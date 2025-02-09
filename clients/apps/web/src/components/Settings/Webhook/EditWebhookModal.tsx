@@ -1,16 +1,6 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-
-import {
-  Organization,
-  ResponseError,
-  WebhookEndpoint,
-  WebhookEndpointUpdate,
-} from '@polar-sh/api'
-import { useCallback, useState } from 'react'
-import { useForm } from 'react-hook-form'
-
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import {
@@ -25,59 +15,49 @@ import {
   useDeleteWebhookEndpoint,
   useEditWebhookEndpoint,
 } from '@/hooks/queries'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
+import { useCallback } from 'react'
+import { useForm } from 'react-hook-form'
 
 export default function EditWebhookModal({
   organization,
   endpoint,
   hide,
 }: {
-  organization: Organization
-  endpoint: WebhookEndpoint
+  organization: components['schemas']['Organization']
+  endpoint: components['schemas']['WebhookEndpoint']
   hide: () => void
 }) {
-  const form = useForm<WebhookEndpointUpdate>({
+  const form = useForm<components['schemas']['WebhookEndpointUpdate']>({
     defaultValues: {
-      // organization_id: organization.id,
       ...endpoint,
     },
   })
 
   const { handleSubmit } = form
-
-  const [isSaving, setIsSaving] = useState(false)
-
   const updateWebhookEndpoint = useEditWebhookEndpoint()
 
   const onSubmit = useCallback(
-    async (form: WebhookEndpointUpdate) => {
-      setIsSaving(true)
-
-      try {
-        await updateWebhookEndpoint.mutateAsync({
-          id: endpoint.id,
-          body: form,
-        })
-
+    async (form: components['schemas']['WebhookEndpointUpdate']) => {
+      const { error } = await updateWebhookEndpoint.mutateAsync({
+        id: endpoint.id,
+        body: form,
+      })
+      if (error) {
         toast({
-          title: 'Webhook Endpoint Updated',
-          description: `Webhook Endpoint was updated successfully`,
+          title: 'Webhook Endpoint Update Failed',
+          description: `Error updating Webhook Endpoint: ${error.detail}`,
         })
-
-        hide()
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          toast({
-            title: 'Webhook Endpoint Update Failed',
-            description: `Error updating Webhook Endpoint: ${e.message}`,
-          })
-        }
-      } finally {
-        setIsSaving(false)
+        return
       }
+      toast({
+        title: 'Webhook Endpoint Updated',
+        description: `Webhook Endpoint was updated successfully`,
+      })
     },
     [endpoint],
   )
@@ -93,25 +73,26 @@ export default function EditWebhookModal({
   const deleteWebhookEndpoint = useDeleteWebhookEndpoint()
 
   const handleDeleteWebhookEndpoint = useCallback(async () => {
-    try {
-      await deleteWebhookEndpoint.mutateAsync({ id: endpoint.id })
-      hideDeleteModal()
-      hide()
-      router.push(
-        getStatusRedirect(
-          `/dashboard/${organization.slug}/settings`,
-          'Webhook Endpoint Deleted',
-          'Webhook Endpoint was deleted successfully',
-        ),
-      )
-    } catch (e) {
-      if (e instanceof ResponseError) {
-        toast({
-          title: 'Webhook Endpoint Deletion Failed',
-          description: `Error deleting Webhook Endpoint: ${e.message}`,
-        })
-      }
+    const { error } = await await deleteWebhookEndpoint.mutateAsync({
+      id: endpoint.id,
+    })
+    if (error) {
+      toast({
+        title: 'Webhook Endpoint Deletion Failed',
+        description: `Error deleting Webhook Endpoint: ${error.detail}`,
+      })
+      return
     }
+
+    hideDeleteModal()
+    hide()
+    router.push(
+      getStatusRedirect(
+        `/dashboard/${organization.slug}/settings/webhooks`,
+        'Webhook Endpoint Deleted',
+        'Webhook Endpoint was deleted successfully',
+      ),
+    )
   }, [
     deleteWebhookEndpoint,
     hideDeleteModal,
@@ -138,7 +119,11 @@ export default function EditWebhookModal({
             <FieldSecret isUpdate={true} />
             <FieldEvents />
 
-            <Button type="submit" loading={isSaving}>
+            <Button
+              type="submit"
+              loading={updateWebhookEndpoint.isPending}
+              disabled={updateWebhookEndpoint.isPending}
+            >
               Save
             </Button>
           </form>

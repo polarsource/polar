@@ -18,7 +18,7 @@ interface StorefrontHeaderProps {
 
 export const StorefrontHeader = ({ organization }: StorefrontHeaderProps) => {
   const externalGitHubOrganizations = useExternalOrganizations({
-    organizationId: organization.id,
+    organization_id: organization.id,
     platform: 'github',
     limit: 1,
     sorting: ['created_at'],

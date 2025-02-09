@@ -13,7 +13,7 @@ import { useDashboard, useListRepositories } from '@/hooks/queries'
 import { useOrganizationSSE } from '@/hooks/sse'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { HowToVoteOutlined } from '@mui/icons-material'
-import { IssueSortBy, Organization, Repository } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useSearchParams } from 'next/navigation'
 import {
@@ -52,37 +52,19 @@ export default function ClientPage() {
   return <Issues key={key} org={org} repo={repo} />
 }
 
-const getSort = (sort: string | null): IssueSortBy => {
-  if (sort === 'newest') {
-    return IssueSortBy.NEWEST
+const getSort = (sort: string | null): components['schemas']['IssueSortBy'] => {
+  if (!sort) {
+    return 'newest'
   }
-  if (sort === 'pledged_amount_desc') {
-    return IssueSortBy.PLEDGED_AMOUNT_DESC
-  }
-  if (sort === 'relevance') {
-    return IssueSortBy.RELEVANCE
-  }
-  if (sort === 'dependencies_default') {
-    return IssueSortBy.DEPENDENCIES_DEFAULT
-  }
-  if (sort === 'most_positive_reactions') {
-    return IssueSortBy.MOST_POSITIVE_REACTIONS
-  }
-  if (sort === 'most_engagement') {
-    return IssueSortBy.MOST_ENGAGEMENT
-  }
-  if (sort === 'most_recently_funded') {
-    return IssueSortBy.MOST_RECENTLY_FUNDED
-  }
-  return IssueSortBy.NEWEST
+  return sort as components['schemas']['IssueSortBy']
 }
 
 const Issues = ({
   org,
   repo,
 }: {
-  org: Organization
-  repo: Repository | undefined
+  org: components['schemas']['Organization']
+  repo: components['schemas']['Repository'] | undefined
 }) => {
   const search = useSearchParams()
   const hasLinkedExternalOrganizations = useHasLinkedExternalOrganizations(org)
@@ -145,8 +127,8 @@ const OrganizationIssues = ({
   onSetFilters,
   hasAppInstalled,
 }: {
-  org: Organization
-  repo: Repository | undefined
+  org: components['schemas']['Organization']
+  repo: components['schemas']['Repository'] | undefined
   filters: DashboardFilters
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
   hasAppInstalled: boolean

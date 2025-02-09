@@ -1,16 +1,9 @@
 import { useAuth } from '@/hooks/auth'
 import { usePostHog } from '@/hooks/posthog'
 import { useListPaymentMethods } from '@/hooks/queries'
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
 import { EnvelopeIcon } from '@heroicons/react/24/outline'
-import {
-  Issue,
-  Organization,
-  PaymentMethod,
-  PledgeStripePaymentIntentCreateSetupFutureUsageEnum,
-  PledgeStripePaymentIntentMutationResponse,
-  ResponseError,
-} from '@polar-sh/api'
+import { components, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
@@ -39,7 +32,7 @@ type PledgeFormState = {
   amount: number
   email: string
   setup_future_usage:
-    | PledgeStripePaymentIntentCreateSetupFutureUsageEnum
+    | components['schemas']['PledgeStripePaymentIntentCreate']['setup_future_usage']
     | undefined
   on_behalf_of_organization_id: string | undefined
 }
@@ -50,14 +43,15 @@ const PledgeCheckoutFundToday = ({
   gotoURL,
   onAmountChange: onAmountChangeProp,
 }: {
-  issue: Issue
-  organization: Organization
+  issue: components['schemas']['Issue']
+  organization: components['schemas']['Organization']
   gotoURL?: string
   onAmountChange?: (amount: number) => void
 }) => {
   const posthog = usePostHog()
-  const [polarPaymentIntent, setPolarPaymentIntent] =
-    useState<PledgeStripePaymentIntentMutationResponse | null>(null)
+  const [polarPaymentIntent, setPolarPaymentIntent] = useState<
+    components['schemas']['PledgeStripePaymentIntentMutationResponse'] | null
+  >(null)
 
   const [formState, setFormState] = useState<PledgeFormState>({
     amount: organization.pledge_minimum_amount,
@@ -93,14 +87,18 @@ const PledgeCheckoutFundToday = ({
 
   const createPaymentIntent = useCallback(
     async (pledgeSync: PledgeFormState) => {
-      return await api.pledges.createPaymentIntent({
-        body: {
-          issue_id: issue.id,
-          amount: pledgeSync.amount,
-          email: pledgeSync.email,
-          on_behalf_of_organization_id: pledgeSync.on_behalf_of_organization_id,
-        },
-      })
+      return unwrap(
+        api.POST('/v1/pledges/payment_intent', {
+          body: {
+            issue_id: issue.id,
+            amount: pledgeSync.amount,
+            email: pledgeSync.email,
+            on_behalf_of_organization_id:
+              pledgeSync.on_behalf_of_organization_id,
+            currency: 'usd',
+          },
+        }),
+      )
     },
     [issue.id],
   )
@@ -111,15 +109,19 @@ const PledgeCheckoutFundToday = ({
         throw new Error('no payment intent to update')
       }
 
-      return await api.pledges.updatePaymentIntent({
-        id: polarPaymentIntent.payment_intent_id,
-        body: {
-          amount: pledgeSync.amount,
-          email: pledgeSync.email,
-          setup_future_usage: pledgeSync.setup_future_usage,
-          on_behalf_of_organization_id: pledgeSync.on_behalf_of_organization_id,
-        },
-      })
+      return await unwrap(
+        api.PATCH('/v1/pledges/payment_intent/{id}', {
+          params: { path: { id: polarPaymentIntent.payment_intent_id } },
+          body: {
+            amount: pledgeSync.amount,
+            email: pledgeSync.email,
+            setup_future_usage: pledgeSync.setup_future_usage,
+            on_behalf_of_organization_id:
+              pledgeSync.on_behalf_of_organization_id,
+            currency: 'usd',
+          },
+        }),
+      )
     },
     [polarPaymentIntent],
   )
@@ -163,32 +165,18 @@ const PledgeCheckoutFundToday = ({
       setSyncing(true)
       setErrorMessage('')
 
-      let updatedPaymentIntent:
-        | PledgeStripePaymentIntentMutationResponse
-        | undefined
+      let updatedPaymentIntent: components['schemas']['PledgeStripePaymentIntentMutationResponse']
 
-      try {
-        if (!polarPaymentIntent) {
-          updatedPaymentIntent = await createPaymentIntent(pledgeSync)
-        } else {
-          updatedPaymentIntent = await updatePaymentIntent(pledgeSync)
-        }
-
-        if (updatedPaymentIntent) {
-          setPolarPaymentIntent(updatedPaymentIntent)
-        }
-        lastPledgeSync.current = pledgeSync
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (body && body['detail'] === 'Invalid Stripe Request') {
-            // Probably a invalid email according to Stripe. Ignore this error.
-          } else {
-            // We didn't handle this error, raise it again.
-            setErrorMessage('Something went wrong, please try again')
-          }
-        }
+      if (!polarPaymentIntent) {
+        updatedPaymentIntent = await createPaymentIntent(pledgeSync)
+      } else {
+        updatedPaymentIntent = await updatePaymentIntent(pledgeSync)
       }
+
+      if (updatedPaymentIntent) {
+        setPolarPaymentIntent(updatedPaymentIntent)
+      }
+      lastPledgeSync.current = pledgeSync
 
       setSyncing(false)
     },
@@ -286,7 +274,7 @@ const PledgeCheckoutFundToday = ({
   }
 
   const [paymentMethod, setPaymentMethod] = useState<
-    PaymentMethod | undefined
+    components['schemas']['PaymentMethod'] | undefined
   >()
   const showStripeForm = polarPaymentIntent ? true : false
   const repository = issue.repository
@@ -294,12 +282,12 @@ const PledgeCheckoutFundToday = ({
   const onSavePaymentMethodChanged = (save: boolean) => {
     const n = {
       ...formState,
-      setup_future_usage: save
-        ? PledgeStripePaymentIntentCreateSetupFutureUsageEnum.ON_SESSION
-        : undefined,
+      setup_future_usage: save ? 'on_session' : undefined,
     }
 
+    // @ts-ignore
     setFormState(n)
+    // @ts-ignore
     debouncedSync(n)
   }
 
@@ -329,7 +317,9 @@ const PledgeCheckoutFundToday = ({
     didSetPaymentMethodOnLoad.current = true
   }, [savedPaymentMethods.isFetched, savedPaymentMethods.data])
 
-  const onChangeOnBehalfOf = (org: Organization | undefined) => {
+  const onChangeOnBehalfOf = (
+    org: components['schemas']['Organization'] | undefined,
+  ) => {
     const n = {
       ...formState,
       on_behalf_of_organization_id: org ? org.id : undefined,

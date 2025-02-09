@@ -8,23 +8,7 @@ import {
 } from '@/hooks/queries'
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import { Announcement, Notifications, VerifiedUser } from '@mui/icons-material'
-import {
-  MaintainerAccountReviewedNotification,
-  MaintainerAccountUnderReviewNotification,
-  MaintainerCreateAccountNotification,
-  MaintainerNewPaidSubscriptionNotification,
-  MaintainerNewProductSaleNotification,
-  MaintainerPledgeConfirmationPendingNotification,
-  MaintainerPledgeCreatedNotification,
-  MaintainerPledgePaidNotification,
-  MaintainerPledgePendingNotification,
-  MaintainerPledgedIssueConfirmationPendingNotification,
-  MaintainerPledgedIssuePendingNotification,
-  NotificationsListNotificationsInner,
-  PledgerPledgePendingNotification,
-  RewardPaidNotification,
-  TeamAdminMemberPledgedNotification,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
@@ -37,7 +21,8 @@ import Icon from '../Icons/Icon'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 
-type NotificationSchema = NotificationsListNotificationsInner
+type NotificationSchema =
+  components['schemas']['NotificationsList']['notifications'][number]
 
 const Popover = () => {
   const [show, setShow] = useState(false)
@@ -194,7 +179,7 @@ const Item = ({
 const MaintainerPledgeCreated = ({
   n,
 }: {
-  n: MaintainerPledgeCreatedNotification
+  n: components['schemas']['MaintainerPledgeCreatedNotification']
 }) => {
   const { payload } = n
   return (
@@ -224,7 +209,7 @@ const MaintainerPledgeConfirmationPendingWrapper = ({
   n,
   setIsInNestedModal,
 }: {
-  n: MaintainerPledgeConfirmationPendingNotification
+  n: components['schemas']['MaintainerPledgeConfirmationPendingNotification']
   setIsInNestedModal: (_: boolean) => void
 }) => {
   const { payload } = n
@@ -283,7 +268,7 @@ const MaintainerPledgedIssueConfirmationPendingWrapper = ({
   n,
   setIsInNestedModal,
 }: {
-  n: MaintainerPledgedIssueConfirmationPendingNotification
+  n: components['schemas']['MaintainerPledgedIssueConfirmationPendingNotification']
   setIsInNestedModal: (_: boolean) => void
 }) => {
   const { payload } = n
@@ -354,8 +339,8 @@ export const MaintainerPledgeConfirmationPending = ({
   onMarkSoved,
 }: {
   n:
-    | MaintainerPledgeConfirmationPendingNotification
-    | MaintainerPledgedIssueConfirmationPendingNotification
+    | components['schemas']['MaintainerPledgeConfirmationPendingNotification']
+    | components['schemas']['MaintainerPledgedIssueConfirmationPendingNotification']
   canMarkSolved: boolean
   isMarkedSolved: boolean
   isLoading: boolean
@@ -409,7 +394,7 @@ export const MaintainerPledgeConfirmationPending = ({
 const MaintainerPledgePending = ({
   n,
 }: {
-  n: MaintainerPledgePendingNotification
+  n: components['schemas']['MaintainerPledgePendingNotification']
 }) => {
   const { payload } = n
   return (
@@ -437,7 +422,7 @@ const MaintainerPledgePending = ({
 const MaintainerPledgedIssuePending = ({
   n,
 }: {
-  n: MaintainerPledgedIssuePendingNotification
+  n: components['schemas']['MaintainerPledgedIssuePendingNotification']
 }) => {
   const { payload } = n
   return (
@@ -466,7 +451,7 @@ const MaintainerPledgedIssuePending = ({
 const MaintainerPledgePaid = ({
   n,
 }: {
-  n: MaintainerPledgePaidNotification
+  n: components['schemas']['MaintainerPledgePaidNotification']
 }) => {
   const { payload } = n
   return (
@@ -493,7 +478,11 @@ const MaintainerPledgePaid = ({
   )
 }
 
-const RewardPaid = ({ n }: { n: RewardPaidNotification }) => {
+const RewardPaid = ({
+  n,
+}: {
+  n: components['schemas']['RewardPaidNotification']
+}) => {
   const { payload } = n
   return (
     <Item
@@ -522,7 +511,7 @@ const RewardPaid = ({ n }: { n: RewardPaidNotification }) => {
 const PledgerPledgePending = ({
   n,
 }: {
-  n: PledgerPledgePendingNotification
+  n: components['schemas']['PledgerPledgePendingNotification']
 }) => {
   const { payload } = n
   return (
@@ -548,7 +537,7 @@ const PledgerPledgePending = ({
 const TeamAdminMemberPledged = ({
   n,
 }: {
-  n: TeamAdminMemberPledgedNotification
+  n: components['schemas']['TeamAdminMemberPledgedNotification']
 }) => {
   const { payload } = n
   return (
@@ -575,7 +564,7 @@ const TeamAdminMemberPledged = ({
 const MaintainerAccountUnderReview = ({
   n,
 }: {
-  n: MaintainerAccountUnderReviewNotification
+  n: components['schemas']['MaintainerAccountUnderReviewNotification']
 }) => {
   return (
     <Item n={n} iconClasses="bg-yellow-200 text-yellow-500">
@@ -599,7 +588,7 @@ const MaintainerAccountUnderReview = ({
 const MaintainerAccountReviewed = ({
   n,
 }: {
-  n: MaintainerAccountReviewedNotification
+  n: components['schemas']['MaintainerAccountReviewedNotification']
 }) => {
   return (
     <Item n={n} iconClasses="bg-green-200 text-green-500">
@@ -622,7 +611,7 @@ const MaintainerAccountReviewed = ({
 const MaintainerNewPaidSubscription = ({
   n,
 }: {
-  n: MaintainerNewPaidSubscriptionNotification
+  n: components['schemas']['MaintainerNewPaidSubscriptionNotification']
 }) => {
   const { payload } = n
   return (
@@ -653,7 +642,7 @@ const MaintainerNewPaidSubscription = ({
 const MaintainerNewProductSale = ({
   n,
 }: {
-  n: MaintainerNewProductSaleNotification
+  n: components['schemas']['MaintainerNewProductSaleNotification']
 }) => {
   const { payload } = n
   return (
@@ -679,7 +668,7 @@ const MaintainerNewProductSale = ({
 const MaintainerCreateAccount = ({
   n,
 }: {
-  n: MaintainerCreateAccountNotification
+  n: components['schemas']['MaintainerCreateAccountNotification']
 }) => {
   const { payload } = n
   return (

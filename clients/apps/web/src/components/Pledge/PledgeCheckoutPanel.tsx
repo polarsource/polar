@@ -1,5 +1,5 @@
 import { CommandLineIcon, HeartIcon } from '@heroicons/react/24/solid'
-import { Issue, Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import {
   Tabs,
   TabsContent,
@@ -55,8 +55,8 @@ const PledgeCheckoutPanel = ({
   gotoURL,
   onAmountChange: onAmountChangeProp,
 }: {
-  issue: Issue
-  organization: Organization
+  issue: components['schemas']['Issue']
+  organization: components['schemas']['Organization']
   gotoURL?: string
   onAmountChange?: (amount: number) => void
 }) => {

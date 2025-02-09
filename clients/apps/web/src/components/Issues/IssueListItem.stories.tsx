@@ -11,18 +11,12 @@ import {
   pledgesSummaries,
   user,
 } from '@/utils/testdata'
-import {
-  Pledge,
-  PledgeState,
-  PledgeType,
-  Reward,
-  RewardState,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import IssueListItem from './IssueListItem'
 
 type Story = StoryObj<typeof IssueListItem>
 
-const pledges: Pledge[] = [
+const pledges: components['schemas']['Pledge'][] = [
   {
     id: 'xx',
     created_at: new Date('2023-10-17').toISOString(),
@@ -30,60 +24,62 @@ const pledges: Pledge[] = [
     issue: issue,
     amount: 1234,
     currency: 'usd',
-    state: PledgeState.CREATED,
-    type: PledgeType.UPFRONT,
+    state: 'created',
+    type: 'pay_upfront',
     pledger: {
       name: 'zz',
       avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
       github_username: 'zz',
     },
+    authed_can_admin_received: false,
+    authed_can_admin_sender: false,
   },
 ]
 
-const pledgeDisputable: Pledge[] = [
+const pledgeDisputable: components['schemas']['Pledge'][] = [
   {
     ...pledges[0],
-    state: PledgeState.PENDING,
-    type: PledgeType.UPFRONT,
+    state: 'pending',
+    type: 'pay_upfront',
     scheduled_payout_at: addDays(new Date(), 7).toISOString(),
     authed_can_admin_sender: true,
   },
 ]
 
-const pledgeDisputableToday: Pledge[] = [
+const pledgeDisputableToday: components['schemas']['Pledge'][] = [
   {
     ...pledges[0],
-    state: PledgeState.PENDING,
-    type: PledgeType.UPFRONT,
+    state: 'pending',
+    type: 'pay_upfront',
     scheduled_payout_at: addHours(new Date(), 2).toISOString(),
     authed_can_admin_sender: true,
   },
 ]
 
-const pledgeDisputableYesterday: Pledge[] = [
+const pledgeDisputableYesterday: components['schemas']['Pledge'][] = [
   {
     ...pledges[0],
-    state: PledgeState.PENDING,
-    type: PledgeType.UPFRONT,
+    state: 'pending',
+    type: 'pay_upfront',
     scheduled_payout_at: addDays(new Date(), -1).toISOString(),
     authed_can_admin_sender: true,
   },
 ]
 
-const pledgeDisputed: Pledge[] = [
+const pledgeDisputed: components['schemas']['Pledge'][] = [
   {
     ...pledges[0],
-    state: PledgeState.DISPUTED,
-    type: PledgeType.UPFRONT,
+    state: 'disputed',
+    type: 'pay_upfront',
     authed_can_admin_sender: true,
   },
 ]
 
-const pledgeDisputedByOther: Pledge[] = [
+const pledgeDisputedByOther: components['schemas']['Pledge'][] = [
   {
     ...pledges[0],
-    state: PledgeState.DISPUTED,
-    type: PledgeType.UPFRONT,
+    state: 'disputed',
+    type: 'pay_upfront',
     authed_can_admin_received: true,
   },
 ]
@@ -290,7 +286,7 @@ export const PledgeConfirmationPending: Story = {
     pledges: [
       {
         ...pledgePublicAPI,
-        state: PledgeState.CREATED,
+        state: 'created',
         authed_can_admin_received: true,
       },
     ],
@@ -308,7 +304,7 @@ export const PledgeConfirmationPendingConfirmed: Story = {
     pledges: [
       {
         ...pledgePublicAPI,
-        state: PledgeState.PENDING,
+        state: 'pending',
         authed_can_admin_received: true,
       },
     ],
@@ -321,7 +317,7 @@ export const PledgeMultipleTypes: Story = {
     pledges: [
       {
         ...pledgePublicAPI,
-        type: PledgeType.UPFRONT,
+        type: 'pay_upfront',
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
@@ -330,7 +326,7 @@ export const PledgeMultipleTypes: Story = {
       },
       {
         ...pledgePublicAPI,
-        type: PledgeType.UPFRONT,
+        type: 'pay_upfront',
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
@@ -339,7 +335,7 @@ export const PledgeMultipleTypes: Story = {
       },
       {
         ...pledgePublicAPI,
-        type: PledgeType.UPFRONT,
+        type: 'pay_upfront',
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
@@ -348,7 +344,7 @@ export const PledgeMultipleTypes: Story = {
       },
       {
         ...pledgePublicAPI,
-        type: PledgeType.UPFRONT,
+        type: 'pay_upfront',
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
@@ -357,7 +353,7 @@ export const PledgeMultipleTypes: Story = {
       },
       {
         ...pledgePublicAPI,
-        type: PledgeType.UPFRONT,
+        type: 'pay_upfront',
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
@@ -366,7 +362,7 @@ export const PledgeMultipleTypes: Story = {
       },
       {
         ...pledgePublicAPI,
-        type: PledgeType.UPFRONT,
+        type: 'pay_upfront',
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
@@ -376,7 +372,7 @@ export const PledgeMultipleTypes: Story = {
 
       {
         ...pledgePublicAPI,
-        type: PledgeType.ON_COMPLETION,
+        type: 'pay_on_completion',
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
@@ -575,7 +571,7 @@ export const OrganizationPledgeWithInvoice: Story = {
           avatar_url: user.avatar_url,
         },
         hosted_invoice_url: 'http://example.com/',
-        state: PledgeState.PENDING, // paid
+        state: 'pending', // paid
       },
     ],
   },
@@ -592,9 +588,9 @@ export const PublicReward: Story = {
   },
 }
 
-const reward: Reward = {
+const reward: components['schemas']['Reward'] = {
   pledge: pledgePublicAPI,
-  state: RewardState.PENDING,
+  state: 'pending',
   amount: { currency: 'usd', amount: 4000 },
 }
 
@@ -623,18 +619,18 @@ export const RewardsStatusAll: Story = {
     rewards: [
       {
         ...reward,
-        state: RewardState.PENDING,
+        state: 'pending',
 
         amount: { currency: 'usd', amount: 1000 },
       },
       {
         ...reward,
-        state: RewardState.PAID,
+        state: 'paid',
         amount: { currency: 'usd', amount: 2000 },
       },
       {
         ...reward,
-        state: RewardState.PENDING,
+        state: 'pending',
         amount: { currency: 'usd', amount: 3000 },
         pledge: {
           ...reward.pledge,
@@ -671,7 +667,7 @@ export const RewardsStatusPaidOnly: Story = {
     rewards: [
       {
         ...reward,
-        state: RewardState.PAID,
+        state: 'paid',
         amount: { currency: 'usd', amount: 2000 },
       },
     ],
@@ -704,7 +700,7 @@ export const RewardsStatusPaidOnlyZero: Story = {
     rewards: [
       {
         ...reward,
-        state: RewardState.PAID,
+        state: 'paid',
         amount: { currency: 'usd', amount: 2000 },
       },
     ],

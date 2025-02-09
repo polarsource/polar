@@ -16,7 +16,6 @@ import { useCustomFields, useProduct } from '@/hooks/queries'
 import { useOrder } from '@/hooks/queries/orders'
 import { useRefunds } from '@/hooks/queries/refunds'
 import { markdownOptionsJustText } from '@/utils/markdown'
-import { Product, RefundReason } from '@polar-sh/api'
 import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -32,7 +31,7 @@ import React, { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface OrderProductItemProps {
-  product: Product
+  product: components['schemas']['Product']
 }
 
 const OrderProductItem = ({ product }: OrderProductItemProps) => {
@@ -286,8 +285,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
               {
                 accessorKey: 'reason',
                 header: 'Reason',
-                cell: ({ row }) =>
-                  RefundReasonDisplay[row.original.reason as RefundReason],
+                cell: ({ row }) => RefundReasonDisplay[row.original.reason],
               },
               {
                 accessorKey: 'revoke_benefits',

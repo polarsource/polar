@@ -3,14 +3,14 @@
 import Finance from '@/components/Finance/Finance'
 import { useToast } from '@/components/Toast/use-toast'
 import { useListPledgesForOrganization, useListRewards } from '@/hooks/queries'
-import { Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 
 export default function Current({
   organization,
 }: {
-  organization: Organization
+  organization: components['schemas']['Organization']
 }) {
   const params = useSearchParams()
   const status = params?.get('status')

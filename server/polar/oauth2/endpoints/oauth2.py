@@ -23,14 +23,11 @@ from ..dependencies import get_authorization_server, get_token
 from ..grants import AuthorizationCodeGrant
 from ..schemas import (
     AuthorizeResponse,
-    IntrospectTokenRequest,
     IntrospectTokenResponse,
     OAuth2Client,
     OAuth2ClientConfiguration,
     OAuth2ClientConfigurationUpdate,
-    RevokeTokenRequest,
     RevokeTokenResponse,
-    TokenRequestAdapter,
     TokenResponse,
     authorize_response_adapter,
 )
@@ -195,27 +192,12 @@ async def consent(
     )
 
 
-_request_token_schema = TokenRequestAdapter.json_schema(
-    ref_template="#/paths/~1v1~1oauth2~1token/post/x-components/{model}"
-)
-_request_token_schema_defs = _request_token_schema.pop("$defs")
-
-
 @router.post(
     "/token",
     summary="Request Token",
     name="oauth2:request_token",
     operation_id="oauth2:request_token",
     tags=[APITag.featured, APITag.documented],
-    openapi_extra={
-        "x-components": _request_token_schema_defs,
-        "requestBody": {
-            "required": True,
-            "content": {
-                "application/x-www-form-urlencoded": {"schema": _request_token_schema}
-            },
-        },
-    },
     response_model=TokenResponse,
 )
 async def token(
@@ -233,16 +215,6 @@ async def token(
     name="oauth2:revoke_token",
     operation_id="oauth2:revoke_token",
     tags=[APITag.featured, APITag.documented],
-    openapi_extra={
-        "requestBody": {
-            "required": True,
-            "content": {
-                "application/x-www-form-urlencoded": {
-                    "schema": RevokeTokenRequest.model_json_schema()
-                }
-            },
-        },
-    },
     response_model=RevokeTokenResponse,
 )
 async def revoke(
@@ -262,16 +234,6 @@ async def revoke(
     name="oauth2:introspect_token",
     operation_id="oauth2:introspect_token",
     tags=[APITag.featured, APITag.documented],
-    openapi_extra={
-        "requestBody": {
-            "required": True,
-            "content": {
-                "application/x-www-form-urlencoded": {
-                    "schema": IntrospectTokenRequest.model_json_schema()
-                }
-            },
-        },
-    },
     response_model=IntrospectTokenResponse,
 )
 async def introspect(

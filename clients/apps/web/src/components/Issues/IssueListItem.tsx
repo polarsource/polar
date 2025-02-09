@@ -2,8 +2,8 @@
 
 import { ModalBox, Modal as ModernModal } from '@/components/Modal'
 import { useToastLatestPledged } from '@/hooks/stripe'
-import { api } from '@/utils/api'
-import { Issue, Pledge, PledgesTypeSummaries, Reward } from '@polar-sh/api'
+import { api } from '@/utils/client'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
@@ -16,9 +16,9 @@ import IssueSummary from './IssueSummary'
 import IssueListItemDecoration from './ListItemDecoration'
 
 const IssueListItem = (props: {
-  issue: Issue
-  pledges: Array<Pledge>
-  pledgesSummary: PledgesTypeSummaries | null
+  issue: components['schemas']['Issue']
+  pledges: Array<components['schemas']['Pledge']>
+  pledgesSummary: components['schemas']['PledgesTypeSummaries'] | null
   checkJustPledged?: boolean
   canAddRemovePolarLabel: boolean
   showPledgeAction: boolean
@@ -26,7 +26,7 @@ const IssueListItem = (props: {
   className?: string
   showLogo?: boolean
   showIssueOpenClosedStatus?: boolean
-  rewards: Reward[] | null
+  rewards: components['schemas']['Reward'][] | null
 }) => {
   const externalOrganization = props.issue.repository.organization
   const repo = props.issue.repository
@@ -49,10 +49,10 @@ const IssueListItem = (props: {
   const havePledge = mergedPledges.length > 0
 
   const [showDisputeModalForPledge, setShowDisputeModalForPledge] = useState<
-    Pledge | undefined
+    components['schemas']['Pledge'] | undefined
   >()
 
-  const onDispute = (pledge: Pledge) => {
+  const onDispute = (pledge: components['schemas']['Pledge']) => {
     setShowDisputeModalForPledge(pledge)
   }
 
@@ -136,7 +136,7 @@ const IssueListItem = (props: {
 
 export default IssueListItem
 
-const DisputeModal = (props: { pledge: Pledge }) => {
+const DisputeModal = (props: { pledge: components['schemas']['Pledge'] }) => {
   const [reason, setReason] = useState('')
   const [canSubmit, setCanSubmit] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -147,17 +147,19 @@ const DisputeModal = (props: { pledge: Pledge }) => {
     setIsLoading(true)
     setMessage('')
 
-    try {
-      await api.pledges.disputePledge({
-        pledgeId: pledge.id,
-        reason: reason,
-      })
-      setMessage("Thanks, we'll review your dispute soon.")
-      setDidSubmit(true)
-    } catch (Error) {
-      setMessage('Something went wrong. Please try again.')
-    }
+    const { error } = await api.POST('/v1/pledges/{pledge_id}/dispute', {
+      params: { path: { pledge_id: pledge.id }, query: { reason } },
+    })
+
     setIsLoading(false)
+
+    if (error) {
+      setMessage('Something went wrong. Please try again.')
+      return
+    }
+
+    setMessage("Thanks, we'll review your dispute soon.")
+    setDidSubmit(true)
   }
 
   const onUpdateReason = (e: ChangeEvent<HTMLTextAreaElement>) => {

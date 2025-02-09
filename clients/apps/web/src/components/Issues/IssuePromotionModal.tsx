@@ -9,12 +9,12 @@ import {
   useOrganizationBadgeSettings,
   useUpdateIssue,
 } from '@/hooks/queries'
-import { api } from '@/utils/api'
 import { queryClient } from '@/utils/api/query'
+import { api } from '@/utils/client'
 import { githubIssueLink } from '@/utils/github'
 import { HeartIcon } from '@heroicons/react/24/outline'
 import { CardGiftcardOutlined, WifiTethering } from '@mui/icons-material'
-import { CurrencyAmount, Issue, Pledge, UserRead } from '@polar-sh/api'
+import { components, unwrap } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -39,11 +39,13 @@ import { useModal } from '../Modal/useModal'
 import BadgeMessageForm from './BadgeMessageForm'
 import PublicRewardsSetting from './UpfrontRewards'
 
-const isIssueBadged = (issue: Issue): boolean => {
+const isIssueBadged = (issue: components['schemas']['Issue']): boolean => {
   return issue.pledge_badge_currently_embedded
 }
 
-export const AddBadgeButton = (props: { issue: Issue }) => {
+export const AddBadgeButton = (props: {
+  issue: components['schemas']['Issue']
+}) => {
   const posthog = usePostHog()
   const [isBadged, setBadged] = useState<boolean>(isIssueBadged(props.issue))
 
@@ -121,7 +123,9 @@ export const AddBadgeButton = (props: { issue: Issue }) => {
 
   const updateIssue = useUpdateIssue()
 
-  const onUpdateFundingGoal = async (amount: CurrencyAmount) => {
+  const onUpdateFundingGoal = async (
+    amount: components['schemas']['CurrencyAmount'],
+  ) => {
     await updateIssue.mutateAsync({
       id: props.issue.id,
       funding_goal: amount,
@@ -188,14 +192,16 @@ export const AddBadgeButton = (props: { issue: Issue }) => {
 }
 
 export const BadgePromotionModal = (props: {
-  issue: Issue
+  issue: components['schemas']['Issue']
   isShown: boolean
   toggle: () => void
   onRemoveBadge: () => Promise<void>
-  user: UserRead
+  user: components['schemas']['UserRead']
   onAddComment: (message: string) => Promise<void>
   onBadgeWithComment: (comment: string) => Promise<void>
-  onUpdateFundingGoal: (amount: CurrencyAmount) => Promise<void>
+  onUpdateFundingGoal: (
+    amount: components['schemas']['CurrencyAmount'],
+  ) => Promise<void>
   defaultTab?: string
 }) => {
   const { toggle } = props
@@ -284,8 +290,8 @@ export const BadgePromotionModal = (props: {
 }
 
 const PostCommentForm = (props: {
-  issue: Issue
-  user: UserRead
+  issue: components['schemas']['Issue']
+  user: components['schemas']['UserRead']
   onAddComment: (message: string) => Promise<void>
 }) => {
   const posthog = usePostHog()
@@ -428,8 +434,8 @@ const Tab = ({
 )
 
 const PromoteTab = (props: {
-  issue: Issue
-  user: UserRead
+  issue: components['schemas']['Issue']
+  user: components['schemas']['UserRead']
   onAddComment: (message: string) => Promise<void>
 }) => {
   const pledgePageLink = `https://polar.sh/${props.issue.repository.organization.name}/${props.issue.repository.name}/issues/${props.issue.number}`
@@ -506,7 +512,10 @@ const PromoteTab = (props: {
   )
 }
 
-const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
+const RewardsTab = (props: {
+  issue: components['schemas']['Issue']
+  user: components['schemas']['UserRead']
+}) => {
   const linkedOrganization = props.issue.repository.internal_organization
   const upfront =
     props.issue.upfront_split_to_contributors ??
@@ -533,18 +542,21 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
   const [bannerSeededPledge, setBannerSeededPledge] = useState(false)
 
   const [createdSeedPledge, setCreatedSeedPledge] = useState<
-    Pledge | undefined
+    components['schemas']['Pledge'] | undefined
   >(undefined)
 
   const onSubmitSeedReward = async () => {
     setPledgeIsLoading(true)
 
-    const p = await api.pledges.createPayOnCompletion({
-      body: {
-        issue_id: props.issue.id,
-        amount: selfPledgeAmount,
-      },
-    })
+    const p = await unwrap(
+      api.POST('/v1/pledges/pay_on_completion', {
+        body: {
+          issue_id: props.issue.id,
+          amount: selfPledgeAmount,
+          currency: 'usd',
+        },
+      }),
+    )
 
     queryClient.invalidateQueries({
       queryKey: ['pledge', 'byIssue', props.issue.id],

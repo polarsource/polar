@@ -1,12 +1,4 @@
-import {
-  Funding,
-  Issue,
-  Organization,
-  Pledge,
-  PledgeState,
-  PledgesTypeSummaries,
-  Reward,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import {
   formatCurrencyAndAmount,
   getCentsInDollarString,
@@ -27,24 +19,24 @@ const IssueListItemDecoration = ({
   organization,
   rewards,
 }: {
-  pledges: Array<Pledge>
-  pledgesSummary: PledgesTypeSummaries | null
+  pledges: Array<components['schemas']['Pledge']>
+  pledgesSummary: components['schemas']['PledgesTypeSummaries'] | null
   showDisputeAction: boolean
-  onDispute: (pledge: Pledge) => void
+  onDispute: (pledge: components['schemas']['Pledge']) => void
   onConfirmPledges: () => void
   showConfirmPledgeAction: boolean
   confirmPledgeIsLoading: boolean
-  funding: Funding
-  issue: Issue
-  organization: Organization
-  rewards: Reward[] | null
+  funding: components['schemas']['Funding']
+  issue: components['schemas']['Issue']
+  organization: components['schemas']['Organization']
+  rewards: components['schemas']['Reward'][] | null
 }) => {
   const showPledges = pledges && pledges.length > 0
 
   const ONE_DAY = 1000 * 60 * 60 * 24
   const now = new Date()
 
-  const remainingDays = (pledge: Pledge) => {
+  const remainingDays = (pledge: components['schemas']['Pledge']) => {
     if (!pledge.scheduled_payout_at) {
       return -1
     }
@@ -61,7 +53,7 @@ const IssueListItemDecoration = ({
         (p) =>
           p.authed_can_admin_sender &&
           p.scheduled_payout_at &&
-          p.state === PledgeState.PENDING &&
+          p.state === 'pending' &&
           remainingDays(p) >= 0,
       )
       .map((p) => {
@@ -71,8 +63,7 @@ const IssueListItemDecoration = ({
         }
       }) || []
 
-  const disputedPledges =
-    pledges?.filter((p) => p.state === PledgeState.DISPUTED) || []
+  const disputedPledges = pledges?.filter((p) => p.state === 'disputed') || []
 
   const canDisputeAny =
     pledges &&
@@ -80,7 +71,7 @@ const IssueListItemDecoration = ({
       (p) =>
         p.authed_can_admin_sender &&
         p.scheduled_payout_at &&
-        p.state === PledgeState.PENDING &&
+        p.state === 'pending' &&
         remainingDays(p) >= 0,
     )
 
@@ -90,14 +81,14 @@ const IssueListItemDecoration = ({
   const showPledgeStatusBox = pledgeStatusShowCount > 0
   const disputeBoxShowAmount = pledgeStatusShowCount > 1
 
-  const onClickDisputeButton = (pledge: Pledge) => {
+  const onClickDisputeButton = (pledge: components['schemas']['Pledge']) => {
     if (!canDisputeAny || !onDispute) {
       return
     }
     onDispute(pledge)
   }
 
-  const pledgeAmount = (pledge: Pledge): number => {
+  const pledgeAmount = (pledge: components['schemas']['Pledge']): number => {
     if (typeof pledge.amount === 'number') {
       return pledge.amount
     }

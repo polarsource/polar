@@ -1,6 +1,5 @@
 import { useCreateRefund } from '@/hooks/queries'
-import { RefundCreate, RefundReason } from '@polar-sh/api'
-import { components } from '@polar-sh/client'
+import { components, enums } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
@@ -33,7 +32,7 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
   const maximumRefundAmount = order.amount - (order.refunded_amount ?? 0)
   const canRefund = maximumRefundAmount > 0
 
-  const form = useForm<RefundCreate>({
+  const form = useForm<components['schemas']['RefundCreate']>({
     defaultValues: {
       amount: maximumRefundAmount,
       order_id: order.id,
@@ -44,7 +43,9 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
 
   const createRefund = useCreateRefund()
 
-  const handleRefundOrder = async (refund: RefundCreate) => {
+  const handleRefundOrder = async (
+    refund: components['schemas']['RefundCreate'],
+  ) => {
     if (!order || !canRefund) {
       toast({
         title: 'Refund Failed',
@@ -54,29 +55,26 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
       return
     }
 
-    createRefund
-      .mutateAsync({
-        body: refund,
-      })
-      .then((refund) => {
-        if (refund) {
-          toast({
-            title: 'Refund Created',
-            description: `Refund for ${formatCurrencyAndAmount(
-              refund.amount,
-              refund.currency,
-            )} created successfully`,
-          })
-
-          hide()
-        }
-      })
-      .catch((error) => {
+    createRefund.mutateAsync(refund).then((result) => {
+      const { data, error } = result
+      if (error) {
         toast({
           title: 'Refund Failed',
-          description: `Error creating refund: ${error.message}`,
+          description: `Error creating refund: ${error.detail}`,
         })
-      })
+        return
+      }
+      if (data) {
+        toast({
+          title: 'Refund Created',
+          description: `Refund for ${formatCurrencyAndAmount(
+            data.amount,
+            data.currency,
+          )} created successfully`,
+        })
+      }
+      hide()
+    })
   }
 
   return (
@@ -139,11 +137,13 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
                         <SelectValue placeholder="Select Reason" />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.values(RefundReason).map((reason) => (
-                          <SelectItem key={reason} value={reason}>
-                            {RefundReasonDisplay[reason]}
-                          </SelectItem>
-                        ))}
+                        {Object.values(enums.refundReasonValues).map(
+                          (reason) => (
+                            <SelectItem key={reason} value={reason}>
+                              {RefundReasonDisplay[reason]}
+                            </SelectItem>
+                          ),
+                        )}
                       </SelectContent>
                     </Select>
                   </FormControl>

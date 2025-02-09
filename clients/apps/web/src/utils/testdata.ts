@@ -1,34 +1,4 @@
-import {
-  ExternalOrganization,
-  Issue,
-  IssueFunding,
-  MaintainerPledgeConfirmationPendingNotification,
-  MaintainerPledgeConfirmationPendingNotificationPayload,
-  MaintainerPledgeCreatedNotification,
-  MaintainerPledgeCreatedNotificationPayload,
-  MaintainerPledgePaidNotification,
-  MaintainerPledgePaidNotificationPayload,
-  MaintainerPledgePendingNotification,
-  MaintainerPledgePendingNotificationPayload,
-  MaintainerPledgedIssueConfirmationPendingNotification,
-  MaintainerPledgedIssueConfirmationPendingNotificationPayload,
-  MaintainerPledgedIssuePendingNotificationPayload,
-  Organization,
-  Platforms,
-  Pledge,
-  PledgeState,
-  PledgeType,
-  Pledger,
-  PledgerPledgePendingNotification,
-  PledgerPledgePendingNotificationPayload,
-  PledgesTypeSummaries,
-  Reactions,
-  Repository,
-  RewardPaidNotification,
-  RewardPaidNotificationPayload,
-  State,
-  UserRead,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 
 export function addDays(date: Date, days: number) {
   var result = new Date(date)
@@ -42,7 +12,7 @@ export function addHours(date: Date, hours: number) {
   return result
 }
 
-export const org: Organization = {
+export const org: components['schemas']['Organization'] = {
   id: 'xxxabc',
   created_at: new Date('2023-01-01T00:00:00Z').toISOString(),
   modified_at: null,
@@ -53,8 +23,11 @@ export const org: Organization = {
   pledge_badge_show_amount: true,
   profile_settings: {
     enabled: false,
+    subscribe: null,
   },
-  feature_settings: {},
+  feature_settings: {
+    issue_funding_enabled: false,
+  },
   default_upfront_split_to_contributors: null,
   bio: null,
   company: null,
@@ -69,7 +42,7 @@ export const org: Organization = {
   },
 }
 
-export const user: UserRead = {
+export const user: components['schemas']['UserRead'] = {
   created_at: new Date('2023-01-01T00:00:00Z').toISOString(),
   modified_at: new Date('2023-01-01T09:00:00Z').toISOString(),
   email: 'test@example.com',
@@ -80,24 +53,25 @@ export const user: UserRead = {
   account_id: null,
 }
 
-export const externalOrganization: ExternalOrganization = {
-  id: '',
-  platform: Platforms.GITHUB,
-  name: 'polarsource',
-  avatar_url: 'https://avatars.githubusercontent.com/u/105373340?v=4',
-  is_personal: false,
-  bio: null,
-  pretty_name: null,
-  company: null,
-  blog: null,
-  location: null,
-  email: null,
-  twitter_username: null,
-  organization_id: null,
-}
+export const externalOrganization: components['schemas']['ExternalOrganization'] =
+  {
+    id: '',
+    platform: 'github',
+    name: 'polarsource',
+    avatar_url: 'https://avatars.githubusercontent.com/u/105373340?v=4',
+    is_personal: false,
+    bio: null,
+    pretty_name: null,
+    company: null,
+    blog: null,
+    location: null,
+    email: null,
+    twitter_username: null,
+    organization_id: null,
+  }
 
-export const repo: Repository = {
-  platform: Platforms.GITHUB,
+export const repo: components['schemas']['Repository'] = {
+  platform: 'github',
   name: 'pydantic',
   id: 'bb',
   is_private: false,
@@ -110,7 +84,7 @@ export const repo: Repository = {
   internal_organization: org,
 }
 
-export const reactions: Reactions = {
+export const reactions: components['schemas']['Reactions'] = {
   total_count: 0,
   plus_one: 0,
   minus_one: 0,
@@ -123,8 +97,8 @@ export const reactions: Reactions = {
 }
 
 // Public API
-export const issue: Issue = {
-  platform: Platforms.GITHUB,
+export const issue: components['schemas']['Issue'] = {
+  platform: 'github',
   number: 222,
   title: 'SecretStr comparison fails when field is defined with Field',
   author: {
@@ -139,13 +113,14 @@ export const issue: Issue = {
     total_count: 3,
     plus_one: 3,
   },
-  state: State.OPEN,
+  state: 'open',
   id: 'cc',
   issue_created_at: addDays(new Date(), -7).toISOString(),
   repository: repo,
   funding: {},
   needs_confirmation_solved: false,
   pledge_badge_currently_embedded: false,
+  labels: [],
 }
 
 export const issueBodyHTML = `<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit,
@@ -156,13 +131,13 @@ reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
 Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia
 deserunt mollit anim id est laborum.</p>`
 
-export const pledger: Pledger = {
+export const pledger: components['schemas']['Pledger'] = {
   name: 'zegl',
   github_username: 'zegl',
   avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
 }
 
-export const pledgesSummaries: PledgesTypeSummaries = {
+export const pledgesSummaries: components['schemas']['PledgesTypeSummaries'] = {
   pay_directly: { total: { currency: 'usd', amount: 0 }, pledgers: [] },
   pay_on_completion: {
     total: { currency: 'usd', amount: 40000 },
@@ -174,7 +149,7 @@ export const pledgesSummaries: PledgesTypeSummaries = {
   },
 }
 
-export const issueFunding: IssueFunding = {
+export const issueFunding: components['schemas']['IssueFunding'] = {
   issue,
   funding_goal: { currency: 'usd', amount: 60000 },
   total: { currency: 'usd', amount: 50000 },
@@ -182,19 +157,21 @@ export const issueFunding: IssueFunding = {
 }
 
 // PublicAPI
-export const pledgePublicAPI: Pledge = {
+export const pledgePublicAPI: components['schemas']['Pledge'] = {
   id: 'pppp',
   created_at: '2023-10-11',
   modified_at: null,
   issue: issue,
   amount: 3000,
   currency: 'usd',
-  state: PledgeState.CREATED,
-  type: PledgeType.UPFRONT,
+  state: 'created',
+  type: 'pay_upfront',
   pledger: pledger,
+  authed_can_admin_sender: false,
+  authed_can_admin_received: false,
 }
 
-const maintainerPledgeCreatedNotification: MaintainerPledgeCreatedNotificationPayload =
+const maintainerPledgeCreatedNotification: components['schemas']['MaintainerPledgeCreatedNotificationPayload'] =
   {
     pledger_name: 'xx',
     pledge_amount: '123.50',
@@ -205,23 +182,10 @@ const maintainerPledgeCreatedNotification: MaintainerPledgeCreatedNotificationPa
     issue_number: 123,
     maintainer_has_stripe_account: false,
     pledge_id: null,
-    pledge_type: PledgeType.UPFRONT,
+    pledge_type: 'pay_upfront',
   }
 
-const maintainerPledgeConfirmationPendingNotification: MaintainerPledgeConfirmationPendingNotificationPayload =
-  {
-    pledger_name: 'xx',
-    pledge_amount: '123.50',
-    issue_url: '#',
-    issue_title: 'Hello World',
-    issue_org_name: 'polarsource',
-    issue_repo_name: 'polar',
-    issue_number: 123,
-    maintainer_has_stripe_account: false,
-    pledge_id: null,
-  }
-
-const maintainerPledgePendingNotification: MaintainerPledgePendingNotificationPayload =
+const maintainerPledgeConfirmationPendingNotification: components['schemas']['MaintainerPledgeConfirmationPendingNotificationPayload'] =
   {
     pledger_name: 'xx',
     pledge_amount: '123.50',
@@ -234,7 +198,20 @@ const maintainerPledgePendingNotification: MaintainerPledgePendingNotificationPa
     pledge_id: null,
   }
 
-const maintainerPledgePaidNotification: MaintainerPledgePaidNotificationPayload =
+const maintainerPledgePendingNotification: components['schemas']['MaintainerPledgePendingNotificationPayload'] =
+  {
+    pledger_name: 'xx',
+    pledge_amount: '123.50',
+    issue_url: '#',
+    issue_title: 'Hello World',
+    issue_org_name: 'polarsource',
+    issue_repo_name: 'polar',
+    issue_number: 123,
+    maintainer_has_stripe_account: false,
+    pledge_id: null,
+  }
+
+const maintainerPledgePaidNotification: components['schemas']['MaintainerPledgePaidNotificationPayload'] =
   {
     paid_out_amount: '123.50',
     issue_url: '#',
@@ -245,7 +222,7 @@ const maintainerPledgePaidNotification: MaintainerPledgePaidNotificationPayload 
     pledge_id: null,
   }
 
-const pledgerPledgePendingNotification: PledgerPledgePendingNotificationPayload =
+const pledgerPledgePendingNotification: components['schemas']['PledgerPledgePendingNotificationPayload'] =
   {
     pledge_amount: '50.50',
     issue_url: '#',
@@ -255,20 +232,21 @@ const pledgerPledgePendingNotification: PledgerPledgePendingNotificationPayload 
     issue_number: 123,
     pledge_date: addDays(new Date(), -2).toISOString(),
     pledge_id: null,
-    pledge_type: PledgeType.UPFRONT,
+    pledge_type: 'pay_upfront',
   }
 
-const rewardPaidNotification: RewardPaidNotificationPayload = {
-  paid_out_amount: '123.50',
-  issue_url: '#',
-  issue_title: 'Hello World',
-  issue_org_name: 'polarsource',
-  issue_repo_name: 'polar',
-  issue_number: 123,
-  issue_id: 'xx',
-  pledge_id: 'yyy',
-}
-const maintainerPledgedIssuePendingNotification: MaintainerPledgedIssuePendingNotificationPayload =
+const rewardPaidNotification: components['schemas']['RewardPaidNotificationPayload'] =
+  {
+    paid_out_amount: '123.50',
+    issue_url: '#',
+    issue_title: 'Hello World',
+    issue_org_name: 'polarsource',
+    issue_repo_name: 'polar',
+    issue_number: 123,
+    issue_id: 'xx',
+    pledge_id: 'yyy',
+  }
+const maintainerPledgedIssuePendingNotification: components['schemas']['MaintainerPledgedIssuePendingNotificationPayload'] =
   {
     pledge_amount_sum: '123.50',
     issue_url: '#',
@@ -280,7 +258,7 @@ const maintainerPledgedIssuePendingNotification: MaintainerPledgedIssuePendingNo
     maintainer_has_account: false,
   }
 
-const maintainerPledgedIssueConfirmationPendingNotification: MaintainerPledgedIssueConfirmationPendingNotificationPayload =
+const maintainerPledgedIssueConfirmationPendingNotification: components['schemas']['MaintainerPledgedIssueConfirmationPendingNotificationPayload'] =
   {
     pledge_amount_sum: '123.50',
     issue_url: '#',
@@ -292,7 +270,7 @@ const maintainerPledgedIssueConfirmationPendingNotification: MaintainerPledgedIs
     maintainer_has_account: false,
   }
 
-export const notification_maintainerPledgeCreatedNotification: MaintainerPledgeCreatedNotification =
+export const notification_maintainerPledgeCreatedNotification: components['schemas']['MaintainerPledgeCreatedNotification'] =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
@@ -300,7 +278,7 @@ export const notification_maintainerPledgeCreatedNotification: MaintainerPledgeC
     payload: maintainerPledgeCreatedNotification,
   }
 
-export const notification_maintainerPledgeConfirmationPendingNotification: MaintainerPledgeConfirmationPendingNotification =
+export const notification_maintainerPledgeConfirmationPendingNotification: components['schemas']['MaintainerPledgeConfirmationPendingNotification'] =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
@@ -308,7 +286,7 @@ export const notification_maintainerPledgeConfirmationPendingNotification: Maint
     payload: maintainerPledgeConfirmationPendingNotification,
   }
 
-export const notification_maintainerPledgePendingNotification: MaintainerPledgePendingNotification =
+export const notification_maintainerPledgePendingNotification: components['schemas']['MaintainerPledgePendingNotification'] =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
@@ -316,7 +294,7 @@ export const notification_maintainerPledgePendingNotification: MaintainerPledgeP
     payload: maintainerPledgePendingNotification,
   }
 
-export const notification_maintainerPledgePaidNotification: MaintainerPledgePaidNotification =
+export const notification_maintainerPledgePaidNotification: components['schemas']['MaintainerPledgePaidNotification'] =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
@@ -324,7 +302,7 @@ export const notification_maintainerPledgePaidNotification: MaintainerPledgePaid
     payload: maintainerPledgePaidNotification,
   }
 
-export const notification_pledgerPledgePendingNotification: PledgerPledgePendingNotification =
+export const notification_pledgerPledgePendingNotification: components['schemas']['PledgerPledgePendingNotification'] =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
@@ -332,14 +310,15 @@ export const notification_pledgerPledgePendingNotification: PledgerPledgePending
     payload: pledgerPledgePendingNotification,
   }
 
-export const notification_rewardPaidNotification: RewardPaidNotification = {
-  id: 'x',
-  created_at: addDays(new Date(), -2).toISOString(),
-  type: 'RewardPaidNotification',
-  payload: rewardPaidNotification,
-}
+export const notification_rewardPaidNotification: components['schemas']['RewardPaidNotification'] =
+  {
+    id: 'x',
+    created_at: addDays(new Date(), -2).toISOString(),
+    type: 'RewardPaidNotification',
+    payload: rewardPaidNotification,
+  }
 
-export const notification_maintainerPledgedIssuePendingNotification: MaintainerPledgedIssueConfirmationPendingNotification =
+export const notification_maintainerPledgedIssuePendingNotification: components['schemas']['MaintainerPledgedIssueConfirmationPendingNotification'] =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
@@ -347,7 +326,7 @@ export const notification_maintainerPledgedIssuePendingNotification: MaintainerP
     payload: maintainerPledgedIssuePendingNotification,
   }
 
-export const notification_maintainerPledgedIssueConfirmationPendingNotification: MaintainerPledgedIssueConfirmationPendingNotification =
+export const notification_maintainerPledgedIssueConfirmationPendingNotification: components['schemas']['MaintainerPledgedIssueConfirmationPendingNotification'] =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),

@@ -4,7 +4,7 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
-import { IssueListResponse, IssueSortBy } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -24,7 +24,7 @@ import Spinner from '../Shared/Spinner'
 import IssueListItem from './IssueListItem'
 
 const IssueList = (props: {
-  dashboard?: InfiniteData<IssueListResponse>
+  dashboard?: InfiniteData<components['schemas']['IssueListResponse']>
   filters: DashboardFilters
   loading: boolean
   totalCount?: number
@@ -81,7 +81,7 @@ const IssueList = (props: {
 export default IssueList
 
 const IssueListPage = (props: {
-  page: IssueListResponse
+  page: components['schemas']['IssueListResponse']
   canAddRemovePolarLabel: boolean
 }) => {
   return (
@@ -138,48 +138,48 @@ export const Header = (props: {
     router.push(newPath)
   }
 
-  const getTitle = (sortBy: IssueSortBy): string => {
-    if (sortBy == IssueSortBy.NEWEST) {
+  const getTitle = (sortBy: components['schemas']['IssueSortBy']): string => {
+    if (sortBy == 'newest') {
       return 'Newest'
     }
-    if (sortBy == IssueSortBy.PLEDGED_AMOUNT_DESC) {
+    if (sortBy == 'pledged_amount_desc') {
       return 'Pledged amount'
     }
-    if (sortBy == IssueSortBy.RELEVANCE) {
+    if (sortBy == 'relevance') {
       return 'Relevance'
     }
-    if (sortBy == IssueSortBy.DEPENDENCIES_DEFAULT) {
+    if (sortBy == 'dependencies_default') {
       return 'Most wanted'
     }
-    if (sortBy == IssueSortBy.ISSUES_DEFAULT) {
+    if (sortBy == 'issues_default') {
       return 'Most wanted'
     }
-    if (sortBy == IssueSortBy.MOST_POSITIVE_REACTIONS) {
+    if (sortBy == 'most_positive_reactions') {
       return 'Most reactions'
     }
-    if (sortBy == IssueSortBy.MOST_ENGAGEMENT) {
+    if (sortBy == 'most_engagement') {
       return 'Most engagement'
     }
-    if (sortBy == IssueSortBy.MOST_RECENTLY_FUNDED) {
+    if (sortBy == 'most_recently_funded') {
       return 'Recently pledged'
     }
     return 'Most wanted'
   }
 
-  const tabFilters = [IssueSortBy.ISSUES_DEFAULT]
+  const tabFilters = ['issues_default']
 
-  const options: IssueSortBy[] = useMemo(() => {
+  const options: components['schemas']['IssueSortBy'][] = useMemo(() => {
     return [
       ...tabFilters,
       ...[
-        IssueSortBy.MOST_POSITIVE_REACTIONS,
-        IssueSortBy.MOST_ENGAGEMENT,
-        IssueSortBy.NEWEST,
-        IssueSortBy.PLEDGED_AMOUNT_DESC,
-        IssueSortBy.MOST_RECENTLY_FUNDED,
-        IssueSortBy.RELEVANCE,
+        'most_positive_reactions',
+        'most_engagement',
+        'newest',
+        'pledged_amount_desc',
+        'most_recently_funded',
+        'relevance',
       ],
-    ]
+    ] as components['schemas']['IssueSortBy'][]
   }, [tabFilters])
 
   const onQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -187,7 +187,7 @@ export const Header = (props: {
     event.stopPropagation()
 
     // if not set, set to relevance
-    const sort = props.filters.sort || IssueSortBy.RELEVANCE
+    const sort = props.filters.sort || 'relevance'
     const f: DashboardFilters = {
       ...props.filters,
       q: event.target.value,
@@ -221,7 +221,7 @@ export const Header = (props: {
   const onSortingChanged = (value: string) => {
     const f: DashboardFilters = {
       ...props.filters,
-      sort: value as IssueSortBy,
+      sort: value as components['schemas']['IssueSortBy'],
     }
 
     props.onSetFilters(f)

@@ -2,13 +2,13 @@ import {
   useDetachPaymentMethodMutation,
   useListPaymentMethods,
 } from '@/hooks/queries'
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
 import {
   ArrowTopRightOnSquareIcon,
   CreditCardIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { PaymentMethod } from '@polar-sh/api'
+import { components, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { useState } from 'react'
 import { prettyCardName } from '../Pledge/payment'
@@ -22,7 +22,7 @@ const PaymentMethodSettings = () => {
   const onGotoStripeCustomerPortal = async () => {
     setStripePortalLoading(true)
 
-    const portal = await api.users.createStripeCustomerPortal()
+    const portal = await unwrap(api.POST('/v1/users/me/stripe_customer_portal'))
     if (portal) {
       window.location.href = portal.url
     }
@@ -59,7 +59,11 @@ const PaymentMethodSettings = () => {
 
 export default PaymentMethodSettings
 
-const PaymentMethodItem = ({ pm }: { pm: PaymentMethod }) => {
+const PaymentMethodItem = ({
+  pm,
+}: {
+  pm: components['schemas']['PaymentMethod']
+}) => {
   const detachPaymentMethod = useDetachPaymentMethodMutation()
 
   const [isDetaching, setIsDetaching] = useState(false)

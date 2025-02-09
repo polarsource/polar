@@ -1,67 +1,56 @@
-import { api } from '@/utils/api'
 import { queryClient } from '@/utils/api/query'
-import { PaymentMethod, Pledge, PledgesApiSearchRequest } from '@polar-sh/api'
-import {
-  UseMutationResult,
-  UseQueryResult,
-  useMutation,
-  useQuery,
-} from '@tanstack/react-query'
+import { api } from '@/utils/client'
+import { operations, unwrap } from '@polar-sh/client'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useGetPledge: (
-  pledgeId: string | null,
-) => UseQueryResult<Pledge, Error> = (pledgeId: string | null) =>
+export const useGetPledge = (pledgeId: string | null) =>
   useQuery({
     queryKey: ['pledge', pledgeId],
     queryFn: () =>
-      api.pledges.get({
-        id: pledgeId || '',
-      }),
+      unwrap(
+        api.GET('/v1/pledges/{id}', {
+          params: { path: { id: pledgeId ?? '' } },
+        }),
+      ),
     enabled: !!pledgeId,
     retry: defaultRetry,
   })
 
-export const useSearchPledges = (params: PledgesApiSearchRequest) =>
+export const useSearchPledges = (
+  params: operations['pledges:search']['parameters']['query'],
+) =>
   useQuery({
     queryKey: ['pledges', { ...params }],
-    queryFn: () => api.pledges.search(params),
+    queryFn: () =>
+      unwrap(api.GET('/v1/pledges/search', { params: { query: params } })),
     retry: defaultRetry,
   })
 
 export const useListPledesForIssue = (issueId: string) =>
-  useSearchPledges({ issueId })
+  useSearchPledges({ issue_id: issueId })
 
 export const useListPledgesForOrganization = (organizationId: string) =>
-  useSearchPledges({ organizationId })
+  useSearchPledges({ organization_id: organizationId })
 
 export const useListPaymentMethods = () =>
   useQuery({
     queryKey: ['paymentMethods'],
-    queryFn: () => api.paymentMethods.list(),
+    queryFn: () => unwrap(api.GET('/v1/payment_methods')),
     retry: defaultRetry,
   })
 
-export const useDetachPaymentMethodMutation: () => UseMutationResult<
-  PaymentMethod,
-  Error,
-  {
-    id: string
-  },
-  unknown
-> = () =>
+export const useDetachPaymentMethodMutation = () =>
   useMutation({
     mutationFn: (variables: { id: string }) => {
-      return api.paymentMethods.detach(variables)
+      return api.POST('/v1/payment_methods/{id}/detach', {
+        params: { path: { id: variables.id } },
+      })
     },
-    onSuccess: (_result, _variables, _ctx) => {
+    onSuccess: (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
       queryClient.invalidateQueries({ queryKey: ['paymentMethods'] })
     },
-  })
-
-export const useSpending = (organizationId: string) =>
-  useQuery({
-    queryKey: ['spending', organizationId],
-    queryFn: () => api.pledges.spending({ organizationId }),
-    retry: defaultRetry,
   })

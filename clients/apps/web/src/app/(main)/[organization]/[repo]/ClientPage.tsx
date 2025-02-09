@@ -1,25 +1,14 @@
 'use client'
 
-import revalidate from '@/app/actions'
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
-import { CoverEditor } from '@/components/Profile/CoverEditor/CoverEditor'
-import { DescriptionEditor } from '@/components/Profile/DescriptionEditor/DescriptionEditor'
-import {
-  Link as LinkItem,
-  LinksEditor,
-} from '@/components/Profile/LinksEditor/LinksEditor'
-import { useUpdateProject } from '@/hooks/queries'
-import useDebouncedCallback from '@/hooks/utils'
 import { organizationPageLink } from '@/utils/nav'
 import { formatStarsNumber } from '@/utils/stars'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
-import { RepositoryProfileSettingsUpdate } from '@polar-sh/api'
 import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
 import type { SuccessResult } from 'open-graph-scraper-lite'
-import { useMemo } from 'react'
 
 type OgObject = SuccessResult['result']
 
@@ -27,8 +16,6 @@ const ClientPage = ({
   organization,
   repository,
   issuesFunding,
-  userOrganizations,
-  links,
 }: {
   organization: components['schemas']['Organization']
   repository: components['schemas']['Repository']
@@ -37,69 +24,11 @@ const ClientPage = ({
   userOrganizations: components['schemas']['Organization'][]
   links: { opengraph: OgObject; url: string }[]
 }) => {
-  const isOrgMember = useMemo(
-    () => userOrganizations?.some((org) => org.id === organization.id),
-    [organization, userOrganizations],
-  )
-
-  const updateProjectMutation = useUpdateProject()
-
-  const updateProfile = (setting: Partial<RepositoryProfileSettingsUpdate>) => {
-    return updateProjectMutation
-      .mutateAsync({
-        id: repository.id,
-        body: {
-          profile_settings: setting,
-        },
-      })
-      .then(() =>
-        revalidate(`repository:${organization.slug}/${repository.name}`),
-      )
-  }
-
-  const updateCoverImage = (coverImageUrl: string | undefined) => {
-    updateProfile({ set_cover_image_url: true, cover_image_url: coverImageUrl })
-  }
-
-  const updateDescription = useDebouncedCallback(
-    async (description: string | undefined) => {
-      await updateProfile({ set_description: true, description })
-    },
-    500,
-    [updateProfile],
-  )
-
-  const updateLinks = (links: LinkItem[]) => {
-    updateProfile({ links: links.map((l) => l.url) })
-  }
-
   return (
     <div className="flex w-full flex-col gap-y-12">
       <div className="flex w-full flex-col gap-16">
         <div className="flex flex-col gap-16 md:flex-row">
           <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16">
-            <DescriptionEditor
-              description={
-                repository.profile_settings?.description ??
-                repository.description ??
-                ''
-              }
-              onChange={updateDescription}
-              disabled={!isOrgMember}
-              loading={updateProjectMutation.isPending}
-              failed={updateProjectMutation.isError}
-              maxLength={240}
-            />
-
-            <CoverEditor
-              organization={organization}
-              onChange={updateCoverImage}
-              coverImageUrl={
-                repository.profile_settings?.cover_image_url || undefined
-              }
-              disabled={!isOrgMember}
-            />
-
             {organization.feature_settings?.issue_funding_enabled &&
               (issuesFunding.items.length ?? 0) > 0 && (
                 <ShadowBoxOnMd>
@@ -205,13 +134,6 @@ const ClientPage = ({
                 </div>
               </ShadowBoxOnMd>
             </div>
-
-            <LinksEditor
-              links={links}
-              onChange={updateLinks}
-              disabled={!isOrgMember}
-              variant="column"
-            />
           </div>
         </div>
       </div>

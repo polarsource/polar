@@ -1,26 +1,25 @@
-import { api } from '@/utils/api'
 import { queryClient } from '@/utils/api/query'
-import {
-  OAuth2Client,
-  OAuth2ClientConfiguration,
-  Oauth2ClientsApiListRequest,
-  Oauth2ClientsApiUpdateClientRequest,
-} from '@polar-sh/api'
+import { api } from '@/utils/client'
+import { components, operations, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
-export const useOAuth2Clients = (options?: Oauth2ClientsApiListRequest) =>
+export const useOAuth2Clients = (
+  options?: operations['oauth2:clients:list']['parameters']['query'],
+) =>
   useQuery({
     queryKey: ['oauth2Clients'],
-    queryFn: async () => api.oauth2Clients.list(options),
+    queryFn: async () =>
+      unwrap(api.GET('/v1/oauth2/', { params: { query: options } })),
   })
 
 export const useCreateOAuth2Client = () =>
   useMutation({
-    mutationFn: (body: OAuth2ClientConfiguration) =>
-      api.oauth2Clients.createClient({
-        body,
-      }) as Promise<OAuth2Client>,
-    onSuccess(_data, _variables, _context) {
+    mutationFn: (body: components['schemas']['OAuth2ClientConfiguration']) =>
+      api.POST('/v1/oauth2/register', { body }),
+    onSuccess(data, _variables, _context) {
+      if (data.error) {
+        return
+      }
       queryClient.invalidateQueries({
         queryKey: ['oauth2Clients'],
       })
@@ -29,9 +28,21 @@ export const useCreateOAuth2Client = () =>
 
 export const useUpdateOAuth2Client = () =>
   useMutation({
-    mutationFn: (options: Oauth2ClientsApiUpdateClientRequest) =>
-      api.oauth2Clients.updateClient(options),
-    onSuccess(_data, _variables, _context) {
+    mutationFn: ({
+      client_id,
+      body,
+    }: {
+      client_id: string
+      body: components['schemas']['OAuth2ClientConfigurationUpdate']
+    }) =>
+      api.PUT('/v1/oauth2/register/{client_id}', {
+        params: { path: { client_id } },
+        body,
+      }),
+    onSuccess(data, _variables, _context) {
+      if (data.error) {
+        return
+      }
       queryClient.invalidateQueries({
         queryKey: ['oauth2Clients'],
       })
@@ -41,8 +52,13 @@ export const useUpdateOAuth2Client = () =>
 export const useDeleteOAuthClient = () =>
   useMutation({
     mutationFn: (clientId: string) =>
-      api.oauth2Clients.deleteClient({ clientId }),
-    onSuccess(_data, _variables, _context) {
+      api.DELETE('/v1/oauth2/register/{client_id}', {
+        params: { path: { client_id: clientId } },
+      }),
+    onSuccess(data, _variables, _context) {
+      if (data.error) {
+        return
+      }
       queryClient.invalidateQueries({
         queryKey: ['oauth2Clients'],
       })

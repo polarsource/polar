@@ -6,11 +6,7 @@ import {
   useDeleteOAuthClient,
   useUpdateOAuth2Client,
 } from '@/hooks/queries/oauth'
-import {
-  OAuth2Client,
-  OAuth2ClientConfigurationUpdate,
-  ResponseError,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -30,15 +26,18 @@ import {
 } from './OAuthForm'
 
 export interface EnhancedOAuth2ClientConfigurationUpdate
-  extends Omit<OAuth2ClientConfigurationUpdate, 'redirect_uris' | 'scope'> {
+  extends Omit<
+    components['schemas']['OAuth2ClientConfigurationUpdate'],
+    'redirect_uris' | 'scope'
+  > {
   redirect_uris: { uri: string }[]
   scope: string[]
 }
 
 interface EditOAuthClientModalProps {
-  client: OAuth2Client
-  onSuccess: (client: OAuth2Client) => void
-  onDelete: (client: OAuth2Client) => void
+  client: components['schemas']['OAuth2Client']
+  onSuccess: (client: components['schemas']['OAuth2Client']) => void
+  onDelete: (client: components['schemas']['OAuth2Client']) => void
   onHide: () => void
 }
 
@@ -64,67 +63,58 @@ export const EditOAuthClientModal = ({
 
   const { handleSubmit } = form
 
-  const [updated, setUpdated] = useState<OAuth2ClientConfigurationUpdate>()
-  const [isUpdating, setIsUpdating] = useState(false)
+  const [updated, setUpdated] =
+    useState<components['schemas']['OAuth2ClientConfigurationUpdate']>()
 
   const updateOAuth2Client = useUpdateOAuth2Client()
 
   const onSubmit = useCallback(
     async (form: EnhancedOAuth2ClientConfigurationUpdate) => {
-      setIsUpdating(true)
+      const { data, error } = await updateOAuth2Client.mutateAsync({
+        client_id: client.client_id,
+        body: {
+          ...form,
+          redirect_uris: form.redirect_uris.map(({ uri }) => uri),
+          scope: form.scope.join(' '),
+        },
+      })
 
-      try {
-        const res = await updateOAuth2Client.mutateAsync({
-          clientId: client.client_id,
-          body: {
-            ...form,
-            redirect_uris: form.redirect_uris.map(({ uri }) => uri),
-            scope: form.scope.join(' '),
-          },
-        })
-
+      if (error) {
         toast({
-          title: 'OAuth App Updated',
-          description: `OAuth App ${client.client_name} was updated successfully`,
+          title: 'OAuth App Update Failed',
+          description: `Error updating OAuth App: ${error.detail}`,
         })
-
-        setUpdated(res)
-        onSuccess(res)
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          toast({
-            title: 'OAuth App Update Failed',
-            description: `Error updating OAuth App: ${e.message}`,
-          })
-        }
-      } finally {
-        setIsUpdating(false)
+        return
       }
+
+      const res = data as components['schemas']['OAuth2Client']
+      toast({
+        title: 'OAuth App Updated',
+        description: `OAuth App ${client.client_name} was updated successfully`,
+      })
+      setUpdated(res)
+      onSuccess(res)
     },
-    [onSuccess, updateOAuth2Client, setUpdated, setIsUpdating, client],
+    [onSuccess, updateOAuth2Client, setUpdated, client],
   )
 
   const deleteOAuthClient = useDeleteOAuthClient()
 
   const handleDeleteOAuthClient = useCallback(async () => {
-    try {
-      await deleteOAuthClient.mutateAsync(client.client_id)
-
+    const { error } = await deleteOAuthClient.mutateAsync(client.client_id)
+    if (error) {
       toast({
-        title: 'OAuth App Deleted',
-        description: `OAuth App ${client.client_name} was deleted successfully`,
+        title: 'OAuth App Deletion Failed',
+        description: `Error deleting OAuth App: ${error.detail}`,
       })
-
-      hideDeleteModal()
-      onDelete(client)
-    } catch (e) {
-      if (e instanceof ResponseError) {
-        toast({
-          title: 'OAuth App Deletion Failed',
-          description: `Error deleting OAuth App: ${e.message}`,
-        })
-      }
+      return
     }
+    toast({
+      title: 'OAuth App Deleted',
+      description: `OAuth App ${client.client_name} was deleted successfully`,
+    })
+    hideDeleteModal()
+    onDelete(client)
   }, [hideDeleteModal, onDelete, client, deleteOAuthClient])
 
   return (
@@ -189,7 +179,7 @@ export const EditOAuthClientModal = ({
 
             <Button
               type="submit"
-              loading={isUpdating}
+              loading={updateOAuth2Client.isPending}
               disabled={Boolean(updated)}
             >
               Update

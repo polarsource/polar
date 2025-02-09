@@ -9,7 +9,6 @@ import { useExternalOrganizations } from '@/hooks/queries/externalOrganizations'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { getGitHubOrganizationInstallationURL } from '@/utils/auth'
 import { GitHub } from '@mui/icons-material'
-import { Platforms } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
 import Link from 'next/link'
@@ -22,7 +21,7 @@ export default function ClientPage() {
   const hasLinkedExternalOrganizations =
     useHasLinkedExternalOrganizations(organization)
   const externalOrganizations = useExternalOrganizations({
-    organizationId: organization.id,
+    organization_id: organization.id,
   })
   const redirectToGitHubInstallation =
     useRedirectToGitHubInstallation(organization)
@@ -47,9 +46,7 @@ export default function ClientPage() {
             <ShadowListGroup.Item key={externalOrganization.id}>
               <div className="flex flex-row items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {externalOrganization.platform === Platforms.GITHUB && (
-                    <GitHub />
-                  )}
+                  {externalOrganization.platform === 'github' && <GitHub />}
                   {externalOrganization.name}
                 </div>
                 <Link

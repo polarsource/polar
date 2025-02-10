@@ -1,3 +1,4 @@
+from .properties import BenefitGrantProperties, BenefitProperties
 from .service import (
     BenefitActionRequiredError,
     BenefitPropertiesValidationError,
@@ -12,4 +13,6 @@ __all__ = [
     "BenefitPropertiesValidationError",
     "BenefitRetriableError",
     "BenefitServiceError",
+    "BenefitProperties",
+    "BenefitGrantProperties",
 ]

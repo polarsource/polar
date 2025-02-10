@@ -1,9 +1,9 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export const subscriptionStatusDisplayNames: {
-  [key in components['schemas']['SubscriptionStatus']]: string
+  [key in schemas['SubscriptionStatus']]: string
 } = {
   incomplete: 'Incomplete',
   incomplete_expired: 'Incomplete',
@@ -15,11 +15,11 @@ export const subscriptionStatusDisplayNames: {
 }
 
 export const hasRecurringInterval =
-  (recurringInterval: components['schemas']['SubscriptionRecurringInterval']) =>
+  (recurringInterval: schemas['SubscriptionRecurringInterval']) =>
   (
-    subscriptionTier: components['schemas']['ProductStorefront'],
-  ): subscriptionTier is components['schemas']['ProductStorefront'] & {
-    prices: components['schemas']['ProductPriceRecurring'][]
+    subscriptionTier: schemas['ProductStorefront'],
+  ): subscriptionTier is schemas['ProductStorefront'] & {
+    prices: schemas['ProductPriceRecurring'][]
   } => {
     return subscriptionTier.prices?.some(
       (price) =>
@@ -33,9 +33,7 @@ export const SubscriptionStatusLabel = ({
   subscription,
 }: {
   className?: string
-  subscription:
-    | components['schemas']['Subscription']
-    | components['schemas']['CustomerSubscription']
+  subscription: schemas['Subscription'] | schemas['CustomerSubscription']
 }) => {
   const label = useMemo(() => {
     switch (subscription.status) {
@@ -66,18 +64,18 @@ export const SubscriptionStatusLabel = ({
 }
 
 export const getRecurringProductPrice = (
-  subscriptionTier: Partial<components['schemas']['ProductStorefront']>,
-  recurringInterval: components['schemas']['SubscriptionRecurringInterval'],
-): components['schemas']['ProductPriceRecurring'] | undefined => {
+  subscriptionTier: Partial<schemas['ProductStorefront']>,
+  recurringInterval: schemas['SubscriptionRecurringInterval'],
+): schemas['ProductPriceRecurring'] | undefined => {
   return subscriptionTier.prices?.find(
     (price) =>
       price.type === 'recurring' &&
       price.recurring_interval === recurringInterval,
-  ) as components['schemas']['ProductPriceRecurring'] | undefined
+  ) as schemas['ProductPriceRecurring'] | undefined
 }
 
 export const getRecurringBillingLabel = (
-  recurringInterval: components['schemas']['SubscriptionRecurringInterval'],
+  recurringInterval: schemas['SubscriptionRecurringInterval'],
 ) => {
   switch (recurringInterval) {
     case 'month':

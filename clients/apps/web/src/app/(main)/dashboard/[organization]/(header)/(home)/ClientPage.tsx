@@ -21,7 +21,7 @@ import {
   metricDisplayNames,
 } from '@/utils/metrics'
 import { ChevronRight } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
@@ -38,13 +38,10 @@ import Link from 'next/link'
 import React, { useContext, useMemo } from 'react'
 
 interface HeroChartProps {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }
 
-const intervalDisplayNames: Record<
-  components['schemas']['TimeInterval'],
-  string
-> = {
+const intervalDisplayNames: Record<schemas['TimeInterval'], string> = {
   year: '3y',
   month: '12m',
   week: '3m',
@@ -53,8 +50,8 @@ const intervalDisplayNames: Record<
 }
 
 const getIntervalStartDate = (
-  interval: components['schemas']['TimeInterval'],
-  organization: components['schemas']['Organization'],
+  interval: schemas['TimeInterval'],
+  organization: schemas['Organization'],
 ) => {
   switch (interval) {
     case 'year':
@@ -75,9 +72,9 @@ const getIntervalStartDate = (
 
 const HeroChart = ({ organization }: HeroChartProps) => {
   const [selectedMetric, setSelectedMetric] =
-    React.useState<keyof components['schemas']['Metrics']>('revenue')
+    React.useState<keyof schemas['Metrics']>('revenue')
   const [selectedInterval, setSelectedInterval] =
-    React.useState<components['schemas']['TimeInterval']>('day')
+    React.useState<schemas['TimeInterval']>('day')
   const [hoveredMetricPeriod, setHoveredMetricPeriod] =
     React.useState<ParsedMetricPeriod | null>(null)
 
@@ -117,7 +114,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
           <Select
             value={selectedMetric}
             onValueChange={(value) =>
-              setSelectedMetric(value as keyof components['schemas']['Metrics'])
+              setSelectedMetric(value as keyof schemas['Metrics'])
             }
           >
             <SelectTrigger className="h-fit w-fit border-0 border-none bg-transparent p-0 shadow-none ring-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 dark:hover:bg-transparent">
@@ -156,7 +153,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
         <Tabs
           value={selectedInterval}
           onValueChange={(value) =>
-            setSelectedInterval(value as components['schemas']['TimeInterval'])
+            setSelectedInterval(value as schemas['TimeInterval'])
           }
         >
           <TabsList className="dark:bg-polar-900 flex flex-row gap-x-0 rounded-md bg-white">
@@ -204,7 +201,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
 }
 
 interface OverviewPageProps {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
   startDate: Date
   endDate: Date
 }

@@ -1,11 +1,11 @@
 'use client'
 
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { useAuth } from './auth'
 import { useExternalOrganizations } from './queries/externalOrganizations'
 
 export const useHasLinkedExternalOrganizations = (
-  organization: components['schemas']['Organization'],
+  organization: schemas['Organization'],
 ): boolean => {
   const { data: externalOrganizations } = useExternalOrganizations({
     organization_id: organization.id,
@@ -16,9 +16,7 @@ export const useHasLinkedExternalOrganizations = (
   )
 }
 
-export const useIsOrganizationMember = (
-  org?: components['schemas']['Organization'],
-) => {
+export const useIsOrganizationMember = (org?: schemas['Organization']) => {
   const { userOrganizations } = useAuth()
   return userOrganizations.some((o) => o.id === org?.id)
 }

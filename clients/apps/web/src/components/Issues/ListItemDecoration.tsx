@@ -1,4 +1,4 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import {
   formatCurrencyAndAmount,
   getCentsInDollarString,
@@ -19,24 +19,24 @@ const IssueListItemDecoration = ({
   organization,
   rewards,
 }: {
-  pledges: Array<components['schemas']['Pledge']>
-  pledgesSummary: components['schemas']['PledgesTypeSummaries'] | null
+  pledges: Array<schemas['Pledge']>
+  pledgesSummary: schemas['PledgesTypeSummaries'] | null
   showDisputeAction: boolean
-  onDispute: (pledge: components['schemas']['Pledge']) => void
+  onDispute: (pledge: schemas['Pledge']) => void
   onConfirmPledges: () => void
   showConfirmPledgeAction: boolean
   confirmPledgeIsLoading: boolean
-  funding: components['schemas']['Funding']
-  issue: components['schemas']['Issue']
-  organization: components['schemas']['Organization']
-  rewards: components['schemas']['Reward'][] | null
+  funding: schemas['Funding']
+  issue: schemas['Issue']
+  organization: schemas['Organization']
+  rewards: schemas['Reward'][] | null
 }) => {
   const showPledges = pledges && pledges.length > 0
 
   const ONE_DAY = 1000 * 60 * 60 * 24
   const now = new Date()
 
-  const remainingDays = (pledge: components['schemas']['Pledge']) => {
+  const remainingDays = (pledge: schemas['Pledge']) => {
     if (!pledge.scheduled_payout_at) {
       return -1
     }
@@ -81,14 +81,14 @@ const IssueListItemDecoration = ({
   const showPledgeStatusBox = pledgeStatusShowCount > 0
   const disputeBoxShowAmount = pledgeStatusShowCount > 1
 
-  const onClickDisputeButton = (pledge: components['schemas']['Pledge']) => {
+  const onClickDisputeButton = (pledge: schemas['Pledge']) => {
     if (!canDisputeAny || !onDispute) {
       return
     }
     onDispute(pledge)
   }
 
-  const pledgeAmount = (pledge: components['schemas']['Pledge']): number => {
+  const pledgeAmount = (pledge: schemas['Pledge']): number => {
     if (typeof pledge.amount === 'number') {
       return pledge.amount
     }

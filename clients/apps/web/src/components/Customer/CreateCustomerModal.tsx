@@ -1,7 +1,7 @@
 import revalidate from '@/app/actions'
 import { useCreateCustomer } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -16,10 +16,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import { CustomerMetadataForm } from './CustomerMetadataForm'
 
-export type CustomerCreateForm = Omit<
-  components['schemas']['CustomerCreate'],
-  'metadata'
-> & {
+export type CustomerCreateForm = Omit<schemas['CustomerCreate'], 'metadata'> & {
   metadata: { key: string; value: string | number | boolean }[]
 }
 
@@ -27,7 +24,7 @@ export const CreateCustomerModal = ({
   organization,
   onClose,
 }: {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
   onClose: () => void
 }) => {
   const form = useForm<CustomerCreateForm>({

@@ -1,14 +1,14 @@
 import { useAccount, useOrganizationAccount } from '@/hooks/queries'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from '@/utils/account'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
 import Link from 'next/link'
 import Icon from '../Icons/Icon'
 
 const GenericAccountBanner: React.FC<{
-  account: components['schemas']['Account'] | undefined
+  account: schemas['Account'] | undefined
   setupLink: string
 }> = ({ account, setupLink }) => {
   const isActive = account?.status === 'active'
@@ -108,7 +108,7 @@ const GenericAccountBanner: React.FC<{
 }
 
 const UserAccountBanner: React.FC<{
-  user: components['schemas']['UserRead']
+  user: schemas['UserRead']
 }> = ({ user }) => {
   const { data: account, isLoading: personalAccountIsLoading } = useAccount(
     user?.account_id,
@@ -123,7 +123,7 @@ const UserAccountBanner: React.FC<{
 }
 
 const OrganizationAccountBanner: React.FC<{
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }> = ({ organization }) => {
   const { data: account, isLoading: organizationAccountIsLoading } =
     useOrganizationAccount(organization?.id)
@@ -137,8 +137,8 @@ const OrganizationAccountBanner: React.FC<{
 }
 
 interface AccountBannerProps {
-  organization?: components['schemas']['Organization']
-  user?: components['schemas']['UserRead']
+  organization?: schemas['Organization']
+  user?: schemas['UserRead']
 }
 
 const AccountBanner: React.FC<AccountBannerProps> = ({

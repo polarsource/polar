@@ -13,7 +13,7 @@ import { useDashboard, useListRepositories } from '@/hooks/queries'
 import { useOrganizationSSE } from '@/hooks/sse'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { HowToVoteOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useSearchParams } from 'next/navigation'
 import {
@@ -52,19 +52,19 @@ export default function ClientPage() {
   return <Issues key={key} org={org} repo={repo} />
 }
 
-const getSort = (sort: string | null): components['schemas']['IssueSortBy'] => {
+const getSort = (sort: string | null): schemas['IssueSortBy'] => {
   if (!sort) {
     return 'newest'
   }
-  return sort as components['schemas']['IssueSortBy']
+  return sort as schemas['IssueSortBy']
 }
 
 const Issues = ({
   org,
   repo,
 }: {
-  org: components['schemas']['Organization']
-  repo: components['schemas']['Repository'] | undefined
+  org: schemas['Organization']
+  repo: schemas['Repository'] | undefined
 }) => {
   const search = useSearchParams()
   const hasLinkedExternalOrganizations = useHasLinkedExternalOrganizations(org)
@@ -127,8 +127,8 @@ const OrganizationIssues = ({
   onSetFilters,
   hasAppInstalled,
 }: {
-  org: components['schemas']['Organization']
-  repo: components['schemas']['Repository'] | undefined
+  org: schemas['Organization']
+  repo: schemas['Repository'] | undefined
   filters: DashboardFilters
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
   hasAppInstalled: boolean

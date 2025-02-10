@@ -1,7 +1,7 @@
 import { FundOurBacklog } from '@/components/Embed/FundOurBacklog'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
-import { Client, components, unwrap } from '@polar-sh/client'
+import { Client, schemas, unwrap } from '@polar-sh/client'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
@@ -26,10 +26,7 @@ const getData = async (
   )
 }
 
-const renderBadge = async (
-  issues: components['schemas']['Issue'][],
-  issueCount: number,
-) => {
+const renderBadge = async (issues: schemas['Issue'][], issueCount: number) => {
   const inter500 = await fetch(
     new URL('../../../assets/fonts/Inter-Regular.ttf', import.meta.url),
   ).then((res) => res.arrayBuffer())

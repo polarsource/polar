@@ -1,7 +1,7 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 
 export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<
-  components['schemas']['ProductStorefront']
+  schemas['ProductStorefront']
 > = {
   name: 'Just an Example',
   description:

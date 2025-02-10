@@ -1,9 +1,9 @@
-import { Client, components } from '@polar-sh/client'
+import { Client, schemas } from '@polar-sh/client'
 import { headers } from 'next/headers'
 import { cache } from 'react'
 
 const _getAuthenticatedUser = async (): Promise<
-  components['schemas']['UserRead'] | undefined
+  schemas['UserRead'] | undefined
 > => {
   // Middleware set this header for authenticated requests
   const userData = headers().get('x-polar-user')
@@ -18,7 +18,7 @@ export const getAuthenticatedUser = cache(_getAuthenticatedUser)
 
 const _getUserOrganizations = async (
   api: Client,
-): Promise<components['schemas']['Organization'][]> => {
+): Promise<schemas['Organization'][]> => {
   const user = await getAuthenticatedUser()
   if (!user) {
     return []

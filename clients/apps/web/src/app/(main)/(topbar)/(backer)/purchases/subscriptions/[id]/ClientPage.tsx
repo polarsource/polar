@@ -3,13 +3,13 @@
 import CustomerPortalSubscription from '@/components/CustomerPortal/CustomerPortalSubscription'
 import { api } from '@/utils/client'
 import { ArrowBackOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Link from 'next/link'
 
 const ClientPage = ({
   subscription,
 }: {
-  subscription: components['schemas']['CustomerSubscription']
+  subscription: schemas['CustomerSubscription']
 }) => {
   return (
     <div className="flex flex-col gap-y-8">

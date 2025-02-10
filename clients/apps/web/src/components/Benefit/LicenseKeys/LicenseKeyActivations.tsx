@@ -1,7 +1,7 @@
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKeyDeactivate } from '@/hooks/queries'
 import { CloseOutlined } from '@mui/icons-material'
-import { Client, components } from '@polar-sh/client'
+import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
@@ -9,7 +9,7 @@ import { useCallback } from 'react'
 
 interface LicenseKeyActivationsProps {
   api: Client
-  licenseKey: components['schemas']['LicenseKeyWithActivations']
+  licenseKey: schemas['LicenseKeyWithActivations']
 }
 
 export const LicenseKeyActivations = ({

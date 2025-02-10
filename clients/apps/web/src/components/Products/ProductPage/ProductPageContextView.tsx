@@ -4,7 +4,7 @@ import {
   useUpdateProductBenefits,
 } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components, isValidationError } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
@@ -17,8 +17,8 @@ import ProductBenefitsForm from '../ProductBenefitsForm'
 import ProductForm, { ProductFullMediasMixin } from '../ProductForm/ProductForm'
 
 export interface ProductPageContextViewProps {
-  organization: components['schemas']['Organization']
-  product: components['schemas']['Product']
+  organization: schemas['Organization']
+  product: schemas['Product']
 }
 
 export const ProductPageContextView = ({
@@ -33,12 +33,10 @@ export const ProductPageContextView = ({
   )
 
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
-    components['schemas']['Benefit']['id'][]
+    schemas['Benefit']['id'][]
   >(product.benefits.map((benefit) => benefit.id) ?? [])
 
-  const form = useForm<
-    components['schemas']['ProductUpdate'] & ProductFullMediasMixin
-  >({
+  const form = useForm<schemas['ProductUpdate'] & ProductFullMediasMixin>({
     defaultValues: {
       ...product,
       medias: product.medias.map((media) => media.id),
@@ -53,8 +51,7 @@ export const ProductPageContextView = ({
 
   const onSubmit = useCallback(
     async (
-      productUpdate: components['schemas']['ProductUpdate'] &
-        ProductFullMediasMixin,
+      productUpdate: schemas['ProductUpdate'] & ProductFullMediasMixin,
     ) => {
       const { full_medias, ...productUpdateRest } = productUpdate
       const { error } = await updateProduct.mutateAsync({
@@ -99,14 +96,14 @@ export const ProductPageContextView = ({
   )
 
   const onSelectBenefit = useCallback(
-    (benefit: components['schemas']['Benefit']) => {
+    (benefit: schemas['Benefit']) => {
       setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
     },
     [setEnabledBenefitIds],
   )
 
   const onRemoveBenefit = useCallback(
-    (benefit: components['schemas']['Benefit']) => {
+    (benefit: schemas['Benefit']) => {
       setEnabledBenefitIds((benefits) =>
         benefits.filter((b) => b !== benefit.id),
       )

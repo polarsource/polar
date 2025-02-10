@@ -1,14 +1,14 @@
 'use client'
 
 import { api } from '@/utils/client'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
 export class MagicLinkError extends Error {
-  error: components['schemas']['ValidationError'][] | undefined
+  error: schemas['ValidationError'][] | undefined
 
-  constructor(error: components['schemas']['ValidationError'][] | undefined) {
+  constructor(error: schemas['ValidationError'][] | undefined) {
     super('Magic Link Error')
     this.error = error
   }
@@ -20,7 +20,7 @@ export const useSendMagicLink = () => {
     async (
       email: string,
       return_to?: string,
-      signup?: components['schemas']['UserSignupAttribution'],
+      signup?: schemas['UserSignupAttribution'],
     ) => {
       const { error } = await api.POST('/v1/magic_link/request', {
         body: { email, return_to, signup },

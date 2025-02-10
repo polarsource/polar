@@ -1,5 +1,5 @@
 import { useAuth } from '@/hooks'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
   Select,
@@ -17,16 +17,16 @@ const OrganizationSelect = ({
   defaultToFirstOrganization,
   organizationFilter,
 }: {
-  onChange: (o: components['schemas']['Organization'] | undefined) => void
+  onChange: (o: schemas['Organization'] | undefined) => void
   allowSelfSelect: boolean
   title?: string
   defaultToFirstOrganization?: boolean
-  organizationFilter?: (o: components['schemas']['Organization']) => boolean
+  organizationFilter?: (o: schemas['Organization']) => boolean
 }) => {
   const { currentUser, userOrganizations: organizations } = useAuth()
 
   const [attributePledgeTo, setAttributePledgeTo] = useState<
-    components['schemas']['Organization'] | undefined
+    schemas['Organization'] | undefined
   >(undefined)
 
   const canSelectOrganizations = organizations

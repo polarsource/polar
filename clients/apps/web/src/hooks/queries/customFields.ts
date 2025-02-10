@@ -1,6 +1,6 @@
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { components, operations, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -49,7 +49,7 @@ export const useCustomFields = (
 
 export const useCreateCustomField = (organizationId: string) =>
   useMutation({
-    mutationFn: (body: components['schemas']['CustomFieldCreate']) => {
+    mutationFn: (body: schemas['CustomFieldCreate']) => {
       return api.POST('/v1/custom-fields/', { body })
     },
     onSuccess: (result, _variables, _ctx) => {
@@ -63,7 +63,7 @@ export const useCreateCustomField = (organizationId: string) =>
 
 export const useUpdateCustomField = (id: string) =>
   useMutation({
-    mutationFn: (body: components['schemas']['CustomFieldUpdate']) => {
+    mutationFn: (body: schemas['CustomFieldUpdate']) => {
       return api.PATCH('/v1/custom-fields/{id}', {
         params: { path: { id } },
         body,
@@ -83,7 +83,7 @@ export const useUpdateCustomField = (id: string) =>
 
 export const useDeleteCustomField = () =>
   useMutation({
-    mutationFn: (customField: components['schemas']['CustomField']) => {
+    mutationFn: (customField: schemas['CustomField']) => {
       return api.DELETE('/v1/custom-fields/{id}', {
         params: { path: { id: customField.id } },
       })

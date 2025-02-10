@@ -1,4 +1,4 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import LogoIcon from '../Brand/LogoIcon'
 import Login from './Login'
@@ -6,7 +6,7 @@ import Login from './Login'
 interface AuthModalProps {
   returnTo?: string
   returnParams?: Record<string, string>
-  signup?: components['schemas']['UserSignupAttribution']
+  signup?: schemas['UserSignupAttribution']
 }
 
 export const AuthModal = ({

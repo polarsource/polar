@@ -3,7 +3,7 @@
 import { ModalBox, Modal as ModernModal } from '@/components/Modal'
 import { useToastLatestPledged } from '@/hooks/stripe'
 import { api } from '@/utils/client'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
@@ -16,9 +16,9 @@ import IssueSummary from './IssueSummary'
 import IssueListItemDecoration from './ListItemDecoration'
 
 const IssueListItem = (props: {
-  issue: components['schemas']['Issue']
-  pledges: Array<components['schemas']['Pledge']>
-  pledgesSummary: components['schemas']['PledgesTypeSummaries'] | null
+  issue: schemas['Issue']
+  pledges: Array<schemas['Pledge']>
+  pledgesSummary: schemas['PledgesTypeSummaries'] | null
   checkJustPledged?: boolean
   canAddRemovePolarLabel: boolean
   showPledgeAction: boolean
@@ -26,7 +26,7 @@ const IssueListItem = (props: {
   className?: string
   showLogo?: boolean
   showIssueOpenClosedStatus?: boolean
-  rewards: components['schemas']['Reward'][] | null
+  rewards: schemas['Reward'][] | null
 }) => {
   const externalOrganization = props.issue.repository.organization
   const repo = props.issue.repository
@@ -49,10 +49,10 @@ const IssueListItem = (props: {
   const havePledge = mergedPledges.length > 0
 
   const [showDisputeModalForPledge, setShowDisputeModalForPledge] = useState<
-    components['schemas']['Pledge'] | undefined
+    schemas['Pledge'] | undefined
   >()
 
-  const onDispute = (pledge: components['schemas']['Pledge']) => {
+  const onDispute = (pledge: schemas['Pledge']) => {
     setShowDisputeModalForPledge(pledge)
   }
 
@@ -136,7 +136,7 @@ const IssueListItem = (props: {
 
 export default IssueListItem
 
-const DisputeModal = (props: { pledge: components['schemas']['Pledge'] }) => {
+const DisputeModal = (props: { pledge: schemas['Pledge'] }) => {
   const [reason, setReason] = useState('')
   const [canSubmit, setCanSubmit] = useState(false)
   const [isLoading, setIsLoading] = useState(false)

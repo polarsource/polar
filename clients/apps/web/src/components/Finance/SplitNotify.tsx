@@ -1,6 +1,6 @@
 import { api } from '@/utils/client'
 import { githubIssueLink } from '@/utils/github'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
@@ -9,9 +9,7 @@ import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import { useState } from 'react'
 import { ModalHeader } from '../Modal'
 
-const prettyUsernames = (
-  splits: components['schemas']['ConfirmIssueSplit'][],
-): string => {
+const prettyUsernames = (splits: schemas['ConfirmIssueSplit'][]): string => {
   const usernames = splits
     .map((s) => s.github_username)
     .filter((s): s is string => Boolean(s))
@@ -28,10 +26,10 @@ const prettyUsernames = (
 }
 
 const SplitNotify = (props: {
-  issue: components['schemas']['Issue']
-  pledges: components['schemas']['Pledge'][]
-  splits: components['schemas']['ConfirmIssueSplit'][]
-  user: components['schemas']['UserRead']
+  issue: schemas['Issue']
+  pledges: schemas['Pledge'][]
+  splits: schemas['ConfirmIssueSplit'][]
+  user: schemas['UserRead']
   onCancel: () => void
 }) => {
   const totalPledgedAmount = props.pledges

@@ -3,14 +3,10 @@
 import CustomerPortalOrder from '@/components/CustomerPortal/CustomerPortalOrder'
 import { api } from '@/utils/client'
 import { ArrowBackOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Link from 'next/link'
 
-const ClientPage = ({
-  order,
-}: {
-  order: components['schemas']['CustomerOrder']
-}) => {
+const ClientPage = ({ order }: { order: schemas['CustomerOrder'] }) => {
   return (
     <div className="flex flex-col gap-y-8">
       <Link

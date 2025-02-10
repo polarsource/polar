@@ -1,6 +1,6 @@
 import { useMetrics } from '@/hooks/queries'
 import { dateToInterval } from '@/utils/metrics'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import {
   Tabs,
@@ -20,8 +20,8 @@ const ProductTypeDisplayColor: Record<string, string> = {
 }
 
 export interface ProductPageProps {
-  organization: components['schemas']['Organization']
-  product: components['schemas']['Product']
+  organization: schemas['Organization']
+  product: schemas['Product']
 }
 
 export const ProductPage = ({ organization, product }: ProductPageProps) => {

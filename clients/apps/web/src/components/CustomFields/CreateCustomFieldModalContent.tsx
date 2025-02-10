@@ -1,6 +1,6 @@
 import { useCreateCustomField } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
@@ -9,10 +9,8 @@ import { toast } from '../Toast/use-toast'
 import CustomFieldForm from './CustomFieldForm'
 
 interface CreateCustomFieldModalContentProps {
-  organization: components['schemas']['Organization']
-  onCustomFieldCreated: (
-    customField: components['schemas']['CustomField'],
-  ) => void
+  organization: schemas['Organization']
+  onCustomFieldCreated: (customField: schemas['CustomField']) => void
   hideModal: () => void
 }
 
@@ -23,7 +21,7 @@ const CreateCustomFieldModalContent = ({
 }: CreateCustomFieldModalContentProps) => {
   const createCustomField = useCreateCustomField(organization.id)
 
-  const form = useForm<components['schemas']['CustomFieldCreate']>({
+  const form = useForm<schemas['CustomFieldCreate']>({
     defaultValues: {
       organization_id: organization.id,
       type: 'text',
@@ -37,31 +35,30 @@ const CreateCustomFieldModalContent = ({
     formState: { errors },
   } = form
 
-  const onSubmit: SubmitHandler<components['schemas']['CustomFieldCreate']> =
-    useCallback(
-      async (customFieldCreate) => {
-        const { data: customField, error } =
-          await createCustomField.mutateAsync(customFieldCreate)
-        if (error) {
-          if (error.detail) {
-            setValidationErrors(error.detail, setError, 1, [
-              'text',
-              'number',
-              'date',
-              'checkbox',
-              'select',
-            ])
-          }
-          return
+  const onSubmit: SubmitHandler<schemas['CustomFieldCreate']> = useCallback(
+    async (customFieldCreate) => {
+      const { data: customField, error } =
+        await createCustomField.mutateAsync(customFieldCreate)
+      if (error) {
+        if (error.detail) {
+          setValidationErrors(error.detail, setError, 1, [
+            'text',
+            'number',
+            'date',
+            'checkbox',
+            'select',
+          ])
         }
-        toast({
-          title: 'Custom Field Created',
-          description: `Custom field ${customField.name} was created successfully`,
-        })
-        onCustomFieldCreated(customField)
-      },
-      [createCustomField, onCustomFieldCreated, setError],
-    )
+        return
+      }
+      toast({
+        title: 'Custom Field Created',
+        description: `Custom field ${customField.name} was created successfully`,
+      })
+      onCustomFieldCreated(customField)
+    },
+    [createCustomField, onCustomFieldCreated, setError],
+  )
 
   return (
     <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">

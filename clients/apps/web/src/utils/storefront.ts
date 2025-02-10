@@ -1,11 +1,11 @@
-import { Client, components } from '@polar-sh/client'
+import { Client, schemas } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
 const _getStorefront = async (
   api: Client,
   slug: string,
-): Promise<components['schemas']['Storefront'] | undefined> => {
+): Promise<schemas['Storefront'] | undefined> => {
   const { data, error, response } = await api.GET('/v1/storefronts/{slug}', {
     params: {
       path: {
@@ -35,7 +35,7 @@ export const getStorefront = cache(_getStorefront)
 export const getStorefrontOrNotFound = async (
   api: Client,
   slug: string,
-): Promise<components['schemas']['Storefront']> => {
+): Promise<schemas['Storefront']> => {
   const storefront = await getStorefront(api, slug)
   if (!storefront) {
     notFound()

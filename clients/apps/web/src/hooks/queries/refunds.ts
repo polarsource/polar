@@ -1,6 +1,6 @@
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -16,7 +16,7 @@ export const useRefunds = (orderId?: string) =>
 
 export const useCreateRefund = () =>
   useMutation({
-    mutationFn: async (body: components['schemas']['RefundCreate']) =>
+    mutationFn: async (body: schemas['RefundCreate']) =>
       api.POST('/v1/refunds/', { body }),
     onSuccess: async (result, variables) => {
       if (result.error) {

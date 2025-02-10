@@ -1,6 +1,6 @@
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -84,7 +84,7 @@ export const useBackofficePledgeMarkDisputed = () =>
 
 export const useBackofficeBadgeAction = () =>
   useMutation({
-    mutationFn: (badgeAction: components['schemas']['BackofficeBadge']) => {
+    mutationFn: (badgeAction: schemas['BackofficeBadge']) => {
       return api.POST('/v1/backoffice/badge', { body: badgeAction })
     },
   })

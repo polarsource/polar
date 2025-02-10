@@ -1,9 +1,9 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { StateCreator } from 'zustand'
 
 interface FormDrafts {
-  ProductCreate?: components['schemas']['ProductCreate'] & {
-    full_medias: components['schemas']['ProductMediaFileRead'][]
+  ProductCreate?: schemas['ProductCreate'] & {
+    full_medias: schemas['ProductMediaFileRead'][]
   }
 }
 

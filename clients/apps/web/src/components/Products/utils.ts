@@ -1,25 +1,24 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import type { ProductFullMediasMixin } from './ProductForm/ProductForm'
 
 const isExistingProductPrice = (
   price:
-    | components['schemas']['ExistingProductPrice']
-    | components['schemas']['ProductPriceOneTimeCustomCreate']
-    | components['schemas']['ProductPriceOneTimeFixedCreate']
-    | components['schemas']['ProductPriceOneTimeFreeCreate']
-    | components['schemas']['ProductPriceRecurringFixedCreate']
-    | components['schemas']['ProductPriceRecurringFreeCreate'],
-): price is components['schemas']['ExistingProductPrice'] =>
-  'id' in price && price.id !== ''
+    | schemas['ExistingProductPrice']
+    | schemas['ProductPriceOneTimeCustomCreate']
+    | schemas['ProductPriceOneTimeFixedCreate']
+    | schemas['ProductPriceOneTimeFreeCreate']
+    | schemas['ProductPriceRecurringFixedCreate']
+    | schemas['ProductPriceRecurringFreeCreate'],
+): price is schemas['ExistingProductPrice'] => 'id' in price && price.id !== ''
 
 const priceCreateUpdateToPrice = (
   price:
-    | components['schemas']['ProductPriceOneTimeCustomCreate']
-    | components['schemas']['ProductPriceOneTimeFixedCreate']
-    | components['schemas']['ProductPriceOneTimeFreeCreate']
-    | components['schemas']['ProductPriceRecurringFixedCreate']
-    | components['schemas']['ProductPriceRecurringFreeCreate'],
-): components['schemas']['ProductPrice'] => {
+    | schemas['ProductPriceOneTimeCustomCreate']
+    | schemas['ProductPriceOneTimeFixedCreate']
+    | schemas['ProductPriceOneTimeFreeCreate']
+    | schemas['ProductPriceRecurringFixedCreate']
+    | schemas['ProductPriceRecurringFreeCreate'],
+): schemas['ProductPrice'] => {
   const base = {
     id: '',
     created_at: new Date().toISOString(),
@@ -76,11 +75,10 @@ const priceCreateUpdateToPrice = (
 }
 
 export const productUpdateToProduct = (
-  productUpdate: components['schemas']['ProductUpdate'] &
-    ProductFullMediasMixin,
-  benefits: components['schemas']['Benefit'][],
-  product: components['schemas']['Product'],
-): components['schemas']['Product'] => {
+  productUpdate: schemas['ProductUpdate'] & ProductFullMediasMixin,
+  benefits: schemas['Benefit'][],
+  product: schemas['Product'],
+): schemas['Product'] => {
   const { full_medias, ...productUpdateRest } = productUpdate
   return {
     ...product,
@@ -89,12 +87,10 @@ export const productUpdateToProduct = (
     prices:
       productUpdateRest.prices
         ?.map<
-          components['schemas']['ProductPrice']
-        >((price) => (isExistingProductPrice(price) ? (price as components['schemas']['ProductPrice']) : priceCreateUpdateToPrice(price)))
-        .filter(
-          (price): price is components['schemas']['ProductPrice'] =>
-            'type' in price,
-        ) ?? [],
+          schemas['ProductPrice']
+        >((price) => (isExistingProductPrice(price) ? (price as schemas['ProductPrice']) : priceCreateUpdateToPrice(price)))
+        .filter((price): price is schemas['ProductPrice'] => 'type' in price) ??
+      [],
     medias: full_medias,
     benefits,
   }
@@ -102,10 +98,9 @@ export const productUpdateToProduct = (
 
 export const productCreateToProduct = (
   organizationId: string,
-  productCreate: components['schemas']['ProductCreate'] &
-    ProductFullMediasMixin,
-  benefits: components['schemas']['Benefit'][],
-): components['schemas']['Product'] => {
+  productCreate: schemas['ProductCreate'] & ProductFullMediasMixin,
+  benefits: schemas['Benefit'][],
+): schemas['Product'] => {
   const { full_medias, ...productCreateRest } = productCreate
   return {
     id: organizationId + productCreate.name,
@@ -115,11 +110,9 @@ export const productCreateToProduct = (
     description: productCreateRest.description ?? '',
     prices:
       productCreate.prices
-        ?.map<components['schemas']['ProductPrice']>(priceCreateUpdateToPrice)
-        .filter(
-          (price): price is components['schemas']['ProductPrice'] =>
-            'type' in price,
-        ) ?? [],
+        ?.map<schemas['ProductPrice']>(priceCreateUpdateToPrice)
+        .filter((price): price is schemas['ProductPrice'] => 'type' in price) ??
+      [],
     medias: full_medias,
     benefits,
     created_at: new Date().toISOString(),

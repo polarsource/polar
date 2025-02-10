@@ -21,7 +21,7 @@ import {
   MoreVertOutlined,
   Search,
 } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
@@ -160,8 +160,8 @@ export default function ClientPage({
 }
 
 interface ProductListItemProps {
-  product: components['schemas']['Product']
-  organization: components['schemas']['Organization']
+  product: schemas['Product']
+  organization: schemas['Organization']
 }
 
 const ProductListItem = ({ product, organization }: ProductListItemProps) => {
@@ -177,7 +177,7 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
   }
 
   const generateCopyPriceLabel = (
-    price: components['schemas']['ProductPrice'],
+    price: schemas['ProductPrice'],
     amountOfPrices: number,
     prefix: string,
   ) => {
@@ -199,7 +199,7 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
     return `${prefix}${suffix}`
   }
 
-  const onCopyPriceID = (price: components['schemas']['ProductPrice']) => {
+  const onCopyPriceID = (price: schemas['ProductPrice']) => {
     if (typeof navigator !== 'undefined') {
       navigator.clipboard.writeText(price.id)
     }

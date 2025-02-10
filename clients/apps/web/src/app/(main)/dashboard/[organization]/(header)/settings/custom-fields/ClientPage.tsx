@@ -14,7 +14,7 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DataTable,
@@ -31,10 +31,10 @@ import { useRouter } from 'next/navigation'
 import React, { useCallback, useState } from 'react'
 
 interface ClientPageProps {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
-  type?: components['schemas']['CustomFieldType']
+  type?: schemas['CustomFieldType']
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({
@@ -48,7 +48,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const getSearchParams = (
     pagination: DataTablePaginationState,
     sorting: DataTableSortingState,
-    type?: components['schemas']['CustomFieldType'],
+    type?: schemas['CustomFieldType'],
   ) => {
     const params = serializeSearchParams(pagination, sorting)
 
@@ -98,7 +98,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   }
 
   const handleDeleteCustomField = useCallback(
-    (customField: components['schemas']['CustomField']) => () => {
+    (customField: schemas['CustomField']) => () => {
       deleteCustomField.mutateAsync(customField).then(({ error }) => {
         if (error) {
           toast({
@@ -123,7 +123,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const customFields = customFieldsHook.data?.items || []
   const pageCount = customFieldsHook.data?.pagination.max_page ?? 1
 
-  const columns: DataTableColumnDef<components['schemas']['CustomField']>[] = [
+  const columns: DataTableColumnDef<schemas['CustomField']>[] = [
     {
       accessorKey: 'slug',
       enableSorting: true,
@@ -158,7 +158,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       cell: ({ getValue }) => {
         return (
           <CustomFieldTypeLabel
-            type={getValue() as components['schemas']['CustomFieldType']}
+            type={getValue() as schemas['CustomFieldType']}
           />
         )
       },
@@ -202,9 +202,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const [showNewModal, setShowNewModal] = useState(false)
   const [showUpdateModal, setShowUpdateModal] = useState(false)
   const [selectedCustomField, setSelectedCustomField] =
-    useState<components['schemas']['CustomField']>()
+    useState<schemas['CustomField']>()
   const onCustomFieldSelected = useCallback(
-    (customField: components['schemas']['CustomField']) => {
+    (customField: schemas['CustomField']) => {
       setSelectedCustomField(customField)
       setShowUpdateModal(true)
     },

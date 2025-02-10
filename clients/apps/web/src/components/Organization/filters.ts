@@ -1,10 +1,10 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { ReadonlyURLSearchParams } from 'next/navigation'
 
 export type FundingFilters = {
   q?: string
   badged?: boolean
-  sort?: components['schemas']['ListFundingSortBy'][]
+  sort?: schemas['ListFundingSortBy'][]
   closed?: boolean
 }
 
@@ -24,7 +24,7 @@ export const fundingSortingOptions = [
 ]
 
 export const getFundSortingTitle = (
-  sortBy: components['schemas']['ListFundingSortBy'][],
+  sortBy: schemas['ListFundingSortBy'][],
 ): string => {
   const [initial] = sortBy
   let title = ''
@@ -50,8 +50,8 @@ export const getFundSortingTitle = (
 
 export const getSort = (
   sort: string[] | null,
-): components['schemas']['ListFundingSortBy'][] => {
-  const sorting: components['schemas']['ListFundingSortBy'][] = []
+): schemas['ListFundingSortBy'][] => {
+  const sorting: schemas['ListFundingSortBy'][] = []
 
   if (sort?.includes('oldest')) {
     sorting.push('oldest')

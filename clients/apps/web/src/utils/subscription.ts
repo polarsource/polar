@@ -1,11 +1,11 @@
-import { Client, components, unwrap } from '@polar-sh/client'
+import { Client, schemas, unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
 const _getSubscriptionById = async (
   api: Client,
   id: string,
-): Promise<components['schemas']['Subscription']> => {
+): Promise<schemas['Subscription']> => {
   return unwrap(
     api.GET('/v1/subscriptions/{id}', {
       params: {

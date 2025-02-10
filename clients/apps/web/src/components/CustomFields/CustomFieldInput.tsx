@@ -1,4 +1,4 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
@@ -47,7 +47,7 @@ const markdownOptions: MarkdownToJSX.Options = {
 const FieldLabel = ({
   customField,
 }: {
-  customField: components['schemas']['CustomField']
+  customField: schemas['CustomField']
 }) => {
   return (
     <FormLabel>
@@ -65,7 +65,7 @@ const FieldLabel = ({
 const FieldHelpText = ({
   customField,
 }: {
-  customField: components['schemas']['CustomField']
+  customField: schemas['CustomField']
 }) => {
   return customField.properties.form_help_text ? (
     <FormDescription>
@@ -77,7 +77,7 @@ const FieldHelpText = ({
 }
 
 interface CustomFieldTextInputProps {
-  customField: components['schemas']['CustomFieldText']
+  customField: schemas['CustomFieldText']
   required: boolean
   field: ControllerRenderProps
 }
@@ -113,7 +113,7 @@ const CustomFieldTextInput: React.FC<CustomFieldTextInputProps> = ({
 }
 
 interface CustomFieldNumberInputProps {
-  customField: components['schemas']['CustomFieldNumber']
+  customField: schemas['CustomFieldNumber']
   required: boolean
   field: ControllerRenderProps
 }
@@ -137,7 +137,7 @@ const CustomFieldNumberInput: React.FC<CustomFieldNumberInputProps> = ({
 }
 
 interface CustomFieldDateInputProps {
-  customField: components['schemas']['CustomFieldDate']
+  customField: schemas['CustomFieldDate']
   required: boolean
   field: ControllerRenderProps
 }
@@ -165,7 +165,7 @@ const CustomFieldDateInput: React.FC<CustomFieldDateInputProps> = ({
 }
 
 interface CustomFieldCheckboxInputProps {
-  customField: components['schemas']['CustomFieldCheckbox']
+  customField: schemas['CustomFieldCheckbox']
   required: boolean
   field: ControllerRenderProps
 }
@@ -194,7 +194,7 @@ const CustomFieldCheckboxInput: React.FC<CustomFieldCheckboxInputProps> = ({
 }
 
 interface CustomFieldSelectInputProps {
-  customField: components['schemas']['CustomFieldSelect']
+  customField: schemas['CustomFieldSelect']
   required: boolean
   field: ControllerRenderProps
 }
@@ -224,9 +224,7 @@ const CustomFieldSelectInput: React.FC<CustomFieldSelectInputProps> = ({
   )
 }
 
-const getInputComponent = (
-  customField: components['schemas']['CustomField'],
-) => {
+const getInputComponent = (customField: schemas['CustomField']) => {
   switch (customField.type) {
     case 'text':
       return CustomFieldTextInput
@@ -242,7 +240,7 @@ const getInputComponent = (
 }
 
 interface CustomFieldInputProps {
-  customField: components['schemas']['CustomField']
+  customField: schemas['CustomField']
   required: boolean
   field: ControllerRenderProps
 }

@@ -1,4 +1,4 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import {
   Select,
   SelectContent,
@@ -10,7 +10,7 @@ import {
 import React from 'react'
 
 interface SubscriptionTiersSelectProps {
-  products: components['schemas']['Product'][]
+  products: schemas['Product'][]
   value: string
   onChange: (value: string) => void
 }

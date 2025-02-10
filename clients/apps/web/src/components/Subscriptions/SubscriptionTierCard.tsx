@@ -6,7 +6,7 @@ import {
   useRecurringProductPrice,
 } from '@/hooks/products'
 import { markdownOptionsJustText } from '@/utils/markdown'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import {
   Card,
   CardContent,
@@ -18,9 +18,9 @@ import Markdown from 'markdown-to-jsx'
 import { twMerge } from 'tailwind-merge'
 
 export interface SubscriptionTierCardProps {
-  subscriptionTier: Partial<components['schemas']['ProductStorefront']>
+  subscriptionTier: Partial<schemas['ProductStorefront']>
   className?: string
-  recurringInterval?: components['schemas']['SubscriptionRecurringInterval']
+  recurringInterval?: schemas['SubscriptionRecurringInterval']
 }
 
 const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({

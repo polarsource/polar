@@ -8,7 +8,7 @@ import {
   CreditCardIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { useState } from 'react'
 import { prettyCardName } from '../Pledge/payment'
@@ -59,11 +59,7 @@ const PaymentMethodSettings = () => {
 
 export default PaymentMethodSettings
 
-const PaymentMethodItem = ({
-  pm,
-}: {
-  pm: components['schemas']['PaymentMethod']
-}) => {
+const PaymentMethodItem = ({ pm }: { pm: schemas['PaymentMethod'] }) => {
   const detachPaymentMethod = useDetachPaymentMethodMutation()
 
   const [isDetaching, setIsDetaching] = useState(false)

@@ -3,13 +3,13 @@ import {
   ACCOUNT_TYPE_DISPLAY_NAMES,
 } from '@/utils/account'
 import { api } from '@/utils/client'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { twMerge } from 'tailwind-merge'
 import AccountAssociations from './AccountAssociations'
 
 interface AccountsListProps {
-  accounts: components['schemas']['Account'][]
+  accounts: schemas['Account'][]
   returnPath: string
 }
 
@@ -60,7 +60,7 @@ const AccountsList = ({ accounts, returnPath }: AccountsListProps) => {
 export default AccountsList
 
 interface AccountListItemProps {
-  account: components['schemas']['Account']
+  account: schemas['Account']
   returnPath: string
 }
 

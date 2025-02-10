@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks/auth'
 import { usePostHog } from '@/hooks/posthog'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
@@ -28,17 +28,17 @@ const PaymentForm = ({
   canSavePaymentMethod,
   onSavePaymentMethodChanged,
 }: {
-  paymentIntent?: components['schemas']['PledgeStripePaymentIntentMutationResponse']
-  issue: components['schemas']['Issue']
-  organization: components['schemas']['Organization']
-  repository: components['schemas']['Repository']
+  paymentIntent?: schemas['PledgeStripePaymentIntentMutationResponse']
+  issue: schemas['Issue']
+  organization: schemas['Organization']
+  repository: schemas['Repository']
   isSyncing: boolean
   setSyncing: (isLocked: boolean) => void
   setErrorMessage: (message: string) => void
   onSuccess: (paymentIntent: PaymentIntent) => void
   hasDetails: boolean
   redirectTo: string
-  paymentMethod?: components['schemas']['PaymentMethod']
+  paymentMethod?: schemas['PaymentMethod']
   canSavePaymentMethod: boolean
   onSavePaymentMethodChanged: (save: boolean) => void
 }) => {

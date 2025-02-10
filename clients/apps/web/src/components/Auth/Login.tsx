@@ -1,7 +1,7 @@
 'use client'
 
 import { usePostHog, type EventName } from '@/hooks/posthog'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import LabeledSeparator from '@polar-sh/ui/components/atoms/LabeledSeparator'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
@@ -16,7 +16,7 @@ const Login = ({
 }: {
   returnTo?: string
   returnParams?: Record<string, string>
-  signup?: components['schemas']['UserSignupAttribution']
+  signup?: schemas['UserSignupAttribution']
 }) => {
   const posthog = usePostHog()
 

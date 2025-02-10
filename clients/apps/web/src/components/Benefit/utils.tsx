@@ -1,12 +1,12 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { Check, Download, Globe, Key } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 import GitHubIcon from '../Icons/GitHubIcon'
 
-export type CreatableBenefit = components['schemas']['BenefitType']
+export type CreatableBenefit = schemas['BenefitType']
 
 export const resolveBenefitCategoryIcon = (
-  type?: components['schemas']['BenefitType'],
+  type?: schemas['BenefitType'],
   className?: string,
 ) => {
   const cn = twMerge('h-4 w-4', className)
@@ -27,14 +27,14 @@ export const resolveBenefitCategoryIcon = (
 }
 
 export const resolveBenefitIcon = (
-  type: components['schemas']['BenefitType'],
+  type: schemas['BenefitType'],
   className?: string,
 ) => {
   return resolveBenefitCategoryIcon(type, className)
 }
 
 export const resolveBenefitTypeDisplayName = (
-  type: components['schemas']['BenefitType'] | 'usage',
+  type: schemas['BenefitType'] | 'usage',
 ) => {
   switch (type) {
     case 'usage':
@@ -80,7 +80,7 @@ export const DiscordIcon = ({
 )
 
 export const benefitsDisplayNames: {
-  [key in components['schemas']['BenefitType']]: string
+  [key in schemas['BenefitType']]: string
 } & { usage: string } = {
   usage: 'Usage',
   license_keys: 'License Keys',

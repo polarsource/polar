@@ -3,7 +3,7 @@
 import { CONFIG } from '@/utils/config'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { FavoriteBorderOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import Link from 'next/link'
@@ -13,7 +13,7 @@ import IssueLabel from './IssueLabel'
 import { generateMarkdownTitle } from './markdown'
 
 interface IssueSummaryProps {
-  issue: components['schemas']['Issue']
+  issue: schemas['Issue']
   showLogo?: boolean
   showStatus?: boolean
   right?: React.ReactElement
@@ -91,7 +91,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
             )}
 
             {issue.labels &&
-              issue.labels.map((label: components['schemas']['Label']) => {
+              issue.labels.map((label: schemas['Label']) => {
                 return <IssueLabel label={label} key={label.name} />
               })}
           </div>

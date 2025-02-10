@@ -2,7 +2,7 @@
 
 import { useUpdateSubscription } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components, isValidationError } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Select,
@@ -46,12 +46,12 @@ const getHumanCancellationReason = (key: string | null) => {
 
 type CancellationAction = 'revoke' | 'cancel_at_period_end'
 
-type SubscriptionCancelForm = components['schemas']['SubscriptionCancel'] & {
+type SubscriptionCancelForm = schemas['SubscriptionCancel'] & {
   cancellation_action: CancellationAction
 }
 
 interface CancelSubscriptionModalProps {
-  subscription: components['schemas']['Subscription']
+  subscription: schemas['Subscription']
   onCancellation?: () => void
 }
 
@@ -70,7 +70,7 @@ const CancelSubscriptionModal = ({
 
   const onSubmit = useCallback(
     async (cancellation: SubscriptionCancelForm) => {
-      let body: components['schemas']['SubscriptionCancel'] = {
+      let body: schemas['SubscriptionCancel'] = {
         customer_cancellation_reason: cancellation.customer_cancellation_reason,
       }
       if (cancellation.cancellation_action === 'revoke') {

@@ -3,7 +3,7 @@ import { usePostHog } from '@/hooks/posthog'
 import { useListPaymentMethods } from '@/hooks/queries'
 import { api } from '@/utils/client'
 import { EnvelopeIcon } from '@heroicons/react/24/outline'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
@@ -32,7 +32,7 @@ type PledgeFormState = {
   amount: number
   email: string
   setup_future_usage:
-    | components['schemas']['PledgeStripePaymentIntentCreate']['setup_future_usage']
+    | schemas['PledgeStripePaymentIntentCreate']['setup_future_usage']
     | undefined
   on_behalf_of_organization_id: string | undefined
 }
@@ -43,14 +43,14 @@ const PledgeCheckoutFundToday = ({
   gotoURL,
   onAmountChange: onAmountChangeProp,
 }: {
-  issue: components['schemas']['Issue']
-  organization: components['schemas']['Organization']
+  issue: schemas['Issue']
+  organization: schemas['Organization']
   gotoURL?: string
   onAmountChange?: (amount: number) => void
 }) => {
   const posthog = usePostHog()
   const [polarPaymentIntent, setPolarPaymentIntent] = useState<
-    components['schemas']['PledgeStripePaymentIntentMutationResponse'] | null
+    schemas['PledgeStripePaymentIntentMutationResponse'] | null
   >(null)
 
   const [formState, setFormState] = useState<PledgeFormState>({
@@ -165,7 +165,7 @@ const PledgeCheckoutFundToday = ({
       setSyncing(true)
       setErrorMessage('')
 
-      let updatedPaymentIntent: components['schemas']['PledgeStripePaymentIntentMutationResponse']
+      let updatedPaymentIntent: schemas['PledgeStripePaymentIntentMutationResponse']
 
       if (!polarPaymentIntent) {
         updatedPaymentIntent = await createPaymentIntent(pledgeSync)
@@ -274,7 +274,7 @@ const PledgeCheckoutFundToday = ({
   }
 
   const [paymentMethod, setPaymentMethod] = useState<
-    components['schemas']['PaymentMethod'] | undefined
+    schemas['PaymentMethod'] | undefined
   >()
   const showStripeForm = polarPaymentIntent ? true : false
   const repository = issue.repository
@@ -317,9 +317,7 @@ const PledgeCheckoutFundToday = ({
     didSetPaymentMethodOnLoad.current = true
   }, [savedPaymentMethods.isFetched, savedPaymentMethods.data])
 
-  const onChangeOnBehalfOf = (
-    org: components['schemas']['Organization'] | undefined,
-  ) => {
+  const onChangeOnBehalfOf = (org: schemas['Organization'] | undefined) => {
     const n = {
       ...formState,
       on_behalf_of_organization_id: org ? org.id : undefined,

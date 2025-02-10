@@ -1,7 +1,7 @@
 import { useAuth, useGitHubAccount, useGoogleAccount } from '@/hooks'
 import { getGitHubAuthorizeURL, getGoogleAuthorizeURL } from '@/utils/auth'
 import { AlternateEmailOutlined, GitHub, Google } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
@@ -37,7 +37,7 @@ const AuthenticationMethod: React.FC<AuthenticationMethodProps> = ({
 }
 
 interface GitHubAuthenticationMethodProps {
-  oauthAccount: components['schemas']['OAuthAccountRead'] | undefined
+  oauthAccount: schemas['OAuthAccountRead'] | undefined
   returnTo: string
 }
 
@@ -93,7 +93,7 @@ const GitHubAuthenticationMethod: React.FC<GitHubAuthenticationMethodProps> = ({
 }
 
 interface GoogleAuthenticationMethodProps {
-  oauthAccount: components['schemas']['OAuthAccountRead'] | undefined
+  oauthAccount: schemas['OAuthAccountRead'] | undefined
   returnTo: string
 }
 

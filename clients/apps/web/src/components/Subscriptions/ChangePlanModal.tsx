@@ -2,7 +2,7 @@
 
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { useCustomerUpdateSubscription, useProducts } from '@/hooks/queries'
-import { Client, components, unwrap } from '@polar-sh/client'
+import { Client, schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
@@ -19,8 +19,8 @@ const ProductPriceListItem = ({
   selected,
   onSelect,
 }: {
-  product: components['schemas']['ProductStorefront']
-  price: components['schemas']['ProductPrice']
+  product: schemas['ProductStorefront']
+  price: schemas['ProductPrice']
   selected: boolean
   onSelect?: () => void
 }) => {
@@ -45,11 +45,11 @@ const ChangePlanModal = ({
   onUserSubscriptionUpdate,
 }: {
   api: Client
-  organization: components['schemas']['Organization']
-  subscription: components['schemas']['CustomerSubscription']
+  organization: schemas['Organization']
+  subscription: schemas['CustomerSubscription']
   hide: () => void
   onUserSubscriptionUpdate: (
-    subscription: components['schemas']['CustomerSubscription'],
+    subscription: schemas['CustomerSubscription'],
   ) => void
 }) => {
   const router = useRouter()
@@ -59,14 +59,14 @@ const ChangePlanModal = ({
   })
 
   const currentPrice = subscription.price as
-    | components['schemas']['ProductPriceRecurringFixed']
-    | components['schemas']['ProductPriceRecurringFree']
+    | schemas['ProductPriceRecurringFixed']
+    | schemas['ProductPriceRecurringFree']
   const [selectedProduct, setSelectedProduct] = useState<
-    components['schemas']['ProductStorefront'] | null
+    schemas['ProductStorefront'] | null
   >(null)
   const [selectedPrice, setSelectedPrice] = useState<
-    | components['schemas']['ProductPriceRecurringFixed']
-    | components['schemas']['ProductPriceRecurringFree']
+    | schemas['ProductPriceRecurringFixed']
+    | schemas['ProductPriceRecurringFree']
     | null
   >(null)
 
@@ -226,8 +226,8 @@ const ChangePlanModal = ({
                       setSelectedProduct(product)
                       setSelectedPrice(
                         price as
-                          | components['schemas']['ProductPriceRecurringFixed']
-                          | components['schemas']['ProductPriceRecurringFree'],
+                          | schemas['ProductPriceRecurringFixed']
+                          | schemas['ProductPriceRecurringFree'],
                       )
                     }}
                   />

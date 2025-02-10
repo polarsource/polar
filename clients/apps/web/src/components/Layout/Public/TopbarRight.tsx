@@ -7,7 +7,7 @@ import { useModal } from '@/components/Modal/useModal'
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import Popover from '@/components/Notifications/Popover'
 import { usePostHog } from '@/hooks/posthog'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { usePathname } from 'next/navigation'
 
@@ -15,8 +15,8 @@ const TopbarRight = ({
   authenticatedUser,
   storefrontOrg,
 }: {
-  authenticatedUser?: components['schemas']['UserRead']
-  storefrontOrg?: components['schemas']['Organization']
+  authenticatedUser?: schemas['UserRead']
+  storefrontOrg?: schemas['Organization']
 }) => {
   const posthog = usePostHog()
   const pathname = usePathname()

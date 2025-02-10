@@ -13,7 +13,7 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { FileDownloadOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -27,15 +27,12 @@ import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 
 interface ClientPageProps {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
   productId?: string
   subscriptionStatus?:
-    | Extract<
-        components['schemas']['SubscriptionStatus'],
-        'active' | 'canceled'
-      >
+    | Extract<schemas['SubscriptionStatus'], 'active' | 'canceled'>
     | 'any'
 }
 
@@ -157,7 +154,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     }
   }, [selectedSubscription, organization, router])
 
-  const columns: DataTableColumnDef<components['schemas']['Subscription']>[] = [
+  const columns: DataTableColumnDef<schemas['Subscription']>[] = [
     {
       id: 'customer',
       accessorKey: 'customer',
@@ -223,7 +220,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <DataTableColumnHeader column={column} title="Product" />
       ),
       cell: (props) => {
-        const tier = props.getValue() as components['schemas']['Product']
+        const tier = props.getValue() as schemas['Product']
         return (
           <>
             {tier.name}

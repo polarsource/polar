@@ -1,11 +1,11 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import {
   SyntaxHighlighterClient,
   SyntaxHighlighterProvider,
 } from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
 
 export interface MeterGetStartedProps {
-  meter: components['schemas']['Meter']
+  meter: schemas['Meter']
 }
 
 export const MeterGetStarted = ({}: MeterGetStartedProps) => {

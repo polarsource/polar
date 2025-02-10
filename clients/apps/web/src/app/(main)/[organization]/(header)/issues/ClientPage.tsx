@@ -2,7 +2,7 @@
 
 import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForFunding'
 import { organizationPageLink } from '@/utils/nav'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { redirect } from 'next/navigation'
 
@@ -10,8 +10,8 @@ const ClientPage = ({
   organization,
   issues,
 }: {
-  organization: components['schemas']['Organization']
-  issues: components['schemas']['ListResource_IssueFunding_']
+  organization: schemas['Organization']
+  issues: schemas['ListResource_IssueFunding_']
 }) => {
   if (!organization.feature_settings?.issue_funding_enabled) {
     return redirect(organizationPageLink(organization))

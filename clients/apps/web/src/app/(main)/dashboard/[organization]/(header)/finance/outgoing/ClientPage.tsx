@@ -9,7 +9,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { usePathname, useRouter } from 'next/navigation'
 
 export default function ClientPage({
@@ -19,7 +19,7 @@ export default function ClientPage({
 }: {
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }) {
   const router = useRouter()
   const pathname = usePathname()

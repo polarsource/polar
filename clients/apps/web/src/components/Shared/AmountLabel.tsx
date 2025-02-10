@@ -1,11 +1,11 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useMemo } from 'react'
 
 interface AmountLabelProps {
   amount: number
   currency: string
-  interval?: components['schemas']['SubscriptionRecurringInterval']
+  interval?: schemas['SubscriptionRecurringInterval']
   minimumFractionDigits?: number
 }
 

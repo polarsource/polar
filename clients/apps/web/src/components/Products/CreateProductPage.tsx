@@ -5,7 +5,7 @@ import {
 } from '@/hooks/queries'
 import { useStore } from '@/store'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
@@ -20,8 +20,8 @@ import ProductForm, { ProductFullMediasMixin } from './ProductForm/ProductForm'
 import { productCreateToProduct } from './utils'
 
 export interface CreateProductPageProps {
-  organization: components['schemas']['Organization']
-  productPriceType?: components['schemas']['ProductPriceType']
+  organization: schemas['Organization']
+  productPriceType?: schemas['ProductPriceType']
 }
 
 export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
@@ -39,12 +39,10 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   } = useStore()
 
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
-    components['schemas']['Benefit']['id'][]
+    schemas['Benefit']['id'][]
   >([])
 
-  const form = useForm<
-    components['schemas']['ProductCreate'] & ProductFullMediasMixin
-  >({
+  const form = useForm<schemas['ProductCreate'] & ProductFullMediasMixin>({
     defaultValues: {
       ...{
         prices: [
@@ -75,13 +73,12 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     createdProduct,
     enabledBenefitIds
       .map((id) => organizationBenefits.find((b) => b.id === id))
-      .filter(Boolean) as components['schemas']['Benefit'][],
+      .filter(Boolean) as schemas['Benefit'][],
   )
 
   const onSubmit = useCallback(
     async (
-      productCreate: components['schemas']['ProductCreate'] &
-        ProductFullMediasMixin,
+      productCreate: schemas['ProductCreate'] & ProductFullMediasMixin,
     ) => {
       const { full_medias, ...productCreateRest } = productCreate
       const { data: product, error } = await createProduct.mutateAsync({
@@ -123,14 +120,14 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   )
 
   const onSelectBenefit = useCallback(
-    (benefit: components['schemas']['Benefit']) => {
+    (benefit: schemas['Benefit']) => {
       setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
     },
     [setEnabledBenefitIds],
   )
 
   const onRemoveBenefit = useCallback(
-    (benefit: components['schemas']['Benefit']) => {
+    (benefit: schemas['Benefit']) => {
       setEnabledBenefitIds((benefitIds) =>
         benefitIds.filter((b) => b !== benefit.id),
       )

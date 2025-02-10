@@ -1,4 +1,4 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import React from 'react'
 import { ProductCustomFieldSection } from './ProductCustomFieldSection'
 import { ProductInfoSection } from './ProductInfoSection'
@@ -6,17 +6,17 @@ import { ProductMediaSection } from './ProductMediaSection'
 import { ProductPricingSection } from './ProductPricingSection'
 
 export interface ProductFullMediasMixin {
-  full_medias: components['schemas']['ProductMediaFileRead'][]
+  full_medias: schemas['ProductMediaFileRead'][]
 }
 
 export type ProductFormType = (
-  | components['schemas']['ProductCreate']
-  | components['schemas']['ProductUpdate']
+  | schemas['ProductCreate']
+  | schemas['ProductUpdate']
 ) &
   ProductFullMediasMixin
 
 interface ProductFormProps {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
   update?: boolean
   compact?: boolean
 }

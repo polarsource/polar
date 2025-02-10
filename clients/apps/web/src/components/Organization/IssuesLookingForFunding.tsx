@@ -7,7 +7,7 @@ import {
   SearchOutlined,
   SwapVertOutlined,
 } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -45,10 +45,10 @@ import {
 } from './filters'
 
 interface IssuesLookingForFundingProps {
-  repository?: components['schemas']['Repository']
-  organization: components['schemas']['Organization']
+  repository?: schemas['Repository']
+  organization: schemas['Organization']
   pageSize?: number
-  issues: components['schemas']['ListResource_IssueFunding_']
+  issues: schemas['ListResource_IssueFunding_']
 }
 
 const IssuesLookingForFunding = ({
@@ -230,7 +230,7 @@ export const IssuesFilter = ({
   )
 
   const onSortingChanged = useCallback(
-    (value: components['schemas']['ListFundingSortBy']) => {
+    (value: schemas['ListFundingSortBy']) => {
       return (checked: boolean) => {
         let sort = [...(filters.sort?.values() ?? [])]
 
@@ -335,16 +335,14 @@ export const IssuesFilter = ({
             {fundingSortingOptions.map((v) => (
               <DropdownMenuCheckboxItem
                 onCheckedChange={onSortingChanged(
-                  v as components['schemas']['ListFundingSortBy'],
+                  v as schemas['ListFundingSortBy'],
                 )}
                 key={v}
                 checked={filters.sort?.includes(
-                  v as components['schemas']['ListFundingSortBy'],
+                  v as schemas['ListFundingSortBy'],
                 )}
               >
-                {getFundSortingTitle([
-                  v as components['schemas']['ListFundingSortBy'],
-                ])}
+                {getFundSortingTitle([v as schemas['ListFundingSortBy']])}
               </DropdownMenuCheckboxItem>
             ))}
           </DropdownMenuContent>

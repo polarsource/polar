@@ -1,4 +1,4 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 
 export function addDays(date: Date, days: number) {
   var result = new Date(date)
@@ -12,7 +12,7 @@ export function addHours(date: Date, hours: number) {
   return result
 }
 
-export const org: components['schemas']['Organization'] = {
+export const org: schemas['Organization'] = {
   id: 'xxxabc',
   created_at: new Date('2023-01-01T00:00:00Z').toISOString(),
   modified_at: null,
@@ -42,7 +42,7 @@ export const org: components['schemas']['Organization'] = {
   },
 }
 
-export const user: components['schemas']['UserRead'] = {
+export const user: schemas['UserRead'] = {
   created_at: new Date('2023-01-01T00:00:00Z').toISOString(),
   modified_at: new Date('2023-01-01T09:00:00Z').toISOString(),
   email: 'test@example.com',
@@ -53,24 +53,23 @@ export const user: components['schemas']['UserRead'] = {
   account_id: null,
 }
 
-export const externalOrganization: components['schemas']['ExternalOrganization'] =
-  {
-    id: '',
-    platform: 'github',
-    name: 'polarsource',
-    avatar_url: 'https://avatars.githubusercontent.com/u/105373340?v=4',
-    is_personal: false,
-    bio: null,
-    pretty_name: null,
-    company: null,
-    blog: null,
-    location: null,
-    email: null,
-    twitter_username: null,
-    organization_id: null,
-  }
+export const externalOrganization: schemas['ExternalOrganization'] = {
+  id: '',
+  platform: 'github',
+  name: 'polarsource',
+  avatar_url: 'https://avatars.githubusercontent.com/u/105373340?v=4',
+  is_personal: false,
+  bio: null,
+  pretty_name: null,
+  company: null,
+  blog: null,
+  location: null,
+  email: null,
+  twitter_username: null,
+  organization_id: null,
+}
 
-export const repo: components['schemas']['Repository'] = {
+export const repo: schemas['Repository'] = {
   platform: 'github',
   name: 'pydantic',
   id: 'bb',
@@ -84,7 +83,7 @@ export const repo: components['schemas']['Repository'] = {
   internal_organization: org,
 }
 
-export const reactions: components['schemas']['Reactions'] = {
+export const reactions: schemas['Reactions'] = {
   total_count: 0,
   plus_one: 0,
   minus_one: 0,
@@ -97,7 +96,7 @@ export const reactions: components['schemas']['Reactions'] = {
 }
 
 // Public API
-export const issue: components['schemas']['Issue'] = {
+export const issue: schemas['Issue'] = {
   platform: 'github',
   number: 222,
   title: 'SecretStr comparison fails when field is defined with Field',
@@ -131,13 +130,13 @@ reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
 Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia
 deserunt mollit anim id est laborum.</p>`
 
-export const pledger: components['schemas']['Pledger'] = {
+export const pledger: schemas['Pledger'] = {
   name: 'zegl',
   github_username: 'zegl',
   avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
 }
 
-export const pledgesSummaries: components['schemas']['PledgesTypeSummaries'] = {
+export const pledgesSummaries: schemas['PledgesTypeSummaries'] = {
   pay_directly: { total: { currency: 'usd', amount: 0 }, pledgers: [] },
   pay_on_completion: {
     total: { currency: 'usd', amount: 40000 },
@@ -149,7 +148,7 @@ export const pledgesSummaries: components['schemas']['PledgesTypeSummaries'] = {
   },
 }
 
-export const issueFunding: components['schemas']['IssueFunding'] = {
+export const issueFunding: schemas['IssueFunding'] = {
   issue,
   funding_goal: { currency: 'usd', amount: 60000 },
   total: { currency: 'usd', amount: 50000 },
@@ -157,7 +156,7 @@ export const issueFunding: components['schemas']['IssueFunding'] = {
 }
 
 // PublicAPI
-export const pledgePublicAPI: components['schemas']['Pledge'] = {
+export const pledgePublicAPI: schemas['Pledge'] = {
   id: 'pppp',
   created_at: '2023-10-11',
   modified_at: null,
@@ -171,7 +170,7 @@ export const pledgePublicAPI: components['schemas']['Pledge'] = {
   authed_can_admin_received: false,
 }
 
-const maintainerPledgeCreatedNotification: components['schemas']['MaintainerPledgeCreatedNotificationPayload'] =
+const maintainerPledgeCreatedNotification: schemas['MaintainerPledgeCreatedNotificationPayload'] =
   {
     pledger_name: 'xx',
     pledge_amount: '123.50',
@@ -185,7 +184,7 @@ const maintainerPledgeCreatedNotification: components['schemas']['MaintainerPled
     pledge_type: 'pay_upfront',
   }
 
-const maintainerPledgeConfirmationPendingNotification: components['schemas']['MaintainerPledgeConfirmationPendingNotificationPayload'] =
+const maintainerPledgeConfirmationPendingNotification: schemas['MaintainerPledgeConfirmationPendingNotificationPayload'] =
   {
     pledger_name: 'xx',
     pledge_amount: '123.50',
@@ -198,7 +197,7 @@ const maintainerPledgeConfirmationPendingNotification: components['schemas']['Ma
     pledge_id: null,
   }
 
-const maintainerPledgePendingNotification: components['schemas']['MaintainerPledgePendingNotificationPayload'] =
+const maintainerPledgePendingNotification: schemas['MaintainerPledgePendingNotificationPayload'] =
   {
     pledger_name: 'xx',
     pledge_amount: '123.50',
@@ -211,7 +210,7 @@ const maintainerPledgePendingNotification: components['schemas']['MaintainerPled
     pledge_id: null,
   }
 
-const maintainerPledgePaidNotification: components['schemas']['MaintainerPledgePaidNotificationPayload'] =
+const maintainerPledgePaidNotification: schemas['MaintainerPledgePaidNotificationPayload'] =
   {
     paid_out_amount: '123.50',
     issue_url: '#',
@@ -222,7 +221,7 @@ const maintainerPledgePaidNotification: components['schemas']['MaintainerPledgeP
     pledge_id: null,
   }
 
-const pledgerPledgePendingNotification: components['schemas']['PledgerPledgePendingNotificationPayload'] =
+const pledgerPledgePendingNotification: schemas['PledgerPledgePendingNotificationPayload'] =
   {
     pledge_amount: '50.50',
     issue_url: '#',
@@ -235,30 +234,17 @@ const pledgerPledgePendingNotification: components['schemas']['PledgerPledgePend
     pledge_type: 'pay_upfront',
   }
 
-const rewardPaidNotification: components['schemas']['RewardPaidNotificationPayload'] =
-  {
-    paid_out_amount: '123.50',
-    issue_url: '#',
-    issue_title: 'Hello World',
-    issue_org_name: 'polarsource',
-    issue_repo_name: 'polar',
-    issue_number: 123,
-    issue_id: 'xx',
-    pledge_id: 'yyy',
-  }
-const maintainerPledgedIssuePendingNotification: components['schemas']['MaintainerPledgedIssuePendingNotificationPayload'] =
-  {
-    pledge_amount_sum: '123.50',
-    issue_url: '#',
-    issue_title: 'Hello World',
-    issue_org_name: 'polarsource',
-    issue_repo_name: 'polar',
-    issue_number: 123,
-    issue_id: 'xx',
-    maintainer_has_account: false,
-  }
-
-const maintainerPledgedIssueConfirmationPendingNotification: components['schemas']['MaintainerPledgedIssueConfirmationPendingNotificationPayload'] =
+const rewardPaidNotification: schemas['RewardPaidNotificationPayload'] = {
+  paid_out_amount: '123.50',
+  issue_url: '#',
+  issue_title: 'Hello World',
+  issue_org_name: 'polarsource',
+  issue_repo_name: 'polar',
+  issue_number: 123,
+  issue_id: 'xx',
+  pledge_id: 'yyy',
+}
+const maintainerPledgedIssuePendingNotification: schemas['MaintainerPledgedIssuePendingNotificationPayload'] =
   {
     pledge_amount_sum: '123.50',
     issue_url: '#',
@@ -270,7 +256,19 @@ const maintainerPledgedIssueConfirmationPendingNotification: components['schemas
     maintainer_has_account: false,
   }
 
-export const notification_maintainerPledgeCreatedNotification: components['schemas']['MaintainerPledgeCreatedNotification'] =
+const maintainerPledgedIssueConfirmationPendingNotification: schemas['MaintainerPledgedIssueConfirmationPendingNotificationPayload'] =
+  {
+    pledge_amount_sum: '123.50',
+    issue_url: '#',
+    issue_title: 'Hello World',
+    issue_org_name: 'polarsource',
+    issue_repo_name: 'polar',
+    issue_number: 123,
+    issue_id: 'xx',
+    maintainer_has_account: false,
+  }
+
+export const notification_maintainerPledgeCreatedNotification: schemas['MaintainerPledgeCreatedNotification'] =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
@@ -278,7 +276,7 @@ export const notification_maintainerPledgeCreatedNotification: components['schem
     payload: maintainerPledgeCreatedNotification,
   }
 
-export const notification_maintainerPledgeConfirmationPendingNotification: components['schemas']['MaintainerPledgeConfirmationPendingNotification'] =
+export const notification_maintainerPledgeConfirmationPendingNotification: schemas['MaintainerPledgeConfirmationPendingNotification'] =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
@@ -286,7 +284,7 @@ export const notification_maintainerPledgeConfirmationPendingNotification: compo
     payload: maintainerPledgeConfirmationPendingNotification,
   }
 
-export const notification_maintainerPledgePendingNotification: components['schemas']['MaintainerPledgePendingNotification'] =
+export const notification_maintainerPledgePendingNotification: schemas['MaintainerPledgePendingNotification'] =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
@@ -294,7 +292,7 @@ export const notification_maintainerPledgePendingNotification: components['schem
     payload: maintainerPledgePendingNotification,
   }
 
-export const notification_maintainerPledgePaidNotification: components['schemas']['MaintainerPledgePaidNotification'] =
+export const notification_maintainerPledgePaidNotification: schemas['MaintainerPledgePaidNotification'] =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
@@ -302,7 +300,7 @@ export const notification_maintainerPledgePaidNotification: components['schemas'
     payload: maintainerPledgePaidNotification,
   }
 
-export const notification_pledgerPledgePendingNotification: components['schemas']['PledgerPledgePendingNotification'] =
+export const notification_pledgerPledgePendingNotification: schemas['PledgerPledgePendingNotification'] =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
@@ -310,7 +308,7 @@ export const notification_pledgerPledgePendingNotification: components['schemas'
     payload: pledgerPledgePendingNotification,
   }
 
-export const notification_rewardPaidNotification: components['schemas']['RewardPaidNotification'] =
+export const notification_rewardPaidNotification: schemas['RewardPaidNotification'] =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
@@ -318,7 +316,7 @@ export const notification_rewardPaidNotification: components['schemas']['RewardP
     payload: rewardPaidNotification,
   }
 
-export const notification_maintainerPledgedIssuePendingNotification: components['schemas']['MaintainerPledgedIssueConfirmationPendingNotification'] =
+export const notification_maintainerPledgedIssuePendingNotification: schemas['MaintainerPledgedIssueConfirmationPendingNotification'] =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),
@@ -326,7 +324,7 @@ export const notification_maintainerPledgedIssuePendingNotification: components[
     payload: maintainerPledgedIssuePendingNotification,
   }
 
-export const notification_maintainerPledgedIssueConfirmationPendingNotification: components['schemas']['MaintainerPledgedIssueConfirmationPendingNotification'] =
+export const notification_maintainerPledgedIssueConfirmationPendingNotification: schemas['MaintainerPledgedIssueConfirmationPendingNotification'] =
   {
     id: 'x',
     created_at: addDays(new Date(), -2).toISOString(),

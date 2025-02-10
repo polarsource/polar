@@ -1,4 +1,4 @@
-import { Client, components, operations, unwrap } from '@polar-sh/client'
+import { Client, operations, schemas, unwrap } from '@polar-sh/client'
 import { getStorefront } from './storefront'
 
 const getIssueBy = async (
@@ -8,7 +8,7 @@ const getIssueBy = async (
     'page' | 'limit' | 'sorting'
   >,
   cacheOverrides?: any,
-): Promise<components['schemas']['Issue'] | undefined> => {
+): Promise<schemas['Issue'] | undefined> => {
   const data = await unwrap(
     api.GET('/v1/issues/', {
       params: {
@@ -29,10 +29,7 @@ export const resolveIssuePath = async (
   repositoryName: string,
   issueNumber: string,
   cacheOverrides?: any,
-): Promise<
-  | [components['schemas']['Issue'], components['schemas']['Organization']]
-  | undefined
-> => {
+): Promise<[schemas['Issue'], schemas['Organization']] | undefined> => {
   const parsedIssueNumber = Number.parseInt(issueNumber, 10)
 
   const storefront = await getStorefront(api, organizationSlug)

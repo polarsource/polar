@@ -4,7 +4,7 @@ import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown
 import { useLoginLink } from '@/hooks/login'
 import { usePostHog } from '@/hooks/posthog'
 import { CONFIG } from '@/utils/config'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
@@ -14,9 +14,9 @@ const PolarMenu = ({
   userOrganizations,
   organization,
 }: {
-  authenticatedUser?: components['schemas']['UserRead']
-  userOrganizations: components['schemas']['Organization'][]
-  organization?: components['schemas']['Organization']
+  authenticatedUser?: schemas['UserRead']
+  userOrganizations: schemas['Organization'][]
+  organization?: schemas['Organization']
 }) => {
   const posthog = usePostHog()
   const loginLink = useLoginLink()

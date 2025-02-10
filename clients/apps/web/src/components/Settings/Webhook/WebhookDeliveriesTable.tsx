@@ -15,7 +15,7 @@ import {
   KeyboardArrowDownOutlined,
   KeyboardArrowRightOutlined,
 } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   DataTable,
@@ -28,13 +28,13 @@ import React, { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface DeliveriesTableProps {
-  organization: components['schemas']['Organization']
-  endpoint: components['schemas']['WebhookEndpoint']
+  organization: schemas['Organization']
+  endpoint: schemas['WebhookEndpoint']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
 }
 
-type DeliveryRow = components['schemas']['WebhookDelivery'] & {
+type DeliveryRow = schemas['WebhookDelivery'] & {
   isSubRow?: boolean
 }
 

@@ -1,25 +1,25 @@
 import { api } from '@/utils/client'
 import { toISODate } from '@/utils/metrics'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 interface GetMetricsRequest {
   startDate: Date
   endDate: Date
-  interval: components['schemas']['TimeInterval']
+  interval: schemas['TimeInterval']
   organization_id?: string
   product_id?: string[]
   customer_id?: string[]
 }
 
-export type ParsedMetricPeriod = components['schemas']['MetricPeriod'] & {
+export type ParsedMetricPeriod = schemas['MetricPeriod'] & {
   timestamp: Date
 }
 
 interface ParsedMetricsResponse {
   periods: ParsedMetricPeriod[]
-  metrics: components['schemas']['Metrics']
+  metrics: schemas['Metrics']
 }
 
 export const useMetrics = ({

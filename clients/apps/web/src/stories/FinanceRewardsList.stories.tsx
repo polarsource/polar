@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import List from '@/components/Finance/ListRewards'
 import { issue } from '@/utils/testdata'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 
 type Story = StoryObj<typeof List>
 
@@ -14,7 +14,7 @@ const meta: Meta<typeof List> = {
 
 export default meta
 
-const pledge: components['schemas']['Pledge'] = {
+const pledge: schemas['Pledge'] = {
   id: 'xx',
   created_at: new Date('2023-06-29').toISOString(),
   modified_at: null,
@@ -28,7 +28,7 @@ const pledge: components['schemas']['Pledge'] = {
   authed_can_admin_sender: false,
 }
 
-const reward: components['schemas']['Reward'] = {
+const reward: schemas['Reward'] = {
   pledge,
   user: {
     public_name: 'foobar',

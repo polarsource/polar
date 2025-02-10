@@ -1,4 +1,4 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import LabeledRadioButton from '@polar-sh/ui/components/atoms/LabeledRadioButton'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
@@ -12,17 +12,15 @@ import IssueBadge from '../Embed/IssueBadge'
 const BadgeMessageForm = (props: {
   value: string
   onUpdateMessage: (comment: string) => Promise<void> // when "update" is clicked
-  onUpdateFundingGoal: (
-    amount: components['schemas']['CurrencyAmount'],
-  ) => Promise<void> // when "update" is clicked
+  onUpdateFundingGoal: (amount: schemas['CurrencyAmount']) => Promise<void> // when "update" is clicked
   showUpdateButton: boolean
   onChangeMessage: (comment: string) => void // real time updates
-  onChangeFundingGoal: (amount: components['schemas']['CurrencyAmount']) => void // real time updates
+  onChangeFundingGoal: (amount: schemas['CurrencyAmount']) => void // real time updates
   innerClassNames: string
   showAmountRaised: boolean
   canSetFundingGoal: boolean
   upfrontSplit: number | null
-  funding: components['schemas']['Funding']
+  funding: schemas['Funding']
   orgName: string
   title?: string
   subtitle?: string

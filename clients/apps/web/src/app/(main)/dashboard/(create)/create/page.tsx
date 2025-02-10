@@ -1,7 +1,7 @@
 import revalidate from '@/app/actions'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getAuthenticatedUser } from '@/utils/user'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -17,7 +17,7 @@ export default async function Page({
 }: {
   searchParams: { slug?: string; auto?: string }
 }) {
-  let validationErrors: components['schemas']['ValidationError'][] = []
+  let validationErrors: schemas['ValidationError'][] = []
   let error: string | undefined = undefined
 
   // Create the organization automatically if the slug is provided and auto is true

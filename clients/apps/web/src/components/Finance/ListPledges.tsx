@@ -4,20 +4,20 @@ import Icon from '@/components/Icons/Icon'
 import RefundIcon from '@/components/Icons/RefundIcon'
 import { githubIssueLink } from '@/utils/github'
 import { dateOrString } from '@/utils/time'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 
 export type Column = 'ESTIMATED_PAYOUT_DATE' | 'REFUNDED_DATE'
 
 const List = (props: {
-  pledges: components['schemas']['Pledge'][]
+  pledges: schemas['Pledge'][]
   columns: Column[]
   title: string
   subtitle: string
 }) => {
   const { pledges, columns, title, subtitle } = props
 
-  const icon = (pledge: components['schemas']['Pledge']) => {
+  const icon = (pledge: schemas['Pledge']) => {
     if (
       pledge.issue.needs_confirmation_solved ||
       pledge.state === 'pending' ||

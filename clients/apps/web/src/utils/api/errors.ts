@@ -1,10 +1,10 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { FieldPath, FieldValues, UseFormSetError } from 'react-hook-form'
 
 type ValidationErrorsMap = Record<string, string[]>
 
 export const getValidationErrorsMap = (
-  errors: components['schemas']['ValidationError'][],
+  errors: schemas['ValidationError'][],
 ): ValidationErrorsMap => {
   return errors.reduce<ValidationErrorsMap>((map, error) => {
     const loc = error.loc.slice(1).join('.')
@@ -22,7 +22,7 @@ export const getValidationErrorsMap = (
 }
 
 export const setValidationErrors = <TFieldValues extends FieldValues>(
-  errors: components['schemas']['ValidationError'][],
+  errors: schemas['ValidationError'][],
   setError: UseFormSetError<TFieldValues>,
   slice: number = 1,
   discriminators?: string[] | undefined,

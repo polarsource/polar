@@ -1,5 +1,5 @@
 import { queryClient } from '@/utils/api/query'
-import { Client, components, operations, unwrap } from '@polar-sh/client'
+import { Client, operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -44,7 +44,7 @@ export const useCustomerBenefitGrantUpdate = (api: Client) =>
   useMutation({
     mutationFn: (variables: {
       id: string
-      body: components['schemas']['CustomerBenefitGrantUpdate']
+      body: schemas['CustomerBenefitGrantUpdate']
     }) =>
       api.PATCH('/v1/customer-portal/benefit-grants/{id}', {
         params: { path: { id: variables.id } },
@@ -170,7 +170,7 @@ export const useCustomerUpdateSubscription = (api: Client) =>
   useMutation({
     mutationFn: (variables: {
       id: string
-      body: components['schemas']['CustomerSubscriptionUpdate']
+      body: schemas['CustomerSubscriptionUpdate']
     }) =>
       api.PATCH('/v1/customer-portal/subscriptions/{id}', {
         params: { path: { id: variables.id } },
@@ -190,7 +190,7 @@ export const useCustomerCancelSubscription = (api: Client) =>
   useMutation({
     mutationFn: (variables: {
       id: string
-      body: components['schemas']['CustomerSubscriptionCancel']
+      body: schemas['CustomerSubscriptionCancel']
     }) =>
       api.PATCH('/v1/customer-portal/subscriptions/{id}', {
         params: { path: { id: variables.id } },

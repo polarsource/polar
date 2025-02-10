@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { Metadata } from 'next'
 import ClientPage from './ClientPage'
 
@@ -17,7 +17,7 @@ export default async function Page({
 }: {
   params: { organization: string }
   searchParams: DataTableSearchParams & {
-    type?: components['schemas']['CustomFieldType']
+    type?: schemas['CustomFieldType']
   }
 }) {
   const api = getServerSideAPI()

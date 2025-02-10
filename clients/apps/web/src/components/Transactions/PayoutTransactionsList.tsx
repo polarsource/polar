@@ -5,7 +5,7 @@ import {
   DataTableSortingState,
 } from '@/utils/datatable'
 import { DownloadOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import {
   DataTableColumnDef,
   ReactQueryLoading,
@@ -14,7 +14,7 @@ import Link from 'next/link'
 import TransactionsList, { isTransaction } from './TransactionsList'
 
 interface PayoutTransactionsListProps {
-  transactions: components['schemas']['Transaction'][]
+  transactions: schemas['Transaction'][]
   pageCount: number
   pagination: DataTablePaginationState
   onPaginationChange?: DataTableOnChangeFn<DataTablePaginationState>
@@ -33,8 +33,7 @@ const PayoutTransactionsList = ({
   isLoading,
 }: PayoutTransactionsListProps) => {
   const extraColumns: DataTableColumnDef<
-    | components['schemas']['Transaction']
-    | components['schemas']['TransactionEmbedded']
+    schemas['Transaction'] | schemas['TransactionEmbedded']
   >[] = [
     {
       id: 'actions',

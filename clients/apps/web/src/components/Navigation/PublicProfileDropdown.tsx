@@ -10,7 +10,7 @@ import {
   ShoppingBagOutlined,
   SpaceDashboardOutlined,
 } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import Link from 'next/link'
@@ -23,7 +23,7 @@ const PublicProfileDropdown = ({
   authenticatedUser,
 }: {
   className?: string
-  authenticatedUser: components['schemas']['UserRead'] | undefined
+  authenticatedUser: schemas['UserRead'] | undefined
 }) => {
   const classNames = twMerge('relative', className)
 

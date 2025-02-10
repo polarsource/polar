@@ -4,7 +4,7 @@ import {
   useIssueMarkConfirmed,
   useListPledesForIssue,
 } from '@/hooks/queries'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { useState } from 'react'
 import Spinner from '../Shared/Spinner'
 import Split, { Contributor, Share } from './Split'
@@ -19,7 +19,7 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
 
   const [showNotifyScreen, setShowNotifyScreen] = useState(false)
   const [notifySplits, setNotifySplits] = useState<
-    components['schemas']['ConfirmIssueSplit'][]
+    schemas['ConfirmIssueSplit'][]
   >([])
 
   const markSolved = useIssueMarkConfirmed()
@@ -44,7 +44,7 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
       return
     }
 
-    const splits: components['schemas']['ConfirmIssueSplit'][] = shares
+    const splits: schemas['ConfirmIssueSplit'][] = shares
       .filter((s) => s.share_thousands !== undefined && s.share_thousands > 0)
       .map((s) => {
         // reward to self org

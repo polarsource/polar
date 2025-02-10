@@ -3,7 +3,7 @@
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import { useAuth } from '@/hooks'
 import { ArrowForwardOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -16,8 +16,8 @@ const Topbar = ({
   userOrganizations,
 }: {
   hideProfile?: boolean
-  authenticatedUser: components['schemas']['UserRead'] | undefined
-  userOrganizations: components['schemas']['Organization'][]
+  authenticatedUser: schemas['UserRead'] | undefined
+  userOrganizations: schemas['Organization'][]
 }) => {
   // Fallback to client side user loading
   const { currentUser: clientCurrentUser } = useAuth()

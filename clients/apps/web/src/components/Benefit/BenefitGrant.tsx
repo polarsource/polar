@@ -1,5 +1,5 @@
 import { useCustomerBenefitGrantUpdate } from '@/hooks/queries'
-import { Client, components } from '@polar-sh/client'
+import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Select,
@@ -18,13 +18,13 @@ import { benefitsDisplayNames, resolveBenefitIcon } from './utils'
 
 interface BenefitGrantProps {
   api: Client
-  benefitGrant: components['schemas']['CustomerBenefitGrant']
+  benefitGrant: schemas['CustomerBenefitGrant']
 }
 
 const BenefitGrantCustom = ({
   benefitGrant,
 }: {
-  benefitGrant: components['schemas']['CustomerBenefitGrantCustom']
+  benefitGrant: schemas['CustomerBenefitGrantCustom']
 }) => {
   const {
     benefit: {
@@ -52,8 +52,8 @@ const BenefitGrantOAuth = ({
 }: {
   api: Client
   benefitGrant:
-    | components['schemas']['CustomerBenefitGrantGitHubRepository']
-    | components['schemas']['CustomerBenefitGrantDiscord']
+    | schemas['CustomerBenefitGrantGitHubRepository']
+    | schemas['CustomerBenefitGrantDiscord']
   platform: 'github' | 'discord'
   openButtonText: string
   openButtonUrl: string
@@ -177,7 +177,7 @@ const BenefitGrantGitHubRepository = ({
   benefitGrant,
 }: {
   api: Client
-  benefitGrant: components['schemas']['CustomerBenefitGrantGitHubRepository']
+  benefitGrant: schemas['CustomerBenefitGrantGitHubRepository']
 }) => {
   const {
     benefit: {
@@ -202,7 +202,7 @@ const BenefitGrantDiscord = ({
   benefitGrant,
 }: {
   api: Client
-  benefitGrant: components['schemas']['CustomerBenefitGrantDiscord']
+  benefitGrant: schemas['CustomerBenefitGrantDiscord']
 }) => {
   const {
     benefit: {
@@ -244,16 +244,14 @@ export const BenefitGrant = ({ api, benefitGrant }: BenefitGrantProps) => {
       </div>
       {benefit.type === 'custom' && (
         <BenefitGrantCustom
-          benefitGrant={
-            benefitGrant as components['schemas']['CustomerBenefitGrantCustom']
-          }
+          benefitGrant={benefitGrant as schemas['CustomerBenefitGrantCustom']}
         />
       )}
       {benefit.type === 'downloadables' && (
         <DownloadablesBenefitGrant
           api={api}
           benefitGrant={
-            benefitGrant as components['schemas']['CustomerBenefitGrantDownloadables']
+            benefitGrant as schemas['CustomerBenefitGrantDownloadables']
           }
         />
       )}
@@ -261,7 +259,7 @@ export const BenefitGrant = ({ api, benefitGrant }: BenefitGrantProps) => {
         <LicenseKeyBenefitGrant
           api={api}
           benefitGrant={
-            benefitGrant as components['schemas']['CustomerBenefitGrantLicenseKeys']
+            benefitGrant as schemas['CustomerBenefitGrantLicenseKeys']
           }
         />
       )}
@@ -269,16 +267,14 @@ export const BenefitGrant = ({ api, benefitGrant }: BenefitGrantProps) => {
         <BenefitGrantGitHubRepository
           api={api}
           benefitGrant={
-            benefitGrant as components['schemas']['CustomerBenefitGrantGitHubRepository']
+            benefitGrant as schemas['CustomerBenefitGrantGitHubRepository']
           }
         />
       )}
       {benefit.type === 'discord' && (
         <BenefitGrantDiscord
           api={api}
-          benefitGrant={
-            benefitGrant as components['schemas']['CustomerBenefitGrantDiscord']
-          }
+          benefitGrant={benefitGrant as schemas['CustomerBenefitGrantDiscord']}
         />
       )}
     </div>

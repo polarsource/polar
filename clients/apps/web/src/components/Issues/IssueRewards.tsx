@@ -1,18 +1,14 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import { twMerge } from 'tailwind-merge'
 
-const IssueRewards = ({
-  rewards,
-}: {
-  rewards: components['schemas']['Reward'][]
-}) => {
+const IssueRewards = ({ rewards }: { rewards: schemas['Reward'][] }) => {
   const paidOutSum = rewards
     .filter((r) => r.state === 'paid')
     .map((r) => r.amount.amount)
     .reduce((a, b) => a + b, 0)
 
-  const isAtRisk = (r: components['schemas']['Reward']) => {
+  const isAtRisk = (r: schemas['Reward']) => {
     if (r.pledge.refunded_at) {
       return true
     }

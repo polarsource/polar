@@ -2,14 +2,14 @@
 
 import CustomerPortalOrder from '@/components/CustomerPortal/CustomerPortalOrder'
 import { createClientSideAPI } from '@/utils/client'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 
 const ClientPage = ({
   order,
   customerSessionToken,
 }: {
-  organization: components['schemas']['Organization']
-  order: components['schemas']['CustomerOrder']
+  organization: schemas['Organization']
+  order: schemas['CustomerOrder']
   customerSessionToken?: string
 }) => {
   const api = createClientSideAPI(customerSessionToken)

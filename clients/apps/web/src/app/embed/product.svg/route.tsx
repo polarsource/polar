@@ -1,6 +1,6 @@
 import { ProductCardEmbed } from '@/components/Embed/ProductCardEmbed'
 import { getServerURL } from '@/utils/api'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
@@ -28,7 +28,7 @@ const getEmbed = async (
   productId: string,
   productPriceId?: string,
   cachedEtag?: string,
-): Promise<components['schemas']['ProductEmbed'] | Response> => {
+): Promise<schemas['ProductEmbed'] | Response> => {
   let path = `/v1/embed/product/${productId}`
   if (productPriceId) {
     path += `?price_id=${productPriceId}`
@@ -56,11 +56,11 @@ const getEmbed = async (
     return generate404Response()
   }
 
-  return (await response.json()) as components['schemas']['ProductEmbed']
+  return (await response.json()) as schemas['ProductEmbed']
 }
 
 const render = async (
-  embed: components['schemas']['ProductEmbed'],
+  embed: schemas['ProductEmbed'],
   cta?: string,
   darkmode?: boolean,
 ) => {

@@ -2,7 +2,7 @@
 
 import { useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components, isValidationError } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
@@ -23,7 +23,7 @@ interface Features {
 const FeatureSettings = ({
   organization,
 }: {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }) => {
   const form = useForm<Features>({
     defaultValues: {

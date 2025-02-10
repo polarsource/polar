@@ -12,7 +12,7 @@ import {
   BanknotesIcon,
   CurrencyDollarIcon,
 } from '@heroicons/react/20/solid'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -27,17 +27,11 @@ const Pledges = () => {
   const rewards = useBackofficeRewardsPending()
 
   const groupRewardsByPledge = (
-    rewards: Array<components['schemas']['BackofficeReward']>,
-  ): Array<Array<components['schemas']['BackofficeReward']>> => {
+    rewards: Array<schemas['BackofficeReward']>,
+  ): Array<Array<schemas['BackofficeReward']>> => {
     const byPledgeId =
       rewards.reduce(
-        (
-          hash: Record<
-            string,
-            Array<components['schemas']['BackofficeReward']>
-          >,
-          obj,
-        ) => ({
+        (hash: Record<string, Array<schemas['BackofficeReward']>>, obj) => ({
           ...hash,
           [obj.pledge.id]: (hash[obj.pledge.id] || []).concat(obj),
         }),
@@ -47,17 +41,11 @@ const Pledges = () => {
   }
 
   const groupRewardsByIssue = (
-    rewards: Array<components['schemas']['BackofficeReward']>,
-  ): Array<Array<components['schemas']['BackofficeReward']>> => {
+    rewards: Array<schemas['BackofficeReward']>,
+  ): Array<Array<schemas['BackofficeReward']>> => {
     const byIssueId =
       rewards.reduce(
-        (
-          hash: Record<
-            string,
-            Array<components['schemas']['BackofficeReward']>
-          >,
-          obj,
-        ) => ({
+        (hash: Record<string, Array<schemas['BackofficeReward']>>, obj) => ({
           ...hash,
           [obj.pledge.issue.id]: (hash[obj.pledge.issue.id] || []).concat(obj),
         }),
@@ -72,7 +60,7 @@ const Pledges = () => {
     )
     // const byIssue =
     //   rewards.data?.items.reduce(
-    //     (hash: Record<string, Array<components['schemas']['BackofficeReward']>>, obj) => ({
+    //     (hash: Record<string, Array<schemas['BackofficeReward']>>, obj) => ({
     //       ...hash,
     //       [obj.pledge.issue.id]: (hash[obj.pledge.issue.id] || []).concat(obj),
     //     }),

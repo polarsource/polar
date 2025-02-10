@@ -3,7 +3,7 @@
 import { useCustomerPortalSessionAuthenticate } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { api } from '@/utils/client'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   InputOTP,
@@ -25,7 +25,7 @@ import { useForm } from 'react-hook-form'
 const ClientPage = ({
   organization,
 }: {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }) => {
   const router = useRouter()
   const form = useForm<{ code: string }>()

@@ -1,11 +1,9 @@
-import { Client, components, unwrap } from '@polar-sh/client'
+import { Client, schemas, unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
 export const hasIntervals = (
-  product:
-    | components['schemas']['ProductStorefront']
-    | components['schemas']['CheckoutProduct'],
+  product: schemas['ProductStorefront'] | schemas['CheckoutProduct'],
 ): [boolean, boolean, boolean] => {
   const hasMonthInterval = product.prices.some(
     (price) =>
@@ -23,7 +21,7 @@ export const hasIntervals = (
 const _getProductById = async (
   api: Client,
   id: string,
-): Promise<components['schemas']['Product']> => {
+): Promise<schemas['Product']> => {
   return unwrap(
     api.GET('/v1/products/{id}', {
       params: {

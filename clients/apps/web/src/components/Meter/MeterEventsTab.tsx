@@ -1,16 +1,12 @@
 'use client'
 
 import { useMeterEvents } from '@/hooks/queries/meters'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { useMemo } from 'react'
 import { MeterEvents } from './MeterEvents'
 
-const MeterEventsTab = ({
-  meter,
-}: {
-  meter: components['schemas']['Meter']
-}) => {
+const MeterEventsTab = ({ meter }: { meter: schemas['Meter'] }) => {
   const { data, fetchNextPage, isFetching, hasNextPage } = useMeterEvents(
     meter.id,
   )

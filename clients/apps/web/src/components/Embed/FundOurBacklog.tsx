@@ -1,4 +1,4 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 
 const PolarLogo = () => {
@@ -59,7 +59,7 @@ export const FundOurBacklog = ({
   issues,
   issueCount,
 }: {
-  issues: components['schemas']['Issue'][]
+  issues: schemas['Issue'][]
   issueCount: number
 }) => {
   const showIssues = issues.slice(0, 5)

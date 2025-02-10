@@ -2,7 +2,7 @@ import { githubIssueUrl } from '@/utils/github'
 import { formatStarsNumber } from '@/utils/stars'
 import { HeartIcon, StarIcon } from '@heroicons/react/24/solid'
 import { ChatBubbleOutline } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Alert from '@polar-sh/ui/components/atoms/Alert'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import IssueBodyRenderer from '@polar-sh/ui/components/atoms/IssueBodyRenderer'
@@ -20,12 +20,12 @@ const IssueCard = ({
   currentPledgeAmount,
   rewards,
 }: {
-  issue: components['schemas']['Issue']
-  organization: components['schemas']['Organization']
+  issue: schemas['Issue']
+  organization: schemas['Organization']
   htmlBody?: string
-  pledgers: components['schemas']['Pledger'][]
+  pledgers: schemas['Pledger'][]
   currentPledgeAmount: number
-  rewards?: components['schemas']['RewardsSummary']
+  rewards?: schemas['RewardsSummary']
 }) => {
   const { repository } = issue
   const { organization: externalOrganization } = repository
@@ -225,8 +225,8 @@ const FundingGoal = ({
   pledgers,
   currentPledgeAmount,
 }: {
-  funding: components['schemas']['Funding']
-  pledgers: components['schemas']['Pledger'][]
+  funding: schemas['Funding']
+  pledgers: schemas['Pledger'][]
   currentPledgeAmount: number
 }) => {
   const { pledges_sum, funding_goal } = funding
@@ -291,7 +291,7 @@ const FundingGoal = ({
 const RewardsReceivers = ({
   rewards,
 }: {
-  rewards: components['schemas']['RewardsSummary']
+  rewards: schemas['RewardsSummary']
 }) => (
   <div className="flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-gray-50 py-0.5 pl-0.5 pr-2 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400">
     <div className="flex flex-shrink-0 -space-x-1.5">
@@ -309,11 +309,7 @@ const RewardsReceivers = ({
   </div>
 )
 
-const Assignees = ({
-  assignees,
-}: {
-  assignees: components['schemas']['Assignee'][]
-}) => (
+const Assignees = ({ assignees }: { assignees: schemas['Assignee'][] }) => (
   <div className="flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-blue-50 py-0.5 pl-0.5 pr-2 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400">
     <div className="flex flex-shrink-0 -space-x-1.5">
       {assignees.map((a) => (

@@ -5,7 +5,7 @@ import MeterForm from '@/components/Meter/MeterForm'
 import { useToast } from '@/components/Toast/use-toast'
 import { useMeter, useUpdateMeter } from '@/hooks/queries/meters'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components, isValidationError } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
@@ -16,12 +16,12 @@ const ClientPage = ({
   meter: _meter,
   organization,
 }: {
-  meter: components['schemas']['Meter']
-  organization: components['schemas']['Organization']
+  meter: schemas['Meter']
+  organization: schemas['Organization']
 }) => {
   const router = useRouter()
   const { data: meter } = useMeter(_meter.id, _meter)
-  const form = useForm<components['schemas']['MeterUpdate']>({
+  const form = useForm<schemas['MeterUpdate']>({
     defaultValues: meter,
   })
   const { handleSubmit, setError } = form
@@ -29,7 +29,7 @@ const ClientPage = ({
   const { toast } = useToast()
 
   const onSubmit = useCallback(
-    async (body: components['schemas']['MeterUpdate']) => {
+    async (body: schemas['MeterUpdate']) => {
       const { data: meter, error } = await updateMeter.mutateAsync(body)
       if (error) {
         if (isValidationError(error.detail)) {

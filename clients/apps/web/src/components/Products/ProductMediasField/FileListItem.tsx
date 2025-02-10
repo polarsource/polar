@@ -7,12 +7,10 @@ import { twMerge } from 'tailwind-merge'
 import { FileObject } from '@/components/FileUpload'
 import { toast } from '@/components/Toast/use-toast'
 import { ClearOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { useMemo } from 'react'
 
-type ProductMediaFileObject = FileObject<
-  components['schemas']['ProductMediaFileRead']
->
+type ProductMediaFileObject = FileObject<schemas['ProductMediaFileRead']>
 
 export const FileListItem = ({
   file,

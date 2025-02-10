@@ -8,7 +8,7 @@ import {
 import { useOrganizationSSE } from '@/hooks/sse'
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import { InfoOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -41,21 +41,18 @@ interface MappedRepoSettings {
   minimum_amount: number
   message: string | undefined
   repositories: {
-    [id: string]: components['schemas']['RepositoryBadgeSettingsRead']
+    [id: string]: schemas['RepositoryBadgeSettingsRead']
   }
   repositories_order: string[]
 }
 
 const getMappedSettings = (
-  remote: components['schemas']['OrganizationBadgeSettingsRead'] | undefined,
+  remote: schemas['OrganizationBadgeSettingsRead'] | undefined,
 ): MappedRepoSettings | undefined => {
   if (!remote) return undefined
 
   let order: string[] = []
-  let mapped: Record<
-    string,
-    components['schemas']['RepositoryBadgeSettingsRead']
-  > = {}
+  let mapped: Record<string, schemas['RepositoryBadgeSettingsRead']> = {}
   remote.repositories.map((repo) => {
     order.push(repo.id)
     mapped[repo.id] = repo
@@ -72,7 +69,7 @@ const getMappedSettings = (
 }
 
 const getRetroactiveChanges = (
-  repos: components['schemas']['RepositoryBadgeSettingsRead'][],
+  repos: schemas['RepositoryBadgeSettingsRead'][],
 ): AllRetroactiveChanges => {
   return repos.reduce(
     (ret: Record<string, RetroactiveChanges>, repo): AllRetroactiveChanges => {
@@ -104,7 +101,7 @@ const BadgeSetup = ({
   setSyncIssuesCount,
   isSettingPage = false,
 }: {
-  org: components['schemas']['Organization']
+  org: schemas['Organization']
   showControls: boolean
   setShowControls: (state: boolean) => void
   setSyncIssuesCount: (state: number) => void
@@ -219,7 +216,7 @@ const BadgeSetup = ({
   const [anyBadgeSettingChanged, setAnyBadgeSettingChanged] = useState(false)
 
   const onEnableBadgeChange = (
-    repo: components['schemas']['RepositoryBadgeSettingsRead'],
+    repo: schemas['RepositoryBadgeSettingsRead'],
     enabled: boolean,
   ) => {
     setAnyBadgeSettingChanged(true)
@@ -436,7 +433,7 @@ export const Controls = ({
   isSettingPage,
   anyBadgeSettingChanged,
 }: {
-  org: components['schemas']['Organization']
+  org: schemas['Organization']
   showControls: boolean
   setShowControls: (state: boolean) => void
   isRetroactiveEnabled: boolean
@@ -453,7 +450,7 @@ export const Controls = ({
   }
 
   const isRetroactiveApplicable = (
-    repo: components['schemas']['RepositoryBadgeSettingsRead'],
+    repo: schemas['RepositoryBadgeSettingsRead'],
   ): boolean => {
     if (!isRetroactiveEnabled) return false
     if (!retroactiveChanges) return false
@@ -468,7 +465,7 @@ export const Controls = ({
   const updateBadgeSettings = useUpdateOrganizationBadgeSettings()
 
   const save = async () => {
-    const data: components['schemas']['OrganizationBadgeSettingsUpdate'] = {
+    const data: schemas['OrganizationBadgeSettingsUpdate'] = {
       show_amount: settings.show_amount,
       minimum_amount: settings.minimum_amount,
       message: settings.message || '',

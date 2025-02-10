@@ -2,17 +2,15 @@ import {
   getRecurringBillingLabel,
   getRecurringProductPrice,
 } from '@/components/Subscriptions/utils'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import { useProducts } from './queries'
 
 export const useRecurringInterval = (
-  products: components['schemas']['ProductStorefront'][],
+  products: schemas['ProductStorefront'][],
 ): [
-  components['schemas']['SubscriptionRecurringInterval'],
-  Dispatch<
-    SetStateAction<components['schemas']['SubscriptionRecurringInterval']>
-  >,
+  schemas['SubscriptionRecurringInterval'],
+  Dispatch<SetStateAction<schemas['SubscriptionRecurringInterval']>>,
   boolean,
 ] => {
   const hasMonthInterval = useMemo(() => {
@@ -37,16 +35,16 @@ export const useRecurringInterval = (
   )
 
   const [recurringInterval, setRecurringInterval] = useState<
-    components['schemas']['SubscriptionRecurringInterval']
+    schemas['SubscriptionRecurringInterval']
   >(hasBothIntervals ? 'month' : hasYearInterval ? 'year' : 'month')
 
   return [recurringInterval, setRecurringInterval, hasBothIntervals]
 }
 
 export const useRecurringProductPrice = (
-  product: Partial<components['schemas']['ProductStorefront']>,
-  recurringInterval: components['schemas']['SubscriptionRecurringInterval'],
-): components['schemas']['ProductPriceRecurring'] | undefined => {
+  product: Partial<schemas['ProductStorefront']>,
+  recurringInterval: schemas['SubscriptionRecurringInterval'],
+): schemas['ProductPriceRecurring'] | undefined => {
   return useMemo(
     () => getRecurringProductPrice(product, recurringInterval),
     [product, recurringInterval],
@@ -54,9 +52,7 @@ export const useRecurringProductPrice = (
 }
 
 export const useRecurringBillingLabel = (
-  recurringInterval:
-    | components['schemas']['SubscriptionRecurringInterval']
-    | null,
+  recurringInterval: schemas['SubscriptionRecurringInterval'] | null,
 ) => {
   return useMemo(
     () =>
@@ -67,10 +63,7 @@ export const useRecurringBillingLabel = (
 
 export const useProductsByPriceType = (
   organizationId: string,
-): Record<
-  components['schemas']['ProductPriceType'],
-  components['schemas']['Product'][]
-> => {
+): Record<schemas['ProductPriceType'], schemas['Product'][]> => {
   const { data: products } = useProducts(organizationId, { limit: 100 })
   return useMemo(
     () => ({

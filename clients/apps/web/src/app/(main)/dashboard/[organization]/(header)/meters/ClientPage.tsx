@@ -9,7 +9,7 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { AddOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   PaginationState,
@@ -27,7 +27,7 @@ const ClientPage = ({
 }: {
   sorting: SortingState
   pagination: PaginationState
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }) => {
   console.log('ClientPage', sorting, pagination, organization)
   const router = useRouter()

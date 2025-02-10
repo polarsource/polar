@@ -1,10 +1,10 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 
 export type DashboardFilters = {
   q: string
   onlyPledged: boolean
   onlyBadged: boolean
-  sort?: components['schemas']['IssueSortBy']
+  sort?: schemas['IssueSortBy']
   showClosed: boolean
 }
 

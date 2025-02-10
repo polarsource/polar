@@ -1,6 +1,6 @@
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { components, operations, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@polar-sh/client'
 import {
   useInfiniteQuery,
   useMutation,
@@ -29,10 +29,7 @@ export const useMeters = (
     retry: defaultRetry,
   })
 
-export const useMeter = (
-  id: string,
-  initialData?: components['schemas']['Meter'],
-) =>
+export const useMeter = (id: string, initialData?: schemas['Meter']) =>
   useQuery({
     queryKey: ['meters', { id }],
     queryFn: () =>
@@ -67,7 +64,7 @@ export const useMeterQuantities = (
   id: string,
   startTimestamp: Date,
   endTimestamp: Date,
-  interval: components['schemas']['TimeInterval'],
+  interval: schemas['TimeInterval'],
   parameters?: Omit<
     operations['meters:quantities']['parameters']['query'],
     'id' | 'startTimestamp' | 'endTimestamp' | 'interval'
@@ -105,7 +102,7 @@ export const useMeterQuantities = (
 
 export const useCreateMeter = (organizationId: string) =>
   useMutation({
-    mutationFn: (data: components['schemas']['MeterCreate']) =>
+    mutationFn: (data: schemas['MeterCreate']) =>
       api.POST('/v1/meters/', {
         body: { ...data, organization_id: organizationId },
       }),
@@ -121,7 +118,7 @@ export const useCreateMeter = (organizationId: string) =>
 
 export const useUpdateMeter = (id: string) =>
   useMutation({
-    mutationFn: (body: components['schemas']['MeterUpdate']) =>
+    mutationFn: (body: schemas['MeterUpdate']) =>
       api.PATCH('/v1/meters/{id}', {
         params: { path: { id } },
         body,

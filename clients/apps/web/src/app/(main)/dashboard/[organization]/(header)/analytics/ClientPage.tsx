@@ -7,7 +7,7 @@ import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import ProductSelect from '@/components/Products/ProductSelect'
 import { ParsedMetricPeriod, useMetrics } from '@/hooks/queries'
 import { fromISODate, toISODate } from '@/utils/metrics'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -20,11 +20,11 @@ export default function ClientPage({
   interval,
   productId,
 }: {
-  organization: components['schemas']['Organization']
-  limits: components['schemas']['MetricsLimits']
+  organization: schemas['Organization']
+  limits: schemas['MetricsLimits']
   startDate: Date
   endDate: Date
-  interval: components['schemas']['TimeInterval']
+  interval: schemas['TimeInterval']
   productId?: string[]
 }) {
   const router = useRouter()
@@ -50,7 +50,7 @@ export default function ClientPage({
 
   const getSearchParams = (
     dateRange: { from: Date; to: Date },
-    interval: components['schemas']['TimeInterval'],
+    interval: schemas['TimeInterval'],
     productId?: string[],
   ) => {
     const params = new URLSearchParams()
@@ -66,7 +66,7 @@ export default function ClientPage({
   }
 
   const onIntervalChange = useCallback(
-    (interval: components['schemas']['TimeInterval']) => {
+    (interval: schemas['TimeInterval']) => {
       const params = getSearchParams(
         { from: startDate, to: endDate },
         interval,
@@ -97,21 +97,21 @@ export default function ClientPage({
     [router, organization, interval, startDate, endDate],
   )
 
-  const generalEvents: (keyof components['schemas']['Metrics'])[] = [
+  const generalEvents: (keyof schemas['Metrics'])[] = [
     'revenue',
     'monthly_recurring_revenue',
     'orders',
     'average_order_value',
     'cumulative_revenue',
   ]
-  const subscriptionEvents: (keyof components['schemas']['Metrics'])[] = [
+  const subscriptionEvents: (keyof schemas['Metrics'])[] = [
     'active_subscriptions',
     'new_subscriptions',
     'renewed_subscriptions',
     'new_subscriptions_revenue',
     'renewed_subscriptions_revenue',
   ]
-  const oneTimeEvents: (keyof components['schemas']['Metrics'])[] = [
+  const oneTimeEvents: (keyof schemas['Metrics'])[] = [
     'one_time_products',
     'one_time_products_revenue',
   ]
@@ -178,10 +178,10 @@ export default function ClientPage({
 
 interface MetricGroupProps {
   title: string
-  metricKeys: (keyof components['schemas']['Metrics'])[]
-  metrics: components['schemas']['Metrics']
+  metricKeys: (keyof schemas['Metrics'])[]
+  metrics: schemas['Metrics']
   periods: ParsedMetricPeriod[]
-  interval: components['schemas']['TimeInterval']
+  interval: schemas['TimeInterval']
 }
 
 const MetricGroup = ({
@@ -201,9 +201,7 @@ const MetricGroup = ({
               key={metricKey}
               data={periods}
               interval={interval}
-              metric={
-                metrics[metricKey as keyof components['schemas']['Metrics']]
-              }
+              metric={metrics[metricKey as keyof schemas['Metrics']]}
               height={200}
               maxTicks={5}
               className={twMerge(

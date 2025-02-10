@@ -1,6 +1,6 @@
 import { usePayoutEstimate } from '@/hooks/queries'
 import { api } from '@/utils/client'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import React, { useCallback, useEffect, useState } from 'react'
@@ -8,7 +8,7 @@ import { Modal } from '../Modal'
 import { toast } from '../Toast/use-toast'
 
 interface WithdrawModalProps {
-  account: components['schemas']['Account']
+  account: schemas['Account']
   isShown: boolean
   hide: () => void
   onSuccess?: (payoutId: string) => void
@@ -24,7 +24,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [payoutEstimate, setPayoutEstimate] = useState<
-    components['schemas']['PayoutEstimate'] | null
+    schemas['PayoutEstimate'] | null
   >(null)
 
   const getPayoutEstimate = useCallback(async () => {

@@ -11,12 +11,12 @@ import {
   pledgesSummaries,
   user,
 } from '@/utils/testdata'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import IssueListItem from './IssueListItem'
 
 type Story = StoryObj<typeof IssueListItem>
 
-const pledges: components['schemas']['Pledge'][] = [
+const pledges: schemas['Pledge'][] = [
   {
     id: 'xx',
     created_at: new Date('2023-10-17').toISOString(),
@@ -36,7 +36,7 @@ const pledges: components['schemas']['Pledge'][] = [
   },
 ]
 
-const pledgeDisputable: components['schemas']['Pledge'][] = [
+const pledgeDisputable: schemas['Pledge'][] = [
   {
     ...pledges[0],
     state: 'pending',
@@ -46,7 +46,7 @@ const pledgeDisputable: components['schemas']['Pledge'][] = [
   },
 ]
 
-const pledgeDisputableToday: components['schemas']['Pledge'][] = [
+const pledgeDisputableToday: schemas['Pledge'][] = [
   {
     ...pledges[0],
     state: 'pending',
@@ -56,7 +56,7 @@ const pledgeDisputableToday: components['schemas']['Pledge'][] = [
   },
 ]
 
-const pledgeDisputableYesterday: components['schemas']['Pledge'][] = [
+const pledgeDisputableYesterday: schemas['Pledge'][] = [
   {
     ...pledges[0],
     state: 'pending',
@@ -66,7 +66,7 @@ const pledgeDisputableYesterday: components['schemas']['Pledge'][] = [
   },
 ]
 
-const pledgeDisputed: components['schemas']['Pledge'][] = [
+const pledgeDisputed: schemas['Pledge'][] = [
   {
     ...pledges[0],
     state: 'disputed',
@@ -75,7 +75,7 @@ const pledgeDisputed: components['schemas']['Pledge'][] = [
   },
 ]
 
-const pledgeDisputedByOther: components['schemas']['Pledge'][] = [
+const pledgeDisputedByOther: schemas['Pledge'][] = [
   {
     ...pledges[0],
     state: 'disputed',
@@ -588,7 +588,7 @@ export const PublicReward: Story = {
   },
 }
 
-const reward: components['schemas']['Reward'] = {
+const reward: schemas['Reward'] = {
   pledge: pledgePublicAPI,
   state: 'pending',
   amount: { currency: 'usd', amount: 4000 },

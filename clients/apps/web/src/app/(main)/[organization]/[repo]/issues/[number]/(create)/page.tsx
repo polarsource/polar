@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { resolveIssuePath } from '@/utils/issue'
 import { organizationPageLink } from '@/utils/nav'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -101,8 +101,8 @@ export default async function Page({
   }
 
   let issueHTMLBody: string | undefined
-  let pledgers: components['schemas']['Pledger'][] = []
-  let rewards: components['schemas']['RewardsSummary'] | undefined
+  let pledgers: schemas['Pledger'][] = []
+  let rewards: schemas['RewardsSummary'] | undefined
 
   const [bodyResponse, pledgeSummary, rewardsSummary] = await Promise.all([
     unwrap(
@@ -128,7 +128,7 @@ export default async function Page({
   issueHTMLBody = bodyResponse as string
   pledgers = pledgeSummary.pledges
     .map(({ pledger }) => pledger)
-    .filter((p): p is components['schemas']['Pledger'] => !!p)
+    .filter((p): p is schemas['Pledger'] => !!p)
   rewards = rewardsSummary
 
   // Closed issue, redirect to donation instead if linked organization

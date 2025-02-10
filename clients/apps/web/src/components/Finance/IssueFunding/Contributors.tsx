@@ -2,12 +2,12 @@
 
 import Finance from '@/components/Finance/Finance'
 import { useListPledgesForOrganization, useListRewards } from '@/hooks/queries'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 
 export default function ClientPage({
   organization,
 }: {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }) {
   const pledges = useListPledgesForOrganization(organization.id)
   const rewards = useListRewards(organization.id)

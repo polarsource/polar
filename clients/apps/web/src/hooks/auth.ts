@@ -1,17 +1,17 @@
 import { usePostHog } from '@/hooks/posthog'
 import { AuthContext } from '@/providers/auth'
 import { api } from '@/utils/client'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import * as Sentry from '@sentry/nextjs'
 import { useContext, useEffect } from 'react'
 
 export const useAuth = (): {
   authenticated: boolean
-  currentUser: components['schemas']['UserRead'] | undefined
+  currentUser: schemas['UserRead'] | undefined
   reloadUser: () => Promise<undefined>
-  userOrganizations: components['schemas']['Organization'][]
+  userOrganizations: schemas['Organization'][]
   setUserOrganizations: React.Dispatch<
-    React.SetStateAction<components['schemas']['Organization'][]>
+    React.SetStateAction<schemas['Organization'][]>
   >
 } => {
   const posthog = usePostHog()

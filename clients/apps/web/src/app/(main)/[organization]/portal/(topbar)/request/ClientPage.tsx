@@ -8,7 +8,7 @@ import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useRouter } from 'next/navigation'
 
 import { api } from '@/utils/client'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import {
   Form,
   FormControl,
@@ -22,7 +22,7 @@ import { useForm } from 'react-hook-form'
 const ClientPage = ({
   organization,
 }: {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }) => {
   const router = useRouter()
   const form = useForm<{ email: string }>()

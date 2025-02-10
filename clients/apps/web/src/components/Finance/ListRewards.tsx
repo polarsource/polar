@@ -4,7 +4,7 @@ import EyeIcon from '@/components/Icons/EyeIcon'
 import Icon from '@/components/Icons/Icon'
 import { githubIssueLink } from '@/utils/github'
 import { dateOrString } from '@/utils/time'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
   formatCurrencyAndAmount,
@@ -14,14 +14,14 @@ import {
 export type Column = 'PAID_OUT_DATE' | 'RECEIVER' | 'BACKER' | 'PAYMENT_STATUS'
 
 const List = (props: {
-  rewards: components['schemas']['Reward'][]
+  rewards: schemas['Reward'][]
   columns: Column[]
   title: string
   subtitle: string
 }) => {
   const { rewards, columns, title, subtitle } = props
 
-  const icon = (reward: components['schemas']['Reward']) => {
+  const icon = (reward: schemas['Reward']) => {
     if (reward.state === 'pending') {
       return <Icon classes="bg-gray-200 text-gray-600" icon={<EyeIcon />} />
     }

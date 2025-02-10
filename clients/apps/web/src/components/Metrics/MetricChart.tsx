@@ -5,13 +5,13 @@ import {
   MetricMarksResolver,
 } from '@/utils/metrics'
 import * as Plot from '@observablehq/plot'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 interface MetricChartProps {
   data: ParsedMetricPeriod[]
-  interval: components['schemas']['TimeInterval']
-  metric: components['schemas']['Metric']
+  interval: schemas['TimeInterval']
+  metric: schemas['Metric']
   height?: number
   maxTicks?: number
   onDataIndexHover?: (index: number | undefined) => void

@@ -1,4 +1,4 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { createServerSideAPI } from './utils/client'
@@ -39,7 +39,7 @@ const getLoginResponse = (request: NextRequest): NextResponse => {
 }
 
 export async function middleware(request: NextRequest) {
-  let user: components['schemas']['UserRead'] | undefined = undefined
+  let user: schemas['UserRead'] | undefined = undefined
   if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {
     const api = createServerSideAPI(request.headers, request.cookies)
     const { data, response } = await api.GET('/v1/users/me', {

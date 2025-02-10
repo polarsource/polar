@@ -1,6 +1,6 @@
 import { useUpdateBenefit } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components, isValidationError, operations } from '@polar-sh/client'
+import { isValidationError, operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { MouseEvent, useCallback } from 'react'
@@ -9,8 +9,8 @@ import { UpdateBenefitForm } from '../Benefit/BenefitForm'
 import { toast } from '../Toast/use-toast'
 
 interface UpdateBenefitModalContentProps {
-  organization: components['schemas']['Organization']
-  benefit: components['schemas']['Benefit']
+  organization: schemas['Organization']
+  benefit: schemas['Benefit']
   hideModal: () => void
 }
 

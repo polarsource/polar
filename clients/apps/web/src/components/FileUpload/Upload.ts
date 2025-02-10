@@ -1,42 +1,30 @@
 import { api } from '@/utils/client'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 
 const CHUNK_SIZE = 10000000 // 10MB
 
 export type FileRead =
-  | components['schemas']['DownloadableFileRead']
-  | components['schemas']['ProductMediaFileRead']
-  | components['schemas']['OrganizationAvatarFileRead']
+  | schemas['DownloadableFileRead']
+  | schemas['ProductMediaFileRead']
+  | schemas['OrganizationAvatarFileRead']
 
 interface UploadProperties {
-  organization: components['schemas']['Organization']
-  service: components['schemas']['FileServiceTypes']
+  organization: schemas['Organization']
+  service: schemas['FileServiceTypes']
   file: File
   buffer: ArrayBuffer
-  onFileCreate: (
-    response: components['schemas']['FileUpload'],
-    buffer: ArrayBuffer,
-  ) => void
-  onFileUploadProgress: (
-    file: components['schemas']['FileUpload'],
-    uploaded: number,
-  ) => void
+  onFileCreate: (response: schemas['FileUpload'], buffer: ArrayBuffer) => void
+  onFileUploadProgress: (file: schemas['FileUpload'], uploaded: number) => void
   onFileUploaded: (response: FileRead) => void
 }
 
 export class Upload {
-  organization: components['schemas']['Organization']
-  service: components['schemas']['FileServiceTypes']
+  organization: schemas['Organization']
+  service: schemas['FileServiceTypes']
   file: File
   buffer: ArrayBuffer
-  onFileCreate: (
-    response: components['schemas']['FileUpload'],
-    buffer: ArrayBuffer,
-  ) => void
-  onFileUploadProgress: (
-    file: components['schemas']['FileUpload'],
-    uploaded: number,
-  ) => void
+  onFileCreate: (response: schemas['FileUpload'], buffer: ArrayBuffer) => void
+  onFileUploadProgress: (file: schemas['FileUpload'], uploaded: number) => void
   onFileUploaded: (response: FileRead) => void
 
   constructor({
@@ -70,7 +58,7 @@ export class Upload {
       ? this.file.type
       : 'application/octet-stream'
 
-    const params: components['schemas']['FileCreate'] = {
+    const params: schemas['FileCreate'] = {
       organization_id: this.organization.id,
       service: this.service,
       name: this.file.name,
@@ -83,11 +71,9 @@ export class Upload {
     return await api.POST('/v1/files/', { body: params })
   }
 
-  async getMultiparts(): Promise<
-    Array<components['schemas']['S3FileCreatePart']>
-  > {
+  async getMultiparts(): Promise<Array<schemas['S3FileCreatePart']>> {
     const chunkCount = Math.floor(this.file.size / CHUNK_SIZE) + 1
-    const parts: Array<components['schemas']['S3FileCreatePart']> = []
+    const parts: Array<schemas['S3FileCreatePart']> = []
 
     for (let i = 1; i <= chunkCount; i++) {
       const chunk_start = (i - 1) * CHUNK_SIZE
@@ -99,7 +85,7 @@ export class Upload {
 
       const chunkSha256base64 = await this.getSha256Base64(chunk)
 
-      let part: components['schemas']['S3FileCreatePart'] = {
+      let part: schemas['S3FileCreatePart'] = {
         number: i,
         chunk_start: chunk_start,
         chunk_end: chunk_end,
@@ -114,9 +100,9 @@ export class Upload {
     parts,
     onProgress,
   }: {
-    parts: Array<components['schemas']['S3FileUploadPart']>
+    parts: Array<schemas['S3FileUploadPart']>
     onProgress: (uploaded: number) => void
-  }): Promise<components['schemas']['S3FileUploadCompletedPart'][]> {
+  }): Promise<schemas['S3FileUploadCompletedPart'][]> {
     const ret = []
     let uploaded = 0
     const partCount = parts.length
@@ -145,9 +131,9 @@ export class Upload {
     part,
     onProgress,
   }: {
-    part: components['schemas']['S3FileUploadPart']
+    part: schemas['S3FileUploadPart']
     onProgress: (uploaded: number) => void
-  }): Promise<components['schemas']['S3FileUploadCompletedPart']> {
+  }): Promise<schemas['S3FileUploadCompletedPart']> {
     const data = this.buffer.slice(part.chunk_start, part.chunk_end)
     let blob = new Blob([data], { type: this.file.type })
 
@@ -162,12 +148,11 @@ export class Upload {
               reject(new Error('ETag not found in response'))
               return
             }
-            const completed: components['schemas']['S3FileUploadCompletedPart'] =
-              {
-                number: part.number,
-                checksum_etag: etag,
-                checksum_sha256_base64: part.checksum_sha256_base64 || null,
-              }
+            const completed: schemas['S3FileUploadCompletedPart'] = {
+              number: part.number,
+              checksum_etag: etag,
+              checksum_sha256_base64: part.checksum_sha256_base64 || null,
+            }
             resolve(completed)
           } else {
             reject(new Error('Failed to upload part'))
@@ -193,8 +178,8 @@ export class Upload {
   }
 
   async complete(
-    createFileResponse: components['schemas']['FileUpload'],
-    uploadedParts: components['schemas']['S3FileUploadCompletedPart'][],
+    createFileResponse: schemas['FileUpload'],
+    uploadedParts: schemas['S3FileUploadCompletedPart'][],
   ) {
     const { data, error } = await api.POST('/v1/files/{id}/uploaded', {
       params: { path: { id: createFileResponse.id } },

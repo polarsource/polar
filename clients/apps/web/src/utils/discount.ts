@@ -1,25 +1,25 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 
 type CheckoutDiscount =
-  | components['schemas']['CheckoutDiscountFixedOnceForeverDuration']
-  | components['schemas']['CheckoutDiscountFixedRepeatDuration']
-  | components['schemas']['CheckoutDiscountPercentageOnceForeverDuration']
-  | components['schemas']['CheckoutDiscountPercentageRepeatDuration']
+  | schemas['CheckoutDiscountFixedOnceForeverDuration']
+  | schemas['CheckoutDiscountFixedRepeatDuration']
+  | schemas['CheckoutDiscountPercentageOnceForeverDuration']
+  | schemas['CheckoutDiscountPercentageRepeatDuration']
 
 const isDiscountFixed = (
   discount: CheckoutDiscount,
 ): discount is
-  | components['schemas']['CheckoutDiscountFixedOnceForeverDuration']
-  | components['schemas']['CheckoutDiscountFixedRepeatDuration'] => {
+  | schemas['CheckoutDiscountFixedOnceForeverDuration']
+  | schemas['CheckoutDiscountFixedRepeatDuration'] => {
   return discount.type === 'fixed'
 }
 
 const isDiscountPercentage = (
   discount: CheckoutDiscount,
 ): discount is
-  | components['schemas']['CheckoutDiscountPercentageOnceForeverDuration']
-  | components['schemas']['CheckoutDiscountPercentageRepeatDuration'] => {
+  | schemas['CheckoutDiscountPercentageOnceForeverDuration']
+  | schemas['CheckoutDiscountPercentageRepeatDuration'] => {
   return discount.type === 'percentage'
 }
 

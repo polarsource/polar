@@ -4,7 +4,7 @@ import { FileObject, useFileUpload } from '@/components/FileUpload'
 import { FileRead } from '@/components/FileUpload/Upload'
 import { useFiles } from '@/hooks/queries'
 import { FileUploadOutlined as FileUploadIcon } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { ReactElement, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
@@ -51,7 +51,7 @@ const DownloadablesForm = ({
   initialFiles,
   initialArchivedFiles,
 }: {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
   initialFiles: FileRead[]
   initialArchivedFiles: { [key: string]: boolean }
 }) => {
@@ -60,7 +60,7 @@ const DownloadablesForm = ({
     register,
     clearErrors,
     formState: { errors },
-  } = useFormContext<components['schemas']['BenefitDownloadablesCreate']>()
+  } = useFormContext<schemas['BenefitDownloadablesCreate']>()
 
   register('properties.files', {
     minLength: 1,
@@ -143,15 +143,14 @@ const DownloadablesForm = ({
 }
 
 interface DownloadablesBenefitFormProps {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
   update?: boolean
 }
 
 const DownloadablesEditForm = ({
   organization,
 }: DownloadablesBenefitFormProps) => {
-  const { getValues } =
-    useFormContext<components['schemas']['BenefitDownloadablesCreate']>()
+  const { getValues } = useFormContext<schemas['BenefitDownloadablesCreate']>()
 
   const fileIds = getValues('properties.files')
   const archivedFiles = getValues('properties.archived') ?? {}

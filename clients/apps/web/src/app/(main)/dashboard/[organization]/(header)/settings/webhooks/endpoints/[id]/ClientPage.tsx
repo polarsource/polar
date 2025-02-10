@@ -10,7 +10,7 @@ import {
   DataTablePaginationState,
   DataTableSortingState,
 } from '@/utils/datatable'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import { useParams } from 'next/navigation'
@@ -20,7 +20,7 @@ export default function ClientPage({
   pagination,
   sorting,
 }: {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
 }) {

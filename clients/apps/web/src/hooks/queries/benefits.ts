@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { components, operations, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@polar-sh/client'
 import { defaultRetry } from './retry'
 
 const _invalidateBenefitsQueries = ({
@@ -32,7 +32,7 @@ const _invalidateBenefitsQueries = ({
 export const useBenefits = (
   orgId?: string,
   limit = 30,
-  type?: components['schemas']['BenefitType'],
+  type?: schemas['BenefitType'],
 ) =>
   useQuery({
     queryKey: ['benefits', 'organization', orgId, { type }],
@@ -99,7 +99,7 @@ export const useUpdateBenefit = (orgId?: string) =>
 
 export const useCreateBenefit = (orgId?: string) =>
   useMutation({
-    mutationFn: (body: components['schemas']['BenefitCreate']) => {
+    mutationFn: (body: schemas['BenefitCreate']) => {
       return api.POST('/v1/benefits/', { body })
     },
     onSuccess: (result, _variables, _ctx) => {

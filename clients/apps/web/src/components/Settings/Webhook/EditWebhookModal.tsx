@@ -15,7 +15,7 @@ import {
   useDeleteWebhookEndpoint,
   useEditWebhookEndpoint,
 } from '@/hooks/queries'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -28,11 +28,11 @@ export default function EditWebhookModal({
   endpoint,
   hide,
 }: {
-  organization: components['schemas']['Organization']
-  endpoint: components['schemas']['WebhookEndpoint']
+  organization: schemas['Organization']
+  endpoint: schemas['WebhookEndpoint']
   hide: () => void
 }) {
-  const form = useForm<components['schemas']['WebhookEndpointUpdate']>({
+  const form = useForm<schemas['WebhookEndpointUpdate']>({
     defaultValues: {
       ...endpoint,
     },
@@ -42,7 +42,7 @@ export default function EditWebhookModal({
   const updateWebhookEndpoint = useEditWebhookEndpoint()
 
   const onSubmit = useCallback(
-    async (form: components['schemas']['WebhookEndpointUpdate']) => {
+    async (form: schemas['WebhookEndpointUpdate']) => {
       const { error } = await updateWebhookEndpoint.mutateAsync({
         id: endpoint.id,
         body: form,

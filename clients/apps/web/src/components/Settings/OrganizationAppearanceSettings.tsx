@@ -1,7 +1,7 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { AddPhotoAlternateOutlined } from '@mui/icons-material'
-import { components, isValidationError } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -22,7 +22,7 @@ import { FileObject, useFileUpload } from '../FileUpload'
 import { toast } from '../Toast/use-toast'
 
 interface OrganizationAppearanceSettingsProps {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }
 
 const OrganizationAppearanceSettings: React.FC<
@@ -36,9 +36,7 @@ const OrganizationAppearanceSettings: React.FC<
   const avatarURL = watch('avatar_url')
 
   const onFilesUpdated = useCallback(
-    (
-      files: FileObject<components['schemas']['OrganizationAvatarFileRead']>[],
-    ) => {
+    (files: FileObject<schemas['OrganizationAvatarFileRead']>[]) => {
       if (files.length === 0) {
         return
       }

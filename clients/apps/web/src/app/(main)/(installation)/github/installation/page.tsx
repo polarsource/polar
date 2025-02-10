@@ -8,7 +8,7 @@ import LoadingScreen, {
 import { useAuth } from '@/hooks'
 import { useStore } from '@/store'
 import { api } from '@/utils/client'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -31,9 +31,9 @@ export default function Page() {
   const router = useRouter()
   const pathname = usePathname()
   const [error, setError] = useState<string | null>(null)
-  const [installed, setInstalled] = useState<
-    components['schemas']['Organization'] | null
-  >(null)
+  const [installed, setInstalled] = useState<schemas['Organization'] | null>(
+    null,
+  )
 
   const [showLogin, setShowLogin] = useState(false)
 

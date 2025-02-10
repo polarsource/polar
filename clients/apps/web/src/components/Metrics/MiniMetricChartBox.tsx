@@ -1,4 +1,4 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import {
   Card,
   CardContent,
@@ -8,7 +8,7 @@ import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 
 export interface MiniMetricBoxProps {
   title?: string
-  metric?: components['schemas']['Metric']
+  metric?: schemas['Metric']
   value?: number
 }
 

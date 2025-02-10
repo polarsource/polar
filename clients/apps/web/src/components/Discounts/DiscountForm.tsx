@@ -18,7 +18,7 @@ import {
 } from '@polar-sh/ui/components/atoms/Select'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import DateTimePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
 import {
   FormControl,
@@ -33,7 +33,7 @@ import { useFormContext } from 'react-hook-form'
 import ProductSelect from '../Products/ProductSelect'
 
 interface DiscountFormProps {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
   update: boolean
   redemptionsCount?: number
 }
@@ -44,15 +44,12 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
   redemptionsCount,
 }) => {
   const { control, watch, setValue } = useFormContext<
-    (
-      | components['schemas']['DiscountCreate']
-      | components['schemas']['DiscountUpdate']
-    ) & { products: { id: string }[] }
+    (schemas['DiscountCreate'] | schemas['DiscountUpdate']) & {
+      products: { id: string }[]
+    }
   >()
-  const type = watch('type') as components['schemas']['DiscountType']
-  const duration = watch(
-    'duration',
-  ) as components['schemas']['DiscountDuration']
+  const type = watch('type') as schemas['DiscountType']
+  const duration = watch('duration') as schemas['DiscountDuration']
 
   const now = useMemo(() => new Date(), [])
   const startsAt = watch('starts_at')
@@ -134,7 +131,7 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
         <Tabs
           value={type}
           onValueChange={(value: string) =>
-            setValue('type', value as components['schemas']['DiscountType'])
+            setValue('type', value as schemas['DiscountType'])
           }
         >
           <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-100">

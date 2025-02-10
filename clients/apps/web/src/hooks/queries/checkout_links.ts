@@ -1,6 +1,6 @@
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { components, operations, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -29,7 +29,7 @@ export const useCheckoutLinks = (
 
 export const useCreateCheckoutLink = () =>
   useMutation({
-    mutationFn: (body: components['schemas']['CheckoutLinkCreate']) => {
+    mutationFn: (body: schemas['CheckoutLinkCreate']) => {
       return api.POST('/v1/checkout-links/', { body })
     },
     onSuccess: (result, _variables, _ctx) => {
@@ -37,9 +37,7 @@ export const useCreateCheckoutLink = () =>
       if (error) {
         return
       }
-      queryClient.setQueriesData<
-        components['schemas']['ListResource_CheckoutLink_']
-      >(
+      queryClient.setQueriesData<schemas['ListResource_CheckoutLink_']>(
         {
           queryKey: ['checkout_links', { productId: data.product.id }],
         },
@@ -70,7 +68,7 @@ export const useUpdateCheckoutLink = () =>
   useMutation({
     mutationFn: (variables: {
       id: string
-      body: components['schemas']['CheckoutLinkUpdate']
+      body: schemas['CheckoutLinkUpdate']
     }) => {
       return api.PATCH('/v1/checkout-links/{id}', {
         params: {
@@ -86,9 +84,7 @@ export const useUpdateCheckoutLink = () =>
       if (error) {
         return
       }
-      queryClient.setQueriesData<
-        components['schemas']['ListResource_CheckoutLink_']
-      >(
+      queryClient.setQueriesData<schemas['ListResource_CheckoutLink_']>(
         {
           queryKey: ['checkout_links', { productId: data.product.id }],
         },
@@ -116,7 +112,7 @@ export const useUpdateCheckoutLink = () =>
 
 export const useDeleteCheckoutLink = () =>
   useMutation({
-    mutationFn: (checkoutLink: components['schemas']['CheckoutLink']) => {
+    mutationFn: (checkoutLink: schemas['CheckoutLink']) => {
       return api.DELETE('/v1/checkout-links/{id}', {
         params: {
           path: {

@@ -26,7 +26,7 @@ export const RevenueWidget = ({ className }: RevenueWidgetProps) => {
   startDate.setFullYear(startDate.getFullYear() - 1)
 
   const revenueMetrics = useMetrics({
-    organizationId: org.id,
+    organization_id: org.id,
     interval: 'month',
     startDate,
     endDate: new Date(),

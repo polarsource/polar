@@ -104,9 +104,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
   const { data: metricsData, isLoading: metricsLoading } = useMetrics({
     startDate: startDate,
     endDate: new Date(),
-    organizationId: organization.id,
+    organization_id: organization.id,
     interval: dateToInterval(startDate),
-    customerId: [customer.id],
+    customer_id: [customer.id],
   })
 
   const metricValue = useMemo(() => {

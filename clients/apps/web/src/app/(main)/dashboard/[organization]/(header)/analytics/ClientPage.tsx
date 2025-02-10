@@ -39,8 +39,8 @@ export default function ClientPage({
     startDate,
     endDate,
     interval,
-    organizationId: organization.id,
-    ...(productId ? { productId } : {}),
+    organization_id: organization.id,
+    ...(productId ? { product_id: productId } : {}),
   })
 
   const dateRange = useMemo(

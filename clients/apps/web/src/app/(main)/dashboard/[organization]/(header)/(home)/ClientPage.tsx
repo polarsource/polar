@@ -82,7 +82,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
     React.useState<ParsedMetricPeriod | null>(null)
 
   const { data: metricsData, isLoading: metricsLoading } = useMetrics({
-    organizationId: organization.id,
+    organization_id: organization.id,
     startDate: getIntervalStartDate(selectedInterval, organization),
     endDate: new Date(),
     interval: selectedInterval,

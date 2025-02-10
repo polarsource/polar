@@ -1,17 +1,19 @@
 'use client'
 
-import { SubscriptionProrationBehavior } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { Label } from '@polar-sh/ui/components/ui/label'
 import {
   RadioGroup,
   RadioGroupItem,
 } from '@polar-sh/ui/components/ui/radio-group'
 
-const PRORATION_BEHAVIOR_LABELS: Record<SubscriptionProrationBehavior, string> =
-  {
-    invoice: 'Invoice immediately',
-    prorate: 'Prorate on the next invoice',
-  }
+const PRORATION_BEHAVIOR_LABELS: Record<
+  components['schemas']['SubscriptionProrationBehavior'],
+  string
+> = {
+  invoice: 'Invoice immediately',
+  prorate: 'Prorate on the next invoice',
+}
 
 const ProrationBehaviorRadioGroup: React.FC<
   React.ComponentPropsWithoutRef<typeof RadioGroup>

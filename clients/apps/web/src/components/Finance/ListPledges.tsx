@@ -4,31 +4,28 @@ import Icon from '@/components/Icons/Icon'
 import RefundIcon from '@/components/Icons/RefundIcon'
 import { githubIssueLink } from '@/utils/github'
 import { dateOrString } from '@/utils/time'
-import { Pledge, PledgeState, PledgeType } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 
 export type Column = 'ESTIMATED_PAYOUT_DATE' | 'REFUNDED_DATE'
 
 const List = (props: {
-  pledges: Pledge[]
+  pledges: components['schemas']['Pledge'][]
   columns: Column[]
   title: string
   subtitle: string
 }) => {
   const { pledges, columns, title, subtitle } = props
 
-  const icon = (pledge: Pledge) => {
+  const icon = (pledge: components['schemas']['Pledge']) => {
     if (
       pledge.issue.needs_confirmation_solved ||
-      pledge.state === PledgeState.PENDING ||
-      pledge.state === PledgeState.DISPUTED
+      pledge.state === 'pending' ||
+      pledge.state === 'disputed'
     ) {
       return <Icon classes="bg-gray-200 text-gray-600" icon={<EyeIcon />} />
     }
-    if (
-      pledge.state === PledgeState.REFUNDED ||
-      pledge.state === PledgeState.CHARGE_DISPUTED
-    ) {
+    if (pledge.state === 'refunded' || pledge.state === 'charge_disputed') {
       return <Icon classes="bg-red-200 text-red-600" icon={<RefundIcon />} />
     }
 
@@ -125,13 +122,13 @@ const List = (props: {
                       <span>{t.pledger?.name || 'Anonymous'}</span>
                     </div>
 
-                    {t.type === PledgeType.ON_COMPLETION && (
+                    {t.type === 'pay_on_completion' && (
                       <div className="text-sx w-fit whitespace-nowrap rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-600 dark:bg-blue-800 dark:text-blue-200">
                         Pay on completion
                       </div>
                     )}
 
-                    {t.type === PledgeType.UPFRONT && (
+                    {t.type === 'pay_upfront' && (
                       <div className="text-sx w-fit whitespace-nowrap rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-600 dark:bg-blue-800 dark:text-blue-200">
                         Pay upfront
                       </div>

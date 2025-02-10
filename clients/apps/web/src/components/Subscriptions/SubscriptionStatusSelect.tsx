@@ -1,4 +1,3 @@
-import { SubscriptionStatus } from '@polar-sh/api'
 import {
   Select,
   SelectContent,
@@ -12,10 +11,7 @@ import React from 'react'
 import { subscriptionStatusDisplayNames } from './utils'
 
 interface SubscriptionStatusSelectProps {
-  statuses: [
-    typeof SubscriptionStatus.ACTIVE,
-    typeof SubscriptionStatus.CANCELED,
-  ]
+  statuses: ['active', 'canceled']
   value: string
   onChange: (value: string) => void
 }

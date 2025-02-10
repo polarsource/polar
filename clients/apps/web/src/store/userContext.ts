@@ -1,4 +1,4 @@
-import { Pledge } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { StateCreator } from 'zustand'
 
 export interface OnboardingState {
@@ -15,12 +15,15 @@ export interface OnboardingState {
 export interface LastPledgeState {
   latestPledge:
     | {
-        pledge: Pledge
+        pledge: components['schemas']['Pledge']
         redirectStatus: string
       }
     | undefined
   latestPledgeShown: boolean
-  setLatestPledge: (pledge: Pledge, redirectStatus: string) => void
+  setLatestPledge: (
+    pledge: components['schemas']['Pledge'],
+    redirectStatus: string,
+  ) => void
   setLatestPledgeShown: (shown: boolean) => void
 }
 
@@ -55,7 +58,10 @@ export const createUserSlice: StateCreator<UserSlice> = (set, _get) => ({
       onboardingMaintainerConnectRepositoriesSkip: skip,
     })
   },
-  setLatestPledge: (pledge: Pledge, redirectStatus: string) => {
+  setLatestPledge: (
+    pledge: components['schemas']['Pledge'],
+    redirectStatus: string,
+  ) => {
     set({
       latestPledge: {
         pledge: pledge,

@@ -1,4 +1,4 @@
-import { Funding } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 
 const IssueBadge = ({
@@ -14,7 +14,7 @@ const IssueBadge = ({
 }: {
   showAmountRaised?: boolean
   darkmode: boolean
-  funding: Funding
+  funding: components['schemas']['Funding']
   avatarsUrls: string[]
   upfront_split_to_contributors: number | null
   orgName: string
@@ -390,7 +390,7 @@ const FundingGoal = ({
   funding,
 }: {
   darkmode: boolean
-  funding: Funding
+  funding: components['schemas']['Funding']
 }) => {
   if (
     funding.pledges_sum?.amount === undefined ||
@@ -492,7 +492,7 @@ const Amount = ({
 }: {
   darkmode: boolean
   showAmount: boolean
-  funding: Funding
+  funding: components['schemas']['Funding']
 }) => (
   <div
     style={{

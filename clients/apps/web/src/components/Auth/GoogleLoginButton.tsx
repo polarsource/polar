@@ -1,13 +1,13 @@
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { getGoogleAuthorizeURL } from '@/utils/auth'
 import { Google } from '@mui/icons-material'
-import { UserSignupAttribution } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 
 interface GoogleLoginButtonProps {
   returnTo?: string
-  signup?: UserSignupAttribution
+  signup?: components['schemas']['UserSignupAttribution']
 }
 
 const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
@@ -30,7 +30,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   return (
     <Link
       href={getGoogleAuthorizeURL({
-        returnTo,
+        return_to: returnTo,
         attribution: JSON.stringify(signup),
       })}
       onClick={onClick}

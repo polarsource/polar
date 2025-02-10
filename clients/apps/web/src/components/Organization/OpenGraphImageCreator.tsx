@@ -1,5 +1,5 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
-import { Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 
 const generatePostOGFallbackPath = (slug: string, maxInt: number) => {
   let sum = 0
@@ -14,7 +14,7 @@ const imageBaseURL = 'https://polar.sh/assets/posts/og'
 const OpenGraphImageCreator = ({
   organization,
 }: {
-  organization: Organization
+  organization: components['schemas']['Organization']
 }) => {
   return (
     <div

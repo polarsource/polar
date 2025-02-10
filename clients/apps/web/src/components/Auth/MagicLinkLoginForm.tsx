@@ -3,7 +3,7 @@
 import { MagicLinkError, useSendMagicLink } from '@/hooks/magicLink'
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { setValidationErrors } from '@/utils/api/errors'
-import { UserSignupAttribution } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -18,7 +18,7 @@ import { SubmitHandler, useForm } from 'react-hook-form'
 
 interface MagicLinkLoginFormProps {
   returnTo?: string
-  signup?: UserSignupAttribution
+  signup?: components['schemas']['UserSignupAttribution']
 }
 
 const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({

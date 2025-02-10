@@ -1,6 +1,8 @@
-import { Issue } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 
-export const githubIssueLink = (issue: Issue): string => {
+export const githubIssueLink = (
+  issue: components['schemas']['Issue'],
+): string => {
   return `https://github.com/${issue.repository.organization.name}/${issue.repository.name}/issues/${issue.number}`
 }
 

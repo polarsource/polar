@@ -1,11 +1,7 @@
 'use client'
 
 import MeterFilterInput from '@/components/Meter/MeterFilterInput'
-import {
-  CountAggregationFuncEnum,
-  MeterCreate,
-  PropertyAggregationFuncEnum,
-} from '@polar-sh/api'
+import { components, enums } from '@polar-sh/client'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
@@ -24,8 +20,13 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useFormContext } from 'react-hook-form'
 
+const AGGREGATION_FUNCTIONS = [
+  ...enums.countAggregationFuncValues,
+  ...enums.propertyAggregationFuncValues,
+]
+
 const AGGREGATION_FUNCTION_DISPLAY_NAMES: Record<
-  CountAggregationFuncEnum | PropertyAggregationFuncEnum,
+  (typeof AGGREGATION_FUNCTIONS)[number],
   string
 > = {
   count: 'Count',
@@ -36,7 +37,7 @@ const AGGREGATION_FUNCTION_DISPLAY_NAMES: Record<
 }
 
 const MeterForm = () => {
-  const form = useFormContext<MeterCreate>()
+  const form = useFormContext<components['schemas']['MeterCreate']>()
   const { control, watch } = form
   const aggregationFunction = watch('aggregation.func')
 

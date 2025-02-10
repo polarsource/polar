@@ -4,7 +4,7 @@ import CustomFieldTypeIcon from '@/components/CustomFields/CustomFieldTypeIcon'
 import { Section } from '@/components/Layout/Section'
 import { useCustomFields } from '@/hooks/queries'
 import { ClearOutlined } from '@mui/icons-material'
-import { CustomField, Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import {
@@ -28,7 +28,7 @@ import { ProductFormType } from './ProductForm'
 
 export interface ProductCustomFieldSectionProps {
   className?: string
-  organization: Organization
+  organization: components['schemas']['Organization']
   compact?: boolean
 }
 
@@ -51,7 +51,9 @@ export const ProductCustomFieldSection = ({
 
   const attachedCustomFieldsMap = useMemo(
     () =>
-      attachedCustomFields.reduce<Record<string, CustomField>>((acc, field) => {
+      attachedCustomFields.reduce<
+        Record<string, components['schemas']['CustomField']>
+      >((acc, field) => {
         const customField = customFields?.items.find(
           ({ id }) => id === field.custom_field_id,
         )
@@ -66,7 +68,9 @@ export const ProductCustomFieldSection = ({
     [attachedCustomFields, customFields],
   )
 
-  const [selectedField, setSelectedField] = useState<CustomField | null>(null)
+  const [selectedField, setSelectedField] = useState<
+    components['schemas']['CustomField'] | null
+  >(null)
   const onSelectField = (id: string) => {
     const customField = customFields?.items.find((field) => field.id === id)
     if (customField) {

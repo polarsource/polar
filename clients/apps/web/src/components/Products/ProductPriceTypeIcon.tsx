@@ -1,18 +1,18 @@
 import { LoopOutlined, ShoppingCartOutlined } from '@mui/icons-material'
-import { ProductPriceType } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import React from 'react'
 
 interface ProductPriceTypeIconProps {
-  productPriceType: ProductPriceType
+  productPriceType: components['schemas']['ProductPriceType']
 }
 
 const ProductPriceTypeIcon: React.FC<ProductPriceTypeIconProps> = ({
   productPriceType,
 }) => {
   switch (productPriceType) {
-    case ProductPriceType.ONE_TIME:
+    case 'one_time':
       return <ShoppingCartOutlined fontSize="inherit" />
-    case ProductPriceType.RECURRING:
+    case 'recurring':
       return <LoopOutlined fontSize="inherit" />
     default:
       return null

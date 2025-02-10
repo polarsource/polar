@@ -1,5 +1,5 @@
 import IssueBadge from '@/components/Embed/IssueBadge'
-import { Funding } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
@@ -11,7 +11,7 @@ const renderBadge = async ({
   withUpfrontSplit,
 }: {
   amount?: number
-  funding: Funding
+  funding: components['schemas']['Funding']
   isDarkMode: boolean
   withUpfrontSplit: boolean
 }) => {

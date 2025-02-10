@@ -4,7 +4,7 @@ import EyeIcon from '@/components/Icons/EyeIcon'
 import Icon from '@/components/Icons/Icon'
 import { githubIssueLink } from '@/utils/github'
 import { dateOrString } from '@/utils/time'
-import { PledgeState, PledgeType, Reward, RewardState } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
   formatCurrencyAndAmount,
@@ -14,18 +14,18 @@ import {
 export type Column = 'PAID_OUT_DATE' | 'RECEIVER' | 'BACKER' | 'PAYMENT_STATUS'
 
 const List = (props: {
-  rewards: Reward[]
+  rewards: components['schemas']['Reward'][]
   columns: Column[]
   title: string
   subtitle: string
 }) => {
   const { rewards, columns, title, subtitle } = props
 
-  const icon = (reward: Reward) => {
-    if (reward.state === RewardState.PENDING) {
+  const icon = (reward: components['schemas']['Reward']) => {
+    if (reward.state === 'pending') {
       return <Icon classes="bg-gray-200 text-gray-600" icon={<EyeIcon />} />
     }
-    if (reward.state === RewardState.PAID) {
+    if (reward.state === 'paid') {
       return <Icon classes="bg-green-200 text-green-600" icon={<CheckIcon />} />
     }
     return (
@@ -174,14 +174,14 @@ const List = (props: {
                 {showPaymentStatus && (
                   <td className="dark:text-polar-400 whitespace-nowrap py-3 pr-3 text-sm text-gray-500">
                     <div className="flex flex-wrap items-center gap-2">
-                      {t.pledge.type === PledgeType.ON_COMPLETION &&
-                        t.pledge.state === PledgeState.CREATED && (
+                      {t.pledge.type === 'pay_on_completion' &&
+                        t.pledge.state === 'created' && (
                           <div className="w-fit whitespace-nowrap rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700 dark:bg-blue-800 dark:text-blue-200">
                             Pending payment from pledger
                           </div>
                         )}
 
-                      {t.pledge.state === PledgeState.PENDING && (
+                      {t.pledge.state === 'pending' && (
                         <div className="w-fit whitespace-nowrap rounded-full bg-green-100 px-2 py-1 text-xs text-green-700 dark:bg-green-800 dark:text-green-200">
                           Paid to Polar
                         </div>

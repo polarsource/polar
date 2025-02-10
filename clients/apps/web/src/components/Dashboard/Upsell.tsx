@@ -2,7 +2,7 @@ import { useAuth } from '@/hooks'
 import { useRedirectToGitHubInstallation } from '@/hooks/github'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { ArrowForwardOutlined } from '@mui/icons-material'
-import { Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
 import Link from 'next/link'
@@ -68,7 +68,7 @@ export const Upsell = ({
 export const GitHubAppInstallationUpsell = ({
   organization,
 }: {
-  organization: Organization
+  organization: components['schemas']['Organization']
 }) => {
   const redirectToGitHubInstallation =
     useRedirectToGitHubInstallation(organization)

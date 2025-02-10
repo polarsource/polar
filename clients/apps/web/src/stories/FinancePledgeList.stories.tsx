@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import List, { Column } from '@/components/Finance/ListPledges'
 import { issue } from '@/utils/testdata'
-import { Pledge, PledgeState, PledgeType } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 
 type Story = StoryObj<typeof List>
 
@@ -14,30 +14,38 @@ const meta: Meta<typeof List> = {
 
 export default meta
 
-const pledge: Pledge = {
+const pledge: components['schemas']['Pledge'] = {
   id: 'xx',
   created_at: new Date('2023-06-29').toISOString(),
   modified_at: null,
   amount: 12300,
   currency: 'usd',
-  state: PledgeState.CREATED,
-  type: PledgeType.UPFRONT,
+  state: 'created',
+  type: 'pay_upfront',
   scheduled_payout_at: undefined,
   issue: issue,
+  authed_can_admin_received: false,
+  authed_can_admin_sender: false,
 }
 
-let all_pledge_states: Pledge[] = Object.values(PledgeState).map(
-  (s): Pledge => {
-    return {
-      ...pledge,
-      state: s,
-      issue: {
-        ...pledge.issue,
-        title: `${pledge.issue.title} (${s})`,
-      },
-    }
-  },
-)
+let all_pledge_states: components['schemas']['Pledge'][] = [
+  'initiated',
+  'created',
+  'pending',
+  'refunded',
+  'disputed',
+  'charge_disputed',
+  'cancelled',
+].map((s): components['schemas']['Pledge'] => {
+  return {
+    ...pledge,
+    state: s as components['schemas']['PledgeState'],
+    issue: {
+      ...pledge.issue,
+      title: `${pledge.issue.title} (${s})`,
+    },
+  }
+})
 
 export const Default: Story = {
   args: {
@@ -70,7 +78,7 @@ export const Default: Story = {
       },
       {
         ...pledge,
-        type: PledgeType.ON_COMPLETION,
+        type: 'pay_on_completion',
         issue: {
           ...pledge.issue,
           title: `PAY_ON_COMPLETION`,
@@ -95,12 +103,12 @@ export const InReview: Story = {
     pledges: [
       {
         ...pledge,
-        state: PledgeState.PENDING,
+        state: 'pending',
         scheduled_payout_at: new Date('2023-07-14').toISOString(),
       },
       {
         ...pledge,
-        state: PledgeState.PENDING,
+        state: 'pending',
       },
     ],
     columns: ['ESTIMATED_PAYOUT_DATE' as Column],
@@ -113,7 +121,7 @@ export const Refunded: Story = {
     pledges: [
       {
         ...pledge,
-        state: PledgeState.REFUNDED,
+        state: 'refunded',
         scheduled_payout_at: new Date('2023-07-14').toISOString(),
       },
     ],

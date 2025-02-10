@@ -1,16 +1,18 @@
 import { useDeleteFile } from '@/hooks/queries'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ProductMediaFileRead } from '@polar-sh/api'
 import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { FileObject } from '@/components/FileUpload'
 import { toast } from '@/components/Toast/use-toast'
 import { ClearOutlined } from '@mui/icons-material'
+import { components } from '@polar-sh/client'
 import { useMemo } from 'react'
 
-type ProductMediaFileObject = FileObject<ProductMediaFileRead>
+type ProductMediaFileObject = FileObject<
+  components['schemas']['ProductMediaFileRead']
+>
 
 export const FileListItem = ({
   file,

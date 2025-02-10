@@ -1,7 +1,7 @@
 'use client'
 
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import { Repository } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { Command } from 'cmdk'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -10,8 +10,8 @@ import { Item, Left, SelectedBox, Text } from '../Dropdown'
 export function RepoSelection(props: {
   onSelectRepo: (repo: string) => void
   onSelectAll: () => void
-  repositories: Repository[]
-  value: Repository | undefined
+  repositories: components['schemas']['Repository'][]
+  value: components['schemas']['Repository'] | undefined
   selectedClassNames: string
   openClassNames: string
 }) {
@@ -37,7 +37,7 @@ export function RepoSelection(props: {
     setInputValue('')
   }
 
-  const onSelectRepo = (repo: Repository) => {
+  const onSelectRepo = (repo: components['schemas']['Repository']) => {
     resetDropdown()
     props.onSelectRepo(repo.name)
   }
@@ -162,7 +162,7 @@ const SelectedRepository = ({
   classNames,
   displayOrganization,
 }: {
-  repository: Repository
+  repository: components['schemas']['Repository']
   onClick: () => void
   classNames: string
   displayOrganization?: boolean

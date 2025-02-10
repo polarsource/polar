@@ -18,7 +18,7 @@ import {
 
 import ImageUpload from '@/components/Form/ImageUpload'
 import { AddOutlined, ClearOutlined } from '@mui/icons-material'
-import { Scope } from '@polar-sh/api'
+import { enums } from '@polar-sh/client'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import Link from 'next/link'
 import { useFieldArray, useFormContext } from 'react-hook-form'
@@ -261,41 +261,39 @@ export const FieldScopes = () => {
       </h2>
 
       <div className="flex flex-col gap-2">
-        {Object.values(Scope)
-          .filter((scope) => !['admin', 'web_default'].includes(scope))
-          .map((scope) => (
-            <FormField
-              key={scope}
-              control={form.control}
-              name="scope"
-              render={({ field }) => {
-                return (
-                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        defaultChecked={
-                          field.value && field.value.includes(scope)
+        {Object.values(enums.availableScopeValues).map((scope) => (
+          <FormField
+            key={scope}
+            control={form.control}
+            name="scope"
+            render={({ field }) => {
+              return (
+                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      defaultChecked={
+                        field.value && field.value.includes(scope)
+                      }
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          field.onChange([...(field.value || []), scope])
+                        } else {
+                          field.onChange(
+                            (field.value || []).filter((v) => v !== scope),
+                          )
                         }
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            field.onChange([...(field.value || []), scope])
-                          } else {
-                            field.onChange(
-                              (field.value || []).filter((v) => v !== scope),
-                            )
-                          }
-                        }}
-                      />
-                    </FormControl>
-                    <FormLabel className="text-sm leading-none">
-                      {scope}
-                    </FormLabel>
-                    <FormMessage />
-                  </FormItem>
-                )
-              }}
-            />
-          ))}
+                      }}
+                    />
+                  </FormControl>
+                  <FormLabel className="text-sm leading-none">
+                    {scope}
+                  </FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+        ))}
       </div>
     </div>
   )

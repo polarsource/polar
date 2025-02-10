@@ -2,7 +2,7 @@
 
 import { usePostHog } from '@/hooks/posthog'
 import { KeyboardArrowRight } from '@mui/icons-material'
-import { Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ComponentProps, FormEvent, useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -13,7 +13,7 @@ import { AuthModal } from './AuthModal'
 interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   text?: string
   orgSlug?: string
-  storefrontOrg?: Organization
+  storefrontOrg?: components['schemas']['Organization']
 }
 
 const GetStartedButton: React.FC<GetStartedButtonProps> = ({

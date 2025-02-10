@@ -1,6 +1,6 @@
 import { MeterDetails } from '@/components/Meter/MeterDetails'
 import { AddOutlined } from '@mui/icons-material'
-import { Meter } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { useTheme } from 'next-themes'
@@ -43,7 +43,7 @@ const frequencyDisplayNames: Record<
 }
 
 export interface MeterContextViewProps {
-  meter: Meter
+  meter: components['schemas']['Meter']
 }
 
 export const MeterContextView = ({ meter }: MeterContextViewProps) => {

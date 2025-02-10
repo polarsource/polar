@@ -5,7 +5,7 @@ import {
   DataTableSortingState,
 } from '@/utils/datatable'
 import { DownloadOutlined } from '@mui/icons-material'
-import { Transaction, TransactionEmbedded } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import {
   DataTableColumnDef,
   ReactQueryLoading,
@@ -14,7 +14,7 @@ import Link from 'next/link'
 import TransactionsList, { isTransaction } from './TransactionsList'
 
 interface PayoutTransactionsListProps {
-  transactions: Transaction[]
+  transactions: components['schemas']['Transaction'][]
   pageCount: number
   pagination: DataTablePaginationState
   onPaginationChange?: DataTableOnChangeFn<DataTablePaginationState>
@@ -32,34 +32,34 @@ const PayoutTransactionsList = ({
   onSortingChange,
   isLoading,
 }: PayoutTransactionsListProps) => {
-  const extraColumns: DataTableColumnDef<Transaction | TransactionEmbedded>[] =
-    [
-      {
-        id: 'actions',
-        accessorKey: 'id',
-        enableSorting: false,
-        header: () => null,
-        cell: (props) => {
-          const { row } = props
-          const { original: transaction } = row
+  const extraColumns: DataTableColumnDef<
+    | components['schemas']['Transaction']
+    | components['schemas']['TransactionEmbedded']
+  >[] = [
+    {
+      id: 'actions',
+      accessorKey: 'id',
+      enableSorting: false,
+      header: () => null,
+      cell: (props) => {
+        const { row } = props
+        const { original: transaction } = row
 
-          if (!isTransaction(transaction)) {
-            return null
-          }
+        if (!isTransaction(transaction)) {
+          return null
+        }
 
-          const id = props.getValue() as string
-          return (
-            <div className="flex flex-row justify-end">
-              <Link
-                href={`${getServerURL()}/v1/transactions/payouts/${id}/csv`}
-              >
-                <DownloadOutlined />
-              </Link>
-            </div>
-          )
-        },
+        const id = props.getValue() as string
+        return (
+          <div className="flex flex-row justify-end">
+            <Link href={`${getServerURL()}/v1/transactions/payouts/${id}/csv`}>
+              <DownloadOutlined />
+            </Link>
+          </div>
+        )
       },
-    ]
+    },
+  ]
 
   return (
     <TransactionsList

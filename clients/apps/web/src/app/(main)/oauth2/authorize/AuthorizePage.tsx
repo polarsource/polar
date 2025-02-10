@@ -1,34 +1,35 @@
 import LogoType from '@/components/Brand/LogoType'
 import { getServerURL } from '@/utils/api'
 import { AddOutlined } from '@mui/icons-material'
-import {
-  AuthorizeOrganization,
-  AuthorizeResponseOrganization,
-  AuthorizeResponseUser,
-  AuthorizeUser,
-  Scope,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 
 const isSubTypeOrganization = (
   sub_type: string,
-  _sub: AuthorizeUser | AuthorizeOrganization,
-): _sub is AuthorizeOrganization => sub_type === 'organization'
+  _sub:
+    | components['schemas']['AuthorizeUser']
+    | components['schemas']['AuthorizeOrganization'],
+): _sub is components['schemas']['AuthorizeOrganization'] =>
+  sub_type === 'organization'
 
 const isSubTypeUser = (
   sub_type: string,
-  _sub: AuthorizeUser | AuthorizeOrganization,
-): _sub is AuthorizeUser => sub_type === 'user'
+  _sub:
+    | components['schemas']['AuthorizeUser']
+    | components['schemas']['AuthorizeOrganization'],
+): _sub is components['schemas']['AuthorizeUser'] => sub_type === 'user'
 
 const AuthorizePage = ({
   authorizeResponse: { client, scopes, sub_type, sub },
   scopeDisplayNames,
   searchParams,
 }: {
-  authorizeResponse: AuthorizeResponseUser | AuthorizeResponseOrganization
-  scopeDisplayNames: Record<Scope, string>
+  authorizeResponse:
+    | components['schemas']['AuthorizeResponseUser']
+    | components['schemas']['AuthorizeResponseOrganization']
+  scopeDisplayNames: Record<components['schemas']['Scope'], string>
   searchParams: Record<string, string>
 }) => {
   const serializedSearchParams = new URLSearchParams(searchParams).toString()

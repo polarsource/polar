@@ -1,8 +1,8 @@
-import { ProductPrice, ProductPriceType } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import AmountLabel from '../Shared/AmountLabel'
 
 interface ProductPriceLabelProps {
-  price: ProductPrice
+  price: components['schemas']['ProductPrice']
 }
 
 const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ price }) => {
@@ -12,9 +12,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ price }) => {
         amount={price.price_amount}
         currency={price.price_currency}
         interval={
-          price.type === ProductPriceType.RECURRING
-            ? price.recurring_interval
-            : undefined
+          price.type === 'recurring' ? price.recurring_interval : undefined
         }
       />
     )

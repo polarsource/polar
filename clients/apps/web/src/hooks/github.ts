@@ -1,18 +1,18 @@
 import { useStore } from '@/store'
 import { getGitHubAuthorizeURL } from '@/utils/auth'
 import { CONFIG } from '@/utils/config'
-import { Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect } from 'react'
 import { useGitHubAccount } from './oauth-accounts'
 
 export const useRedirectToGitHubInstallation = (
-  organization: Organization,
+  organization: components['schemas']['Organization'],
 ): (() => void) => {
   const store = useStore()
   const pathname = usePathname()
   const gitHubAccount = useGitHubAccount()
-  const authorizeURL = getGitHubAuthorizeURL({ returnTo: pathname })
+  const authorizeURL = getGitHubAuthorizeURL({ return_to: pathname })
 
   const redirect = useCallback(() => {
     if (!gitHubAccount) {

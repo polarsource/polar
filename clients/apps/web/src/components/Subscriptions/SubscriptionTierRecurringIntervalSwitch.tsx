@@ -1,10 +1,12 @@
-import { SubscriptionRecurringInterval } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import React, { useCallback } from 'react'
 
 interface SubscriptionTierRecurringIntervalSwitchProps {
-  value: SubscriptionRecurringInterval
-  onChange: (value: SubscriptionRecurringInterval) => void
+  value: components['schemas']['SubscriptionRecurringInterval']
+  onChange: (
+    value: components['schemas']['SubscriptionRecurringInterval'],
+  ) => void
   tabsListClassName?: string
   tabsTriggerClassName?: string
 }
@@ -15,7 +17,9 @@ const SubscriptionTierRecurringIntervalSwitch: React.FC<
   const onValueChange = useCallback(
     (newValue: string) => {
       if (newValue === value) return
-      onChange(newValue as SubscriptionRecurringInterval)
+      onChange(
+        newValue as components['schemas']['SubscriptionRecurringInterval'],
+      )
     },
     [onChange, value],
   )
@@ -25,16 +29,12 @@ const SubscriptionTierRecurringIntervalSwitch: React.FC<
       <TabsList className={tabsListClassName}>
         <TabsTrigger
           className={tabsTriggerClassName}
-          value={SubscriptionRecurringInterval.MONTH}
+          value="month"
           size="small"
         >
           Monthly Billing
         </TabsTrigger>
-        <TabsTrigger
-          className={tabsTriggerClassName}
-          value={SubscriptionRecurringInterval.YEAR}
-          size="small"
-        >
+        <TabsTrigger className={tabsTriggerClassName} value="year" size="small">
           Yearly Billing
         </TabsTrigger>
       </TabsList>

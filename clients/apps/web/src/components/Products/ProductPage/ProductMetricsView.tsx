@@ -1,10 +1,10 @@
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import { ParsedMetricPeriod } from '@/hooks/queries'
 import { dateToInterval } from '@/utils/metrics'
-import { Metrics } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 
 export interface ProductMetricsViewProps {
-  metrics?: Metrics
+  metrics?: components['schemas']['Metrics']
   periods?: ParsedMetricPeriod[]
   loading: boolean
 }

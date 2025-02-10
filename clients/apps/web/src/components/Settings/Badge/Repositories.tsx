@@ -1,6 +1,5 @@
-import { type RepositoryBadgeSettingsRead } from '@polar-sh/api'
-
 import IssueLabel from '@/components/Issues/IssueLabel'
+import { components } from '@polar-sh/client'
 import { twMerge } from 'tailwind-merge'
 import BadgeRepository from './Repository'
 
@@ -26,10 +25,10 @@ export const BadgeRepositories = ({
   onEnableBadgeChange,
   isSettingPage = false,
 }: {
-  repos: RepositoryBadgeSettingsRead[]
+  repos: components['schemas']['RepositoryBadgeSettingsRead'][]
   showControls: boolean
   onEnableBadgeChange: (
-    repo: RepositoryBadgeSettingsRead,
+    repo: components['schemas']['RepositoryBadgeSettingsRead'],
     enabled: boolean,
   ) => void
   isSettingPage?: boolean

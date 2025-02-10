@@ -1,5 +1,5 @@
 import { getServerURL } from '@/utils/api'
-import { Scope } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import AuthorizeErrorPage from './AuthorizeErrorPage'
@@ -24,7 +24,9 @@ const getAuthorizeResponse = async (
   })
 }
 
-const getScopeDisplayNames = async (): Promise<Record<Scope, string>> => {
+const getScopeDisplayNames = async (): Promise<
+  Record<components['schemas']['Scope'], string>
+> => {
   const response = await fetch(`${getServerURL()}/openapi.json`)
   const openAPISchema = await response.json()
   return openAPISchema.components.schemas.Scope.enumNames

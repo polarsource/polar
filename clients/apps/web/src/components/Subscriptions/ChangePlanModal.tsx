@@ -1,13 +1,5 @@
 'use client'
 
-import {
-  ProductPrice,
-  ProductPriceRecurringFixed,
-  ProductPriceRecurringFree,
-  ProductStorefront,
-  SubscriptionRecurringInterval,
-} from '@polar-sh/api'
-
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { useCustomerUpdateSubscription, useProducts } from '@/hooks/queries'
 import { Client, components, unwrap } from '@polar-sh/client'
@@ -27,8 +19,8 @@ const ProductPriceListItem = ({
   selected,
   onSelect,
 }: {
-  product: ProductStorefront
-  price: ProductPrice
+  product: components['schemas']['ProductStorefront']
+  price: components['schemas']['ProductPrice']
   selected: boolean
   onSelect?: () => void
 }) => {
@@ -67,12 +59,15 @@ const ChangePlanModal = ({
   })
 
   const currentPrice = subscription.price as
-    | ProductPriceRecurringFixed
-    | ProductPriceRecurringFree
-  const [selectedProduct, setSelectedProduct] =
-    useState<ProductStorefront | null>(null)
+    | components['schemas']['ProductPriceRecurringFixed']
+    | components['schemas']['ProductPriceRecurringFree']
+  const [selectedProduct, setSelectedProduct] = useState<
+    components['schemas']['ProductStorefront'] | null
+  >(null)
   const [selectedPrice, setSelectedPrice] = useState<
-    ProductPriceRecurringFixed | ProductPriceRecurringFree | null
+    | components['schemas']['ProductPriceRecurringFixed']
+    | components['schemas']['ProductPriceRecurringFree']
+    | null
   >(null)
 
   const addedBenefits = useMemo(() => {
@@ -103,15 +98,9 @@ const ChangePlanModal = ({
       } else if (currentPrice.amount_type === 'fixed') {
         return (
           currentPrice.price_amount /
-            (currentPrice.recurring_interval ===
-            SubscriptionRecurringInterval.YEAR
-              ? 12
-              : 1) >
+            (currentPrice.recurring_interval === 'year' ? 12 : 1) >
           selectedPrice.price_amount /
-            (selectedPrice.recurring_interval ===
-            SubscriptionRecurringInterval.YEAR
-              ? 12
-              : 1)
+            (selectedPrice.recurring_interval === 'year' ? 12 : 1)
         )
       }
     }
@@ -237,8 +226,8 @@ const ChangePlanModal = ({
                       setSelectedProduct(product)
                       setSelectedPrice(
                         price as
-                          | ProductPriceRecurringFixed
-                          | ProductPriceRecurringFree,
+                          | components['schemas']['ProductPriceRecurringFixed']
+                          | components['schemas']['ProductPriceRecurringFree'],
                       )
                     }}
                   />

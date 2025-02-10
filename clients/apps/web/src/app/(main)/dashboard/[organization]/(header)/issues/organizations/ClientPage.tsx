@@ -50,10 +50,12 @@ export default function ClientPage() {
                   {externalOrganization.name}
                 </div>
                 <Link
-                  href={getGitHubOrganizationInstallationURL({
-                    id: externalOrganization.id,
-                    returnTo: pathname,
-                  })}
+                  href={getGitHubOrganizationInstallationURL(
+                    externalOrganization.id,
+                    {
+                      return_to: pathname,
+                    },
+                  )}
                 >
                   <Button type="button">Manage installation</Button>
                 </Link>

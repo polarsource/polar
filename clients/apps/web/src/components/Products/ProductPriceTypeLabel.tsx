@@ -1,17 +1,17 @@
-import { ProductPriceType } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import React from 'react'
 
 interface ProductPriceTypeLabelProps {
-  productPriceType: ProductPriceType
+  productPriceType: components['schemas']['ProductPriceType']
 }
 
 const ProductPriceTypeLabel: React.FC<ProductPriceTypeLabelProps> = ({
   productPriceType,
 }) => {
   switch (productPriceType) {
-    case ProductPriceType.ONE_TIME:
+    case 'one_time':
       return 'One-time purchase'
-    case ProductPriceType.RECURRING:
+    case 'recurring':
       return 'Subscription'
     default:
       return null

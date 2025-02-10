@@ -2,7 +2,7 @@
 
 import { PostHogContext } from '@/app/providers'
 import { CONFIG } from '@/utils/config'
-import { UserRead } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { useContext } from 'react'
 
 // https://posthog.com/product-engineers/5-ways-to-improve-analytics-data#suggested-naming-guide
@@ -58,7 +58,7 @@ export interface PolarHog {
     persistence: 'localStorage' | 'sessionStorage' | 'cookie' | 'memory',
   ) => void
   capture: (event: EventName, properties?: { [key: string]: any }) => void
-  identify: (user: UserRead) => void
+  identify: (user: components['schemas']['UserRead']) => void
   isFeatureEnabled: (key: string) => boolean
   logout: () => void
 }
@@ -70,7 +70,7 @@ export const usePostHog = (): PolarHog => {
     posthog?.capture(event, properties)
   }
 
-  const identify = (user: UserRead) => {
+  const identify = (user: components['schemas']['UserRead']) => {
     const posthogId = `user:${user.id}`
     if (!posthog) {
       return

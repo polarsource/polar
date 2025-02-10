@@ -2,7 +2,7 @@
 
 import { useBackofficeAllPledges } from '@/hooks/queries'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
-import { BackofficePledge } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
@@ -15,7 +15,13 @@ const Pledges = () => {
   const issueList = useMemo(() => {
     const byIssue =
       pledges.data?.reduce(
-        (hash: Record<string, Array<BackofficePledge>>, obj) => ({
+        (
+          hash: Record<
+            string,
+            Array<components['schemas']['BackofficePledge']>
+          >,
+          obj,
+        ) => ({
           ...hash,
           [obj.issue.id]: (hash[obj.issue.id] || []).concat(obj),
         }),

@@ -15,7 +15,7 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { AddOutlined } from '@mui/icons-material'
-import { CheckoutLink, Organization, Product } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
@@ -26,8 +26,8 @@ import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ClientPageProps {
-  organization: Organization
-  product: Product
+  organization: components['schemas']['Organization']
+  product: components['schemas']['Product']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
 }
@@ -234,7 +234,7 @@ export const ClientPage = ({
         modalContent={
           <CheckoutLinkMangementModal
             product={product}
-            onClose={(checkoutLink: CheckoutLink) => {
+            onClose={(checkoutLink) => {
               setSelectionState({ [checkoutLink.id]: true })
               hideManagementModal()
             }}

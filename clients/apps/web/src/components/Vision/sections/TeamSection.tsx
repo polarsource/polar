@@ -1,4 +1,3 @@
-// import { MetricType } from '@polar-sh/api'
 // import { Chart } from '../Chart'
 import Image from 'next/image'
 import { Link } from '../Link'
@@ -109,16 +108,17 @@ export const TeamSection = ({ active }: { active: boolean }) => {
       }
     >
       <p>
-        From building startups before to Shop.app, Shop Pay and writing the
-        book on FastAPI or React UI engine in Battlefield. Our team is small and battle scared.
+        From building startups before to Shop.app, Shop Pay and writing the book
+        on FastAPI or React UI engine in Battlefield. Our team is small and
+        battle scared.
       </p>
       <p>
-        Want to build the future of payments for developers? We&apos;re looking for
-        a few senior engineers to join the team.
+        Want to build the future of payments for developers? We&apos;re looking
+        for a few senior engineers to join the team.
       </p>
       <p>
-        No cover letter needed. Just your best suggestion for how to improve our API, SDK or Framework Adapters is the best
-        conversation starter.
+        No cover letter needed. Just your best suggestion for how to improve our
+        API, SDK or Framework Adapters is the best conversation starter.
       </p>
       <Link href="mailto:birk@polar.sh">Join Us →</Link>
     </Section>

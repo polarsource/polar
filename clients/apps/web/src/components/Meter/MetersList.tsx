@@ -1,5 +1,5 @@
 import { DataTableSortingState } from '@/utils/datatable'
-import { Meter } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import {
   DataTable,
   DataTableColumnDef,
@@ -15,7 +15,7 @@ import {
 } from '@tanstack/react-table'
 
 export interface MetersListProps {
-  meters: Meter[]
+  meters: components['schemas']['Meter'][]
   pageCount: number
   pagination: PaginationState
   setPagination: OnChangeFn<PaginationState>
@@ -37,7 +37,7 @@ export const MetersList = ({
   selectedMeterState,
   setSelectedMeterState,
 }: MetersListProps) => {
-  const columns: DataTableColumnDef<Meter>[] = [
+  const columns: DataTableColumnDef<components['schemas']['Meter']>[] = [
     {
       id: 'name',
       accessorKey: 'name',

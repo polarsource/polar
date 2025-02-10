@@ -1,10 +1,4 @@
-import {
-  Organization,
-  Pledge,
-  PledgeState,
-  Reward,
-  RewardState,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
@@ -12,15 +6,15 @@ import AccountBanner from '../Transactions/AccountBanner'
 import { default as ListPledges } from './ListPledges'
 import ListRewards, { Column } from './ListRewards'
 
-const refundedStates: PledgeState[] = [
-  PledgeState.REFUNDED,
-  PledgeState.CHARGE_DISPUTED,
+const refundedStates: components['schemas']['PledgeState'][] = [
+  'refunded',
+  'charge_disputed',
 ]
 
-const paidStates: PledgeState[] = [PledgeState.PENDING]
+const paidStates: components['schemas']['PledgeState'][] = ['pending']
 
-const isInReview = (pledge: Pledge): boolean => {
-  const inReviewStates: PledgeState[] = [PledgeState.DISPUTED]
+const isInReview = (pledge: components['schemas']['Pledge']): boolean => {
+  const inReviewStates: components['schemas']['PledgeState'][] = ['disputed']
   if (inReviewStates.includes(pledge.state)) {
     return true
   }
@@ -31,16 +25,16 @@ const isInReview = (pledge: Pledge): boolean => {
 }
 
 const Finance = (props: {
-  org: Organization
+  org: components['schemas']['Organization']
   tab: 'current' | 'rewarded' | 'contributors'
-  pledges: Pledge[]
-  rewards: Reward[]
+  pledges: components['schemas']['Pledge'][]
+  rewards: components['schemas']['Reward'][]
 }) => {
   const { org, tab, pledges, rewards } = props
 
   const currentPledges =
     pledges.filter(
-      (pr) => pr.state !== PledgeState.PENDING && !pr.issue.confirmed_solved_at,
+      (pr) => pr.state !== 'pending' && !pr.issue.confirmed_solved_at,
     ) || []
 
   const currentPledgesAmount = currentPledges
@@ -95,7 +89,9 @@ const Finance = (props: {
 
 export default Finance
 
-const PledgesContent = (props: { pledges: Pledge[] }) => {
+const PledgesContent = (props: {
+  pledges: components['schemas']['Pledge'][]
+}) => {
   const openIssues = props.pledges.filter(
     (p) =>
       !paidStates.includes(p.state) &&
@@ -137,11 +133,11 @@ const PledgesContent = (props: { pledges: Pledge[] }) => {
 }
 
 export const RewardsContent = (props: {
-  rewards: Reward[]
+  rewards: components['schemas']['Reward'][]
   showReceiver: boolean
 }) => {
-  const pending = props.rewards.filter((r) => r.state == RewardState.PENDING)
-  const paid = props.rewards.filter((r) => r.state == RewardState.PAID)
+  const pending = props.rewards.filter((r) => r.state == 'pending')
+  const paid = props.rewards.filter((r) => r.state == 'paid')
 
   const pendingColumns: Column[] = props.showReceiver
     ? ['BACKER', 'PAYMENT_STATUS', 'RECEIVER']

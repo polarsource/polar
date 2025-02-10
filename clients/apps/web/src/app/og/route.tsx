@@ -1,27 +1,20 @@
-import {
-  Issue,
-  ListResourceIssue,
-  ListResourceRepository,
-  Organization,
-  Repository,
-  Storefront,
-} from '@polar-sh/api'
 import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
 
 import OpenGraphImageCreator from '@/components/Organization/OpenGraphImageCreator'
 import OpenGraphImageFunding from '@/components/Organization/OpenGraphImageFunding'
 import { getServerURL } from '@/utils/api'
+import { components } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 
 export const runtime = 'edge'
 
 const renderFundingOG = async (
   org_name: string,
-  repository: Repository | undefined,
+  repository: components['schemas']['Repository'] | undefined,
   issue_count: number,
   avatar: string | null,
-  issues: Issue[],
+  issues: components['schemas']['Issue'][],
   largeIssue: boolean,
 ) => {
   // const [interRegular, interMedium] = await Promise.all([
@@ -63,7 +56,9 @@ const renderFundingOG = async (
     },
   )
 }
-const renderCreatorOG = async (organization: Organization) => {
+const renderCreatorOG = async (
+  organization: components['schemas']['Organization'],
+) => {
   // const [interRegular, interMedium] = await Promise.all([
   //   fetch(`https://polar.sh/fonts/Inter-Regular.ttf`).then((res) =>
   //     res.arrayBuffer(),
@@ -95,9 +90,9 @@ const renderCreatorOG = async (organization: Organization) => {
 }
 
 const listIssues = async (
-  org: Organization,
-  repo: Repository | undefined,
-): Promise<ListResourceIssue> => {
+  org: components['schemas']['Organization'],
+  repo: components['schemas']['Repository'] | undefined,
+): Promise<components['schemas']['ListResource_Issue_']> => {
   const params = new URLSearchParams()
   params.set('platform', 'github')
   params.set('organization_id', org.id)
@@ -117,7 +112,9 @@ const listIssues = async (
   })
 }
 
-const getStorefront = async (org: string): Promise<Storefront> => {
+const getStorefront = async (
+  org: string,
+): Promise<components['schemas']['Storefront']> => {
   const response = await fetch(`${getServerURL()}/v1/storefronts/${org}`, {
     method: 'GET',
   })
@@ -127,14 +124,18 @@ const getStorefront = async (org: string): Promise<Storefront> => {
   return await response.json()
 }
 
-const getRepo = async (orgId: string, repo: string): Promise<Repository> => {
+const getRepo = async (
+  orgId: string,
+  repo: string,
+): Promise<components['schemas']['Repository']> => {
   const response = await fetch(
     `${getServerURL()}/v1/repositories/?organization_id=${orgId}&name=${repo}`,
     {
       method: 'GET',
     },
   )
-  const data = (await response.json()) as ListResourceRepository
+  const data =
+    (await response.json()) as components['schemas']['ListResource_Repository_']
 
   const repository = data.items[0]
 
@@ -145,7 +146,9 @@ const getRepo = async (orgId: string, repo: string): Promise<Repository> => {
   return repository
 }
 
-const getIssue = async (externalUrl: string): Promise<Issue> => {
+const getIssue = async (
+  externalUrl: string,
+): Promise<components['schemas']['Issue']> => {
   const params = new URLSearchParams()
   params.set('external_url', externalUrl)
   return await fetch(
@@ -174,8 +177,8 @@ export async function GET(req: NextRequest) {
     const repo = searchParams.get('repo')
     const number = searchParams.get('number')
 
-    let repoData: Repository | undefined
-    let issueData: Issue | undefined
+    let repoData: components['schemas']['Repository'] | undefined
+    let issueData: components['schemas']['Issue'] | undefined
 
     const { organization } = await getStorefront(org)
 
@@ -190,7 +193,7 @@ export async function GET(req: NextRequest) {
       return await renderCreatorOG(organization)
     }
 
-    let issues: Issue[] = []
+    let issues: components['schemas']['Issue'][] = []
     let largeIssue = false
     let total_issue_count = 0
 

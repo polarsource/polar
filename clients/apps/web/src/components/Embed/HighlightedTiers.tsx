@@ -1,5 +1,5 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
-import { ProductStorefront, SubscriptionRecurringInterval } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import {
   getRecurringBillingLabel,
@@ -11,8 +11,8 @@ const HighlightedTier = ({
   recurringInterval,
   darkmode,
 }: {
-  tier: ProductStorefront
-  recurringInterval: SubscriptionRecurringInterval
+  tier: components['schemas']['ProductStorefront']
+  recurringInterval: components['schemas']['SubscriptionRecurringInterval']
   darkmode: boolean
 }) => {
   const price = getRecurringProductPrice(tier, recurringInterval)
@@ -164,8 +164,8 @@ export const HighlightedTiers = ({
   darkmode,
 }: {
   label: string
-  tiers: ProductStorefront[]
-  recurringInterval: SubscriptionRecurringInterval
+  tiers: components['schemas']['ProductStorefront'][]
+  recurringInterval: components['schemas']['SubscriptionRecurringInterval']
   darkmode: boolean
 }) => {
   return (

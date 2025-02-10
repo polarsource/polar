@@ -1,11 +1,6 @@
 import { useProducts, useSelectedProducts } from '@/hooks/queries'
 import { CheckOutlined, ExpandMoreOutlined } from '@mui/icons-material'
-import {
-  Organization,
-  Product,
-  ProductPriceType,
-  ProductsApiListRequest,
-} from '@polar-sh/api'
+import { components, operations } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Command,
@@ -34,11 +29,16 @@ const ProductsCommandGroup = ({
   selectedProducts,
   className,
 }: {
-  groupedProducts: Record<ProductPriceType, Product[]>
-  productPriceType: ProductPriceType
-  onSelectProduct: (product: Product) => void
-  onSelectProductType: (productPriceType: ProductPriceType) => void
-  selectedProducts: Product[]
+  groupedProducts: Record<
+    components['schemas']['ProductPriceType'],
+    components['schemas']['Product'][]
+  >
+  productPriceType: components['schemas']['ProductPriceType']
+  onSelectProduct: (product: components['schemas']['Product']) => void
+  onSelectProductType: (
+    productPriceType: components['schemas']['ProductPriceType'],
+  ) => void
+  selectedProducts: components['schemas']['Product'][]
   className?: string
 }) => {
   return (
@@ -74,7 +74,7 @@ const ProductsCommandGroup = ({
   )
 }
 interface ProductSelectProps {
-  organization: Organization
+  organization: components['schemas']['Organization']
   value: string[]
   onChange: (value: string[]) => void
   className?: string
@@ -94,10 +94,13 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
 
   // Queried products, show a selection of products based on the query
   const queriedProductsParameters = useMemo<
-    Omit<ProductsApiListRequest, 'organizationId'>
+    Omit<
+      NonNullable<operations['products:list']['parameters']['query']>,
+      'organization_id'
+    >
   >(
     () => ({
-      isArchived: false,
+      is_archived: false,
       ...(query ? { query } : {}),
       sorting: ['name'],
       limit: 20,
@@ -124,20 +127,28 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   }, [queriedProducts, selectedProducts, query])
 
   // Group displayed products by product price type
-  const groupedProducts = useMemo<Record<ProductPriceType, Product[]>>(() => {
-    return displayedProducts.reduce<Record<ProductPriceType, Product[]>>(
+  const groupedProducts = useMemo<
+    Record<
+      components['schemas']['ProductPriceType'],
+      components['schemas']['Product'][]
+    >
+  >(() => {
+    return displayedProducts.reduce<
+      Record<
+        components['schemas']['ProductPriceType'],
+        components['schemas']['Product'][]
+      >
+    >(
       (acc, product) => {
-        const type = product.is_recurring
-          ? ProductPriceType.RECURRING
-          : ProductPriceType.ONE_TIME
+        const type = product.is_recurring ? 'recurring' : 'one_time'
         return {
           ...acc,
           [type]: [...acc[type], product],
         }
       },
       {
-        [ProductPriceType.ONE_TIME]: [],
-        [ProductPriceType.RECURRING]: [],
+        one_time: [],
+        recurring: [],
       },
     )
   }, [displayedProducts])
@@ -153,7 +164,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   }, [value, selectedProducts])
 
   const onSelectProduct = useCallback(
-    (product: Product) => {
+    (product: components['schemas']['Product']) => {
       if (value.includes(product.id)) {
         onChange(value.filter((id) => id !== product.id))
       } else {
@@ -164,7 +175,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   )
 
   const onSelectProductType = useCallback(
-    (productPriceType: ProductPriceType) => {
+    (productPriceType: components['schemas']['ProductPriceType']) => {
       const products = groupedProducts[productPriceType]
       const allSelected = products.every((product) =>
         value.includes(product.id),
@@ -215,7 +226,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
               <>
                 <ProductsCommandGroup
                   groupedProducts={groupedProducts}
-                  productPriceType={ProductPriceType.ONE_TIME}
+                  productPriceType="one_time"
                   onSelectProduct={onSelectProduct}
                   onSelectProductType={onSelectProductType}
                   selectedProducts={selectedProducts || []}
@@ -223,7 +234,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
                 <CommandSeparator />
                 <ProductsCommandGroup
                   groupedProducts={groupedProducts}
-                  productPriceType={ProductPriceType.RECURRING}
+                  productPriceType="recurring"
                   onSelectProduct={onSelectProduct}
                   onSelectProductType={onSelectProductType}
                   selectedProducts={selectedProducts || []}

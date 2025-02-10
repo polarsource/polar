@@ -10,7 +10,6 @@ import {
   MoreVertOutlined,
   VideoFileOutlined,
 } from '@mui/icons-material'
-import { FileRead } from '@polar-sh/api'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   FocusEvent,
@@ -196,7 +195,7 @@ export const FileListItem = ({
   sortable?: ReturnType<typeof useSortable>
 }) => {
   // Re-introduce later for editing files, e.g version and perhaps even name?
-  const patchFileQuery = usePatchFile(file.id, (response: FileRead) => {
+  const patchFileQuery = usePatchFile(file.id, (response) => {
     updateFile((prev: FileObject) => {
       return {
         ...prev,

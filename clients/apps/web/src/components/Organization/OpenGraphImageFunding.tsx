@@ -1,4 +1,4 @@
-import { Issue } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 
 const OpenGraphImageFunding = (props: {
@@ -6,7 +6,7 @@ const OpenGraphImageFunding = (props: {
   repo_name?: string
   issue_count: number
   avatar: string | null
-  issues: Issue[]
+  issues: components['schemas']['Issue'][]
   largeIssue: boolean
 }) => {
   const issueCount = props.largeIssue ? 1 : 2

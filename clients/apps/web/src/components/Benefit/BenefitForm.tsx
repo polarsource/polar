@@ -214,7 +214,7 @@ export const DiscordBenefitForm = () => {
     searchParams.set('type', 'discord')
     searchParams.set('description', description)
     const returnTo = `${pathname}?${searchParams}`
-    return getBotDiscordAuthorizeURL({ returnTo })
+    return getBotDiscordAuthorizeURL({ return_to: returnTo })
   }, [pathname, description])
 
   const { data: discordGuild } = useDiscordGuild(guildToken)

@@ -1,9 +1,9 @@
-import { CheckoutLink, Product } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { CheckoutLinkForm } from './CheckoutLinkForm'
 
 interface CheckoutLinkMangementModalProps {
-  product: Product
-  onClose: (checkoutLink: CheckoutLink) => void
+  product: components['schemas']['Product']
+  onClose: (checkoutLink: components['schemas']['CheckoutLink']) => void
 }
 
 export const CheckoutLinkMangementModal = ({

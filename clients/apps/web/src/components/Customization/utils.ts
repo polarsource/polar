@@ -1,16 +1,7 @@
+import { components } from '@polar-sh/client'
 import {
-  CheckoutProduct,
-  CheckoutStatus,
-  CustomerOrder,
-  CustomerSubscription,
-  Organization,
-  ProductPrice,
-  ProductStorefront,
-  SubscriptionProrationBehavior,
-} from '@polar-sh/api'
-import {
-  CheckoutPublic$inboundSchema,
   type CheckoutPublic,
+  CheckoutPublic$inboundSchema,
 } from '@polar-sh/sdk/models/components/checkoutpublic'
 
 const PRODUCT_DESCRIPTION = `# Et Tritonia pectora partus praebentem
@@ -24,7 +15,7 @@ Gravem colentes impetus reminiscitur invitusque blanditur ipse
 Iam maiora
 In quoque extulerat tale semper quidque. Fovebat heros quos gaudent et movent agmina fortis.`
 
-export const PRODUCT_PREVIEW: ProductStorefront = {
+export const PRODUCT_PREVIEW: components['schemas']['ProductStorefront'] = {
   id: '123',
   is_recurring: false,
   is_archived: false,
@@ -81,65 +72,66 @@ export const PRODUCT_PREVIEW: ProductStorefront = {
   created_at: new Date().toISOString(),
 }
 
-export const SUBSCRIPTION_PRODUCT_PREVIEW: ProductStorefront = {
-  id: '123',
-  is_recurring: false,
-  is_archived: false,
-  modified_at: new Date().toISOString(),
-  organization_id: '123',
-  medias: [
-    {
-      id: '123',
-      created_at: new Date().toISOString(),
-      public_url: '/assets/docs/og/bg.jpg',
-      is_uploaded: false,
-      service: 'product_media',
-      mime_type: 'image/png',
-      organization_id: '123',
-      name: 'blend.png',
-      path: '/assets/docs/og/bg.png',
-      size: 123,
-      size_readable: '123 B',
-      storage_version: '1',
-      checksum_etag: '123',
-      checksum_sha256_base64: '123',
-      checksum_sha256_hex: '123',
-      version: '1',
-      last_modified_at: new Date().toISOString(),
-    },
-  ],
-  prices: [
-    {
-      id: '123',
-      amount_type: 'fixed',
-      price_amount: 10000,
-      type: 'recurring',
-      recurring_interval: 'month',
-      price_currency: 'usd',
-      is_archived: false,
-      created_at: new Date().toISOString(),
-      modified_at: new Date().toISOString(),
-      product_id: '123',
-    },
-  ],
-  name: 'Pro Tier',
-  description: PRODUCT_DESCRIPTION,
-  benefits: [
-    {
-      id: '123',
-      description: 'Premium feature',
-      type: 'custom',
-      created_at: new Date().toISOString(),
-      modified_at: null,
-      selectable: false,
-      deletable: false,
-      organization_id: '123',
-    },
-  ],
-  created_at: new Date().toISOString(),
-}
+export const SUBSCRIPTION_PRODUCT_PREVIEW: components['schemas']['ProductStorefront'] =
+  {
+    id: '123',
+    is_recurring: false,
+    is_archived: false,
+    modified_at: new Date().toISOString(),
+    organization_id: '123',
+    medias: [
+      {
+        id: '123',
+        created_at: new Date().toISOString(),
+        public_url: '/assets/docs/og/bg.jpg',
+        is_uploaded: false,
+        service: 'product_media',
+        mime_type: 'image/png',
+        organization_id: '123',
+        name: 'blend.png',
+        path: '/assets/docs/og/bg.png',
+        size: 123,
+        size_readable: '123 B',
+        storage_version: '1',
+        checksum_etag: '123',
+        checksum_sha256_base64: '123',
+        checksum_sha256_hex: '123',
+        version: '1',
+        last_modified_at: new Date().toISOString(),
+      },
+    ],
+    prices: [
+      {
+        id: '123',
+        amount_type: 'fixed',
+        price_amount: 10000,
+        type: 'recurring',
+        recurring_interval: 'month',
+        price_currency: 'usd',
+        is_archived: false,
+        created_at: new Date().toISOString(),
+        modified_at: new Date().toISOString(),
+        product_id: '123',
+      },
+    ],
+    name: 'Pro Tier',
+    description: PRODUCT_DESCRIPTION,
+    benefits: [
+      {
+        id: '123',
+        description: 'Premium feature',
+        type: 'custom',
+        created_at: new Date().toISOString(),
+        modified_at: null,
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+    ],
+    created_at: new Date().toISOString(),
+  }
 
-export const ORGANIZATION = {
+export const ORGANIZATION: components['schemas']['Organization'] = {
   id: '123',
   name: 'My Organization',
   slug: 'my-organization',
@@ -160,14 +152,14 @@ export const ORGANIZATION = {
   subscription_settings: {
     allow_multiple_subscriptions: true,
     allow_customer_updates: true,
-    proration_behavior: SubscriptionProrationBehavior.INVOICE,
+    proration_behavior: 'invoice',
   },
 }
 
 export const createCheckoutPreview = (
-  product: CheckoutProduct,
-  price: ProductPrice,
-  organization: Organization,
+  product: components['schemas']['CheckoutProduct'],
+  price: components['schemas']['ProductPrice'],
+  organization: components['schemas']['Organization'],
 ): CheckoutPublic => {
   const amount =
     price.amount_type === 'custom'
@@ -181,7 +173,7 @@ export const createCheckoutPreview = (
     created_at: new Date().toISOString(),
     modified_at: new Date().toISOString(),
     payment_processor: 'stripe',
-    status: CheckoutStatus.OPEN,
+    status: 'open',
     expires_at: new Date().toISOString(),
     client_secret: 'CLIENT_SECRET',
     product: product,
@@ -222,13 +214,13 @@ export const createCheckoutPreview = (
   }
 }
 
-export const CHECKOUT_PREVIEW: CheckoutPublic = createCheckoutPreview(
+export const CHECKOUT_PREVIEW = createCheckoutPreview(
   PRODUCT_PREVIEW,
   PRODUCT_PREVIEW.prices[0],
   ORGANIZATION,
 )
 
-export const ORDER_PREVIEW: CustomerOrder = {
+export const ORDER_PREVIEW: components['schemas']['CustomerOrder'] = {
   id: '123',
   amount: 10000,
   currency: 'usd',
@@ -248,45 +240,46 @@ export const ORDER_PREVIEW: CustomerOrder = {
   modified_at: new Date().toISOString(),
 }
 
-export const SUBSCRIPTION_ORDER_PREVIEW: CustomerSubscription = {
-  created_at: new Date().toISOString(),
-  modified_at: new Date().toISOString(),
-  id: '989898989',
-  amount: 10000,
-  currency: 'usd',
-  recurring_interval: 'month',
-  status: 'active',
-  current_period_start: new Date().toISOString(),
-  current_period_end: new Date(
-    new Date().setMonth(new Date().getMonth() + 1),
-  ).toISOString(),
-  cancel_at_period_end: false,
-  canceled_at: null,
-  started_at: new Date().toISOString(),
-  ends_at: null,
-  ended_at: null,
-  user_id: '123',
-  customer_id: '123',
-  product_id: SUBSCRIPTION_PRODUCT_PREVIEW.id,
-  price_id: SUBSCRIPTION_PRODUCT_PREVIEW.prices[0].id,
-  checkout_id: null,
-  product: {
-    ...SUBSCRIPTION_PRODUCT_PREVIEW,
-    organization: ORGANIZATION,
-  },
-  price: {
-    id: '123',
-    amount_type: 'fixed',
-    price_amount: 10000,
-    type: 'recurring',
-    recurring_interval: 'month',
-    price_currency: 'usd',
-    is_archived: false,
+export const SUBSCRIPTION_ORDER_PREVIEW: components['schemas']['CustomerSubscription'] =
+  {
     created_at: new Date().toISOString(),
     modified_at: new Date().toISOString(),
-    product_id: '123',
-  },
-  discount_id: null,
-  customer_cancellation_comment: null,
-  customer_cancellation_reason: null,
-}
+    id: '989898989',
+    amount: 10000,
+    currency: 'usd',
+    recurring_interval: 'month',
+    status: 'active',
+    current_period_start: new Date().toISOString(),
+    current_period_end: new Date(
+      new Date().setMonth(new Date().getMonth() + 1),
+    ).toISOString(),
+    cancel_at_period_end: false,
+    canceled_at: null,
+    started_at: new Date().toISOString(),
+    ends_at: null,
+    ended_at: null,
+    user_id: '123',
+    customer_id: '123',
+    product_id: SUBSCRIPTION_PRODUCT_PREVIEW.id,
+    price_id: SUBSCRIPTION_PRODUCT_PREVIEW.prices[0].id,
+    checkout_id: null,
+    product: {
+      ...SUBSCRIPTION_PRODUCT_PREVIEW,
+      organization: ORGANIZATION,
+    },
+    price: {
+      id: '123',
+      amount_type: 'fixed',
+      price_amount: 10000,
+      type: 'recurring',
+      recurring_interval: 'month',
+      price_currency: 'usd',
+      is_archived: false,
+      created_at: new Date().toISOString(),
+      modified_at: new Date().toISOString(),
+      product_id: '123',
+    },
+    discount_id: null,
+    customer_cancellation_comment: null,
+    customer_cancellation_reason: null,
+  }

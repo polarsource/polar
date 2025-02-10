@@ -7,13 +7,13 @@ import TopbarRight from '@/components/Layout/Public/TopbarRight'
 import { StorefrontHeader } from '@/components/Profile/StorefrontHeader'
 import { useAuth } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { Product } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useContext } from 'react'
 import { CHECKOUT_PREVIEW } from '../utils'
 
 export interface CheckoutPreviewProps {
-  product?: Product
+  product?: components['schemas']['Product']
 }
 
 export const CheckoutPreview = ({}: CheckoutPreviewProps) => {

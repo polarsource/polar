@@ -2,14 +2,7 @@ import { githubIssueUrl } from '@/utils/github'
 import { formatStarsNumber } from '@/utils/stars'
 import { HeartIcon, StarIcon } from '@heroicons/react/24/solid'
 import { ChatBubbleOutline } from '@mui/icons-material'
-import {
-  Assignee,
-  Funding,
-  Issue,
-  Organization,
-  Pledger,
-  RewardsSummary,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Alert from '@polar-sh/ui/components/atoms/Alert'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import IssueBodyRenderer from '@polar-sh/ui/components/atoms/IssueBodyRenderer'
@@ -27,12 +20,12 @@ const IssueCard = ({
   currentPledgeAmount,
   rewards,
 }: {
-  issue: Issue
-  organization: Organization
+  issue: components['schemas']['Issue']
+  organization: components['schemas']['Organization']
   htmlBody?: string
-  pledgers: Pledger[]
+  pledgers: components['schemas']['Pledger'][]
   currentPledgeAmount: number
-  rewards?: RewardsSummary
+  rewards?: components['schemas']['RewardsSummary']
 }) => {
   const { repository } = issue
   const { organization: externalOrganization } = repository
@@ -232,8 +225,8 @@ const FundingGoal = ({
   pledgers,
   currentPledgeAmount,
 }: {
-  funding: Funding
-  pledgers: Pledger[]
+  funding: components['schemas']['Funding']
+  pledgers: components['schemas']['Pledger'][]
   currentPledgeAmount: number
 }) => {
   const { pledges_sum, funding_goal } = funding
@@ -295,7 +288,11 @@ const FundingGoal = ({
   return null
 }
 
-const RewardsReceivers = ({ rewards }: { rewards: RewardsSummary }) => (
+const RewardsReceivers = ({
+  rewards,
+}: {
+  rewards: components['schemas']['RewardsSummary']
+}) => (
   <div className="flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-gray-50 py-0.5 pl-0.5 pr-2 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400">
     <div className="flex flex-shrink-0 -space-x-1.5">
       {rewards.receivers.map((r) => (
@@ -312,7 +309,11 @@ const RewardsReceivers = ({ rewards }: { rewards: RewardsSummary }) => (
   </div>
 )
 
-const Assignees = ({ assignees }: { assignees: Assignee[] }) => (
+const Assignees = ({
+  assignees,
+}: {
+  assignees: components['schemas']['Assignee'][]
+}) => (
   <div className="flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-blue-50 py-0.5 pl-0.5 pr-2 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400">
     <div className="flex flex-shrink-0 -space-x-1.5">
       {assignees.map((a) => (

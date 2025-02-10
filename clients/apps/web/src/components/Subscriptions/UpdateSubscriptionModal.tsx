@@ -3,7 +3,6 @@
 import { useOrganization, useProducts } from '@/hooks/queries'
 import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
 import { setValidationErrors } from '@/utils/api/errors'
-import { SubscriptionUpdatePrice } from '@polar-sh/api'
 import { components, isValidationError } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -40,7 +39,7 @@ const UpdateSubscriptionModal = ({
   const { data: organization } = useOrganization(
     subscription.product.organization_id,
   )
-  const form = useForm<SubscriptionUpdatePrice>({
+  const form = useForm<components['schemas']['SubscriptionUpdatePrice']>({
     defaultValues: {
       proration_behavior: 'prorate',
       product_price_id: subscription.price_id,
@@ -63,7 +62,7 @@ const UpdateSubscriptionModal = ({
   )
 
   const onSubmit = useCallback(
-    async (body: SubscriptionUpdatePrice) => {
+    async (body: components['schemas']['SubscriptionUpdatePrice']) => {
       await updateSubscription.mutateAsync(body).then(({ error }) => {
         if (error) {
           if (error.detail)

@@ -6,7 +6,7 @@ import Spinner from '@/components/Shared/Spinner'
 import { useHasLinkedExternalOrganizations } from '@/hooks'
 import { useListRepositories } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
@@ -18,7 +18,11 @@ interface Embeddable {
   tag: string
 }
 
-const EmbedPage = ({ organization }: { organization: Organization }) => {
+const EmbedPage = ({
+  organization,
+}: {
+  organization: components['schemas']['Organization']
+}) => {
   const searchParams = useSearchParams()
   const repoSlug = searchParams.get('repo')
   const repositories = useListRepositories(

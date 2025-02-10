@@ -1,22 +1,17 @@
 import { getServerURL } from '@/utils/api'
-import {
-  IntegrationsDiscordApiIntegrationsDiscordBotAuthorizeRequest,
-  IntegrationsGithubApiIntegrationsGithubAuthorizeRequest,
-  IntegrationsGithubApiRedirectToOrganizationInstallationRequest,
-  IntegrationsGithubRepositoryBenefitApiIntegrationsGithubRepositoryBenefitUserAuthorizeRequest,
-  IntegrationsGoogleApiIntegrationsGoogleAuthorizeRequest,
-  MagicLinkApiMagicLinkAuthenticateRequest,
-} from '@polar-sh/api'
+import { operations } from '@polar-sh/client'
 
 export const getGitHubAuthorizeURL = (
-  params: IntegrationsGithubApiIntegrationsGithubAuthorizeRequest,
+  params: NonNullable<
+    operations['integrations_github:integrations.github.authorize']['parameters']['query']
+  >,
 ): string => {
   const searchParams = new URLSearchParams()
-  if (params.paymentIntentId) {
-    searchParams.set('payment_intent_id', params.paymentIntentId)
+  if (params.payment_intent_id) {
+    searchParams.set('payment_intent_id', params.payment_intent_id)
   }
-  if (params.returnTo) {
-    searchParams.set('return_to', params.returnTo)
+  if (params.return_to) {
+    searchParams.set('return_to', params.return_to)
   }
   if (params.attribution) {
     searchParams.set('attribution', params.attribution)
@@ -25,11 +20,13 @@ export const getGitHubAuthorizeURL = (
 }
 
 export const getGoogleAuthorizeURL = (
-  params: IntegrationsGoogleApiIntegrationsGoogleAuthorizeRequest,
+  params: NonNullable<
+    operations['integrations_google:integrations.google.authorize']['parameters']['query']
+  >,
 ): string => {
   const searchParams = new URLSearchParams()
-  if (params.returnTo) {
-    searchParams.set('return_to', params.returnTo)
+  if (params.return_to) {
+    searchParams.set('return_to', params.return_to)
   }
   if (params.attribution) {
     searchParams.set('attribution', params.attribution)
@@ -38,43 +35,40 @@ export const getGoogleAuthorizeURL = (
 }
 
 export const getGitHubOrganizationInstallationURL = (
-  params: IntegrationsGithubApiRedirectToOrganizationInstallationRequest,
+  organizationId: string,
+  params: NonNullable<
+    operations['integrations_github:redirect_to_organization_installation']['parameters']['query']
+  >,
 ): string => {
   const searchParams = new URLSearchParams()
-  if (params.returnTo) {
-    searchParams.set('return_to', params.returnTo)
+  if (params.return_to) {
+    searchParams.set('return_to', params.return_to)
   }
   return `${getServerURL()}/v1/integrations/github/organizations/${
-    params.id
+    organizationId
   }/installation?${searchParams}`
 }
 
-export const getMagicLinkAuthenticateURL = (
-  params: MagicLinkApiMagicLinkAuthenticateRequest,
-): string => {
-  const searchParams = new URLSearchParams({ token: params.token })
-  if (params.returnTo) {
-    searchParams.set('return_to', params.returnTo)
-  }
-  return `${getServerURL()}/v1/magic_link/authenticate?${searchParams}`
-}
-
 export const getBotDiscordAuthorizeURL = (
-  params: IntegrationsDiscordApiIntegrationsDiscordBotAuthorizeRequest,
+  params: NonNullable<
+    operations['integrations_discord:integrations.discord.bot_authorize']['parameters']['query']
+  >,
 ): string => {
   const searchParams = new URLSearchParams()
-  if (params.returnTo) {
-    searchParams.set('return_to', params.returnTo)
+  if (params.return_to) {
+    searchParams.set('return_to', params.return_to)
   }
   return `${getServerURL()}/v1/integrations/discord/bot/authorize?${searchParams}`
 }
 
 export const getGitHubRepositoryBenefitAuthorizeURL = (
-  params: IntegrationsGithubRepositoryBenefitApiIntegrationsGithubRepositoryBenefitUserAuthorizeRequest,
+  params: NonNullable<
+    operations['integrations_github_repository_benefit:integrations.github_repository_benefit.user_authorize']['parameters']['query']
+  >,
 ): string => {
   const searchParams = new URLSearchParams()
-  if (params.returnTo) {
-    searchParams.set('return_to', params.returnTo)
+  if (params.return_to) {
+    searchParams.set('return_to', params.return_to)
   }
   return `${getServerURL()}/v1/integrations/github_repository_benefit/user/authorize?${searchParams}`
 }

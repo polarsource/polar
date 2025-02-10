@@ -1,8 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { resolveIssuePath } from '@/utils/issue'
 import { organizationPageLink } from '@/utils/nav'
-import { Pledger, ResponseError, RewardsSummary } from '@polar-sh/api'
-import { unwrap } from '@polar-sh/client'
+import { components, unwrap } from '@polar-sh/client'
 import { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -102,41 +101,35 @@ export default async function Page({
   }
 
   let issueHTMLBody: string | undefined
-  let pledgers: Pledger[] = []
-  let rewards: RewardsSummary | undefined
+  let pledgers: components['schemas']['Pledger'][] = []
+  let rewards: components['schemas']['RewardsSummary'] | undefined
 
-  try {
-    const [bodyResponse, pledgeSummary, rewardsSummary] = await Promise.all([
-      unwrap(
-        api.GET('/v1/issues/{id}/body', {
-          params: { path: { id: issue.id } },
-          next: { revalidate: 60 },
-        }),
-      ), // Cache for 60s
-      unwrap(
-        api.GET('/v1/pledges/summary', {
-          params: { query: { issue_id: issue.id } },
-          ...cacheConfig,
-        }),
-      ),
-      unwrap(
-        api.GET('/v1/rewards/summary', {
-          params: { query: { issue_id: issue.id } },
-          ...cacheConfig,
-        }),
-      ),
-    ])
+  const [bodyResponse, pledgeSummary, rewardsSummary] = await Promise.all([
+    unwrap(
+      api.GET('/v1/issues/{id}/body', {
+        params: { path: { id: issue.id } },
+        next: { revalidate: 60 },
+      }),
+    ), // Cache for 60s
+    unwrap(
+      api.GET('/v1/pledges/summary', {
+        params: { query: { issue_id: issue.id } },
+        ...cacheConfig,
+      }),
+    ),
+    unwrap(
+      api.GET('/v1/rewards/summary', {
+        params: { query: { issue_id: issue.id } },
+        ...cacheConfig,
+      }),
+    ),
+  ])
 
-    issueHTMLBody = bodyResponse as string
-    pledgers = pledgeSummary.pledges
-      .map(({ pledger }) => pledger)
-      .filter((p): p is Pledger => !!p)
-    rewards = rewardsSummary
-  } catch (e) {
-    if (e instanceof ResponseError && e.response.status === 404) {
-      notFound()
-    }
-  }
+  issueHTMLBody = bodyResponse as string
+  pledgers = pledgeSummary.pledges
+    .map(({ pledger }) => pledger)
+    .filter((p): p is components['schemas']['Pledger'] => !!p)
+  rewards = rewardsSummary
 
   // Closed issue, redirect to donation instead if linked organization
   if (issue.issue_closed_at) {

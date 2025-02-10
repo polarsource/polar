@@ -1,12 +1,5 @@
 import { AutorenewOutlined } from '@mui/icons-material'
 import {
-  DiscountCreate,
-  DiscountDuration,
-  DiscountType,
-  DiscountUpdate,
-  Organization,
-} from '@polar-sh/api'
-import {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -25,6 +18,7 @@ import {
 } from '@polar-sh/ui/components/atoms/Select'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 
+import { components } from '@polar-sh/client'
 import DateTimePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
 import {
   FormControl,
@@ -39,7 +33,7 @@ import { useFormContext } from 'react-hook-form'
 import ProductSelect from '../Products/ProductSelect'
 
 interface DiscountFormProps {
-  organization: Organization
+  organization: components['schemas']['Organization']
   update: boolean
   redemptionsCount?: number
 }
@@ -50,10 +44,15 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
   redemptionsCount,
 }) => {
   const { control, watch, setValue } = useFormContext<
-    (DiscountCreate | DiscountUpdate) & { products: { id: string }[] }
+    (
+      | components['schemas']['DiscountCreate']
+      | components['schemas']['DiscountUpdate']
+    ) & { products: { id: string }[] }
   >()
-  const type = watch('type') as DiscountType
-  const duration = watch('duration') as DiscountDuration
+  const type = watch('type') as components['schemas']['DiscountType']
+  const duration = watch(
+    'duration',
+  ) as components['schemas']['DiscountDuration']
 
   const now = useMemo(() => new Date(), [])
   const startsAt = watch('starts_at')
@@ -135,25 +134,25 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
         <Tabs
           value={type}
           onValueChange={(value: string) =>
-            setValue('type', value as DiscountType)
+            setValue('type', value as components['schemas']['DiscountType'])
           }
         >
           <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-100">
-            <TabsTrigger className="flex-grow" value={DiscountType.PERCENTAGE}>
+            <TabsTrigger className="flex-grow" value="percentage">
               Percentage discount
             </TabsTrigger>
-            <TabsTrigger className="flex-grow" value={DiscountType.FIXED}>
+            <TabsTrigger className="flex-grow" value="fixed">
               Fixed amount discount
             </TabsTrigger>
           </TabsList>
         </Tabs>
       )}
 
-      {type === DiscountType.PERCENTAGE && (
+      {type === 'percentage' && (
         <FormField
           control={control}
           name="basis_points"
-          shouldUnregister={type !== DiscountType.PERCENTAGE}
+          shouldUnregister={type !== 'percentage'}
           rules={{
             required: 'This field is required',
             min: { value: 1, message: 'This field must be at least 0.01%' },
@@ -187,11 +186,11 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
         />
       )}
 
-      {type === DiscountType.FIXED && (
+      {type === 'fixed' && (
         <FormField
           control={control}
           name="amount"
-          shouldUnregister={type !== DiscountType.FIXED}
+          shouldUnregister={type !== 'fixed'}
           rules={{
             required: 'This field is required',
             min: { value: 1, message: 'This field must be at least 1' },
@@ -249,24 +248,20 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
                           <SelectValue placeholder="Select duration" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={DiscountDuration.ONCE}>
-                            Once
-                          </SelectItem>
-                          <SelectItem value={DiscountDuration.FOREVER}>
-                            Forever
-                          </SelectItem>
-                          <SelectItem value={DiscountDuration.REPEATING}>
+                          <SelectItem value="once">Once</SelectItem>
+                          <SelectItem value="forever">Forever</SelectItem>
+                          <SelectItem value="repeating">
                             For several months
                           </SelectItem>
                         </SelectContent>
                       </Select>
                     </FormControl>
                     <FormDescription>
-                      {duration === DiscountDuration.ONCE &&
+                      {duration === 'once' &&
                         'The discount is applied once on the first invoice.'}
-                      {duration === DiscountDuration.FOREVER &&
+                      {duration === 'forever' &&
                         'The discount is applied on every invoice.'}
-                      {duration === DiscountDuration.REPEATING &&
+                      {duration === 'repeating' &&
                         'The discount is applied for a set number of months.'}
                     </FormDescription>
                     <FormMessage />
@@ -274,11 +269,11 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
                 )
               }}
             />
-            {duration === DiscountDuration.REPEATING && (
+            {duration === 'repeating' && (
               <FormField
                 control={control}
                 name="duration_in_months"
-                shouldUnregister={duration !== DiscountDuration.REPEATING}
+                shouldUnregister={duration !== 'repeating'}
                 rules={{
                   required: 'This field is required',
                   min: {

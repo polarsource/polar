@@ -1,10 +1,10 @@
-import { PledgeStripePaymentIntentMutationResponse } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 
 const Subtotal = ({
   paymentIntent,
 }: {
-  paymentIntent?: PledgeStripePaymentIntentMutationResponse
+  paymentIntent?: components['schemas']['PledgeStripePaymentIntentMutationResponse']
 }) => {
   const amount = paymentIntent?.amount || 0
   const fee = paymentIntent?.fee || 0

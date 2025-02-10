@@ -1052,6 +1052,12 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         checkout.status = CheckoutStatus.failed
         session.add(checkout)
 
+        # Make sure to remove the Discount Redemptions
+        # To avoid race conditions, we save the Discount Redemption when *confirming*
+        # the Checkout.
+        # However, if it ultimately fails, we need to free up the Discount Redemption.
+        await discount_service.remove_checkout_redemption(session, checkout)
+
         await self._after_checkout_updated(session, checkout)
 
         return checkout

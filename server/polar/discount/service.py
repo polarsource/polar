@@ -3,7 +3,7 @@ import uuid
 from collections.abc import AsyncIterator, Sequence
 from typing import Any
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
+from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -22,6 +22,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.checkout import Checkout
 from polar.models.discount_redemption import DiscountRedemption
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
@@ -409,6 +410,14 @@ class DiscountService(ResourceServiceReader[Discount]):
 
             session.add(discount_redemption)
             await session.flush()
+
+    async def remove_checkout_redemption(
+        self, session: AsyncSession, checkout: Checkout
+    ) -> None:
+        statement = delete(DiscountRedemption).where(
+            DiscountRedemption.checkout_id == checkout.id
+        )
+        await session.execute(statement)
 
     def _get_readable_discount_statement(
         self, auth_subject: AuthSubject[User | Organization]

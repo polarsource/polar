@@ -34,6 +34,7 @@ from polar.checkout.service import (
 from polar.checkout.service import checkout as checkout_service
 from polar.customer.service import customer as customer_service
 from polar.customer_session.service import customer_session as customer_session_service
+from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarRequestValidationError
@@ -47,6 +48,7 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
+    DiscountRedemption,
     Organization,
     Product,
     User,
@@ -2712,6 +2714,35 @@ class TestHandleStripeFailure:
         )
 
         assert checkout.status == CheckoutStatus.failed
+
+    async def test_valid_with_redemption(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_confirmed_one_time: Checkout,
+        discount_fixed_once: Discount,
+    ) -> None:
+        discount_redemption = DiscountRedemption(
+            discount=discount_fixed_once,
+            checkout=checkout_confirmed_one_time,
+        )
+        await save_fixture(discount_redemption)
+
+        checkout = await checkout_service.handle_stripe_failure(
+            session,
+            checkout_confirmed_one_time.id,
+            build_stripe_payment_intent(),
+        )
+
+        assert checkout.status == CheckoutStatus.failed
+
+        discount_redemption_repository = DiscountRedemptionRepository.from_session(
+            session
+        )
+        assert (
+            await discount_redemption_repository.get_by_id(discount_redemption.id)
+            is None
+        )
 
 
 @pytest.mark.asyncio

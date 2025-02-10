@@ -23,6 +23,32 @@ export const createClient = (
     },
   })
 
+export class ClientResponseError extends Error {
+  error: any
+  response: Response
+
+  constructor(error: any, response: Response) {
+    super(error.message)
+    this.name = 'ClientResponseError'
+    this.error = error
+    this.response = response
+  }
+}
+
+export class UnauthorizedResponseError extends ClientResponseError {
+  constructor(error: any, response: Response) {
+    super(error, response)
+    this.name = 'UnauthorizedResponseError'
+  }
+}
+
+export class NotFoundResponseError extends ClientResponseError {
+  constructor(error: any, response: Response) {
+    super(error, response)
+    this.name = 'NotFoundResponseError'
+  }
+}
+
 export const unwrap = async <
   T extends Record<string | number, any>,
   Options,
@@ -42,9 +68,16 @@ export const unwrap = async <
       return handler(response)
     }
   }
+
   if (error) {
-    throw new Error(error)
+    if (response.status === 401) {
+      throw new UnauthorizedResponseError(error, response)
+    } else if (response.status === 404) {
+      throw new NotFoundResponseError(error, response)
+    }
+    throw new ClientResponseError(error, response)
   }
+
   if (!data) {
     throw new Error('No data returned')
   }

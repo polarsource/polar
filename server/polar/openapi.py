@@ -6,6 +6,7 @@ from fastapi.openapi.utils import get_openapi
 
 from polar.config import Environment, settings
 from polar.kit.metadata import add_metadata_query_schema
+from polar.oauth2.schemas import add_oauth2_form_schemas
 
 
 class OpenAPIExternalDoc(TypedDict):
@@ -130,6 +131,7 @@ def set_openapi_generator(app: FastAPI) -> None:
         )
 
         openapi_schema = add_metadata_query_schema(openapi_schema)
+        openapi_schema = add_oauth2_form_schemas(openapi_schema)
 
         return openapi_schema
 

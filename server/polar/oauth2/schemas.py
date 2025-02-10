@@ -1,7 +1,8 @@
 import ipaddress
 import re
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
+from fastapi.openapi.constants import REF_TEMPLATE
 from pydantic import (
     UUID4,
     AfterValidator,
@@ -133,12 +134,6 @@ class RefreshTokenRequest(TokenRequestBase):
     refresh_token: str
 
 
-TokenRequest = Annotated[
-    AuthorizationCodeTokenRequest | RefreshTokenRequest, Discriminator("grant_type")
-]
-TokenRequestAdapter: TypeAdapter[TokenRequest] = TypeAdapter(TokenRequest)
-
-
 class TokenResponse(Schema):
     access_token: str
     token_type: Literal["Bearer"]
@@ -191,3 +186,19 @@ class UserInfoOrganization(Schema):
 
 
 UserInfo = UserInfoUser | UserInfoOrganization
+
+
+def add_oauth2_form_schemas(openapi_schema: dict[str, Any]) -> dict[str, Any]:
+    openapi_schema["components"]["schemas"]["AuthorizationCodeTokenRequest"] = (
+        AuthorizationCodeTokenRequest.model_json_schema(ref_template=REF_TEMPLATE)
+    )
+    openapi_schema["components"]["schemas"]["RefreshTokenRequest"] = (
+        RefreshTokenRequest.model_json_schema(ref_template=REF_TEMPLATE)
+    )
+    openapi_schema["components"]["schemas"]["RevokeTokenRequest"] = (
+        RevokeTokenRequest.model_json_schema(ref_template=REF_TEMPLATE)
+    )
+    openapi_schema["components"]["schemas"]["IntrospectTokenRequest"] = (
+        IntrospectTokenRequest.model_json_schema(ref_template=REF_TEMPLATE)
+    )
+    return openapi_schema

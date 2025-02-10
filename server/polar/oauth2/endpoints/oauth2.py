@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from typing import Literal, cast
 
 from fastapi import Depends, Form, HTTPException, Request, Response
+from fastapi.openapi.constants import REF_TEMPLATE
 
 from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import is_user
@@ -198,6 +199,25 @@ async def consent(
     name="oauth2:request_token",
     operation_id="oauth2:request_token",
     tags=[APITag.featured, APITag.documented],
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                "application/x-www-form-urlencoded": {
+                    "schema": {
+                        "oneOf": [
+                            {
+                                "$ref": REF_TEMPLATE.format(
+                                    model="AuthorizationCodeTokenRequest"
+                                )
+                            },
+                            {"$ref": REF_TEMPLATE.format(model="RefreshTokenRequest")},
+                        ]
+                    }
+                }
+            },
+        },
+    },
     response_model=TokenResponse,
 )
 async def token(
@@ -215,6 +235,16 @@ async def token(
     name="oauth2:revoke_token",
     operation_id="oauth2:revoke_token",
     tags=[APITag.featured, APITag.documented],
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                "application/x-www-form-urlencoded": {
+                    "schema": {"$ref": REF_TEMPLATE.format(model="RevokeTokenRequest")}
+                }
+            },
+        },
+    },
     response_model=RevokeTokenResponse,
 )
 async def revoke(
@@ -234,6 +264,18 @@ async def revoke(
     name="oauth2:introspect_token",
     operation_id="oauth2:introspect_token",
     tags=[APITag.featured, APITag.documented],
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                "application/x-www-form-urlencoded": {
+                    "schema": {
+                        "$ref": REF_TEMPLATE.format(model="IntrospectTokenRequest")
+                    }
+                }
+            },
+        },
+    },
     response_model=IntrospectTokenResponse,
 )
 async def introspect(

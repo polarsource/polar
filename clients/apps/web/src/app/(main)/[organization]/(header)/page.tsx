@@ -6,7 +6,7 @@ import ClientPage from './ClientPage'
 
 const cacheConfig = {
   next: {
-    revalidate: 30, // 30 seconds
+    revalidate: 600,
   },
 }
 

@@ -62,7 +62,7 @@ export const GitHubRepositoryBenefitForm = ({
 
   useEffect(() => {
     if (repositoriesError) {
-      repositoriesError.response.json().then((data) => {
+      repositoriesError.response.json().then((data: any) => {
         setError('properties.repository_owner', {
           message: data['detail'],
           type: data['type'],
@@ -189,7 +189,7 @@ export const GitHubRepositoryBenefitForm = ({
       searchParams.set('description', description)
     }
     const returnTo = `${pathname}?${searchParams}`
-    return getGitHubRepositoryBenefitAuthorizeURL({ returnTo })
+    return getGitHubRepositoryBenefitAuthorizeURL({ return_to: returnTo })
   }, [pathname, description, update])
 
   if (!userGitHubBenefitOauth) {

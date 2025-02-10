@@ -1,10 +1,10 @@
 'use client'
 
-import { Product } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { CheckoutPreview } from './CheckoutPreview'
 
 export interface CheckoutCustomizationProps {
-  product?: Product
+  product?: components['schemas']['Product']
 }
 
 export const CheckoutCustomization = ({

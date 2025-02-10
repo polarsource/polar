@@ -1,27 +1,26 @@
-import {
-  CheckoutDiscount,
-  CheckoutDiscountFixedOnceForeverDuration,
-  CheckoutDiscountFixedRepeatDuration,
-  CheckoutDiscountPercentageOnceForeverDuration,
-  CheckoutDiscountPercentageRepeatDuration,
-  DiscountType,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+
+type CheckoutDiscount =
+  | components['schemas']['CheckoutDiscountFixedOnceForeverDuration']
+  | components['schemas']['CheckoutDiscountFixedRepeatDuration']
+  | components['schemas']['CheckoutDiscountPercentageOnceForeverDuration']
+  | components['schemas']['CheckoutDiscountPercentageRepeatDuration']
 
 const isDiscountFixed = (
   discount: CheckoutDiscount,
 ): discount is
-  | CheckoutDiscountFixedOnceForeverDuration
-  | CheckoutDiscountFixedRepeatDuration => {
-  return discount.type === DiscountType.FIXED
+  | components['schemas']['CheckoutDiscountFixedOnceForeverDuration']
+  | components['schemas']['CheckoutDiscountFixedRepeatDuration'] => {
+  return discount.type === 'fixed'
 }
 
 const isDiscountPercentage = (
   discount: CheckoutDiscount,
 ): discount is
-  | CheckoutDiscountPercentageOnceForeverDuration
-  | CheckoutDiscountPercentageRepeatDuration => {
-  return discount.type === DiscountType.PERCENTAGE
+  | components['schemas']['CheckoutDiscountPercentageOnceForeverDuration']
+  | components['schemas']['CheckoutDiscountPercentageRepeatDuration'] => {
+  return discount.type === 'percentage'
 }
 
 const percentageFormatter = new Intl.NumberFormat('en-US', {

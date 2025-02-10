@@ -1,8 +1,12 @@
-import { Event } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 
-export const MeterEvents = ({ events }: { events: Event[] }) => {
+export const MeterEvents = ({
+  events,
+}: {
+  events: components['schemas']['Event'][]
+}) => {
   return (
     <DataTable
       columns={[

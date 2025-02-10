@@ -1,14 +1,10 @@
 'use client'
 
-import {
-  ProductPrice,
-  ProductPriceType,
-  SubscriptionRecurringInterval,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import ProductPriceLabel from './ProductPriceLabel'
 
 interface ProductPrices {
-  prices: ProductPrice[]
+  prices: components['schemas']['ProductPrice'][]
 }
 
 const ProductPrices: React.FC<ProductPrices> = ({ prices }) => {
@@ -24,13 +20,11 @@ const ProductPrices: React.FC<ProductPrices> = ({ prices }) => {
   if (prices.length > 1) {
     const monthlyPrice = prices.find(
       (price) =>
-        price.type === ProductPriceType.RECURRING &&
-        price.recurring_interval === SubscriptionRecurringInterval.MONTH,
+        price.type === 'recurring' && price.recurring_interval === 'month',
     )
     const yearlyPrice = prices.find(
       (price) =>
-        price.type === ProductPriceType.RECURRING &&
-        price.recurring_interval === SubscriptionRecurringInterval.YEAR,
+        price.type === 'recurring' && price.recurring_interval === 'year',
     )
     return (
       <div className="flex gap-1">

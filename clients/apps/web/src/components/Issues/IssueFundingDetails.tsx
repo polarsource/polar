@@ -1,19 +1,14 @@
-import {
-  CurrencyAmount,
-  Issue,
-  Organization,
-  PledgesTypeSummaries,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import FundingPill from './FundingPill'
 import PledgeSummaryPill from './PledgeSummaryPill'
 import PublicRewardPill from './PublicRewardPill'
 
 interface IssueFundingDetailsProps {
-  organization: Organization
-  issue: Issue
-  total: CurrencyAmount
-  fundingGoal: CurrencyAmount | null
-  pledgesSummaries: PledgesTypeSummaries
+  organization: components['schemas']['Organization']
+  issue: components['schemas']['Issue']
+  total: components['schemas']['CurrencyAmount']
+  fundingGoal: components['schemas']['CurrencyAmount'] | null
+  pledgesSummaries: components['schemas']['PledgesTypeSummaries']
   showLogo?: boolean
   showStatus?: boolean
   summaryRight?: React.ReactElement

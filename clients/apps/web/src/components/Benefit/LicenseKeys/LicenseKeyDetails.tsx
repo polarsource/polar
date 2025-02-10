@@ -1,11 +1,11 @@
-import { LicenseKeyRead } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { twMerge } from 'tailwind-merge'
 
 export interface LicenseKeyDetails {
   className?: string
-  licenseKey: LicenseKeyRead
+  licenseKey: components['schemas']['LicenseKeyRead']
 }
 
 export const LicenseKeyDetails = ({

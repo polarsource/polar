@@ -2,15 +2,7 @@ import {
   CheckCircleIcon,
   ChevronDoubleRightIcon,
 } from '@heroicons/react/24/outline'
-import {
-  Funding,
-  Issue,
-  Organization,
-  Pledge,
-  PledgeState,
-  PledgeType,
-  PledgesTypeSummaries,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
@@ -21,15 +13,15 @@ import PledgeSummaryPill from './PledgeSummaryPill'
 import PublicRewardPill from './PublicRewardPill'
 
 interface Props {
-  pledges: Array<Pledge>
+  pledges: Array<components['schemas']['Pledge']>
   onConfirmPledges: () => void
   showConfirmPledgeAction: boolean
   confirmPledgeIsLoading: boolean
-  funding: Funding
+  funding: components['schemas']['Funding']
 
-  issue: Issue
-  pledgesSummary: PledgesTypeSummaries
-  organization: Organization
+  issue: components['schemas']['Issue']
+  pledgesSummary: components['schemas']['PledgesTypeSummaries']
+  organization: components['schemas']['Organization']
 }
 
 const IssuePledge = (props: Props) => {
@@ -157,13 +149,11 @@ const IssuePledge = (props: Props) => {
                 href={p.hosted_invoice_url}
                 className="border-1 dark:text-polar-200 dark:border-polar-400 dark:hover:bg-polar-700 flex items-center gap-2 rounded-md border border-gray-200 py-1 pl-3 pr-2 text-sm text-gray-700 hover:bg-gray-50"
               >
-                {p.state === PledgeState.CREATED ? (
-                  <span>Pay Invoice</span>
-                ) : null}
-                {p.state === PledgeState.PENDING ? (
+                {p.state === 'created' ? <span>Pay Invoice</span> : null}
+                {p.state === 'pending' ? (
                   <span className="text-xs">Invoice Paid</span>
                 ) : null}
-                {p.state === PledgeState.CREATED ? (
+                {p.state === 'created' ? (
                   <ChevronDoubleRightIcon className="h-4 w-4" />
                 ) : null}
               </a>
@@ -175,13 +165,13 @@ const IssuePledge = (props: Props) => {
   )
 }
 
-const pledgeVerb = (p: Pledge) => {
+const pledgeVerb = (p: components['schemas']['Pledge']) => {
   switch (p.type) {
-    case PledgeType.UPFRONT:
+    case 'pay_upfront':
       return 'contributed'
-    case PledgeType.ON_COMPLETION:
+    case 'pay_on_completion':
       return 'pledged'
-    case PledgeType.DIRECTLY:
+    case 'pay_directly':
       return 'gifted'
     default:
       // TS compile time check that all cases are covered

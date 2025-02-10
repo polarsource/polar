@@ -4,7 +4,7 @@ import {
   EditOutlined,
   PanoramaOutlined,
 } from '@mui/icons-material'
-import { Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { upload } from '@vercel/blob/client'
 import Image from 'next/image'
@@ -12,7 +12,7 @@ import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface CoverEditorProps {
-  organization: Organization
+  organization: components['schemas']['Organization']
   coverImageUrl?: string
   onChange: (coverImageUrl: string | undefined) => void
   disabled?: boolean

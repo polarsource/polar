@@ -2,14 +2,7 @@ import IssueBadge from '@/components/Embed/IssueBadge'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { resolveIssuePath } from '@/utils/issue'
 import { getStorefront } from '@/utils/storefront'
-import {
-  Issue,
-  Organization,
-  PledgePledgesSummary,
-  Pledger,
-  State,
-} from '@polar-sh/api'
-import { Client, unwrap } from '@polar-sh/client'
+import { Client, components, unwrap } from '@polar-sh/client'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
@@ -19,9 +12,9 @@ const cacheConfig = {
 }
 
 type Data = {
-  issue: Issue
-  organization: Organization
-  pledges: PledgePledgesSummary
+  issue: components['schemas']['Issue']
+  organization: components['schemas']['Organization']
+  pledges: components['schemas']['PledgePledgesSummary']
   donationsEnabled: boolean
 }
 
@@ -79,7 +72,7 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
   const avatarUrlsSet = new Set(
     pledges
       .map(({ pledger }) => pledger)
-      .filter((p): p is Pledger => !!p)
+      .filter((p): p is components['schemas']['Pledger'] => !!p)
       .map((p) => p.avatar_url ?? '')
       .filter((s) => s.length > 0),
   )
@@ -106,9 +99,7 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
       avatarsUrls={Array.from(avatarUrlsSet)}
       upfront_split_to_contributors={upfront_split_to_contributors}
       orgName={issue.repository.organization.name}
-      issueIsClosed={
-        Boolean(issue.issue_closed_at) || issue.state === State.CLOSED
-      }
+      issueIsClosed={Boolean(issue.issue_closed_at) || issue.state === 'closed'}
       donationsEnabled={donationsEnabled}
     />,
     {

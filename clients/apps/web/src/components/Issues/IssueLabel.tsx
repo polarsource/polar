@@ -1,4 +1,4 @@
-import { Label } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 
 const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
   var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
@@ -91,7 +91,7 @@ const TEXT_SATURATION_DARK = 0.2
 const TEXT_VALUE_LIGHT = 0.35
 const TEXT_VALUE_DARK = 0.8
 
-const IssueLabel = (props: { label: Label }) => {
+const IssueLabel = (props: { label: components['schemas']['Label'] }) => {
   const { name, color } = props.label
 
   const rgb = hexToRgb(color)

@@ -1,8 +1,8 @@
-import { Pledger } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import type { Meta, StoryObj } from '@storybook/react'
 import PledgeSummaryPill from './PledgeSummaryPill'
 
-const pledger: Pledger = {
+const pledger: components['schemas']['Pledger'] = {
   name: 'zegl',
   github_username: 'zegl',
   avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',

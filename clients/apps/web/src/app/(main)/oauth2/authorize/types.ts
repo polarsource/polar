@@ -1,3 +1,4 @@
-import { ResponseOauth2Authorize } from '@polar-sh/api'
+import { operations } from '@polar-sh/client'
 
-export type AuthorizeResponse = ResponseOauth2Authorize
+export type AuthorizeResponse =
+  operations['oauth2:authorize']['responses']['200']['content']['application/json']

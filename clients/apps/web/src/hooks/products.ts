@@ -2,29 +2,24 @@ import {
   getRecurringBillingLabel,
   getRecurringProductPrice,
 } from '@/components/Subscriptions/utils'
-import {
-  Product,
-  ProductPriceRecurring,
-  ProductPriceType,
-  ProductStorefront,
-  SubscriptionRecurringInterval,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { Dispatch, SetStateAction, useMemo, useState } from 'react'
 import { useProducts } from './queries'
 
 export const useRecurringInterval = (
-  products: ProductStorefront[],
+  products: components['schemas']['ProductStorefront'][],
 ): [
-  SubscriptionRecurringInterval,
-  Dispatch<SetStateAction<SubscriptionRecurringInterval>>,
+  components['schemas']['SubscriptionRecurringInterval'],
+  Dispatch<
+    SetStateAction<components['schemas']['SubscriptionRecurringInterval']>
+  >,
   boolean,
 ] => {
   const hasMonthInterval = useMemo(() => {
     return products.some((product) =>
       product.prices.some(
         (price) =>
-          price.type === 'recurring' &&
-          price.recurring_interval === SubscriptionRecurringInterval.MONTH,
+          price.type === 'recurring' && price.recurring_interval === 'month',
       ),
     )
   }, [products])
@@ -32,8 +27,7 @@ export const useRecurringInterval = (
     return products.some((product) =>
       product.prices.some(
         (price) =>
-          price.type === 'recurring' &&
-          price.recurring_interval === SubscriptionRecurringInterval.YEAR,
+          price.type === 'recurring' && price.recurring_interval === 'year',
       ),
     )
   }, [products])
@@ -42,22 +36,17 @@ export const useRecurringInterval = (
     [hasMonthInterval, hasYearInterval],
   )
 
-  const [recurringInterval, setRecurringInterval] =
-    useState<SubscriptionRecurringInterval>(
-      hasBothIntervals
-        ? SubscriptionRecurringInterval.MONTH
-        : hasYearInterval
-          ? SubscriptionRecurringInterval.YEAR
-          : SubscriptionRecurringInterval.MONTH,
-    )
+  const [recurringInterval, setRecurringInterval] = useState<
+    components['schemas']['SubscriptionRecurringInterval']
+  >(hasBothIntervals ? 'month' : hasYearInterval ? 'year' : 'month')
 
   return [recurringInterval, setRecurringInterval, hasBothIntervals]
 }
 
 export const useRecurringProductPrice = (
-  product: Partial<ProductStorefront>,
-  recurringInterval: SubscriptionRecurringInterval,
-): ProductPriceRecurring | undefined => {
+  product: Partial<components['schemas']['ProductStorefront']>,
+  recurringInterval: components['schemas']['SubscriptionRecurringInterval'],
+): components['schemas']['ProductPriceRecurring'] | undefined => {
   return useMemo(
     () => getRecurringProductPrice(product, recurringInterval),
     [product, recurringInterval],
@@ -65,7 +54,9 @@ export const useRecurringProductPrice = (
 }
 
 export const useRecurringBillingLabel = (
-  recurringInterval: SubscriptionRecurringInterval | null,
+  recurringInterval:
+    | components['schemas']['SubscriptionRecurringInterval']
+    | null,
 ) => {
   return useMemo(
     () =>
@@ -76,21 +67,20 @@ export const useRecurringBillingLabel = (
 
 export const useProductsByPriceType = (
   organizationId: string,
-): Record<ProductPriceType, Product[]> => {
+): Record<
+  components['schemas']['ProductPriceType'],
+  components['schemas']['Product'][]
+> => {
   const { data: products } = useProducts(organizationId, { limit: 100 })
   return useMemo(
     () => ({
-      [ProductPriceType.ONE_TIME]:
+      one_time:
         products?.items.filter((product) =>
-          product.prices.some(
-            (price) => price.type === ProductPriceType.ONE_TIME,
-          ),
+          product.prices.some((price) => price.type === 'one_time'),
         ) || [],
-      [ProductPriceType.RECURRING]:
+      recurring:
         products?.items.filter((product) =>
-          product.prices.some(
-            (price) => price.type === ProductPriceType.RECURRING,
-          ),
+          product.prices.some((price) => price.type === 'recurring'),
         ) || [],
     }),
     [products],

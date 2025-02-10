@@ -7,7 +7,6 @@ import {
 import { setValidationErrors } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
 import { ClearOutlined } from '@mui/icons-material'
-import { CheckoutLink, Product } from '@polar-sh/api'
 import { components, isValidationError } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -44,9 +43,9 @@ type CheckoutLinksForm = Omit<
 }
 
 export interface CheckoutLinkFormProps {
-  product: Product
-  checkoutLink?: CheckoutLink
-  onClose: (checkoutLink: CheckoutLink) => void
+  product: components['schemas']['Product']
+  checkoutLink?: components['schemas']['CheckoutLink']
+  onClose: (checkoutLink: components['schemas']['CheckoutLink']) => void
 }
 
 export const CheckoutLinkForm = ({

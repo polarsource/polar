@@ -8,7 +8,7 @@ import {
   metricDisplayNames,
   MetricMarksResolver,
 } from '@/utils/metrics'
-import { Metric, Metrics, MetricType, TimeInterval } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
   Select,
@@ -26,13 +26,13 @@ import MetricChart from './MetricChart'
 interface MetricChartBoxProps {
   className?: string
   data: ParsedMetricPeriod[]
-  interval: TimeInterval
-  metric?: Metric
+  interval: components['schemas']['TimeInterval']
+  metric?: components['schemas']['Metric']
   height?: number
   maxTicks?: number
   marks?: MetricMarksResolver
   loading?: boolean
-  defaultMetric?: keyof Metrics
+  defaultMetric?: keyof components['schemas']['Metrics']
   compact?: boolean
 }
 
@@ -48,7 +48,7 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
   defaultMetric,
 }) => {
   const [selectedMetric, setSelectedMetric] = React.useState<
-    keyof Metrics | undefined
+    keyof components['schemas']['Metrics'] | undefined
   >(defaultMetric)
 
   const [hoveredMetricPeriod, setHoveredMetricPeriod] =
@@ -83,7 +83,7 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
           }),
         )
 
-    if (currentMetric?.type === MetricType.CURRENCY) {
+    if (currentMetric?.type === 'currency') {
       return `$${getCentsInDollarString(value ?? 0)}`
     } else {
       return value
@@ -115,7 +115,9 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
             <Select
               value={selectedMetric}
               onValueChange={(value) =>
-                setSelectedMetric(value as keyof Metrics)
+                setSelectedMetric(
+                  value as keyof components['schemas']['Metrics'],
+                )
               }
             >
               <SelectTrigger className="h-fit w-fit border-0 border-none bg-transparent p-0 shadow-none ring-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 dark:hover:bg-transparent">
@@ -179,7 +181,11 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
             marks={marks}
             maxTicks={maxTicks}
             metric={
-              isMetricObject ? metric : metric[selectedMetric as keyof Metrics]
+              isMetricObject
+                ? metric
+                : metric[
+                    selectedMetric as keyof components['schemas']['Metrics']
+                  ]
             }
             onDataIndexHover={(period) =>
               setHoveredMetricPeriod(data[period as number] ?? null)

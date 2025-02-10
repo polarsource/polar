@@ -1,15 +1,4 @@
-import {
-  ProductPrice,
-  Transaction,
-  TransactionExternalOrganization,
-  TransactionIssue,
-  TransactionIssueReward,
-  TransactionOrder,
-  TransactionOrganization,
-  TransactionPledge,
-  TransactionProduct,
-  TransactionRepository,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import type { Meta, StoryObj } from '@storybook/react'
 import TransactionsList from './TransactionsList'
 
@@ -22,7 +11,7 @@ export default meta
 
 type Story = StoryObj<typeof TransactionsList>
 
-const tx: Transaction = {
+const tx: components['schemas']['Transaction'] = {
   created_at: '2024-03-27',
   modified_at: null,
   id: '',
@@ -47,7 +36,7 @@ const tx: Transaction = {
   order: null,
 }
 
-const issue_reward: TransactionIssueReward = {
+const issue_reward: components['schemas']['TransactionIssueReward'] = {
   created_at: '',
   modified_at: null,
   id: '',
@@ -55,7 +44,7 @@ const issue_reward: TransactionIssueReward = {
   share_thousands: 800,
 }
 
-const organization: TransactionOrganization = {
+const organization: components['schemas']['TransactionOrganization'] = {
   created_at: '',
   modified_at: null,
   id: '',
@@ -64,17 +53,18 @@ const organization: TransactionOrganization = {
   avatar_url: 'https://avatars.githubusercontent.com/u/1144727?s=60&v=4',
 }
 
-const externalOrganization: TransactionExternalOrganization = {
-  id: '',
-  created_at: '',
-  modified_at: null,
-  name: 'OrgName',
-  platform: 'github',
-  avatar_url: 'https://avatars.githubusercontent.com/u/1144727?s=60&v=4',
-  is_personal: false,
-}
+const externalOrganization: components['schemas']['TransactionExternalOrganization'] =
+  {
+    id: '',
+    created_at: '',
+    modified_at: null,
+    name: 'OrgName',
+    platform: 'github',
+    avatar_url: 'https://avatars.githubusercontent.com/u/1144727?s=60&v=4',
+    is_personal: false,
+  }
 
-const repository: TransactionRepository = {
+const repository: components['schemas']['TransactionRepository'] = {
   created_at: '',
   modified_at: null,
   id: '',
@@ -83,7 +73,7 @@ const repository: TransactionRepository = {
   name: 'reponame',
 }
 
-const issue: TransactionIssue = {
+const issue: components['schemas']['TransactionIssue'] = {
   created_at: '',
   modified_at: null,
   id: '',
@@ -96,7 +86,7 @@ const issue: TransactionIssue = {
   repository,
 }
 
-const pledge: TransactionPledge = {
+const pledge: components['schemas']['TransactionPledge'] = {
   created_at: '',
   modified_at: null,
   id: '',
@@ -104,13 +94,13 @@ const pledge: TransactionPledge = {
   issue,
 }
 
-const txIssueReward: Transaction = {
+const txIssueReward: components['schemas']['Transaction'] = {
   ...tx,
   issue_reward,
   pledge,
 }
 
-const product: TransactionProduct = {
+const product: components['schemas']['TransactionProduct'] = {
   created_at: '',
   modified_at: null,
   id: '',
@@ -119,7 +109,7 @@ const product: TransactionProduct = {
   organization,
 }
 
-const product_price: ProductPrice = {
+const product_price: components['schemas']['ProductPrice'] = {
   created_at: '',
   modified_at: null,
   id: '',
@@ -132,7 +122,7 @@ const product_price: ProductPrice = {
   product_id: product.id,
 }
 
-const order: TransactionOrder = {
+const order: components['schemas']['TransactionOrder'] = {
   created_at: '',
   modified_at: null,
   id: '',
@@ -141,7 +131,7 @@ const order: TransactionOrder = {
   subscription_id: null,
 }
 
-const txOrder: Transaction = {
+const txOrder: components['schemas']['Transaction'] = {
   ...tx,
   order,
 }

@@ -3,7 +3,7 @@ import { OrderAmountWithRefund } from '@/components/Refunds/OrderAmountWithRefun
 import { ParsedMetricPeriod, useDiscounts } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { getDiscountDisplay } from '@/utils/discount'
-import { Metrics, OrderCustomer, Organization, Product } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -14,9 +14,9 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
 
 export interface ProductOverviewProps {
-  organization: Organization
-  product: Product
-  metrics?: Metrics
+  organization: components['schemas']['Organization']
+  product: components['schemas']['Product']
+  metrics?: components['schemas']['Metrics']
   periods?: ParsedMetricPeriod[]
 }
 
@@ -54,7 +54,11 @@ export const ProductOverview = ({
           metric={metrics?.orders}
           value={periods?.reduce((acc, current) => acc + current.orders, 0)}
         />
-        <MiniMetricChartBox title="Today's Revenue" metric={metrics?.revenue} value={periods?.[periods.length - 1].revenue} />
+        <MiniMetricChartBox
+          title="Today's Revenue"
+          metric={metrics?.revenue}
+          value={periods?.[periods.length - 1].revenue}
+        />
         <MiniMetricChartBox
           metric={metrics?.cumulative_revenue}
           value={periods?.[periods.length - 1].cumulative_revenue}
@@ -84,7 +88,8 @@ export const ProductOverview = ({
                 <DataTableColumnHeader column={column} title="Customer" />
               ),
               cell: (props) => {
-                const customer = props.getValue() as OrderCustomer
+                const customer =
+                  props.getValue() as components['schemas']['OrderCustomer']
                 return (
                   <div className="flex flex-row items-center gap-2">
                     <Avatar

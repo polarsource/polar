@@ -1,4 +1,4 @@
-import { BenefitType } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import React, { ReactNode, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
@@ -26,7 +26,13 @@ export const BenefitList = ({
   benefits,
   toggle = false,
 }: {
-  benefits: { id: string; type: BenefitType; description: string }[] | undefined
+  benefits:
+    | {
+        id: string
+        type: components['schemas']['BenefitType']
+        description: string
+      }[]
+    | undefined
   toggle?: boolean
 }) => {
   const [showAll, setShowAll] = useState(false)

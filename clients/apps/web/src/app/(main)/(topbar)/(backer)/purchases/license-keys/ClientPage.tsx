@@ -12,7 +12,7 @@ import {
 } from '@/hooks/queries'
 import { api } from '@/utils/client'
 import { Key } from '@mui/icons-material'
-import { BenefitType, CustomerBenefitGrantLicenseKeys } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -39,7 +39,7 @@ export default function ClientPage() {
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     limit: purchaseParameters.limit,
     page: purchaseParameters.page,
-    type: BenefitType.LICENSE_KEYS,
+    type: 'license_keys',
   })
 
   return (
@@ -68,7 +68,9 @@ export default function ClientPage() {
             {benefitGrants?.items.map((benefitGrant) => (
               <LicenseKeyItem
                 key={benefitGrant.id}
-                benefitGrant={benefitGrant as CustomerBenefitGrantLicenseKeys}
+                benefitGrant={
+                  benefitGrant as components['schemas']['CustomerBenefitGrantLicenseKeys']
+                }
               />
             ))}
             <Pagination
@@ -86,7 +88,7 @@ export default function ClientPage() {
 }
 
 interface LicenseKeyItemProps {
-  benefitGrant: CustomerBenefitGrantLicenseKeys
+  benefitGrant: components['schemas']['CustomerBenefitGrantLicenseKeys']
 }
 
 const LicenseKeyItem = ({ benefitGrant }: LicenseKeyItemProps) => {

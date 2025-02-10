@@ -1,8 +1,12 @@
 import { useMeters } from '@/hooks/queries/meters'
-import { Customer, Meter } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
 
-export const CustomerUsageView = ({ customer }: { customer: Customer }) => {
+export const CustomerUsageView = ({
+  customer,
+}: {
+  customer: components['schemas']['Customer']
+}) => {
   const { data: meters } = useMeters(customer.organization_id)
 
   return (
@@ -16,7 +20,11 @@ export const CustomerUsageView = ({ customer }: { customer: Customer }) => {
   )
 }
 
-const CustomerMeter = ({ meter }: { meter: Meter }) => {
+const CustomerMeter = ({
+  meter,
+}: {
+  meter: components['schemas']['Meter']
+}) => {
   // const { data } = useMeterEvents(meter.id)
   // const meterEvents = useMemo(() => {
   //   if (!data) return []

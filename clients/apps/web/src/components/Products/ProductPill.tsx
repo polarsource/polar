@@ -1,15 +1,13 @@
-import {
-  CheckoutProduct,
-  Product,
-  ProductPrice,
-  ProductStorefront,
-  TransactionProduct,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import ProductPriceLabel from './ProductPriceLabel'
 
 interface ProductPillProps {
-  product: Product | TransactionProduct | ProductStorefront | CheckoutProduct
-  price?: ProductPrice
+  product:
+    | components['schemas']['Product']
+    | components['schemas']['TransactionProduct']
+    | components['schemas']['ProductStorefront']
+    | components['schemas']['CheckoutProduct']
+  price?: components['schemas']['ProductPrice']
 }
 
 const ProductPill: React.FC<ProductPillProps> = ({ product, price }) => {

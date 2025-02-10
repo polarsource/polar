@@ -8,12 +8,6 @@ import { setValidationErrors } from '@/utils/api/errors'
 import { CONFIG } from '@/utils/config'
 import { ErrorMessage } from '@hookform/error-message'
 import { AddPhotoAlternateOutlined } from '@mui/icons-material'
-import {
-  FileServiceTypes,
-  Organization,
-  OrganizationAvatarFileRead,
-  OrganizationUpdate,
-} from '@polar-sh/api'
 import { components, isValidationError } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -56,7 +50,7 @@ const StorefrontSidebarContentWrapper = ({
 }: PropsWithChildren<{
   title: string
   enabled: boolean
-  organization: Organization
+  organization: components['schemas']['Organization']
 }>) => {
   return (
     <ShadowBox className="shadow-3xl flex h-full min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col overflow-y-auto bg-white p-8 dark:border-transparent">
@@ -91,12 +85,14 @@ const StorefrontForm = () => {
     setValue,
     setError,
     watch,
-  } = useFormContext<OrganizationUpdate>()
+  } = useFormContext<components['schemas']['OrganizationUpdate']>()
 
   const avatarURL = watch('avatar_url')
 
   const onFilesUpdated = useCallback(
-    (files: FileObject<OrganizationAvatarFileRead>[]) => {
+    (
+      files: FileObject<components['schemas']['OrganizationAvatarFileRead']>[],
+    ) => {
       if (files.length === 0) {
         return
       }
@@ -115,7 +111,7 @@ const StorefrontForm = () => {
   )
   const { getRootProps, getInputProps, isDragActive } = useFileUpload({
     organization,
-    service: FileServiceTypes.ORGANIZATION_AVATAR,
+    service: 'organization_avatar',
     accept: {
       'image/jpeg': [],
       'image/png': [],

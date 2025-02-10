@@ -3,7 +3,7 @@
 import { CONFIG } from '@/utils/config'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { FavoriteBorderOutlined } from '@mui/icons-material'
-import { Issue, Label, State } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import Link from 'next/link'
@@ -13,7 +13,7 @@ import IssueLabel from './IssueLabel'
 import { generateMarkdownTitle } from './markdown'
 
 interface IssueSummaryProps {
-  issue: Issue
+  issue: components['schemas']['Issue']
   showLogo?: boolean
   showStatus?: boolean
   right?: React.ReactElement
@@ -38,7 +38,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
     repository,
   } = issue
   const { organization } = repository
-  const isOpen = state === State.OPEN
+  const isOpen = state === 'open'
 
   const createdAt = new Date(issue_created_at)
   const closedAt = issue_closed_at ? new Date(issue_closed_at) : undefined
@@ -91,7 +91,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
             )}
 
             {issue.labels &&
-              issue.labels.map((label: Label) => {
+              issue.labels.map((label: components['schemas']['Label']) => {
                 return <IssueLabel label={label} key={label.name} />
               })}
           </div>

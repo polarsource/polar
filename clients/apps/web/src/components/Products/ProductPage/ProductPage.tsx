@@ -26,8 +26,8 @@ export interface ProductPageProps {
 
 export const ProductPage = ({ organization, product }: ProductPageProps) => {
   const { data: metrics, isLoading: metricsLoading } = useMetrics({
-    organizationId: organization.id,
-    productId: [product.id],
+    organization_id: organization.id,
+    product_id: [product.id],
     interval: dateToInterval(new Date(product.created_at)),
     startDate: new Date(product.created_at),
     endDate: new Date(),

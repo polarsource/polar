@@ -1,6 +1,8 @@
-import { ProductStorefront } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 
-export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<ProductStorefront> = {
+export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<
+  components['schemas']['ProductStorefront']
+> = {
   name: 'Just an Example',
   description:
     'Polar has no monthly fees. This tier is only an example of what you could offer your audience in minutes using Polar.',

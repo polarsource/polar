@@ -1,12 +1,14 @@
 import { Subscribe } from '@/components/Embed/Subscribe'
 import { getServerURL } from '@/utils/api'
-import { Storefront, StorefrontCustomer } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
-const getStorefront = async (org: string): Promise<Storefront> => {
+const getStorefront = async (
+  org: string,
+): Promise<components['schemas']['Storefront']> => {
   const response = await fetch(`${getServerURL()}/v1/storefronts/${org}`, {
     method: 'GET',
   })
@@ -17,7 +19,7 @@ const getStorefront = async (org: string): Promise<Storefront> => {
 }
 
 const renderBadge = async (
-  customers: StorefrontCustomer[],
+  customers: components['schemas']['StorefrontCustomer'][],
   totalCustomers: number,
   label: string,
   darkmode: boolean,

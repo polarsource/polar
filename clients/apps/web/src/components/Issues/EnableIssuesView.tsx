@@ -2,13 +2,13 @@
 
 import { useUpdateOrganization } from '@/hooks/queries'
 import { Bolt } from '@mui/icons-material'
-import { Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { useRouter } from 'next/navigation'
 import EmptyLayout from '../Layout/EmptyLayout'
 
 export interface EnableIssuesViewProps {
-  organization: Organization
+  organization: components['schemas']['Organization']
 }
 
 export const EnableIssuesView = ({ organization }: EnableIssuesViewProps) => {

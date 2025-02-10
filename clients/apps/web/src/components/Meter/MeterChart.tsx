@@ -1,5 +1,5 @@
 import * as Plot from '@observablehq/plot'
-import { TimeInterval } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { timeFormat } from 'd3'
 import { GeistMono } from 'geist/font/mono'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -76,11 +76,11 @@ const getTicks = (timestamps: Date[], maxTicks: number = 10): Date[] => {
 }
 
 const getTickFormat = (
-  interval: TimeInterval,
+  interval: components['schemas']['TimeInterval'],
   ticks: Date[],
 ): ((t: Date, i: number) => any) | string => {
   switch (interval) {
-    case TimeInterval.HOUR:
+    case 'hour':
       return (t: Date, i: number) => {
         const previousDate = ticks[i - 1]
         if (!previousDate || previousDate.getDate() < t.getDate()) {
@@ -88,13 +88,13 @@ const getTickFormat = (
         }
         return timeFormat('%H:%M')(t)
       }
-    case TimeInterval.DAY:
+    case 'day':
       return '%b %d'
-    case TimeInterval.WEEK:
+    case 'week':
       return '%b %d'
-    case TimeInterval.MONTH:
+    case 'month':
       return '%b %y'
-    case TimeInterval.YEAR:
+    case 'year':
       return '%Y'
   }
 }
@@ -104,7 +104,7 @@ interface MeterChartProps {
     timestamp: Date
     quantity: number
   }[]
-  interval: TimeInterval
+  interval: components['schemas']['TimeInterval']
   height?: number
   maxTicks?: number
   onDataIndexHover?: (index: number | undefined) => void

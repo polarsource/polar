@@ -1,9 +1,5 @@
 import { ClearOutlined } from '@mui/icons-material'
-import {
-  CustomFieldCreate,
-  CustomFieldType,
-  CustomFieldUpdate,
-} from '@polar-sh/api'
+import { components, enums } from '@polar-sh/client'
 import {
   Accordion,
   AccordionContent,
@@ -34,7 +30,10 @@ import CustomFieldTypeLabel from './CustomFieldTypeLabel'
 
 const CustomFieldTextProperties = () => {
   const { control } = useFormContext<
-    (CustomFieldCreate | CustomFieldUpdate) & { type: 'text' }
+    (
+      | components['schemas']['CustomFieldCreate']
+      | components['schemas']['CustomFieldUpdate']
+    ) & { type: 'text' }
   >()
   return (
     <>
@@ -86,7 +85,10 @@ const CustomFieldTextProperties = () => {
 
 const CustomFieldComparableProperties = () => {
   const { control } = useFormContext<
-    (CustomFieldCreate | CustomFieldUpdate) & { type: 'number' | 'datetime' }
+    (
+      | components['schemas']['CustomFieldCreate']
+      | components['schemas']['CustomFieldUpdate']
+    ) & { type: 'number' | 'datetime' }
   >()
   return (
     <>
@@ -126,7 +128,10 @@ const CustomFieldComparableProperties = () => {
 
 const CustomFieldSelectProperties = () => {
   const { control } = useFormContext<
-    (CustomFieldCreate | CustomFieldUpdate) & { type: 'select' }
+    (
+      | components['schemas']['CustomFieldCreate']
+      | components['schemas']['CustomFieldUpdate']
+    ) & { type: 'select' }
   >()
   const { fields, append, remove } = useFieldArray({
     control,
@@ -208,7 +213,8 @@ interface CustomFieldFormBaseProps {
 
 const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
   const { control, watch } = useFormContext<
-    CustomFieldCreate | CustomFieldUpdate
+    | components['schemas']['CustomFieldCreate']
+    | components['schemas']['CustomFieldUpdate']
   >()
   const type = watch('type')
 
@@ -227,7 +233,7 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
                   <SelectValue placeholder="Select a type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.values(CustomFieldType).map((type) => (
+                  {Object.values(enums.customFieldTypeValues).map((type) => (
                     <SelectItem key={type} value={type} textValue={type}>
                       <CustomFieldTypeLabel type={type} />
                     </SelectItem>
@@ -289,7 +295,7 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
           )
         }}
       />
-      {type === CustomFieldType.SELECT && <CustomFieldSelectProperties />}
+      {type === 'select' && <CustomFieldSelectProperties />}
       <Accordion type="single" collapsible className="flex flex-col gap-y-6">
         <AccordionItem
           value="form-input-options"
@@ -299,7 +305,7 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
             Form input options
           </AccordionTrigger>
           <AccordionContent className="flex flex-col gap-y-6">
-            {type === CustomFieldType.TEXT && (
+            {type === 'text' && (
               <FormField
                 control={control}
                 name="properties.textarea"
@@ -394,9 +400,7 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
             />
           </AccordionContent>
         </AccordionItem>
-        {(type === CustomFieldType.TEXT ||
-          type === CustomFieldType.NUMBER ||
-          type === CustomFieldType.DATE) && (
+        {(type === 'text' || type === 'number' || type === 'date') && (
           <AccordionItem
             value="validation-constraints"
             className="dark:border-polar-700 rounded-xl border border-gray-200 px-4"
@@ -406,13 +410,9 @@ const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
             </AccordionTrigger>
 
             <AccordionContent className="flex flex-col gap-y-6">
-              {type === CustomFieldType.TEXT && <CustomFieldTextProperties />}
-              {type === CustomFieldType.NUMBER && (
-                <CustomFieldComparableProperties />
-              )}
-              {type === CustomFieldType.DATE && (
-                <CustomFieldComparableProperties />
-              )}
+              {type === 'text' && <CustomFieldTextProperties />}
+              {type === 'number' && <CustomFieldComparableProperties />}
+              {type === 'date' && <CustomFieldComparableProperties />}
             </AccordionContent>
           </AccordionItem>
         )}

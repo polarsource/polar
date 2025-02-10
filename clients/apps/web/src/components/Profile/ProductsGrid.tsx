@@ -1,4 +1,4 @@
-import { Organization, SubscriptionRecurringInterval } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import {
   Select,
   SelectContent,
@@ -12,10 +12,12 @@ import SubscriptionTierRecurringIntervalSwitch from '../Subscriptions/Subscripti
 export interface ProductsGridProps extends React.PropsWithChildren {
   className?: string
   title?: string
-  organization: Organization
-  recurringInterval?: SubscriptionRecurringInterval
+  organization: components['schemas']['Organization']
+  recurringInterval?: components['schemas']['SubscriptionRecurringInterval']
   hasBothIntervals?: boolean
-  setRecurringInterval?: (interval: SubscriptionRecurringInterval) => void
+  setRecurringInterval?: (
+    interval: components['schemas']['SubscriptionRecurringInterval'],
+  ) => void
   gridClassName?: string
 }
 
@@ -49,10 +51,10 @@ export const ProductsGrid = ({
                   <SelectValue placeholder="Select interval" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={SubscriptionRecurringInterval.MONTH}>
+                  <SelectItem value="month">
                     <span className="whitespace-nowrap">Monthly</span>
                   </SelectItem>
-                  <SelectItem value={SubscriptionRecurringInterval.YEAR}>
+                  <SelectItem value="year">
                     <span className="whitespace-nowrap">Yearly</span>
                   </SelectItem>
                 </SelectContent>

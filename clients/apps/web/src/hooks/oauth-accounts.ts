@@ -1,15 +1,16 @@
-import { OAuthAccountRead, OAuthPlatform } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { useMemo } from 'react'
 import { useAuth } from '.'
 
-export const useOAuthAccounts = (): OAuthAccountRead[] => {
-  const { currentUser } = useAuth()
-  return currentUser?.oauth_accounts || []
-}
+export const useOAuthAccounts =
+  (): components['schemas']['OAuthAccountRead'][] => {
+    const { currentUser } = useAuth()
+    return currentUser?.oauth_accounts || []
+  }
 
 export const usePlatformOAuthAccount = (
-  platform: OAuthPlatform,
-): OAuthAccountRead | undefined => {
+  platform: components['schemas']['OAuthPlatform'],
+): components['schemas']['OAuthAccountRead'] | undefined => {
   const oauthAccounts = useOAuthAccounts()
   return useMemo(
     () =>
@@ -18,8 +19,10 @@ export const usePlatformOAuthAccount = (
   )
 }
 
-export const useGitHubAccount = (): OAuthAccountRead | undefined =>
-  usePlatformOAuthAccount(OAuthPlatform.GITHUB)
+export const useGitHubAccount = ():
+  | components['schemas']['OAuthAccountRead']
+  | undefined => usePlatformOAuthAccount('github')
 
-export const useGoogleAccount = (): OAuthAccountRead | undefined =>
-  usePlatformOAuthAccount(OAuthPlatform.GOOGLE)
+export const useGoogleAccount = ():
+  | components['schemas']['OAuthAccountRead']
+  | undefined => usePlatformOAuthAccount('google')

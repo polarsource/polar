@@ -1,9 +1,9 @@
-import { CurrencyAmount } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 
 interface FundingPillProps {
-  total: CurrencyAmount
-  goal: CurrencyAmount | null
+  total: components['schemas']['CurrencyAmount']
+  goal: components['schemas']['CurrencyAmount'] | null
 }
 
 const FundingPill: React.FC<FundingPillProps> = ({ total, goal }) => {

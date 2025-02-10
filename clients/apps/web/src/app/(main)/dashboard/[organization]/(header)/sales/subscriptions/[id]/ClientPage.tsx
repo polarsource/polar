@@ -10,7 +10,6 @@ import SubscriptionDetails from '@/components/Subscriptions/SubscriptionDetails'
 import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscriptionModal'
 import { useProduct, useSubscription } from '@/hooks/queries'
 import { markdownOptionsJustText } from '@/utils/markdown'
-import { Product } from '@polar-sh/api'
 import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
@@ -21,7 +20,7 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ProductItemProps {
-  product: Product
+  product: components['schemas']['Product']
 }
 
 const ProductItem = ({ product }: ProductItemProps) => {

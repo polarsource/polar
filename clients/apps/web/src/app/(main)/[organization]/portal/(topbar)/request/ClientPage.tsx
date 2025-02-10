@@ -2,13 +2,13 @@
 
 import { useCustomerPortalSessionRequest } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { Organization } from '@polar-sh/api'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useRouter } from 'next/navigation'
 
 import { api } from '@/utils/client'
+import { components } from '@polar-sh/client'
 import {
   Form,
   FormControl,
@@ -19,7 +19,11 @@ import {
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 
-const ClientPage = ({ organization }: { organization: Organization }) => {
+const ClientPage = ({
+  organization,
+}: {
+  organization: components['schemas']['Organization']
+}) => {
   const router = useRouter()
   const form = useForm<{ email: string }>()
   const { control, handleSubmit, setError } = form

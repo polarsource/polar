@@ -1,36 +1,29 @@
-import {
-  ProductPriceRecurring,
-  ProductPriceType,
-  ProductStorefront,
-  SubscriptionRecurringInterval,
-  SubscriptionStatus,
-} from '@polar-sh/api'
 import { components } from '@polar-sh/client'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export const subscriptionStatusDisplayNames: {
-  [key in SubscriptionStatus]: string
+  [key in components['schemas']['SubscriptionStatus']]: string
 } = {
-  [SubscriptionStatus.INCOMPLETE]: 'Incomplete',
-  [SubscriptionStatus.INCOMPLETE_EXPIRED]: 'Incomplete',
-  [SubscriptionStatus.TRIALING]: 'Trialing',
-  [SubscriptionStatus.ACTIVE]: 'Active',
-  [SubscriptionStatus.PAST_DUE]: 'Past due',
-  [SubscriptionStatus.CANCELED]: 'Canceled',
-  [SubscriptionStatus.UNPAID]: 'Unpaid',
+  incomplete: 'Incomplete',
+  incomplete_expired: 'Incomplete',
+  trialing: 'Trialing',
+  active: 'Active',
+  past_due: 'Past due',
+  canceled: 'Canceled',
+  unpaid: 'Unpaid',
 }
 
 export const hasRecurringInterval =
-  (recurringInterval: SubscriptionRecurringInterval) =>
+  (recurringInterval: components['schemas']['SubscriptionRecurringInterval']) =>
   (
-    subscriptionTier: ProductStorefront,
-  ): subscriptionTier is ProductStorefront & {
-    prices: ProductPriceRecurring[]
+    subscriptionTier: components['schemas']['ProductStorefront'],
+  ): subscriptionTier is components['schemas']['ProductStorefront'] & {
+    prices: components['schemas']['ProductPriceRecurring'][]
   } => {
     return subscriptionTier.prices?.some(
       (price) =>
-        price.type === ProductPriceType.RECURRING &&
+        price.type === 'recurring' &&
         price.recurring_interval === recurringInterval,
     )
   }
@@ -73,23 +66,23 @@ export const SubscriptionStatusLabel = ({
 }
 
 export const getRecurringProductPrice = (
-  subscriptionTier: Partial<ProductStorefront>,
-  recurringInterval: SubscriptionRecurringInterval,
-): ProductPriceRecurring | undefined => {
+  subscriptionTier: Partial<components['schemas']['ProductStorefront']>,
+  recurringInterval: components['schemas']['SubscriptionRecurringInterval'],
+): components['schemas']['ProductPriceRecurring'] | undefined => {
   return subscriptionTier.prices?.find(
     (price) =>
-      price.type === ProductPriceType.RECURRING &&
+      price.type === 'recurring' &&
       price.recurring_interval === recurringInterval,
-  ) as ProductPriceRecurring | undefined
+  ) as components['schemas']['ProductPriceRecurring'] | undefined
 }
 
 export const getRecurringBillingLabel = (
-  recurringInterval: SubscriptionRecurringInterval,
+  recurringInterval: components['schemas']['SubscriptionRecurringInterval'],
 ) => {
   switch (recurringInterval) {
-    case SubscriptionRecurringInterval.MONTH:
+    case 'month':
       return '/mo'
-    case SubscriptionRecurringInterval.YEAR:
+    case 'year':
       return '/year'
   }
 }

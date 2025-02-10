@@ -8,12 +8,7 @@ import {
   useOrganizationAccessTokens,
   useUpdateOrganizationAccessToken,
 } from '@/hooks/queries'
-import {
-  AvailableScope,
-  Organization,
-  OrganizationAccessToken,
-  OrganizationAccessTokenCreateResponse,
-} from '@polar-sh/api'
+import { components, enums } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -47,19 +42,19 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useMemo, useState, type MouseEvent } from 'react'
+import { useCallback, useState, type MouseEvent } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import { toast, useToast } from '../Toast/use-toast'
 
 interface AccessTokenCreate {
   comment: string
   expires_in: string | null | 'no-expiration'
-  scopes: Array<AvailableScope>
+  scopes: Array<components['schemas']['AvailableScope']>
 }
 
 interface AccessTokenUpdate {
   comment: string
-  scopes: Array<AvailableScope>
+  scopes: Array<components['schemas']['AvailableScope']>
 }
 
 const AccessTokenForm = ({ update }: { update?: boolean }) => {
@@ -67,14 +62,15 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
     AccessTokenCreate | AccessTokenUpdate
   >()
 
-  const selectableScopes = useMemo(() => Object.values(AvailableScope), [])
+  const selectableScopes =
+    enums.availableScopeValues as components['schemas']['AvailableScope'][]
   const [allSelected, setSelectAll] = useState(false)
 
   const onToggleAll = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault()
 
-      let values: Array<AvailableScope> = []
+      let values: Array<components['schemas']['AvailableScope']> = []
       if (!allSelected) {
         values = selectableScopes
       }
@@ -193,8 +189,10 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
 }
 
 interface CreateAccessTokenModalProps {
-  organization: Organization
-  onSuccess: (token: OrganizationAccessTokenCreateResponse) => void
+  organization: components['schemas']['Organization']
+  onSuccess: (
+    token: components['schemas']['OrganizationAccessTokenCreateResponse'],
+  ) => void
   onHide: () => void
 }
 
@@ -253,8 +251,8 @@ const CreateAccessTokenModal = ({
 }
 
 interface UpdateAccessTokenModalProps {
-  token: OrganizationAccessToken
-  onSuccess: (token: OrganizationAccessToken) => void
+  token: components['schemas']['OrganizationAccessToken']
+  onSuccess: (token: components['schemas']['OrganizationAccessToken']) => void
   onHide: () => void
 }
 
@@ -267,7 +265,7 @@ const UpdateAccessTokenModal = ({
   const form = useForm<AccessTokenUpdate>({
     defaultValues: {
       ...token,
-      scopes: token.scopes as AvailableScope[],
+      scopes: token.scopes as components['schemas']['AvailableScope'][],
     },
   })
   const { handleSubmit } = form
@@ -316,7 +314,7 @@ const AccessTokenItem = ({
   token,
   rawToken,
 }: {
-  token: OrganizationAccessToken
+  token: components['schemas']['OrganizationAccessToken']
   rawToken?: string
 }) => {
   const {
@@ -443,11 +441,11 @@ const AccessTokenItem = ({
 const OrganizationAccessTokensSettings = ({
   organization,
 }: {
-  organization: Organization
+  organization: components['schemas']['Organization']
 }) => {
   const tokens = useOrganizationAccessTokens()
   const [createdToken, setCreatedToken] =
-    useState<OrganizationAccessTokenCreateResponse>()
+    useState<components['schemas']['OrganizationAccessTokenCreateResponse']>()
 
   const {
     isShown: createModalShown,
@@ -455,7 +453,9 @@ const OrganizationAccessTokensSettings = ({
     hide: hideCreateModal,
   } = useModal()
 
-  const onCreate = (token: OrganizationAccessTokenCreateResponse) => {
+  const onCreate = (
+    token: components['schemas']['OrganizationAccessTokenCreateResponse'],
+  ) => {
     hideCreateModal()
     setCreatedToken(token)
   }

@@ -1,68 +1,72 @@
-import { ListFundingSortBy } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { ReadonlyURLSearchParams } from 'next/navigation'
 
 export type FundingFilters = {
   q?: string
   badged?: boolean
-  sort?: ListFundingSortBy[]
+  sort?: components['schemas']['ListFundingSortBy'][]
   closed?: boolean
 }
 
 export const DefaultFilters: FundingFilters = {
   q: undefined,
-  sort: [ListFundingSortBy.MOST_RECENTLY_FUNDED],
+  sort: ['most_recently_funded'],
   badged: undefined,
   closed: false,
 }
 
 export const fundingSortingOptions = [
-  ListFundingSortBy.MOST_ENGAGEMENT,
-  ListFundingSortBy.MOST_FUNDED,
-  ListFundingSortBy.MOST_RECENTLY_FUNDED,
-  ListFundingSortBy.NEWEST,
-  ListFundingSortBy.OLDEST,
+  'most_engagement',
+  'most_funded',
+  'most_recently_funded',
+  'newest',
+  'oldest',
 ]
 
-export const getFundSortingTitle = (sortBy: ListFundingSortBy[]): string => {
+export const getFundSortingTitle = (
+  sortBy: components['schemas']['ListFundingSortBy'][],
+): string => {
   const [initial] = sortBy
   let title = ''
 
-  if (initial === ListFundingSortBy.NEWEST) {
+  if (initial === 'newest') {
     title = 'Newest'
   }
-  if (initial === ListFundingSortBy.OLDEST) {
+  if (initial === 'oldest') {
     title = 'Oldest'
   }
-  if (initial === ListFundingSortBy.MOST_ENGAGEMENT) {
+  if (initial === 'most_engagement') {
     title = 'Most engagement'
   }
-  if (initial === ListFundingSortBy.MOST_FUNDED) {
+  if (initial === 'most_funded') {
     title = 'Most funded'
   }
-  if (initial === ListFundingSortBy.MOST_RECENTLY_FUNDED) {
+  if (initial === 'most_recently_funded') {
     title = 'Recently pledged'
   }
 
   return sortBy.length > 1 ? `${title}, +${sortBy.length - 1}` : title
 }
 
-export const getSort = (sort: string[] | null): ListFundingSortBy[] => {
-  const sorting: ListFundingSortBy[] = []
+export const getSort = (
+  sort: string[] | null,
+): components['schemas']['ListFundingSortBy'][] => {
+  const sorting: components['schemas']['ListFundingSortBy'][] = []
 
   if (sort?.includes('oldest')) {
-    sorting.push(ListFundingSortBy.OLDEST)
+    sorting.push('oldest')
   }
   if (sort?.includes('newest')) {
-    sorting.push(ListFundingSortBy.NEWEST)
+    sorting.push('newest')
   }
   if (sort?.includes('most_engagement')) {
-    sorting.push(ListFundingSortBy.MOST_ENGAGEMENT)
+    sorting.push('most_engagement')
   }
   if (sort?.includes('most_funded')) {
-    sorting.push(ListFundingSortBy.MOST_FUNDED)
+    sorting.push('most_funded')
   }
   if (sort?.includes('most_recently_funded')) {
-    sorting.push(ListFundingSortBy.MOST_RECENTLY_FUNDED)
+    sorting.push('most_recently_funded')
   }
 
   return sorting

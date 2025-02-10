@@ -3,13 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { PolarQueryClientProvider } from '@/app/providers'
 import Finance from '@/components/Finance/Finance'
 import { issue, org } from '@/utils/testdata'
-import {
-  Pledge,
-  PledgeState,
-  PledgeType,
-  Reward,
-  RewardState,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 
 type Story = StoryObj<typeof Finance>
 
@@ -23,7 +17,7 @@ const meta: Meta<typeof Finance> = {
 
 export default meta
 
-const pledge: Pledge = {
+const pledge: components['schemas']['Pledge'] = {
   id: 'xx',
   created_at: new Date('2023-06-29').toISOString(),
   modified_at: null,
@@ -32,32 +26,38 @@ const pledge: Pledge = {
   currency: 'usd',
   // repository_id: 'xx',
   // organization_id: 'xx',
-  state: PledgeState.CREATED,
-  type: PledgeType.UPFRONT,
+  state: 'created',
+  type: 'pay_upfront',
   // pledger_name: 'Google',
   // pledger_avatar: 'https://avatars.githubusercontent.com/u/1342004?s=200&v=4',
   // authed_user_can_admin: false,
   scheduled_payout_at: new Date('2023-08-02').toISOString(),
   refunded_at: new Date('2023-06-28').toISOString(),
-  // authed_user_can_admin_sender: false,
-  // authed_user_can_admin_received: false,
   issue: issue,
+  authed_can_admin_received: false,
+  authed_can_admin_sender: false,
 }
 
-let all_pledge_states: Pledge[] = Object.values(PledgeState).map(
-  (s): Pledge => {
-    return {
-      ...pledge,
-      state: s,
-      issue: {
-        ...pledge.issue,
-        title: `${pledge.issue.title} (${s})`,
-      },
-    }
-  },
-)
+let all_pledge_states: components['schemas']['Pledge'][] = [
+  'initiated',
+  'created',
+  'pending',
+  'refunded',
+  'disputed',
+  'charge_disputed',
+  'cancelled',
+].map((s): components['schemas']['Pledge'] => {
+  return {
+    ...pledge,
+    state: s as components['schemas']['PledgeState'],
+    issue: {
+      ...pledge.issue,
+      title: `${pledge.issue.title} (${s})`,
+    },
+  }
+})
 
-const paidRewardUser: Reward = {
+const paidRewardUser: components['schemas']['Reward'] = {
   pledge: pledge,
   user: {
     public_name: 'Petter',
@@ -65,24 +65,24 @@ const paidRewardUser: Reward = {
   },
   organization: undefined,
   amount: { currency: 'usd', amount: 4000 },
-  state: RewardState.PAID,
+  state: 'paid',
 }
 
-const pendingRewardUser: Reward = {
+const pendingRewardUser: components['schemas']['Reward'] = {
   ...paidRewardUser,
-  state: RewardState.PENDING,
+  state: 'pending',
 }
 
-const paidRewardOrg: Reward = {
+const paidRewardOrg: components['schemas']['Reward'] = {
   ...paidRewardUser,
   user: undefined,
   organization: org,
-  state: RewardState.PAID,
+  state: 'paid',
 }
 
-const pendingRewardOrg: Reward = {
+const pendingRewardOrg: components['schemas']['Reward'] = {
   ...paidRewardOrg,
-  state: RewardState.PENDING,
+  state: 'pending',
 }
 
 const rewards = [

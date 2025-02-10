@@ -1,11 +1,11 @@
-import { SubscriptionRecurringInterval } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useMemo } from 'react'
 
 interface AmountLabelProps {
   amount: number
   currency: string
-  interval?: SubscriptionRecurringInterval
+  interval?: components['schemas']['SubscriptionRecurringInterval']
   minimumFractionDigits?: number
 }
 
@@ -20,9 +20,9 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
       return ''
     }
     switch (interval) {
-      case SubscriptionRecurringInterval.MONTH:
+      case 'month':
         return ' / mo'
-      case SubscriptionRecurringInterval.YEAR:
+      case 'year':
         return ' / yr'
       default:
         return ''

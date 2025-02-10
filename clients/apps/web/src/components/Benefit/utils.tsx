@@ -1,48 +1,53 @@
-import { BenefitType } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { Check, Download, Globe, Key } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 import GitHubIcon from '../Icons/GitHubIcon'
 
-export type CreatableBenefit = BenefitType
+export type CreatableBenefit = components['schemas']['BenefitType']
 
 export const resolveBenefitCategoryIcon = (
-  type?: BenefitType,
+  type?: components['schemas']['BenefitType'],
   className?: string,
 ) => {
   const cn = twMerge('h-4 w-4', className)
   switch (type) {
-    case BenefitType.ADS:
+    case 'ads':
       return <Globe className={cn} />
-    case BenefitType.DISCORD:
+    case 'discord':
       return <DiscordIcon className={cn} />
-    case BenefitType.GITHUB_REPOSITORY:
+    case 'github_repository':
       return <GitHubIcon className={cn} />
-    case BenefitType.DOWNLOADABLES:
+    case 'downloadables':
       return <Download className={cn} />
-    case BenefitType.LICENSE_KEYS:
+    case 'license_keys':
       return <Key className={cn} />
     default:
       return <Check className={cn} />
   }
 }
 
-export const resolveBenefitIcon = (type: BenefitType, className?: string) => {
+export const resolveBenefitIcon = (
+  type: components['schemas']['BenefitType'],
+  className?: string,
+) => {
   return resolveBenefitCategoryIcon(type, className)
 }
 
-export const resolveBenefitTypeDisplayName = (type: BenefitType | 'usage') => {
+export const resolveBenefitTypeDisplayName = (
+  type: components['schemas']['BenefitType'] | 'usage',
+) => {
   switch (type) {
     case 'usage':
       return 'Usage'
-    case BenefitType.ADS:
+    case 'ads':
       return 'Advertisement Spot'
-    case BenefitType.DISCORD:
+    case 'discord':
       return 'Discord Server Invite'
-    case BenefitType.GITHUB_REPOSITORY:
+    case 'github_repository':
       return 'GitHub Repository Access'
-    case BenefitType.DOWNLOADABLES:
+    case 'downloadables':
       return 'Downloadable Files'
-    case BenefitType.LICENSE_KEYS:
+    case 'license_keys':
       return 'License Keys'
     default:
       return 'Custom'
@@ -75,13 +80,13 @@ export const DiscordIcon = ({
 )
 
 export const benefitsDisplayNames: {
-  [key in BenefitType]: string
+  [key in components['schemas']['BenefitType']]: string
 } & { usage: string } = {
   usage: 'Usage',
-  [BenefitType.LICENSE_KEYS]: 'License Keys',
-  [BenefitType.GITHUB_REPOSITORY]: 'GitHub Repository Access',
-  [BenefitType.DISCORD]: 'Discord Invite',
-  [BenefitType.DOWNLOADABLES]: 'File Downloads',
-  [BenefitType.ADS]: 'Ad',
-  [BenefitType.CUSTOM]: 'Custom',
+  license_keys: 'License Keys',
+  github_repository: 'GitHub Repository Access',
+  discord: 'Discord Invite',
+  downloadables: 'File Downloads',
+  ads: 'Ad',
+  custom: 'Custom',
 }

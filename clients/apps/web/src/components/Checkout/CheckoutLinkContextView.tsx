@@ -1,5 +1,5 @@
 import { CONFIG } from '@/utils/config'
-import { CheckoutLink, Product } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import {
   Tabs,
@@ -14,9 +14,9 @@ import { toast } from '../Toast/use-toast'
 import { CheckoutLinkForm } from './CheckoutLinkForm'
 
 export interface CheckoutLinkContextViewProps {
-  product: Product
-  checkoutLink: CheckoutLink
-  onUpdate: (checkoutLink: CheckoutLink) => void
+  product: components['schemas']['Product']
+  checkoutLink: components['schemas']['CheckoutLink']
+  onUpdate: (checkoutLink: components['schemas']['CheckoutLink']) => void
 }
 
 export const CheckoutLinkContextView = ({

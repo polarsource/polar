@@ -2,11 +2,7 @@
 
 import { ErrorMessage } from '@hookform/error-message'
 import { ClearOutlined } from '@mui/icons-material'
-import {
-  ProductPrice,
-  ProductPriceType,
-  SubscriptionRecurringInterval,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
@@ -80,12 +76,10 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                     placeholder={0}
                     postSlot={
                       <>
-                        {recurringInterval ===
-                          SubscriptionRecurringInterval.MONTH && (
+                        {recurringInterval === 'month' && (
                           <span className="text-sm">/month</span>
                         )}
-                        {recurringInterval ===
-                          SubscriptionRecurringInterval.YEAR && (
+                        {recurringInterval === 'year' && (
                           <span className="text-sm">/year</span>
                         )}
                       </>
@@ -236,39 +230,36 @@ export const ProductPricingSection = ({
 
   const hasMonthlyPrice = useMemo(
     () =>
-      (prices as ProductPrice[]).some(
+      (prices as components['schemas']['ProductPrice'][]).some(
         (price) =>
-          price.type === 'recurring' &&
-          price.recurring_interval === SubscriptionRecurringInterval.MONTH,
+          price.type === 'recurring' && price.recurring_interval === 'month',
       ),
     [prices],
   )
   const hasYearlyPrice = useMemo(
     () =>
-      (prices as ProductPrice[]).some(
+      (prices as components['schemas']['ProductPrice'][]).some(
         (price) =>
-          price.type === 'recurring' &&
-          price.recurring_interval === SubscriptionRecurringInterval.YEAR,
+          price.type === 'recurring' && price.recurring_interval === 'year',
       ),
     [prices],
   )
 
-  const [pricingType, setPricingType] = useState<ProductPriceType | undefined>(
-    hasMonthlyPrice || hasYearlyPrice
-      ? ProductPriceType.RECURRING
-      : ProductPriceType.ONE_TIME,
-  )
+  const [pricingType, setPricingType] = useState<
+    components['schemas']['ProductPriceType'] | undefined
+  >(hasMonthlyPrice || hasYearlyPrice ? 'recurring' : 'one_time')
 
   const [amountType, setAmountType] = useState<'fixed' | 'custom' | 'free'>(
-    prices.length > 0 && (prices as ProductPrice[])[0].amount_type
-      ? (prices as ProductPrice[])[0].amount_type
+    prices.length > 0 &&
+      (prices as components['schemas']['ProductPrice'][])[0].amount_type
+      ? (prices as components['schemas']['ProductPrice'][])[0].amount_type
       : 'fixed',
   )
 
   useEffect(() => {
     if (update) return
 
-    if (pricingType === ProductPriceType.ONE_TIME) {
+    if (pricingType === 'one_time') {
       if (amountType === 'fixed') {
         replace([
           {
@@ -294,13 +285,13 @@ export const ProductPricingSection = ({
           },
         ])
       }
-    } else if (pricingType === ProductPriceType.RECURRING) {
+    } else if (pricingType === 'recurring') {
       if (amountType === 'fixed') {
         replace([
           {
             type: 'recurring',
             amount_type: 'fixed',
-            recurring_interval: SubscriptionRecurringInterval.MONTH,
+            recurring_interval: 'month',
             price_currency: 'usd',
             price_amount: 0,
           },
@@ -310,7 +301,7 @@ export const ProductPricingSection = ({
           {
             type: 'recurring',
             amount_type: 'free',
-            recurring_interval: SubscriptionRecurringInterval.MONTH,
+            recurring_interval: 'month',
           },
         ])
       } else {
@@ -335,19 +326,19 @@ export const ProductPricingSection = ({
           <Tabs
             value={pricingType}
             onValueChange={(value: string) =>
-              setPricingType(value as ProductPriceType)
+              setPricingType(value as components['schemas']['ProductPriceType'])
             }
           >
             <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-200">
               <TabsTrigger
                 className="flex-grow data-[state=active]:bg-white data-[state=active]:shadow-sm"
-                value={ProductPriceType.ONE_TIME}
+                value="one_time"
               >
                 Pay Once
               </TabsTrigger>
               <TabsTrigger
                 className="flex-grow data-[state=active]:bg-white data-[state=active]:shadow-sm"
-                value={ProductPriceType.RECURRING}
+                value="recurring"
               >
                 Subscription
               </TabsTrigger>
@@ -366,7 +357,7 @@ export const ProductPricingSection = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="fixed">Fixed price</SelectItem>
-              {pricingType === ProductPriceType.ONE_TIME && (
+              {pricingType === 'one_time' && (
                 <SelectItem value="custom">Pay what you want</SelectItem>
               )}
               <SelectItem value="free">Free</SelectItem>
@@ -380,7 +371,7 @@ export const ProductPricingSection = ({
                 key={price.id}
                 index={index}
                 fieldArray={pricesFieldArray}
-                deletable={pricingType === ProductPriceType.RECURRING}
+                deletable={pricingType === 'recurring'}
               />
             )}
             {amountType === 'custom' && (
@@ -391,51 +382,50 @@ export const ProductPricingSection = ({
             )}
           </>
         ))}
-        {amountType !== 'free' &&
-          pricingType === ProductPriceType.RECURRING && (
-            <div className="flex flex-row gap-2">
-              {!hasMonthlyPrice && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="self-start"
-                  type="button"
-                  onClick={() => {
-                    append({
-                      type: 'recurring',
-                      amount_type: 'fixed',
-                      recurring_interval: SubscriptionRecurringInterval.MONTH,
-                      price_currency: 'usd',
-                      price_amount: 0,
-                    })
-                    clearErrors('prices')
-                  }}
-                >
-                  Add monthly pricing
-                </Button>
-              )}
-              {!hasYearlyPrice && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="self-start"
-                  type="button"
-                  onClick={() => {
-                    append({
-                      type: 'recurring',
-                      amount_type: 'fixed',
-                      recurring_interval: SubscriptionRecurringInterval.YEAR,
-                      price_currency: 'usd',
-                      price_amount: 0,
-                    })
-                    clearErrors('prices')
-                  }}
-                >
-                  Add yearly pricing
-                </Button>
-              )}
-            </div>
-          )}
+        {amountType !== 'free' && pricingType === 'recurring' && (
+          <div className="flex flex-row gap-2">
+            {!hasMonthlyPrice && (
+              <Button
+                size="sm"
+                variant="secondary"
+                className="self-start"
+                type="button"
+                onClick={() => {
+                  append({
+                    type: 'recurring',
+                    amount_type: 'fixed',
+                    recurring_interval: 'month',
+                    price_currency: 'usd',
+                    price_amount: 0,
+                  })
+                  clearErrors('prices')
+                }}
+              >
+                Add monthly pricing
+              </Button>
+            )}
+            {!hasYearlyPrice && (
+              <Button
+                size="sm"
+                variant="secondary"
+                className="self-start"
+                type="button"
+                onClick={() => {
+                  append({
+                    type: 'recurring',
+                    amount_type: 'fixed',
+                    recurring_interval: 'year',
+                    price_currency: 'usd',
+                    price_amount: 0,
+                  })
+                  clearErrors('prices')
+                }}
+              >
+                Add yearly pricing
+              </Button>
+            )}
+          </div>
+        )}
         <ErrorMessage
           errors={errors}
           name="prices"

@@ -1,4 +1,4 @@
-import { TimeInterval } from '@polar-sh/api'
+import { components, enums } from '@polar-sh/client'
 import {
   Select,
   SelectContent,
@@ -7,24 +7,24 @@ import {
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
 
-const getIntervalLabel = (interval: TimeInterval) => {
+const getIntervalLabel = (interval: components['schemas']['TimeInterval']) => {
   switch (interval) {
-    case TimeInterval.HOUR:
+    case 'hour':
       return 'Hourly'
-    case TimeInterval.DAY:
+    case 'day':
       return 'Daily'
-    case TimeInterval.WEEK:
+    case 'week':
       return 'Weekly'
-    case TimeInterval.MONTH:
+    case 'month':
       return 'Monthly'
-    case TimeInterval.YEAR:
+    case 'year':
       return 'Yearly'
   }
 }
 
 interface IntervalPickerProps {
-  interval: TimeInterval
-  onChange: (interval: TimeInterval) => void
+  interval: components['schemas']['TimeInterval']
+  onChange: (interval: components['schemas']['TimeInterval']) => void
 }
 
 const IntervalPicker: React.FC<IntervalPickerProps> = ({
@@ -37,7 +37,7 @@ const IntervalPicker: React.FC<IntervalPickerProps> = ({
         <SelectValue placeholder="Select an interval" />
       </SelectTrigger>
       <SelectContent>
-        {Object.values(TimeInterval).map((interval) => (
+        {Object.values(enums.timeIntervalValues).map((interval) => (
           <SelectItem value={interval} key={interval} className="font-medium">
             {getIntervalLabel(interval)}
           </SelectItem>

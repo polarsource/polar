@@ -1,6 +1,6 @@
 'use client'
 
-import { Filter, FilterClause, FilterOperator } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -21,7 +21,10 @@ import { Plus, X } from 'lucide-react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 
-const OPERATOR_DISPLAY_NAMES: Record<FilterOperator, string> = {
+const OPERATOR_DISPLAY_NAMES: Record<
+  components['schemas']['FilterOperator'],
+  string
+> = {
   eq: 'Equals',
   ne: 'Not Equals',
   gt: 'Greater Than',
@@ -33,8 +36,10 @@ const OPERATOR_DISPLAY_NAMES: Record<FilterOperator, string> = {
 }
 
 const isFilterClause = (
-  filter: Filter | FilterClause,
-): filter is FilterClause => {
+  filter:
+    | components['schemas']['Filter']
+    | components['schemas']['FilterClause'],
+): filter is components['schemas']['FilterClause'] => {
   return 'property' in filter
 }
 
@@ -85,7 +90,11 @@ const MeterFilterInput: React.FC<{
       {clauses.map((clause, index) => {
         return (
           <div key={index}>
-            {isFilterClause(clause as unknown as Filter | FilterClause) ? (
+            {isFilterClause(
+              clause as unknown as
+                | components['schemas']['Filter']
+                | components['schemas']['FilterClause'],
+            ) ? (
               <div className="flex w-full flex-row items-center gap-x-4">
                 <div
                   className={twMerge(

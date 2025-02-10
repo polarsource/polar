@@ -1,9 +1,8 @@
 import { useStore } from '@/store'
-import { ResponseError } from '@polar-sh/api'
 
 export const authenticatingRetry = (
   failureCount: number,
-  error: ResponseError, // TODO: This type is not correct
+  error: any, // TODO: This type is not correct
 ): boolean => {
   if (error?.response?.status === 401) {
     // Empty Zustand store on unauthenticated errors
@@ -26,22 +25,3 @@ export const authenticatingRetry = (
 }
 
 export const defaultRetry = authenticatingRetry
-
-export const serverErrorRetry = (
-  failureCount: number,
-  error: ResponseError, // TODO: This type is not correct
-): boolean => {
-  if (error?.response?.status === 401) {
-    return false
-  }
-
-  if (error?.response?.status === 404) {
-    return false
-  }
-
-  if (failureCount > 2) {
-    return false
-  }
-
-  return true
-}

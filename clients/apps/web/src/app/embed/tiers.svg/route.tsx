@@ -1,16 +1,14 @@
 import { HighlightedTiers } from '@/components/Embed/HighlightedTiers'
 import { getServerURL } from '@/utils/api'
-import {
-  ProductStorefront,
-  Storefront,
-  SubscriptionRecurringInterval,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
-const getStorefront = async (org: string): Promise<Storefront> => {
+const getStorefront = async (
+  org: string,
+): Promise<components['schemas']['Storefront']> => {
   const response = await fetch(`${getServerURL()}/v1/storefronts/${org}`, {
     method: 'GET',
   })
@@ -22,15 +20,15 @@ const getStorefront = async (org: string): Promise<Storefront> => {
 
 const getRecurringProducts = async (
   org: string,
-): Promise<ProductStorefront[]> => {
+): Promise<components['schemas']['ProductStorefront'][]> => {
   const { products } = await getStorefront(org)
   return products.filter((product) => product.is_recurring)
 }
 
 const renderBadge = async (
   label: string,
-  products: ProductStorefront[],
-  recurringInterval: SubscriptionRecurringInterval,
+  products: components['schemas']['ProductStorefront'][],
+  recurringInterval: components['schemas']['SubscriptionRecurringInterval'],
   darkmode: boolean,
 ) => {
   const inter500 = await fetch(
@@ -74,8 +72,7 @@ export async function GET(request: Request) {
   const label =
     searchParams.get('label') ?? `Support ${org} with a subscription`
   const darkmode = searchParams.has('darkmode')
-  const recurringInterval =
-    searchParams.get('interval') || SubscriptionRecurringInterval.MONTH
+  const recurringInterval = searchParams.get('interval') || 'month'
 
   if (!org) {
     return new Response('No org provided', { status: 400 })
@@ -87,7 +84,7 @@ export async function GET(request: Request) {
     const svg = await renderBadge(
       label,
       highlightedTiers,
-      recurringInterval as SubscriptionRecurringInterval,
+      recurringInterval as components['schemas']['SubscriptionRecurringInterval'],
       darkmode,
     )
 

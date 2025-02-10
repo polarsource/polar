@@ -5,9 +5,9 @@ import {
   Numbers,
   TextSnippet,
 } from '@mui/icons-material'
-import { CustomFieldType } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 
-const getIcon = (type: CustomFieldType) => {
+const getIcon = (type: components['schemas']['CustomFieldType']) => {
   switch (type) {
     case 'text':
       return TextSnippet
@@ -22,7 +22,11 @@ const getIcon = (type: CustomFieldType) => {
   }
 }
 
-const CustomFieldTypeIcon = ({ type }: { type: CustomFieldType }) => {
+const CustomFieldTypeIcon = ({
+  type,
+}: {
+  type: components['schemas']['CustomFieldType']
+}) => {
   const Icon = getIcon(type)
 
   return <Icon fontSize="inherit" />

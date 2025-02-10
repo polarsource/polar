@@ -1,12 +1,4 @@
-import {
-  CustomField,
-  CustomFieldCheckbox,
-  CustomFieldDate,
-  CustomFieldNumber,
-  CustomFieldSelect,
-  CustomFieldText,
-  CustomFieldType,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
@@ -52,7 +44,11 @@ const markdownOptions: MarkdownToJSX.Options = {
   },
 }
 
-const FieldLabel = ({ customField }: { customField: CustomField }) => {
+const FieldLabel = ({
+  customField,
+}: {
+  customField: components['schemas']['CustomField']
+}) => {
   return (
     <FormLabel>
       {customField.properties.form_label ? (
@@ -66,7 +62,11 @@ const FieldLabel = ({ customField }: { customField: CustomField }) => {
   )
 }
 
-const FieldHelpText = ({ customField }: { customField: CustomField }) => {
+const FieldHelpText = ({
+  customField,
+}: {
+  customField: components['schemas']['CustomField']
+}) => {
   return customField.properties.form_help_text ? (
     <FormDescription>
       <Markdown options={markdownOptions}>
@@ -77,7 +77,7 @@ const FieldHelpText = ({ customField }: { customField: CustomField }) => {
 }
 
 interface CustomFieldTextInputProps {
-  customField: CustomFieldText
+  customField: components['schemas']['CustomFieldText']
   required: boolean
   field: ControllerRenderProps
 }
@@ -113,7 +113,7 @@ const CustomFieldTextInput: React.FC<CustomFieldTextInputProps> = ({
 }
 
 interface CustomFieldNumberInputProps {
-  customField: CustomFieldNumber
+  customField: components['schemas']['CustomFieldNumber']
   required: boolean
   field: ControllerRenderProps
 }
@@ -137,7 +137,7 @@ const CustomFieldNumberInput: React.FC<CustomFieldNumberInputProps> = ({
 }
 
 interface CustomFieldDateInputProps {
-  customField: CustomFieldDate
+  customField: components['schemas']['CustomFieldDate']
   required: boolean
   field: ControllerRenderProps
 }
@@ -165,7 +165,7 @@ const CustomFieldDateInput: React.FC<CustomFieldDateInputProps> = ({
 }
 
 interface CustomFieldCheckboxInputProps {
-  customField: CustomFieldCheckbox
+  customField: components['schemas']['CustomFieldCheckbox']
   required: boolean
   field: ControllerRenderProps
 }
@@ -194,7 +194,7 @@ const CustomFieldCheckboxInput: React.FC<CustomFieldCheckboxInputProps> = ({
 }
 
 interface CustomFieldSelectInputProps {
-  customField: CustomFieldSelect
+  customField: components['schemas']['CustomFieldSelect']
   required: boolean
   field: ControllerRenderProps
 }
@@ -224,23 +224,25 @@ const CustomFieldSelectInput: React.FC<CustomFieldSelectInputProps> = ({
   )
 }
 
-const getInputComponent = (customField: CustomField) => {
+const getInputComponent = (
+  customField: components['schemas']['CustomField'],
+) => {
   switch (customField.type) {
-    case CustomFieldType.TEXT:
+    case 'text':
       return CustomFieldTextInput
-    case CustomFieldType.NUMBER:
+    case 'number':
       return CustomFieldNumberInput
-    case CustomFieldType.DATE:
+    case 'date':
       return CustomFieldDateInput
-    case CustomFieldType.CHECKBOX:
+    case 'checkbox':
       return CustomFieldCheckboxInput
-    case CustomFieldType.SELECT:
+    case 'select':
       return CustomFieldSelectInput
   }
 }
 
 interface CustomFieldInputProps {
-  customField: CustomField
+  customField: components['schemas']['CustomField']
   required: boolean
   field: ControllerRenderProps
 }
@@ -252,7 +254,7 @@ const CustomFieldInput: React.FC<CustomFieldInputProps> = ({
 }) => {
   const InputComponent = getInputComponent(customField)
 
-  if (customField.type === CustomFieldType.CHECKBOX) {
+  if (customField.type === 'checkbox') {
     return (
       <CustomFieldCheckboxInput
         customField={customField}

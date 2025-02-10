@@ -1,9 +1,9 @@
-import { Repository } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 
 export const RepoPickerHeader = (props: {
-  currentRepository?: Repository
-  repositories: Repository[]
+  currentRepository?: components['schemas']['Repository']
+  repositories: components['schemas']['Repository'][]
   children?: React.ReactNode
 }) => {
   const onSubmit = () => {}

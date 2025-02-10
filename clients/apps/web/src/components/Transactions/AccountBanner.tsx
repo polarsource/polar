@@ -1,24 +1,18 @@
 import { useAccount, useOrganizationAccount } from '@/hooks/queries'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from '@/utils/account'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
-import {
-  Account,
-  AccountType,
-  Organization,
-  Status,
-  UserRead,
-} from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
 import Link from 'next/link'
 import Icon from '../Icons/Icon'
 
 const GenericAccountBanner: React.FC<{
-  account: Account | undefined
+  account: components['schemas']['Account'] | undefined
   setupLink: string
 }> = ({ account, setupLink }) => {
-  const isActive = account?.status === Status.ACTIVE
-  const isUnderReview = account?.status === Status.UNDER_REVIEW
+  const isActive = account?.status === 'active'
+  const isUnderReview = account?.status === 'under_review'
 
   if (!account) {
     return (
@@ -33,7 +27,8 @@ const GenericAccountBanner: React.FC<{
         >
           <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
           <span className="text-sm">
-            You need to set up <strong>Stripe Connect Express</strong> to receive payouts
+            You need to set up <strong>Stripe Connect Express</strong> to
+            receive payouts
           </span>
         </Banner>
       </>
@@ -99,9 +94,9 @@ const GenericAccountBanner: React.FC<{
         >
           <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
           <span className="dark:text-polar-400 text-sm">
-            {accountType === AccountType.STRIPE &&
+            {accountType === 'stripe' &&
               'Payouts will be made to the connected Stripe account'}
-            {accountType === AccountType.OPEN_COLLECTIVE &&
+            {accountType === 'open_collective' &&
               'Payouts will be made in bulk once per month to the connected Open Collective account'}
           </span>
         </Banner>
@@ -112,7 +107,9 @@ const GenericAccountBanner: React.FC<{
   return null
 }
 
-const UserAccountBanner: React.FC<{ user: UserRead }> = ({ user }) => {
+const UserAccountBanner: React.FC<{
+  user: components['schemas']['UserRead']
+}> = ({ user }) => {
   const { data: account, isLoading: personalAccountIsLoading } = useAccount(
     user?.account_id,
   )
@@ -125,9 +122,9 @@ const UserAccountBanner: React.FC<{ user: UserRead }> = ({ user }) => {
   return <GenericAccountBanner account={account} setupLink={setupLink} />
 }
 
-const OrganizationAccountBanner: React.FC<{ organization: Organization }> = ({
-  organization,
-}) => {
+const OrganizationAccountBanner: React.FC<{
+  organization: components['schemas']['Organization']
+}> = ({ organization }) => {
   const { data: account, isLoading: organizationAccountIsLoading } =
     useOrganizationAccount(organization?.id)
   const setupLink = `/dashboard/${organization.slug}/finance/account`
@@ -140,8 +137,8 @@ const OrganizationAccountBanner: React.FC<{ organization: Organization }> = ({
 }
 
 interface AccountBannerProps {
-  organization?: Organization
-  user?: UserRead
+  organization?: components['schemas']['Organization']
+  user?: components['schemas']['UserRead']
 }
 
 const AccountBanner: React.FC<AccountBannerProps> = ({

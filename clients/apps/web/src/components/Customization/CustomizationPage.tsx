@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks'
 import { useProduct } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { ArrowBack } from '@mui/icons-material'
-import { OrganizationUpdate } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -59,7 +59,7 @@ const Customization = () => {
     }
   }, [customizationMode, product, isLoading])
 
-  const form = useForm<OrganizationUpdate>({
+  const form = useForm<components['schemas']['OrganizationUpdate']>({
     defaultValues: {
       ...organization,
     },

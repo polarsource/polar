@@ -22,8 +22,8 @@ const GithubLoginButton = (props: {
   const signup = props.signup
 
   const authorizeURL = getGitHubAuthorizeURL({
-    paymentIntentId: search?.get('payment_intent_id') ?? undefined,
-    returnTo: props.returnTo,
+    payment_intent_id: search?.get('payment_intent_id') ?? undefined,
+    return_to: props.returnTo,
     attribution: JSON.stringify(signup),
   })
 

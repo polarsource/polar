@@ -1,5 +1,5 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
-import { ProductEmbed, ProductPrice } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { getRecurringBillingLabel } from '../Subscriptions/utils'
 
@@ -8,11 +8,11 @@ export const ProductCardEmbed = ({
   cta,
   darkmode,
 }: {
-  embed: ProductEmbed
+  embed: components['schemas']['ProductEmbed']
   cta?: string
   darkmode?: boolean
 }) => {
-  const price: ProductPrice = embed.price
+  const price = embed.price
 
   const isSubscription = 'recurring_interval' in price
   const isPWYW = price.amount_type === 'custom'

@@ -1,6 +1,6 @@
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
 import { githubIssueLink } from '@/utils/github'
-import { ConfirmIssueSplit, Issue, Pledge, UserRead } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
@@ -9,7 +9,9 @@ import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import { useState } from 'react'
 import { ModalHeader } from '../Modal'
 
-const prettyUsernames = (splits: ConfirmIssueSplit[]): string => {
+const prettyUsernames = (
+  splits: components['schemas']['ConfirmIssueSplit'][],
+): string => {
   const usernames = splits
     .map((s) => s.github_username)
     .filter((s): s is string => Boolean(s))
@@ -26,10 +28,10 @@ const prettyUsernames = (splits: ConfirmIssueSplit[]): string => {
 }
 
 const SplitNotify = (props: {
-  issue: Issue
-  pledges: Pledge[]
-  splits: ConfirmIssueSplit[]
-  user: UserRead
+  issue: components['schemas']['Issue']
+  pledges: components['schemas']['Pledge'][]
+  splits: components['schemas']['ConfirmIssueSplit'][]
+  user: components['schemas']['UserRead']
   onCancel: () => void
 }) => {
   const totalPledgedAmount = props.pledges
@@ -63,11 +65,9 @@ _If you already have a Polar account setup, you don't need to do anything._
 
   const onConfirm = async () => {
     setIsLoading(true)
-    await api.issues.addIssueComment({
-      id: props.issue.id,
-      body: {
-        message: value,
-      },
+    await api.POST('/v1/issues/{id}/comment', {
+      params: { path: { id: props.issue.id } },
+      body: { message: value, append_badge: false },
     })
     setIsLoading(false)
     setIsPosted(true)

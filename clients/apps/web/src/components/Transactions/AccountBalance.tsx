@@ -1,6 +1,6 @@
 import { useTransactionsSummary } from '@/hooks/queries'
 import { Skeleton } from '@mui/material'
-import { Account, Status } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import {
@@ -11,7 +11,7 @@ import React, { useCallback, useState } from 'react'
 import WithdrawModal from './WithdrawModal'
 
 interface AccountBalanceProps {
-  account: Account
+  account: components['schemas']['Account']
   onWithdrawSuccess?: (payoutId: string) => void
 }
 
@@ -25,7 +25,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
     isLoading,
   } = useTransactionsSummary(account.id)
   const canWithdraw =
-    account.status === Status.ACTIVE &&
+    account.status === 'active' &&
     summary?.balance?.amount &&
     summary.balance.amount > 1000
 

@@ -1,12 +1,12 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { useAuth } from '@/hooks/auth'
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
 import {
   BellIcon,
   ClockIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline'
-import { Issue, Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
@@ -21,8 +21,8 @@ const PledgeCheckoutFundOnCompletion = ({
   issue,
   organization,
 }: {
-  issue: Issue
-  organization: Organization
+  issue: components['schemas']['Issue']
+  organization: components['schemas']['Organization']
 }) => {
   const [formState, setFormState] = useState<{
     amount: number
@@ -53,20 +53,22 @@ const PledgeCheckoutFundOnCompletion = ({
 
     setIsLoading(true)
     setErrorMessage('')
-    try {
-      await api.pledges.createPayOnCompletion({
-        body: {
-          issue_id: issue.id,
-          amount: formState.amount,
-          on_behalf_of_organization_id: formState.on_behalf_of_organization_id,
-        },
-      })
+    const { error } = await api.POST('/v1/pledges/pay_on_completion', {
+      body: {
+        issue_id: issue.id,
+        amount: formState.amount,
+        on_behalf_of_organization_id: formState.on_behalf_of_organization_id,
+        currency: 'usd',
+      },
+    })
+    setIsLoading(false)
 
-      router.push('/funding')
-    } catch (e) {
+    if (error) {
       setErrorMessage('Something went wrong, please try again.')
-      setIsLoading(false)
+      return
     }
+
+    router.push('/funding')
   }
 
   const onAmountChange = (amount: number) => {
@@ -76,7 +78,9 @@ const PledgeCheckoutFundOnCompletion = ({
     })
   }
 
-  const onChangeOnBehalfOf = (org: Organization | undefined) => {
+  const onChangeOnBehalfOf = (
+    org: components['schemas']['Organization'] | undefined,
+  ) => {
     setFormState({
       ...formState,
       on_behalf_of_organization_id: org ? org.id : undefined,

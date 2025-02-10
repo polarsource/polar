@@ -2,8 +2,8 @@
 
 import AccountAssociations from '@/components/Accounts/AccountAssociations'
 import { ACCOUNT_TYPE_DISPLAY_NAMES } from '@/utils/account'
-import { api } from '@/utils/api'
-import { Account, Organization, Status } from '@polar-sh/api'
+import { api } from '@/utils/client'
+import { components, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Select,
@@ -17,10 +17,10 @@ import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { useForm } from 'react-hook-form'
 
 interface AccoutSetupProps {
-  organization: Organization | undefined
-  accounts: Account[]
-  organizationAccount: Account | undefined
-  personalAccount?: Account
+  organization: components['schemas']['Organization'] | undefined
+  accounts: components['schemas']['Account'][]
+  organizationAccount: components['schemas']['Account'] | undefined
+  personalAccount?: components['schemas']['Account']
   loading: boolean
   onLinkAccount: (accountId: string) => void
   onAccountSetup: () => void
@@ -40,26 +40,36 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
     organizationAccount !== undefined &&
     personalAccount !== undefined &&
     organizationAccount.id !== personalAccount.id
-  const isActive = currentAccount?.status === Status.ACTIVE
-  const isUnderReview = currentAccount?.status === Status.UNDER_REVIEW
+  const isActive = currentAccount?.status === 'active'
+  const isUnderReview = currentAccount?.status === 'under_review'
 
   const linkAccountForm = useForm<{ account_id: string }>()
   const { control, handleSubmit } = linkAccountForm
 
-  const goToOnboarding = async (account: Account) => {
-    const link = await api.accounts.onboardingLink({
-      id: account.id,
-      returnPath: !organization
-        ? '/finance/account'
-        : `/dashboard/${organization.slug}/finance/account`,
-    })
+  const goToOnboarding = async (account: components['schemas']['Account']) => {
+    const link = await unwrap(
+      api.POST('/v1/accounts/{id}/onboarding_link', {
+        params: {
+          path: { id: account.id },
+          query: {
+            return_path: organization
+              ? `/dashboard/${organization.slug}/finance/account`
+              : '/finance/account',
+          },
+        },
+      }),
+    )
     window.location.href = link.url
   }
 
-  const goToDashboard = async (account: Account) => {
-    const link = await api.accounts.dashboardLink({
-      id: account.id,
-    })
+  const goToDashboard = async (account: components['schemas']['Account']) => {
+    const link = await unwrap(
+      api.POST('/v1/accounts/{id}/dashboard_link', {
+        params: {
+          path: { id: account.id },
+        },
+      }),
+    )
     window.open(link.url, '_blank')
   }
 

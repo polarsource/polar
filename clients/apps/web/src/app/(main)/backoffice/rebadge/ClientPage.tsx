@@ -1,6 +1,7 @@
 'use client'
 
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
+import { unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -31,10 +32,16 @@ const ClientPage = () => {
   const [res, setRes] = useState<any>()
 
   const onSubmit = useCallback(async (form: Form) => {
-    const res = await api.backoffice.updateBadgeContents({
-      repoSlug: form.repo_slug,
-      orgSlug: form.org_slug,
-    })
+    const res = await unwrap(
+      api.POST('/v1/backoffice/update_badge_contents', {
+        params: {
+          query: {
+            repo_slug: form.repo_slug,
+            org_slug: form.org_slug,
+          },
+        },
+      }),
+    )
 
     setRes(res)
 

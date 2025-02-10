@@ -1,13 +1,8 @@
 import { ACCOUNT_TYPE_DISPLAY_NAMES } from '@/utils/account'
-import { api } from '@/utils/api'
 import { getValidationErrorsMap } from '@/utils/api/errors'
+import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
-import {
-  Account,
-  AccountType,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/api'
+import { components, isValidationError } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import {
@@ -30,9 +25,8 @@ const AccountCreateModal = ({
   forUserId?: string
   returnPath: string
 }) => {
-  const [accountType, setAccountType] = useState<AccountType>(
-    AccountType.STRIPE,
-  )
+  const [accountType, setAccountType] =
+    useState<components['schemas']['AccountType']>('stripe')
   const [country, setCountry] = useState<string>('US')
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string[]>
@@ -48,7 +42,7 @@ const AccountCreateModal = ({
 
   const onChangeAccountType = (value: string) => {
     resetErrors()
-    setAccountType(value as AccountType)
+    setAccountType(value as components['schemas']['AccountType'])
   }
 
   const onChangeCountry = (countryCode: string) => {
@@ -59,55 +53,57 @@ const AccountCreateModal = ({
   const onConfirm = async () => {
     setLoading(true)
 
-    try {
-      const account = await api.accounts.create({
-        body: {
-          account_type: accountType,
-          country,
-        },
-      })
-      if (forOrganizationId) {
-        await api.organizations.setAccount({
-          id: forOrganizationId,
-          body: { account_id: account.id },
-        })
-      }
-      if (forUserId) {
-        await api.users.setAccount({
-          body: { account_id: account.id },
-        })
-      }
+    const { data: account, error } = await api.POST('/v1/accounts', {
+      body: {
+        account_type: accountType,
+        country,
+      },
+    })
 
-      await goToOnboarding(account)
-    } catch (e) {
-      if (e instanceof ResponseError) {
-        const body = await e.response.json()
-        if (e.response.status === 422) {
-          const validationErrors = body['detail'] as ValidationError[]
-          setValidationErrors(getValidationErrorsMap(validationErrors))
-        } else if (body['detail']) {
-          setErrorMessage(body['detail'])
-        }
+    if (error) {
+      if (isValidationError(error.detail)) {
+        setValidationErrors(getValidationErrorsMap(error.detail))
+      } else {
+        setErrorMessage(error.detail)
       }
-    } finally {
-      setLoading(false)
+      return
     }
+
+    if (forOrganizationId) {
+      await api.PATCH('/v1/organizations/{id}/account', {
+        params: { path: { id: forOrganizationId } },
+        body: { account_id: account.id },
+      })
+    }
+    if (forUserId) {
+      await api.PATCH('/v1/users/me/account', {
+        body: { account_id: account.id },
+      })
+    }
+
+    setLoading(false)
+    await goToOnboarding(account)
   }
 
-  const goToOnboarding = async (account: Account) => {
+  const goToOnboarding = async (account: components['schemas']['Account']) => {
     setLoading(true)
+    const { data, error } = await api.POST(
+      '/v1/accounts/{id}/onboarding_link',
+      {
+        params: {
+          path: { id: account.id },
+          query: { return_path: returnPath },
+        },
+      },
+    )
+    setLoading(false)
 
-    try {
-      const link = await api.accounts.onboardingLink({
-        id: account.id,
-        returnPath,
-      })
-      window.location.href = link.url
-    } catch (e) {
+    if (error) {
       window.location.reload()
-    } finally {
-      setLoading(false)
+      return
     }
+
+    window.location.href = data.url
   }
 
   return (

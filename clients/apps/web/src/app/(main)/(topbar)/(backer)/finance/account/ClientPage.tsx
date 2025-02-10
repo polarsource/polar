@@ -7,7 +7,7 @@ import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import { useAuth } from '@/hooks'
 import { useAccount, useListAccounts } from '@/hooks/queries'
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -32,14 +32,13 @@ export default function ClientPage() {
   const onLinkAccount = useCallback(
     async (accountId: string) => {
       setLinkAccountLoading(true)
-      try {
-        await api.users.setAccount({
-          body: { account_id: accountId },
-        })
+      const { error } = await api.PATCH('/v1/users/me/account', {
+        body: { account_id: accountId },
+      })
+      setLinkAccountLoading(false)
+      if (!error) {
         await reloadUser()
         window.location.reload()
-      } finally {
-        setLinkAccountLoading(false)
       }
     },
     [reloadUser],

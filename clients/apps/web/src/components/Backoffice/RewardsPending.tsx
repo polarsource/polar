@@ -4,7 +4,7 @@ import {
   useBackofficePledgeCreateInvoice,
   useBackofficeRewardsPending,
 } from '@/hooks/queries'
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -12,7 +12,7 @@ import {
   BanknotesIcon,
   CurrencyDollarIcon,
 } from '@heroicons/react/20/solid'
-import { BackofficeReward, PledgeState, PledgeType } from '@polar-sh/api'
+import { components, unwrap } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -27,11 +27,17 @@ const Pledges = () => {
   const rewards = useBackofficeRewardsPending()
 
   const groupRewardsByPledge = (
-    rewards: Array<BackofficeReward>,
-  ): Array<Array<BackofficeReward>> => {
+    rewards: Array<components['schemas']['BackofficeReward']>,
+  ): Array<Array<components['schemas']['BackofficeReward']>> => {
     const byPledgeId =
       rewards.reduce(
-        (hash: Record<string, Array<BackofficeReward>>, obj) => ({
+        (
+          hash: Record<
+            string,
+            Array<components['schemas']['BackofficeReward']>
+          >,
+          obj,
+        ) => ({
           ...hash,
           [obj.pledge.id]: (hash[obj.pledge.id] || []).concat(obj),
         }),
@@ -41,11 +47,17 @@ const Pledges = () => {
   }
 
   const groupRewardsByIssue = (
-    rewards: Array<BackofficeReward>,
-  ): Array<Array<BackofficeReward>> => {
+    rewards: Array<components['schemas']['BackofficeReward']>,
+  ): Array<Array<components['schemas']['BackofficeReward']>> => {
     const byIssueId =
       rewards.reduce(
-        (hash: Record<string, Array<BackofficeReward>>, obj) => ({
+        (
+          hash: Record<
+            string,
+            Array<components['schemas']['BackofficeReward']>
+          >,
+          obj,
+        ) => ({
           ...hash,
           [obj.pledge.issue.id]: (hash[obj.pledge.issue.id] || []).concat(obj),
         }),
@@ -60,7 +72,7 @@ const Pledges = () => {
     )
     // const byIssue =
     //   rewards.data?.items.reduce(
-    //     (hash: Record<string, Array<BackofficeReward>>, obj) => ({
+    //     (hash: Record<string, Array<components['schemas']['BackofficeReward']>>, obj) => ({
     //       ...hash,
     //       [obj.pledge.issue.id]: (hash[obj.pledge.issue.id] || []).concat(obj),
     //     }),
@@ -178,16 +190,12 @@ const Pledges = () => {
                       <div
                         className={twMerge(
                           'inline-flex items-center rounded-full px-2 text-sm text-white',
-                          p[0].pledge.state === PledgeState.CHARGE_DISPUTED ||
-                            p[0].pledge.state === PledgeState.DISPUTED
+                          p[0].pledge.state === 'charge_disputed' ||
+                            p[0].pledge.state === 'disputed'
                             ? 'bg-red-700'
                             : '',
-                          p[0].pledge.state === PledgeState.PENDING
-                            ? 'bg-green-700'
-                            : '',
-                          p[0].pledge.state === PledgeState.CREATED
-                            ? 'bg-blue-300'
-                            : '',
+                          p[0].pledge.state === 'pending' ? 'bg-green-700' : '',
+                          p[0].pledge.state === 'created' ? 'bg-blue-300' : '',
                         )}
                       >
                         state={p[0].pledge.state}
@@ -196,10 +204,10 @@ const Pledges = () => {
                       <div
                         className={twMerge(
                           'inline-flex items-center rounded-full px-2 text-sm text-white',
-                          p[0].pledge.type === PledgeType.UPFRONT
+                          p[0].pledge.type === 'pay_upfront'
                             ? 'bg-green-700'
                             : '',
-                          p[0].pledge.type === PledgeType.ON_COMPLETION
+                          p[0].pledge.type === 'pay_on_completion'
                             ? 'bg-red-700'
                             : '',
                         )}
@@ -212,7 +220,7 @@ const Pledges = () => {
                   {/* Actions */}
                   <td>
                     <div className="flex gap-2">
-                      {p[0].pledge.type === PledgeType.ON_COMPLETION && (
+                      {p[0].pledge.type === 'pay_on_completion' && (
                         <>
                           {p[0].pledge.hosted_invoice_url ? (
                             <a
@@ -319,12 +327,14 @@ const Pledges = () => {
                         <Button
                           size="sm"
                           onClick={async () => {
-                            await api.backoffice.pledgeRewardTransfer({
-                              body: {
-                                pledge_id: r.pledge.id,
-                                issue_reward_id: r.issue_reward_id,
-                              },
-                            })
+                            await unwrap(
+                              api.POST('/v1/backoffice/pledges/approve', {
+                                body: {
+                                  pledge_id: r.pledge.id,
+                                  issue_reward_id: r.issue_reward_id,
+                                },
+                              }),
+                            )
                             alert('paid!')
                           }}
                         >

@@ -7,13 +7,8 @@ import LoadingScreen, {
 } from '@/components/Dashboard/LoadingScreen'
 import { useAuth } from '@/hooks'
 import { useStore } from '@/store'
-import { api } from '@/utils/api'
-import {
-  FetchError,
-  Organization,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/api'
+import { api } from '@/utils/client'
+import { components, unwrap } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -36,7 +31,9 @@ export default function Page() {
   const router = useRouter()
   const pathname = usePathname()
   const [error, setError] = useState<string | null>(null)
-  const [installed, setInstalled] = useState<Organization | null>(null)
+  const [installed, setInstalled] = useState<
+    components['schemas']['Organization'] | null
+  >(null)
 
   const [showLogin, setShowLogin] = useState(false)
 
@@ -49,26 +46,36 @@ export default function Page() {
     (installationId: string, organizationId: string) => {
       const controller = new AbortController()
       const signal = controller.signal
-      const request = api.integrationsGitHub.install(
-        {
-          body: {
-            installation_id: Number.parseInt(installationId, 10),
-            organization_id: organizationId,
-          },
+      const request = api.POST('/v1/integrations/github/installations', {
+        body: {
+          installation_id: Number.parseInt(installationId, 10),
+          organization_id: organizationId,
         },
-        {
-          signal,
-        },
-      )
+        signal,
+      })
 
       setShowLogin(false)
       setError(null)
 
       request
-        .then(async (externalOrganization) => {
-          const organization = await api.organizations.get({
-            id: externalOrganization.organization_id as string,
-          })
+        .then(async ({ data: externalOrganization, error, response }) => {
+          if (error) {
+            const status = response.status
+            if (status === 401) {
+              setShowLogin(true)
+              return
+            } else if (status === 422 && error.detail) {
+              setError(error.detail[0].msg)
+            }
+            return
+          }
+          const organization = await unwrap(
+            api.GET('/v1/organizations/{id}', {
+              params: {
+                path: { id: externalOrganization.organization_id as string },
+              },
+            }),
+          )
           // As the Organization page & its data is fetched on the server, we need to revalidate the cache
           // to avoid stale data.
           await Promise.all([
@@ -85,30 +92,9 @@ export default function Page() {
           // redirect
           router.replace(`/dashboard/${organization.slug}/initialize`)
         })
-        .catch(async (err) => {
+        .catch(async () => {
           if (signal.aborted) {
             return
-          }
-
-          if (err instanceof FetchError) {
-            setError(
-              'Could not fetch data from GitHub. Try refreshing the page.',
-            )
-            // Since we get rare issues here sometimes. Raise so we capture in
-            // Sentry for more details.
-            throw err
-          }
-
-          if (err instanceof ResponseError) {
-            const status = err.response.status
-            if (status === 401) {
-              setShowLogin(true)
-              return
-            } else if (status === 422) {
-              const body = await err.response.json()
-              const validationErrors = body['detail'] as ValidationError[]
-              setError(validationErrors[0].msg)
-            }
           }
         })
 

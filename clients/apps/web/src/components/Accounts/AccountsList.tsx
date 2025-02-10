@@ -2,14 +2,14 @@ import {
   ACCOUNT_STATUS_DISPLAY_NAMES,
   ACCOUNT_TYPE_DISPLAY_NAMES,
 } from '@/utils/account'
-import { api } from '@/utils/api'
-import { Account, Status } from '@polar-sh/api'
+import { api } from '@/utils/client'
+import { components, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { twMerge } from 'tailwind-merge'
 import AccountAssociations from './AccountAssociations'
 
 interface AccountsListProps {
-  accounts: Account[]
+  accounts: components['schemas']['Account'][]
   returnPath: string
 }
 
@@ -60,7 +60,7 @@ const AccountsList = ({ accounts, returnPath }: AccountsListProps) => {
 export default AccountsList
 
 interface AccountListItemProps {
-  account: Account
+  account: components['schemas']['Account']
   returnPath: string
 }
 
@@ -69,21 +69,35 @@ const AccountListItem = ({ account, returnPath }: AccountListItemProps) => {
     'dark:group-hover:bg-polar-700 px-4 py-2 transition-colors group-hover:bg-blue-50 group-hover:text-gray-950 text-gray-700 dark:text-polar-200 group-hover:dark:text-white',
   )
 
-  const isActive = account?.status === Status.ACTIVE
-  const isUnderReview = account?.status === Status.UNDER_REVIEW
+  const isActive = account?.status === 'active'
+  const isUnderReview = account?.status === 'under_review'
 
   const goToOnboarding = async () => {
-    const link = await api.accounts.onboardingLink({
-      id: account.id,
-      returnPath,
-    })
+    const link = await unwrap(
+      api.POST('/v1/accounts/{id}/onboarding_link', {
+        params: {
+          path: {
+            id: account.id,
+          },
+          query: {
+            return_path: returnPath,
+          },
+        },
+      }),
+    )
     window.location.href = link.url
   }
 
   const goToDashboard = async () => {
-    const link = await api.accounts.dashboardLink({
-      id: account.id,
-    })
+    const link = await unwrap(
+      api.POST('/v1/accounts/{id}/dashboard_link', {
+        params: {
+          path: {
+            id: account.id,
+          },
+        },
+      }),
+    )
     window.location.href = link.url
   }
 

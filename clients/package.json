@@ -8,7 +8,7 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "storybook": "turbo watch storybook",
-    "generate": "pnpm -C packages/api generate",
+    "generate": "pnpm -C packages/client generate",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "preinstall": "npx only-allow pnpm",
     "postinstall": "manypkg check",

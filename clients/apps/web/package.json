@@ -31,7 +31,6 @@
     "@mui/material": "^6.4.3",
     "@next/mdx": "^14.2.18",
     "@observablehq/plot": "^0.6.16",
-    "@polar-sh/api": "workspace:*",
     "@polar-sh/checkout": "workspace:^",
     "@polar-sh/client": "workspace:*",
     "@polar-sh/mdx": "workspace:*",

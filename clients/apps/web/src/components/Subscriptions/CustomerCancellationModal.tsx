@@ -1,5 +1,6 @@
 'use client'
 
+import revalidate from '@/app/actions'
 import { Modal, ModalProps } from '@/components/Modal'
 import { useCustomerCancelSubscription } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
@@ -72,6 +73,9 @@ const CustomerCancellationModal = ({
         id: subscription.id,
         body: cancellation,
       })
+
+      await revalidate(`customer_portal`)
+
       if (error) {
         if (isValidationError(error.detail)) {
           setValidationErrors(error.detail, setError)

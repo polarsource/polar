@@ -64,6 +64,9 @@ export default async function Page({
       },
     },
     cache: 'no-cache',
+    next: {
+      tags: [`customer_portal`],
+    },
   })
 
   if (response.status === 401) {

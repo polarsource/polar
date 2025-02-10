@@ -6,6 +6,9 @@ import ClientPage from './ClientPage'
 
 const cacheConfig = {
   cache: 'no-store' as RequestCache,
+  next: {
+    tags: ['customer_portal'],
+  },
 }
 
 export async function generateMetadata({

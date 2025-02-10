@@ -1,7 +1,7 @@
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
 import { InformationCircleIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { XMarkIcon } from '@heroicons/react/24/solid'
-import { Issue, Organization, Pledge } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
@@ -34,9 +34,9 @@ export interface Contributor {
 }
 
 const Split = (props: {
-  organization: Organization
-  issue: Issue
-  pledges: Pledge[]
+  organization: components['schemas']['Organization']
+  issue: components['schemas']['Issue']
+  pledges: components['schemas']['Pledge'][]
   contributors: Contributor[]
   shares: Share[]
   onConfirm: (shares: Share[]) => void
@@ -205,28 +205,30 @@ const Split = (props: {
 
     setShowAddUserError(false)
 
-    try {
-      const lookup = await api.integrationsGitHub.lookupUser({
+    const { data: lookup, error } = await api.POST(
+      '/v1/integrations/github/lookup_user',
+      {
         body: { username: searchGithubUsername },
-      })
+      },
+    )
 
-      // Add to shares if not exists
-      if (!shares.find((s) => s.username === lookup.username)) {
-        setShares((prev) => [
-          ...prev,
-          { id: lookup.username, username: lookup.username },
-        ])
-      }
-
-      // Add to contributors if not exists
-      if (!contributors.find((c) => c.username === lookup.username)) {
-        setContributors((prev) => [...prev, { ...lookup, id: lookup.username }])
-      }
-
-      setSearchGithubUsername('')
-    } catch {
+    if (error) {
       setShowAddUserError(true)
       setShowAddUserErrorUsername(searchGithubUsername)
+      return
+    }
+
+    // Add to shares if not exists
+    if (!shares.find((s) => s.username === lookup.username)) {
+      setShares((prev) => [
+        ...prev,
+        { id: lookup.username, username: lookup.username },
+      ])
+    }
+
+    // Add to contributors if not exists
+    if (!contributors.find((c) => c.username === lookup.username)) {
+      setContributors((prev) => [...prev, { ...lookup, id: lookup.username }])
     }
   }
 

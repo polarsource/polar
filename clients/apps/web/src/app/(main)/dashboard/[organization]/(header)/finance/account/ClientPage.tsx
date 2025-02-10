@@ -6,8 +6,8 @@ import AccountsList from '@/components/Accounts/AccountsList'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import { useListAccounts, useOrganizationAccount } from '@/hooks/queries'
-import { api } from '@/utils/api'
-import { Organization } from '@polar-sh/api'
+import { api } from '@/utils/client'
+import { components } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { useCallback, useState } from 'react'
@@ -15,7 +15,7 @@ import { useCallback, useState } from 'react'
 export default function ClientPage({
   organization,
 }: {
-  organization: Organization
+  organization: components['schemas']['Organization']
 }) {
   const { data: accounts } = useListAccounts()
   const {
@@ -30,14 +30,13 @@ export default function ClientPage({
   const onLinkAccount = useCallback(
     async (accountId: string) => {
       setLinkAccountLoading(true)
-      try {
-        await api.organizations.setAccount({
-          id: organization.id,
-          body: { account_id: accountId },
-        })
+      const { error } = await api.PATCH('/v1/organizations/{id}/account', {
+        params: { path: { id: organization.id } },
+        body: { account_id: accountId },
+      })
+      setLinkAccountLoading(false)
+      if (!error) {
         window.location.reload()
-      } finally {
-        setLinkAccountLoading(false)
       }
     },
     [organization],

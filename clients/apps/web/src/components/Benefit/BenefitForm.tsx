@@ -1,14 +1,7 @@
 import { usePostHog } from '@/hooks/posthog'
 import { useDiscordGuild } from '@/hooks/queries'
 import { getBotDiscordAuthorizeURL } from '@/utils/auth'
-import {
-  BenefitAdsCreate,
-  BenefitCreate,
-  BenefitCustomCreate,
-  BenefitDiscordCreate,
-  BenefitType,
-  Organization,
-} from '@polar-sh/api'
+import { components, enums } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -42,17 +35,17 @@ import { benefitsDisplayNames } from './utils'
 export const NewBenefitForm = ({
   organization,
 }: {
-  organization: Organization
+  organization: components['schemas']['Organization']
 }) => {
-  const { watch } = useFormContext<BenefitCreate>()
+  const { watch } = useFormContext<components['schemas']['BenefitCreate']>()
   const type = watch('type')
 
   return <BenefitForm organization={organization} type={type} />
 }
 
 interface UpdateBenefitFormProps {
-  organization: Organization
-  type: BenefitType
+  organization: components['schemas']['Organization']
+  type: components['schemas']['BenefitType']
 }
 
 export const UpdateBenefitForm = ({
@@ -63,8 +56,8 @@ export const UpdateBenefitForm = ({
 }
 
 interface BenefitFormProps {
-  organization: Organization
-  type: BenefitType | 'usage'
+  organization: components['schemas']['Organization']
+  type: components['schemas']['BenefitType'] | 'usage'
   update?: boolean
 }
 
@@ -73,7 +66,7 @@ export const BenefitForm = ({
   type,
   update = false,
 }: BenefitFormProps) => {
-  const { control } = useFormContext<BenefitCreate>()
+  const { control } = useFormContext<components['schemas']['BenefitCreate']>()
 
   return (
     <>
@@ -130,7 +123,8 @@ interface CustomBenefitFormProps {
 }
 
 export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
-  const { control } = useFormContext<BenefitCustomCreate>()
+  const { control } =
+    useFormContext<components['schemas']['BenefitCustomCreate']>()
 
   return (
     <>
@@ -160,7 +154,8 @@ export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
 }
 
 export const AdsBenefitForm = () => {
-  const { control } = useFormContext<BenefitAdsCreate>()
+  const { control } =
+    useFormContext<components['schemas']['BenefitAdsCreate']>()
 
   return (
     <>
@@ -207,7 +202,8 @@ export const AdsBenefitForm = () => {
 }
 
 export const DiscordBenefitForm = () => {
-  const { control, watch } = useFormContext<BenefitDiscordCreate>()
+  const { control, watch } =
+    useFormContext<components['schemas']['BenefitDiscordCreate']>()
   const pathname = usePathname()
   const description = watch('description')
   const guildToken = watch('properties.guild_token')
@@ -215,7 +211,7 @@ export const DiscordBenefitForm = () => {
   const authorizeURL = useMemo(() => {
     const searchParams = new URLSearchParams()
     searchParams.set('create_benefit', 'true')
-    searchParams.set('type', BenefitType.DISCORD)
+    searchParams.set('type', 'discord')
     searchParams.set('description', description)
     const returnTo = `${pathname}?${searchParams}`
     return getBotDiscordAuthorizeURL({ returnTo })
@@ -335,7 +331,8 @@ export const DiscordBenefitForm = () => {
 }
 
 const BenefitTypeSelect = ({}) => {
-  const { control } = useFormContext<BenefitCustomCreate>()
+  const { control } =
+    useFormContext<components['schemas']['BenefitCustomCreate']>()
 
   const { isFeatureEnabled } = usePostHog()
 
@@ -356,7 +353,7 @@ const BenefitTypeSelect = ({}) => {
                   <SelectValue placeholder="Select a benefit type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.values(BenefitType).map((value) => (
+                  {Object.values(enums.benefitTypeValues).map((value) => (
                     <SelectItem key={value} value={value}>
                       {benefitsDisplayNames[value]}
                     </SelectItem>

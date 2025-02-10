@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/auth'
-import { api } from '@/utils/api'
+import { api } from '@/utils/client'
 import { ClockIcon } from '@heroicons/react/24/outline'
-import { Issue, Organization } from '@polar-sh/api'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
@@ -16,8 +16,8 @@ const PledgeCheckoutFundByTeam = ({
   organization,
   issue,
 }: {
-  organization: Organization
-  issue: Issue
+  organization: components['schemas']['Organization']
+  issue: components['schemas']['Issue']
 }) => {
   const [formState, setFormState] = useState<{
     amount: number
@@ -37,9 +37,9 @@ const PledgeCheckoutFundByTeam = ({
 
   const [paymentPromise, setPaymentPromise] = useState(false)
 
-  const [selectedOrg, setSelectedOrg] = useState<Organization | undefined>(
-    undefined,
-  )
+  const [selectedOrg, setSelectedOrg] = useState<
+    components['schemas']['Organization'] | undefined
+  >(undefined)
 
   const hasValidDetails =
     formState.amount >= organization.pledge_minimum_amount &&
@@ -59,20 +59,23 @@ const PledgeCheckoutFundByTeam = ({
 
     setIsLoading(true)
     setErrorMessage('')
-    try {
-      await api.pledges.createPayOnCompletion({
-        body: {
-          issue_id: issue.id,
-          amount: formState.amount,
-          by_organization_id: formState.by_organization_id,
-        },
-      })
 
-      router.push(`/dashboard/${selectedOrg.slug}`)
-    } catch (e) {
+    const { error } = await api.POST('/v1/pledges/pay_on_completion', {
+      body: {
+        issue_id: issue.id,
+        amount: formState.amount,
+        by_organization_id: formState.by_organization_id,
+        currency: 'usd',
+      },
+    })
+
+    if (error) {
       setErrorMessage('Something went wrong, please try again.')
       setIsLoading(false)
+      return
     }
+
+    router.push(`/dashboard/${selectedOrg.slug}`)
   }
 
   const onAmountChange = (amount: number) => {
@@ -82,7 +85,9 @@ const PledgeCheckoutFundByTeam = ({
     })
   }
 
-  const onChangeOnBehalfOf = (org: Organization | undefined) => {
+  const onChangeOnBehalfOf = (
+    org: components['schemas']['Organization'] | undefined,
+  ) => {
     setFormState({
       ...formState,
       by_organization_id: org ? org.id : undefined,

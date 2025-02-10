@@ -1,6 +1,6 @@
 import { usePayoutEstimate } from '@/hooks/queries'
-import { api } from '@/utils/api'
-import { Account, ResponseError } from '@polar-sh/api'
+import { api } from '@/utils/client'
+import { components } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import React, { useCallback, useEffect, useState } from 'react'
@@ -8,7 +8,7 @@ import { Modal } from '../Modal'
 import { toast } from '../Toast/use-toast'
 
 interface WithdrawModalProps {
-  account: Account
+  account: components['schemas']['Account']
   isShown: boolean
   hide: () => void
   onSuccess?: (payoutId: string) => void
@@ -20,60 +20,62 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   hide,
   onSuccess,
 }) => {
-  const { data: payoutEstimate, error } = usePayoutEstimate(account.id, isShown)
+  const payoutEstimateMutation = usePayoutEstimate(account.id)
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const handleErrorMessage = useCallback(async () => {
-    if (!error) {
-      setErrorMessage(null)
-      return
-    }
+  const [payoutEstimate, setPayoutEstimate] = useState<
+    components['schemas']['PayoutEstimate'] | null
+  >(null)
 
-    if (error instanceof ResponseError) {
-      const body = await error.response.json()
-      if (body.error === 'InsufficientBalance') {
+  const getPayoutEstimate = useCallback(async () => {
+    const { data, response } = await payoutEstimateMutation.mutateAsync()
+    if (!response.ok) {
+      const errorBody = await response.json()
+      if (errorBody.error === 'InsufficientBalance') {
         setErrorMessage(
           'The balance of this account is insufficient to cover the processing fees.',
         )
-        return
+      } else {
+        setErrorMessage(
+          'An error occurred while trying to compute the processing fees. Please try again later.',
+        )
       }
+      return
     }
 
-    setErrorMessage(
-      'An error occurred while trying to compute the processing fees. Please try again later.',
-    )
-  }, [error])
+    if (data) {
+      setPayoutEstimate(data)
+    }
+  }, [])
+
   useEffect(() => {
-    handleErrorMessage()
-  }, [handleErrorMessage])
+    if (isShown) {
+      getPayoutEstimate()
+    }
+  }, [isShown, getPayoutEstimate])
 
   const [loading, setLoading] = useState(false)
   const onConfirm = useCallback(async () => {
     setLoading(true)
-    try {
-      const { id } = await api.transactions.createPayout({
-        body: { account_id: account.id },
+    const { data, error } = await api.POST('/v1/transactions/payouts', {
+      body: { account_id: account.id },
+    })
+    setLoading(false)
+
+    if (error) {
+      toast({
+        title: 'Withdrawal Failed',
+        description: `Error initiating withdrawal: ${error.detail}`,
       })
-      if (onSuccess) {
-        toast({
-          title: 'Withdrawal Initiated',
-          description: `Withdrawal initiated successfully`,
-        })
-
-        onSuccess(id)
-      }
-    } catch (e) {
-      if (e instanceof ResponseError) {
-        toast({
-          title: 'Withdrawal Failed',
-          description: `Error initiating withdrawal: ${e.message}`,
-        })
-      }
-
-      console.error(e)
-    } finally {
-      setLoading(false)
+      return
     }
+
+    toast({
+      title: 'Withdrawal Initiated',
+      description: `Withdrawal initiated successfully`,
+    })
+
+    onSuccess?.(data.id)
   }, [account.id, onSuccess])
 
   return (

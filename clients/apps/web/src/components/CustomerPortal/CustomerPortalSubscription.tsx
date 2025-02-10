@@ -36,12 +36,9 @@ const CustomerPortalSubscription = ({
     sorting: ['-created_at'],
   })
 
-  const onSubscriptionUpdate = useCallback(
-    async (subscription: CustomerSubscription) => {
-      await revalidate(`customer_portal`)
-    },
-    [],
-  )
+  const onSubscriptionUpdate = useCallback(async () => {
+    await revalidate(`customer_portal`)
+  }, [])
 
   const orderInvoiceMutation = useCustomerOrderInvoice(api)
   const openInvoice = useCallback(

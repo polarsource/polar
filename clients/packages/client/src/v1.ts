@@ -15435,6 +15435,67 @@ export interface components {
         MetadataQuery: {
             [key: string]: string | number | boolean | string[] | number[] | boolean[];
         } | null;
+        /** AuthorizationCodeTokenRequest */
+        AuthorizationCodeTokenRequest: {
+            /**
+             * Grant Type
+             * @constant
+             */
+            grant_type: "authorization_code";
+            /** Client Id */
+            client_id: string;
+            /** Client Secret */
+            client_secret: string;
+            /** Code */
+            code: string;
+            /**
+             * Redirect Uri
+             * Format: uri
+             */
+            redirect_uri: string;
+        };
+        /** RefreshTokenRequest */
+        RefreshTokenRequest: {
+            /**
+             * Grant Type
+             * @constant
+             */
+            grant_type: "refresh_token";
+            /** Client Id */
+            client_id: string;
+            /** Client Secret */
+            client_secret: string;
+            /** Refresh Token */
+            refresh_token: string;
+        };
+        /** RevokeTokenRequest */
+        RevokeTokenRequest: {
+            /** Token */
+            token: string;
+            /**
+             * Token Type Hint
+             * @default null
+             */
+            token_type_hint: ("access_token" | "refresh_token") | null;
+            /** Client Id */
+            client_id: string;
+            /** Client Secret */
+            client_secret: string;
+        };
+        /** IntrospectTokenRequest */
+        IntrospectTokenRequest: {
+            /** Token */
+            token: string;
+            /**
+             * Token Type Hint
+             * @default null
+             */
+            token_type_hint: ("access_token" | "refresh_token") | null;
+            /** Client Id */
+            client_id: string;
+            /** Client Secret */
+            client_secret: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -18964,7 +19025,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["AuthorizationCodeTokenRequest"] | components["schemas"]["RefreshTokenRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -18984,7 +19049,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["RevokeTokenRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -19004,7 +19073,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["IntrospectTokenRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -24365,3 +24438,5 @@ export const transactionTypeValues: ReadonlyArray<components["schemas"]["Transac
 export const userSignupAttributionIntentValues: ReadonlyArray<components["schemas"]["UserSignupAttribution"]["intent"]> = ["creator", "pledge", "purchase", "subscription", "newsletter_subscription"];
 export const webhookEventTypeValues: ReadonlyArray<components["schemas"]["WebhookEventType"]> = ["checkout.created", "checkout.updated", "order.created", "order.refunded", "subscription.created", "subscription.updated", "subscription.active", "subscription.canceled", "subscription.uncanceled", "subscription.revoked", "refund.created", "refund.updated", "product.created", "product.updated", "benefit.created", "benefit.updated", "benefit_grant.created", "benefit_grant.updated", "benefit_grant.revoked", "organization.updated", "pledge.created", "pledge.updated"];
 export const webhookFormatValues: ReadonlyArray<components["schemas"]["WebhookFormat"]> = ["raw", "discord", "slack"];
+export const revokeTokenRequestToken_type_hintValues: ReadonlyArray<components["schemas"]["RevokeTokenRequest"]["token_type_hint"]> = ["access_token", "refresh_token"];
+export const introspectTokenRequestToken_type_hintValues: ReadonlyArray<components["schemas"]["IntrospectTokenRequest"]["token_type_hint"]> = ["access_token", "refresh_token"];

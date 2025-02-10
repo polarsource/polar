@@ -1,10 +1,20 @@
 import { useStore } from '@/store'
+import {
+  ClientResponseError,
+  NotFoundResponseError,
+  UnauthorizedResponseError,
+} from '@polar-sh/client'
 
 export const authenticatingRetry = (
   failureCount: number,
-  error: any, // TODO: This type is not correct
+  // Errors that can be raised by `unwrap`.
+  // API calls not wrapped by `unwrap` will succeed with an error object, so they won't be catched here.
+  error:
+    | ClientResponseError
+    | UnauthorizedResponseError
+    | NotFoundResponseError,
 ): boolean => {
-  if (error?.response?.status === 401) {
+  if (error instanceof UnauthorizedResponseError) {
     // Empty Zustand store on unauthenticated errors
     const state = useStore.getState()
     if (state.resetState) {
@@ -13,7 +23,7 @@ export const authenticatingRetry = (
     return false
   }
 
-  if (error?.response?.status === 404) {
+  if (error instanceof NotFoundResponseError) {
     return false
   }
 

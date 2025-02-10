@@ -46,7 +46,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const [selectedSubscriptionState, setSelectedSubscriptionState] =
     useState<RowSelectionState>({})
 
-  const subscriptionTiers = useProducts(organization.id, { isRecurring: true })
+  const subscriptionTiers = useProducts(organization.id, { is_recurring: true })
 
   const filter = productId || 'all'
   const status = subscriptionStatus || 'active'

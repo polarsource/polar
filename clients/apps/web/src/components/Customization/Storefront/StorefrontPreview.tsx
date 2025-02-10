@@ -21,7 +21,7 @@ export const StorefrontPreview = () => {
   const organization = { ...org, ...organizationUpdate }
 
   const products =
-    useProducts(organization.id, { isArchived: false }).data?.items ?? []
+    useProducts(organization.id, { is_archived: false }).data?.items ?? []
 
   const issues =
     useSearchFunding({

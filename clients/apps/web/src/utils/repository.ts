@@ -4,7 +4,7 @@ import { getStorefront } from './storefront'
 const getRepositoryBy = async (
   api: Client,
   parameters: Omit<
-    operations['repositories:list']['parameters']['query'],
+    NonNullable<operations['repositories:list']['parameters']['query']>,
     'page' | 'limit' | 'sorting'
   >,
   cacheOverrides?: any,
@@ -52,7 +52,7 @@ export const resolveRepositoryPath = async (
   const repository = await getRepositoryBy(
     api,
     {
-      externalOrganizationName: organizationSlug,
+      external_organization_name: organizationSlug,
       name: repositoryName,
     },
     cacheOverrides,

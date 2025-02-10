@@ -55,7 +55,7 @@ const ChangePlanModal = ({
   const router = useRouter()
   const { data: products } = useProducts(organization.id, {
     limit: 100,
-    isRecurring: true,
+    is_recurring: true,
   })
 
   const currentPrice = subscription.price as

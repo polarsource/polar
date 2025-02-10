@@ -27,7 +27,7 @@ const invalidateCustomFieldsQueries = ({
 export const useCustomFields = (
   organizationId: string,
   parameters?: Omit<
-    operations['custom-fields:list']['parameters']['query'],
+    NonNullable<operations['custom-fields:list']['parameters']['query']>,
     'organization_id'
   >,
 ) =>

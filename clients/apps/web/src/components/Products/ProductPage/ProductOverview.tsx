@@ -29,7 +29,7 @@ export const ProductOverview = ({
   const { data: productOrders, isLoading: productOrdersIsLoading } = useOrders(
     organization.id,
     {
-      productId: product.id,
+      product_id: product.id,
       limit: 10,
     },
   )

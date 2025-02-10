@@ -27,7 +27,7 @@ const invalidateDiscountsQueries = ({
 export const useDiscounts = (
   organizationId: string,
   parameters?: Omit<
-    operations['discounts:list']['parameters']['query'],
+    NonNullable<operations['discounts:list']['parameters']['query']>,
     'organization_id'
   >,
 ) =>

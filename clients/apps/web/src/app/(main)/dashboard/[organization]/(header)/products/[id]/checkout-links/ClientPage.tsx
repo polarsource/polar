@@ -51,7 +51,7 @@ export const ClientPage = ({
   const { data: checkoutLinks, isLoading } = useCheckoutLinks(
     product.organization_id,
     {
-      productId: product.id,
+      product_id: product.id,
       ...getAPIParams(pagination, sorting),
     },
   )

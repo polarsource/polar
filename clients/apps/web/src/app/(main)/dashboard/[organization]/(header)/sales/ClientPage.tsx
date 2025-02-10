@@ -107,7 +107,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const ordersHook = useOrders(organization.id, {
     ...getAPIParams(pagination, sorting),
-    productId,
+    product_id: productId,
   })
 
   const orders = ordersHook.data?.items || []

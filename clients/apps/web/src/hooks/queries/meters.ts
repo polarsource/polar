@@ -12,7 +12,7 @@ import { defaultRetry } from './retry'
 export const useMeters = (
   organizationId: string,
   parameters?: Omit<
-    operations['meters:list']['parameters']['query'],
+    NonNullable<operations['meters:list']['parameters']['query']>,
     'organization_id'
   >,
 ) =>
@@ -66,7 +66,7 @@ export const useMeterQuantities = (
   endTimestamp: Date,
   interval: schemas['TimeInterval'],
   parameters?: Omit<
-    operations['meters:quantities']['parameters']['query'],
+    NonNullable<operations['meters:quantities']['parameters']['query']>,
     'id' | 'startTimestamp' | 'endTimestamp' | 'interval'
   >,
 ): UseQueryResult<ParsedMeterQuantities, Error> =>

@@ -7,7 +7,7 @@ import { defaultRetry } from './retry'
 export const useCheckoutLinks = (
   organizationId: string,
   parameters?: Omit<
-    operations['checkout-links:list']['parameters']['query'],
+    NonNullable<operations['checkout-links:list']['parameters']['query']>,
     'organization_id'
   >,
 ) =>

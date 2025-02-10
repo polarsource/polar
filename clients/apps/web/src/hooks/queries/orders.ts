@@ -15,7 +15,7 @@ export const useOrder = (id: string, initialData?: schemas['Order']) =>
 export const useOrders = (
   organizationId?: string,
   parameters?: Omit<
-    operations['orders:list']['parameters']['query'],
+    NonNullable<operations['orders:list']['parameters']['query']>,
     'organization_id'
   >,
 ) =>

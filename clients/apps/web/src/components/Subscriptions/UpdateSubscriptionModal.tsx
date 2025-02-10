@@ -47,7 +47,7 @@ const UpdateSubscriptionModal = ({
   })
   const { control, handleSubmit, setError, watch, resetField } = form
   const { data: products } = useProducts(subscription.product.organization_id, {
-    isRecurring: true,
+    is_recurring: true,
     limit: 100,
     sorting: ['price_amount'],
   })

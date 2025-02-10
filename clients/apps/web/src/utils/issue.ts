@@ -4,7 +4,7 @@ import { getStorefront } from './storefront'
 const getIssueBy = async (
   api: Client,
   parameters: Omit<
-    operations['issues:list']['parameters']['query'],
+    NonNullable<operations['issues:list']['parameters']['query']>,
     'page' | 'limit' | 'sorting'
   >,
   cacheOverrides?: any,
@@ -40,8 +40,8 @@ export const resolveIssuePath = async (
     const issue = await getIssueBy(
       api,
       {
-        organizationId: organization.id,
-        repositoryName,
+        organization_id: organization.id,
+        repository_name: repositoryName,
         number: parsedIssueNumber,
       },
       cacheOverrides,
@@ -56,8 +56,8 @@ export const resolveIssuePath = async (
   const issue = await getIssueBy(
     api,
     {
-      externalOrganizationName: organizationSlug,
-      repositoryName,
+      external_organization_name: organizationSlug,
+      repository_name: repositoryName,
       number: parsedIssueNumber,
     },
     cacheOverrides,

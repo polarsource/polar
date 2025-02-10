@@ -81,7 +81,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
   const { data: orders, isLoading: ordersLoading } = useOrders(
     customer.organization_id,
     {
-      customerId: customer.id,
+      customer_id: customer.id,
       limit: 999,
       sorting: ['-created_at'],
     },
@@ -89,7 +89,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
 
   const { data: subscriptions, isLoading: subscriptionsLoading } =
     useListSubscriptions(customer.organization_id, {
-      customerId: customer.id,
+      customer_id: customer.id,
       limit: 999,
       sorting: ['-started_at'],
     })

@@ -8,7 +8,7 @@ import { defaultRetry } from './retry'
 export const useProducts = (
   organizationId: string | string[],
   parameters?: Omit<
-    operations['products:list']['parameters']['query'],
+    NonNullable<operations['products:list']['parameters']['query']>,
     'organization_id'
   >,
 ) =>

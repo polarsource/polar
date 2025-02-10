@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import List, { Column } from '@/components/Finance/ListPledges'
 import { issue } from '@/utils/testdata'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 
 type Story = StoryObj<typeof List>
 
@@ -14,7 +14,7 @@ const meta: Meta<typeof List> = {
 
 export default meta
 
-const pledge: components['schemas']['Pledge'] = {
+const pledge: schemas['Pledge'] = {
   id: 'xx',
   created_at: new Date('2023-06-29').toISOString(),
   modified_at: null,
@@ -28,7 +28,7 @@ const pledge: components['schemas']['Pledge'] = {
   authed_can_admin_sender: false,
 }
 
-let all_pledge_states: components['schemas']['Pledge'][] = [
+let all_pledge_states: schemas['Pledge'][] = [
   'initiated',
   'created',
   'pending',
@@ -36,10 +36,10 @@ let all_pledge_states: components['schemas']['Pledge'][] = [
   'disputed',
   'charge_disputed',
   'cancelled',
-].map((s): components['schemas']['Pledge'] => {
+].map((s): schemas['Pledge'] => {
   return {
     ...pledge,
-    state: s as components['schemas']['PledgeState'],
+    state: s as schemas['PledgeState'],
     issue: {
       ...pledge.issue,
       title: `${pledge.issue.title} (${s})`,

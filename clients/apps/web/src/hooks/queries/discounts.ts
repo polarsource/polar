@@ -1,6 +1,6 @@
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { components, operations, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -44,7 +44,7 @@ export const useDiscounts = (
 
 export const useCreateDiscount = (organizationId: string) =>
   useMutation({
-    mutationFn: (body: components['schemas']['DiscountCreate']) => {
+    mutationFn: (body: schemas['DiscountCreate']) => {
       return api.POST('/v1/discounts/', {
         body,
       })
@@ -60,7 +60,7 @@ export const useCreateDiscount = (organizationId: string) =>
 
 export const useUpdateDiscount = (id: string) =>
   useMutation({
-    mutationFn: (body: components['schemas']['DiscountUpdate']) => {
+    mutationFn: (body: schemas['DiscountUpdate']) => {
       return api.PATCH('/v1/discounts/{id}', {
         params: {
           path: {
@@ -84,7 +84,7 @@ export const useUpdateDiscount = (id: string) =>
 
 export const useDeleteDiscount = () =>
   useMutation({
-    mutationFn: (discount: components['schemas']['Discount']) => {
+    mutationFn: (discount: schemas['Discount']) => {
       return api.DELETE('/v1/discounts/{id}', {
         params: {
           path: {

@@ -1,7 +1,7 @@
 import revalidate from '@/app/actions'
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { components, operations, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@polar-sh/client'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -33,7 +33,7 @@ export const useSelectedProducts = (id: string[]) =>
   useQuery({
     queryKey: ['products', { id }],
     queryFn: async () => {
-      const products: components['schemas']['Product'][] = []
+      const products: schemas['Product'][] = []
       let page = 1
       while (true) {
         const data = await unwrap(
@@ -96,11 +96,9 @@ export const useProduct = (id?: string) =>
     enabled: !!id,
   })
 
-export const useCreateProduct = (
-  organization: components['schemas']['Organization'],
-) =>
+export const useCreateProduct = (organization: schemas['Organization']) =>
   useMutation({
-    mutationFn: (body: components['schemas']['ProductCreate']) => {
+    mutationFn: (body: schemas['ProductCreate']) => {
       return api.POST('/v1/products/', { body })
     },
     onSuccess: async (result, _variables, _ctx) => {
@@ -114,16 +112,14 @@ export const useCreateProduct = (
     },
   })
 
-export const useUpdateProduct = (
-  organization: components['schemas']['Organization'],
-) =>
+export const useUpdateProduct = (organization: schemas['Organization']) =>
   useMutation({
     mutationFn: ({
       id,
       body,
     }: {
       id: string
-      body: components['schemas']['ProductUpdate']
+      body: schemas['ProductUpdate']
     }) => {
       return api.PATCH('/v1/products/{id}', {
         params: { path: { id } },
@@ -145,7 +141,7 @@ export const useUpdateProduct = (
   })
 
 export const useUpdateProductBenefits = (
-  organization: components['schemas']['Organization'],
+  organization: schemas['Organization'],
 ) =>
   useMutation({
     mutationFn: ({
@@ -153,7 +149,7 @@ export const useUpdateProductBenefits = (
       body,
     }: {
       id: string
-      body: components['schemas']['ProductBenefitsUpdate']
+      body: schemas['ProductBenefitsUpdate']
     }) => {
       return api.POST('/v1/products/{id}/benefits', {
         params: { path: { id } },

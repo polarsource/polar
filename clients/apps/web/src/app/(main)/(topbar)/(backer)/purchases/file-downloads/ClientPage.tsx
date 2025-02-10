@@ -11,7 +11,7 @@ import {
 } from '@/hooks/queries'
 import { api } from '@/utils/client'
 import { FileDownloadOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -86,7 +86,7 @@ export default function ClientPage() {
 }
 
 interface DownloadableItemProps {
-  downloadable: components['schemas']['DownloadableRead']
+  downloadable: schemas['DownloadableRead']
 }
 
 const DownloadableItem = ({ downloadable }: DownloadableItemProps) => {

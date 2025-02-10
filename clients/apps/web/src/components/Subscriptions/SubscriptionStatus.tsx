@@ -1,5 +1,5 @@
 import { AccessTimeOutlined, CancelOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
 import { twMerge } from 'tailwind-merge'
 import { subscriptionStatusDisplayNames } from './utils'
@@ -50,7 +50,7 @@ const StatusLabel = ({
 export const SubscriptionStatus = ({
   subscription,
 }: {
-  subscription: components['schemas']['Subscription']
+  subscription: schemas['Subscription']
 }) => {
   switch (subscription.status) {
     case 'active':

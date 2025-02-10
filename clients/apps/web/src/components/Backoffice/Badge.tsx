@@ -1,7 +1,7 @@
 'use client'
 
 import { useBackofficeBadgeAction } from '@/hooks/queries'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { useState } from 'react'
 
 const Badge = () => {
@@ -13,9 +13,7 @@ const Badge = () => {
 
   const manageBadgeMutation = useBackofficeBadgeAction()
 
-  const generateGitHubURL = (
-    badge: components['schemas']['BackofficeBadgeResponse'],
-  ) => {
+  const generateGitHubURL = (badge: schemas['BackofficeBadgeResponse']) => {
     return `https://github.com/${badge.org_slug}/${badge.repo_slug}/issues/${badge.issue_number}`
   }
 

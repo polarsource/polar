@@ -1,5 +1,5 @@
 import BadgeRepositories from '@/components/Settings/Badge/Repositories'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import type { Meta, StoryObj } from '@storybook/react'
 
 const meta: Meta<typeof BadgeRepositories> = {
@@ -12,7 +12,7 @@ export default meta
 
 type Story = StoryObj<typeof BadgeRepositories>
 
-const repo: components['schemas']['RepositoryBadgeSettingsRead'] = {
+const repo: schemas['RepositoryBadgeSettingsRead'] = {
   id: 'aaa',
   avatar_url: 'https://avatars.githubusercontent.com/u/105373340?s=48&v=4',
   name: 'polar',

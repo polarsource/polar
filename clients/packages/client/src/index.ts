@@ -7,7 +7,7 @@ import type {
   ResponseObjectMap,
   SuccessResponse,
 } from 'openapi-typescript-helpers'
-import type { paths } from './v1'
+import type { components, paths } from './v1'
 
 export const createClient = (
   baseUrl: string,
@@ -64,4 +64,5 @@ export const isValidationError = (
 export type { Middleware } from 'openapi-fetch'
 export * as enums from './enums'
 export type { components, operations } from './v1'
+export type schemas = components['schemas']
 export type Client = ReturnType<typeof createClient>

@@ -1,7 +1,7 @@
 import { api } from '@/utils/client'
 import { InformationCircleIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { XMarkIcon } from '@heroicons/react/24/solid'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
@@ -34,9 +34,9 @@ export interface Contributor {
 }
 
 const Split = (props: {
-  organization: components['schemas']['Organization']
-  issue: components['schemas']['Issue']
-  pledges: components['schemas']['Pledge'][]
+  organization: schemas['Organization']
+  issue: schemas['Issue']
+  pledges: schemas['Pledge'][]
   contributors: Contributor[]
   shares: Share[]
   onConfirm: (shares: Share[]) => void

@@ -5,9 +5,9 @@ import {
   Numbers,
   TextSnippet,
 } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 
-const getIcon = (type: components['schemas']['CustomFieldType']) => {
+const getIcon = (type: schemas['CustomFieldType']) => {
   switch (type) {
     case 'text':
       return TextSnippet
@@ -25,7 +25,7 @@ const getIcon = (type: components['schemas']['CustomFieldType']) => {
 const CustomFieldTypeIcon = ({
   type,
 }: {
-  type: components['schemas']['CustomFieldType']
+  type: schemas['CustomFieldType']
 }) => {
   const Icon = getIcon(type)
 

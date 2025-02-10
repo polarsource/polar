@@ -7,7 +7,7 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import { organizationPageLink } from '@/utils/nav'
 import { resolveRepositoryPath } from '@/utils/repository'
 import { getUserOrganizations } from '@/utils/user'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import type { SuccessResult } from 'open-graph-scraper-lite'
@@ -131,7 +131,7 @@ export default async function Page({
     { 404: notFound },
   )
 
-  let featuredOrganizations: components['schemas']['Organization'][] = []
+  let featuredOrganizations: schemas['Organization'][] = []
   let links: { opengraph: OgObject; url: string }[] = []
 
   return (

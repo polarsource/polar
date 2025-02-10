@@ -18,7 +18,7 @@ import {
   useDeleteBenefit,
 } from '@/hooks/queries'
 import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import {
@@ -37,10 +37,10 @@ import { twMerge } from 'tailwind-merge'
 const ClientPage = ({
   organization,
 }: {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }) => {
   const [selectedBenefit, setSelectedBenefit] = useState<
-    components['schemas']['Benefit'] | undefined
+    schemas['Benefit'] | undefined
   >()
   const { data: benefits } = useBenefits(organization.id, 100)
   const { data: benefitProducts } = useBenefitProducts(
@@ -154,8 +154,8 @@ const ClientPage = ({
 export default ClientPage
 
 interface BenefitRowProps {
-  benefit: components['schemas']['Benefit']
-  organization: components['schemas']['Organization']
+  benefit: schemas['Benefit']
+  organization: schemas['Organization']
 }
 
 const BenefitRow = ({ benefit, organization }: BenefitRowProps) => {
@@ -248,11 +248,7 @@ const BenefitRow = ({ benefit, organization }: BenefitRowProps) => {
   )
 }
 
-const AdsBenefitContent = ({
-  benefit,
-}: {
-  benefit: components['schemas']['BenefitAds']
-}) => {
+const AdsBenefitContent = ({ benefit }: { benefit: schemas['BenefitAds'] }) => {
   const shortID = benefit.id.substring(benefit.id.length - 6)
 
   const height =

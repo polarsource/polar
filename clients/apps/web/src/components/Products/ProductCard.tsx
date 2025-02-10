@@ -1,13 +1,13 @@
 'use client'
 
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import LogoIcon from '../Brand/LogoIcon'
 import ProductPriceLabel from './ProductPriceLabel'
 import ProductPrices from './ProductPrices'
 
 interface ProductCardProps {
-  product: components['schemas']['ProductStorefront']
-  price?: components['schemas']['ProductPrice']
+  product: schemas['ProductStorefront']
+  price?: schemas['ProductPrice']
 }
 
 export const ProductCard = ({ product, price }: ProductCardProps) => {

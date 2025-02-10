@@ -1,7 +1,7 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import CustomFieldTypeIcon from './CustomFieldTypeIcon'
 
-const getLabel = (type: components['schemas']['CustomFieldType']) => {
+const getLabel = (type: schemas['CustomFieldType']) => {
   switch (type) {
     case 'text':
       return 'Text'
@@ -19,7 +19,7 @@ const getLabel = (type: components['schemas']['CustomFieldType']) => {
 const CustomFieldTypeLabel = ({
   type,
 }: {
-  type: components['schemas']['CustomFieldType']
+  type: schemas['CustomFieldType']
 }) => {
   const label = getLabel(type)
 

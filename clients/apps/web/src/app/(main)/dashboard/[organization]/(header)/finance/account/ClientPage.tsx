@@ -7,7 +7,7 @@ import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import { useListAccounts, useOrganizationAccount } from '@/hooks/queries'
 import { api } from '@/utils/client'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { useCallback, useState } from 'react'
@@ -15,7 +15,7 @@ import { useCallback, useState } from 'react'
 export default function ClientPage({
   organization,
 }: {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }) {
   const { data: accounts } = useListAccounts()
   const {

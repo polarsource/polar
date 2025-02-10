@@ -1,6 +1,6 @@
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { components, operations, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -30,7 +30,7 @@ export const useListSubscriptions = (
 
 export const useSubscription = (
   id: string,
-  initialData?: components['schemas']['Subscription'],
+  initialData?: schemas['Subscription'],
 ) =>
   useQuery({
     queryKey: ['subscriptions', { id }],
@@ -42,7 +42,7 @@ export const useSubscription = (
 
 export const useUpdateSubscription = (id: string) =>
   useMutation({
-    mutationFn: (body: components['schemas']['SubscriptionUpdate']) => {
+    mutationFn: (body: schemas['SubscriptionUpdate']) => {
       return api.PATCH('/v1/subscriptions/{id}', {
         params: { path: { id } },
         body,
@@ -59,9 +59,7 @@ export const useUpdateSubscription = (id: string) =>
         },
         result,
       )
-      queryClient.setQueriesData<
-        components['schemas']['ListResource_Subscription_']
-      >(
+      queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
         {
           queryKey: [
             'subscriptions',

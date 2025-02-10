@@ -1,6 +1,6 @@
 'use client'
 
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { Label } from '@polar-sh/ui/components/ui/label'
 import {
   RadioGroup,
@@ -8,7 +8,7 @@ import {
 } from '@polar-sh/ui/components/ui/radio-group'
 
 const PRORATION_BEHAVIOR_LABELS: Record<
-  components['schemas']['SubscriptionProrationBehavior'],
+  schemas['SubscriptionProrationBehavior'],
   string
 > = {
   invoice: 'Invoice immediately',

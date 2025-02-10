@@ -1,6 +1,6 @@
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { unwrap, type components, type operations } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -29,7 +29,7 @@ export const useCustomers = (
 
 export const useCreateCustomer = (organizationId: string) =>
   useMutation({
-    mutationFn: (body: components['schemas']['CustomerCreate']) =>
+    mutationFn: (body: schemas['CustomerCreate']) =>
       api.POST('/v1/customers/', { body }),
     onSuccess: async (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
@@ -40,7 +40,7 @@ export const useCreateCustomer = (organizationId: string) =>
 
 export const useUpdateCustomer = (customerId: string, organizationId: string) =>
   useMutation({
-    mutationFn: (body: components['schemas']['CustomerUpdate']) =>
+    mutationFn: (body: schemas['CustomerUpdate']) =>
       api.PATCH('/v1/customers/{id}', {
         params: { path: { id: customerId } },
         body,

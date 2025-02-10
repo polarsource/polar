@@ -1,13 +1,13 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import ProductPriceLabel from './ProductPriceLabel'
 
 interface ProductPillProps {
   product:
-    | components['schemas']['Product']
-    | components['schemas']['TransactionProduct']
-    | components['schemas']['ProductStorefront']
-    | components['schemas']['CheckoutProduct']
-  price?: components['schemas']['ProductPrice']
+    | schemas['Product']
+    | schemas['TransactionProduct']
+    | schemas['ProductStorefront']
+    | schemas['CheckoutProduct']
+  price?: schemas['ProductPrice']
 }
 
 const ProductPill: React.FC<ProductPillProps> = ({ product, price }) => {

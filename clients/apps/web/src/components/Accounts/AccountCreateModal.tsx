@@ -2,7 +2,7 @@ import { ACCOUNT_TYPE_DISPLAY_NAMES } from '@/utils/account'
 import { getValidationErrorsMap } from '@/utils/api/errors'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
-import { components, isValidationError } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import {
@@ -26,7 +26,7 @@ const AccountCreateModal = ({
   returnPath: string
 }) => {
   const [accountType, setAccountType] =
-    useState<components['schemas']['AccountType']>('stripe')
+    useState<schemas['AccountType']>('stripe')
   const [country, setCountry] = useState<string>('US')
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string[]>
@@ -42,7 +42,7 @@ const AccountCreateModal = ({
 
   const onChangeAccountType = (value: string) => {
     resetErrors()
-    setAccountType(value as components['schemas']['AccountType'])
+    setAccountType(value as schemas['AccountType'])
   }
 
   const onChangeCountry = (countryCode: string) => {
@@ -85,7 +85,7 @@ const AccountCreateModal = ({
     await goToOnboarding(account)
   }
 
-  const goToOnboarding = async (account: components['schemas']['Account']) => {
+  const goToOnboarding = async (account: schemas['Account']) => {
     setLoading(true)
     const { data, error } = await api.POST(
       '/v1/accounts/{id}/onboarding_link',

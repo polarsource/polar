@@ -8,7 +8,7 @@ import {
 } from '@/hooks/queries'
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import { Announcement, Notifications, VerifiedUser } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
@@ -21,8 +21,7 @@ import Icon from '../Icons/Icon'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 
-type NotificationSchema =
-  components['schemas']['NotificationsList']['notifications'][number]
+type NotificationSchema = schemas['NotificationsList']['notifications'][number]
 
 const Popover = () => {
   const [show, setShow] = useState(false)
@@ -179,7 +178,7 @@ const Item = ({
 const MaintainerPledgeCreated = ({
   n,
 }: {
-  n: components['schemas']['MaintainerPledgeCreatedNotification']
+  n: schemas['MaintainerPledgeCreatedNotification']
 }) => {
   const { payload } = n
   return (
@@ -209,7 +208,7 @@ const MaintainerPledgeConfirmationPendingWrapper = ({
   n,
   setIsInNestedModal,
 }: {
-  n: components['schemas']['MaintainerPledgeConfirmationPendingNotification']
+  n: schemas['MaintainerPledgeConfirmationPendingNotification']
   setIsInNestedModal: (_: boolean) => void
 }) => {
   const { payload } = n
@@ -268,7 +267,7 @@ const MaintainerPledgedIssueConfirmationPendingWrapper = ({
   n,
   setIsInNestedModal,
 }: {
-  n: components['schemas']['MaintainerPledgedIssueConfirmationPendingNotification']
+  n: schemas['MaintainerPledgedIssueConfirmationPendingNotification']
   setIsInNestedModal: (_: boolean) => void
 }) => {
   const { payload } = n
@@ -339,8 +338,8 @@ export const MaintainerPledgeConfirmationPending = ({
   onMarkSoved,
 }: {
   n:
-    | components['schemas']['MaintainerPledgeConfirmationPendingNotification']
-    | components['schemas']['MaintainerPledgedIssueConfirmationPendingNotification']
+    | schemas['MaintainerPledgeConfirmationPendingNotification']
+    | schemas['MaintainerPledgedIssueConfirmationPendingNotification']
   canMarkSolved: boolean
   isMarkedSolved: boolean
   isLoading: boolean
@@ -394,7 +393,7 @@ export const MaintainerPledgeConfirmationPending = ({
 const MaintainerPledgePending = ({
   n,
 }: {
-  n: components['schemas']['MaintainerPledgePendingNotification']
+  n: schemas['MaintainerPledgePendingNotification']
 }) => {
   const { payload } = n
   return (
@@ -422,7 +421,7 @@ const MaintainerPledgePending = ({
 const MaintainerPledgedIssuePending = ({
   n,
 }: {
-  n: components['schemas']['MaintainerPledgedIssuePendingNotification']
+  n: schemas['MaintainerPledgedIssuePendingNotification']
 }) => {
   const { payload } = n
   return (
@@ -451,7 +450,7 @@ const MaintainerPledgedIssuePending = ({
 const MaintainerPledgePaid = ({
   n,
 }: {
-  n: components['schemas']['MaintainerPledgePaidNotification']
+  n: schemas['MaintainerPledgePaidNotification']
 }) => {
   const { payload } = n
   return (
@@ -478,11 +477,7 @@ const MaintainerPledgePaid = ({
   )
 }
 
-const RewardPaid = ({
-  n,
-}: {
-  n: components['schemas']['RewardPaidNotification']
-}) => {
+const RewardPaid = ({ n }: { n: schemas['RewardPaidNotification'] }) => {
   const { payload } = n
   return (
     <Item
@@ -511,7 +506,7 @@ const RewardPaid = ({
 const PledgerPledgePending = ({
   n,
 }: {
-  n: components['schemas']['PledgerPledgePendingNotification']
+  n: schemas['PledgerPledgePendingNotification']
 }) => {
   const { payload } = n
   return (
@@ -537,7 +532,7 @@ const PledgerPledgePending = ({
 const TeamAdminMemberPledged = ({
   n,
 }: {
-  n: components['schemas']['TeamAdminMemberPledgedNotification']
+  n: schemas['TeamAdminMemberPledgedNotification']
 }) => {
   const { payload } = n
   return (
@@ -564,7 +559,7 @@ const TeamAdminMemberPledged = ({
 const MaintainerAccountUnderReview = ({
   n,
 }: {
-  n: components['schemas']['MaintainerAccountUnderReviewNotification']
+  n: schemas['MaintainerAccountUnderReviewNotification']
 }) => {
   return (
     <Item n={n} iconClasses="bg-yellow-200 text-yellow-500">
@@ -588,7 +583,7 @@ const MaintainerAccountUnderReview = ({
 const MaintainerAccountReviewed = ({
   n,
 }: {
-  n: components['schemas']['MaintainerAccountReviewedNotification']
+  n: schemas['MaintainerAccountReviewedNotification']
 }) => {
   return (
     <Item n={n} iconClasses="bg-green-200 text-green-500">
@@ -611,7 +606,7 @@ const MaintainerAccountReviewed = ({
 const MaintainerNewPaidSubscription = ({
   n,
 }: {
-  n: components['schemas']['MaintainerNewPaidSubscriptionNotification']
+  n: schemas['MaintainerNewPaidSubscriptionNotification']
 }) => {
   const { payload } = n
   return (
@@ -642,7 +637,7 @@ const MaintainerNewPaidSubscription = ({
 const MaintainerNewProductSale = ({
   n,
 }: {
-  n: components['schemas']['MaintainerNewProductSaleNotification']
+  n: schemas['MaintainerNewProductSaleNotification']
 }) => {
   const { payload } = n
   return (
@@ -668,7 +663,7 @@ const MaintainerNewProductSale = ({
 const MaintainerCreateAccount = ({
   n,
 }: {
-  n: components['schemas']['MaintainerCreateAccountNotification']
+  n: schemas['MaintainerCreateAccountNotification']
 }) => {
   const { payload } = n
   return (

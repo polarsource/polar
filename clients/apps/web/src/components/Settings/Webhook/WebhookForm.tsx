@@ -1,4 +1,4 @@
-import { components, enums } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -21,8 +21,8 @@ import { useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
 
 type CreateOrUpdate =
-  | components['schemas']['WebhookEndpointCreate']
-  | components['schemas']['WebhookEndpointUpdate']
+  | schemas['WebhookEndpointCreate']
+  | schemas['WebhookEndpointUpdate']
 
 export const FieldUrl = () => {
   const { control } = useFormContext<CreateOrUpdate>()

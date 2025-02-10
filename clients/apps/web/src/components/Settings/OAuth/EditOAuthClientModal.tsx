@@ -6,7 +6,7 @@ import {
   useDeleteOAuthClient,
   useUpdateOAuth2Client,
 } from '@/hooks/queries/oauth'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -27,7 +27,7 @@ import {
 
 export interface EnhancedOAuth2ClientConfigurationUpdate
   extends Omit<
-    components['schemas']['OAuth2ClientConfigurationUpdate'],
+    schemas['OAuth2ClientConfigurationUpdate'],
     'redirect_uris' | 'scope'
   > {
   redirect_uris: { uri: string }[]
@@ -35,9 +35,9 @@ export interface EnhancedOAuth2ClientConfigurationUpdate
 }
 
 interface EditOAuthClientModalProps {
-  client: components['schemas']['OAuth2Client']
-  onSuccess: (client: components['schemas']['OAuth2Client']) => void
-  onDelete: (client: components['schemas']['OAuth2Client']) => void
+  client: schemas['OAuth2Client']
+  onSuccess: (client: schemas['OAuth2Client']) => void
+  onDelete: (client: schemas['OAuth2Client']) => void
   onHide: () => void
 }
 
@@ -64,7 +64,7 @@ export const EditOAuthClientModal = ({
   const { handleSubmit } = form
 
   const [updated, setUpdated] =
-    useState<components['schemas']['OAuth2ClientConfigurationUpdate']>()
+    useState<schemas['OAuth2ClientConfigurationUpdate']>()
 
   const updateOAuth2Client = useUpdateOAuth2Client()
 
@@ -87,7 +87,7 @@ export const EditOAuthClientModal = ({
         return
       }
 
-      const res = data as components['schemas']['OAuth2Client']
+      const res = data as schemas['OAuth2Client']
       toast({
         title: 'OAuth App Updated',
         description: `OAuth App ${client.client_name} was updated successfully`,

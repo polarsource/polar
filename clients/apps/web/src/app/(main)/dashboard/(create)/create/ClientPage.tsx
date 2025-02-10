@@ -8,7 +8,7 @@ import { useCreateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { CONFIG } from '@/utils/config'
 import { FormControl } from '@mui/material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -31,7 +31,7 @@ export default function ClientPage({
   error,
 }: {
   slug?: string
-  validationErrors?: components['schemas']['ValidationError'][]
+  validationErrors?: schemas['ValidationError'][]
   error?: string
 }) {
   const posthog = usePostHog()

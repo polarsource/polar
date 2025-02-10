@@ -1,10 +1,10 @@
 import { ClockIcon, HeartIcon } from '@heroicons/react/20/solid'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Pledgers from './Pledgers'
 
 interface BasePledgeSummaryPillProps {
-  summary: components['schemas']['PledgesSummary']
+  summary: schemas['PledgesSummary']
   icon: React.ReactElement
   label: string
 }
@@ -31,7 +31,7 @@ const BasePledgeSummaryPill: React.FC<BasePledgeSummaryPillProps> = ({
 }
 
 interface PledgeSummaryPillProps {
-  summary: components['schemas']['PledgesSummary']
+  summary: schemas['PledgesSummary']
 }
 
 const Funded: React.FC<PledgeSummaryPillProps> = ({ summary }) => {

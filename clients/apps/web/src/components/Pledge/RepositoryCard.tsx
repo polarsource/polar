@@ -1,6 +1,6 @@
 import { githubRepoUrl } from '@/utils/github'
 import { formatStarsNumber } from '@/utils/stars'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import GrayCard from '../Cards/GrayCard'
 
@@ -18,8 +18,8 @@ const RepositoryCard = ({
   organization,
   repository,
 }: {
-  organization: components['schemas']['Organization']
-  repository: components['schemas']['Repository']
+  organization: schemas['Organization']
+  repository: schemas['Repository']
 }) => {
   const repoURL = githubRepoUrl(organization.slug, repository.name)
 

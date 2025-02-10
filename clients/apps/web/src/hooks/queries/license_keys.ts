@@ -2,14 +2,14 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { components, operations, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@polar-sh/client'
 import { defaultRetry } from './retry'
 
 export const useLicenseKeyUpdate = (organizationId: string) =>
   useMutation({
     mutationFn: (variables: {
       id: string
-      body: components['schemas']['LicenseKeyUpdate']
+      body: schemas['LicenseKeyUpdate']
     }) =>
       api.PATCH('/v1/license-keys/{id}', {
         params: { path: { id: variables.id } },

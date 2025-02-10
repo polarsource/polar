@@ -5,7 +5,7 @@ import { useUserSSE } from '@/hooks/sse'
 import { getGitHubRepositoryBenefitAuthorizeURL } from '@/utils/auth'
 import { defaultApiUrl } from '@/utils/domain'
 import { RefreshOutlined } from '@mui/icons-material'
-import { components, enums } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Select,
@@ -41,7 +41,7 @@ export const GitHubRepositoryBenefitForm = ({
     setValue,
     setError,
     clearErrors,
-  } = useFormContext<components['schemas']['BenefitGitHubRepositoryCreate']>()
+  } = useFormContext<schemas['BenefitGitHubRepositoryCreate']>()
 
   const canConfigurePersonalOrg = posthog.isFeatureEnabled(
     'github-benefit-personal-org',
@@ -97,8 +97,8 @@ export const GitHubRepositoryBenefitForm = ({
   }, [emitter, refetchRepositories])
 
   type GitHubInvitesBenefitRepositoryWithKey =
-    components['schemas']['GitHubInvitesBenefitRepository'] & {
-      org: components['schemas']['GitHubInvitesBenefitOrganization'] | undefined
+    schemas['GitHubInvitesBenefitRepository'] & {
+      org: schemas['GitHubInvitesBenefitOrganization'] | undefined
       key: string
     }
 

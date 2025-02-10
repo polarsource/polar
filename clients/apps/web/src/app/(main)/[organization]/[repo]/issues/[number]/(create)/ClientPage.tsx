@@ -6,7 +6,7 @@ import HowItWorks from '@/components/Pledge/HowItWorks'
 import IssueCard from '@/components/Pledge/IssueCard'
 import PledgeCheckoutPanel from '@/components/Pledge/PledgeCheckoutPanel'
 import { usePostHog } from '@/hooks/posthog'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
 import { useEffect, useState } from 'react'
 
@@ -18,12 +18,12 @@ const ClientPage = ({
   gotoURL,
   rewards,
 }: {
-  issue: components['schemas']['Issue']
-  organization: components['schemas']['Organization']
+  issue: schemas['Issue']
+  organization: schemas['Organization']
   htmlBody?: string
-  pledgers: components['schemas']['Pledger'][]
+  pledgers: schemas['Pledger'][]
   gotoURL?: string
-  rewards?: components['schemas']['RewardsSummary']
+  rewards?: schemas['RewardsSummary']
 }) => {
   const posthog = usePostHog()
 

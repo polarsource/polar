@@ -4,7 +4,7 @@ import IssuesLookingForFunding from '@/components/Organization/IssuesLookingForF
 import { organizationPageLink } from '@/utils/nav'
 import { formatStarsNumber } from '@/utils/stars'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
@@ -17,11 +17,11 @@ const ClientPage = ({
   repository,
   issuesFunding,
 }: {
-  organization: components['schemas']['Organization']
-  repository: components['schemas']['Repository']
-  issuesFunding: components['schemas']['ListResource_IssueFunding_']
-  featuredOrganizations: components['schemas']['Organization'][]
-  userOrganizations: components['schemas']['Organization'][]
+  organization: schemas['Organization']
+  repository: schemas['Repository']
+  issuesFunding: schemas['ListResource_IssueFunding_']
+  featuredOrganizations: schemas['Organization'][]
+  userOrganizations: schemas['Organization'][]
   links: { opengraph: OgObject; url: string }[]
 }) => {
   return (

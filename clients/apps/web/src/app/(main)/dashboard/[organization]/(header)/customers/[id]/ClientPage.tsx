@@ -20,7 +20,7 @@ import {
   defaultMetricMarks,
   metricDisplayNames,
 } from '@/utils/metrics'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -52,10 +52,7 @@ const rangeDisplayNames: Record<Range, string> = {
   '24h': '24h',
 }
 
-const getRangeStartDate = (
-  range: Range,
-  customer: components['schemas']['Customer'],
-) => {
+const getRangeStartDate = (range: Range, customer: schemas['Customer']) => {
   switch (range) {
     case 'all_time':
       return new Date(customer.created_at)
@@ -71,13 +68,13 @@ const getRangeStartDate = (
 }
 
 interface ClientPageProps {
-  organization: components['schemas']['Organization']
-  customer: components['schemas']['Customer']
+  organization: schemas['Organization']
+  customer: schemas['Customer']
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
   const [selectedMetric, setSelectedMetric] =
-    React.useState<keyof components['schemas']['Metrics']>('revenue')
+    React.useState<keyof schemas['Metrics']>('revenue')
   const [hoveredMetricPeriod, setHoveredMetricPeriod] =
     React.useState<ParsedMetricPeriod | null>(null)
 
@@ -159,9 +156,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
                 <Select
                   value={selectedMetric}
                   onValueChange={(value) =>
-                    setSelectedMetric(
-                      value as keyof components['schemas']['Metrics'],
-                    )
+                    setSelectedMetric(value as keyof schemas['Metrics'])
                   }
                 >
                   <SelectTrigger className="h-fit w-fit border-0 border-none bg-transparent p-0 shadow-none ring-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 dark:hover:bg-transparent">

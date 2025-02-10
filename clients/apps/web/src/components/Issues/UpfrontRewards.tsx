@@ -1,5 +1,5 @@
 import { UserIcon } from '@heroicons/react/24/outline'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
@@ -8,7 +8,7 @@ import { useMemo, useRef, useState } from 'react'
 
 const PublicRewardsSetting = (props: {
   value: number | null
-  org: components['schemas']['Organization']
+  org: schemas['Organization']
   isIssue?: boolean
   onSave: (value: number | null) => void
 }) => {

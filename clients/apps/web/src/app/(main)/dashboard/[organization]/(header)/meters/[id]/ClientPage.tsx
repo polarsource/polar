@@ -14,7 +14,7 @@ import {
 } from '@/hooks/queries/meters'
 import { UTCDate } from '@date-fns/utc'
 import { MoreVert } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Card,
@@ -36,8 +36,8 @@ export default function ClientPage({
   meter: _meter,
   organization,
 }: {
-  meter: components['schemas']['Meter']
-  organization: components['schemas']['Organization']
+  meter: schemas['Meter']
+  organization: schemas['Organization']
 }) {
   const { data: meter } = useMeter(_meter.id, _meter)
 

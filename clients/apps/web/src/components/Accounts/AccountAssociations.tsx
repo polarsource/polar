@@ -1,8 +1,8 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import React, { useMemo } from 'react'
 
 interface AccountAssociationsProps {
-  account: components['schemas']['Account']
+  account: schemas['Account']
   prefix?: string
 }
 

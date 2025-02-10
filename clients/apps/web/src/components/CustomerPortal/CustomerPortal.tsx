@@ -1,7 +1,7 @@
 'use client'
 
 import { createClientSideAPI } from '@/utils/client'
-import { Client, components } from '@polar-sh/client'
+import { Client, schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Link from 'next/link'
 import { parseAsString, useQueryState } from 'nuqs'
@@ -33,9 +33,9 @@ const PortalSectionLayout = ({
 }
 
 export interface CustomerPortalProps {
-  organization: components['schemas']['Organization']
-  subscriptions: components['schemas']['CustomerSubscription'][]
-  orders: components['schemas']['CustomerOrder'][]
+  organization: schemas['Organization']
+  subscriptions: schemas['CustomerSubscription'][]
+  orders: schemas['CustomerOrder'][]
   customerSessionToken?: string
 }
 
@@ -131,9 +131,7 @@ const OrderItem = ({
   selected,
   customerSessionToken,
 }: {
-  item:
-    | components['schemas']['CustomerSubscription']
-    | components['schemas']['CustomerOrder']
+  item: schemas['CustomerSubscription'] | schemas['CustomerOrder']
   onClick: () => void
   selected: boolean
   customerSessionToken?: string
@@ -193,9 +191,7 @@ const SelectedItemDetails = ({
   item,
   api,
 }: {
-  item:
-    | components['schemas']['CustomerSubscription']
-    | components['schemas']['CustomerOrder']
+  item: schemas['CustomerSubscription'] | schemas['CustomerOrder']
   api: Client
 }) => {
   // Render order details

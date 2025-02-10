@@ -1,6 +1,6 @@
 import { useUpdateCustomField } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components, isValidationError } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
@@ -9,10 +9,8 @@ import { toast } from '../Toast/use-toast'
 import CustomFieldForm from './CustomFieldForm'
 
 interface UpdateCustomFieldModalContentProps {
-  customField: components['schemas']['CustomField']
-  onCustomFieldUpdated: (
-    customField: components['schemas']['CustomField'],
-  ) => void
+  customField: schemas['CustomField']
+  onCustomFieldUpdated: (customField: schemas['CustomField']) => void
   hideModal: () => void
 }
 
@@ -23,7 +21,7 @@ const UpdateCustomFieldModalContent = ({
 }: UpdateCustomFieldModalContentProps) => {
   const updateCustomField = useUpdateCustomField(customField.id)
 
-  const form = useForm<components['schemas']['CustomFieldUpdate']>({
+  const form = useForm<schemas['CustomFieldUpdate']>({
     defaultValues: {
       ...customField,
     },
@@ -36,7 +34,7 @@ const UpdateCustomFieldModalContent = ({
   } = form
 
   const onSubmit = useCallback(
-    async (customFieldUpdate: components['schemas']['CustomFieldUpdate']) => {
+    async (customFieldUpdate: schemas['CustomFieldUpdate']) => {
       const { data: customField, error } =
         await updateCustomField.mutateAsync(customFieldUpdate)
 

@@ -1,4 +1,4 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import React, { ReactNode, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
@@ -29,7 +29,7 @@ export const BenefitList = ({
   benefits:
     | {
         id: string
-        type: components['schemas']['BenefitType']
+        type: schemas['BenefitType']
         description: string
       }[]
     | undefined

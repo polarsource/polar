@@ -12,7 +12,7 @@ import {
 } from '@/hooks/queries'
 import { api } from '@/utils/client'
 import { Key } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -69,7 +69,7 @@ export default function ClientPage() {
               <LicenseKeyItem
                 key={benefitGrant.id}
                 benefitGrant={
-                  benefitGrant as components['schemas']['CustomerBenefitGrantLicenseKeys']
+                  benefitGrant as schemas['CustomerBenefitGrantLicenseKeys']
                 }
               />
             ))}
@@ -88,7 +88,7 @@ export default function ClientPage() {
 }
 
 interface LicenseKeyItemProps {
-  benefitGrant: components['schemas']['CustomerBenefitGrantLicenseKeys']
+  benefitGrant: schemas['CustomerBenefitGrantLicenseKeys']
 }
 
 const LicenseKeyItem = ({ benefitGrant }: LicenseKeyItemProps) => {

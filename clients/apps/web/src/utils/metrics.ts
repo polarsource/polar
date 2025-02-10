@@ -1,6 +1,6 @@
 import { ParsedMetricPeriod } from '@/hooks/queries'
 import * as Plot from '@observablehq/plot'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { timeFormat, utcDay } from 'd3'
 import { format, parse } from 'date-fns'
@@ -50,7 +50,7 @@ export const fromISODate = (date: string) =>
   parse(date, 'yyyy-MM-dd', new Date('1970-01-01T12:00:00Z'))
 
 export const getValueFormatter = (
-  metric: components['schemas']['Metric'],
+  metric: schemas['Metric'],
 ): ((value: number) => string) => {
   const numberFormat = new Intl.NumberFormat(undefined, {
     maximumFractionDigits: 2,
@@ -66,7 +66,7 @@ export const getValueFormatter = (
 }
 
 export const getTimestampFormatter = (
-  interval: components['schemas']['TimeInterval'],
+  interval: schemas['TimeInterval'],
   locale: string = 'en-US',
 ): ((value: Date) => string) => {
   switch (interval) {
@@ -124,7 +124,7 @@ export const getTicks = (timestamps: Date[], maxTicks: number = 10): Date[] => {
 }
 
 const getTickFormat = (
-  interval: components['schemas']['TimeInterval'],
+  interval: schemas['TimeInterval'],
   ticks: Date[],
 ): ((t: Date, i: number) => any) | string => {
   switch (interval) {
@@ -149,8 +149,8 @@ const getTickFormat = (
 
 export type MetricMarksResolver = (config: {
   data: ParsedMetricPeriod[]
-  metric: components['schemas']['Metric']
-  interval: components['schemas']['TimeInterval']
+  metric: schemas['Metric']
+  interval: schemas['TimeInterval']
   onDataIndexHover?: (index: number | undefined) => void
   ticks: Date[]
 }) => Plot.Markish[]
@@ -163,8 +163,8 @@ export const defaultMetricMarks: MetricMarksResolver = ({
   ticks,
 }: {
   data: ParsedMetricPeriod[]
-  metric: components['schemas']['Metric']
-  interval: components['schemas']['TimeInterval']
+  metric: schemas['Metric']
+  interval: schemas['TimeInterval']
   onDataIndexHover?: (index: number | undefined) => void
   ticks: Date[]
 }): Plot.Markish[] => [
@@ -264,10 +264,7 @@ export const barMetricMarks: MetricMarksResolver = ({
     : []),
 ]
 
-export const metricDisplayNames: Record<
-  keyof components['schemas']['Metrics'],
-  string
-> = {
+export const metricDisplayNames: Record<keyof schemas['Metrics'], string> = {
   revenue: 'Revenue',
   orders: 'Orders',
   cumulative_revenue: 'Cumulative Revenue',
@@ -283,7 +280,7 @@ export const metricDisplayNames: Record<
 }
 
 export const metricToCumulativeType: Record<
-  components['schemas']['Metric']['slug'],
+  schemas['Metric']['slug'],
   MetricCumulativeType
 > = {
   revenue: 'sum',
@@ -303,7 +300,7 @@ export const metricToCumulativeType: Record<
 export type MetricCumulativeType = 'sum' | 'average' | 'lastValue'
 
 export const computeCumulativeValue = (
-  metric: components['schemas']['Metric'],
+  metric: schemas['Metric'],
   values: number[],
 ): number => {
   if (values.length === 0) return 0

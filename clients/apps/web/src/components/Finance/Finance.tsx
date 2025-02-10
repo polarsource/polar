@@ -1,4 +1,4 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
@@ -6,15 +6,12 @@ import AccountBanner from '../Transactions/AccountBanner'
 import { default as ListPledges } from './ListPledges'
 import ListRewards, { Column } from './ListRewards'
 
-const refundedStates: components['schemas']['PledgeState'][] = [
-  'refunded',
-  'charge_disputed',
-]
+const refundedStates: schemas['PledgeState'][] = ['refunded', 'charge_disputed']
 
-const paidStates: components['schemas']['PledgeState'][] = ['pending']
+const paidStates: schemas['PledgeState'][] = ['pending']
 
-const isInReview = (pledge: components['schemas']['Pledge']): boolean => {
-  const inReviewStates: components['schemas']['PledgeState'][] = ['disputed']
+const isInReview = (pledge: schemas['Pledge']): boolean => {
+  const inReviewStates: schemas['PledgeState'][] = ['disputed']
   if (inReviewStates.includes(pledge.state)) {
     return true
   }
@@ -25,10 +22,10 @@ const isInReview = (pledge: components['schemas']['Pledge']): boolean => {
 }
 
 const Finance = (props: {
-  org: components['schemas']['Organization']
+  org: schemas['Organization']
   tab: 'current' | 'rewarded' | 'contributors'
-  pledges: components['schemas']['Pledge'][]
-  rewards: components['schemas']['Reward'][]
+  pledges: schemas['Pledge'][]
+  rewards: schemas['Reward'][]
 }) => {
   const { org, tab, pledges, rewards } = props
 
@@ -89,9 +86,7 @@ const Finance = (props: {
 
 export default Finance
 
-const PledgesContent = (props: {
-  pledges: components['schemas']['Pledge'][]
-}) => {
+const PledgesContent = (props: { pledges: schemas['Pledge'][] }) => {
   const openIssues = props.pledges.filter(
     (p) =>
       !paidStates.includes(p.state) &&
@@ -133,7 +128,7 @@ const PledgesContent = (props: {
 }
 
 export const RewardsContent = (props: {
-  rewards: components['schemas']['Reward'][]
+  rewards: schemas['Reward'][]
   showReceiver: boolean
 }) => {
   const pending = props.rewards.filter((r) => r.state == 'pending')

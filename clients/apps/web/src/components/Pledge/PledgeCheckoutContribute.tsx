@@ -1,12 +1,8 @@
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import CircledNumber from './CircledNumber'
 
-const PledgeCheckoutContribute = ({
-  issue,
-}: {
-  issue: components['schemas']['Issue']
-}) => {
+const PledgeCheckoutContribute = ({ issue }: { issue: schemas['Issue'] }) => {
   return (
     <div className="flex flex-col gap-6 py-4">
       <div className="flex items-center gap-4">

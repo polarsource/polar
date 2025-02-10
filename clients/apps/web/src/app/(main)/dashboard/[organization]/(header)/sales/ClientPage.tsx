@@ -13,7 +13,7 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { dateToInterval } from '@/utils/metrics'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
   DataTable,
@@ -26,7 +26,7 @@ import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 
 interface ClientPageProps {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
   productId?: string[]
@@ -113,7 +113,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const orders = ordersHook.data?.items || []
   const pageCount = ordersHook.data?.pagination.max_page ?? 1
 
-  const columns: DataTableColumnDef<components['schemas']['Order']>[] = [
+  const columns: DataTableColumnDef<schemas['Order']>[] = [
     {
       accessorKey: 'customer',
       enableSorting: true,
@@ -121,8 +121,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <DataTableColumnHeader column={column} title="Customer" />
       ),
       cell: (props) => {
-        const customer =
-          props.getValue() as components['schemas']['OrderCustomer']
+        const customer = props.getValue() as schemas['OrderCustomer']
         return (
           <div className="flex flex-row items-center gap-2">
             <Avatar
@@ -152,7 +151,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <DataTableColumnHeader column={column} title="Product" />
       ),
       cell: (props) => {
-        const product = props.getValue() as components['schemas']['Product']
+        const product = props.getValue() as schemas['Product']
         return (
           <>
             {product.name}

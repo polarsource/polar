@@ -1,7 +1,7 @@
 'use client'
 
 import MeterFilterInput from '@/components/Meter/MeterFilterInput'
-import { components, enums } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
@@ -37,7 +37,7 @@ const AGGREGATION_FUNCTION_DISPLAY_NAMES: Record<
 }
 
 const MeterForm = () => {
-  const form = useFormContext<components['schemas']['MeterCreate']>()
+  const form = useFormContext<schemas['MeterCreate']>()
   const { control, watch } = form
   const aggregationFunction = watch('aggregation.func')
 

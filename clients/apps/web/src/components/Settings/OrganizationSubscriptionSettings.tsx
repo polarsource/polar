@@ -1,6 +1,6 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components, isValidationError } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
@@ -18,15 +18,13 @@ import { toast } from '../Toast/use-toast'
 import ProrationBehaviorRadioGroup from './ProrationBehaviorRadioGroup'
 
 interface OrganizationSubscriptionSettingsProps {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }
 
 const OrganizationSubscriptionSettings: React.FC<
   OrganizationSubscriptionSettingsProps
 > = ({ organization }) => {
-  const form = useForm<
-    components['schemas']['OrganizationSubscriptionSettings']
-  >({
+  const form = useForm<schemas['OrganizationSubscriptionSettings']>({
     defaultValues: organization.subscription_settings,
   })
   const { control, handleSubmit, setError, watch } = form
@@ -35,7 +33,7 @@ const OrganizationSubscriptionSettings: React.FC<
 
   const updateOrganization = useUpdateOrganization()
   const onSubmit = async (
-    subscription_settings: components['schemas']['OrganizationSubscriptionSettings'],
+    subscription_settings: schemas['OrganizationSubscriptionSettings'],
   ) => {
     const { error } = await updateOrganization.mutateAsync({
       id: organization.id,

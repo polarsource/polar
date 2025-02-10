@@ -1,6 +1,6 @@
 import { useCreateBenefit } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useSearchParams } from 'next/navigation'
@@ -18,8 +18,8 @@ export type CreateBenefitModalParams = {
 }
 
 interface CreateBenefitModalContentProps {
-  organization: components['schemas']['Organization']
-  onSelectBenefit: (benefit: components['schemas']['Benefit']) => void
+  organization: schemas['Organization']
+  onSelectBenefit: (benefit: schemas['Benefit']) => void
   hideModal: () => void
   defaultValues?: CreateBenefitModalParams
 }
@@ -45,7 +45,7 @@ const CreateBenefitModalContent = ({
 
   const createSubscriptionBenefit = useCreateBenefit(organization.id)
 
-  const form = useForm<components['schemas']['BenefitCreate']>({
+  const form = useForm<schemas['BenefitCreate']>({
     defaultValues: {
       organization_id: organization.id,
       type: type ? type : 'custom',
@@ -65,9 +65,7 @@ const CreateBenefitModalContent = ({
   } = form
 
   const handleCreateNewBenefit = useCallback(
-    async (
-      subscriptionBenefitCreate: components['schemas']['BenefitCreate'],
-    ) => {
+    async (subscriptionBenefitCreate: schemas['BenefitCreate']) => {
       const { data: benefit, error } =
         await createSubscriptionBenefit.mutateAsync(subscriptionBenefitCreate)
       if (error) {

@@ -7,7 +7,7 @@ import {
 import { setValidationErrors } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
 import { ClearOutlined } from '@mui/icons-material'
-import { components, isValidationError } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -35,7 +35,7 @@ import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { toast } from '../Toast/use-toast'
 
 type CheckoutLinksForm = Omit<
-  components['schemas']['CheckoutLinkProductCreate'],
+  schemas['CheckoutLinkProductCreate'],
   'payment_processor' | 'metadata'
 > & {
   product_price_id?: string
@@ -43,9 +43,9 @@ type CheckoutLinksForm = Omit<
 }
 
 export interface CheckoutLinkFormProps {
-  product: components['schemas']['Product']
-  checkoutLink?: components['schemas']['CheckoutLink']
-  onClose: (checkoutLink: components['schemas']['CheckoutLink']) => void
+  product: schemas['Product']
+  checkoutLink?: schemas['CheckoutLink']
+  onClose: (checkoutLink: schemas['CheckoutLink']) => void
 }
 
 export const CheckoutLinkForm = ({
@@ -139,7 +139,7 @@ export const CheckoutLinkForm = ({
 
   const handleValidationError = (
     data: CheckoutLinksForm,
-    errors: components['schemas']['ValidationError'][],
+    errors: schemas['ValidationError'][],
   ) => {
     setValidationErrors(errors, setError)
     errors.forEach((error) => {
@@ -167,7 +167,7 @@ export const CheckoutLinkForm = ({
       if (params.success_url === '') {
         params.success_url = null
       }
-      const body: components['schemas']['CheckoutLinkCreate'] = {
+      const body: schemas['CheckoutLinkCreate'] = {
         payment_processor: 'stripe',
         ...params,
         ...(product_price_id
@@ -183,7 +183,7 @@ export const CheckoutLinkForm = ({
         ),
       }
 
-      let newCheckoutLink: components['schemas']['CheckoutLink']
+      let newCheckoutLink: schemas['CheckoutLink']
 
       if (checkoutLink) {
         const { data: updatedCheckoutLink, error } = await updateCheckoutLink({

@@ -2,7 +2,7 @@ import {
   CheckCircleIcon,
   ChevronDoubleRightIcon,
 } from '@heroicons/react/24/outline'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
@@ -13,15 +13,15 @@ import PledgeSummaryPill from './PledgeSummaryPill'
 import PublicRewardPill from './PublicRewardPill'
 
 interface Props {
-  pledges: Array<components['schemas']['Pledge']>
+  pledges: Array<schemas['Pledge']>
   onConfirmPledges: () => void
   showConfirmPledgeAction: boolean
   confirmPledgeIsLoading: boolean
-  funding: components['schemas']['Funding']
+  funding: schemas['Funding']
 
-  issue: components['schemas']['Issue']
-  pledgesSummary: components['schemas']['PledgesTypeSummaries']
-  organization: components['schemas']['Organization']
+  issue: schemas['Issue']
+  pledgesSummary: schemas['PledgesTypeSummaries']
+  organization: schemas['Organization']
 }
 
 const IssuePledge = (props: Props) => {
@@ -165,7 +165,7 @@ const IssuePledge = (props: Props) => {
   )
 }
 
-const pledgeVerb = (p: components['schemas']['Pledge']) => {
+const pledgeVerb = (p: schemas['Pledge']) => {
   switch (p.type) {
     case 'pay_upfront':
       return 'contributed'

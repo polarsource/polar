@@ -15,7 +15,7 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { AddOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
@@ -26,8 +26,8 @@ import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ClientPageProps {
-  organization: components['schemas']['Organization']
-  product: components['schemas']['Product']
+  organization: schemas['Organization']
+  product: schemas['Product']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
 }

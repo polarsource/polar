@@ -1,5 +1,5 @@
 import { api } from '@/utils/client'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import {
   InfiniteData,
   UseInfiniteQueryResult,
@@ -11,13 +11,13 @@ export const useDashboard = (vars: {
   organizationId: string
   repoName?: string
   q?: string
-  sort?: components['schemas']['IssueSortBy']
+  sort?: schemas['IssueSortBy']
   onlyPledged?: boolean
   onlyBadged?: boolean
   hasAppInstalled?: boolean
   showClosed: boolean
 }): UseInfiniteQueryResult<
-  InfiniteData<components['schemas']['IssueListResponse'], unknown>
+  InfiniteData<schemas['IssueListResponse'], unknown>
 > =>
   useInfiniteQuery({
     queryKey: [
@@ -56,7 +56,7 @@ export const useDashboard = (vars: {
 
 export const usePersonalDashboard = (vars: {
   q?: string
-  sort?: components['schemas']['IssueSortBy']
+  sort?: schemas['IssueSortBy']
   onlyPledged?: boolean
   onlyBadged?: boolean
   showClosed?: boolean

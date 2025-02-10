@@ -1,11 +1,11 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 
 export const OrderAmountWithRefund = ({
   order,
 }: {
-  order: components['schemas']['Order']
+  order: schemas['Order']
 }) => {
   return (
     <div className="flex flex-row gap-x-2">

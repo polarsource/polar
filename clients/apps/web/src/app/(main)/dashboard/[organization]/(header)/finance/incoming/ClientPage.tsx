@@ -11,7 +11,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import {
   Tabs,
   TabsContent,
@@ -28,7 +28,7 @@ export default function ClientPage({
 }: {
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }) {
   const router = useRouter()
   const pathname = usePathname()

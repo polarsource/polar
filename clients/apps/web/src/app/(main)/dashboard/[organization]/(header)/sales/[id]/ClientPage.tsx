@@ -16,7 +16,7 @@ import { useCustomFields, useProduct } from '@/hooks/queries'
 import { useOrder } from '@/hooks/queries/orders'
 import { useRefunds } from '@/hooks/queries/refunds'
 import { markdownOptionsJustText } from '@/utils/markdown'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -31,7 +31,7 @@ import React, { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface OrderProductItemProps {
-  product: components['schemas']['Product']
+  product: schemas['Product']
 }
 
 const OrderProductItem = ({ product }: OrderProductItemProps) => {
@@ -73,8 +73,8 @@ const OrderStatusDisplayColor: Record<string, string> = {
 }
 
 interface ClientPageProps {
-  organization: components['schemas']['Organization']
-  order: components['schemas']['Order']
+  organization: schemas['Organization']
+  order: schemas['Order']
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({
@@ -116,9 +116,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       }
       className="gap-y-8"
       contextView={
-        <CustomerContextView
-          customer={order.customer as components['schemas']['Customer']}
-        />
+        <CustomerContextView customer={order.customer as schemas['Customer']} />
       }
     >
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0">

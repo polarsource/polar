@@ -1,5 +1,5 @@
 import { TextureOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { twMerge } from 'tailwind-merge'
 
 export const ProductThumbnail = ({
@@ -7,7 +7,7 @@ export const ProductThumbnail = ({
   product,
 }: {
   size?: 'small' | 'medium'
-  product: components['schemas']['Product']
+  product: schemas['Product']
 }) => {
   let coverUrl = null
   if (product.medias.length > 0) {

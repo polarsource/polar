@@ -1,5 +1,5 @@
 import { api } from '@/utils/client'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { UseQueryResult, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -8,11 +8,11 @@ export const useSearchTransactions = (variables: {
   payment_user_id?: string
   payment_organization_id?: string
   exclude_platform_fees?: boolean
-  type?: components['schemas']['TransactionType']
+  type?: schemas['TransactionType']
   page?: number
   limit?: number
-  sorting?: components['schemas']['TransactionSortProperty'][]
-}): UseQueryResult<components['schemas']['ListResource_Transaction_']> =>
+  sorting?: schemas['TransactionSortProperty'][]
+}): UseQueryResult<schemas['ListResource_Transaction_']> =>
   useQuery({
     queryKey: ['transactions', { ...variables }],
     queryFn: () =>
@@ -30,7 +30,7 @@ export const useSearchTransactions = (variables: {
 
 export const useTransactionsSummary = (
   accountId: string,
-): UseQueryResult<components['schemas']['TransactionsSummary']> =>
+): UseQueryResult<schemas['TransactionsSummary']> =>
   useQuery({
     queryKey: ['transactions_summary', accountId],
     queryFn: () =>

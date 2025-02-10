@@ -8,7 +8,7 @@ import {
   metricDisplayNames,
   MetricMarksResolver,
 } from '@/utils/metrics'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
   Select,
@@ -26,13 +26,13 @@ import MetricChart from './MetricChart'
 interface MetricChartBoxProps {
   className?: string
   data: ParsedMetricPeriod[]
-  interval: components['schemas']['TimeInterval']
-  metric?: components['schemas']['Metric']
+  interval: schemas['TimeInterval']
+  metric?: schemas['Metric']
   height?: number
   maxTicks?: number
   marks?: MetricMarksResolver
   loading?: boolean
-  defaultMetric?: keyof components['schemas']['Metrics']
+  defaultMetric?: keyof schemas['Metrics']
   compact?: boolean
 }
 
@@ -48,7 +48,7 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
   defaultMetric,
 }) => {
   const [selectedMetric, setSelectedMetric] = React.useState<
-    keyof components['schemas']['Metrics'] | undefined
+    keyof schemas['Metrics'] | undefined
   >(defaultMetric)
 
   const [hoveredMetricPeriod, setHoveredMetricPeriod] =
@@ -115,9 +115,7 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
             <Select
               value={selectedMetric}
               onValueChange={(value) =>
-                setSelectedMetric(
-                  value as keyof components['schemas']['Metrics'],
-                )
+                setSelectedMetric(value as keyof schemas['Metrics'])
               }
             >
               <SelectTrigger className="h-fit w-fit border-0 border-none bg-transparent p-0 shadow-none ring-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 dark:hover:bg-transparent">
@@ -183,9 +181,7 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
             metric={
               isMetricObject
                 ? metric
-                : metric[
-                    selectedMetric as keyof components['schemas']['Metrics']
-                  ]
+                : metric[selectedMetric as keyof schemas['Metrics']]
             }
             onDataIndexHover={(period) =>
               setHoveredMetricPeriod(data[period as number] ?? null)

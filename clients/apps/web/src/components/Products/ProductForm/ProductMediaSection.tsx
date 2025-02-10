@@ -1,7 +1,7 @@
 'use client'
 
 import { Section } from '@/components/Layout/Section'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import {
   FormControl,
   FormField,
@@ -14,7 +14,7 @@ import { ProductFormType } from './ProductForm'
 
 export interface ProductMediaSectionProps {
   className?: string
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
   compact?: boolean
 }
 

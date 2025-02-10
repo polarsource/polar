@@ -1,4 +1,4 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { PropsWithChildren, createContext, useContext } from 'react'
 
 export interface DashboardContextValue {}
@@ -12,7 +12,7 @@ export const DashboardContext = createContext<DashboardContextValue>(
 export const DashboardProvider = ({
   children,
 }: PropsWithChildren<{
-  organization: components['schemas']['Organization'] | undefined
+  organization: schemas['Organization'] | undefined
 }>) => {
   return (
     <DashboardContext.Provider value={{}}>{children}</DashboardContext.Provider>

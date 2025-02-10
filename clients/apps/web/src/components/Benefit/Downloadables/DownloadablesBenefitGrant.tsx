@@ -1,6 +1,6 @@
 import { useCustomerDownloadables } from '@/hooks/queries'
 import { ArrowDownward, MoreVertOutlined } from '@mui/icons-material'
-import { Client, components } from '@polar-sh/client'
+import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
 import {
@@ -21,7 +21,7 @@ export const DownloadableItem = ({
   fileIcon,
 }: {
   className?: string
-  downloadable: components['schemas']['DownloadableRead']
+  downloadable: schemas['DownloadableRead']
   historic: boolean
   showActions?: boolean
   fileIcon?: boolean
@@ -102,7 +102,7 @@ const DownloadablesBenefitGrant = ({
   benefitGrant,
 }: {
   api: Client
-  benefitGrant: components['schemas']['CustomerBenefitGrantDownloadables']
+  benefitGrant: schemas['CustomerBenefitGrantDownloadables']
 }) => {
   const {
     benefit: {

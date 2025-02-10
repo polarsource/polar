@@ -1,6 +1,6 @@
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { components, operations, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
 export const useOAuth2Clients = (
@@ -14,7 +14,7 @@ export const useOAuth2Clients = (
 
 export const useCreateOAuth2Client = () =>
   useMutation({
-    mutationFn: (body: components['schemas']['OAuth2ClientConfiguration']) =>
+    mutationFn: (body: schemas['OAuth2ClientConfiguration']) =>
       api.POST('/v1/oauth2/register', { body }),
     onSuccess(data, _variables, _context) {
       if (data.error) {
@@ -33,7 +33,7 @@ export const useUpdateOAuth2Client = () =>
       body,
     }: {
       client_id: string
-      body: components['schemas']['OAuth2ClientConfigurationUpdate']
+      body: schemas['OAuth2ClientConfigurationUpdate']
     }) =>
       api.PUT('/v1/oauth2/register/{client_id}', {
         params: { path: { client_id } },

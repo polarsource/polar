@@ -5,7 +5,7 @@ import {
   ChevronLeftOutlined,
   ChevronRightOutlined,
 } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -110,9 +110,9 @@ export const Journey = ({ steps, loading }: JourneyProps) => {
 }
 
 export interface ProductWizardProps {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
   completed?: boolean
-  onSuccess?: (product: components['schemas']['Product']) => void
+  onSuccess?: (product: schemas['Product']) => void
 }
 
 export const ProductWizard = ({

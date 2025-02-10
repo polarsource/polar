@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 
 import OpenGraphImageFunding from '@/components/Organization/OpenGraphImageFunding'
 import { issue, org } from '@/utils/testdata'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 
 const meta: Meta<typeof OpenGraphImageFunding> = {
   title: 'Organisms/OpenGraphImageFunding',
@@ -59,7 +59,7 @@ export const IssueToday: Story = {
           new Date().getTime() - 60 * 60 * 24 * 1000,
         ).toISOString(),
         reactions: {
-          ...(issue.reactions as components['schemas']['Reactions']),
+          ...(issue.reactions as schemas['Reactions']),
           plus_one: 0,
         },
       },
@@ -227,7 +227,7 @@ export const LargeIssueNoReactions: Story = {
       {
         ...issue,
         reactions: {
-          ...(issue.reactions as components['schemas']['Reactions']),
+          ...(issue.reactions as schemas['Reactions']),
           plus_one: 0,
         },
       },

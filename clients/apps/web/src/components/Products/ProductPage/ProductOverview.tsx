@@ -3,7 +3,7 @@ import { OrderAmountWithRefund } from '@/components/Refunds/OrderAmountWithRefun
 import { ParsedMetricPeriod, useDiscounts } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { getDiscountDisplay } from '@/utils/discount'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -14,9 +14,9 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
 
 export interface ProductOverviewProps {
-  organization: components['schemas']['Organization']
-  product: components['schemas']['Product']
-  metrics?: components['schemas']['Metrics']
+  organization: schemas['Organization']
+  product: schemas['Product']
+  metrics?: schemas['Metrics']
   periods?: ParsedMetricPeriod[]
 }
 
@@ -88,8 +88,7 @@ export const ProductOverview = ({
                 <DataTableColumnHeader column={column} title="Customer" />
               ),
               cell: (props) => {
-                const customer =
-                  props.getValue() as components['schemas']['OrderCustomer']
+                const customer = props.getValue() as schemas['OrderCustomer']
                 return (
                   <div className="flex flex-row items-center gap-2">
                     <Avatar

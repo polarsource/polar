@@ -1,10 +1,10 @@
 'use client'
 
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import ProductPriceLabel from './ProductPriceLabel'
 
 interface ProductPrices {
-  prices: components['schemas']['ProductPrice'][]
+  prices: schemas['ProductPrice'][]
 }
 
 const ProductPrices: React.FC<ProductPrices> = ({ prices }) => {

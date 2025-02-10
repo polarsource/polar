@@ -1,5 +1,5 @@
 import { useCreateRefund } from '@/hooks/queries'
-import { components, enums } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
@@ -24,7 +24,7 @@ import { toast } from '../Toast/use-toast'
 import { RefundReasonDisplay } from './utils'
 
 interface RefundModalProps {
-  order: components['schemas']['Order']
+  order: schemas['Order']
   hide: () => void
 }
 
@@ -32,7 +32,7 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
   const maximumRefundAmount = order.amount - (order.refunded_amount ?? 0)
   const canRefund = maximumRefundAmount > 0
 
-  const form = useForm<components['schemas']['RefundCreate']>({
+  const form = useForm<schemas['RefundCreate']>({
     defaultValues: {
       amount: maximumRefundAmount,
       order_id: order.id,
@@ -43,9 +43,7 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
 
   const createRefund = useCreateRefund()
 
-  const handleRefundOrder = async (
-    refund: components['schemas']['RefundCreate'],
-  ) => {
+  const handleRefundOrder = async (refund: schemas['RefundCreate']) => {
     if (!order || !canRefund) {
       toast({
         title: 'Refund Failed',

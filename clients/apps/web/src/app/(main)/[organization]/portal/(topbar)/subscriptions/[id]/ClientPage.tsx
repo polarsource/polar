@@ -2,14 +2,14 @@
 
 import CustomerPortalSubscription from '@/components/CustomerPortal/CustomerPortalSubscription'
 import { createClientSideAPI } from '@/utils/client'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 
 const ClientPage = ({
   subscription,
   customerSessionToken,
 }: {
-  organization: components['schemas']['Organization']
-  subscription: components['schemas']['CustomerSubscription']
+  organization: schemas['Organization']
+  subscription: schemas['CustomerSubscription']
   customerSessionToken?: string
 }) => {
   const api = createClientSideAPI(customerSessionToken)

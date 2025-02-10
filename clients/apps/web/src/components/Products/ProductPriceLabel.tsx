@@ -1,8 +1,8 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import AmountLabel from '../Shared/AmountLabel'
 
 interface ProductPriceLabelProps {
-  price: components['schemas']['ProductPrice']
+  price: schemas['ProductPrice']
 }
 
 const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ price }) => {

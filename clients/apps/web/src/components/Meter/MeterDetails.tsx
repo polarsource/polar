@@ -1,16 +1,12 @@
 'use client'
 
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import CopyToClipboardButton from '../CopyToClipboardButton/CopyToClipboardButton'
 import { DetailRow } from '../Shared/DetailRow'
 import { toast } from '../Toast/use-toast'
 
-export const MeterDetails = ({
-  meter,
-}: {
-  meter: components['schemas']['Meter']
-}) => {
+export const MeterDetails = ({ meter }: { meter: schemas['Meter'] }) => {
   return (
     <div className="flex flex-col">
       <DetailRow

@@ -1,5 +1,5 @@
 import { organizationPageLink } from '@/utils/nav'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
 import { Fragment } from 'react'
@@ -8,8 +8,8 @@ import IssueFundingDetails from '../Issues/IssueFundingDetails'
 import IssueSummary from '../Issues/IssueSummary'
 
 export interface OrganizationIssueSummaryListProps {
-  organization: components['schemas']['Organization']
-  issues: components['schemas']['IssueFunding'][]
+  organization: schemas['Organization']
+  issues: schemas['IssueFunding'][]
 }
 
 export const OrganizationIssueSummaryList = ({

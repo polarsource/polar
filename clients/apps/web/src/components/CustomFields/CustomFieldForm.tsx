@@ -1,5 +1,5 @@
 import { ClearOutlined } from '@mui/icons-material'
-import { components, enums } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import {
   Accordion,
   AccordionContent,
@@ -30,10 +30,9 @@ import CustomFieldTypeLabel from './CustomFieldTypeLabel'
 
 const CustomFieldTextProperties = () => {
   const { control } = useFormContext<
-    (
-      | components['schemas']['CustomFieldCreate']
-      | components['schemas']['CustomFieldUpdate']
-    ) & { type: 'text' }
+    (schemas['CustomFieldCreate'] | schemas['CustomFieldUpdate']) & {
+      type: 'text'
+    }
   >()
   return (
     <>
@@ -85,10 +84,9 @@ const CustomFieldTextProperties = () => {
 
 const CustomFieldComparableProperties = () => {
   const { control } = useFormContext<
-    (
-      | components['schemas']['CustomFieldCreate']
-      | components['schemas']['CustomFieldUpdate']
-    ) & { type: 'number' | 'datetime' }
+    (schemas['CustomFieldCreate'] | schemas['CustomFieldUpdate']) & {
+      type: 'number' | 'datetime'
+    }
   >()
   return (
     <>
@@ -128,10 +126,9 @@ const CustomFieldComparableProperties = () => {
 
 const CustomFieldSelectProperties = () => {
   const { control } = useFormContext<
-    (
-      | components['schemas']['CustomFieldCreate']
-      | components['schemas']['CustomFieldUpdate']
-    ) & { type: 'select' }
+    (schemas['CustomFieldCreate'] | schemas['CustomFieldUpdate']) & {
+      type: 'select'
+    }
   >()
   const { fields, append, remove } = useFieldArray({
     control,
@@ -213,8 +210,7 @@ interface CustomFieldFormBaseProps {
 
 const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
   const { control, watch } = useFormContext<
-    | components['schemas']['CustomFieldCreate']
-    | components['schemas']['CustomFieldUpdate']
+    schemas['CustomFieldCreate'] | schemas['CustomFieldUpdate']
   >()
   const type = watch('type')
 

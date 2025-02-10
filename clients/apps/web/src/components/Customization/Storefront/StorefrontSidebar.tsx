@@ -8,7 +8,7 @@ import { setValidationErrors } from '@/utils/api/errors'
 import { CONFIG } from '@/utils/config'
 import { ErrorMessage } from '@hookform/error-message'
 import { AddPhotoAlternateOutlined } from '@mui/icons-material'
-import { components, isValidationError } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -50,7 +50,7 @@ const StorefrontSidebarContentWrapper = ({
 }: PropsWithChildren<{
   title: string
   enabled: boolean
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }>) => {
   return (
     <ShadowBox className="shadow-3xl flex h-full min-h-0 w-full max-w-96 flex-shrink-0 flex-grow-0 flex-col overflow-y-auto bg-white p-8 dark:border-transparent">
@@ -85,14 +85,12 @@ const StorefrontForm = () => {
     setValue,
     setError,
     watch,
-  } = useFormContext<components['schemas']['OrganizationUpdate']>()
+  } = useFormContext<schemas['OrganizationUpdate']>()
 
   const avatarURL = watch('avatar_url')
 
   const onFilesUpdated = useCallback(
-    (
-      files: FileObject<components['schemas']['OrganizationAvatarFileRead']>[],
-    ) => {
+    (files: FileObject<schemas['OrganizationAvatarFileRead']>[]) => {
       if (files.length === 0) {
         return
       }
@@ -275,12 +273,12 @@ export const StorefrontSidebar = () => {
   const { organization } = useContext(MaintainerOrganizationContext)
 
   const { handleSubmit, setError, formState, reset } =
-    useFormContext<components['schemas']['OrganizationUpdate']>()
+    useFormContext<schemas['OrganizationUpdate']>()
 
   const updateOrganization = useUpdateOrganization()
 
   const onSubmit = useCallback(
-    async (organizationUpdate: components['schemas']['OrganizationUpdate']) => {
+    async (organizationUpdate: schemas['OrganizationUpdate']) => {
       const { data: org, error } = await updateOrganization.mutateAsync({
         id: organization.id,
         body: organizationUpdate,

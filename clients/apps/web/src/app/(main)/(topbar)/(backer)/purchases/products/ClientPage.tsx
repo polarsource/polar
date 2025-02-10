@@ -8,7 +8,7 @@ import AmountLabel from '@/components/Shared/AmountLabel'
 import { useCustomerOrders } from '@/hooks/queries'
 import { api } from '@/utils/client'
 import { Search, ShoppingBagOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -103,11 +103,7 @@ export default function ClientPage() {
   )
 }
 
-const OrderItem = ({
-  order,
-}: {
-  order: components['schemas']['CustomerOrder']
-}) => {
+const OrderItem = ({ order }: { order: schemas['CustomerOrder'] }) => {
   const organization = order.product.organization
 
   return (

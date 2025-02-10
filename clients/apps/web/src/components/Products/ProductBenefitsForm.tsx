@@ -7,7 +7,7 @@ import {
   MoreVertOutlined,
   RemoveOutlined,
 } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
@@ -33,8 +33,8 @@ import { useModal } from '../Modal/useModal'
 import { toast } from '../Toast/use-toast'
 
 interface BenefitRowProps {
-  organization: components['schemas']['Organization']
-  benefit: components['schemas']['Benefit']
+  organization: schemas['Organization']
+  benefit: schemas['Benefit']
   checked: boolean
   onCheckedChange: (checked: boolean) => void
 }
@@ -152,11 +152,11 @@ const BenefitRow = ({
 }
 
 interface ProductBenefitsFormProps {
-  organization: components['schemas']['Organization']
-  benefits: components['schemas']['Benefit'][]
-  organizationBenefits: components['schemas']['Benefit'][]
-  onSelectBenefit: (benefit: components['schemas']['Benefit']) => void
-  onRemoveBenefit: (benefit: components['schemas']['Benefit']) => void
+  organization: schemas['Organization']
+  benefits: schemas['Benefit'][]
+  organizationBenefits: schemas['Benefit'][]
+  onSelectBenefit: (benefit: schemas['Benefit']) => void
+  onRemoveBenefit: (benefit: schemas['Benefit']) => void
   className?: string
   compact?: boolean
 }
@@ -177,7 +177,7 @@ const ProductBenefitsForm = ({
   )
 
   const handleCheckedChange = useCallback(
-    (benefit: components['schemas']['Benefit']) => (checked: boolean) => {
+    (benefit: schemas['Benefit']) => (checked: boolean) => {
       if (checked) {
         onSelectBenefit(benefit)
       } else {
@@ -202,7 +202,7 @@ const ProductBenefitsForm = ({
             <BenefitsContainer
               key={type}
               title={title}
-              type={type as components['schemas']['BenefitType']}
+              type={type as schemas['BenefitType']}
               handleCheckedChange={handleCheckedChange}
               enabledBenefits={benefits}
               benefits={organizationBenefits.filter(
@@ -236,12 +236,12 @@ const ProductBenefitsForm = ({
 
 interface BenefitsContainerProps {
   title: string
-  benefits: components['schemas']['Benefit'][]
-  enabledBenefits: components['schemas']['Benefit'][]
+  benefits: schemas['Benefit'][]
+  enabledBenefits: schemas['Benefit'][]
   handleCheckedChange: (
-    benefit: components['schemas']['Benefit'],
+    benefit: schemas['Benefit'],
   ) => (checked: boolean) => void
-  type: components['schemas']['BenefitType']
+  type: schemas['BenefitType']
   onCreateNewBenefit?: () => void
 }
 

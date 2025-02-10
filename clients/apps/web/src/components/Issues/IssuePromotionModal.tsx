@@ -14,7 +14,7 @@ import { api } from '@/utils/client'
 import { githubIssueLink } from '@/utils/github'
 import { HeartIcon } from '@heroicons/react/24/outline'
 import { CardGiftcardOutlined, WifiTethering } from '@mui/icons-material'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -39,13 +39,11 @@ import { useModal } from '../Modal/useModal'
 import BadgeMessageForm from './BadgeMessageForm'
 import PublicRewardsSetting from './UpfrontRewards'
 
-const isIssueBadged = (issue: components['schemas']['Issue']): boolean => {
+const isIssueBadged = (issue: schemas['Issue']): boolean => {
   return issue.pledge_badge_currently_embedded
 }
 
-export const AddBadgeButton = (props: {
-  issue: components['schemas']['Issue']
-}) => {
+export const AddBadgeButton = (props: { issue: schemas['Issue'] }) => {
   const posthog = usePostHog()
   const [isBadged, setBadged] = useState<boolean>(isIssueBadged(props.issue))
 
@@ -123,9 +121,7 @@ export const AddBadgeButton = (props: {
 
   const updateIssue = useUpdateIssue()
 
-  const onUpdateFundingGoal = async (
-    amount: components['schemas']['CurrencyAmount'],
-  ) => {
+  const onUpdateFundingGoal = async (amount: schemas['CurrencyAmount']) => {
     await updateIssue.mutateAsync({
       id: props.issue.id,
       funding_goal: amount,
@@ -192,16 +188,14 @@ export const AddBadgeButton = (props: {
 }
 
 export const BadgePromotionModal = (props: {
-  issue: components['schemas']['Issue']
+  issue: schemas['Issue']
   isShown: boolean
   toggle: () => void
   onRemoveBadge: () => Promise<void>
-  user: components['schemas']['UserRead']
+  user: schemas['UserRead']
   onAddComment: (message: string) => Promise<void>
   onBadgeWithComment: (comment: string) => Promise<void>
-  onUpdateFundingGoal: (
-    amount: components['schemas']['CurrencyAmount'],
-  ) => Promise<void>
+  onUpdateFundingGoal: (amount: schemas['CurrencyAmount']) => Promise<void>
   defaultTab?: string
 }) => {
   const { toggle } = props
@@ -290,8 +284,8 @@ export const BadgePromotionModal = (props: {
 }
 
 const PostCommentForm = (props: {
-  issue: components['schemas']['Issue']
-  user: components['schemas']['UserRead']
+  issue: schemas['Issue']
+  user: schemas['UserRead']
   onAddComment: (message: string) => Promise<void>
 }) => {
   const posthog = usePostHog()
@@ -434,8 +428,8 @@ const Tab = ({
 )
 
 const PromoteTab = (props: {
-  issue: components['schemas']['Issue']
-  user: components['schemas']['UserRead']
+  issue: schemas['Issue']
+  user: schemas['UserRead']
   onAddComment: (message: string) => Promise<void>
 }) => {
   const pledgePageLink = `https://polar.sh/${props.issue.repository.organization.name}/${props.issue.repository.name}/issues/${props.issue.number}`
@@ -513,8 +507,8 @@ const PromoteTab = (props: {
 }
 
 const RewardsTab = (props: {
-  issue: components['schemas']['Issue']
-  user: components['schemas']['UserRead']
+  issue: schemas['Issue']
+  user: schemas['UserRead']
 }) => {
   const linkedOrganization = props.issue.repository.internal_organization
   const upfront =
@@ -542,7 +536,7 @@ const RewardsTab = (props: {
   const [bannerSeededPledge, setBannerSeededPledge] = useState(false)
 
   const [createdSeedPledge, setCreatedSeedPledge] = useState<
-    components['schemas']['Pledge'] | undefined
+    schemas['Pledge'] | undefined
   >(undefined)
 
   const onSubmitSeedReward = async () => {

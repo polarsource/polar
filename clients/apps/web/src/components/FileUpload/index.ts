@@ -1,23 +1,19 @@
 'use client'
 
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { useState } from 'react'
 import { Accept, FileRejection, useDropzone } from 'react-dropzone'
 import { FileRead, Upload } from './Upload'
 
 export type FileObject<
-  T extends FileRead | components['schemas']['FileUpload'] =
-    | FileRead
-    | components['schemas']['FileUpload'],
+  T extends FileRead | schemas['FileUpload'] = FileRead | schemas['FileUpload'],
 > = T & {
   isUploading: boolean
   uploadedBytes: number
   buffer?: ArrayBuffer
 }
 
-const buildFileObject = <
-  T extends FileRead | components['schemas']['FileUpload'],
->(
+const buildFileObject = <T extends FileRead | schemas['FileUpload']>(
   file: T,
   buffer?: ArrayBuffer,
 ): FileObject<T> => {
@@ -29,29 +25,23 @@ const buildFileObject = <
   }
 }
 
-const buildFileObjects = <
-  T extends FileRead | components['schemas']['FileUpload'],
->(
+const buildFileObjects = <T extends FileRead | schemas['FileUpload']>(
   files: T[],
 ): FileObject<T>[] => {
   return files.map((file) => buildFileObject(file))
 }
 
-interface FileUploadProps<
-  T extends FileRead | components['schemas']['FileUpload'],
-> {
-  service: components['schemas']['FileServiceTypes']
+interface FileUploadProps<T extends FileRead | schemas['FileUpload']> {
+  service: schemas['FileServiceTypes']
   accept?: Accept
   maxSize?: number
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
   initialFiles: FileRead[]
   onFilesUpdated: (files: FileObject<T>[]) => void
   onFilesRejected?: (rejections: FileRejection[]) => void
 }
 
-export const useFileUpload = <
-  T extends FileRead | components['schemas']['FileUpload'],
->({
+export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
   service,
   accept,
   maxSize,
@@ -95,7 +85,7 @@ export const useFileUpload = <
   }
 
   const onFileCreate = (
-    response: components['schemas']['FileUpload'],
+    response: schemas['FileUpload'],
     buffer: ArrayBuffer,
   ) => {
     const newFile = buildFileObject(response, buffer)
@@ -117,7 +107,7 @@ export const useFileUpload = <
   }
 
   const onFileUploadProgress = (
-    file: components['schemas']['FileUpload'],
+    file: schemas['FileUpload'],
     uploaded: number,
   ) => {
     updateFile(file.id, (prev) => {

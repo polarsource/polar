@@ -171,8 +171,8 @@ const MobileNav = () => {
 }
 
 export const RepoPickerHeader = (props: {
-  currentRepository?: components['schemas']['Repository']
-  repositories: components['schemas']['Repository'][]
+  currentRepository?: schemas['Repository']
+  repositories: schemas['Repository'][]
   children?: React.ReactNode
 }) => {
   const onSubmit = () => {}
@@ -217,7 +217,7 @@ const SubNav = (props: { items: SubRouteWithActive[] }) => {
   )
 }
 
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import React from 'react'
 
 export const DashboardBody = ({

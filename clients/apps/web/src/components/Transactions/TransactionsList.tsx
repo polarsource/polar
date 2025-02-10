@@ -7,7 +7,7 @@ import {
   KeyboardArrowDownOutlined,
   KeyboardArrowRightOutlined,
 } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
   DataTable,
@@ -21,9 +21,7 @@ import Link from 'next/link'
 import { useMemo } from 'react'
 import ProductPill from '../Products/ProductPill'
 
-const getTransactionMeta = (
-  transaction: components['schemas']['Transaction'],
-) => {
+const getTransactionMeta = (transaction: schemas['Transaction']) => {
   if (transaction.order) {
     return {
       type: transaction.order.subscription_id ? 'Subscription' : 'Purchase',
@@ -58,7 +56,7 @@ const getTransactionMeta = (
 }
 
 interface TransactionMetaProps {
-  transaction: components['schemas']['Transaction']
+  transaction: schemas['Transaction']
 }
 
 const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
@@ -129,7 +127,7 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
 }
 
 export const platformFeesDisplayNames: {
-  [key in components['schemas']['PlatformFeeType']]: string
+  [key in schemas['PlatformFeeType']]: string
 } = {
   payment: 'Payment fee',
   international_payment: 'International payment fee',
@@ -143,24 +141,21 @@ export const platformFeesDisplayNames: {
 }
 
 interface TransactionsListProps {
-  transactions: components['schemas']['Transaction'][]
+  transactions: schemas['Transaction'][]
   pageCount: number
   pagination: DataTablePaginationState
   onPaginationChange?: DataTableOnChangeFn<DataTablePaginationState>
   sorting: DataTableSortingState
   onSortingChange?: DataTableOnChangeFn<DataTableSortingState>
   extraColumns?: DataTableColumnDef<
-    | components['schemas']['Transaction']
-    | components['schemas']['TransactionEmbedded']
+    schemas['Transaction'] | schemas['TransactionEmbedded']
   >[]
   isLoading: boolean | ReactQueryLoading
 }
 
 export const isTransaction = (
-  t:
-    | components['schemas']['Transaction']
-    | components['schemas']['TransactionEmbedded'],
-): t is components['schemas']['Transaction'] =>
+  t: schemas['Transaction'] | schemas['TransactionEmbedded'],
+): t is schemas['Transaction'] =>
   t.hasOwnProperty('account_incurred_transactions')
 
 const TransactionsList = ({
@@ -174,8 +169,7 @@ const TransactionsList = ({
   isLoading,
 }: TransactionsListProps) => {
   const columns: DataTableColumnDef<
-    | components['schemas']['Transaction']
-    | components['schemas']['TransactionEmbedded']
+    schemas['Transaction'] | schemas['TransactionEmbedded']
   >[] = [
     {
       id: 'expand',

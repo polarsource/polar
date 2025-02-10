@@ -1,10 +1,10 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { useRouter } from 'next/navigation'
 import RepoSelection from '../Organization/RepoSelection'
 
 const MaintainerRepoSelection = (props: {
-  current?: components['schemas']['Repository']
-  repositories: components['schemas']['Repository'][]
+  current?: schemas['Repository']
+  repositories: schemas['Repository'][]
 }) => {
   const router = useRouter()
 

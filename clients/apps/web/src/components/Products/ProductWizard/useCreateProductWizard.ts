@@ -7,14 +7,14 @@ import {
 } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { ProductFullMediasMixin } from '../ProductForm/ProductForm'
 
 export const useCreateProductWizard = (
-  organization: components['schemas']['Organization'],
-  onSuccess?: (product: components['schemas']['Product']) => void,
+  organization: schemas['Organization'],
+  onSuccess?: (product: schemas['Product']) => void,
 ) => {
   const benefits = useBenefits(organization.id)
   const organizationBenefits = useMemo(
@@ -23,12 +23,10 @@ export const useCreateProductWizard = (
   )
 
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
-    components['schemas']['Benefit']['id'][]
+    schemas['Benefit']['id'][]
   >([])
 
-  const form = useForm<
-    components['schemas']['ProductCreate'] & ProductFullMediasMixin
-  >({
+  const form = useForm<schemas['ProductCreate'] & ProductFullMediasMixin>({
     defaultValues: {
       ...{
         prices: [
@@ -53,8 +51,7 @@ export const useCreateProductWizard = (
 
   const onSubmit = useCallback(
     async (
-      productCreate: components['schemas']['ProductCreate'] &
-        ProductFullMediasMixin,
+      productCreate: schemas['ProductCreate'] & ProductFullMediasMixin,
     ) => {
       const { full_medias, ...productCreateRest } = productCreate
       const { data: product, error } = await createProduct.mutateAsync({
@@ -81,14 +78,14 @@ export const useCreateProductWizard = (
   )
 
   const onSelectBenefit = useCallback(
-    (benefit: components['schemas']['Benefit']) => {
+    (benefit: schemas['Benefit']) => {
       setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
     },
     [setEnabledBenefitIds],
   )
 
   const onRemoveBenefit = useCallback(
-    (benefit: components['schemas']['Benefit']) => {
+    (benefit: schemas['Benefit']) => {
       setEnabledBenefitIds((benefitIds) =>
         benefitIds.filter((b) => b !== benefit.id),
       )

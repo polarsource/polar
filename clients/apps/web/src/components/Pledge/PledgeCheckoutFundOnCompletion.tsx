@@ -6,7 +6,7 @@ import {
   ClockIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
@@ -21,8 +21,8 @@ const PledgeCheckoutFundOnCompletion = ({
   issue,
   organization,
 }: {
-  issue: components['schemas']['Issue']
-  organization: components['schemas']['Organization']
+  issue: schemas['Issue']
+  organization: schemas['Organization']
 }) => {
   const [formState, setFormState] = useState<{
     amount: number
@@ -78,9 +78,7 @@ const PledgeCheckoutFundOnCompletion = ({
     })
   }
 
-  const onChangeOnBehalfOf = (
-    org: components['schemas']['Organization'] | undefined,
-  ) => {
+  const onChangeOnBehalfOf = (org: schemas['Organization'] | undefined) => {
     setFormState({
       ...formState,
       on_behalf_of_organization_id: org ? org.id : undefined,

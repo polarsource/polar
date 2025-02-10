@@ -1,5 +1,5 @@
 import IssueLabel from '@/components/Issues/IssueLabel'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { motion } from 'framer-motion'
 import { twMerge } from 'tailwind-merge'
 
@@ -62,7 +62,7 @@ const EmbedSetting = ({
   isAutoEnabled,
   onChange,
 }: {
-  repo: components['schemas']['RepositoryBadgeSettingsRead']
+  repo: schemas['RepositoryBadgeSettingsRead']
   showIndividualBadgeLabel: boolean
   isAutoEnabled: boolean
   onChange: (state: boolean) => void
@@ -118,7 +118,7 @@ export const BadgeRepository = ({
   onEnableBadgeChange,
   isSettingPage = false,
 }: {
-  repo: components['schemas']['RepositoryBadgeSettingsRead']
+  repo: schemas['RepositoryBadgeSettingsRead']
   showControls: boolean
   showIndividualBadgeLabel: boolean
   onEnableBadgeChange: (badge: boolean) => void

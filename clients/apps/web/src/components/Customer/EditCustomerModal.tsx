@@ -1,7 +1,7 @@
 import revalidate from '@/app/actions'
 import { useUpdateCustomer } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components, isValidationError } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -16,10 +16,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import { CustomerMetadataForm } from './CustomerMetadataForm'
 
-export type CustomerUpdateForm = Omit<
-  components['schemas']['CustomerUpdate'],
-  'metadata'
-> & {
+export type CustomerUpdateForm = Omit<schemas['CustomerUpdate'], 'metadata'> & {
   metadata: { key: string; value: string | number | boolean }[]
 }
 
@@ -27,7 +24,7 @@ export const EditCustomerModal = ({
   customer,
   onClose,
 }: {
-  customer: components['schemas']['Customer']
+  customer: schemas['Customer']
   onClose: () => void
 }) => {
   const form = useForm<CustomerUpdateForm>({

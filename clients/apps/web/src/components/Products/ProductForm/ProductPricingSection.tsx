@@ -2,7 +2,7 @@
 
 import { ErrorMessage } from '@hookform/error-message'
 import { ClearOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
@@ -230,7 +230,7 @@ export const ProductPricingSection = ({
 
   const hasMonthlyPrice = useMemo(
     () =>
-      (prices as components['schemas']['ProductPrice'][]).some(
+      (prices as schemas['ProductPrice'][]).some(
         (price) =>
           price.type === 'recurring' && price.recurring_interval === 'month',
       ),
@@ -238,7 +238,7 @@ export const ProductPricingSection = ({
   )
   const hasYearlyPrice = useMemo(
     () =>
-      (prices as components['schemas']['ProductPrice'][]).some(
+      (prices as schemas['ProductPrice'][]).some(
         (price) =>
           price.type === 'recurring' && price.recurring_interval === 'year',
       ),
@@ -246,13 +246,12 @@ export const ProductPricingSection = ({
   )
 
   const [pricingType, setPricingType] = useState<
-    components['schemas']['ProductPriceType'] | undefined
+    schemas['ProductPriceType'] | undefined
   >(hasMonthlyPrice || hasYearlyPrice ? 'recurring' : 'one_time')
 
   const [amountType, setAmountType] = useState<'fixed' | 'custom' | 'free'>(
-    prices.length > 0 &&
-      (prices as components['schemas']['ProductPrice'][])[0].amount_type
-      ? (prices as components['schemas']['ProductPrice'][])[0].amount_type
+    prices.length > 0 && (prices as schemas['ProductPrice'][])[0].amount_type
+      ? (prices as schemas['ProductPrice'][])[0].amount_type
       : 'fixed',
   )
 
@@ -326,7 +325,7 @@ export const ProductPricingSection = ({
           <Tabs
             value={pricingType}
             onValueChange={(value: string) =>
-              setPricingType(value as components['schemas']['ProductPriceType'])
+              setPricingType(value as schemas['ProductPriceType'])
             }
           >
             <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-200">

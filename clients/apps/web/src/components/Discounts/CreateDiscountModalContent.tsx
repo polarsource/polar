@@ -1,6 +1,6 @@
 import { useCreateDiscount } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
@@ -9,8 +9,8 @@ import { toast } from '../Toast/use-toast'
 import DiscountForm from './DiscountForm'
 
 interface CreateDiscountModalContentProps {
-  organization: components['schemas']['Organization']
-  onDiscountCreated: (discount: components['schemas']['Discount']) => void
+  organization: schemas['Organization']
+  onDiscountCreated: (discount: schemas['Discount']) => void
   hideModal: () => void
 }
 
@@ -21,7 +21,7 @@ const CreateDiscountModalContent = ({
 }: CreateDiscountModalContentProps) => {
   const createDiscount = useCreateDiscount(organization.id)
 
-  const form = useForm<components['schemas']['DiscountCreate']>({
+  const form = useForm<schemas['DiscountCreate']>({
     defaultValues: {
       organization_id: organization.id,
       type: 'percentage',
@@ -35,30 +35,29 @@ const CreateDiscountModalContent = ({
     formState: { errors },
   } = form
 
-  const onSubmit: SubmitHandler<components['schemas']['DiscountCreate']> =
-    useCallback(
-      async (discountCreate) => {
-        const { data: discount, error } =
-          await createDiscount.mutateAsync(discountCreate)
-        if (error) {
-          if (error.detail) {
-            setValidationErrors(error.detail, setError, 1, [
-              'fixed.once_forever',
-              'fixed.repeat',
-              'percentage.once_forever',
-              'percentage.repeat',
-            ])
-          }
-          return
+  const onSubmit: SubmitHandler<schemas['DiscountCreate']> = useCallback(
+    async (discountCreate) => {
+      const { data: discount, error } =
+        await createDiscount.mutateAsync(discountCreate)
+      if (error) {
+        if (error.detail) {
+          setValidationErrors(error.detail, setError, 1, [
+            'fixed.once_forever',
+            'fixed.repeat',
+            'percentage.once_forever',
+            'percentage.repeat',
+          ])
         }
-        toast({
-          title: 'Discount Created',
-          description: `Discount ${discount.code} was created successfully`,
-        })
-        onDiscountCreated(discount)
-      },
-      [createDiscount, onDiscountCreated, setError],
-    )
+        return
+      }
+      toast({
+        title: 'Discount Created',
+        description: `Discount ${discount.code} was created successfully`,
+      })
+      onDiscountCreated(discount)
+    },
+    [createDiscount, onDiscountCreated, setError],
+  )
 
   return (
     <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">

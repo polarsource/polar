@@ -14,7 +14,7 @@ import {
   TrendingUp,
   TuneOutlined,
 } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { usePathname } from 'next/navigation'
 import { useMemo } from 'react'
 
@@ -77,11 +77,8 @@ const applyIsActive = (path: string): ((r: Route) => RouteWithActive) => {
 }
 
 const useResolveRoutes = (
-  routesResolver: (
-    org: components['schemas']['Organization'],
-    posthog?: PolarHog,
-  ) => Route[],
-  org: components['schemas']['Organization'],
+  routesResolver: (org: schemas['Organization'], posthog?: PolarHog) => Route[],
+  org: schemas['Organization'],
   allowAll?: boolean,
 ): RouteWithActive[] => {
   const path = usePathname()
@@ -95,7 +92,7 @@ const useResolveRoutes = (
 }
 
 export const useDashboardRoutes = (
-  org: components['schemas']['Organization'],
+  org: schemas['Organization'],
   allowAll?: boolean,
 ): RouteWithActive[] => {
   const posthog = usePostHog()
@@ -108,7 +105,7 @@ export const useDashboardRoutes = (
 }
 
 export const useGeneralRoutes = (
-  org: components['schemas']['Organization'],
+  org: schemas['Organization'],
   allowAll?: boolean,
 ): RouteWithActive[] => {
   const posthog = usePostHog()
@@ -121,14 +118,14 @@ export const useGeneralRoutes = (
 }
 
 export const useFundingRoutes = (
-  org: components['schemas']['Organization'],
+  org: schemas['Organization'],
   allowAll?: boolean,
 ): RouteWithActive[] => {
   return useResolveRoutes(fundingRoutesList, org, allowAll)
 }
 
 export const useOrganizationRoutes = (
-  org: components['schemas']['Organization'],
+  org: schemas['Organization'],
   allowAll?: boolean,
 ): RouteWithActive[] => {
   return useResolveRoutes(organizationRoutesList, org, allowAll)
@@ -149,7 +146,7 @@ export const usePersonalFinanceSubRoutes = (): SubRouteWithActive[] => {
 // internals below
 
 const generalRoutesList = (
-  org: components['schemas']['Organization'],
+  org: schemas['Organization'],
   posthog: PolarHog,
 ): Route[] => [
   {
@@ -254,9 +251,7 @@ const generalRoutesList = (
   },
 ]
 
-const fundingRoutesList = (
-  org: components['schemas']['Organization'],
-): Route[] => [
+const fundingRoutesList = (org: schemas['Organization']): Route[] => [
   {
     id: 'org-issues',
     title: 'Issues',
@@ -288,7 +283,7 @@ const fundingRoutesList = (
 ]
 
 const dashboardRoutesList = (
-  org: components['schemas']['Organization'],
+  org: schemas['Organization'],
   posthog: PolarHog,
 ): Route[] => [
   ...generalRoutesList(org, posthog),
@@ -350,9 +345,7 @@ const personalFinanceSubRoutesList = (): SubRoute[] => [
   },
 ]
 
-const orgFinanceSubRoutesList = (
-  org: components['schemas']['Organization'],
-): SubRoute[] => [
+const orgFinanceSubRoutesList = (org: schemas['Organization']): SubRoute[] => [
   {
     title: 'Incoming',
     link: `/dashboard/${org.slug}/finance/incoming`,
@@ -372,9 +365,7 @@ const orgFinanceSubRoutesList = (
   },
 ]
 
-const organizationRoutesList = (
-  org: components['schemas']['Organization'],
-): Route[] => [
+const organizationRoutesList = (org: schemas['Organization']): Route[] => [
   {
     id: 'finance',
     title: 'Finance',

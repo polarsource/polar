@@ -5,7 +5,7 @@ import TopbarRight from '@/components/Layout/Public/TopbarRight'
 import { useAuth } from '@/hooks'
 import { useProducts, useSearchFunding } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useContext } from 'react'
 import { useFormContext } from 'react-hook-form'
@@ -14,8 +14,7 @@ import { StorefrontHeader } from '../../Profile/StorefrontHeader'
 
 export const StorefrontPreview = () => {
   const { organization: org } = useContext(MaintainerOrganizationContext)
-  const { watch } =
-    useFormContext<components['schemas']['OrganizationUpdate']>()
+  const { watch } = useFormContext<schemas['OrganizationUpdate']>()
   const { currentUser } = useAuth()
   const organizationUpdate = watch()
 
@@ -56,12 +55,12 @@ export const StorefrontPreview = () => {
         )}
         <div className="flex flex-grow flex-col items-center">
           <StorefrontHeader
-            organization={organization as components['schemas']['Organization']}
+            organization={organization as schemas['Organization']}
           />
         </div>
         <div className="flex h-full flex-grow flex-col gap-y-8 pb-16 md:gap-y-16">
           <Storefront
-            organization={organization as components['schemas']['Organization']}
+            organization={organization as schemas['Organization']}
             products={products}
             issues={issues}
           />

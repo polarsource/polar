@@ -10,7 +10,7 @@ import SubscriptionDetails from '@/components/Subscriptions/SubscriptionDetails'
 import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscriptionModal'
 import { useProduct, useSubscription } from '@/hooks/queries'
 import { markdownOptionsJustText } from '@/utils/markdown'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -20,7 +20,7 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ProductItemProps {
-  product: components['schemas']['Product']
+  product: schemas['Product']
 }
 
 const ProductItem = ({ product }: ProductItemProps) => {
@@ -50,8 +50,8 @@ const ProductItem = ({ product }: ProductItemProps) => {
 }
 
 interface ClientPageProps {
-  organization: components['schemas']['Organization']
-  subscription: components['schemas']['Subscription']
+  organization: schemas['Organization']
+  subscription: schemas['Subscription']
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({
@@ -93,7 +93,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       className="gap-y-8"
       contextView={
         <CustomerContextView
-          customer={subscription.customer as components['schemas']['Customer']}
+          customer={subscription.customer as schemas['Customer']}
         />
       }
     >

@@ -1,6 +1,6 @@
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { InfiniteData, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -46,7 +46,7 @@ export const useIssueAddComment = () =>
   useMutation({
     mutationFn: (variables: {
       id: string
-      body: components['schemas']['PostIssueComment']
+      body: schemas['PostIssueComment']
     }) => {
       return api.POST('/v1/issues/{id}/comment', {
         params: { path: { id: variables.id } },
@@ -59,7 +59,7 @@ export const useBadgeWithComment = () =>
   useMutation({
     mutationFn: (variables: {
       id: string
-      body: components['schemas']['IssueUpdateBadgeMessage']
+      body: schemas['IssueUpdateBadgeMessage']
     }) => {
       return api.POST('/v1/issues/{id}/badge_with_message', {
         params: { path: { id: variables.id } },
@@ -72,7 +72,7 @@ export const useUpdateIssue = () =>
   useMutation({
     mutationFn: (variables: {
       id: string
-      funding_goal?: components['schemas']['CurrencyAmount']
+      funding_goal?: schemas['CurrencyAmount']
       upfront_split_to_contributors?: number | null
       set_upfront_split_to_contributors?: boolean
     }) => {
@@ -95,11 +95,9 @@ export const useUpdateIssue = () =>
     },
   })
 
-const updateIssuesCache = (result: components['schemas']['Issue']) => {
+const updateIssuesCache = (result: schemas['Issue']) => {
   // update issue in dashboard results
-  queryClient.setQueriesData<
-    InfiniteData<components['schemas']['IssueListResponse']>
-  >(
+  queryClient.setQueriesData<InfiniteData<schemas['IssueListResponse']>>(
     {
       queryKey: ['dashboard', 'repo'],
     },
@@ -131,7 +129,7 @@ const updateIssuesCache = (result: components['schemas']['Issue']) => {
     },
   )
 
-  queryClient.setQueriesData<components['schemas']['ListResource_Pledge_']>(
+  queryClient.setQueriesData<schemas['ListResource_Pledge_']>(
     {
       queryKey: ['pledgeByIssue', result.id],
     },
@@ -155,7 +153,7 @@ const updateIssuesCache = (result: components['schemas']['Issue']) => {
     },
   )
 
-  queryClient.setQueriesData<components['schemas']['ListResource_Pledge_']>(
+  queryClient.setQueriesData<schemas['ListResource_Pledge_']>(
     {
       queryKey: ['pledgeList'],
     },
@@ -179,7 +177,7 @@ const updateIssuesCache = (result: components['schemas']['Issue']) => {
     },
   )
 
-  queryClient.setQueriesData<components['schemas']['ListResource_Issue_']>(
+  queryClient.setQueriesData<schemas['ListResource_Issue_']>(
     {
       queryKey: ['issuesForYou'],
     },
@@ -211,7 +209,7 @@ export const useIssueMarkConfirmed = () =>
   useMutation({
     mutationFn: (variables: {
       id: string
-      splits: components['schemas']['ConfirmIssueSplit'][]
+      splits: schemas['ConfirmIssueSplit'][]
     }) => {
       return api.POST('/v1/issues/{id}/confirm_solved', {
         params: { path: { id: variables.id } },

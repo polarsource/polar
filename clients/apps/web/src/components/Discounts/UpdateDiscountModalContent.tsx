@@ -1,6 +1,6 @@
 import { useUpdateDiscount } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components, isValidationError } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
@@ -9,9 +9,9 @@ import { toast } from '../Toast/use-toast'
 import DiscountForm from './DiscountForm'
 
 interface UpdateDiscountModalContentProps {
-  organization: components['schemas']['Organization']
-  discount: components['schemas']['Discount']
-  onDiscountUpdated: (discount: components['schemas']['Discount']) => void
+  organization: schemas['Organization']
+  discount: schemas['Discount']
+  onDiscountUpdated: (discount: schemas['Discount']) => void
   hideModal: () => void
 }
 
@@ -23,7 +23,7 @@ const UpdateDiscountModalContent = ({
 }: UpdateDiscountModalContentProps) => {
   const updateDiscount = useUpdateDiscount(discount.id)
 
-  const form = useForm<components['schemas']['DiscountUpdate']>({
+  const form = useForm<schemas['DiscountUpdate']>({
     defaultValues: {
       ...discount,
       products: discount.products.map((product) => product.id),
@@ -37,7 +37,7 @@ const UpdateDiscountModalContent = ({
   } = form
 
   const onSubmit = useCallback(
-    async (discountUpdate: components['schemas']['DiscountUpdate']) => {
+    async (discountUpdate: schemas['DiscountUpdate']) => {
       const { data: discount, error } =
         await updateDiscount.mutateAsync(discountUpdate)
       if (error) {

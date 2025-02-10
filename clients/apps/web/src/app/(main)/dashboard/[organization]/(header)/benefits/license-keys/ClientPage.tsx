@@ -16,7 +16,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -40,7 +40,7 @@ export const ClientPage = ({
   sorting,
   pagination,
 }: {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
   sorting: SortingState
   pagination: PaginationState
 }) => {

@@ -1,5 +1,5 @@
 import { AddPhotoAlternateOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { ReactElement, useCallback, useState } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { twMerge } from 'tailwind-merge'
@@ -41,9 +41,9 @@ const DropzoneView = ({
 }
 
 interface ProductMediasFieldProps {
-  organization: components['schemas']['Organization']
-  value: components['schemas']['ProductMediaFileRead'][] | undefined
-  onChange: (value: components['schemas']['ProductMediaFileRead'][]) => void
+  organization: schemas['Organization']
+  value: schemas['ProductMediaFileRead'][] | undefined
+  onChange: (value: schemas['ProductMediaFileRead'][]) => void
   compact?: boolean
 }
 
@@ -54,7 +54,7 @@ const ProductMediasField = ({
   compact,
 }: ProductMediasFieldProps) => {
   const onFilesUpdated = useCallback(
-    (files: FileObject<components['schemas']['ProductMediaFileRead']>[]) => {
+    (files: FileObject<schemas['ProductMediaFileRead']>[]) => {
       onChange(files.filter((file) => file.is_uploaded).map((file) => file))
     },
     [onChange],

@@ -1,5 +1,5 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { getRecurringBillingLabel } from '../Subscriptions/utils'
 
@@ -8,7 +8,7 @@ export const ProductCardEmbed = ({
   cta,
   darkmode,
 }: {
-  embed: components['schemas']['ProductEmbed']
+  embed: schemas['ProductEmbed']
   cta?: string
   darkmode?: boolean
 }) => {

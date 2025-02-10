@@ -1,5 +1,5 @@
 import { CheckOutlined, CloseOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 
@@ -9,7 +9,7 @@ const CustomFieldValue = ({
   field,
   value,
 }: {
-  field: components['schemas']['CustomField']
+  field: schemas['CustomField']
   value: string | number | boolean | undefined | null
 }) => {
   if (value === undefined || value === null) {

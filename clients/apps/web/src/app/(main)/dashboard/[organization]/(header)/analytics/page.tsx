@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import {
   addDays,
   endOfMonth,
@@ -21,7 +21,7 @@ export default async function Page({
   searchParams: {
     start_date?: string
     end_date?: string
-    interval?: components['schemas']['TimeInterval']
+    interval?: schemas['TimeInterval']
     product_id?: string | string[]
   }
 }) {

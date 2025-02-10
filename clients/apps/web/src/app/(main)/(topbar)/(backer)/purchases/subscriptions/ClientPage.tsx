@@ -8,7 +8,7 @@ import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import { useCustomerSubscriptions } from '@/hooks/queries'
 import { api } from '@/utils/client'
 import { Search, ShoppingBagOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -124,7 +124,7 @@ export default function ClientPage() {
 const SubscriptionItem = ({
   subscription,
 }: {
-  subscription: components['schemas']['CustomerSubscription']
+  subscription: schemas['CustomerSubscription']
 }) => {
   const organization = subscription.product.organization
 

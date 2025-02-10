@@ -3,7 +3,7 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
 import { AddOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -30,7 +30,7 @@ const CustomerStatBox = ({
 }
 
 interface CustomerContextViewProps {
-  customer: components['schemas']['Customer']
+  customer: schemas['Customer']
 }
 
 export const CustomerContextView = ({ customer }: CustomerContextViewProps) => {
@@ -43,7 +43,7 @@ export const CustomerContextView = ({ customer }: CustomerContextViewProps) => {
     string | null
   >(null)
   const [customerSession, setCustomerSession] = useState<
-    components['schemas']['CustomerSession'] | null
+    schemas['CustomerSession'] | null
   >(null)
   const createCustomerSession = useCallback(async () => {
     setCustomerSessionLoading(true)

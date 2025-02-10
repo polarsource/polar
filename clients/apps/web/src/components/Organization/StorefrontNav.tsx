@@ -3,7 +3,7 @@
 import { useCustomerOrders } from '@/hooks/queries'
 import { api } from '@/utils/client'
 import { organizationPageLink } from '@/utils/nav'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import {
   Select,
   SelectContent,
@@ -18,7 +18,7 @@ import { twMerge } from 'tailwind-merge'
 
 interface OrganizationStorefrontNavProps {
   className?: string
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }
 
 export const StorefrontNav = ({

@@ -1,6 +1,6 @@
 'use client'
 
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
@@ -24,23 +24,21 @@ import { useFormContext } from 'react-hook-form'
 
 export const LicenseKeysBenefitForm = () => {
   const { control, watch, setValue } =
-    useFormContext<components['schemas']['BenefitLicenseKeysCreate']>()
+    useFormContext<schemas['BenefitLicenseKeysCreate']>()
 
   const expires = watch('properties.expires', undefined)
   const showExpirationFields = !!expires
-  const defaultExpiration: components['schemas']['BenefitLicenseKeyExpirationProperties'] =
-    {
-      ttl: 1,
-      timeframe: 'year',
-    }
+  const defaultExpiration: schemas['BenefitLicenseKeyExpirationProperties'] = {
+    ttl: 1,
+    timeframe: 'year',
+  }
 
   const activations = watch('properties.activations', undefined)
   const showActivationFields = !!activations
-  const defaultActivations: components['schemas']['BenefitLicenseKeyActivationProperties'] =
-    {
-      limit: 5,
-      enable_customer_admin: true,
-    }
+  const defaultActivations: schemas['BenefitLicenseKeyActivationProperties'] = {
+    limit: 5,
+    enable_customer_admin: true,
+  }
 
   const limitUsage = watch('properties.limit_usage', undefined)
   const [showLimitUsage, setShowLimitUsage] = useState(!!limitUsage)

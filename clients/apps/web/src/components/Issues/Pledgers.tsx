@@ -1,8 +1,8 @@
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { useMemo } from 'react'
 
 interface PledgersProps {
-  pledgers: components['schemas']['Pledger'][]
+  pledgers: schemas['Pledger'][]
   maxShown?: number
   size: 'xs' | 'sm' | 'md' | 'lg'
 }

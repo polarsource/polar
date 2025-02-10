@@ -1,12 +1,9 @@
 import { api } from '@/utils/client'
-import { components, operations, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useOrder = (
-  id: string,
-  initialData?: components['schemas']['Order'],
-) =>
+export const useOrder = (id: string, initialData?: schemas['Order']) =>
   useQuery({
     queryKey: ['orders', { id }],
     queryFn: () =>

@@ -4,7 +4,7 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -24,7 +24,7 @@ import Spinner from '../Shared/Spinner'
 import IssueListItem from './IssueListItem'
 
 const IssueList = (props: {
-  dashboard?: InfiniteData<components['schemas']['IssueListResponse']>
+  dashboard?: InfiniteData<schemas['IssueListResponse']>
   filters: DashboardFilters
   loading: boolean
   totalCount?: number
@@ -81,7 +81,7 @@ const IssueList = (props: {
 export default IssueList
 
 const IssueListPage = (props: {
-  page: components['schemas']['IssueListResponse']
+  page: schemas['IssueListResponse']
   canAddRemovePolarLabel: boolean
 }) => {
   return (
@@ -138,7 +138,7 @@ export const Header = (props: {
     router.push(newPath)
   }
 
-  const getTitle = (sortBy: components['schemas']['IssueSortBy']): string => {
+  const getTitle = (sortBy: schemas['IssueSortBy']): string => {
     if (sortBy == 'newest') {
       return 'Newest'
     }
@@ -168,7 +168,7 @@ export const Header = (props: {
 
   const tabFilters = ['issues_default']
 
-  const options: components['schemas']['IssueSortBy'][] = useMemo(() => {
+  const options: schemas['IssueSortBy'][] = useMemo(() => {
     return [
       ...tabFilters,
       ...[
@@ -179,7 +179,7 @@ export const Header = (props: {
         'most_recently_funded',
         'relevance',
       ],
-    ] as components['schemas']['IssueSortBy'][]
+    ] as schemas['IssueSortBy'][]
   }, [tabFilters])
 
   const onQueryChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -221,7 +221,7 @@ export const Header = (props: {
   const onSortingChanged = (value: string) => {
     const f: DashboardFilters = {
       ...props.filters,
-      sort: value as components['schemas']['IssueSortBy'],
+      sort: value as schemas['IssueSortBy'],
     }
 
     props.onSetFilters(f)

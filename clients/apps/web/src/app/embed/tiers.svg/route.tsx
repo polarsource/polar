@@ -1,14 +1,12 @@
 import { HighlightedTiers } from '@/components/Embed/HighlightedTiers'
 import { getServerURL } from '@/utils/api'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
-const getStorefront = async (
-  org: string,
-): Promise<components['schemas']['Storefront']> => {
+const getStorefront = async (org: string): Promise<schemas['Storefront']> => {
   const response = await fetch(`${getServerURL()}/v1/storefronts/${org}`, {
     method: 'GET',
   })
@@ -20,15 +18,15 @@ const getStorefront = async (
 
 const getRecurringProducts = async (
   org: string,
-): Promise<components['schemas']['ProductStorefront'][]> => {
+): Promise<schemas['ProductStorefront'][]> => {
   const { products } = await getStorefront(org)
   return products.filter((product) => product.is_recurring)
 }
 
 const renderBadge = async (
   label: string,
-  products: components['schemas']['ProductStorefront'][],
-  recurringInterval: components['schemas']['SubscriptionRecurringInterval'],
+  products: schemas['ProductStorefront'][],
+  recurringInterval: schemas['SubscriptionRecurringInterval'],
   darkmode: boolean,
 ) => {
   const inter500 = await fetch(
@@ -84,7 +82,7 @@ export async function GET(request: Request) {
     const svg = await renderBadge(
       label,
       highlightedTiers,
-      recurringInterval as components['schemas']['SubscriptionRecurringInterval'],
+      recurringInterval as schemas['SubscriptionRecurringInterval'],
       darkmode,
     )
 

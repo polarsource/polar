@@ -4,7 +4,7 @@ import {
   ClockIcon,
   CurrencyDollarIcon,
 } from '@heroicons/react/24/outline'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { Tabs, TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
 import Link from 'next/link'
 import PledgeCheckoutFundByTeam from './PledgeCheckoutFundByTeam'
@@ -18,8 +18,8 @@ const PledgeCheckoutFund = ({
   gotoURL,
   onAmountChange: onAmountChangeProp,
 }: {
-  issue: components['schemas']['Issue']
-  organization: components['schemas']['Organization']
+  issue: schemas['Issue']
+  organization: schemas['Organization']
   gotoURL?: string
   onAmountChange?: (amount: number) => void
 }) => {

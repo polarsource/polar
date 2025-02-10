@@ -1,6 +1,6 @@
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -83,7 +83,7 @@ export const useWebhookEndpoint = (id?: string) =>
 
 export const useCreateWebhookEndpoint = () =>
   useMutation({
-    mutationFn: (body: components['schemas']['WebhookEndpointCreate']) =>
+    mutationFn: (body: schemas['WebhookEndpointCreate']) =>
       api.POST('/v1/webhooks/endpoints', { body }),
     onSuccess: (result, _variables, _ctx) => {
       if (result.error) {
@@ -99,7 +99,7 @@ export const useEditWebhookEndpoint = () =>
   useMutation({
     mutationFn: (variables: {
       id: string
-      body: components['schemas']['WebhookEndpointUpdate']
+      body: schemas['WebhookEndpointUpdate']
     }) =>
       api.PATCH('/v1/webhooks/endpoints/{id}', {
         params: {

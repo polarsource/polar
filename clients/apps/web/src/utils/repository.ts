@@ -1,4 +1,4 @@
-import { Client, components, operations, unwrap } from '@polar-sh/client'
+import { Client, operations, schemas, unwrap } from '@polar-sh/client'
 import { getStorefront } from './storefront'
 
 const getRepositoryBy = async (
@@ -8,7 +8,7 @@ const getRepositoryBy = async (
     'page' | 'limit' | 'sorting'
   >,
   cacheOverrides?: any,
-): Promise<components['schemas']['Repository'] | undefined> => {
+): Promise<schemas['Repository'] | undefined> => {
   const data = await unwrap(
     api.GET('/v1/repositories/', {
       params: {
@@ -28,10 +28,7 @@ export const resolveRepositoryPath = async (
   organizationSlug: string,
   repositoryName: string,
   cacheOverrides?: any,
-): Promise<
-  | [components['schemas']['Repository'], components['schemas']['Organization']]
-  | undefined
-> => {
+): Promise<[schemas['Repository'], schemas['Organization']] | undefined> => {
   const storefront = await getStorefront(api, organizationSlug)
 
   // Existing Polar organization

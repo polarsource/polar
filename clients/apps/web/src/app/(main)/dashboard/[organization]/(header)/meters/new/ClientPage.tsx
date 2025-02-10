@@ -5,7 +5,7 @@ import MeterForm from '@/components/Meter/MeterForm'
 import { useToast } from '@/components/Toast/use-toast'
 import { useCreateMeter } from '@/hooks/queries/meters'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
@@ -15,10 +15,10 @@ import { useForm } from 'react-hook-form'
 const ClientPage = ({
   organization,
 }: {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
 }) => {
   const router = useRouter()
-  const form = useForm<components['schemas']['MeterCreate']>({
+  const form = useForm<schemas['MeterCreate']>({
     defaultValues: {
       filter: {
         conjunction: 'and',
@@ -45,7 +45,7 @@ const ClientPage = ({
   const { toast } = useToast()
 
   const onSubmit = useCallback(
-    async (body: components['schemas']['MeterCreate']) => {
+    async (body: schemas['MeterCreate']) => {
       const { data: meter, error } = await createMeter.mutateAsync(body)
       if (error) {
         if (error.detail) {

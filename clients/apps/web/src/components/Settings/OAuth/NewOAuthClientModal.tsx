@@ -1,7 +1,7 @@
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useCreateOAuth2Client } from '@/hooks/queries/oauth'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useState } from 'react'
@@ -19,7 +19,7 @@ import {
 
 export interface EnhancedOAuth2ClientConfiguration
   extends Omit<
-    components['schemas']['OAuth2ClientConfiguration'],
+    schemas['OAuth2ClientConfiguration'],
     'redirect_uris' | 'scope'
   > {
   redirect_uris: { uri: string }[]
@@ -27,7 +27,7 @@ export interface EnhancedOAuth2ClientConfiguration
 }
 
 interface NewOAuthClientModalProps {
-  onSuccess: (client: components['schemas']['OAuth2Client']) => void
+  onSuccess: (client: schemas['OAuth2Client']) => void
   onHide: () => void
 }
 
@@ -45,8 +45,7 @@ export const NewOAuthClientModal = ({
 
   const { handleSubmit } = form
 
-  const [created, setCreated] =
-    useState<components['schemas']['OAuth2Client']>()
+  const [created, setCreated] = useState<schemas['OAuth2Client']>()
 
   const createOAuth2Client = useCreateOAuth2Client()
 
@@ -66,7 +65,7 @@ export const NewOAuthClientModal = ({
         return
       }
 
-      const res = data as components['schemas']['OAuth2Client']
+      const res = data as schemas['OAuth2Client']
       toast({
         title: 'OAuth App Created',
         description: `OAuth App ${res.client_name} was created successfully`,

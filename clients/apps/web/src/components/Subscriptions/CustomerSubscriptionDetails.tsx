@@ -3,7 +3,7 @@
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import { useCustomerCancelSubscription } from '@/hooks/queries'
-import { Client, components } from '@polar-sh/client'
+import { Client, schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -19,11 +19,11 @@ const CustomerSubscriptionDetails = ({
   onUserSubscriptionUpdate,
   isCanceled,
 }: {
-  subscription: components['schemas']['CustomerSubscription']
+  subscription: schemas['CustomerSubscription']
   api: Client
   cancelSubscription: ReturnType<typeof useCustomerCancelSubscription>
   onUserSubscriptionUpdate: (
-    subscription: components['schemas']['CustomerSubscription'],
+    subscription: schemas['CustomerSubscription'],
   ) => void
   isCanceled: boolean
 }) => {

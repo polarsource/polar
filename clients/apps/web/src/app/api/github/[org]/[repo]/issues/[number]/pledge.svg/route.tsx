@@ -2,7 +2,7 @@ import IssueBadge from '@/components/Embed/IssueBadge'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { resolveIssuePath } from '@/utils/issue'
 import { getStorefront } from '@/utils/storefront'
-import { Client, components, unwrap } from '@polar-sh/client'
+import { Client, schemas, unwrap } from '@polar-sh/client'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
@@ -12,9 +12,9 @@ const cacheConfig = {
 }
 
 type Data = {
-  issue: components['schemas']['Issue']
-  organization: components['schemas']['Organization']
-  pledges: components['schemas']['PledgePledgesSummary']
+  issue: schemas['Issue']
+  organization: schemas['Organization']
+  pledges: schemas['PledgePledgesSummary']
   donationsEnabled: boolean
 }
 
@@ -72,7 +72,7 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
   const avatarUrlsSet = new Set(
     pledges
       .map(({ pledger }) => pledger)
-      .filter((p): p is components['schemas']['Pledger'] => !!p)
+      .filter((p): p is schemas['Pledger'] => !!p)
       .map((p) => p.avatar_url ?? '')
       .filter((s) => s.length > 0),
   )

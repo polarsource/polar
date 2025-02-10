@@ -3,7 +3,7 @@
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useCreateWebhookEndpoint } from '@/hooks/queries'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -17,11 +17,11 @@ export default function NewWebhookModal({
   organization,
   hide,
 }: {
-  organization: components['schemas']['Organization']
+  organization: schemas['Organization']
   hide: () => void
 }) {
   const router = useRouter()
-  const form = useForm<components['schemas']['WebhookEndpointCreate']>({
+  const form = useForm<schemas['WebhookEndpointCreate']>({
     defaultValues: {
       organization_id: organization.id,
     },
@@ -29,13 +29,12 @@ export default function NewWebhookModal({
 
   const { handleSubmit } = form
 
-  const [created, setCreated] =
-    useState<components['schemas']['WebhookEndpoint']>()
+  const [created, setCreated] = useState<schemas['WebhookEndpoint']>()
 
   const createWebhookEndpoint = useCreateWebhookEndpoint()
 
   const onSubmit = useCallback(
-    async (form: components['schemas']['WebhookEndpointCreate']) => {
+    async (form: schemas['WebhookEndpointCreate']) => {
       const { data, error } = await createWebhookEndpoint.mutateAsync(form)
       if (error) {
         toast({

@@ -1,11 +1,11 @@
-import { Client, components, unwrap } from '@polar-sh/client'
+import { Client, schemas, unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
 const _getOrganizationOrNotFound = async (
   api: Client,
   slug: string,
-): Promise<components['schemas']['Organization']> => {
+): Promise<schemas['Organization']> => {
   return unwrap(
     api.GET('/v1/customer-portal/organizations/{slug}', {
       params: {

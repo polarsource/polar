@@ -4,7 +4,7 @@ import SandboxBanner from '@/components/Sandbox/SandboxBanner'
 import { UserContextProvider } from '@/providers/auth'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { GeistSans } from 'geist/font/sans'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { Metadata } from 'next/types'
@@ -43,9 +43,8 @@ export default async function RootLayout({
 }) {
   const api = getServerSideAPI()
 
-  let authenticatedUser: components['schemas']['UserRead'] | undefined =
-    undefined
-  let userOrganizations: components['schemas']['Organization'][] = []
+  let authenticatedUser: schemas['UserRead'] | undefined = undefined
+  let userOrganizations: schemas['Organization'][] = []
 
   try {
     authenticatedUser = await getAuthenticatedUser()

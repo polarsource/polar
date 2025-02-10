@@ -3,7 +3,7 @@
 import AccountAssociations from '@/components/Accounts/AccountAssociations'
 import { ACCOUNT_TYPE_DISPLAY_NAMES } from '@/utils/account'
 import { api } from '@/utils/client'
-import { components, unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Select,
@@ -17,10 +17,10 @@ import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { useForm } from 'react-hook-form'
 
 interface AccoutSetupProps {
-  organization: components['schemas']['Organization'] | undefined
-  accounts: components['schemas']['Account'][]
-  organizationAccount: components['schemas']['Account'] | undefined
-  personalAccount?: components['schemas']['Account']
+  organization: schemas['Organization'] | undefined
+  accounts: schemas['Account'][]
+  organizationAccount: schemas['Account'] | undefined
+  personalAccount?: schemas['Account']
   loading: boolean
   onLinkAccount: (accountId: string) => void
   onAccountSetup: () => void
@@ -46,7 +46,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
   const linkAccountForm = useForm<{ account_id: string }>()
   const { control, handleSubmit } = linkAccountForm
 
-  const goToOnboarding = async (account: components['schemas']['Account']) => {
+  const goToOnboarding = async (account: schemas['Account']) => {
     const link = await unwrap(
       api.POST('/v1/accounts/{id}/onboarding_link', {
         params: {
@@ -62,7 +62,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
     window.location.href = link.url
   }
 
-  const goToDashboard = async (account: components['schemas']['Account']) => {
+  const goToDashboard = async (account: schemas['Account']) => {
     const link = await unwrap(
       api.POST('/v1/accounts/{id}/dashboard_link', {
         params: {

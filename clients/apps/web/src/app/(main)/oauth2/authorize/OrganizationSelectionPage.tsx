@@ -1,7 +1,7 @@
 import LogoType from '@/components/Brand/LogoType'
 import { getServerURL } from '@/utils/api'
 import { AddOutlined } from '@mui/icons-material'
-import { components } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
@@ -10,14 +10,14 @@ const OrganizationSelectionPage = ({
   authorizeResponse: { client, organizations },
   searchParams,
 }: {
-  authorizeResponse: components['schemas']['AuthorizeResponseOrganization']
+  authorizeResponse: schemas['AuthorizeResponseOrganization']
   searchParams: Record<string, string>
 }) => {
   const serializedSearchParams = new URLSearchParams(searchParams).toString()
   const actionURL = `${getServerURL()}/v1/oauth2/consent?${serializedSearchParams}`
 
   const buildOrganizationSelectionURL = (
-    organization: components['schemas']['AuthorizeOrganization'],
+    organization: schemas['AuthorizeOrganization'],
   ) => {
     const updatedSearchParams = {
       ...searchParams,

@@ -3,7 +3,7 @@
 import { Modal, ModalProps } from '@/components/Modal'
 import { useCustomerCancelSubscription } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { components, isValidationError } from '@polar-sh/client'
+import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import {
@@ -26,7 +26,7 @@ const CancellationReasonRadio = ({
   value,
   label,
 }: {
-  value: components['schemas']['CustomerCancellationReason']
+  value: schemas['CustomerCancellationReason']
   label: string
 }) => {
   return (
@@ -41,7 +41,7 @@ const CancellationReasonRadio = ({
 
 interface CustomerCancellationModalProps
   extends Omit<ModalProps, 'modalContent'> {
-  subscription: components['schemas']['CustomerSubscription']
+  subscription: schemas['CustomerSubscription']
   cancelSubscription: ReturnType<typeof useCustomerCancelSubscription>
   onAbort?: () => void
 }
@@ -57,7 +57,7 @@ const CustomerCancellationModal = ({
     props.hide()
   }, [onAbort, props])
 
-  const form = useForm<components['schemas']['CustomerSubscriptionCancel']>({
+  const form = useForm<schemas['CustomerSubscriptionCancel']>({
     defaultValues: {
       cancel_at_period_end: true,
       cancellation_reason: undefined,
@@ -67,9 +67,7 @@ const CustomerCancellationModal = ({
   const { control, handleSubmit, setError, setValue } = form
 
   const handleCancellation = useCallback(
-    async (
-      cancellation: components['schemas']['CustomerSubscriptionCancel'],
-    ) => {
+    async (cancellation: schemas['CustomerSubscriptionCancel']) => {
       const { error } = await cancelSubscription.mutateAsync({
         id: subscription.id,
         body: cancellation,
@@ -91,9 +89,7 @@ const CustomerCancellationModal = ({
     [subscription.id, cancelSubscription, setError, props],
   )
 
-  const onReasonSelect = (
-    value: components['schemas']['CustomerCancellationReason'],
-  ) => {
+  const onReasonSelect = (value: schemas['CustomerCancellationReason']) => {
     setValue('cancellation_reason', value ?? '')
   }
 

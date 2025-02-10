@@ -63,9 +63,9 @@ export const CustomerContextView = ({ customer }: CustomerContextViewProps) => {
   const metrics = useMetrics({
     startDate: new Date(customer.created_at),
     endDate: new Date(),
-    organizationId: organization.id,
+    organization_id: organization.id,
     interval: 'month',
-    customerId: [customer.id],
+    customer_id: [customer.id],
   })
 
   return (

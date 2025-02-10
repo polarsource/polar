@@ -25,7 +25,7 @@ export const SubscribersWidget = ({ className }: SubscribersWidgetProps) => {
   startDate.setFullYear(startDate.getFullYear() - 1)
 
   const subscriberMetrics = useMetrics({
-    organizationId: org.id,
+    organization_id: org.id,
     interval: 'month',
     startDate,
     endDate: new Date(),

@@ -25,7 +25,7 @@ export const ActivityWidget = ({ className }: ActivityWidgetProps) => {
   startDate.setFullYear(startDate.getFullYear() - 1)
 
   const orderMetrics = useMetrics({
-    organizationId: org.id,
+    organization_id: org.id,
     interval: 'day',
     startDate: getNearestMonday(startDate),
     endDate: new Date(),

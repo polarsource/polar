@@ -186,11 +186,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
   }, [selectedOrder, router, organization])
 
   const { data: metricsData } = useMetrics({
-    organizationId: organization.id,
+    organization_id: organization.id,
     startDate: new Date(organization.created_at),
     endDate: new Date(),
     interval: dateToInterval(new Date(organization.created_at)),
-    productId,
+    product_id: productId,
   })
 
   return (

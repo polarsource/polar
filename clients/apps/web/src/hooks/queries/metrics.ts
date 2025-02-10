@@ -8,9 +8,9 @@ interface GetMetricsRequest {
   startDate: Date
   endDate: Date
   interval: components['schemas']['TimeInterval']
-  organizationId?: string
-  productId?: string[]
-  customerId?: string[]
+  organization_id?: string
+  product_id?: string[]
+  customer_id?: string[]
 }
 
 export type ParsedMetricPeriod = components['schemas']['MetricPeriod'] & {

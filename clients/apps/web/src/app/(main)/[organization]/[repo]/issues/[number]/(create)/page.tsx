@@ -109,6 +109,7 @@ export default async function Page({
       api.GET('/v1/issues/{id}/body', {
         params: { path: { id: issue.id } },
         next: { revalidate: 60 },
+        parseAs: 'text',
       }),
     ), // Cache for 60s
     unwrap(

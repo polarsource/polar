@@ -43,7 +43,7 @@ const ClientPage = ({
         issue_number: issue.number,
       })
     }
-  }, [issue, organization])
+  }, [issue, organization, posthog])
 
   return (
     <>

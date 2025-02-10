@@ -65,7 +65,7 @@ export const CustomerPortal = ({
     if (selectedItemId === '' && firstItemId) {
       setSelectedItemId(firstItemId)
     }
-  }, [selectedItemId, subscriptions, orders])
+  }, [selectedItemId, subscriptions, orders, setSelectedItemId])
 
   return (
     <div className="flex h-screen w-screen flex-row">

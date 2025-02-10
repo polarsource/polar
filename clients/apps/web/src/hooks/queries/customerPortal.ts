@@ -205,3 +205,21 @@ export const useCustomerCancelSubscription = (api: Client) =>
       })
     },
   })
+
+export const useCustomerUncancelSubscription = (api: PolarAPI) =>
+  useMutation({
+    mutationFn: (variables: { id: string }) =>
+      api.customerPortalSubscriptions.update({
+        id: variables.id,
+        body: {
+          cancel_at_period_end: false,
+          cancellation_reason: null,
+          cancellation_comment: null,
+        },
+      }),
+    onSuccess: (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscriptions'],
+      })
+    },
+  })

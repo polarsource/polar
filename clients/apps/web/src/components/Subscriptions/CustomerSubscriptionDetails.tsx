@@ -1,13 +1,17 @@
 'use client'
 
+import revalidate from '@/app/actions'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
-import { useCustomerCancelSubscription } from '@/hooks/queries'
+import {
+  useCustomerCancelSubscription,
+  useCustomerUncancelSubscription,
+} from '@/hooks/queries'
 import { Client, schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import ChangePlanModal from './ChangePlanModal'
 import CustomerCancellationModal from './CustomerCancellationModal'
@@ -31,6 +35,40 @@ const CustomerSubscriptionDetails = ({
   const [showCancelModal, setShowCancelModal] = useState(false)
 
   const organization = subscription.product.organization
+
+  const uncancelSubscription = useCustomerUncancelSubscription(api)
+
+  const primaryAction = useMemo(() => {
+    if (
+      organization.subscription_settings.allow_customer_updates &&
+      !isCanceled
+    ) {
+      return {
+        label: 'Change Plan',
+        onClick: () => {
+          setShowChangePlanModal(true)
+        },
+      }
+    }
+
+    if (
+      isCanceled &&
+      subscription.cancel_at_period_end &&
+      subscription.current_period_end &&
+      new Date(subscription.current_period_end) > new Date()
+    ) {
+      return {
+        label: 'Uncancel',
+        loading: uncancelSubscription.isPending,
+        onClick: async () => {
+          await uncancelSubscription.mutateAsync({ id: subscription.id })
+          await revalidate(`customer_portal`)
+        },
+      }
+    }
+
+    return null
+  }, [subscription, isCanceled, organization, uncancelSubscription])
 
   if (!organization) {
     return null
@@ -118,16 +156,16 @@ const CustomerSubscriptionDetails = ({
       </div>
 
       <div className="flex flex-col gap-2">
-        {organization.subscription_settings.allow_customer_updates &&
-          !isCanceled && (
-            <Button
-              size="lg"
-              fullWidth
-              onClick={() => setShowChangePlanModal(true)}
-            >
-              Change Plan
-            </Button>
-          )}
+        {primaryAction && (
+          <Button
+            size="lg"
+            fullWidth
+            onClick={primaryAction.onClick}
+            loading={primaryAction.loading}
+          >
+            {primaryAction.label}
+          </Button>
+        )}
         {!isCanceled && (
           <Button
             size="lg"

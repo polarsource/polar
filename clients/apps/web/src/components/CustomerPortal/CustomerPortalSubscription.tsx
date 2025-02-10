@@ -1,5 +1,6 @@
 'use client'
 
+import revalidate from '@/app/actions'
 import { BenefitGrant } from '@/components/Benefit/BenefitGrant'
 import {
   useCustomerBenefitGrants,
@@ -13,17 +14,16 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import CustomerSubscriptionDetails from '../Subscriptions/CustomerSubscriptionDetails'
 
 const CustomerPortalSubscription = ({
   api,
-  subscription: _subscription,
+  subscription,
 }: {
   api: Client
   subscription: schemas['CustomerSubscription']
 }) => {
-  const [subscription, setSubscription] = useState(_subscription)
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     subscription_id: subscription.id,
     limit: 100,
@@ -35,6 +35,13 @@ const CustomerPortalSubscription = ({
     limit: 100,
     sorting: ['-created_at'],
   })
+
+  const onSubscriptionUpdate = useCallback(
+    async (subscription: CustomerSubscription) => {
+      await revalidate(`customer_portal`)
+    },
+    [],
+  )
 
   const orderInvoiceMutation = useCustomerOrderInvoice(api)
   const openInvoice = useCallback(
@@ -61,7 +68,7 @@ const CustomerPortalSubscription = ({
           <CustomerSubscriptionDetails
             api={api}
             subscription={subscription}
-            onUserSubscriptionUpdate={setSubscription}
+            onUserSubscriptionUpdate={onSubscriptionUpdate}
             cancelSubscription={cancelSubscription}
             isCanceled={isCanceled}
           />

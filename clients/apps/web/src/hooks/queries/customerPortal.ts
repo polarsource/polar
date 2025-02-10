@@ -206,11 +206,11 @@ export const useCustomerCancelSubscription = (api: Client) =>
     },
   })
 
-export const useCustomerUncancelSubscription = (api: PolarAPI) =>
+export const useCustomerUncancelSubscription = (api: Client) =>
   useMutation({
     mutationFn: (variables: { id: string }) =>
-      api.customerPortalSubscriptions.update({
-        id: variables.id,
+      api.PATCH('/v1/customer-portal/subscriptions/{id}', {
+        params: { path: { id: variables.id } },
         body: {
           cancel_at_period_end: false,
           cancellation_reason: null,

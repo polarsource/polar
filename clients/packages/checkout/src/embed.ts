@@ -267,7 +267,17 @@ class EmbedCheckout {
 
   private static async checkoutElementClickHandler(e: Event) {
     e.preventDefault()
-    const checkoutElement = e.target as HTMLElement
+    let checkoutElement = e.target as HTMLElement
+
+    // Find the closest parent element with the `data-polar-checkout` attribute,
+    // in case the checkout element has children triggering the event.
+    while (!checkoutElement.hasAttribute('data-polar-checkout')) {
+      if (!checkoutElement.parentElement) {
+        return
+      }
+      checkoutElement = checkoutElement.parentElement
+    }
+
     const url =
       checkoutElement.getAttribute('href') ||
       (checkoutElement.getAttribute('data-polar-checkout') as string)

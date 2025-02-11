@@ -25,12 +25,13 @@ const Login = ({
   const searchParams = useSearchParams()
 
   let eventName: EventName = 'global:user:login:view'
+
+  if (!returnTo) {
+    returnTo = `/dashboard`
+  }
+
   if (signup) {
     eventName = 'global:user:signup:view'
-
-    if (!returnTo) {
-      returnTo = `/dashboard/create`
-    }
 
     signup.path = pathname
 

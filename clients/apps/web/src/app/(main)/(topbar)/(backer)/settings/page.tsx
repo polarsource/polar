@@ -6,8 +6,10 @@ import GeneralSettings from '@/components/Settings/GeneralSettings'
 import OAuthSettings from '@/components/Settings/OAuth/OAuthSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
+import { useListOrganizations } from '@/hooks/queries'
 
 export default function Page() {
+  const { data: organizations } = useListOrganizations({})
   return (
     <div className="relative z-0">
       <div className="mb-24 flex flex-col gap-y-16">
@@ -38,13 +40,15 @@ export default function Page() {
           <h2 className="text-2xl">Developer Settings</h2>
 
           <div className="flex flex-col gap-y-4">
-            <Section id="pat">
-              <SectionDescription
-                title="Personal Access Tokens"
-                description="Manage access tokens which can be used to authenticate you with the Polar API."
-              />
-              <AccessTokensSettings />
-            </Section>
+            {organizations && organizations.items.length > 0 && (
+              <Section id="pat">
+                <SectionDescription
+                  title="Personal Access Tokens"
+                  description="Manage access tokens which can be used to authenticate you with the Polar API."
+                />
+                <AccessTokensSettings />
+              </Section>
+            )}
 
             <Section id="oauth">
               <SectionDescription

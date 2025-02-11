@@ -34,6 +34,7 @@ interface ClientPageProps {
   subscriptionStatus?:
     | Extract<schemas['SubscriptionStatus'], 'active' | 'canceled'>
     | 'any'
+  metadata?: string[]
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({
@@ -42,6 +43,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   sorting,
   productId,
   subscriptionStatus,
+  metadata,
 }) => {
   const [selectedSubscriptionState, setSelectedSubscriptionState] =
     useState<RowSelectionState>({})
@@ -62,6 +64,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
     }
 
     params.append('status', status)
+
+    if (metadata) {
+      metadata.forEach((key) => params.append('metadata', key))
+    }
+
     return params
   }
 
@@ -233,6 +240,18 @@ const ClientPage: React.FC<ClientPageProps> = ({
         )
       },
     },
+    ...(metadata
+      ? metadata.map<DataTableColumnDef<schemas['Subscription']>>((key) => ({
+          accessorKey: `metadata.${key}`,
+          enableSorting: false,
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title={key} />
+          ),
+          cell: (props) => (
+            <span className="font-mono">{props.getValue() as string}</span>
+          ),
+        }))
+      : []),
   ]
 
   const onExport = () => {

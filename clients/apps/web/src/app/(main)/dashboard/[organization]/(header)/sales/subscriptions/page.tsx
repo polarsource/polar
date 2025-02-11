@@ -18,6 +18,7 @@ export default async function Page({
   searchParams: DataTableSearchParams & {
     product_id?: string
     status?: 'active' | 'canceled' | 'any'
+    metadata?: string[]
   }
 }) {
   const api = getServerSideAPI()
@@ -32,6 +33,12 @@ export default async function Page({
     50,
   )
 
+  const metadata = searchParams.metadata
+    ? Array.isArray(searchParams.metadata)
+      ? searchParams.metadata
+      : [searchParams.metadata]
+    : undefined
+
   return (
     <ClientPage
       organization={organization}
@@ -39,6 +46,7 @@ export default async function Page({
       sorting={sorting}
       productId={searchParams.product_id}
       subscriptionStatus={searchParams.status ?? 'active'}
+      metadata={metadata}
     />
   )
 }

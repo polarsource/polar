@@ -19,6 +19,11 @@ export function Toaster() {
   const router = useRouter()
 
   useEffect(() => {
+    const isToastRedirection = searchParams.get('toast')
+    if (isToastRedirection !== 'true') {
+      return
+    }
+
     const status = searchParams.get('status')
     const status_description = searchParams.get('status_description')
     const error = searchParams.get('error')
@@ -37,6 +42,7 @@ export function Toaster() {
       // intact.
       const newSearchParams = new URLSearchParams(searchParams.toString())
       const paramsToRemove = [
+        'toast',
         'error',
         'status',
         'status_description',

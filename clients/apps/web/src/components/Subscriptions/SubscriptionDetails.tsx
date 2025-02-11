@@ -1,10 +1,8 @@
 'use client'
 
-import { useCustomFields } from '@/hooks/queries/customFields'
 import { schemas } from '@polar-sh/client'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
-import CustomFieldValue from '../CustomFields/CustomFieldValue'
 import AmountLabel from '../Shared/AmountLabel'
 import { SubscriptionStatus } from './SubscriptionStatus'
 
@@ -29,16 +27,10 @@ const getHumanCancellationReason = (key: string | null) => {
 }
 
 interface SubscriptionDetailsProps {
-  organization: schemas['Organization']
   subscription: schemas['Subscription']
 }
 
-const SubscriptionDetails = ({
-  organization,
-  subscription,
-}: SubscriptionDetailsProps) => {
-  const { data: customFields } = useCustomFields(organization.id)
-
+const SubscriptionDetails = ({ subscription }: SubscriptionDetailsProps) => {
   const cancellationReason = subscription.customer_cancellation_reason
   const cancellationComment = subscription.customer_cancellation_comment
 
@@ -121,30 +113,7 @@ const SubscriptionDetails = ({
           </div>
         )}
       </div>
-      {(customFields?.items?.length ?? 0) > 0 && (
-        <div className="flex flex-col gap-4">
-          <h3 className="text-lg">Custom Fields</h3>
-          <div className="flex flex-col gap-2">
-            {customFields?.items?.map((field) => (
-              <div key={field.slug} className="flex flex-col gap-y-2">
-                <span>{field.name}</span>
-                <div className="font-mono text-sm">
-                  <CustomFieldValue
-                    field={field}
-                    value={
-                      subscription.custom_field_data
-                        ? subscription.custom_field_data[
-                            field.slug as keyof typeof subscription.custom_field_data
-                          ]
-                        : undefined
-                    }
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
       {cancellationDate && (
         <div className="flex flex-col gap-y-4">
           <h3 className="text-lg">Cancellation Details</h3>

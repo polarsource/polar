@@ -19,6 +19,7 @@ export default async function Page({
   searchParams: DataTableSearchParams & {
     product_id?: string[] | string
     product_price_type?: schemas['ProductPriceType']
+    metadata?: string[]
   }
 }) {
   const api = getServerSideAPI()
@@ -39,12 +40,19 @@ export default async function Page({
       : [searchParams.product_id]
     : undefined
 
+  const metadata = searchParams.metadata
+    ? Array.isArray(searchParams.metadata)
+      ? searchParams.metadata
+      : [searchParams.metadata]
+    : undefined
+
   return (
     <ClientPage
       organization={organization}
       pagination={pagination}
       sorting={sorting}
       productId={productId}
+      metadata={metadata}
     />
   )
 }

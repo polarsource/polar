@@ -30,6 +30,7 @@ interface ClientPageProps {
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
   productId?: string[]
+  metadata?: string[]
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({
@@ -37,6 +38,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   pagination,
   sorting,
   productId,
+  metadata,
 }) => {
   const [selectedOrderState, setSelectedOrderState] =
     useState<RowSelectionState>({})
@@ -50,6 +52,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
     if (productId) {
       productId.forEach((id) => params.append('product_id', id))
+    }
+
+    if (metadata) {
+      metadata.forEach((key) => params.append('metadata', key))
     }
 
     return params
@@ -174,6 +180,18 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <FormattedDateTime datetime={props.getValue() as string} />
       ),
     },
+    ...(metadata
+      ? metadata.map<DataTableColumnDef<schemas['Order']>>((key) => ({
+          accessorKey: `metadata.${key}`,
+          enableSorting: false,
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title={key} />
+          ),
+          cell: (props) => (
+            <span className="font-mono">{props.getValue() as string}</span>
+          ),
+        }))
+      : []),
   ]
 
   const selectedOrder = orders.find((order) => selectedOrderState[order.id])

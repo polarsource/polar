@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.1.9
+
+### Patch Changes
+
+- de906a0: Handle case where the checkout element might have nested elements triggering the click event
+
 ## 0.1.8
 
 ### Patch Changes

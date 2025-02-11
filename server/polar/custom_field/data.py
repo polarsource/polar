@@ -74,9 +74,13 @@ def validate_custom_field_data(
     data: dict[str, Any],
     *,
     error_loc_prefix: Sequence[str] = ("body", "custom_field_data"),
+    validate_required: bool = True,
 ) -> dict[str, Any]:
     schema = build_custom_field_data_schema(
-        [(f.custom_field, f.required) for f in attached_custom_fields]
+        [
+            (f.custom_field, validate_required and f.required)
+            for f in attached_custom_fields
+        ]
     )
     try:
         return schema.model_validate(data).model_dump(mode="json")

@@ -753,10 +753,7 @@ class TestCreate:
 
     @pytest.mark.parametrize(
         "custom_field_data",
-        (
-            pytest.param({"text": "abc"}, id="missing select"),
-            pytest.param({"text": "abc", "select": "c"}, id="invalid select"),
-        ),
+        (pytest.param({"text": "abc", "select": "c"}, id="invalid select"),),
     )
     async def test_invalid_custom_field_data(
         self,
@@ -802,6 +799,26 @@ class TestCreate:
         )
 
         assert checkout.custom_field_data == {"text": "abc", "select": "a"}
+
+    async def test_valid_missing_required_custom_field(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_custom_fields: Product,
+    ) -> None:
+        price = product_custom_fields.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutPriceCreate(
+                product_price_id=price.id, custom_field_data={"text": "abc"}
+            ),
+            auth_subject,
+        )
+
+        assert checkout.custom_field_data == {"text": "abc", "select": None}
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1792,10 +1809,7 @@ class TestUpdate:
 
     @pytest.mark.parametrize(
         "custom_field_data",
-        (
-            pytest.param({"text": "abc"}, id="missing select"),
-            pytest.param({"text": "abc", "select": "c"}, id="invalid select"),
-        ),
+        (pytest.param({"text": "abc", "select": "c"}, id="invalid select"),),
     )
     async def test_invalid_custom_field_data(
         self,
@@ -1828,6 +1842,20 @@ class TestUpdate:
         )
 
         assert checkout.custom_field_data == {"text": "abc", "select": "a"}
+
+    async def test_valid_missing_required_custom_field(
+        self, session: AsyncSession, locker: Locker, checkout_custom_fields: Checkout
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout_custom_fields,
+            CheckoutUpdate(
+                custom_field_data={"text": "abc"},
+            ),
+        )
+
+        assert checkout.custom_field_data == {"text": "abc", "select": None}
 
     async def test_valid_embed_origin(
         self,
@@ -2079,6 +2107,30 @@ class TestConfirm:
                         "customer_name": "Customer Name",
                         "customer_email": "customer@example.com",
                         "customer_billing_address": {"country": "FR"},
+                    }
+                ),
+            )
+
+    async def test_missing_required_custom_field(
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_custom_fields: Checkout,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.confirm(
+                session,
+                locker,
+                auth_subject,
+                checkout_custom_fields,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        "customer_billing_address": {"country": "FR"},
+                        "custom_field_data": {"text": "abc"},
                     }
                 ),
             )

@@ -209,21 +209,31 @@ const ClientPage: React.FC<ClientPageProps> = ({
             <h3 className="text-lg">Custom Fields</h3>
             <div className="flex flex-col gap-2">
               {customFields?.items?.map((field) => (
-                <div key={field.slug} className="flex flex-col gap-y-2">
-                  <span>{field.name}</span>
-                  <div className="font-mono text-sm">
-                    <CustomFieldValue
-                      field={field}
-                      value={
-                        order.custom_field_data
-                          ? order.custom_field_data[
-                              field.slug as keyof typeof order.custom_field_data
-                            ]
-                          : undefined
-                      }
-                    />
-                  </div>
-                </div>
+                <DetailRow key={field.id} title={field.name}>
+                  <CustomFieldValue
+                    field={field}
+                    value={
+                      order.custom_field_data
+                        ? order.custom_field_data[
+                            field.slug as keyof typeof order.custom_field_data
+                          ]
+                        : undefined
+                    }
+                  />
+                </DetailRow>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {Object.keys(order.metadata).length > 0 && (
+          <div className="flex flex-col gap-6 p-8">
+            <h3 className="text-lg">Metadata</h3>
+            <div className="flex flex-col gap-2">
+              {Object.entries(order.metadata).map(([key, value]) => (
+                <DetailRow key={key} title={key}>
+                  <span className="font-mono">{value}</span>
+                </DetailRow>
               ))}
             </div>
           </div>

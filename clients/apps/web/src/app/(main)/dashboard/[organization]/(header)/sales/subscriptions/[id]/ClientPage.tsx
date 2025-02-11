@@ -1,6 +1,7 @@
 'use client'
 
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
+import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
@@ -8,7 +9,7 @@ import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
 import CancelSubscriptionModal from '@/components/Subscriptions/CancelSubscriptionModal'
 import SubscriptionDetails from '@/components/Subscriptions/SubscriptionDetails'
 import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscriptionModal'
-import { useProduct, useSubscription } from '@/hooks/queries'
+import { useCustomFields, useProduct, useSubscription } from '@/hooks/queries'
 import { markdownOptionsJustText } from '@/utils/markdown'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -16,7 +17,7 @@ import Pill from '@polar-sh/ui/components/atoms/Pill'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
-import React from 'react'
+import React, { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ProductItemProps {
@@ -62,6 +63,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     _subscription.id,
     _subscription,
   )
+  const { data: customFields } = useCustomFields(organization.id)
   const { data: product } = useProduct(_subscription.product.id)
   const {
     hide: hideCancellationModal,
@@ -123,12 +125,45 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <div className="flex flex-col gap-6 p-8">
           <h2 className="text-xl">Subscription Details</h2>
           <div className="flex flex-col gap-6">
-            <SubscriptionDetails
-              organization={organization}
-              subscription={subscription}
-            />
+            <SubscriptionDetails subscription={subscription} />
           </div>
         </div>
+
+        {(customFields?.items?.length ?? 0) > 0 && (
+          <div className="flex flex-col gap-6 p-8">
+            <h3 className="text-lg">Custom Fields</h3>
+            <div className="flex flex-col gap-2">
+              {customFields?.items?.map((field) => (
+                <DetailRow key={field.id} title={field.name}>
+                  <CustomFieldValue
+                    field={field}
+                    value={
+                      subscription.custom_field_data
+                        ? subscription.custom_field_data[
+                            field.slug as keyof typeof subscription.custom_field_data
+                          ]
+                        : undefined
+                    }
+                  />
+                </DetailRow>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {Object.keys(subscription.metadata).length > 0 && (
+          <div className="flex flex-col gap-6 p-8">
+            <h3 className="text-lg">Metadata</h3>
+            <div className="flex flex-col gap-2">
+              {Object.entries(subscription.metadata).map(([key, value]) => (
+                <DetailRow key={key} title={key}>
+                  <span className="font-mono">{value}</span>
+                </DetailRow>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-row gap-4 p-8">
           <Button type="button" onClick={showUpdateModal}>
             Update Subscription
@@ -166,6 +201,18 @@ const ClientPage: React.FC<ClientPageProps> = ({
         </div>
       </ShadowBox>
     </DashboardBody>
+  )
+}
+
+const DetailRow = ({
+  title,
+  children,
+}: PropsWithChildren<{ title: string }>) => {
+  return (
+    <div className="flex flex-row justify-between gap-8">
+      <span className="dark:text-polar-500 text-gray-500">{title}</span>
+      {children}
+    </div>
   )
 }
 

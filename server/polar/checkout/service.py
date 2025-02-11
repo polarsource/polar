@@ -370,7 +370,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             currency = None
 
         custom_field_data = validate_custom_field_data(
-            product.attached_custom_fields, checkout_create.custom_field_data
+            product.attached_custom_fields,
+            checkout_create.custom_field_data,
+            validate_required=False,
         )
 
         checkout = Checkout(
@@ -1413,7 +1415,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         self,
         session: AsyncSession,
         checkout: Checkout,
-        checkout_update: CheckoutUpdate | CheckoutUpdatePublic,
+        checkout_update: CheckoutUpdate | CheckoutUpdatePublic | CheckoutConfirm,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
         if checkout.status != CheckoutStatus.open:
@@ -1582,6 +1584,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             custom_field_data = validate_custom_field_data(
                 checkout.product.attached_custom_fields,
                 checkout_update.custom_field_data,
+                validate_required=isinstance(checkout_update, CheckoutConfirm),
             )
             checkout.custom_field_data = custom_field_data
 

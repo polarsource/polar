@@ -1,18 +1,29 @@
+import { isLegacyRecurringPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import AmountLabel from '../Shared/AmountLabel'
 
 interface ProductPriceLabelProps {
+  product:
+    | schemas['Product']
+    | schemas['TransactionProduct']
+    | schemas['ProductStorefront']
+    | schemas['CheckoutProduct']
   price: schemas['ProductPrice']
 }
 
-const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ price }) => {
+const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
+  product,
+  price,
+}) => {
   if (price.amount_type === 'fixed') {
     return (
       <AmountLabel
         amount={price.price_amount}
         currency={price.price_currency}
         interval={
-          price.type === 'recurring' ? price.recurring_interval : undefined
+          isLegacyRecurringPrice(price)
+            ? price.recurring_interval
+            : product.recurring_interval || undefined
         }
       />
     )

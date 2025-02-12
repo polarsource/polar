@@ -32,7 +32,7 @@ const ProductPriceListItem = ({
       size="small"
     >
       <h3 className="font-medium">{product.name}</h3>
-      <ProductPriceLabel price={price} />
+      <ProductPriceLabel product={product} price={price} />
     </ListItem>
   )
 }
@@ -60,16 +60,12 @@ const ChangePlanModal = ({
     [_products],
   )
 
-  const currentPrice = subscription.price as
-    | schemas['ProductPriceRecurringFixed']
-    | schemas['ProductPriceRecurringFree']
+  const currentPrice = subscription.price
   const [selectedProduct, setSelectedProduct] = useState<
     schemas['ProductStorefront'] | null
   >(null)
   const [selectedPrice, setSelectedPrice] = useState<
-    | schemas['ProductPriceRecurringFixed']
-    | schemas['ProductPriceRecurringFree']
-    | null
+    schemas['ProductPrice'] | null
   >(null)
 
   const addedBenefits = useMemo(() => {

@@ -37,9 +37,9 @@ export const ProductCard = ({ product, price }: ProductCardProps) => {
           <span className="dark:text-polar-500 flex flex-row items-center gap-x-2 text-base text-gray-500">
             <h3 className="leading-snug">
               {price ? (
-                <ProductPriceLabel price={price} />
+                <ProductPriceLabel product={product} price={price} />
               ) : (
-                <ProductPrices prices={product.prices} />
+                <ProductPrices product={product} />
               )}
             </h3>
             {product.benefits.length > 0 && (

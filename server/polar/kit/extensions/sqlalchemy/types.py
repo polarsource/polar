@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import TYPE_CHECKING, Any
 
 import sqlalchemy as sa
@@ -34,3 +34,21 @@ class IntEnum(EnumType):
 class StringEnum(EnumType):
     impl = sa.Unicode
     cache_ok = True
+
+
+class StrEnumType(TypeDecorator):
+    impl = sa.String
+
+    def __init__(self, enum_klass: type[StrEnum], **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.enum_klass = enum_klass
+
+    def process_bind_param(self, value: Any, dialect: Dialect) -> Any:
+        if isinstance(value, self.enum_klass):
+            return str(value)
+        return value
+
+    def process_result_value(self, value: Any, dialect: Dialect) -> Any:
+        if value is not None:
+            return self.enum_klass(value)
+        return value

@@ -21,6 +21,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy import StrEnumType
 from polar.kit.metadata import MetadataMixin
 from polar.models.product_price import ProductPriceType
 
@@ -52,7 +53,10 @@ class Product(MetadataMixin, RecordModel):
     )
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     recurring_interval: Mapped[SubscriptionRecurringInterval | None] = mapped_column(
-        String, nullable=True, index=True, default=None
+        StrEnumType(SubscriptionRecurringInterval),
+        nullable=True,
+        index=True,
+        default=None,
     )
 
     stripe_product_id: Mapped[str | None] = mapped_column(

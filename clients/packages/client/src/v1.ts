@@ -5933,7 +5933,8 @@ export interface components {
                 [key: string]: string | number | boolean;
             };
             product: components["schemas"]["CheckoutProduct"];
-            product_price: components["schemas"]["ProductPrice"];
+            /** Product Price */
+            product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /** Discount */
             discount: (components["schemas"]["CheckoutDiscountFixedOnceForeverDuration"] | components["schemas"]["CheckoutDiscountFixedRepeatDuration"] | components["schemas"]["CheckoutDiscountPercentageOnceForeverDuration"] | components["schemas"]["CheckoutDiscountPercentageRepeatDuration"]) | null;
             /** Subscription Id */
@@ -5989,18 +5990,13 @@ export interface components {
          */
         CheckoutCreatePublic: {
             /**
-             * Product Price Id
+             * Product Id
              * Format: uuid4
-             * @description ID of the product price to checkout.
+             * @description ID of the product to checkout.
              */
-            product_price_id: string;
+            product_id: string;
             /** Customer Email */
             customer_email?: string | null;
-            /**
-             * From Legacy Checkout Link
-             * @default false
-             */
-            from_legacy_checkout_link: boolean;
             /**
              * Subscription Id
              * @description ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
@@ -6163,7 +6159,8 @@ export interface components {
              */
             discount_id: string | null;
             product: components["schemas"]["CheckoutLinkProduct"];
-            product_price: components["schemas"]["ProductPrice"] | null;
+            /** Product Price */
+            product_price: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"]) | null;
             /** Discount */
             discount: (components["schemas"]["DiscountFixedOnceForeverDurationBase"] | components["schemas"]["DiscountFixedRepeatDurationBase"] | components["schemas"]["DiscountPercentageOnceForeverDurationBase"] | components["schemas"]["DiscountPercentageRepeatDurationBase"]) | null;
             /** Url */
@@ -6254,9 +6251,11 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
-             * @description Whether the product is a subscription tier.
+             * @description Whether the product is a subscription.
              */
             is_recurring: boolean;
             /**
@@ -6274,7 +6273,7 @@ export interface components {
              * Prices
              * @description List of prices for this product.
              */
-            prices: components["schemas"]["ProductPrice"][];
+            prices: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"])[];
             /**
              * BenefitPublic
              * @description List of benefits granted by the product.
@@ -6500,9 +6499,11 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
-             * @description Whether the product is a subscription tier.
+             * @description Whether the product is a subscription.
              */
             is_recurring: boolean;
             /**
@@ -6520,7 +6521,7 @@ export interface components {
              * Prices
              * @description List of prices for this product.
              */
-            prices: components["schemas"]["ProductPrice"][];
+            prices: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"])[];
             /**
              * BenefitPublic
              * @description List of benefits granted by the product.
@@ -6778,7 +6779,8 @@ export interface components {
                 [key: string]: string;
             };
             product: components["schemas"]["CheckoutProduct"];
-            product_price: components["schemas"]["ProductPrice"];
+            /** Product Price */
+            product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /** Discount */
             discount: (components["schemas"]["CheckoutDiscountFixedOnceForeverDuration"] | components["schemas"]["CheckoutDiscountFixedRepeatDuration"] | components["schemas"]["CheckoutDiscountPercentageOnceForeverDuration"] | components["schemas"]["CheckoutDiscountPercentageRepeatDuration"]) | null;
             organization: components["schemas"]["Organization"];
@@ -6941,7 +6943,8 @@ export interface components {
                 [key: string]: string;
             };
             product: components["schemas"]["CheckoutProduct"];
-            product_price: components["schemas"]["ProductPrice"];
+            /** Product Price */
+            product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /** Discount */
             discount: (components["schemas"]["CheckoutDiscountFixedOnceForeverDuration"] | components["schemas"]["CheckoutDiscountFixedRepeatDuration"] | components["schemas"]["CheckoutDiscountPercentageOnceForeverDuration"] | components["schemas"]["CheckoutDiscountPercentageRepeatDuration"]) | null;
             organization: components["schemas"]["Organization"];
@@ -8246,7 +8249,8 @@ export interface components {
              */
             user_id: string;
             product: components["schemas"]["CustomerOrderProduct"];
-            product_price: components["schemas"]["ProductPrice"];
+            /** Product Price */
+            product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             subscription: components["schemas"]["CustomerOrderSubscription"] | null;
         };
         /**
@@ -8289,9 +8293,11 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
-             * @description Whether the product is a subscription tier.
+             * @description Whether the product is a subscription.
              */
             is_recurring: boolean;
             /**
@@ -8309,7 +8315,7 @@ export interface components {
              * Prices
              * @description List of prices for this product.
              */
-            prices: components["schemas"]["ProductPrice"][];
+            prices: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"])[];
             /**
              * BenefitPublic
              * @description List of benefits granted by the product.
@@ -8476,9 +8482,11 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
-             * @description Whether the product is a subscription tier.
+             * @description Whether the product is a subscription.
              */
             is_recurring: boolean;
             /**
@@ -8496,7 +8504,7 @@ export interface components {
              * Prices
              * @description List of available prices for this product.
              */
-            prices: components["schemas"]["ProductPrice"][];
+            prices: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"])[];
             /**
              * BenefitPublic
              * @description The benefits granted by the product.
@@ -8657,7 +8665,8 @@ export interface components {
              */
             user_id: string;
             product: components["schemas"]["CustomerSubscriptionProduct"];
-            price: components["schemas"]["ProductPrice"];
+            /** Price */
+            price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
         };
         /** CustomerSubscriptionCancel */
         CustomerSubscriptionCancel: {
@@ -8714,9 +8723,11 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
-             * @description Whether the product is a subscription tier.
+             * @description Whether the product is a subscription.
              */
             is_recurring: boolean;
             /**
@@ -8734,7 +8745,7 @@ export interface components {
              * Prices
              * @description List of prices for this product.
              */
-            prices: components["schemas"]["ProductPrice"][];
+            prices: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"])[];
             /**
              * BenefitPublic
              * @description List of benefits granted by the product.
@@ -8752,15 +8763,15 @@ export interface components {
          * @enum {string}
          */
         CustomerSubscriptionSortProperty: "started_at" | "-started_at" | "amount" | "-amount" | "status" | "-status" | "organization" | "-organization" | "product" | "-product";
-        CustomerSubscriptionUpdate: components["schemas"]["CustomerSubscriptionUpdatePrice"] | components["schemas"]["CustomerSubscriptionCancel"];
-        /** CustomerSubscriptionUpdatePrice */
-        CustomerSubscriptionUpdatePrice: {
+        CustomerSubscriptionUpdate: components["schemas"]["CustomerSubscriptionUpdateProduct"] | components["schemas"]["CustomerSubscriptionCancel"];
+        /** CustomerSubscriptionUpdateProduct */
+        CustomerSubscriptionUpdateProduct: {
             /**
-             * Product Price Id
+             * Product Id
              * Format: uuid4
-             * @description Update subscription to another price.
+             * @description Update subscription to another product.
              */
-            product_price_id: string;
+            product_id: string;
         };
         /** CustomerUpdate */
         CustomerUpdate: {
@@ -9675,9 +9686,11 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
-             * @description Whether the product is a subscription tier.
+             * @description Whether the product is a subscription.
              */
             is_recurring: boolean;
             /**
@@ -10370,6 +10383,199 @@ export interface components {
             name: string;
             /** Color */
             color: string;
+        };
+        LegacyRecurringProductPrice: components["schemas"]["LegacyRecurringProductPriceFixed"] | components["schemas"]["LegacyRecurringProductPriceCustom"] | components["schemas"]["LegacyRecurringProductPriceFree"];
+        /**
+         * LegacyRecurringProductPriceCustom
+         * @description A pay-what-you-want recurring price for a product, i.e. a subscription.
+         *
+         *     **Deprecated**: The recurring interval should be set on the product itself.
+         */
+        LegacyRecurringProductPriceCustom: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the price.
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            amount_type: "custom";
+            /**
+             * Is Archived
+             * @description Whether the price is archived and no longer available.
+             */
+            is_archived: boolean;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @description The ID of the product owning the price.
+             */
+            product_id: string;
+            /**
+             * Type
+             * @description The type of the price.
+             * @constant
+             */
+            type: "recurring";
+            /** @description The recurring interval of the price. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
+            /**
+             * Price Currency
+             * @description The currency.
+             */
+            price_currency: string;
+            /**
+             * Minimum Amount
+             * @description The minimum amount the customer can pay.
+             */
+            minimum_amount: number | null;
+            /**
+             * Maximum Amount
+             * @description The maximum amount the customer can pay.
+             */
+            maximum_amount: number | null;
+            /**
+             * Preset Amount
+             * @description The initial amount shown to the customer.
+             */
+            preset_amount: number | null;
+            /**
+             * Legacy
+             * @constant
+             */
+            readonly legacy: true;
+        };
+        /**
+         * LegacyRecurringProductPriceFixed
+         * @description A recurring price for a product, i.e. a subscription.
+         *
+         *     **Deprecated**: The recurring interval should be set on the product itself.
+         */
+        LegacyRecurringProductPriceFixed: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the price.
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            amount_type: "fixed";
+            /**
+             * Is Archived
+             * @description Whether the price is archived and no longer available.
+             */
+            is_archived: boolean;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @description The ID of the product owning the price.
+             */
+            product_id: string;
+            /**
+             * Type
+             * @description The type of the price.
+             * @constant
+             */
+            type: "recurring";
+            /** @description The recurring interval of the price. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
+            /**
+             * Price Currency
+             * @description The currency.
+             */
+            price_currency: string;
+            /**
+             * Price Amount
+             * @description The price in cents.
+             */
+            price_amount: number;
+            /**
+             * Legacy
+             * @constant
+             */
+            readonly legacy: true;
+        };
+        /**
+         * LegacyRecurringProductPriceFree
+         * @description A free recurring price for a product, i.e. a subscription.
+         *
+         *     **Deprecated**: The recurring interval should be set on the product itself.
+         */
+        LegacyRecurringProductPriceFree: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the price.
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            amount_type: "free";
+            /**
+             * Is Archived
+             * @description Whether the price is archived and no longer available.
+             */
+            is_archived: boolean;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @description The ID of the product owning the price.
+             */
+            product_id: string;
+            /**
+             * Type
+             * @description The type of the price.
+             * @constant
+             */
+            type: "recurring";
+            /** @description The recurring interval of the price. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
+            /**
+             * Legacy
+             * @constant
+             */
+            readonly legacy: true;
         };
         /** LicenseKeyActivate */
         LicenseKeyActivate: {
@@ -11829,7 +12035,8 @@ export interface components {
             /** @deprecated */
             user: components["schemas"]["OrderUser"];
             product: components["schemas"]["OrderProduct"];
-            product_price: components["schemas"]["ProductPrice"];
+            /** Product Price */
+            product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /** Discount */
             discount: (components["schemas"]["DiscountFixedOnceForeverDurationBase"] | components["schemas"]["DiscountFixedRepeatDurationBase"] | components["schemas"]["DiscountPercentageOnceForeverDurationBase"] | components["schemas"]["DiscountPercentageRepeatDurationBase"]) | null;
             subscription: components["schemas"]["OrderSubscription"] | null;
@@ -11922,9 +12129,11 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
-             * @description Whether the product is a subscription tier.
+             * @description Whether the product is a subscription.
              */
             is_recurring: boolean;
             /**
@@ -12789,9 +12998,11 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
-             * @description Whether the product is a subscription tier.
+             * @description Whether the product is a subscription.
              */
             is_recurring: boolean;
             /**
@@ -12813,7 +13024,7 @@ export interface components {
              * Prices
              * @description List of prices for this product.
              */
-            prices: components["schemas"]["ProductPrice"][];
+            prices: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"])[];
             /**
              * Benefits
              * @description List of benefits granted by the product.
@@ -12841,7 +13052,65 @@ export interface components {
              */
             benefits: string[];
         };
-        ProductCreate: components["schemas"]["ProductRecurringCreate"] | components["schemas"]["ProductOneTimeCreate"];
+        /**
+         * ProductBillingType
+         * @enum {string}
+         */
+        ProductBillingType: "one_time" | "recurring";
+        /**
+         * ProductCreate
+         * @description Schema to create a product.
+         */
+        ProductCreate: {
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Name
+             * @description The name of the product.
+             */
+            name: string;
+            /**
+             * Description
+             * @description The description of the product.
+             */
+            description?: string | null;
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
+            /**
+             * ProductPriceCreateList
+             * @description List of available prices for this product. Currently, only a single price is supported.
+             */
+            prices: (components["schemas"]["ProductPriceFixedCreate"] | components["schemas"]["ProductPriceCustomCreate"] | components["schemas"]["ProductPriceFreeCreate"])[];
+            /**
+             * Medias
+             * @description List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
+             */
+            medias?: string[] | null;
+            /**
+             * Attached Custom Fields
+             * @description List of custom fields to attach.
+             */
+            attached_custom_fields?: components["schemas"]["AttachedCustomFieldCreate"][];
+            /**
+             * Organization Id
+             * @description The ID of the organization owning the product. **Required unless you use an organization token.**
+             */
+            organization_id?: string | null;
+        };
         /** ProductEmbed */
         ProductEmbed: {
             /**
@@ -12855,12 +13124,14 @@ export interface components {
             description: string | null;
             /** Is Recurring */
             is_recurring: boolean;
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Organization Id
              * Format: uuid4
              */
             organization_id: string;
-            price: components["schemas"]["ProductPrice"];
+            /** Price */
+            price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             cover: components["schemas"]["ProductMediaFileRead"] | null;
             /**
              * Benefits
@@ -12953,65 +13224,12 @@ export interface components {
             /** Public Url */
             readonly public_url: string;
         };
+        ProductPrice: components["schemas"]["ProductPriceFixed"] | components["schemas"]["ProductPriceCustom"] | components["schemas"]["ProductPriceFree"];
         /**
-         * ProductOneTimeCreate
-         * @description Schema to create a one-time product.
+         * ProductPriceCustom
+         * @description A pay-what-you-want price for a product.
          */
-        ProductOneTimeCreate: {
-            /**
-             * Metadata
-             * @description Key-value object allowing you to store additional information.
-             *
-             *     The key must be a string with a maximum length of **40 characters**.
-             *     The value must be either:
-             *
-             *     * A string with a maximum length of **500 characters**
-             *     * An integer
-             *     * A boolean
-             *
-             *     You can store up to **50 key-value pairs**.
-             */
-            metadata?: {
-                [key: string]: string | number | boolean;
-            };
-            /**
-             * Name
-             * @description The name of the product.
-             */
-            name: string;
-            /**
-             * Description
-             * @description The description of the product.
-             */
-            description?: string | null;
-            /**
-             * ProductPriceOneTimeCreate
-             * @description List of available prices for this product.
-             */
-            prices: (components["schemas"]["ProductPriceOneTimeFixedCreate"] | components["schemas"]["ProductPriceOneTimeCustomCreate"] | components["schemas"]["ProductPriceOneTimeFreeCreate"])[];
-            /**
-             * Medias
-             * @description List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
-             */
-            medias?: string[] | null;
-            /**
-             * Attached Custom Fields
-             * @description List of custom fields to attach.
-             */
-            attached_custom_fields?: components["schemas"]["AttachedCustomFieldCreate"][];
-            /**
-             * Organization Id
-             * @description The ID of the organization owning the product. **Required unless you use an organization token.**
-             */
-            organization_id?: string | null;
-        };
-        ProductPrice: components["schemas"]["ProductPriceRecurring"] | components["schemas"]["ProductPriceOneTime"];
-        ProductPriceOneTime: components["schemas"]["ProductPriceOneTimeFixed"] | components["schemas"]["ProductPriceOneTimeCustom"] | components["schemas"]["ProductPriceOneTimeFree"];
-        /**
-         * ProductPriceOneTimeCustom
-         * @description A pay-what-you-want price for a one-time product.
-         */
-        ProductPriceOneTimeCustom: {
+        ProductPriceCustom: {
             /**
              * Created At
              * Format: date-time
@@ -13045,6 +13263,10 @@ export interface components {
              * @description The ID of the product owning the price.
              */
             product_id: string;
+            /** @deprecated */
+            type: components["schemas"]["ProductPriceType"];
+            /** @deprecated */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Price Currency
              * @description The currency.
@@ -13065,23 +13287,12 @@ export interface components {
              * @description The initial amount shown to the customer.
              */
             preset_amount: number | null;
-            /**
-             * Type
-             * @description The type of the price.
-             * @constant
-             */
-            type: "one_time";
         };
         /**
-         * ProductPriceOneTimeCustomCreate
-         * @description Schema to create a pay-what-you-want price for a one-time product.
+         * ProductPriceCustomCreate
+         * @description Schema to create a pay-what-you-want price.
          */
-        ProductPriceOneTimeCustomCreate: {
-            /**
-             * Type
-             * @constant
-             */
-            type: "one_time";
+        ProductPriceCustomCreate: {
             /**
              * Amount Type
              * @constant
@@ -13110,10 +13321,10 @@ export interface components {
             preset_amount?: number | null;
         };
         /**
-         * ProductPriceOneTimeFixed
-         * @description A one-time price for a product.
+         * ProductPriceFixed
+         * @description A fixed price for a product.
          */
-        ProductPriceOneTimeFixed: {
+        ProductPriceFixed: {
             /**
              * Created At
              * Format: date-time
@@ -13147,6 +13358,10 @@ export interface components {
              * @description The ID of the product owning the price.
              */
             product_id: string;
+            /** @deprecated */
+            type: components["schemas"]["ProductPriceType"];
+            /** @deprecated */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Price Currency
              * @description The currency.
@@ -13157,23 +13372,12 @@ export interface components {
              * @description The price in cents.
              */
             price_amount: number;
-            /**
-             * Type
-             * @description The type of the price.
-             * @constant
-             */
-            type: "one_time";
         };
         /**
-         * ProductPriceOneTimeFixedCreate
-         * @description Schema to create a one-time product price.
+         * ProductPriceFixedCreate
+         * @description Schema to create a fixed price.
          */
-        ProductPriceOneTimeFixedCreate: {
-            /**
-             * Type
-             * @constant
-             */
-            type: "one_time";
+        ProductPriceFixedCreate: {
             /**
              * Amount Type
              * @constant
@@ -13192,10 +13396,10 @@ export interface components {
             price_currency: string;
         };
         /**
-         * ProductPriceOneTimeFree
-         * @description A free one-time price for a product.
+         * ProductPriceFree
+         * @description A free price for a product.
          */
-        ProductPriceOneTimeFree: {
+        ProductPriceFree: {
             /**
              * Created At
              * Format: date-time
@@ -13229,247 +13433,21 @@ export interface components {
              * @description The ID of the product owning the price.
              */
             product_id: string;
-            /**
-             * Type
-             * @description The type of the price.
-             * @constant
-             */
-            type: "one_time";
+            /** @deprecated */
+            type: components["schemas"]["ProductPriceType"];
+            /** @deprecated */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
         };
         /**
-         * ProductPriceOneTimeFreeCreate
-         * @description Schema to create a free one-time product price.
+         * ProductPriceFreeCreate
+         * @description Schema to create a free price.
          */
-        ProductPriceOneTimeFreeCreate: {
-            /**
-             * Type
-             * @constant
-             */
-            type: "one_time";
+        ProductPriceFreeCreate: {
             /**
              * Amount Type
              * @constant
              */
             amount_type: "free";
-        };
-        ProductPriceRecurring: components["schemas"]["ProductPriceRecurringFixed"] | components["schemas"]["ProductPriceRecurringCustom"] | components["schemas"]["ProductPriceRecurringFree"];
-        /**
-         * ProductPriceRecurringCustom
-         * @description A pay-what-you-want recurring price for a product, i.e. a subscription.
-         */
-        ProductPriceRecurringCustom: {
-            /**
-             * Created At
-             * Format: date-time
-             * @description Creation timestamp of the object.
-             */
-            created_at: string;
-            /**
-             * Modified At
-             * @description Last modification timestamp of the object.
-             */
-            modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the price.
-             */
-            id: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            amount_type: "custom";
-            /**
-             * Is Archived
-             * @description Whether the price is archived and no longer available.
-             */
-            is_archived: boolean;
-            /**
-             * Product Id
-             * Format: uuid4
-             * @description The ID of the product owning the price.
-             */
-            product_id: string;
-            /**
-             * Price Currency
-             * @description The currency.
-             */
-            price_currency: string;
-            /**
-             * Minimum Amount
-             * @description The minimum amount the customer can pay.
-             */
-            minimum_amount: number | null;
-            /**
-             * Maximum Amount
-             * @description The maximum amount the customer can pay.
-             */
-            maximum_amount: number | null;
-            /**
-             * Preset Amount
-             * @description The initial amount shown to the customer.
-             */
-            preset_amount: number | null;
-            /**
-             * Type
-             * @description The type of the price.
-             * @constant
-             */
-            type: "recurring";
-            /** @description The recurring interval of the price. */
-            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
-        };
-        /**
-         * ProductPriceRecurringFixed
-         * @description A recurring price for a product, i.e. a subscription.
-         */
-        ProductPriceRecurringFixed: {
-            /**
-             * Created At
-             * Format: date-time
-             * @description Creation timestamp of the object.
-             */
-            created_at: string;
-            /**
-             * Modified At
-             * @description Last modification timestamp of the object.
-             */
-            modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the price.
-             */
-            id: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            amount_type: "fixed";
-            /**
-             * Is Archived
-             * @description Whether the price is archived and no longer available.
-             */
-            is_archived: boolean;
-            /**
-             * Product Id
-             * Format: uuid4
-             * @description The ID of the product owning the price.
-             */
-            product_id: string;
-            /**
-             * Price Currency
-             * @description The currency.
-             */
-            price_currency: string;
-            /**
-             * Price Amount
-             * @description The price in cents.
-             */
-            price_amount: number;
-            /**
-             * Type
-             * @description The type of the price.
-             * @constant
-             */
-            type: "recurring";
-            /** @description The recurring interval of the price. */
-            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
-        };
-        /**
-         * ProductPriceRecurringFixedCreate
-         * @description Schema to create a recurring product price, i.e. a subscription.
-         */
-        ProductPriceRecurringFixedCreate: {
-            /**
-             * Type
-             * @constant
-             */
-            type: "recurring";
-            /**
-             * Amount Type
-             * @constant
-             */
-            amount_type: "fixed";
-            /**
-             * Price Amount
-             * @description The price in cents.
-             */
-            price_amount: number;
-            /**
-             * Price Currency
-             * @description The currency. Currently, only `usd` is supported.
-             * @default usd
-             */
-            price_currency: string;
-            /** @description The recurring interval of the price. */
-            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
-        };
-        /**
-         * ProductPriceRecurringFree
-         * @description A free recurring price for a product, i.e. a subscription.
-         */
-        ProductPriceRecurringFree: {
-            /**
-             * Created At
-             * Format: date-time
-             * @description Creation timestamp of the object.
-             */
-            created_at: string;
-            /**
-             * Modified At
-             * @description Last modification timestamp of the object.
-             */
-            modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the price.
-             */
-            id: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            amount_type: "free";
-            /**
-             * Is Archived
-             * @description Whether the price is archived and no longer available.
-             */
-            is_archived: boolean;
-            /**
-             * Product Id
-             * Format: uuid4
-             * @description The ID of the product owning the price.
-             */
-            product_id: string;
-            /**
-             * Type
-             * @description The type of the price.
-             * @constant
-             */
-            type: "recurring";
-            /** @description The recurring interval of the price. */
-            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
-        };
-        /**
-         * ProductPriceRecurringFreeCreate
-         * @description Schema to create a free recurring product price, i.e. a subscription.
-         */
-        ProductPriceRecurringFreeCreate: {
-            /**
-             * Type
-             * @constant
-             */
-            type: "recurring";
-            /**
-             * Amount Type
-             * @constant
-             */
-            amount_type: "free";
-            /** @description The recurring interval of the price. */
-            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
         };
         /**
          * ProductPriceType
@@ -13477,62 +13455,10 @@ export interface components {
          */
         ProductPriceType: "one_time" | "recurring";
         /**
-         * ProductRecurringCreate
-         * @description Schema to create a recurring product, i.e. a subscription.
-         */
-        ProductRecurringCreate: {
-            /**
-             * Metadata
-             * @description Key-value object allowing you to store additional information.
-             *
-             *     The key must be a string with a maximum length of **40 characters**.
-             *     The value must be either:
-             *
-             *     * A string with a maximum length of **500 characters**
-             *     * An integer
-             *     * A boolean
-             *
-             *     You can store up to **50 key-value pairs**.
-             */
-            metadata?: {
-                [key: string]: string | number | boolean;
-            };
-            /**
-             * Name
-             * @description The name of the product.
-             */
-            name: string;
-            /**
-             * Description
-             * @description The description of the product.
-             */
-            description?: string | null;
-            /**
-             * Prices
-             * @description List of available prices for this product.
-             */
-            prices: components["schemas"]["ProductPriceRecurringFixedCreate"][] | components["schemas"]["ProductPriceRecurringFreeCreate"][];
-            /**
-             * Medias
-             * @description List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
-             */
-            medias?: string[] | null;
-            /**
-             * Attached Custom Fields
-             * @description List of custom fields to attach.
-             */
-            attached_custom_fields?: components["schemas"]["AttachedCustomFieldCreate"][];
-            /**
-             * Organization Id
-             * @description The ID of the organization owning the product. **Required unless you use an organization token.**
-             */
-            organization_id?: string | null;
-        };
-        /**
          * ProductSortProperty
          * @enum {string}
          */
-        ProductSortProperty: "created_at" | "-created_at" | "name" | "-name" | "price_type" | "-price_type" | "price_amount_type" | "-price_amount_type" | "price_amount" | "-price_amount";
+        ProductSortProperty: "created_at" | "-created_at" | "name" | "-name" | "price_amount_type" | "-price_amount_type" | "price_amount" | "-price_amount";
         /**
          * ProductStorefront
          * @description Schema of a public product.
@@ -13565,9 +13491,11 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
-             * @description Whether the product is a subscription tier.
+             * @description Whether the product is a subscription.
              */
             is_recurring: boolean;
             /**
@@ -13585,7 +13513,7 @@ export interface components {
              * Prices
              * @description List of available prices for this product.
              */
-            prices: components["schemas"]["ProductPrice"][];
+            prices: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"])[];
             /**
              * BenefitPublic
              * @description The benefits granted by the product.
@@ -13613,6 +13541,8 @@ export interface components {
              * @description The description of the product.
              */
             description?: string | null;
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.** */
+            recurring_interval?: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Archived
              * @description Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally.
@@ -13622,7 +13552,7 @@ export interface components {
              * Prices
              * @description List of available prices for this product. If you want to keep existing prices, include them in the list as an `ExistingProductPrice` object.
              */
-            prices?: (components["schemas"]["ExistingProductPrice"] | components["schemas"]["ProductPriceRecurringFixedCreate"] | components["schemas"]["ProductPriceRecurringFreeCreate"] | components["schemas"]["ProductPriceOneTimeFixedCreate"] | components["schemas"]["ProductPriceOneTimeCustomCreate"] | components["schemas"]["ProductPriceOneTimeFreeCreate"])[] | null;
+            prices?: (components["schemas"]["ExistingProductPrice"] | components["schemas"]["ProductPriceFixedCreate"] | components["schemas"]["ProductPriceCustomCreate"] | components["schemas"]["ProductPriceFreeCreate"])[] | null;
             /**
              * Medias
              * @description List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
@@ -14203,7 +14133,8 @@ export interface components {
             /** @deprecated */
             user: components["schemas"]["SubscriptionUser"];
             product: components["schemas"]["Product"];
-            price: components["schemas"]["ProductPriceRecurring"];
+            /** Price */
+            price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /** Discount */
             discount: (components["schemas"]["DiscountFixedOnceForeverDurationBase"] | components["schemas"]["DiscountFixedRepeatDurationBase"] | components["schemas"]["DiscountPercentageOnceForeverDurationBase"] | components["schemas"]["DiscountPercentageRepeatDurationBase"]) | null;
         };
@@ -14316,15 +14247,15 @@ export interface components {
          * @enum {string}
          */
         SubscriptionStatus: "incomplete" | "incomplete_expired" | "trialing" | "active" | "past_due" | "canceled" | "unpaid";
-        SubscriptionUpdate: components["schemas"]["SubscriptionUpdatePrice"] | components["schemas"]["SubscriptionCancel"];
-        /** SubscriptionUpdatePrice */
-        SubscriptionUpdatePrice: {
+        SubscriptionUpdate: components["schemas"]["SubscriptionUpdateProduct"] | components["schemas"]["SubscriptionCancel"];
+        /** SubscriptionUpdateProduct */
+        SubscriptionUpdateProduct: {
             /**
-             * Product Price Id
+             * Product Id
              * Format: uuid4
-             * @description Update subscription to another price.
+             * @description Update subscription to another product.
              */
-            product_price_id: string;
+            product_id: string;
             /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
             proration_behavior?: components["schemas"]["SubscriptionProrationBehavior"] | null;
         };
@@ -14682,7 +14613,8 @@ export interface components {
              */
             id: string;
             product: components["schemas"]["TransactionProduct"];
-            product_price: components["schemas"]["ProductPrice"];
+            /** Product Price */
+            product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /** Subscription Id */
             subscription_id: string | null;
         };
@@ -14755,6 +14687,7 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /** Organization Id */
             organization_id: string | null;
             organization: components["schemas"]["TransactionOrganization"] | null;
@@ -20794,8 +20727,8 @@ export interface operations {
                 organization_id?: string | string[] | null;
                 /** @description Filter by product ID. */
                 product_id?: string | string[] | null;
-                /** @description Filter by product price type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
-                product_price_type?: components["schemas"]["ProductPriceType"] | components["schemas"]["ProductPriceType"][] | null;
+                /** @description Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
+                billing_type?: components["schemas"]["ProductBillingType"] | components["schemas"]["ProductBillingType"][] | null;
                 /** @description Filter by customer ID. */
                 customer_id?: string | string[] | null;
             };
@@ -24446,6 +24379,9 @@ export const filterOperatorValues: ReadonlyArray<components["schemas"]["FilterOp
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<components["schemas"]["IntrospectTokenResponse"]["token_type"]> = ["access_token", "refresh_token"];
 export const issueSortByValues: ReadonlyArray<components["schemas"]["IssueSortBy"]> = ["newest", "recently_updated", "least_recently_updated", "pledged_amount_desc", "relevance", "dependencies_default", "issues_default", "most_engagement", "most_positive_reactions", "funding_goal_desc_and_most_positive_reactions", "most_recently_funded"];
 export const issueSortPropertyValues: ReadonlyArray<components["schemas"]["IssueSortProperty"]> = ["created_at", "-created_at", "modified_at", "-modified_at", "engagement", "-engagement", "positive_reactions", "-positive_reactions", "funding_goal", "-funding_goal"];
+export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<components["schemas"]["LegacyRecurringProductPriceCustom"]["amount_type"]> = ["custom"];
+export const legacyRecurringProductPriceFixedAmount_typeValues: ReadonlyArray<components["schemas"]["LegacyRecurringProductPriceFixed"]["amount_type"]> = ["fixed"];
+export const legacyRecurringProductPriceFreeAmount_typeValues: ReadonlyArray<components["schemas"]["LegacyRecurringProductPriceFree"]["amount_type"]> = ["free"];
 export const licenseKeyStatusValues: ReadonlyArray<components["schemas"]["LicenseKeyStatus"]> = ["granted", "revoked", "disabled"];
 export const listFundingSortByValues: ReadonlyArray<components["schemas"]["ListFundingSortBy"]> = ["oldest", "newest", "most_funded", "most_recently_funded", "most_engagement"];
 export const maintainerAccountReviewedNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerAccountReviewedNotification"]["type"]> = ["MaintainerAccountReviewedNotification"];
@@ -24480,16 +24416,14 @@ export const pledgeStateValues: ReadonlyArray<components["schemas"]["PledgeState
 export const pledgeTypeValues: ReadonlyArray<components["schemas"]["PledgeType"]> = ["pay_upfront", "pay_on_completion", "pay_directly"];
 export const pledgerPledgePendingNotificationTypeValues: ReadonlyArray<components["schemas"]["PledgerPledgePendingNotification"]["type"]> = ["PledgerPledgePendingNotification"];
 export const processorValues: ReadonlyArray<components["schemas"]["Processor"]> = ["stripe", "open_collective"];
+export const productBillingTypeValues: ReadonlyArray<components["schemas"]["ProductBillingType"]> = ["one_time", "recurring"];
 export const productMediaFileCreateServiceValues: ReadonlyArray<components["schemas"]["ProductMediaFileCreate"]["service"]> = ["product_media"];
 export const productMediaFileReadServiceValues: ReadonlyArray<components["schemas"]["ProductMediaFileRead"]["service"]> = ["product_media"];
-export const productPriceOneTimeCustomAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceOneTimeCustom"]["amount_type"]> = ["custom"];
-export const productPriceOneTimeFixedAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceOneTimeFixed"]["amount_type"]> = ["fixed"];
-export const productPriceOneTimeFreeAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceOneTimeFree"]["amount_type"]> = ["free"];
-export const productPriceRecurringCustomAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceRecurringCustom"]["amount_type"]> = ["custom"];
-export const productPriceRecurringFixedAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceRecurringFixed"]["amount_type"]> = ["fixed"];
-export const productPriceRecurringFreeAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceRecurringFree"]["amount_type"]> = ["free"];
+export const productPriceCustomAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceCustom"]["amount_type"]> = ["custom"];
+export const productPriceFixedAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceFixed"]["amount_type"]> = ["fixed"];
+export const productPriceFreeAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceFree"]["amount_type"]> = ["free"];
 export const productPriceTypeValues: ReadonlyArray<components["schemas"]["ProductPriceType"]> = ["one_time", "recurring"];
-export const productSortPropertyValues: ReadonlyArray<components["schemas"]["ProductSortProperty"]> = ["created_at", "-created_at", "name", "-name", "price_type", "-price_type", "price_amount_type", "-price_amount_type", "price_amount", "-price_amount"];
+export const productSortPropertyValues: ReadonlyArray<components["schemas"]["ProductSortProperty"]> = ["created_at", "-created_at", "name", "-name", "price_amount_type", "-price_amount_type", "price_amount", "-price_amount"];
 export const propertyAggregationFuncValues: ReadonlyArray<components["schemas"]["PropertyAggregation"]["func"]> = ["avg", "max", "min", "sum"];
 export const refundReasonValues: ReadonlyArray<components["schemas"]["RefundReason"]> = ["duplicate", "fraudulent", "customer_request", "service_disruption", "satisfaction_guarantee", "other"];
 export const refundSortPropertyValues: ReadonlyArray<components["schemas"]["RefundSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];

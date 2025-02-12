@@ -1,7 +1,7 @@
 'use client'
 
+import { isLegacyRecurringPrice } from '@/utils/product'
 import { ErrorMessage } from '@hookform/error-message'
-import { ClearOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import {
   FormControl,
   FormField,
@@ -20,7 +19,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   UseFieldArrayReturn,
   useFieldArray,
@@ -32,27 +31,16 @@ import { ProductFormType } from './ProductForm'
 export interface ProductPriceItemProps {
   index: number
   fieldArray: UseFieldArrayReturn<ProductFormType, 'prices', 'id'>
-  deletable: boolean
 }
 
 export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   index,
-  fieldArray,
-  deletable,
 }) => {
-  const { control, register, watch, setValue } =
-    useFormContext<ProductFormType>()
-  const { remove } = fieldArray
-  const recurringInterval = watch(`prices.${index}.recurring_interval`)
+  const { control, register, setValue } = useFormContext<ProductFormType>()
 
   return (
     <div className="flex items-center gap-2">
-      <input
-        type="hidden"
-        {...register(`prices.${index}.recurring_interval`)}
-      />
       <input type="hidden" {...register(`prices.${index}.id`)} />
-      <input type="hidden" {...register(`prices.${index}.type`)} />
       <input type="hidden" {...register(`prices.${index}.amount_type`)} />
       <FormField
         control={control}
@@ -74,31 +62,8 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                       setValue(`prices.${index}.id`, '')
                     }}
                     placeholder={0}
-                    postSlot={
-                      <>
-                        {recurringInterval === 'month' && (
-                          <span className="text-sm">/month</span>
-                        )}
-                        {recurringInterval === 'year' && (
-                          <span className="text-sm">/year</span>
-                        )}
-                      </>
-                    }
                   />
                 </FormControl>
-                {deletable && (
-                  <Button
-                    className={
-                      'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
-                    }
-                    size="icon"
-                    variant="secondary"
-                    type="button"
-                    onClick={() => remove(index)}
-                  >
-                    <ClearOutlined fontSize="inherit" />
-                  </Button>
-                )}
               </div>
               <FormMessage />
             </FormItem>
@@ -120,12 +85,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
 
   return (
     <div className="flex items-center gap-2">
-      <input
-        type="hidden"
-        {...register(`prices.${index}.recurring_interval`)}
-      />
       <input type="hidden" {...register(`prices.${index}.id`)} />
-      <input type="hidden" {...register(`prices.${index}.type`)} />
       <input type="hidden" {...register(`prices.${index}.amount_type`)} />
       <FormField
         control={control}
@@ -194,12 +154,7 @@ export const ProductPriceFreeItem: React.FC<ProductPriceFreeItemProps> = ({
 
   return (
     <>
-      <input
-        type="hidden"
-        {...register(`prices.${index}.recurring_interval`)}
-      />
       <input type="hidden" {...register(`prices.${index}.id`)} />
-      <input type="hidden" {...register(`prices.${index}.type`)} />
       <input type="hidden" {...register(`prices.${index}.amount_type`)} />
     </>
   )
@@ -219,35 +174,20 @@ export const ProductPricingSection = ({
   const {
     control,
     formState: { errors },
-    clearErrors,
+    setValue,
   } = useFormContext<ProductFormType>()
 
   const pricesFieldArray = useFieldArray({
     control,
     name: 'prices',
   })
-  const { fields: prices, append, replace } = pricesFieldArray
+  const { fields: prices, replace } = pricesFieldArray
 
-  const hasMonthlyPrice = useMemo(
-    () =>
-      (prices as schemas['ProductPrice'][]).some(
-        (price) =>
-          price.type === 'recurring' && price.recurring_interval === 'month',
-      ),
+  const isLegacyRecurringProduct = useMemo(
+    () => (prices as schemas['ProductPrice'][]).some(isLegacyRecurringPrice),
     [prices],
   )
-  const hasYearlyPrice = useMemo(
-    () =>
-      (prices as schemas['ProductPrice'][]).some(
-        (price) =>
-          price.type === 'recurring' && price.recurring_interval === 'year',
-      ),
-    [prices],
-  )
-
-  const [pricingType, setPricingType] = useState<
-    schemas['ProductPriceType'] | undefined
-  >(hasMonthlyPrice || hasYearlyPrice ? 'recurring' : 'one_time')
+  const [legacyMigration, setLegacyMigration] = useState(false)
 
   const [amountType, setAmountType] = useState<'fixed' | 'custom' | 'free'>(
     prices.length > 0 && (prices as schemas['ProductPrice'][])[0].amount_type
@@ -255,184 +195,149 @@ export const ProductPricingSection = ({
       : 'fixed',
   )
 
+  const switchToNewPricingModel = useCallback(() => {
+    setLegacyMigration(true)
+    const price = prices[0] as schemas['LegacyRecurringProductPrice']
+    setValue('recurring_interval', 'month')
+    replace([
+      {
+        ...price,
+        // @ts-ignore
+        id: null,
+        type: null,
+        recurring_interval: null,
+      },
+    ])
+  }, [])
+
   useEffect(() => {
     if (update) return
 
-    if (pricingType === 'one_time') {
-      if (amountType === 'fixed') {
-        replace([
-          {
-            type: 'one_time',
-            amount_type: 'fixed',
-            price_currency: 'usd',
-            price_amount: 0,
-          },
-        ])
-      } else if (amountType === 'custom') {
-        replace([
-          {
-            type: 'one_time',
-            amount_type: 'custom',
-            price_currency: 'usd',
-          },
-        ])
-      } else {
-        replace([
-          {
-            type: 'one_time',
-            amount_type: 'free',
-          },
-        ])
-      }
-    } else if (pricingType === 'recurring') {
-      if (amountType === 'fixed') {
-        replace([
-          {
-            type: 'recurring',
-            amount_type: 'fixed',
-            recurring_interval: 'month',
-            price_currency: 'usd',
-            price_amount: 0,
-          },
-        ])
-      } else if (amountType === 'free') {
-        replace([
-          {
-            type: 'recurring',
-            amount_type: 'free',
-            recurring_interval: 'month',
-          },
-        ])
-      } else {
-        setAmountType('fixed')
-      }
+    if (amountType === 'fixed') {
+      replace([
+        {
+          amount_type: 'fixed',
+          price_currency: 'usd',
+          price_amount: 0,
+        },
+      ])
+    } else if (amountType === 'custom') {
+      replace([
+        {
+          amount_type: 'custom',
+          price_currency: 'usd',
+        },
+      ])
+    } else {
+      replace([
+        {
+          amount_type: 'free',
+        },
+      ])
     }
-  }, [update, pricingType, replace, amountType])
-
-  if (update && amountType === 'free') {
-    return null
-  }
+  }, [update, replace, amountType])
 
   return (
     <Section
       title="Pricing"
-      description="Set a one-time price, recurring price or a “pay what you want” pricing model"
+      description="Set your billing cycle and pricing model"
       className={className}
       compact={compact}
     >
-      <div className="flex w-full flex-col gap-6">
-        {!update && (
-          <Tabs
-            value={pricingType}
-            onValueChange={(value: string) =>
-              setPricingType(value as schemas['ProductPriceType'])
-            }
-          >
-            <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-200">
-              <TabsTrigger
-                className="flex-grow data-[state=active]:bg-white data-[state=active]:shadow-sm"
-                value="one_time"
-              >
-                Pay Once
-              </TabsTrigger>
-              <TabsTrigger
-                className="flex-grow data-[state=active]:bg-white data-[state=active]:shadow-sm"
-                value="recurring"
-              >
-                Subscription
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        )}
-        {!update && (
+      {isLegacyRecurringProduct && !legacyMigration ? (
+        <div className="prose rounded-2xl bg-yellow-50 px-4 py-3 text-justify text-sm text-yellow-500 dark:bg-yellow-950">
+          <p>
+            This product uses a deprecated pricing model with both a monthly and
+            yearly pricing.
+          </p>
+          <p>
+            To better support future pricing model, the billing cycle is now set
+            at the product level, meaning you need to create a separate product
+            for each billing cycle.
+          </p>
+          <Button type="button" onClick={switchToNewPricingModel}>
+            Switch to new pricing model
+          </Button>
+        </div>
+      ) : (
+        <div className="flex w-full flex-col gap-6">
+          <FormField
+            control={control}
+            name="recurring_interval"
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <FormControl>
+                    <Select
+                      onValueChange={(value) =>
+                        field.onChange(value === 'one_time' ? null : value)
+                      }
+                      defaultValue={
+                        field.value === null ? 'one_time' : field.value
+                      }
+                      disabled={update && !legacyMigration}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a billing cycle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {!legacyMigration && (
+                          <SelectItem value="one_time">
+                            One-time purchase
+                          </SelectItem>
+                        )}
+                        <SelectItem value="month">Monthly</SelectItem>
+                        <SelectItem value="year">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
           <Select
             value={amountType}
             onValueChange={(value) =>
               setAmountType(value as 'fixed' | 'custom' | 'free')
             }
+            disabled={update}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select a product" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="fixed">Fixed price</SelectItem>
-              {pricingType === 'one_time' && (
-                <SelectItem value="custom">Pay what you want</SelectItem>
-              )}
+              <SelectItem value="custom">Pay what you want</SelectItem>
               <SelectItem value="free">Free</SelectItem>
             </SelectContent>
           </Select>
-        )}
-        {prices.map((price, index) => (
-          <>
-            {amountType === 'fixed' && (
-              <ProductPriceItem
-                key={price.id}
-                index={index}
-                fieldArray={pricesFieldArray}
-                deletable={pricingType === 'recurring'}
-              />
+          {prices.map((price, index) => (
+            <>
+              {amountType === 'fixed' && (
+                <ProductPriceItem
+                  key={price.id}
+                  index={index}
+                  fieldArray={pricesFieldArray}
+                />
+              )}
+              {amountType === 'custom' && (
+                <ProductPriceCustomItem key={price.id} index={index} />
+              )}
+              {amountType === 'free' && (
+                <ProductPriceFreeItem key={price.id} index={index} />
+              )}
+            </>
+          ))}
+          <ErrorMessage
+            errors={errors}
+            name="prices"
+            render={({ message }) => (
+              <p className="text-destructive text-sm font-medium">{message}</p>
             )}
-            {amountType === 'custom' && (
-              <ProductPriceCustomItem key={price.id} index={index} />
-            )}
-            {amountType === 'free' && (
-              <ProductPriceFreeItem key={price.id} index={index} />
-            )}
-          </>
-        ))}
-        {amountType !== 'free' && pricingType === 'recurring' && (
-          <div className="flex flex-row gap-2">
-            {!hasMonthlyPrice && (
-              <Button
-                size="sm"
-                variant="secondary"
-                className="self-start"
-                type="button"
-                onClick={() => {
-                  append({
-                    type: 'recurring',
-                    amount_type: 'fixed',
-                    recurring_interval: 'month',
-                    price_currency: 'usd',
-                    price_amount: 0,
-                  })
-                  clearErrors('prices')
-                }}
-              >
-                Add monthly pricing
-              </Button>
-            )}
-            {!hasYearlyPrice && (
-              <Button
-                size="sm"
-                variant="secondary"
-                className="self-start"
-                type="button"
-                onClick={() => {
-                  append({
-                    type: 'recurring',
-                    amount_type: 'fixed',
-                    recurring_interval: 'year',
-                    price_currency: 'usd',
-                    price_amount: 0,
-                  })
-                  clearErrors('prices')
-                }}
-              >
-                Add yearly pricing
-              </Button>
-            )}
-          </div>
-        )}
-        <ErrorMessage
-          errors={errors}
-          name="prices"
-          render={({ message }) => (
-            <p className="text-destructive text-sm font-medium">{message}</p>
-          )}
-        />
-      </div>
+          />
+        </div>
+      )}
     </Section>
   )
 }

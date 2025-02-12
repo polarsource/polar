@@ -22,7 +22,7 @@ const ProductPill: React.FC<ProductPillProps> = ({ product, price }) => {
         {price && (
           <>
             <div>·</div>
-            <ProductPriceLabel price={price} />
+            <ProductPriceLabel product={product} price={price} />
           </>
         )}
       </div>

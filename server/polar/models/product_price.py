@@ -77,7 +77,7 @@ class ProductPrice(RecordModel):
 
     @declared_attr
     def product(cls) -> Mapped["Product"]:
-        return relationship("Product", lazy="raise", back_populates="all_prices")
+        return relationship("Product", lazy="raise_on_sql", back_populates="all_prices")
 
     @declared_attr
     def subscriptions(cls) -> Mapped[list["Subscription"]]:
@@ -91,6 +91,16 @@ class ProductPrice(RecordModel):
     @classmethod
     def _is_recurring_expression(cls) -> ColumnElement[bool]:
         return type_coerce(cls.type == ProductPriceType.recurring, Boolean)
+
+    @property
+    def legacy_type(self) -> ProductPriceType | None:
+        if self.product.is_recurring:
+            return ProductPriceType.recurring
+        return ProductPriceType.one_time
+
+    @property
+    def legacy_recurring_interval(self) -> SubscriptionRecurringInterval | None:
+        return self.product.recurring_interval
 
     __mapper_args__ = {
         "polymorphic_on": case(

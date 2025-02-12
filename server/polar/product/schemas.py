@@ -325,6 +325,21 @@ class ProductPriceBase(TimestampedSchema):
     )
     product_id: UUID4 = Field(description="The ID of the product owning the price.")
 
+    type: ProductPriceType = Field(
+        validation_alias="legacy_type",
+        deprecated=(
+            "This field is actually set from Product. "
+            "It's only kept for backward compatibility."
+        ),
+    )
+    recurring_interval: SubscriptionRecurringInterval | None = Field(
+        validation_alias="legacy_recurring_interval",
+        deprecated=(
+            "This field is actually set from Product. "
+            "It's only kept for backward compatibility."
+        ),
+    )
+
 
 class ProductPriceFixedBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.fixed]

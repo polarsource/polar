@@ -2,7 +2,7 @@ import builtins
 from typing import Annotated, Any, Literal
 
 import stripe as stripe_lib
-from pydantic import UUID4, AfterValidator, Discriminator, Field, Tag
+from pydantic import UUID4, Discriminator, Field, Tag
 
 from polar.benefit.schemas import Benefit, BenefitID, BenefitPublic
 from polar.custom_field.attachment import (
@@ -88,14 +88,17 @@ ProductDescription = Annotated[
 
 
 class ProductPriceCreateBase(Schema):
-    type: ProductPriceType
     amount_type: ProductPriceAmountType
 
     def get_model_class(self) -> builtins.type[Model]:
         raise NotImplementedError()
 
 
-class ProductPriceFixedCreateBase(ProductPriceCreateBase):
+class ProductPriceFixedCreate(ProductPriceCreateBase):
+    """
+    Schema to create a fixed price.
+    """
+
     amount_type: Literal[ProductPriceAmountType.fixed]
     price_amount: PriceAmount
     price_currency: PriceCurrency
@@ -103,14 +106,26 @@ class ProductPriceFixedCreateBase(ProductPriceCreateBase):
     def get_model_class(self) -> builtins.type[ProductPriceFixedModel]:
         return ProductPriceFixedModel
 
-    def get_stripe_price_params(self) -> stripe_lib.Price.CreateParams:
-        return {
+    def get_stripe_price_params(
+        self, recurring_interval: SubscriptionRecurringInterval | None
+    ) -> stripe_lib.Price.CreateParams:
+        params: stripe_lib.Price.CreateParams = {
             "unit_amount": self.price_amount,
             "currency": self.price_currency,
         }
+        if recurring_interval is not None:
+            params = {
+                **params,
+                "recurring": {"interval": recurring_interval.as_literal()},
+            }
+        return params
 
 
-class ProductPriceCustomCreateBase(ProductPriceCreateBase):
+class ProductPriceCustomCreate(ProductPriceCreateBase):
+    """
+    Schema to create a pay-what-you-want price.
+    """
+
     amount_type: Literal[ProductPriceAmountType.custom]
     price_currency: PriceCurrency
     minimum_amount: PriceAmount | None = Field(
@@ -127,7 +142,9 @@ class ProductPriceCustomCreateBase(ProductPriceCreateBase):
     def get_model_class(self) -> builtins.type[ProductPriceCustomModel]:
         return ProductPriceCustomModel
 
-    def get_stripe_price_params(self) -> stripe_lib.Price.CreateParams:
+    def get_stripe_price_params(
+        self, recurring_interval: SubscriptionRecurringInterval | None
+    ) -> stripe_lib.Price.CreateParams:
         custom_unit_amount_params: stripe_lib.Price.CreateParamsCustomUnitAmount = {
             "enabled": True,
         }
@@ -137,152 +154,76 @@ class ProductPriceCustomCreateBase(ProductPriceCreateBase):
             custom_unit_amount_params["maximum"] = self.maximum_amount
         if self.preset_amount is not None:
             custom_unit_amount_params["preset"] = self.preset_amount
+
+        # `recurring_interval` is unused because we actually create ad-hoc prices,
+        # since Stripe doesn't support PWYW pricing for subscriptions.
+
         return {
             "currency": self.price_currency,
             "custom_unit_amount": custom_unit_amount_params,
         }
 
 
-class ProductPriceFreeCreateBase(ProductPriceCreateBase):
+class ProductPriceFreeCreate(ProductPriceCreateBase):
+    """
+    Schema to create a free price.
+    """
+
     amount_type: Literal[ProductPriceAmountType.free]
 
     def get_model_class(self) -> builtins.type[ProductPriceFreeModel]:
         return ProductPriceFreeModel
 
-    def get_stripe_price_params(self) -> stripe_lib.Price.CreateParams:
-        return {
+    def get_stripe_price_params(
+        self, recurring_interval: SubscriptionRecurringInterval | None
+    ) -> stripe_lib.Price.CreateParams:
+        params: stripe_lib.Price.CreateParams = {
             "unit_amount": 0,
             "currency": "usd",
         }
+        if recurring_interval is not None:
+            params = {
+                **params,
+                "recurring": {"interval": recurring_interval.as_literal()},
+            }
+
+        return params
 
 
-class ProductPriceRecurringFixedCreate(ProductPriceFixedCreateBase):
-    """
-    Schema to create a recurring product price, i.e. a subscription.
-    """
-
-    type: Literal[ProductPriceType.recurring]
-    recurring_interval: SubscriptionRecurringInterval = Field(
-        description="The recurring interval of the price."
-    )
-
-    def get_stripe_price_params(self) -> stripe_lib.Price.CreateParams:
-        return {
-            **super().get_stripe_price_params(),
-            "recurring": {"interval": self.recurring_interval.as_literal()},
-        }
-
-
-class ProductPriceRecurringFreeCreate(ProductPriceFreeCreateBase):
-    """
-    Schema to create a free recurring product price, i.e. a subscription.
-    """
-
-    type: Literal[ProductPriceType.recurring]
-    recurring_interval: SubscriptionRecurringInterval = Field(
-        description="The recurring interval of the price."
-    )
-
-    def get_stripe_price_params(self) -> stripe_lib.Price.CreateParams:
-        return {
-            **super().get_stripe_price_params(),
-            "recurring": {"interval": self.recurring_interval.as_literal()},
-        }
-
-
-ProductPriceRecurringCreate = (
-    ProductPriceRecurringFixedCreate | ProductPriceRecurringFreeCreate
+ProductPriceCreate = (
+    ProductPriceFixedCreate | ProductPriceCustomCreate | ProductPriceFreeCreate
 )
 
 
-class ProductPriceOneTimeFixedCreate(ProductPriceFixedCreateBase):
-    """
-    Schema to create a one-time product price.
-    """
-
-    type: Literal[ProductPriceType.one_time]
-
-
-class ProductPriceOneTimeCustomCreate(ProductPriceCustomCreateBase):
-    """
-    Schema to create a pay-what-you-want price for a one-time product.
-    """
-
-    type: Literal[ProductPriceType.one_time]
-
-
-class ProductPriceOneTimeFreeCreate(ProductPriceFreeCreateBase):
-    """
-    Schema to create a free one-time product price.
-    """
-
-    type: Literal[ProductPriceType.one_time]
-
-
-ProductPriceOneTimeCreate = (
-    ProductPriceOneTimeFixedCreate
-    | ProductPriceOneTimeCustomCreate
-    | ProductPriceOneTimeFreeCreate
-)
-
-
-def _check_intervals(
-    value: list[ProductPriceRecurringCreate],
-) -> list[ProductPriceRecurringCreate]:
-    intervals = {price.recurring_interval for price in value}
-    if len(intervals) != len(value):
-        raise ValueError("Only one price per interval is allowed.")
-    return value
-
-
-ProductPriceRecurringFixedCreateList = Annotated[
-    list[ProductPriceRecurringFixedCreate],
-    Field(min_length=1, max_length=2),
-    AfterValidator(_check_intervals),
-    MergeJSONSchema(
-        {
-            "title": "ProductPriceRecurringFixedCreate",
-            "description": (
-                "List of recurring prices. "
-                "Only one price per interval (one monthly and one yearly) is allowed."
-            ),
-        }
-    ),
-]
-
-ProductPriceRecurringFreeCreateList = Annotated[
-    list[ProductPriceRecurringFreeCreate],
+ProductPriceCreateList = Annotated[
+    list[ProductPriceCreate],
     Field(min_length=1, max_length=1),
     MergeJSONSchema(
         {
-            "title": "ProductPriceRecurringFreeCreate",
-            "description": "List with a single free recurring price.",
-        }
-    ),
-]
-
-ProductPriceRecurringCreateList = (
-    ProductPriceRecurringFixedCreateList | ProductPriceRecurringFreeCreateList
-)
-
-ProductPriceOneTimeCreateList = Annotated[
-    list[ProductPriceOneTimeCreate],
-    Field(min_length=1, max_length=1),
-    MergeJSONSchema(
-        {
-            "title": "ProductPriceOneTimeCreate",
-            "description": "List with a single one-time price.",
+            "title": "ProductPriceCreateList",
+            "description": "List with a single price.",
         }
     ),
 ]
 
 
-class ProductCreateBase(MetadataInputMixin, Schema):
+class ProductCreate(MetadataInputMixin, Schema):
+    """
+    Schema to create a product.
+    """
+
     name: ProductName
     description: ProductDescription = None
-
-    prices: ProductPriceRecurringCreateList | ProductPriceOneTimeCreateList = Field(
-        ..., description="List of available prices for this product."
+    recurring_interval: SubscriptionRecurringInterval | None = Field(
+        description=(
+            "The recurring interval of the product. "
+            "If `None`, the product is a one-time purchase."
+        ),
+    )
+    prices: ProductPriceCreateList = Field(
+        ...,
+        description="List of available prices for this product. "
+        "Currently, only a single price is supported.",
     )
     medias: list[UUID4] | None = Field(
         default=None,
@@ -302,33 +243,6 @@ class ProductCreateBase(MetadataInputMixin, Schema):
     )
 
 
-class ProductRecurringCreate(ProductCreateBase):
-    """
-    Schema to create a recurring product, i.e. a subscription.
-    """
-
-    prices: ProductPriceRecurringCreateList = Field(
-        ..., description="List of available prices for this product."
-    )
-
-
-class ProductOneTimeCreate(ProductCreateBase):
-    """
-    Schema to create a one-time product.
-    """
-
-    prices: ProductPriceOneTimeCreateList = Field(
-        ..., description="List of available prices for this product."
-    )
-
-
-ProductCreate = Annotated[
-    ProductRecurringCreate | ProductOneTimeCreate,
-    MergeJSONSchema({"title": "ProductCreate"}),
-    SetSchemaReference("ProductCreate"),
-]
-
-
 class ExistingProductPrice(Schema):
     """
     A price that already exists for this product.
@@ -340,8 +254,7 @@ class ExistingProductPrice(Schema):
 
 
 ProductPriceUpdate = Annotated[
-    ExistingProductPrice | ProductPriceRecurringCreate | ProductPriceOneTimeCreate,
-    Field(union_mode="left_to_right"),
+    ExistingProductPrice | ProductPriceCreate, Field(union_mode="left_to_right")
 ]
 
 
@@ -352,6 +265,15 @@ class ProductUpdate(OptionalMetadataInputMixin, Schema):
 
     name: ProductName | None = None
     description: ProductDescription = None
+    recurring_interval: SubscriptionRecurringInterval | None = Field(
+        default=None,
+        description=(
+            "The recurring interval of the product. "
+            "If `None`, the product is a one-time purchase. "
+            "**Can only be set on legacy recurring products. "
+            "Once set, it can't be changed.**"
+        ),
+    )
     is_archived: bool | None = Field(
         default=None,
         description=(
@@ -526,9 +448,11 @@ class ProductBase(IDSchema, TimestampedSchema):
     id: UUID4 = Field(description="The ID of the product.")
     name: str = Field(description="The name of the product.")
     description: str | None = Field(description="The description of the product.")
-    is_recurring: bool = Field(
-        description="Whether the product is a subscription tier."
+    recurring_interval: SubscriptionRecurringInterval | None = Field(
+        description="The recurring interval of the product. "
+        "If `None`, the product is a one-time purchase."
     )
+    is_recurring: bool = Field(description="Whether the product is a subscription.")
     is_archived: bool = Field(
         description="Whether the product is archived and no longer available."
     )

@@ -108,14 +108,6 @@ class NotARecurringProduct(SubscriptionError):
         super().__init__(message)
 
 
-class CustomPriceNotSupported(SubscriptionError):
-    def __init__(self, stripe_subscription_id: str, stripe_price_id: str) -> None:
-        self.subscription_id = stripe_subscription_id
-        self.price_id = stripe_price_id
-        message = "Custom prices are not supported for subscriptions."
-        super().__init__(message)
-
-
 class SubscriptionDoesNotExist(SubscriptionError):
     def __init__(self, stripe_subscription_id: str) -> None:
         self.stripe_subscription_id = stripe_subscription_id
@@ -354,8 +346,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         price = await product_price_service.get_by_stripe_price_id(session, price_id)
         if price is None:
             raise AssociatedPriceDoesNotExist(stripe_subscription.id, price_id)
-        if isinstance(price, ProductPriceCustom):
-            raise CustomPriceNotSupported(stripe_subscription.id, price_id)
 
         product = price.product
         if not product.is_recurring:

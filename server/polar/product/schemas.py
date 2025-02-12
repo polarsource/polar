@@ -1,8 +1,8 @@
 import builtins
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 import stripe as stripe_lib
-from pydantic import UUID4, AfterValidator, Discriminator, Field
+from pydantic import UUID4, AfterValidator, Discriminator, Field, Tag
 
 from polar.benefit.schemas import Benefit, BenefitID, BenefitPublic
 from polar.custom_field.attachment import (
@@ -28,10 +28,16 @@ from polar.kit.schemas import (
 )
 from polar.models.product_price import (
     ProductPriceAmountType,
-    ProductPriceCustom,
-    ProductPriceFixed,
-    ProductPriceFree,
     ProductPriceType,
+)
+from polar.models.product_price import (
+    ProductPriceCustom as ProductPriceCustomModel,
+)
+from polar.models.product_price import (
+    ProductPriceFixed as ProductPriceFixedModel,
+)
+from polar.models.product_price import (
+    ProductPriceFree as ProductPriceFreeModel,
 )
 from polar.organization.schemas import OrganizationID
 
@@ -94,8 +100,8 @@ class ProductPriceFixedCreateBase(ProductPriceCreateBase):
     price_amount: PriceAmount
     price_currency: PriceCurrency
 
-    def get_model_class(self) -> builtins.type[ProductPriceFixed]:
-        return ProductPriceFixed
+    def get_model_class(self) -> builtins.type[ProductPriceFixedModel]:
+        return ProductPriceFixedModel
 
     def get_stripe_price_params(self) -> stripe_lib.Price.CreateParams:
         return {
@@ -118,8 +124,8 @@ class ProductPriceCustomCreateBase(ProductPriceCreateBase):
         description="The initial amount shown to the customer.",
     )
 
-    def get_model_class(self) -> builtins.type[ProductPriceCustom]:
-        return ProductPriceCustom
+    def get_model_class(self) -> builtins.type[ProductPriceCustomModel]:
+        return ProductPriceCustomModel
 
     def get_stripe_price_params(self) -> stripe_lib.Price.CreateParams:
         custom_unit_amount_params: stripe_lib.Price.CreateParamsCustomUnitAmount = {
@@ -140,8 +146,8 @@ class ProductPriceCustomCreateBase(ProductPriceCreateBase):
 class ProductPriceFreeCreateBase(ProductPriceCreateBase):
     amount_type: Literal[ProductPriceAmountType.free]
 
-    def get_model_class(self) -> builtins.type[ProductPriceFree]:
-        return ProductPriceFree
+    def get_model_class(self) -> builtins.type[ProductPriceFreeModel]:
+        return ProductPriceFreeModel
 
     def get_stripe_price_params(self) -> stripe_lib.Price.CreateParams:
         return {
@@ -422,9 +428,11 @@ class ProductPriceFreeBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.free]
 
 
-class ProductPriceRecurringFixed(ProductPriceFixedBase):
+class LegacyRecurringProductPriceFixed(ProductPriceFixedBase):
     """
     A recurring price for a product, i.e. a subscription.
+
+    **Deprecated**: The recurring interval should be set on the product itself.
     """
 
     type: Literal[ProductPriceType.recurring] = Field(
@@ -435,9 +443,11 @@ class ProductPriceRecurringFixed(ProductPriceFixedBase):
     )
 
 
-class ProductPriceRecurringCustom(ProductPriceCustomBase):
+class LegacyRecurringProductPriceCustom(ProductPriceCustomBase):
     """
     A pay-what-you-want recurring price for a product, i.e. a subscription.
+
+    **Deprecated**: The recurring interval should be set on the product itself.
     """
 
     type: Literal[ProductPriceType.recurring] = Field(
@@ -448,9 +458,11 @@ class ProductPriceRecurringCustom(ProductPriceCustomBase):
     )
 
 
-class ProductPriceRecurringFree(ProductPriceFreeBase):
+class LegacyRecurringProductPriceFree(ProductPriceFreeBase):
     """
     A free recurring price for a product, i.e. a subscription.
+
+    **Deprecated**: The recurring interval should be set on the product itself.
     """
 
     type: Literal[ProductPriceType.recurring] = Field(
@@ -461,56 +473,52 @@ class ProductPriceRecurringFree(ProductPriceFreeBase):
     )
 
 
-ProductPriceRecurring = Annotated[
-    ProductPriceRecurringFixed
-    | ProductPriceRecurringCustom
-    | ProductPriceRecurringFree,
+LegacyRecurringProductPrice = Annotated[
+    LegacyRecurringProductPriceFixed
+    | LegacyRecurringProductPriceCustom
+    | LegacyRecurringProductPriceFree,
     Discriminator("amount_type"),
-    SetSchemaReference("ProductPriceRecurring"),
+    SetSchemaReference("LegacyRecurringProductPrice"),
 ]
 
 
-class ProductPriceOneTimeFixed(ProductPriceFixedBase):
+class ProductPriceFixed(ProductPriceFixedBase):
     """
-    A one-time price for a product.
-    """
-
-    type: Literal[ProductPriceType.one_time] = Field(
-        description="The type of the price."
-    )
-
-
-class ProductPriceOneTimeCustom(ProductPriceCustomBase):
-    """
-    A pay-what-you-want price for a one-time product.
+    A fixed price for a product.
     """
 
-    type: Literal[ProductPriceType.one_time] = Field(
-        description="The type of the price."
-    )
 
-
-class ProductPriceOneTimeFree(ProductPriceFreeBase):
+class ProductPriceCustom(ProductPriceCustomBase):
     """
-    A free one-time price for a product.
+    A pay-what-you-want price for a product.
     """
 
-    type: Literal[ProductPriceType.one_time] = Field(
-        description="The type of the price."
-    )
+
+class ProductPriceFree(ProductPriceFreeBase):
+    """
+    A free price for a product.
+    """
 
 
-ProductPriceOneTime = Annotated[
-    ProductPriceOneTimeFixed | ProductPriceOneTimeCustom | ProductPriceOneTimeFree,
+NewProductPrice = Annotated[
+    ProductPriceFixed | ProductPriceCustom | ProductPriceFree,
     Discriminator("amount_type"),
-    SetSchemaReference("ProductPriceOneTime"),
+    SetSchemaReference("ProductPrice"),
 ]
+
+
+def _get_discriminator_value(v: Any) -> Literal["legacy", "new"]:
+    if isinstance(v, dict):
+        type = v.get("type")
+    else:
+        type = getattr(v, "type", None)
+    return "legacy" if type is not None else "new"
 
 
 ProductPrice = Annotated[
-    ProductPriceRecurring | ProductPriceOneTime,
-    Discriminator("type"),
-    SetSchemaReference("ProductPrice"),
+    Annotated[LegacyRecurringProductPrice, Tag("legacy")]
+    | Annotated[NewProductPrice, Tag("new")],
+    Discriminator(_get_discriminator_value),
 ]
 
 

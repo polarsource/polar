@@ -28,7 +28,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.product_price import ProductPriceType
+from polar.models.product import ProductBillingType
 
 if TYPE_CHECKING:
     from .metrics import Metric
@@ -65,7 +65,7 @@ class QueryCallable(Protocol):
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
-        product_price_type: Sequence[ProductPriceType] | None = None,
+        billing_type: Sequence[ProductBillingType] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
     ) -> CTE: ...
 
@@ -75,7 +75,7 @@ def _get_readable_orders_statement(
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
-    product_price_type: Sequence[ProductPriceType] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
 ) -> Select[tuple[uuid.UUID]]:
     statement = select(Order.id).join(Product, onclause=Order.product_id == Product.id)
@@ -98,11 +98,8 @@ def _get_readable_orders_statement(
     if product_id is not None:
         statement = statement.where(Order.product_id.in_(product_id))
 
-    if product_price_type is not None:
-        statement = statement.join(
-            ProductPrice,
-            onclause=Order.product_price_id == ProductPrice.id,
-        ).where(ProductPrice.type.in_(product_price_type))
+    if billing_type is not None:
+        statement = statement.where(Product.billing_type.in_(billing_type))
 
     if customer_id is not None:
         statement = statement.join(
@@ -121,7 +118,7 @@ def get_orders_cte(
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
-    product_price_type: Sequence[ProductPriceType] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
@@ -130,7 +127,7 @@ def get_orders_cte(
         auth_subject,
         organization_id=organization_id,
         product_id=product_id,
-        product_price_type=product_price_type,
+        billing_type=billing_type,
         customer_id=customer_id,
     )
 
@@ -169,7 +166,7 @@ def get_cumulative_orders_cte(
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
-    product_price_type: Sequence[ProductPriceType] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
@@ -178,7 +175,7 @@ def get_cumulative_orders_cte(
         auth_subject,
         organization_id=organization_id,
         product_id=product_id,
-        product_price_type=product_price_type,
+        billing_type=billing_type,
         customer_id=customer_id,
     )
 
@@ -217,7 +214,7 @@ def get_active_subscriptions_cte(
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
-    product_price_type: Sequence[ProductPriceType] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
@@ -249,11 +246,10 @@ def get_active_subscriptions_cte(
             Subscription.product_id.in_(product_id)
         )
 
-    if product_price_type is not None:
-        readable_subscriptions_statement = readable_subscriptions_statement.join(
-            ProductPrice,
-            onclause=Subscription.price_id == ProductPrice.id,
-        ).where(ProductPrice.type.in_(product_price_type))
+    if billing_type is not None:
+        readable_subscriptions_statement = readable_subscriptions_statement.where(
+            Product.billing_type.in_(billing_type)
+        )
 
     if customer_id is not None:
         readable_subscriptions_statement = readable_subscriptions_statement.join(

@@ -34,6 +34,9 @@ from .discount import Discount
 from .organization import Organization
 from .product import Product
 from .product_price import (
+    LegacyRecurringProductPriceCustom,
+    LegacyRecurringProductPriceFixed,
+    LegacyRecurringProductPriceFree,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
@@ -201,13 +204,19 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @property
     def is_discount_applicable(self) -> bool:
-        return isinstance(self.product_price, ProductPriceFixed) or isinstance(
-            self.product_price, ProductPriceCustom
+        return isinstance(
+            self.product_price,
+            ProductPriceFixed
+            | ProductPriceCustom
+            | LegacyRecurringProductPriceFixed
+            | LegacyRecurringProductPriceCustom,
         )
 
     @property
     def is_free_product_price(self) -> bool:
-        return isinstance(self.product_price, ProductPriceFree)
+        return isinstance(
+            self.product_price, ProductPriceFree | LegacyRecurringProductPriceFree
+        )
 
     @property
     def is_payment_required(self) -> bool:
@@ -215,7 +224,7 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @property
     def is_payment_setup_required(self) -> bool:
-        return self.product_price.is_recurring and not self.is_free_product_price
+        return self.product.is_recurring and not self.is_free_product_price
 
     @property
     def is_payment_form_required(self) -> bool:

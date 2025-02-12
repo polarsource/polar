@@ -30,7 +30,7 @@ from polar.customer.service import customer as customer_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
-from polar.enums import PaymentProcessor
+from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.exceptions import (
     NotPermitted,
     PolarError,
@@ -54,6 +54,9 @@ from polar.models import (
     CheckoutLink,
     Customer,
     Discount,
+    LegacyRecurringProductPriceCustom,
+    LegacyRecurringProductPriceFixed,
+    LegacyRecurringProductPriceFree,
     Organization,
     Product,
     ProductPrice,
@@ -68,7 +71,6 @@ from polar.models.discount import DiscountDuration
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceFree,
-    ProductPriceType,
 )
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.service import organization as organization_service
@@ -358,14 +360,14 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         amount = checkout_create.amount
         currency = None
-        if isinstance(price, ProductPriceFixed):
+        if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
             amount = price.price_amount
             currency = price.price_currency
-        elif isinstance(price, ProductPriceCustom):
+        elif isinstance(price, ProductPriceCustom | LegacyRecurringProductPriceCustom):
             currency = price.price_currency
             if amount is None:
                 amount = price.preset_amount or 1000
-        elif isinstance(price, ProductPriceFree):
+        elif isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
             amount = None
             currency = None
 
@@ -505,14 +507,14 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         amount = None
         currency = None
-        if isinstance(price, ProductPriceFixed):
+        if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
             amount = price.price_amount
             currency = price.price_currency
-        elif isinstance(price, ProductPriceCustom):
+        elif isinstance(price, ProductPriceCustom | LegacyRecurringProductPriceCustom):
             currency = price.price_currency
             if amount is None:
                 amount = price.preset_amount or 1000
-        elif isinstance(price, ProductPriceFree):
+        elif isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
             amount = None
             currency = None
 
@@ -630,14 +632,14 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         amount = None
         currency = None
-        if isinstance(price, ProductPriceFixed):
+        if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
             amount = price.price_amount
             currency = price.price_currency
-        elif isinstance(price, ProductPriceCustom):
+        elif isinstance(price, ProductPriceCustom | LegacyRecurringProductPriceCustom):
             currency = price.price_currency
             if amount is None:
                 amount = price.preset_amount or 1000
-        elif isinstance(price, ProductPriceFree):
+        elif isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
             amount = None
             currency = None
 
@@ -937,6 +939,8 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         if payment_intent.payment_method is None:
             raise NoPaymentMethodOnPaymentIntent(checkout, payment_intent.id)
 
+        product = checkout.product
+
         stripe_customer_id = get_expandable_id(payment_intent.customer)
         stripe_payment_method_id = get_expandable_id(payment_intent.payment_method)
         metadata = {
@@ -948,11 +952,13 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         stripe_price_id = product_price.stripe_price_id
         # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
-        if isinstance(product_price, ProductPriceCustom):
+        if isinstance(
+            product_price, ProductPriceCustom | LegacyRecurringProductPriceCustom
+        ):
             ad_hoc_price = await self._create_ad_hoc_custom_price(checkout)
             stripe_price_id = ad_hoc_price.id
 
-        if product_price.is_recurring:
+        if product.is_recurring:
             subscription = checkout.subscription
             # New subscription
             if subscription is None:
@@ -968,7 +974,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                         if checkout.discount
                         else None
                     ),
-                    automatic_tax=checkout.product.is_tax_applicable,
+                    automatic_tax=product.is_tax_applicable,
                     metadata=metadata,
                     invoice_metadata={
                         "payment_intent_id": payment_intent.id,
@@ -991,7 +997,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                         if checkout.discount
                         else None
                     ),
-                    automatic_tax=checkout.product.is_tax_applicable,
+                    automatic_tax=product.is_tax_applicable,
                     metadata=metadata,
                     invoice_metadata={
                         "payment_intent_id": payment_intent.id,
@@ -1010,7 +1016,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 coupon=(
                     checkout.discount.stripe_coupon_id if checkout.discount else None
                 ),
-                automatic_tax=checkout.product.is_tax_applicable,
+                automatic_tax=product.is_tax_applicable,
                 metadata={
                     **metadata,
                     "payment_intent_id": payment_intent.id,
@@ -1083,6 +1089,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             raise PaymentRequired(checkout)
 
         product_price = checkout.product_price
+        product = checkout.product
         stripe_price_id = product_price.stripe_price_id
         metadata = {
             "type": ProductType.product,
@@ -1093,13 +1100,15 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         idempotency_key = f"checkout_{checkout.id}"
 
         # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
-        if isinstance(product_price, ProductPriceCustom):
+        if isinstance(
+            product_price, ProductPriceCustom | LegacyRecurringProductPriceCustom
+        ):
             ad_hoc_price = await self._create_ad_hoc_custom_price(
                 checkout, idempotency_key=f"{idempotency_key}_price"
             )
             stripe_price_id = ad_hoc_price.id
 
-        if product_price.is_recurring:
+        if product.is_recurring:
             (
                 stripe_subscription,
                 _,
@@ -1328,7 +1337,11 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             )
 
         if (
-            price.type == ProductPriceType.one_time
+            product.recurring_interval is None
+            and not isinstance(
+                price,
+                LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom,
+            )
             and discount.duration == DiscountDuration.repeating
         ):
             raise PolarRequestValidationError(
@@ -1465,12 +1478,14 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 )
 
             checkout.product_price = price
-            if isinstance(price, ProductPriceFixed):
+            if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
                 checkout.amount = price.price_amount
                 checkout.currency = price.price_currency
-            elif isinstance(price, ProductPriceCustom):
+            elif isinstance(
+                price, ProductPriceCustom | LegacyRecurringProductPriceCustom
+            ):
                 checkout.currency = price.price_currency
-            elif isinstance(price, ProductPriceFree):
+            elif isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
                 checkout.amount = None
                 checkout.currency = None
 
@@ -1807,9 +1822,15 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 "product_price_id": str(checkout.product_price_id),
             },
         }
-        if checkout.product_price.is_recurring:
+        if checkout.product.is_recurring:
+            recurring_interval: SubscriptionRecurringInterval
+            if isinstance(checkout.product_price, LegacyRecurringProductPriceCustom):
+                recurring_interval = checkout.product_price.recurring_interval
+            else:
+                assert checkout.product.recurring_interval is not None
+                recurring_interval = checkout.product.recurring_interval
             price_params["recurring"] = {
-                "interval": checkout.product_price.recurring_interval.as_literal(),
+                "interval": recurring_interval.as_literal(),
             }
         return await stripe_service.create_price_for_product(
             checkout.product.stripe_product_id,

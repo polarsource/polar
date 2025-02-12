@@ -1,4 +1,5 @@
 import hashlib
+from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -9,6 +10,8 @@ from sqlalchemy import (
     String,
     Text,
     Uuid,
+    case,
+    or_,
     select,
 )
 from sqlalchemy.dialects.postgresql import CITEXT
@@ -16,6 +19,7 @@ from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
 from polar.models.product_price import ProductPriceType
@@ -33,6 +37,11 @@ if TYPE_CHECKING:
     from polar.models.file import ProductMediaFile
 
 
+class ProductBillingType(StrEnum):
+    one_time = "one_time"
+    recurring = "recurring"
+
+
 class Product(MetadataMixin, RecordModel):
     __tablename__ = "products"
 
@@ -42,6 +51,9 @@ class Product(MetadataMixin, RecordModel):
         Boolean, nullable=False, default=True
     )
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    recurring_interval: Mapped[SubscriptionRecurringInterval | None] = mapped_column(
+        String, nullable=True, index=True, default=None
+    )
 
     stripe_product_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True
@@ -117,15 +129,38 @@ class Product(MetadataMixin, RecordModel):
 
     @hybrid_property
     def is_recurring(self) -> bool:
+        if self.recurring_interval is not None:
+            return True
+
+        # Check for Products that have legacy prices where recurring interval was set on them
         return all(price.is_recurring for price in self.prices)
 
     @is_recurring.inplace.expression
     @classmethod
     def _is_recurring_expression(cls) -> ColumnElement[bool]:
-        return cls.id.not_in(
-            select(ProductPrice.product_id).where(
-                ProductPrice.type != ProductPriceType.recurring
-            )
+        return or_(
+            cls.recurring_interval.is_not(None),
+            # Check for Products that have legacy prices where recurring interval was set on them
+            cls.id.in_(
+                select(ProductPrice.product_id).where(
+                    ProductPrice.type == ProductPriceType.recurring,
+                    ProductPrice.is_archived.is_(False),
+                )
+            ),
+        )
+
+    @hybrid_property
+    def billing_type(self) -> ProductBillingType:
+        if self.is_recurring:
+            return ProductBillingType.recurring
+        return ProductBillingType.one_time
+
+    @billing_type.inplace.expression
+    @classmethod
+    def _billing_type_expression(cls) -> ColumnElement[ProductBillingType]:
+        return case(
+            (cls.is_recurring.is_(True), ProductBillingType.recurring),
+            else_=ProductBillingType.one_time,
         )
 
     @property

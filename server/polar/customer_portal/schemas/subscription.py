@@ -56,8 +56,8 @@ class CustomerSubscription(CustomerSubscriptionBase):
     price: ProductPrice
 
 
-class CustomerSubscriptionUpdatePrice(Schema):
-    product_price_id: UUID4 = Field(description="Update subscription to another price.")
+class CustomerSubscriptionUpdateProduct(Schema):
+    product_id: UUID4 = Field(description="Update subscription to another product.")
 
 
 class CustomerSubscriptionCancel(Schema):
@@ -95,6 +95,6 @@ class CustomerSubscriptionCancel(Schema):
 
 
 CustomerSubscriptionUpdate = Annotated[
-    CustomerSubscriptionUpdatePrice | CustomerSubscriptionCancel,
+    CustomerSubscriptionUpdateProduct | CustomerSubscriptionCancel,
     SetSchemaReference("CustomerSubscriptionUpdate"),
 ]

@@ -124,13 +124,10 @@ class TestList:
         recurring_product = await create_product(
             save_fixture,
             organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
         )
         one_time_product = await create_product(
-            save_fixture,
-            organization=organization,
-            prices=[
-                (1000, ProductPriceType.one_time, None),
-            ],
+            save_fixture, organization=organization, recurring_interval=None
         )
 
         # then
@@ -198,7 +195,10 @@ class TestList:
         user_organization: UserOrganization,
     ) -> None:
         archived_product = await create_product(
-            save_fixture, organization=organization, is_archived=True
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            is_archived=True,
         )
 
         # then

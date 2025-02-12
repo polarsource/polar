@@ -5,7 +5,7 @@ import typing
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
-from typing import Any, Unpack
+from typing import Any, Literal, Unpack
 
 import pytest_asyncio
 
@@ -29,6 +29,9 @@ from polar.models import (
     Event,
     ExternalOrganization,
     IssueReward,
+    LegacyRecurringProductPriceCustom,
+    LegacyRecurringProductPriceFixed,
+    LegacyRecurringProductPriceFree,
     Order,
     Organization,
     Product,
@@ -73,7 +76,11 @@ from polar.models.discount import (
 from polar.models.issue import Issue
 from polar.models.order import OrderBillingReason
 from polar.models.pledge import Pledge, PledgeState, PledgeType
-from polar.models.product_price import HasPriceCurrency, ProductPriceType
+from polar.models.product_price import (
+    HasPriceCurrency,
+    ProductPriceAmountType,
+    ProductPriceType,
+)
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.models.user import OAuthAccount, OAuthPlatform
@@ -580,19 +587,12 @@ async def create_product(
     save_fixture: SaveFixture,
     *,
     organization: Organization,
+    recurring_interval: SubscriptionRecurringInterval | None,
     name: str = "Product",
     is_archived: bool = False,
     prices: Sequence[
-        tuple[int, ProductPriceType, SubscriptionRecurringInterval | None]
-        | tuple[
-            int | None,
-            int | None,
-            int | None,
-            ProductPriceType,
-            SubscriptionRecurringInterval | None,
-        ]
-        | tuple[ProductPriceType, SubscriptionRecurringInterval | None]
-    ] = [(1000, ProductPriceType.recurring, SubscriptionRecurringInterval.month)],
+        tuple[int] | tuple[int | None, int | None, int | None] | tuple[None]
+    ] = [(1000,)],
     attached_custom_fields: Sequence[tuple[CustomField, bool]] = [],
     is_tax_applicable: bool = True,
 ) -> Product:
@@ -600,6 +600,7 @@ async def create_product(
         name=name,
         description="Description",
         is_tax_applicable=is_tax_applicable,
+        recurring_interval=recurring_interval,
         is_archived=is_archived,
         organization=organization,
         stripe_product_id=rstr("PRODUCT_ID"),
@@ -616,36 +617,25 @@ async def create_product(
 
     for price in prices:
         product_price: ProductPriceFixed | ProductPriceCustom | ProductPriceFree
-        if len(price) == 2:
-            price_type, recurring_interval = price
-            product_price = await create_product_price_free(
-                save_fixture,
-                product=product,
-                type=price_type,
-                recurring_interval=recurring_interval,
-            )
-        elif len(price) == 3:
-            amount, price_type, recurring_interval = price
-            product_price = await create_product_price_fixed(
-                save_fixture,
-                product=product,
-                amount=amount,
-                type=price_type,
-                recurring_interval=recurring_interval,
-            )
+        if len(price) == 1:
+            (amount,) = price
+            if amount is None:
+                product_price = await create_product_price_free(
+                    save_fixture, product=product
+                )
+            else:
+                product_price = await create_product_price_fixed(
+                    save_fixture, product=product, amount=amount
+                )
         else:
             (
                 minimum_amount,
                 maximum_amount,
                 preset_amount,
-                price_type,
-                recurring_interval,
             ) = price
             product_price = await create_product_price_custom(
                 save_fixture,
                 product=product,
-                type=price_type,
-                recurring_interval=recurring_interval,
                 minimum_amount=minimum_amount,
                 maximum_amount=maximum_amount,
                 preset_amount=preset_amount,
@@ -660,18 +650,12 @@ async def create_product_price_fixed(
     save_fixture: SaveFixture,
     *,
     product: Product,
-    type: ProductPriceType = ProductPriceType.recurring,
-    recurring_interval: (
-        SubscriptionRecurringInterval | None
-    ) = SubscriptionRecurringInterval.month,
     amount: int = 1000,
     is_archived: bool = False,
 ) -> ProductPriceFixed:
     price = ProductPriceFixed(
         price_amount=amount,
         price_currency="usd",
-        type=type,
-        recurring_interval=recurring_interval,
         stripe_price_id=rstr("PRICE_ID"),
         product=product,
         is_archived=is_archived,
@@ -684,16 +668,12 @@ async def create_product_price_custom(
     save_fixture: SaveFixture,
     *,
     product: Product,
-    type: ProductPriceType = ProductPriceType.one_time,
-    recurring_interval: SubscriptionRecurringInterval | None = None,
     minimum_amount: int | None = None,
     maximum_amount: int | None = None,
     preset_amount: int | None = None,
 ) -> ProductPriceCustom:
     price = ProductPriceCustom(
         price_currency="usd",
-        type=type,
-        recurring_interval=recurring_interval,
         minimum_amount=minimum_amount,
         maximum_amount=maximum_amount,
         preset_amount=preset_amount,
@@ -708,17 +688,99 @@ async def create_product_price_free(
     save_fixture: SaveFixture,
     *,
     product: Product,
-    type: ProductPriceType = ProductPriceType.one_time,
-    recurring_interval: SubscriptionRecurringInterval | None = None,
 ) -> ProductPriceFree:
     price = ProductPriceFree(
-        type=type,
-        recurring_interval=recurring_interval,
         stripe_price_id=rstr("PRICE_ID"),
         product=product,
     )
     await save_fixture(price)
     return price
+
+
+@typing.overload
+async def create_legacy_recurring_product_price(
+    save_fixture: SaveFixture,
+    *,
+    amount_type: Literal[ProductPriceAmountType.fixed],
+    product: Product,
+    recurring_interval: SubscriptionRecurringInterval,
+    amount: int = 1000,
+) -> LegacyRecurringProductPriceFixed: ...
+
+
+@typing.overload
+async def create_legacy_recurring_product_price(
+    save_fixture: SaveFixture,
+    *,
+    amount_type: Literal[ProductPriceAmountType.custom],
+    product: Product,
+    recurring_interval: SubscriptionRecurringInterval,
+    minimum_amount: int | None = None,
+    maximum_amount: int | None = None,
+    preset_amount: int | None = None,
+) -> LegacyRecurringProductPriceCustom: ...
+
+
+@typing.overload
+async def create_legacy_recurring_product_price(
+    save_fixture: SaveFixture,
+    *,
+    amount_type: Literal[ProductPriceAmountType.free],
+    product: Product,
+    recurring_interval: SubscriptionRecurringInterval,
+) -> LegacyRecurringProductPriceFree: ...
+
+
+async def create_legacy_recurring_product_price(
+    save_fixture: SaveFixture,
+    *,
+    amount_type: ProductPriceAmountType,
+    product: Product,
+    recurring_interval: SubscriptionRecurringInterval,
+    amount: int | None = 1000,
+    minimum_amount: int | None = None,
+    maximum_amount: int | None = None,
+    preset_amount: int | None = None,
+) -> (
+    LegacyRecurringProductPriceFixed
+    | LegacyRecurringProductPriceCustom
+    | LegacyRecurringProductPriceFree
+):
+    product_price: (
+        LegacyRecurringProductPriceFixed
+        | LegacyRecurringProductPriceCustom
+        | LegacyRecurringProductPriceFree
+    )
+    if amount_type == ProductPriceAmountType.fixed:
+        product_price = LegacyRecurringProductPriceFixed(
+            price_amount=amount,
+            price_currency="usd",
+            stripe_price_id=rstr("PRICE_ID"),
+            product=product,
+            is_archived=False,
+        )
+    elif amount_type == ProductPriceAmountType.custom:
+        product_price = LegacyRecurringProductPriceCustom(
+            price_currency="usd",
+            minimum_amount=minimum_amount,
+            maximum_amount=maximum_amount,
+            preset_amount=preset_amount,
+            stripe_price_id=rstr("PRICE_ID"),
+            product=product,
+            is_archived=False,
+        )
+    elif amount_type == ProductPriceAmountType.free:
+        product_price = LegacyRecurringProductPriceFree(
+            stripe_price_id=rstr("PRICE_ID"),
+            product=product,
+            is_archived=False,
+        )
+
+    product_price.type = ProductPriceType.recurring
+    product_price.recurring_interval = recurring_interval
+
+    await save_fixture(product_price)
+    return product_price
 
 
 @typing.overload
@@ -1006,11 +1068,14 @@ async def create_subscription(
             if price is not None and isinstance(price, HasPriceCurrency)
             else None
         ),
-        recurring_interval=(
-            price.recurring_interval
-            if price is not None
-            else SubscriptionRecurringInterval.month
-        ),
+        recurring_interval=price.recurring_interval
+        if isinstance(
+            price,
+            LegacyRecurringProductPriceFixed
+            | LegacyRecurringProductPriceCustom
+            | LegacyRecurringProductPriceFree,
+        )
+        else product.recurring_interval,
         status=status,
         current_period_start=(
             now if current_period_start is None else current_period_start
@@ -1078,7 +1143,11 @@ async def create_canceled_subscription(
 
 @pytest_asyncio.fixture
 async def product(save_fixture: SaveFixture, organization: Organization) -> Product:
-    return await create_product(save_fixture, organization=organization)
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+    )
 
 
 @pytest_asyncio.fixture
@@ -1088,7 +1157,7 @@ async def product_one_time(
     return await create_product(
         save_fixture,
         organization=organization,
-        prices=[(1000, ProductPriceType.one_time, None)],
+        recurring_interval=None,
     )
 
 
@@ -1099,7 +1168,8 @@ async def product_one_time_custom_price(
     return await create_product(
         save_fixture,
         organization=organization,
-        prices=[(None, None, None, ProductPriceType.one_time, None)],
+        recurring_interval=None,
+        prices=[(None, None, None)],
     )
 
 
@@ -1110,7 +1180,8 @@ async def product_one_time_free_price(
     return await create_product(
         save_fixture,
         organization=organization,
-        prices=[(ProductPriceType.one_time, None)],
+        recurring_interval=None,
+        prices=[(None,)],
     )
 
 
@@ -1121,15 +1192,8 @@ async def product_recurring_custom_price(
     return await create_product(
         save_fixture,
         organization=organization,
-        prices=[
-            (
-                None,
-                None,
-                None,
-                ProductPriceType.recurring,
-                SubscriptionRecurringInterval.month,
-            )
-        ],
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[(None, None, None)],
     )
 
 
@@ -1137,26 +1201,33 @@ async def product_recurring_custom_price(
 async def product_recurring_monthly_and_yearly(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
-    return await create_product(
+    product = await create_product(
         save_fixture,
         organization=organization,
-        prices=[
-            (
-                None,
-                None,
-                None,
-                ProductPriceType.recurring,
-                SubscriptionRecurringInterval.month,
-            ),
-            (
-                None,
-                None,
-                None,
-                ProductPriceType.recurring,
-                SubscriptionRecurringInterval.year,
-            ),
-        ],
+        recurring_interval=None,
+        prices=[],
     )
+
+    monthly_price = await create_legacy_recurring_product_price(
+        save_fixture,
+        amount_type=ProductPriceAmountType.fixed,
+        product=product,
+        recurring_interval=SubscriptionRecurringInterval.month,
+    )
+    product.prices.append(monthly_price)
+    product.all_prices.append(monthly_price)
+
+    yearly_price = await create_legacy_recurring_product_price(
+        save_fixture,
+        amount_type=ProductPriceAmountType.fixed,
+        product=product,
+        recurring_interval=SubscriptionRecurringInterval.year,
+    )
+    product.prices.append(yearly_price)
+    product.all_prices.append(yearly_price)
+
+    await save_fixture(product)
+    return product
 
 
 @pytest_asyncio.fixture
@@ -1166,12 +1237,8 @@ async def product_recurring_free_price(
     return await create_product(
         save_fixture,
         organization=organization,
-        prices=[
-            (
-                ProductPriceType.recurring,
-                SubscriptionRecurringInterval.month,
-            )
-        ],
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[(None,)],
     )
 
 
@@ -1182,9 +1249,8 @@ async def product_second(
     return await create_product(
         save_fixture,
         organization=organization,
-        prices=[
-            (2000, ProductPriceType.recurring, SubscriptionRecurringInterval.month)
-        ],
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[(2000,)],
     )
 
 
@@ -1192,7 +1258,11 @@ async def product_second(
 async def product_organization_second(
     save_fixture: SaveFixture, organization_second: Organization
 ) -> Product:
-    return await create_product(save_fixture, organization=organization_second)
+    return await create_product(
+        save_fixture,
+        organization=organization_second,
+        recurring_interval=SubscriptionRecurringInterval.month,
+    )
 
 
 @pytest_asyncio.fixture

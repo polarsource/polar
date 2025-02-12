@@ -159,6 +159,8 @@ interface BenefitRowProps {
 }
 
 const BenefitRow = ({ benefit, organization }: BenefitRowProps) => {
+  const { toast } = useToast()
+
   const {
     isShown: isEditShown,
     toggle: toggleEdit,
@@ -172,8 +174,6 @@ const BenefitRow = ({ benefit, organization }: BenefitRowProps) => {
   } = useModal()
 
   const deleteBenefit = useDeleteBenefit(organization.id)
-
-  const { toast } = useToast()
 
   const handleDeleteBenefit = useCallback(() => {
     deleteBenefit.mutateAsync({ id: benefit.id }).then(({ error }) => {
@@ -190,6 +190,21 @@ const BenefitRow = ({ benefit, organization }: BenefitRowProps) => {
       })
     })
   }, [deleteBenefit, benefit, toast])
+
+  const copyBenefitId = async () => {
+    try {
+      await navigator.clipboard.writeText(benefit.id)
+      toast({
+        title: 'Benefit ID Copied',
+        description: `Benefit ${benefit.description} ID successfully copied`,
+      })
+    } catch (err) {
+      toast({
+        title: 'Benefit ID Copy Failed',
+        description: `Error copying ID of benefit ${benefit.description}`,
+      })
+    }
+  }
 
   return (
     <div className="flex w-full flex-row items-center justify-between">
@@ -219,6 +234,7 @@ const BenefitRow = ({ benefit, organization }: BenefitRowProps) => {
           align="end"
           className="dark:bg-polar-800 bg-gray-50 shadow-lg"
         >
+          <DropdownMenuItem onClick={copyBenefitId}>Copy ID</DropdownMenuItem>
           <DropdownMenuItem onClick={toggleEdit}>Edit</DropdownMenuItem>
           {benefit.deletable && (
             <DropdownMenuItem onClick={toggleDelete}>Delete</DropdownMenuItem>

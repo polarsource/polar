@@ -2,7 +2,9 @@ from uuid import UUID
 
 import pytest
 
-from polar.benefit.schemas import BenefitDownloadablesCreateProperties
+from polar.benefit.strategies.downloadables.schemas import (
+    BenefitDownloadablesCreateProperties,
+)
 from polar.file.schemas import FileRead
 from polar.models import Customer, Downloadable, Organization, Product
 from polar.models.downloadable import DownloadableStatus

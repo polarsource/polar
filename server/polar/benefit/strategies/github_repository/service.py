@@ -20,7 +20,7 @@ from polar.models.benefit_grant import BenefitGrantGitHubRepositoryProperties
 from polar.models.customer import CustomerOAuthPlatform
 from polar.posthog import posthog
 
-from .base import (
+from ..base.service import (
     BenefitActionRequiredError,
     BenefitPropertiesValidationError,
     BenefitRetriableError,

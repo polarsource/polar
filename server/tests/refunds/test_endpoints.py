@@ -5,7 +5,7 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
-from polar.benefit.service.benefit_grant import benefit_grant as benefit_grant_service
+from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import generate_uuid
 from polar.models import (

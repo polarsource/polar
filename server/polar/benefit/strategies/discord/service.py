@@ -14,7 +14,7 @@ from polar.models.benefit import BenefitDiscord, BenefitDiscordProperties
 from polar.models.benefit_grant import BenefitGrantDiscordProperties
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 
-from .base import (
+from ..base.service import (
     BenefitActionRequiredError,
     BenefitPropertiesValidationError,
     BenefitRetriableError,

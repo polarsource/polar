@@ -5,7 +5,7 @@ from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 from httpx import AsyncClient
 
-from polar.benefit.schemas import (
+from polar.benefit.strategies.license_keys.schemas import (
     BenefitLicenseKeyActivationProperties,
     BenefitLicenseKeyExpirationProperties,
     BenefitLicenseKeysCreateProperties,

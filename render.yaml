@@ -353,7 +353,7 @@ databases:
   - name: db
     databaseName: polar_cpit
     user: polar_cpit_user
-    plan: basic-1gb
+    plan: pro-4gb
     diskSizeGB: 16
     region: ohio
     postgresMajorVersion: "15"

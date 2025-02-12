@@ -379,14 +379,18 @@ class ProductService(ResourceServiceReader[Product]):
             )
 
         # Prevent non-legacy products from changing their recurring interval
-        if update_schema.recurring_interval is not None and not all(
-            isinstance(
-                price,
-                LegacyRecurringProductPriceFixed
-                | LegacyRecurringProductPriceCustom
-                | LegacyRecurringProductPriceFree,
+        if (
+            update_schema.recurring_interval is not None
+            and update_schema.recurring_interval != product.recurring_interval
+            and not all(
+                isinstance(
+                    price,
+                    LegacyRecurringProductPriceFixed
+                    | LegacyRecurringProductPriceCustom
+                    | LegacyRecurringProductPriceFree,
+                )
+                for price in product.prices
             )
-            for price in product.prices
         ):
             raise PolarRequestValidationError(
                 [

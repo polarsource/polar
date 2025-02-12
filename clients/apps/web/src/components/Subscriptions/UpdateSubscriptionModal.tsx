@@ -131,7 +131,10 @@ const UpdateSubscriptionModal = ({
                                 disabled={price.id === subscription.price_id}
                               >
                                 <div>{product.name}</div>
-                                <ProductPriceLabel price={price} />
+                                <ProductPriceLabel
+                                  product={product}
+                                  price={price}
+                                />
                               </SelectItem>
                             )),
                           )}

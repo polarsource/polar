@@ -65,7 +65,7 @@ export default function ClientPage({
       }
       router.replace(`${pathname}?${searchParams}`)
     },
-    [pagination, router, sorting, pathname],
+    [pagination, router, sorting, pathname, query],
   )
 
   const debouncedQueryChange = useDebouncedCallback(
@@ -233,9 +233,9 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
       <div className="flex flex-row items-center gap-x-6">
         <span className="text-sm leading-snug">
           {product.prices.length < 2 ? (
-            <ProductPriceLabel price={product.prices[0]} />
+            <ProductPriceLabel product={product} price={product.prices[0]} />
           ) : (
-            <ProductPrices prices={product.prices} />
+            <ProductPrices product={product} />
           )}
         </span>
         <Button

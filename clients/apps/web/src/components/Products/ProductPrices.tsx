@@ -1,36 +1,40 @@
 'use client'
 
+import { isLegacyRecurringPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import ProductPriceLabel from './ProductPriceLabel'
 
 interface ProductPrices {
-  prices: schemas['ProductPrice'][]
+  product:
+    | schemas['Product']
+    | schemas['ProductStorefront']
+    | schemas['CheckoutProduct']
 }
 
-const ProductPrices: React.FC<ProductPrices> = ({ prices }) => {
-  if (prices.length === 0) {
-    return <></>
-  }
+const ProductPrices: React.FC<ProductPrices> = ({ product }) => {
+  const { prices } = product
 
   if (prices.length === 1) {
     const price = prices[0]
-    return <ProductPriceLabel price={price} />
+    return <ProductPriceLabel product={product} price={price} />
   }
 
   if (prices.length > 1) {
-    const monthlyPrice = prices.find(
-      (price) =>
-        price.type === 'recurring' && price.recurring_interval === 'month',
-    )
-    const yearlyPrice = prices.find(
-      (price) =>
-        price.type === 'recurring' && price.recurring_interval === 'year',
-    )
+    const monthlyPrice = prices
+      .filter(isLegacyRecurringPrice)
+      .find((price) => price.recurring_interval === 'month')
+    const yearlyPrice = prices
+      .filter(isLegacyRecurringPrice)
+      .find((price) => price.recurring_interval === 'year')
     return (
       <div className="flex gap-1">
-        {monthlyPrice && <ProductPriceLabel price={monthlyPrice} />}
+        {monthlyPrice && (
+          <ProductPriceLabel product={product} price={monthlyPrice} />
+        )}
         <div>-</div>
-        {yearlyPrice && <ProductPriceLabel price={yearlyPrice} />}
+        {yearlyPrice && (
+          <ProductPriceLabel product={product} price={yearlyPrice} />
+        )}
       </div>
     )
   }

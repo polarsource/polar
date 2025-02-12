@@ -2,7 +2,7 @@ import builtins
 from typing import Annotated, Any, Literal
 
 import stripe as stripe_lib
-from pydantic import UUID4, Discriminator, Field, Tag
+from pydantic import UUID4, Discriminator, Field, Tag, computed_field
 
 from polar.benefit.schemas import Benefit, BenefitID, BenefitPublic
 from polar.custom_field.attachment import (
@@ -365,7 +365,15 @@ class ProductPriceFreeBase(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.free]
 
 
-class LegacyRecurringProductPriceFixed(ProductPriceFixedBase):
+class LegacyRecurringProductPriceMixin:
+    @computed_field
+    def legacy(self) -> Literal[True]:
+        return True
+
+
+class LegacyRecurringProductPriceFixed(
+    ProductPriceFixedBase, LegacyRecurringProductPriceMixin
+):
     """
     A recurring price for a product, i.e. a subscription.
 
@@ -380,7 +388,9 @@ class LegacyRecurringProductPriceFixed(ProductPriceFixedBase):
     )
 
 
-class LegacyRecurringProductPriceCustom(ProductPriceCustomBase):
+class LegacyRecurringProductPriceCustom(
+    ProductPriceCustomBase, LegacyRecurringProductPriceMixin
+):
     """
     A pay-what-you-want recurring price for a product, i.e. a subscription.
 
@@ -395,7 +405,9 @@ class LegacyRecurringProductPriceCustom(ProductPriceCustomBase):
     )
 
 
-class LegacyRecurringProductPriceFree(ProductPriceFreeBase):
+class LegacyRecurringProductPriceFree(
+    ProductPriceFreeBase, LegacyRecurringProductPriceMixin
+):
     """
     A free recurring price for a product, i.e. a subscription.
 

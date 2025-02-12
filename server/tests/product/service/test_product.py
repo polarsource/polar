@@ -17,19 +17,14 @@ from polar.models.file import FileServiceTypes, ProductMediaFile
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceFixed,
-    ProductPriceType,
 )
 from polar.postgres import AsyncSession
 from polar.product.schemas import (
     ExistingProductPrice,
     ProductCreate,
-    ProductOneTimeCreate,
-    ProductPriceOneTimeCustomCreate,
-    ProductPriceOneTimeFixedCreate,
-    ProductPriceOneTimeFreeCreate,
-    ProductPriceRecurringFixedCreate,
-    ProductPriceRecurringFreeCreate,
-    ProductRecurringCreate,
+    ProductPriceCustomCreate,
+    ProductPriceFixedCreate,
+    ProductPriceFreeCreate,
     ProductUpdate,
 )
 from polar.product.service.product import product as product_service
@@ -328,14 +323,13 @@ class TestCreate:
     async def test_user_not_existing_organization(
         self, auth_subject: AuthSubject[User], session: AsyncSession
     ) -> None:
-        create_schema = ProductRecurringCreate(
+        create_schema = ProductCreate(
             name="Product",
             organization_id=uuid.uuid4(),
+            recurring_interval=SubscriptionRecurringInterval.month,
             prices=[
-                ProductPriceRecurringFixedCreate(
-                    type=ProductPriceType.recurring,
+                ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
-                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -352,14 +346,13 @@ class TestCreate:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        create_schema = ProductRecurringCreate(
+        create_schema = ProductCreate(
             name="Product",
             organization_id=organization.id,
+            recurring_interval=SubscriptionRecurringInterval.month,
             prices=[
-                ProductPriceRecurringFixedCreate(
-                    type=ProductPriceType.recurring,
+                ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
-                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -386,14 +379,13 @@ class TestCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = ProductRecurringCreate(
+        create_schema = ProductCreate(
             name="Product",
             organization_id=organization.id,
+            recurring_interval=SubscriptionRecurringInterval.month,
             prices=[
-                ProductPriceRecurringFixedCreate(
-                    type=ProductPriceType.recurring,
+                ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
-                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -426,15 +418,14 @@ class TestCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = ProductRecurringCreate(
+        create_schema = ProductCreate(
             name="Product",
             description="",
             organization_id=organization.id,
+            recurring_interval=SubscriptionRecurringInterval.month,
             prices=[
-                ProductPriceRecurringFixedCreate(
-                    type=ProductPriceType.recurring,
+                ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
-                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -451,14 +442,13 @@ class TestCreate:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        create_schema = ProductRecurringCreate(
+        create_schema = ProductCreate(
             name="Product",
             organization_id=organization.id,
+            recurring_interval=SubscriptionRecurringInterval.month,
             prices=[
-                ProductPriceRecurringFixedCreate(
-                    type=ProductPriceType.recurring,
+                ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
-                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -484,13 +474,12 @@ class TestCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = ProductRecurringCreate(
+        create_schema = ProductCreate(
             name="Product",
+            recurring_interval=SubscriptionRecurringInterval.month,
             prices=[
-                ProductPriceRecurringFixedCreate(
-                    type=ProductPriceType.recurring,
+                ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
-                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -514,14 +503,13 @@ class TestCreate:
             stripe_service_mock.create_price_for_product
         )
 
-        create_schema = ProductRecurringCreate(
+        create_schema = ProductCreate(
             name="Product",
             organization_id=organization.id,
+            recurring_interval=SubscriptionRecurringInterval.month,
             prices=[
-                ProductPriceRecurringFixedCreate(
-                    type=ProductPriceType.recurring,
+                ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
-                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -574,14 +562,13 @@ class TestCreate:
             stripe_service_mock.create_price_for_product
         )
 
-        create_schema = ProductRecurringCreate(
+        create_schema = ProductCreate(
             name="Product",
             organization_id=organization.id,
+            recurring_interval=SubscriptionRecurringInterval.month,
             prices=[
-                ProductPriceRecurringFixedCreate(
-                    type=ProductPriceType.recurring,
+                ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
-                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -627,14 +614,13 @@ class TestCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = ProductRecurringCreate(
+        create_schema = ProductCreate(
             name="Product",
             organization_id=organization.id,
+            recurring_interval=SubscriptionRecurringInterval.month,
             prices=[
-                ProductPriceRecurringFixedCreate(
-                    type=ProductPriceType.recurring,
+                ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
-                    recurring_interval=SubscriptionRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -649,22 +635,22 @@ class TestCreate:
     @pytest.mark.parametrize(
         "create_schema",
         (
-            ProductOneTimeCreate(
+            ProductCreate(
                 name="Product",
+                recurring_interval=None,
                 prices=[
-                    ProductPriceOneTimeFixedCreate(
-                        type=ProductPriceType.one_time,
+                    ProductPriceFixedCreate(
                         amount_type=ProductPriceAmountType.fixed,
                         price_amount=1000,
                         price_currency="usd",
                     )
                 ],
             ),
-            ProductOneTimeCreate(
+            ProductCreate(
                 name="Product",
+                recurring_interval=None,
                 prices=[
-                    ProductPriceOneTimeCustomCreate(
-                        type=ProductPriceType.one_time,
+                    ProductPriceCustomCreate(
                         amount_type=ProductPriceAmountType.custom,
                         minimum_amount=1000,
                         maximum_amount=2000,
@@ -673,22 +659,21 @@ class TestCreate:
                     ),
                 ],
             ),
-            ProductOneTimeCreate(
+            ProductCreate(
                 name="Product",
+                recurring_interval=None,
                 prices=[
-                    ProductPriceOneTimeFreeCreate(
-                        type=ProductPriceType.one_time,
+                    ProductPriceFreeCreate(
                         amount_type=ProductPriceAmountType.free,
                     ),
                 ],
             ),
-            ProductRecurringCreate(
+            ProductCreate(
                 name="Product",
+                recurring_interval=SubscriptionRecurringInterval.month,
                 prices=[
-                    ProductPriceRecurringFreeCreate(
-                        type=ProductPriceType.recurring,
+                    ProductPriceFreeCreate(
                         amount_type=ProductPriceAmountType.free,
-                        recurring_interval=SubscriptionRecurringInterval.month,
                     )
                 ],
             ),
@@ -734,18 +719,12 @@ class TestUpdate:
         authz: Authz,
         product: Product,
     ) -> None:
-        # load
-        product_organization_loaded = await product_service.get_loaded(
-            session, product.id
-        )
-        assert product_organization_loaded
-
         update_schema = ProductUpdate(name="Product Update")
         with pytest.raises(NotPermitted):
             await product_service.update(
                 session,
                 authz,
-                product_organization_loaded,
+                product,
                 update_schema,
                 auth_subject,
             )
@@ -762,18 +741,12 @@ class TestUpdate:
         product: Product,
         user_organization: UserOrganization,
     ) -> None:
-        # load
-        product_organization_loaded = await product_service.get_loaded(
-            session, product.id
-        )
-        assert product_organization_loaded
-
         update_schema = ProductUpdate(prices=[])
         with pytest.raises(PolarRequestValidationError):
             await product_service.update(
                 session,
                 authz,
-                product_organization_loaded,
+                product,
                 update_schema,
                 auth_subject,
             )
@@ -794,17 +767,11 @@ class TestUpdate:
     ) -> None:
         update_product_mock: MagicMock = stripe_service_mock.update_product
 
-        # load
-        product_organization_loaded = await product_service.get_loaded(
-            session, product.id
-        )
-        assert product_organization_loaded
-
         update_schema = ProductUpdate(name="Product Update")
         updated_product = await product_service.update(
             session,
             authz,
-            product_organization_loaded,
+            product,
             update_schema,
             auth_subject,
         )
@@ -830,17 +797,11 @@ class TestUpdate:
     ) -> None:
         update_product_mock: MagicMock = stripe_service_mock.update_product
 
-        # load
-        product_organization_loaded = await product_service.get_loaded(
-            session, product.id
-        )
-        assert product_organization_loaded
-
         update_schema = ProductUpdate(description="Description update")
         updated_product = await product_service.update(
             session,
             authz,
-            product_organization_loaded,
+            product,
             update_schema,
             auth_subject,
         )
@@ -866,17 +827,11 @@ class TestUpdate:
     ) -> None:
         update_product_mock: MagicMock = stripe_service_mock.update_product
 
-        # load
-        product_organization_loaded = await product_service.get_loaded(
-            session, product.id
-        )
-        assert product_organization_loaded
-
         update_schema = ProductUpdate(description="")
         updated_product = await product_service.update(
             session,
             authz,
-            product_organization_loaded,
+            product,
             update_schema,
             auth_subject,
         )
@@ -888,7 +843,7 @@ class TestUpdate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_valid_price_added(
+    async def test_valid_price_kept(
         self,
         session: AsyncSession,
         authz: Authz,
@@ -900,50 +855,30 @@ class TestUpdate:
         create_price_for_product_mock: MagicMock = (
             stripe_service_mock.create_price_for_product
         )
-        create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
-
-        # load
-        product_organization_loaded = await product_service.get_loaded(
-            session, product.id
-        )
-        assert product_organization_loaded
 
         update_schema = ProductUpdate(
             prices=[
-                ExistingProductPrice(id=product_organization_loaded.prices[0].id),
-                ProductPriceRecurringFixedCreate(
-                    type=ProductPriceType.recurring,
-                    amount_type=ProductPriceAmountType.fixed,
-                    recurring_interval=SubscriptionRecurringInterval.year,
-                    price_amount=12000,
-                    price_currency="usd",
-                ),
+                ExistingProductPrice(id=product.prices[0].id),
             ]
         )
         updated_product = await product_service.update(
             session,
             authz,
-            product_organization_loaded,
+            product,
             update_schema,
             auth_subject,
         )
 
-        create_price_for_product_mock.assert_called_once()
+        create_price_for_product_mock.assert_not_called()
 
-        assert len(updated_product.prices) == 2
-        assert updated_product.prices[0].id == product_organization_loaded.prices[0].id
-
-        new_price = updated_product.prices[1]
-        assert isinstance(new_price, ProductPriceFixed)
-        assert new_price.recurring_interval == "year"
-        assert new_price.price_amount == 12000
-        assert new_price.stripe_price_id == "NEW_PRICE_ID"
+        assert len(updated_product.prices) == 1
+        assert updated_product.prices[0].id == product.prices[0].id
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_valid_price_deleted(
+    async def test_valid_price_replaced(
         self,
         session: AsyncSession,
         authz: Authz,
@@ -958,29 +893,21 @@ class TestUpdate:
         create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
         archive_price_mock: MagicMock = stripe_service_mock.archive_price
 
-        deleted_price_id = product.prices[0].stripe_price_id
-
-        # load
-        product_organization_loaded = await product_service.get_loaded(
-            session, product.id
-        )
-        assert product_organization_loaded
-
         update_schema = ProductUpdate(
             prices=[
-                ProductPriceRecurringFixedCreate(
-                    type=ProductPriceType.recurring,
+                ProductPriceFixedCreate(
                     amount_type=ProductPriceAmountType.fixed,
-                    recurring_interval=SubscriptionRecurringInterval.year,
                     price_amount=12000,
                     price_currency="usd",
                 ),
             ]
         )
+        deleted_price_id = product.prices[0].stripe_price_id
+
         updated_product = await product_service.update(
             session,
             authz,
-            product_organization_loaded,
+            product,
             update_schema,
             auth_subject,
         )
@@ -992,7 +919,6 @@ class TestUpdate:
 
         new_price = updated_product.prices[0]
         assert isinstance(new_price, ProductPriceFixed)
-        assert new_price.recurring_interval == "year"
         assert new_price.price_amount == 12000
         assert new_price.stripe_price_id == "NEW_PRICE_ID"
 
@@ -1011,17 +937,11 @@ class TestUpdate:
     ) -> None:
         archive_product_mock: MagicMock = stripe_service_mock.archive_product
 
-        # load
-        product_organization_loaded = await product_service.get_loaded(
-            session, product.id
-        )
-        assert product_organization_loaded
-
         update_schema = ProductUpdate(is_archived=True)
         updated_product = await product_service.update(
             session,
             authz,
-            product_organization_loaded,
+            product,
             update_schema,
             auth_subject,
         )
@@ -1049,17 +969,11 @@ class TestUpdate:
 
         unarchive_product: MagicMock = stripe_service_mock.unarchive_product
 
-        # load
-        product_organization_loaded = await product_service.get_loaded(
-            session, product.id
-        )
-        assert product_organization_loaded
-
         update_schema = ProductUpdate(is_archived=False)
         updated_product = await product_service.update(
             session,
             authz,
-            product_organization_loaded,
+            product,
             update_schema,
             auth_subject,
         )
@@ -1080,18 +994,12 @@ class TestUpdate:
         product: Product,
         user_organization: UserOrganization,
     ) -> None:
-        # load
-        product_organization_loaded = await product_service.get_loaded(
-            session, product.id
-        )
-        assert product_organization_loaded
-
         update_schema = ProductUpdate(medias=[uuid.uuid4()])
         with pytest.raises(PolarRequestValidationError):
             await product_service.update(
                 session,
                 authz,
-                product_organization_loaded,
+                product,
                 update_schema,
                 auth_subject,
             )
@@ -1134,18 +1042,12 @@ class TestUpdate:
         )
         await save_fixture(file)
 
-        # load
-        product_organization_loaded = await product_service.get_loaded(
-            session, product.id
-        )
-        assert product_organization_loaded
-
         update_schema = ProductUpdate(medias=[file.id])
         with pytest.raises(PolarRequestValidationError):
             await product_service.update(
                 session,
                 authz,
-                product_organization_loaded,
+                product,
                 update_schema,
                 auth_subject,
             )
@@ -1178,22 +1080,169 @@ class TestUpdate:
         )
         await save_fixture(file)
 
-        # load
-        product_organization_loaded = await product_service.get_loaded(
-            session, product.id
-        )
-        assert product_organization_loaded
-
         update_schema = ProductUpdate(medias=[file.id])
         updated_product = await product_service.update(
             session,
             authz,
-            product_organization_loaded,
+            product,
             update_schema,
             auth_subject,
         )
 
         assert len(updated_product.medias) == 1
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_invalid_change_recurring_interval_on_non_legacy_product(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        auth_subject: AuthSubject[User | Organization],
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        update_schema = ProductUpdate(
+            recurring_interval=SubscriptionRecurringInterval.year
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.update(
+                session,
+                authz,
+                product,
+                update_schema,
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_invalid_legacy_product_price_with_new_price(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        auth_subject: AuthSubject[User | Organization],
+        product_recurring_monthly_and_yearly: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        update_schema = ProductUpdate(
+            prices=[
+                ExistingProductPrice(
+                    id=product_recurring_monthly_and_yearly.prices[0].id
+                ),
+                ProductPriceFixedCreate(
+                    amount_type=ProductPriceAmountType.fixed,
+                    price_amount=12000,
+                    price_currency="usd",
+                ),
+            ]
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.update(
+                session,
+                authz,
+                product_recurring_monthly_and_yearly,
+                update_schema,
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_legacy_product_price_kept(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        auth_subject: AuthSubject[User | Organization],
+        product_recurring_monthly_and_yearly: Product,
+        user_organization: UserOrganization,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
+
+        update_schema = ProductUpdate(
+            prices=[
+                ExistingProductPrice(
+                    id=product_recurring_monthly_and_yearly.prices[0].id
+                ),
+                ExistingProductPrice(
+                    id=product_recurring_monthly_and_yearly.prices[1].id
+                ),
+            ]
+        )
+        updated_product = await product_service.update(
+            session,
+            authz,
+            product_recurring_monthly_and_yearly,
+            update_schema,
+            auth_subject,
+        )
+
+        create_price_for_product_mock.assert_not_called()
+
+        assert len(updated_product.prices) == 2
+        assert (
+            updated_product.prices[0].id
+            == product_recurring_monthly_and_yearly.prices[0].id
+        )
+        assert (
+            updated_product.prices[1].id
+            == product_recurring_monthly_and_yearly.prices[1].id
+        )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_legacy_product_price_replaced(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        auth_subject: AuthSubject[User | Organization],
+        product_recurring_monthly_and_yearly: Product,
+        user_organization: UserOrganization,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
+        archive_price_mock: MagicMock = stripe_service_mock.archive_price
+
+        old_price_ids = [
+            p.stripe_price_id for p in product_recurring_monthly_and_yearly.prices
+        ]
+
+        update_schema = ProductUpdate(
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[
+                ProductPriceFixedCreate(
+                    amount_type=ProductPriceAmountType.fixed,
+                    price_amount=12000,
+                    price_currency="usd",
+                ),
+            ],
+        )
+        updated_product = await product_service.update(
+            session,
+            authz,
+            product_recurring_monthly_and_yearly,
+            update_schema,
+            auth_subject,
+        )
+
+        create_price_for_product_mock.assert_called_once()
+        for old_price_id in old_price_ids:
+            archive_price_mock.assert_any_call(old_price_id)
+
+        assert len(updated_product.prices) == 1
 
 
 @pytest.mark.asyncio

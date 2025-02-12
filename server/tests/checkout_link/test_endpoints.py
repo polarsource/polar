@@ -4,6 +4,7 @@ from httpx import AsyncClient
 
 from polar.auth.scope import Scope
 from polar.checkout.service import CHECKOUT_CLIENT_SECRET_PREFIX
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
 from polar.models import CheckoutLink, Product, ProductPrice, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
@@ -275,6 +276,7 @@ class TestRedirect:
         product = await create_product(
             save_fixture,
             organization=org,
+            recurring_interval=SubscriptionRecurringInterval.month,
             name="Prohibited product",
             is_archived=False,
         )

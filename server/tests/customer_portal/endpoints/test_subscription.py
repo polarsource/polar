@@ -7,7 +7,6 @@ from pytest_mock import MockerFixture
 
 from polar.integrations.stripe.service import StripeService
 from polar.models import Customer, Organization, Product, ProductPriceFree, Subscription
-from polar.models.product_price import ProductPriceType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -16,7 +15,6 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_canceled_subscription,
     create_product,
-    create_product_price_fixed,
 )
 from tests.fixtures.stripe import (
     cloned_stripe_canceled_subscription,
@@ -32,14 +30,14 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.mark.asyncio
-class TestCustomerSubscriptionPriceUpdate:
+class TestCustomerSubscriptionProductUpdate:
     async def test_anonymous(
         self, client: AsyncClient, session: AsyncSession, subscription: Subscription
     ) -> None:
         non_existing = uuid.uuid4()
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(product_price_id=str(non_existing)),
+            json=dict(product_id=str(non_existing)),
         )
         assert response.status_code == 401
 
@@ -50,12 +48,12 @@ class TestCustomerSubscriptionPriceUpdate:
         non_existing = uuid.uuid4()
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(product_price_id=str(non_existing)),
+            json=dict(product_id=str(non_existing)),
         )
         assert response.status_code == 422
 
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
-    async def test_non_recurring_price(
+    async def test_non_recurring_product(
         self,
         client: AsyncClient,
         session: AsyncSession,
@@ -63,13 +61,12 @@ class TestCustomerSubscriptionPriceUpdate:
         organization: Organization,
         subscription: Subscription,
     ) -> None:
-        product = await create_product(save_fixture, organization=organization)
-        price = await create_product_price_fixed(
-            save_fixture, product=product, type=ProductPriceType.one_time
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
         )
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(product_price_id=str(price.id)),
+            json=dict(product_id=str(product.id)),
         )
         assert response.status_code == 422
 
@@ -80,10 +77,9 @@ class TestCustomerSubscriptionPriceUpdate:
         subscription: Subscription,
         product_organization_second: Product,
     ) -> None:
-        price_id = product_organization_second.prices[0].id
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(product_price_id=str(price_id)),
+            json=dict(product_id=str(product_organization_second.id)),
         )
         assert response.status_code == 422
 
@@ -95,13 +91,12 @@ class TestCustomerSubscriptionPriceUpdate:
         save_fixture: SaveFixture,
         product_second: Product,
     ) -> None:
-        price_id = product_second.prices[0].id
         subscription.stripe_subscription_id = None
         await save_fixture(subscription)
 
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(product_price_id=str(price_id)),
+            json=dict(product_id=str(product_second.id)),
         )
         assert response.status_code == 400
 
@@ -127,7 +122,7 @@ class TestCustomerSubscriptionPriceUpdate:
         new_price_id = new_price.id
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
-            json=dict(product_price_id=str(new_price_id)),
+            json=dict(product_id=str(product_second.id)),
         )
         assert response.status_code == 200
         assert stripe_service_mock.cancel_subscription.called is False

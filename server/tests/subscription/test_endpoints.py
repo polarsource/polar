@@ -15,7 +15,6 @@ from polar.models import (
     Subscription,
     UserOrganization,
 )
-from polar.models.product_price import ProductPriceType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -23,7 +22,6 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_canceled_subscription,
     create_product,
-    create_product_price_fixed,
 )
 from tests.fixtures.stripe import (
     cloned_stripe_canceled_subscription,
@@ -77,7 +75,7 @@ class TestListSubscriptions:
 
 
 @pytest.mark.asyncio
-class TestSubscriptionPriceUpdate:
+class TestSubscriptionProductUpdate:
     async def test_anonymous(
         self, client: AsyncClient, session: AsyncSession, subscription: Subscription
     ) -> None:
@@ -98,8 +96,6 @@ class TestSubscriptionPriceUpdate:
         product_second: Product,
         customer: Customer,
     ) -> None:
-        new_price = product_second.prices[0]
-
         subscription = await create_canceled_subscription(
             save_fixture,
             product=product,
@@ -107,7 +103,7 @@ class TestSubscriptionPriceUpdate:
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(product_price_id=str(new_price.id)),
+            json=dict(product_id=str(product_second.id)),
         )
         assert response.status_code == 403
 
@@ -115,7 +111,6 @@ class TestSubscriptionPriceUpdate:
     async def test_non_existing_product(
         self,
         client: AsyncClient,
-        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
@@ -131,24 +126,22 @@ class TestSubscriptionPriceUpdate:
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(product_price_id=str(non_existing)),
+            json=dict(product_id=str(non_existing)),
         )
         assert response.status_code == 422
 
     @pytest.mark.auth
-    async def test_non_recurring_price(
+    async def test_non_recurring_product(
         self,
         client: AsyncClient,
-        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         product: Product,
         user_organization: UserOrganization,
         customer: Customer,
     ) -> None:
-        product = await create_product(save_fixture, organization=organization)
-        price = await create_product_price_fixed(
-            save_fixture, product=product, type=ProductPriceType.one_time
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
         )
         subscription = await create_active_subscription(
             save_fixture,
@@ -158,7 +151,7 @@ class TestSubscriptionPriceUpdate:
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(product_price_id=str(price.id)),
+            json={"product_id": str(product.id)},
         )
         assert response.status_code == 422
 
@@ -168,7 +161,6 @@ class TestSubscriptionPriceUpdate:
         client: AsyncClient,
         subscription: Subscription,
         save_fixture: SaveFixture,
-        organization: Organization,
         user_organization: UserOrganization,
         product: Product,
         customer: Customer,
@@ -180,10 +172,9 @@ class TestSubscriptionPriceUpdate:
             customer=customer,
             started_at=datetime(2023, 1, 1),
         )
-        price_id = product_organization_second.prices[0].id
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(product_price_id=str(price_id)),
+            json=dict(product_id=str(product_organization_second.id)),
         )
         assert response.status_code == 422
 
@@ -192,7 +183,6 @@ class TestSubscriptionPriceUpdate:
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
-        organization: Organization,
         user_organization: UserOrganization,
         product: Product,
         customer: Customer,
@@ -204,13 +194,12 @@ class TestSubscriptionPriceUpdate:
             customer=customer,
             started_at=datetime(2023, 1, 1),
         )
-        price_id = product_second.prices[0].id
         subscription.stripe_subscription_id = None
         await save_fixture(subscription)
 
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(product_price_id=str(price_id)),
+            json=dict(product_id=str(product_second.id)),
         )
         assert response.status_code == 400
 
@@ -237,7 +226,7 @@ class TestSubscriptionPriceUpdate:
         new_price_id = new_price.id
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json=dict(product_price_id=str(new_price_id)),
+            json=dict(product_id=str(product_second.id)),
         )
         assert response.status_code == 200
         assert stripe_service_mock.cancel_subscription.called is False

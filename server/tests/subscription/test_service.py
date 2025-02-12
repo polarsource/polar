@@ -17,9 +17,6 @@ from polar.models import (
     Discount,
     Organization,
     Product,
-    ProductPriceCustom,
-    ProductPriceFixed,
-    ProductPriceFree,
     Subscription,
     User,
     UserOrganization,
@@ -29,7 +26,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
-    AssociatedSubscriptionTierPriceDoesNotExist,
+    AssociatedPriceDoesNotExist,
     SubscriptionDoesNotExist,
 )
 from polar.subscription.service import subscription as subscription_service
@@ -87,101 +84,6 @@ def reset_hooks(subscription_hooks: Hooks) -> None:
 
 
 @pytest.mark.asyncio
-class TestCreateArbitrarySubscription:
-    async def test_valid_fixed_price(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        enqueue_benefits_grants_mock = mocker.patch.object(
-            subscription_service, "enqueue_benefits_grants"
-        )
-
-        # then
-        session.expunge_all()
-
-        price = product.prices[0]
-        assert isinstance(price, ProductPriceFixed)
-        subscription = await subscription_service.create_arbitrary_subscription(
-            session, customer=customer, product=product, price=price
-        )
-
-        assert subscription.product_id == product.id
-        assert subscription.customer == customer
-        assert subscription.amount == price.price_amount
-        assert subscription.currency == price.price_currency
-        assert subscription.recurring_interval == price.recurring_interval
-
-        enqueue_benefits_grants_mock.assert_called_once()
-
-    async def test_valid_custom_price(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        product_recurring_custom_price: Product,
-        customer: Customer,
-    ) -> None:
-        enqueue_benefits_grants_mock = mocker.patch.object(
-            subscription_service, "enqueue_benefits_grants"
-        )
-
-        # then
-        session.expunge_all()
-
-        price = product_recurring_custom_price.prices[0]
-        assert isinstance(price, ProductPriceCustom)
-        subscription = await subscription_service.create_arbitrary_subscription(
-            session,
-            customer=customer,
-            product=product_recurring_custom_price,
-            price=price,
-            amount=2000,
-        )
-
-        assert subscription.product_id == product_recurring_custom_price.id
-        assert subscription.customer == customer
-        assert subscription.amount == 2000
-        assert subscription.currency == price.price_currency
-        assert subscription.recurring_interval == price.recurring_interval
-
-        enqueue_benefits_grants_mock.assert_called_once()
-
-    async def test_valid_free_price(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        product_recurring_free_price: Product,
-        subscription_hooks: Hooks,
-        customer: Customer,
-    ) -> None:
-        enqueue_benefits_grants_mock = mocker.patch.object(
-            subscription_service, "enqueue_benefits_grants"
-        )
-
-        # then
-        session.expunge_all()
-
-        price = product_recurring_free_price.prices[0]
-        assert isinstance(price, ProductPriceFree)
-        subscription = await subscription_service.create_arbitrary_subscription(
-            session,
-            customer=customer,
-            product=product_recurring_free_price,
-            price=price,
-        )
-
-        assert subscription.product_id == product_recurring_free_price.id
-        assert subscription.customer == customer
-        assert subscription.amount is None
-        assert subscription.currency is None
-        assert subscription.recurring_interval == price.recurring_interval
-
-        enqueue_benefits_grants_mock.assert_called_once()
-
-
-@pytest.mark.asyncio
 class TestCreateSubscriptionFromStripe:
     async def test_not_existing_subscription_tier(self, session: AsyncSession) -> None:
         stripe_subscription = construct_stripe_subscription()
@@ -189,7 +91,7 @@ class TestCreateSubscriptionFromStripe:
         # then
         session.expunge_all()
 
-        with pytest.raises(AssociatedSubscriptionTierPriceDoesNotExist):
+        with pytest.raises(AssociatedPriceDoesNotExist):
             await subscription_service.create_subscription_from_stripe(
                 session, stripe_subscription=stripe_subscription
             )
@@ -444,7 +346,7 @@ class TestUpdateSubscriptionFromStripe:
         # then
         session.expunge_all()
 
-        with pytest.raises(AssociatedSubscriptionTierPriceDoesNotExist):
+        with pytest.raises(AssociatedPriceDoesNotExist):
             await subscription_service.update_subscription_from_stripe(
                 session, stripe_subscription=stripe_subscription
             )

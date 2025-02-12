@@ -7,7 +7,7 @@ from sqlalchemy import ColumnElement, FromClause, select
 from polar.auth.models import AuthSubject
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.models import Organization, User
-from polar.models.product_price import ProductPriceType
+from polar.models.product import ProductBillingType
 from polar.postgres import AsyncSession
 
 from .metrics import METRICS
@@ -26,7 +26,7 @@ class MetricsService:
         interval: TimeInterval,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
-        product_price_type: Sequence[ProductPriceType] | None = None,
+        billing_type: Sequence[ProductBillingType] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
     ) -> MetricsResponse:
         start_timestamp = datetime(
@@ -49,7 +49,7 @@ class MetricsService:
                 METRICS,
                 organization_id=organization_id,
                 product_id=product_id,
-                product_price_type=product_price_type,
+                billing_type=billing_type,
                 customer_id=customer_id,
             )
             for query in QUERIES

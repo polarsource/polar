@@ -140,7 +140,7 @@ class TestSubscriptionProductUpdate:
         user_organization: UserOrganization,
         customer: Customer,
     ) -> None:
-        product = await create_product(
+        new_product = await create_product(
             save_fixture, organization=organization, recurring_interval=None
         )
         subscription = await create_active_subscription(
@@ -151,7 +151,7 @@ class TestSubscriptionProductUpdate:
         )
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json={"product_id": str(product.id)},
+            json={"product_id": str(new_product.id)},
         )
         assert response.status_code == 422
 

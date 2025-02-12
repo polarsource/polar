@@ -6,12 +6,8 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
-from polar.customer_portal.schemas.subscription import (
-    CustomerSubscriptionUpdatePrice,
-)
-from polar.customer_portal.service.subscription import (
-    UpdateSubscriptionNotAllowed,
-)
+from polar.customer_portal.schemas.subscription import CustomerSubscriptionUpdateProduct
+from polar.customer_portal.service.subscription import UpdateSubscriptionNotAllowed
 from polar.customer_portal.service.subscription import (
     customer_subscription as customer_subscription_service,
 )
@@ -25,7 +21,6 @@ from polar.models import (
     ProductPriceFixed,
     Subscription,
 )
-from polar.models.product_price import ProductPriceType
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service import (
@@ -37,7 +32,6 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_product,
-    create_product_price_fixed,
     create_subscription,
 )
 from tests.fixtures.stripe import cloned_stripe_canceled_subscription
@@ -104,25 +98,24 @@ class TestUpdate:
             await customer_subscription_service.update(
                 session,
                 subscription,
-                updates=CustomerSubscriptionUpdatePrice(product_price_id=uuid.uuid4()),
+                updates=CustomerSubscriptionUpdateProduct(product_id=uuid.uuid4()),
             )
 
-    async def test_not_recurring_price(
+    async def test_not_recurring_product(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         subscription: Subscription,
     ) -> None:
-        product = await create_product(save_fixture, organization=organization)
-        price = await create_product_price_fixed(
-            save_fixture, product=product, type=ProductPriceType.one_time
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
         )
         with pytest.raises(PolarRequestValidationError):
             await customer_subscription_service.update(
                 session,
                 subscription,
-                updates=CustomerSubscriptionUpdatePrice(product_price_id=price.id),
+                updates=CustomerSubscriptionUpdateProduct(product_id=product.id),
             )
 
     async def test_extraneous_tier(
@@ -135,8 +128,8 @@ class TestUpdate:
             await customer_subscription_service.update(
                 session,
                 subscription,
-                updates=CustomerSubscriptionUpdatePrice(
-                    product_price_id=product_organization_second.all_prices[0].id
+                updates=CustomerSubscriptionUpdateProduct(
+                    product_id=product_organization_second.id
                 ),
             )
 
@@ -148,9 +141,7 @@ class TestUpdate:
             await customer_subscription_service.update(
                 session,
                 subscription,
-                updates=CustomerSubscriptionUpdatePrice(
-                    product_price_id=product_second.prices[0].id
-                ),
+                updates=CustomerSubscriptionUpdateProduct(product_id=product_second.id),
             )
 
     async def test_update_not_allowed(
@@ -171,9 +162,7 @@ class TestUpdate:
             await customer_subscription_service.update(
                 session,
                 subscription,
-                updates=CustomerSubscriptionUpdatePrice(
-                    product_price_id=product_second.prices[0].id
-                ),
+                updates=CustomerSubscriptionUpdateProduct(product_id=product_second.id),
             )
 
     async def test_valid(
@@ -188,16 +177,16 @@ class TestUpdate:
         updated_subscription = await customer_subscription_service.update(
             session,
             subscription,
-            updates=CustomerSubscriptionUpdatePrice(
-                product_price_id=product_second.prices[0].id,
-            ),
+            updates=CustomerSubscriptionUpdateProduct(product_id=product_second.id),
         )
 
         assert isinstance(new_price, ProductPriceFixed)
         assert updated_subscription.product == product_second
         assert updated_subscription.price == new_price
         assert updated_subscription.amount == new_price.price_amount
-        assert updated_subscription.recurring_interval == new_price.recurring_interval
+        assert (
+            updated_subscription.recurring_interval == product_second.recurring_interval
+        )
 
         stripe_service_mock.update_subscription_price.assert_called_once_with(
             subscription.stripe_subscription_id,

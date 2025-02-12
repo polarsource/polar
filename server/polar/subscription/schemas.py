@@ -20,7 +20,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
-from polar.product.schemas import Product, ProductPriceRecurring
+from polar.product.schemas import Product, ProductPrice
 
 SubscriptionID = Annotated[UUID4, Path(description="The subscription ID.")]
 
@@ -110,7 +110,7 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
         deprecated="Use `customer`.",
     )
     product: Product
-    price: ProductPriceRecurring
+    price: ProductPrice
     discount: SubscriptionDiscount | None
 
 
@@ -123,8 +123,8 @@ class SubscriptionCreateEmail(Schema):
     )
 
 
-class SubscriptionUpdatePrice(Schema):
-    product_price_id: UUID4 = Field(description="Update subscription to another price.")
+class SubscriptionUpdateProduct(Schema):
+    product_id: UUID4 = Field(description="Update subscription to another product.")
     proration_behavior: SubscriptionProrationBehavior | None = Field(
         default=None,
         description=(
@@ -192,6 +192,6 @@ class SubscriptionCancel(Schema):
 
 
 SubscriptionUpdate = Annotated[
-    SubscriptionUpdatePrice | SubscriptionCancel,
+    SubscriptionUpdateProduct | SubscriptionCancel,
     SetSchemaReference("SubscriptionUpdate"),
 ]

@@ -25,16 +25,13 @@ from polar.models import (
     ProductBenefit,
     ProductMedia,
     ProductPrice,
+    ProductPriceCustom,
+    ProductPriceFixed,
     User,
     UserOrganization,
 )
 from polar.models.product_custom_field import ProductCustomField
-from polar.models.product_price import (
-    ProductPriceAmountType,
-    ProductPriceCustom,
-    ProductPriceFixed,
-    ProductPriceType,
-)
+from polar.models.product_price import ProductPriceAmountType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.organization.service import organization as organization_service
@@ -42,11 +39,7 @@ from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
 
-from ..schemas import (
-    ExistingProductPrice,
-    ProductCreate,
-    ProductUpdate,
-)
+from ..schemas import ExistingProductPrice, ProductCreate, ProductUpdate
 from ..sorting import ProductSortProperty
 
 
@@ -121,15 +114,6 @@ class ProductService(ResourceServiceReader[Product]):
                 order_by_clauses.append(clause_function(Product.created_at))
             elif criterion == ProductSortProperty.product_name:
                 order_by_clauses.append(clause_function(Product.name))
-            elif criterion == ProductSortProperty.price_type:
-                order_by_clauses.append(
-                    clause_function(
-                        case(
-                            (ProductPrice.type == ProductPriceType.one_time, 1),
-                            (ProductPrice.type == ProductPriceType.recurring, 2),
-                        )
-                    )
-                )
             elif criterion == ProductSortProperty.price_amount_type:
                 order_by_clauses.append(
                     clause_function(

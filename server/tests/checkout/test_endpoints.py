@@ -11,6 +11,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.checkout.schemas import CheckoutProductCreate
 from polar.checkout.service import checkout as checkout_service
+from polar.enums import SubscriptionRecurringInterval
 from polar.integrations.stripe.service import StripeService
 from polar.kit.tax import calculate_tax
 from polar.kit.utils import utc_now
@@ -69,6 +70,7 @@ async def create_blocked_product(
     product = await create_product(
         save_fixture,
         organization=org,
+        recurring_interval=SubscriptionRecurringInterval.month,
         name="Prohibited product",
         is_archived=False,
     )

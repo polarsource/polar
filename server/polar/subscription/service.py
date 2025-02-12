@@ -1,4 +1,3 @@
-import typing
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, date, datetime
@@ -45,6 +44,9 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
+    LegacyRecurringProductPriceCustom,
+    LegacyRecurringProductPriceFixed,
+    LegacyRecurringProductPriceFree,
     Organization,
     Product,
     ProductBenefit,
@@ -55,7 +57,6 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.product_price import ProductPriceType
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -66,13 +67,17 @@ from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import sql
+from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
 
 from ..product.service.product import product as product_service
 from ..product.service.product_price import product_price as product_price_service
-from .schemas import SubscriptionUpdate, SubscriptionUpdatePrice
+from .schemas import (
+    SubscriptionUpdate,
+    SubscriptionUpdateProduct,
+)
 
 log: Logger = structlog.get_logger()
 
@@ -80,14 +85,25 @@ log: Logger = structlog.get_logger()
 class SubscriptionError(PolarError): ...
 
 
-class AssociatedSubscriptionTierPriceDoesNotExist(SubscriptionError):
+class AssociatedPriceDoesNotExist(SubscriptionError):
+    def __init__(self, stripe_subscription_id: str, stripe_price_id: str) -> None:
+        self.subscription_id = stripe_subscription_id
+        self.price_id = stripe_price_id
+        message = (
+            f"Received the subscription {stripe_subscription_id} from Stripe "
+            f"with price {stripe_price_id}, but no associated ProductPrice exists."
+        )
+        super().__init__(message)
+
+
+class NotARecurringProduct(SubscriptionError):
     def __init__(self, stripe_subscription_id: str, stripe_price_id: str) -> None:
         self.subscription_id = stripe_subscription_id
         self.price_id = stripe_price_id
         message = (
             f"Received the subscription {stripe_subscription_id} from Stripe "
             f"with price {stripe_price_id}, "
-            "but no associated SubscriptionTierPrice exists."
+            "but the associated product is not recurring."
         )
         super().__init__(message)
 
@@ -331,98 +347,22 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
 
-    @typing.overload
-    async def create_arbitrary_subscription(
-        self,
-        session: AsyncSession,
-        *,
-        customer: Customer,
-        product: Product,
-        price: ProductPriceFixed,
-    ) -> Subscription: ...
-
-    @typing.overload
-    async def create_arbitrary_subscription(
-        self,
-        session: AsyncSession,
-        *,
-        customer: Customer,
-        product: Product,
-        price: ProductPriceCustom,
-        amount: int,
-    ) -> Subscription: ...
-
-    @typing.overload
-    async def create_arbitrary_subscription(
-        self,
-        session: AsyncSession,
-        *,
-        customer: Customer,
-        product: Product,
-        price: ProductPriceFree,
-    ) -> Subscription: ...
-
-    async def create_arbitrary_subscription(
-        self,
-        session: AsyncSession,
-        *,
-        customer: Customer,
-        product: Product,
-        price: ProductPriceFixed | ProductPriceCustom | ProductPriceFree,
-        amount: int | None = None,
-    ) -> Subscription:
-        subscription_amount: int | None = None
-        subscription_currency: str | None = None
-        if isinstance(price, ProductPriceFixed):
-            subscription_amount = price.price_amount
-            subscription_currency = price.price_currency
-        elif isinstance(price, ProductPriceCustom):
-            subscription_amount = amount
-            subscription_currency = price.price_currency
-
-        start = utc_now()
-        subscription = Subscription(
-            status=SubscriptionStatus.active,
-            amount=subscription_amount,
-            currency=subscription_currency,
-            recurring_interval=(
-                price.recurring_interval
-                if price is not None
-                else SubscriptionRecurringInterval.month
-            ),
-            current_period_start=start,
-            cancel_at_period_end=False,
-            started_at=start,
-            customer=customer,
-            product=product,
-            price=price,
-        )
-        session.add(subscription)
-        await session.flush()
-
-        await self.enqueue_benefits_grants(session, subscription)
-
-        await self._after_subscription_created(session, subscription)
-
-        return subscription
-
     async def create_subscription_from_stripe(
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
     ) -> Subscription:
         price_id = stripe_subscription["items"].data[0].price.id
         price = await product_price_service.get_by_stripe_price_id(session, price_id)
         if price is None:
-            raise AssociatedSubscriptionTierPriceDoesNotExist(
-                stripe_subscription.id, price_id
-            )
+            raise AssociatedPriceDoesNotExist(stripe_subscription.id, price_id)
         if isinstance(price, ProductPriceCustom):
             raise CustomPriceNotSupported(stripe_subscription.id, price_id)
 
-        subscription_tier = price.product
-        subscription_tier_org = await organization_service.get(
-            session, subscription_tier.organization_id
-        )
-        assert subscription_tier_org is not None
+        product = price.product
+        if not product.is_recurring:
+            raise NotARecurringProduct(stripe_subscription.id, price_id)
+
+        organization = await organization_service.get(session, product.organization_id)
+        assert organization is not None
 
         # Get Discount if available
         discount: Discount | None = None
@@ -472,14 +412,25 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         subscription.discount = discount
         subscription.price = price
-        subscription.recurring_interval = price.recurring_interval
-        if isinstance(price, ProductPriceFixed):
+
+        if isinstance(
+            price,
+            LegacyRecurringProductPriceFixed
+            | LegacyRecurringProductPriceCustom
+            | LegacyRecurringProductPriceFree,
+        ):
+            subscription.recurring_interval = price.recurring_interval
+        else:
+            assert product.recurring_interval is not None
+            subscription.recurring_interval = product.recurring_interval
+
+        if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
             subscription.amount = price.price_amount
             subscription.currency = price.price_currency
         else:
             subscription.amount = None
             subscription.currency = None
-        subscription.product = subscription_tier
+        subscription.product = product
 
         subscription.checkout = checkout
         subscription.user_metadata = {
@@ -499,7 +450,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 get_expandable_id(stripe_subscription.customer)
             )
             customer = await customer_service.get_or_create_from_stripe_customer(
-                session, stripe_customer, subscription_tier_org
+                session, stripe_customer, organization
             )
             subscription.customer = customer
 
@@ -554,9 +505,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         price_id = stripe_subscription["items"].data[0].price.id
         price = await product_price_service.get_by_stripe_price_id(session, price_id)
         if price is None:
-            raise AssociatedSubscriptionTierPriceDoesNotExist(
-                stripe_subscription.id, price_id
-            )
+            raise AssociatedPriceDoesNotExist(stripe_subscription.id, price_id)
         subscription.price = price
         subscription.product = price.product
 
@@ -611,13 +560,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         async with locker.lock(
             f"subscription:{subscription.id}", timeout=5, blocking_timeout=5
         ):
-            if isinstance(update, SubscriptionUpdatePrice):
+            if isinstance(update, SubscriptionUpdateProduct):
                 if subscription.revoked or subscription.cancel_at_period_end:
                     raise AlreadyCanceledSubscription()
-                return await self.update_product_price(
+                return await self.update_product(
                     session,
                     subscription,
-                    product_price_id=update.product_price_id,
+                    product_id=update.product_id,
                     proration_behavior=update.proration_behavior,
                 )
 
@@ -661,93 +610,70 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 customer_comment=update.customer_cancellation_comment,
             )
 
-    async def update_product_price(
+    async def update_product(
         self,
         session: AsyncSession,
         subscription: Subscription,
         *,
-        product_price_id: uuid.UUID,
+        product_id: uuid.UUID,
         proration_behavior: SubscriptionProrationBehavior | None = None,
     ) -> Subscription:
-        price = await product_price_service.get_by_id(session, product_price_id)
-        if price is None:
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id_and_organization(
+            product_id,
+            subscription.product.organization_id,
+            options=product_repository.get_eager_options(),
+        )
+
+        if product is None:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price does not exist.",
-                        "input": product_price_id,
+                        "loc": ("body", "product_id"),
+                        "msg": "Product does not exist.",
+                        "input": product_id,
                     }
                 ]
             )
 
-        if price.is_archived:
+        if product.is_archived:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price is archived.",
-                        "input": product_price_id,
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is archived.",
+                        "input": product_id,
                     }
                 ]
             )
 
-        if price.type != ProductPriceType.recurring:
+        if not product.is_recurring:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price is not recurring.",
-                        "input": product_price_id,
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is not recurring.",
+                        "input": product_id,
                     }
                 ]
             )
+
+        price = product.prices[0]
 
         if isinstance(price, ProductPriceCustom):
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_price_id"),
+                        "loc": ("body", "product_id"),
                         "msg": (
                             "Pay what you want price are not supported "
                             "for subscriptions."
                         ),
-                        "input": product_price_id,
-                    }
-                ]
-            )
-
-        product = await product_service.get_loaded(session, price.product_id)
-        assert product is not None
-        if product.is_archived:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Product is archived.",
-                        "input": product_price_id,
-                    }
-                ]
-            )
-
-        # Make sure the new product belongs to the same organization
-        old_product = subscription.product
-        if old_product.organization_id != product.organization_id:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": (
-                            "Price does not belong to the same organization "
-                            "of the current subscription."
-                        ),
-                        "input": product_price_id,
+                        "input": product_id,
                     }
                 ]
             )
@@ -772,14 +698,22 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         subscription.product = product
         subscription.price = price
-        if isinstance(price, ProductPriceFixed):
+        if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
             subscription.amount = price.price_amount
             subscription.currency = price.price_currency
-            subscription.recurring_interval = price.recurring_interval
-        if isinstance(price, ProductPriceFree):
+            if isinstance(price, LegacyRecurringProductPriceFixed):
+                subscription.recurring_interval = price.recurring_interval
+            else:
+                assert product.recurring_interval is not None
+                subscription.recurring_interval = product.recurring_interval
+        if isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
             subscription.amount = None
             subscription.currency = None
-            subscription.recurring_interval = price.recurring_interval
+            if isinstance(price, LegacyRecurringProductPriceFree):
+                subscription.recurring_interval = price.recurring_interval
+            else:
+                assert product.recurring_interval is not None
+                subscription.recurring_interval = product.recurring_interval
 
         session.add(subscription)
         return subscription
@@ -1039,7 +973,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
         product = subscription.product
-        price = subscription.price
         await notifications_service.send_to_org_members(
             session,
             org_id=product.organization_id,
@@ -1049,7 +982,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     subscriber_name=subscription.customer.email,
                     tier_name=product.name,
                     tier_price_amount=subscription.amount,
-                    tier_price_recurring_interval=price.recurring_interval,
+                    tier_price_recurring_interval=subscription.recurring_interval,
                     tier_organization_name=subscription.organization.name,
                 ),
             ),

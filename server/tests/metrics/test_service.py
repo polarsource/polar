@@ -17,7 +17,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.product_price import ProductPriceType
+from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -30,10 +30,8 @@ from tests.fixtures.random_objects import (
 
 
 class ProductFixture(TypedDict):
-    prices: list[
-        tuple[int, ProductPriceType, SubscriptionRecurringInterval | None]
-        | tuple[ProductPriceType, SubscriptionRecurringInterval | None]
-    ]
+    recurring_interval: SubscriptionRecurringInterval | None
+    prices: list[tuple[int] | tuple[None]]
 
 
 class SubscriptionFixture(TypedDict):
@@ -55,20 +53,20 @@ def _date_to_datetime(date: date) -> datetime:
 
 PRODUCTS: dict[str, ProductFixture] = {
     "one_time_product": {
-        "prices": [(100_00, ProductPriceType.one_time, None)],
+        "recurring_interval": None,
+        "prices": [(100_00,)],
     },
     "monthly_subscription": {
-        "prices": [
-            (100_00, ProductPriceType.recurring, SubscriptionRecurringInterval.month)
-        ],
+        "recurring_interval": SubscriptionRecurringInterval.month,
+        "prices": [(100_00,)],
     },
     "yearly_subscription": {
-        "prices": [
-            (1000_00, ProductPriceType.recurring, SubscriptionRecurringInterval.year)
-        ],
+        "recurring_interval": SubscriptionRecurringInterval.year,
+        "prices": [(1000_00,)],
     },
     "free_subscription": {
-        "prices": [(ProductPriceType.recurring, SubscriptionRecurringInterval.month)]
+        "recurring_interval": SubscriptionRecurringInterval.month,
+        "prices": [(None,)],
     },
 }
 
@@ -131,7 +129,10 @@ async def _create_fixtures(
     products: dict[str, Product] = {}
     for key, product_fixture in product_fixtures.items():
         product = await create_product(
-            save_fixture, organization=organization, prices=product_fixture["prices"]
+            save_fixture,
+            organization=organization,
+            recurring_interval=product_fixture["recurring_interval"],
+            prices=product_fixture["prices"],
         )
         products[key] = product
 
@@ -391,7 +392,7 @@ class TestGetMetrics:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
     )
-    async def test_product_type_filter(
+    async def test_billing_type_filter(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
@@ -404,7 +405,7 @@ class TestGetMetrics:
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
             interval=TimeInterval.day,
-            product_price_type=[ProductPriceType.one_time],
+            billing_type=[ProductBillingType.one_time],
         )
 
         jan_1 = metrics.periods[0]

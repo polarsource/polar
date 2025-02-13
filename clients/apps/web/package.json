@@ -49,7 +49,6 @@
     "@tanstack/react-table": "^8.20.6",
     "@vercel/blob": "^0.14.1",
     "class-variance-authority": "^0.7.1",
-    "cmdk": "^1.0.4",
     "crawler-user-agents": "^1.0.159",
     "d3": "^7.9.0",
     "d3-scale-chromatic": "^3.1.0",

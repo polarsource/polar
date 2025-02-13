@@ -1,20 +1,18 @@
 import { PolarHog, usePostHog } from '@/hooks/posthog'
-import {
-  AllInclusiveOutlined,
-  AttachMoneyOutlined,
-  DiamondOutlined,
-  DonutLargeOutlined,
-  HiveOutlined,
-  HowToVote,
-  ModeStandby,
-  PeopleOutlined,
-  ShoppingBagOutlined,
-  SpaceDashboardOutlined,
-  Storefront,
-  TrendingUp,
-  TuneOutlined,
-} from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
+import {
+  Box,
+  CircleDot,
+  CircleGauge,
+  DollarSign,
+  Infinity,
+  LayoutDashboard,
+  ShoppingBag,
+  SlidersHorizontal,
+  Store,
+  TrendingUp,
+  Users,
+} from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useMemo } from 'react'
 
@@ -131,13 +129,6 @@ export const useOrganizationRoutes = (
   return useResolveRoutes(organizationRoutesList, org, allowAll)
 }
 
-export const useBackerRoutes = (): RouteWithActive[] => {
-  const path = usePathname()
-  return backerRoutesList()
-    .filter((o) => o.if)
-    .map(applyIsActive(path))
-}
-
 export const usePersonalFinanceSubRoutes = (): SubRouteWithActive[] => {
   const path = usePathname()
   return personalFinanceSubRoutesList().map(applySubRouteIsActive(path))
@@ -152,7 +143,7 @@ const generalRoutesList = (
   {
     id: 'home',
     title: 'Home',
-    icon: <SpaceDashboardOutlined fontSize="inherit" />,
+    icon: <LayoutDashboard className="size-4" />,
     link: `/dashboard/${org.slug}`,
     checkIsActive: (currentRoute: string) =>
       currentRoute === `/dashboard/${org.slug}`,
@@ -161,7 +152,7 @@ const generalRoutesList = (
   {
     id: 'new-products',
     title: 'Products',
-    icon: <HiveOutlined fontSize="inherit" />,
+    icon: <Box className="size-4" />,
     link: `/dashboard/${org.slug}/products`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org.slug}/products`)
@@ -181,7 +172,7 @@ const generalRoutesList = (
   {
     id: 'benefits',
     title: 'Benefits',
-    icon: <AllInclusiveOutlined fontSize="inherit" />,
+    icon: <Infinity className="size-4" />,
     link: `/dashboard/${org.slug}/benefits`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org.slug}/benefits`)
@@ -201,14 +192,14 @@ const generalRoutesList = (
   {
     id: 'meters',
     title: 'Meters',
-    icon: <DonutLargeOutlined fontSize="inherit" />,
+    icon: <CircleGauge className="size-4" />,
     link: `/dashboard/${org.slug}/meters`,
     if: posthog?.isFeatureEnabled('usage_based_billing'),
   },
   {
     id: 'customers',
     title: 'Customers',
-    icon: <PeopleOutlined fontSize="inherit" />,
+    icon: <Users className="size-4" />,
     link: `/dashboard/${org.slug}/customers`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org.slug}/customers`)
@@ -218,7 +209,7 @@ const generalRoutesList = (
   {
     id: 'org-sales',
     title: 'Sales',
-    icon: <ShoppingBagOutlined fontSize="inherit" />,
+    icon: <ShoppingBag className="size-4" />,
     link: `/dashboard/${org.slug}/sales`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org.slug}/sales`)
@@ -238,14 +229,14 @@ const generalRoutesList = (
   {
     id: 'storefront',
     title: 'Storefront',
-    icon: <Storefront fontSize="inherit" />,
+    icon: <Store className="size-4" />,
     link: `/dashboard/${org.slug}/storefront`,
     if: org.profile_settings?.enabled ?? false,
   },
   {
     id: 'analytics',
     title: 'Analytics',
-    icon: <TrendingUp fontSize="inherit" />,
+    icon: <TrendingUp className="size-4" />,
     link: `/dashboard/${org.slug}/analytics`,
     if: true,
   },
@@ -255,7 +246,7 @@ const fundingRoutesList = (org: schemas['Organization']): Route[] => [
   {
     id: 'org-issues',
     title: 'Issues',
-    icon: <ModeStandby fontSize="inherit" />,
+    icon: <CircleDot className="size-4" />,
     link: `/dashboard/${org.slug}/issues/overview`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org.slug}/issues`)
@@ -289,41 +280,6 @@ const dashboardRoutesList = (
   ...generalRoutesList(org, posthog),
   ...fundingRoutesList(org),
   ...organizationRoutesList(org),
-]
-
-const backerRoutesList = (): Route[] => [
-  {
-    id: 'purchases',
-    title: 'Purchases',
-    link: `/purchases`,
-    icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
-    if: true,
-    subs: undefined,
-  },
-  {
-    id: 'funding',
-    title: 'Funded Issues',
-    link: `/funding`,
-    icon: <HowToVote className="h-5 w-5" fontSize="inherit" />,
-    if: true,
-    subs: undefined,
-  },
-  {
-    id: 'finance',
-    title: 'Finance',
-    link: `/finance`,
-    icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
-    if: true,
-    subs: personalFinanceSubRoutesList(),
-  },
-  {
-    id: 'settings',
-    title: 'Settings',
-    link: `/settings`,
-    icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
-    if: true,
-    subs: undefined,
-  },
 ]
 
 const personalFinanceSubRoutesList = (): SubRoute[] => [
@@ -370,7 +326,7 @@ const organizationRoutesList = (org: schemas['Organization']): Route[] => [
     id: 'finance',
     title: 'Finance',
     link: `/dashboard/${org.slug}/finance`,
-    icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
+    icon: <DollarSign className="size-4" />,
     if: true,
     subs: orgFinanceSubRoutesList(org),
   },
@@ -378,7 +334,7 @@ const organizationRoutesList = (org: schemas['Organization']): Route[] => [
     id: 'settings',
     title: 'Settings',
     link: `/dashboard/${org.slug}/settings`,
-    icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
+    icon: <SlidersHorizontal className="size-4" />,
     if: true,
     subs: [
       {

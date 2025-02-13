@@ -1053,33 +1053,14 @@ class TestCreate:
 
 @pytest.mark.asyncio
 class TestClientCreate:
-    async def test_not_existing_price(
+    async def test_not_existing_product(
         self, session: AsyncSession, auth_subject: AuthSubject[Anonymous]
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.client_create(
                 session,
-                CheckoutCreatePublic(
-                    product_price_id=uuid.uuid4(),
-                ),
+                CheckoutCreatePublic(product_id=uuid.uuid4()),
                 auth_subject,
-            )
-
-    async def test_archived_price(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[Anonymous],
-        product_one_time: Product,
-    ) -> None:
-        price = await create_product_price_fixed(
-            save_fixture,
-            product=product_one_time,
-            is_archived=True,
-        )
-        with pytest.raises(PolarRequestValidationError):
-            await checkout_service.client_create(
-                session, CheckoutCreatePublic(product_price_id=price.id), auth_subject
             )
 
     async def test_archived_product(
@@ -1094,9 +1075,7 @@ class TestClientCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.client_create(
                 session,
-                CheckoutCreatePublic(
-                    product_price_id=product_one_time.prices[0].id,
-                ),
+                CheckoutCreatePublic(product_id=product_one_time.id),
                 auth_subject,
             )
 
@@ -1109,7 +1088,7 @@ class TestClientCreate:
         price = product_one_time.prices[0]
         assert isinstance(price, ProductPriceFixed)
         checkout = await checkout_service.client_create(
-            session, CheckoutCreatePublic(product_price_id=price.id), auth_subject
+            session, CheckoutCreatePublic(product_id=product_one_time.id), auth_subject
         )
 
         assert checkout.product_price == price
@@ -1126,7 +1105,9 @@ class TestClientCreate:
         price = product_one_time_free_price.prices[0]
         assert isinstance(price, ProductPriceFree)
         checkout = await checkout_service.client_create(
-            session, CheckoutCreatePublic(product_price_id=price.id), auth_subject
+            session,
+            CheckoutCreatePublic(product_id=product_one_time_free_price.id),
+            auth_subject,
         )
 
         assert checkout.product_price == price
@@ -1145,33 +1126,14 @@ class TestClientCreate:
         price.preset_amount = 4242
 
         checkout = await checkout_service.client_create(
-            session, CheckoutCreatePublic(product_price_id=price.id), auth_subject
+            session,
+            CheckoutCreatePublic(product_id=product_one_time_custom_price.id),
+            auth_subject,
         )
 
         assert checkout.product_price == price
         assert checkout.product == product_one_time_custom_price
         assert checkout.amount == price.preset_amount
-        assert checkout.currency == price.price_currency
-
-    async def test_valid_from_legacy_checkout_link(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[Anonymous],
-        product_one_time: Product,
-    ) -> None:
-        price = product_one_time.prices[0]
-        assert isinstance(price, ProductPriceFixed)
-        checkout = await checkout_service.client_create(
-            session,
-            CheckoutCreatePublic(
-                product_price_id=price.id, from_legacy_checkout_link=True
-            ),
-            auth_subject,
-        )
-
-        assert checkout.product_price == price
-        assert checkout.product == product_one_time
-        assert checkout.amount == price.price_amount
         assert checkout.currency == price.price_currency
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
@@ -1181,13 +1143,9 @@ class TestClientCreate:
         auth_subject: AuthSubject[User],
         product_one_time: Product,
     ) -> None:
-        price = product_one_time.prices[0]
-        assert isinstance(price, ProductPriceFixed)
         checkout = await checkout_service.client_create(
             session,
-            CheckoutCreatePublic(
-                product_price_id=price.id, from_legacy_checkout_link=True
-            ),
+            CheckoutCreatePublic(product_id=product_one_time.id),
             auth_subject,
         )
 
@@ -1211,13 +1169,9 @@ class TestClientCreate:
             save_fixture, user=auth_subject.subject, organization=organization
         )
 
-        price = product_one_time.prices[0]
-        assert isinstance(price, ProductPriceFixed)
         checkout = await checkout_service.client_create(
             session,
-            CheckoutCreatePublic(
-                product_price_id=price.id, from_legacy_checkout_link=True
-            ),
+            CheckoutCreatePublic(product_id=product_one_time.id),
             auth_subject,
         )
 
@@ -1242,13 +1196,9 @@ class TestClientCreate:
             client_secret="STRIPE_CUSTOMER_SESSION_CLIENT_SECRET"
         )
 
-        price = product_one_time.prices[0]
-        assert isinstance(price, ProductPriceFixed)
         checkout = await checkout_service.client_create(
             session,
-            CheckoutCreatePublic(
-                product_price_id=price.id, from_legacy_checkout_link=True
-            ),
+            CheckoutCreatePublic(product_id=product_one_time.id),
             auth_subject,
         )
 

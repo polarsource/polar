@@ -338,10 +338,7 @@ class TestClientCreateCheckout:
         self, api_prefix: str, client: AsyncClient, product: Product
     ) -> None:
         response = await client.post(
-            f"{api_prefix}/client/",
-            json={
-                "product_price_id": str(product.prices[0].id),
-            },
+            f"{api_prefix}/client/", json={"product_id": str(product.id)}
         )
 
         assert response.status_code == 403
@@ -350,10 +347,7 @@ class TestClientCreateCheckout:
         self, api_prefix: str, client: AsyncClient, product: Product
     ) -> None:
         response = await client.post(
-            f"{api_prefix}/client/",
-            json={
-                "product_price_id": str(product.prices[0].id),
-            },
+            f"{api_prefix}/client/", json={"product_id": str(product.id)}
         )
 
         assert response.status_code == 201
@@ -367,10 +361,7 @@ class TestClientCreateCheckout:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            f"{api_prefix}/client/",
-            json={
-                "product_price_id": str(product.prices[0].id),
-            },
+            f"{api_prefix}/client/", json={"product_id": str(product.id)}
         )
 
         assert response.status_code == 201

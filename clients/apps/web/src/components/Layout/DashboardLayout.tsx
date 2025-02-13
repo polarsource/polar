@@ -5,9 +5,9 @@ import { useAuth } from '@/hooks/auth'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { setLastVisitedOrg } from '@/utils/cookies'
 import { organizationPageLink } from '@/utils/nav'
-import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
+import { Menu, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -22,7 +22,6 @@ import {
 import { twMerge } from 'tailwind-merge'
 import MaintainerNavigation from '../Dashboard/DashboardNavigation'
 import { DashboardProvider } from '../Dashboard/DashboardProvider'
-import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import { SubRouteWithActive } from '../Dashboard/navigation'
 import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
 import DashboardTopbar from '../Navigation/DashboardTopbar'
@@ -148,7 +147,7 @@ const MobileNav = () => {
           className="dark:text-polar-200 flex flex-row items-center justify-center text-gray-700"
           onClick={() => setMobileNavOpen((toggle) => !toggle)}
         >
-          {mobileNavOpen ? <CloseOutlined /> : <ShortTextOutlined />}
+          {mobileNavOpen ? <X /> : <Menu />}
         </div>
       </div>
     </div>
@@ -167,29 +166,6 @@ const MobileNav = () => {
         header
       )}
     </div>
-  )
-}
-
-export const RepoPickerHeader = (props: {
-  currentRepository?: schemas['Repository']
-  repositories: schemas['Repository'][]
-  children?: React.ReactNode
-}) => {
-  const onSubmit = () => {}
-
-  return (
-    <>
-      <form
-        className="dark:border-polar-700 flex flex-row items-center justify-between space-x-4 space-y-0 bg-transparent"
-        onSubmit={onSubmit}
-      >
-        <MaintainerRepoSelection
-          current={props.currentRepository}
-          repositories={props.repositories}
-        />
-        {props.children}
-      </form>
-    </>
   )
 }
 
@@ -216,9 +192,6 @@ const SubNav = (props: { items: SubRouteWithActive[] }) => {
     </Tabs>
   )
 }
-
-import { schemas } from '@polar-sh/client'
-import React from 'react'
 
 export const DashboardBody = ({
   children,
@@ -316,17 +289,6 @@ export const DashboardBody = ({
           {contextView}
         </div>
       ) : null}
-    </div>
-  )
-}
-
-export const DashboardPaddingX = (props: {
-  children?: React.ReactNode
-  className?: string
-}) => {
-  return (
-    <div className={twMerge('px-4 sm:px-6 md:px-8', props.className)}>
-      {props.children}
     </div>
   )
 }

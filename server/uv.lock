@@ -110,6 +110,17 @@ wheels = [
 ]
 
 [[package]]
+name = "asgi-admin"
+version = "0.0.0"
+source = { git = "https://github.com/polarsource/asgi-admin?rev=b6d7b8be89a13cf6bbd876ca895cbab25ec5fda8#b6d7b8be89a13cf6bbd876ca895cbab25ec5fda8" }
+dependencies = [
+    { name = "jinja2" },
+    { name = "python-multipart" },
+    { name = "starlette" },
+    { name = "wtforms" },
+]
+
+[[package]]
 name = "asgiref"
 version = "3.8.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1218,6 +1229,7 @@ dependencies = [
     { name = "alembic" },
     { name = "apscheduler" },
     { name = "arq" },
+    { name = "asgi-admin" },
     { name = "asyncpg" },
     { name = "authlib" },
     { name = "babel" },
@@ -1297,6 +1309,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.9.2" },
     { name = "apscheduler", specifier = ">=3.10.4" },
     { name = "arq", specifier = ">=0.25.0" },
+    { name = "asgi-admin", git = "https://github.com/polarsource/asgi-admin?rev=b6d7b8be89a13cf6bbd876ca895cbab25ec5fda8" },
     { name = "asyncpg", specifier = ">=0.29.0" },
     { name = "authlib", specifier = ">=1.3.2" },
     { name = "babel", specifier = ">=2.16.0" },
@@ -2447,6 +2460,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/17/27/4fe749a54e7fae6e7146f1c7d914d28ef599dacd4416566c055564080fe2/wrapt-1.17.2-cp312-cp312-win32.whl", hash = "sha256:468090021f391fe0056ad3e807e3d9034e0fd01adcd3bdfba977b6fdf4213ea9", size = 36672 },
     { url = "https://files.pythonhosted.org/packages/15/06/1dbf478ea45c03e78a6a8c4be4fdc3c3bddea5c8de8a93bc971415e47f0f/wrapt-1.17.2-cp312-cp312-win_amd64.whl", hash = "sha256:ec89ed91f2fa8e3f52ae53cd3cf640d6feff92ba90d62236a81e4e563ac0e991", size = 38865 },
     { url = "https://files.pythonhosted.org/packages/2d/82/f56956041adef78f849db6b289b282e72b55ab8045a75abad81898c28d19/wrapt-1.17.2-py3-none-any.whl", hash = "sha256:b18f2d1533a71f069c7f82d524a52599053d4c7166e9dd374ae2136b7f40f7c8", size = 23594 },
+]
+
+[[package]]
+name = "wtforms"
+version = "3.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "markupsafe" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/01/e4/633d080897e769ed5712dcfad626e55dbd6cf45db0ff4d9884315c6a82da/wtforms-3.2.1.tar.gz", hash = "sha256:df3e6b70f3192e92623128123ec8dca3067df9cfadd43d59681e210cfb8d4682", size = 137801 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/08/c9/2088fb5645cd289c99ebe0d4cdcc723922a1d8e1beaefb0f6f76dff9b21c/wtforms-3.2.1-py3-none-any.whl", hash = "sha256:583bad77ba1dd7286463f21e11aa3043ca4869d03575921d1a1698d0715e0fd4", size = 152454 },
 ]
 
 [[package]]

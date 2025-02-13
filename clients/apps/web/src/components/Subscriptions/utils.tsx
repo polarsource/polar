@@ -1,3 +1,7 @@
+import {
+  hasLegacyRecurringPrices,
+  isLegacyRecurringPrice,
+} from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -13,20 +17,6 @@ export const subscriptionStatusDisplayNames: {
   canceled: 'Canceled',
   unpaid: 'Unpaid',
 }
-
-export const hasRecurringInterval =
-  (recurringInterval: schemas['SubscriptionRecurringInterval']) =>
-  (
-    subscriptionTier: schemas['ProductStorefront'],
-  ): subscriptionTier is schemas['ProductStorefront'] & {
-    prices: schemas['ProductPriceRecurring'][]
-  } => {
-    return subscriptionTier.prices?.some(
-      (price) =>
-        price.type === 'recurring' &&
-        price.recurring_interval === recurringInterval,
-    )
-  }
 
 export const SubscriptionStatusLabel = ({
   className,
@@ -64,14 +54,25 @@ export const SubscriptionStatusLabel = ({
 }
 
 export const getRecurringProductPrice = (
-  subscriptionTier: Partial<schemas['ProductStorefront']>,
+  subscriptionTier: schemas['ProductStorefront'],
   recurringInterval: schemas['SubscriptionRecurringInterval'],
-): schemas['ProductPriceRecurring'] | undefined => {
-  return subscriptionTier.prices?.find(
-    (price) =>
-      price.type === 'recurring' &&
-      price.recurring_interval === recurringInterval,
-  ) as schemas['ProductPriceRecurring'] | undefined
+):
+  | schemas['ProductPrice']
+  | schemas['LegacyRecurringProductPrice']
+  | undefined => {
+  if (hasLegacyRecurringPrices(subscriptionTier)) {
+    return subscriptionTier.prices.find(
+      (price) =>
+        isLegacyRecurringPrice(price) &&
+        price.recurring_interval === recurringInterval,
+    )
+  }
+
+  if (subscriptionTier.is_recurring) {
+    return subscriptionTier.prices[0]
+  }
+
+  return undefined
 }
 
 export const getRecurringBillingLabel = (

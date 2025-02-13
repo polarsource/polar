@@ -18,7 +18,7 @@ import Markdown from 'markdown-to-jsx'
 import { twMerge } from 'tailwind-merge'
 
 export interface SubscriptionTierCardProps {
-  subscriptionTier: Partial<schemas['ProductStorefront']>
+  subscriptionTier: schemas['ProductStorefront']
   className?: string
   recurringInterval?: schemas['SubscriptionRecurringInterval']
 }

@@ -1,4 +1,5 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
+import { isLegacyRecurringPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { getRecurringBillingLabel } from '../Subscriptions/utils'
@@ -12,12 +13,17 @@ export const ProductCardEmbed = ({
   cta?: string
   darkmode?: boolean
 }) => {
+  const product = embed
   const price = embed.price
 
-  const isSubscription = 'recurring_interval' in price
+  const isSubscription = product.is_recurring
   const isPWYW = price.amount_type === 'custom'
   const recurringBillingLabel = isSubscription
-    ? getRecurringBillingLabel(price.recurring_interval)
+    ? getRecurringBillingLabel(
+        isLegacyRecurringPrice(price)
+          ? price.recurring_interval
+          : (product.recurring_interval as schemas['SubscriptionRecurringInterval']),
+      )
     : ''
 
   if (!cta) {

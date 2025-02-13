@@ -247,7 +247,7 @@ class CheckoutUpdatePublic(CheckoutUpdateBase):
     )
 
 
-class CheckoutConfirmBase(CheckoutUpdatePublic): ...
+class CheckoutConfirmBase(CustomFieldDataInputMixin, CheckoutUpdatePublic): ...
 
 
 class CheckoutConfirmStripe(CheckoutConfirmBase):

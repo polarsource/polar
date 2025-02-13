@@ -1580,7 +1580,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                         ]
                     ) from e
 
-        if checkout_update.custom_field_data:
+        if checkout_update.custom_field_data is not None:
             custom_field_data = validate_custom_field_data(
                 checkout.product.attached_custom_fields,
                 checkout_update.custom_field_data,

@@ -86,8 +86,7 @@ export default async function Page({
   const checkout = await unwrap(
     api.POST('/v1/checkouts/client/', {
       body: {
-        product_price_id: product.prices[0].id,
-        from_legacy_checkout_link: false,
+        product_id: product.id,
       },
     }),
   )

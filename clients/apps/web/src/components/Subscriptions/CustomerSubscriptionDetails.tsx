@@ -13,8 +13,8 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useMemo, useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
-import ChangePlanModal from './ChangePlanModal'
 import CustomerCancellationModal from './CustomerCancellationModal'
+import CustomerChangePlanModal from './CustomerChangePlanModal'
 
 const CustomerSubscriptionDetails = ({
   subscription,
@@ -190,7 +190,7 @@ const CustomerSubscriptionDetails = ({
         isShown={showChangePlanModal}
         hide={() => setShowChangePlanModal(false)}
         modalContent={
-          <ChangePlanModal
+          <CustomerChangePlanModal
             api={api}
             organization={organization}
             products={products}

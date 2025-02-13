@@ -2,6 +2,7 @@
 
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { useCustomerUpdateSubscription } from '@/hooks/queries'
+import { hasLegacyRecurringPrices } from '@/utils/product'
 import { Client, schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
@@ -37,7 +38,7 @@ const ProductPriceListItem = ({
   )
 }
 
-const ChangePlanModal = ({
+const CustomerChangePlanModal = ({
   api,
   organization,
   products: _products,
@@ -56,17 +57,21 @@ const ChangePlanModal = ({
 }) => {
   const router = useRouter()
   const products = useMemo(
-    () => _products.filter((p) => p.is_recurring),
+    () =>
+      _products.filter((p) => p.is_recurring && !hasLegacyRecurringPrices(p)),
     [_products],
   )
 
   const currentPrice = subscription.price
+  const currentInterval = subscription.recurring_interval
+
   const [selectedProduct, setSelectedProduct] = useState<
     schemas['ProductStorefront'] | null
   >(null)
-  const [selectedPrice, setSelectedPrice] = useState<
-    schemas['ProductPrice'] | null
-  >(null)
+  const selectedPrice: schemas['ProductPrice'] | null = useMemo(
+    () => (selectedProduct ? selectedProduct.prices[0] : null),
+    [selectedProduct],
+  )
 
   const addedBenefits = useMemo(() => {
     if (!selectedProduct) return []
@@ -95,14 +100,12 @@ const ChangePlanModal = ({
         return false
       } else if (currentPrice.amount_type === 'fixed') {
         return (
-          currentPrice.price_amount /
-            (currentPrice.recurring_interval === 'year' ? 12 : 1) >
-          selectedPrice.price_amount /
-            (selectedPrice.recurring_interval === 'year' ? 12 : 1)
+          currentPrice.price_amount / (currentInterval === 'year' ? 12 : 1) >
+          selectedPrice.price_amount / (currentInterval === 'year' ? 12 : 1)
         )
       }
     }
-  }, [selectedPrice, currentPrice])
+  }, [selectedPrice, currentPrice, currentInterval])
 
   const prorationBehavior = useMemo(
     () => organization.subscription_settings.proration_behavior,
@@ -121,7 +124,7 @@ const ChangePlanModal = ({
       if (isDowngrade) {
         if (selectedPrice.amount_type === 'free') {
           return 'A credit invoice will be issued for the unused time this month.'
-        } else {
+        } else if (selectedPrice.amount_type === 'fixed') {
           return `On your next invoice, you'll be billed ${formatCurrencyAndAmount(
             selectedPrice.price_amount,
             selectedPrice.price_currency,
@@ -131,7 +134,7 @@ const ChangePlanModal = ({
       } else {
         if (selectedPrice.amount_type === 'free') {
           return 'An invoice will be issued with a proration for the current month.'
-        } else {
+        } else if (selectedPrice.amount_type === 'fixed') {
           return `On your next invoice, you'll be billed ${formatCurrencyAndAmount(
             selectedPrice.price_amount,
             selectedPrice.price_currency,
@@ -144,11 +147,11 @@ const ChangePlanModal = ({
 
   const updateSubscription = useCustomerUpdateSubscription(api)
   const onConfirm = useCallback(async () => {
-    if (!selectedPrice) return
+    if (!selectedProduct) return
     const { data, response } = await updateSubscription.mutateAsync({
       id: subscription.id,
       body: {
-        product_price_id: selectedPrice.id,
+        product_id: selectedProduct.id,
       },
     })
     if (response.status === 400) {
@@ -165,9 +168,8 @@ const ChangePlanModal = ({
         const { url } = await unwrap(
           api.POST('/v1/checkouts/client/', {
             body: {
-              product_price_id: selectedPrice.id,
+              product_id: selectedProduct.id,
               subscription_id: subscription.id,
-              from_legacy_checkout_link: false,
             },
           }),
         )
@@ -183,7 +185,7 @@ const ChangePlanModal = ({
     }
   }, [
     updateSubscription,
-    selectedPrice,
+    selectedProduct,
     organization,
     subscription,
     onUserSubscriptionUpdate,
@@ -210,28 +212,17 @@ const ChangePlanModal = ({
         </List>
         <h3 className="font-medium">Available Plans</h3>
         <List size="small">
-          {products.map((product) => (
-            <>
-              {product.prices
-                .filter((price) => price.id !== subscription.price_id)
-                .map((price) => (
-                  <ProductPriceListItem
-                    key={price.id}
-                    product={product}
-                    price={price}
-                    selected={selectedPrice?.id === price.id}
-                    onSelect={() => {
-                      setSelectedProduct(product)
-                      setSelectedPrice(
-                        price as
-                          | schemas['ProductPriceRecurringFixed']
-                          | schemas['ProductPriceRecurringFree'],
-                      )
-                    }}
-                  />
-                ))}
-            </>
-          ))}
+          {products
+            .filter((product) => product.id !== subscription.product_id)
+            .map((product) => (
+              <ProductPriceListItem
+                key={product.id}
+                product={product}
+                price={product.prices[0]}
+                selected={selectedProduct?.id === product.id}
+                onSelect={() => setSelectedProduct(product)}
+              />
+            ))}
         </List>
         <div className="flex flex-col gap-y-6">
           {addedBenefits.length > 0 && (
@@ -287,4 +278,4 @@ const ChangePlanModal = ({
   )
 }
 
-export default ChangePlanModal
+export default CustomerChangePlanModal

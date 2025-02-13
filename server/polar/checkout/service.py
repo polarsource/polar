@@ -75,6 +75,7 @@ from polar.models.product_price import (
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
+from polar.product.repository import ProductRepository
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
 from polar.webhook.service import webhook as webhook_service
@@ -450,43 +451,29 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
         ip_address: str | None = None,
     ) -> Checkout:
-        price = await product_price_service.get_by_id(
-            session, checkout_create.product_price_id
-        )
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(checkout_create.product_id)
 
-        if price is None:
+        if product is None:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price does not exist.",
-                        "input": checkout_create.product_price_id,
+                        "loc": ("body", "product_id"),
+                        "msg": "Product does not exist.",
+                        "input": checkout_create.product_id,
                     }
                 ]
             )
 
-        if price.is_archived:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price is archived.",
-                        "input": checkout_create.product_price_id,
-                    }
-                ]
-            )
-
-        product = price.product
         if product.is_archived:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_price_id"),
+                        "loc": ("body", "product_id"),
                         "msg": "Product is archived.",
-                        "input": checkout_create.product_price_id,
+                        "input": checkout_create.product_id,
                     }
                 ]
             )
@@ -498,12 +485,14 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_price_id"),
+                        "loc": ("body", "product_id"),
                         "msg": "Organization is blocked.",
-                        "input": checkout_create.product_price_id,
+                        "input": checkout_create.product_id,
                     }
                 ]
             )
+
+        price = product.prices[0]
 
         amount = None
         currency = None
@@ -580,14 +569,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         await session.flush()
         await self._after_checkout_created(session, checkout)
-
-        if checkout_create.from_legacy_checkout_link:
-            log.warning(
-                "Legacy checkout link used",
-                checkout_id=checkout.id,
-                product_id=product.id,
-                organization_id=product.organization_id,
-            )
 
         return checkout
 

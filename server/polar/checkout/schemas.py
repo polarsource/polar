@@ -194,9 +194,8 @@ CheckoutCreate = Annotated[
 class CheckoutCreatePublic(Schema):
     """Create a new checkout session from a client."""
 
-    product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
+    product_id: UUID4 = Field(description="ID of the product to checkout.")
     customer_email: CustomerEmail | None = None
-    from_legacy_checkout_link: bool = False
     subscription_id: UUID4 | None = Field(
         default=None,
         description=(

@@ -7,11 +7,11 @@ import {
   useNotificationsMarkRead,
 } from '@/hooks/queries'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import { Announcement, Notifications, VerifiedUser } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
+import { Bell, MessageCircleWarning, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -89,7 +89,7 @@ const Popover = () => {
   return (
     <>
       <div className="flex">
-        <Notifications
+        <Bell
           className="dark:text-polar-500 dark:hover:text-polar-300 h-6 w-6 cursor-pointer text-gray-400 transition-colors duration-100 hover:text-gray-900"
           aria-hidden="true"
           onMouseDown={clickBell}
@@ -574,7 +574,7 @@ const MaintainerAccountUnderReview = ({
             of your account.
           </>
         ),
-        icon: <VerifiedUser />,
+        icon: <ShieldCheck />,
       }}
     </Item>
   )
@@ -597,7 +597,7 @@ const MaintainerAccountReviewed = ({
             has been reviewed successfully. Transfers are resumed.
           </>
         ),
-        icon: <VerifiedUser />,
+        icon: <ShieldCheck />,
       }}
     </Item>
   )
@@ -678,7 +678,7 @@ const MaintainerCreateAccount = ({
             now for {payload.organization_name} to receive funds.
           </>
         ),
-        icon: <Announcement />,
+        icon: <MessageCircleWarning />,
       }}
     </Item>
   )

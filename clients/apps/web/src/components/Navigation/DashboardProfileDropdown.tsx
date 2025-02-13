@@ -3,11 +3,7 @@
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { CONFIG } from '@/utils/config'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import {
-  AddOutlined,
-  BiotechOutlined,
-  KeyboardArrowDownOutlined,
-} from '@mui/icons-material'
+import { ChevronDown, Microscope, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useContext, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -56,7 +52,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
         onClick={() => setOpen(true)}
       >
         <Profile name={current.name} avatar_url={current.avatar_url} />
-        <KeyboardArrowDownOutlined className="dark:text-polar-50 h-5 w-5 flex-shrink-0 text-gray-400" />
+        <ChevronDown className="dark:text-polar-50 h-5 w-5 flex-shrink-0 text-gray-400" />
       </div>
 
       {isOpen && (
@@ -84,12 +80,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
 
           <LinkItem
             href="/dashboard/create"
-            icon={
-              <AddOutlined
-                fontSize="small"
-                className="h-5 w-5 text-blue-500 dark:text-blue-400"
-              />
-            }
+            icon={<Plus className="h-4 w-4 text-blue-500 dark:text-blue-400" />}
           >
             <span className="mx-2 text-blue-500 dark:text-blue-400">
               Create organization
@@ -100,9 +91,9 @@ const DashboardProfileDropdown = ({ className = '' }) => {
             <LinkItem
               href="https://sandbox.polar.sh/start"
               icon={
-                <BiotechOutlined
+                <Microscope
                   fontSize="small"
-                  className="h-5 w-5 text-blue-500 dark:text-blue-400"
+                  className="h-4 w-4 text-blue-500 dark:text-blue-400"
                 />
               }
             >

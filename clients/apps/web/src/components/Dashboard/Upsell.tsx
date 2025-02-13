@@ -1,10 +1,10 @@
 import { useAuth } from '@/hooks'
 import { useRedirectToGitHubInstallation } from '@/hooks/github'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
-import { ArrowForwardOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
+import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { PropsWithChildren } from 'react'
 
@@ -17,7 +17,7 @@ export const MaintainerUpsell = () => {
       <Link href="/dashboard/create">
         <Button size="sm" className="-z-1 self-start" type="button">
           <span>Get Started</span>
-          <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
+          <ArrowRight className="ml-2 size-4" />
         </Button>
       </Link>
     </Upsell>
@@ -40,7 +40,7 @@ export const SetupProductsUpsell = () => {
       <Link href={`/dashboard/${firstOrg.slug}/products`}>
         <Button size="sm" className="-z-1">
           <span>Get Started</span>
-          <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
+          <ArrowRight className="ml-2 size-4" />
         </Button>
       </Link>
     </Upsell>

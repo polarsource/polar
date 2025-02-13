@@ -1,6 +1,6 @@
 import { useStore } from '@/store'
 import { CONFIG } from '@/utils/config'
-import { XMarkIcon } from '@heroicons/react/24/outline'
+import { X } from 'lucide-react'
 
 const BackerConnectUpsell = () => {
   const setSkipped = useStore(
@@ -8,7 +8,7 @@ const BackerConnectUpsell = () => {
   )
 
   return (
-    <div className="dark:bg-polar-900 dark:border-polar-700 dark:text-polar-300 flex items-center justify-between border-b border-blue-100 bg-blue-50 px-8 py-2 text-sm text-sm font-medium text-gray-700">
+    <div className="dark:bg-polar-900 dark:border-polar-700 dark:text-polar-300 flex items-center justify-between border-b border-blue-100 bg-blue-50 px-8 py-2 text-sm font-medium text-gray-700">
       <div className="flex flex-wrap">
         <span className="whitespace-nowrap pr-4">
           Get funding for your public repositories.
@@ -21,7 +21,7 @@ const BackerConnectUpsell = () => {
         </a>
       </div>
       <div>
-        <XMarkIcon
+        <X
           className="h-4 w-4 cursor-pointer text-blue-400 hover:text-blue-500 dark:hover:text-blue-300"
           onClick={() => setSkipped(true)}
         />

@@ -3,16 +3,16 @@
 import { useListOrganizations } from '@/hooks/queries'
 import { CONFIG } from '@/utils/config'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import {
-  AttachMoneyOutlined,
-  Face,
-  LogoutOutlined,
-  ShoppingBagOutlined,
-  SpaceDashboardOutlined,
-} from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
+import {
+  DollarSign,
+  LayoutDashboard,
+  LogOut,
+  ShoppingBag,
+  UserPen,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -82,26 +82,26 @@ const PublicProfileDropdown = ({
               {(organizations.data?.items.length ?? 0) > 0 && (
                 <LinkItem
                   href={`${CONFIG.FRONTEND_BASE_URL}/dashboard`}
-                  icon={<SpaceDashboardOutlined fontSize="inherit" />}
+                  icon={<LayoutDashboard className="size-4" />}
                 >
                   <span className="mx-2 text-sm">Dashboard</span>
                 </LinkItem>
               )}
               <LinkItem
                 href={`${CONFIG.FRONTEND_BASE_URL}/purchases`}
-                icon={<ShoppingBagOutlined fontSize="inherit" />}
+                icon={<ShoppingBag className="size-4" />}
               >
                 <span className="mx-2 text-sm">Purchases</span>
               </LinkItem>
               <LinkItem
                 href={`${CONFIG.FRONTEND_BASE_URL}/finance`}
-                icon={<AttachMoneyOutlined fontSize="inherit" />}
+                icon={<DollarSign className="size-4" />}
               >
                 <span className="mx-2 text-sm">Finance</span>
               </LinkItem>
               <LinkItem
                 href={`${CONFIG.FRONTEND_BASE_URL}/settings`}
-                icon={<Face fontSize="inherit" />}
+                icon={<UserPen className="size-4" />}
               >
                 <span className="mx-2 text-sm">Account</span>
               </LinkItem>
@@ -110,7 +110,7 @@ const PublicProfileDropdown = ({
 
               <LinkItem
                 href={`${CONFIG.BASE_URL}/v1/auth/logout`}
-                icon={<LogoutOutlined fontSize="small" />}
+                icon={<LogOut className="size-4" />}
               >
                 <span className="mx-2 py-2">Log out</span>
               </LinkItem>

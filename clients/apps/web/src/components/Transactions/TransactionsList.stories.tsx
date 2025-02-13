@@ -105,6 +105,7 @@ const product: schemas['TransactionProduct'] = {
   id: '',
   name: 'TierName',
   organization_id: organization.id,
+  recurring_interval: 'month',
   organization,
 }
 

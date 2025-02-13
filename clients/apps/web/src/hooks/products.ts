@@ -42,9 +42,9 @@ export const useRecurringInterval = (
 }
 
 export const useRecurringProductPrice = (
-  product: Partial<schemas['ProductStorefront']>,
+  product: schemas['ProductStorefront'],
   recurringInterval: schemas['SubscriptionRecurringInterval'],
-): schemas['ProductPriceRecurring'] | undefined => {
+) => {
   return useMemo(
     () => getRecurringProductPrice(product, recurringInterval),
     [product, recurringInterval],

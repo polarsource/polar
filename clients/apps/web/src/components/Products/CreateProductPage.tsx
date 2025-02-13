@@ -47,7 +47,6 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
       ...{
         prices: [
           {
-            type: 'one_time',
             price_amount: undefined,
             price_currency: 'usd',
           },

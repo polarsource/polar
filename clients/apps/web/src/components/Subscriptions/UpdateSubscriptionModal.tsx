@@ -3,6 +3,7 @@
 import { useOrganization, useProducts } from '@/hooks/queries'
 import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
 import { setValidationErrors } from '@/utils/api/errors'
+import { hasLegacyRecurringPrices } from '@/utils/product'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -39,35 +40,43 @@ const UpdateSubscriptionModal = ({
   const { data: organization } = useOrganization(
     subscription.product.organization_id,
   )
-  const form = useForm<schemas['SubscriptionUpdatePrice']>({
+  const form = useForm<schemas['SubscriptionUpdateProduct']>({
     defaultValues: {
       proration_behavior: 'prorate',
-      product_price_id: subscription.price_id,
     },
   })
   const { control, handleSubmit, setError, watch, resetField } = form
-  const { data: products } = useProducts(subscription.product.organization_id, {
-    is_recurring: true,
-    limit: 100,
-    sorting: ['price_amount'],
-  })
-
-  const selectedPriceId = watch('product_price_id')
-  const selectedProduct = useMemo(
+  const { data: allProducts } = useProducts(
+    subscription.product.organization_id,
+    {
+      is_recurring: true,
+      limit: 100,
+      sorting: ['price_amount'],
+    },
+  )
+  const products = useMemo(
     () =>
-      products?.items.find((product) =>
-        product.prices.some((price) => price.id === selectedPriceId),
-      ),
-    [products, selectedPriceId],
+      allProducts
+        ? allProducts.items.filter(
+            (product) => !hasLegacyRecurringPrices(product),
+          )
+        : [],
+    [allProducts],
+  )
+
+  const selectedProductId = watch('product_id')
+  const selectedProduct = useMemo(
+    () => products.find((product) => product.id === selectedProductId),
+    [products, selectedProductId],
   )
 
   const onSubmit = useCallback(
-    async (body: schemas['SubscriptionUpdatePrice']) => {
+    async (body: schemas['SubscriptionUpdateProduct']) => {
       await updateSubscription.mutateAsync(body).then(({ error }) => {
         if (error) {
           if (error.detail)
             if (isValidationError(error.detail)) {
-              setValidationErrors(error.detail, form.setError)
+              setValidationErrors(error.detail, setError)
             } else {
               toast({
                 title: 'Subscription update failed',
@@ -110,34 +119,39 @@ const UpdateSubscriptionModal = ({
             <div className="flex flex-col gap-y-6">
               <FormField
                 control={control}
-                name="product_price_id"
+                name="product_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>New price</FormLabel>
+                    <FormLabel>New product</FormLabel>
                     <FormControl>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a new price" />
+                          <SelectValue placeholder="Select a new product" />
                         </SelectTrigger>
                         <SelectContent>
-                          {products?.items.map((product) =>
-                            product.prices.map((price) => (
+                          {products
+                            .filter(
+                              (product) =>
+                                product.id !== subscription.product_id,
+                            )
+                            .map((product) => (
                               <SelectItem
-                                key={price.id}
-                                value={price.id}
-                                disabled={price.id === subscription.price_id}
+                                key={product.id}
+                                value={product.id}
+                                disabled={
+                                  product.id === subscription.product_id
+                                }
                               >
                                 <div>{product.name}</div>
                                 <ProductPriceLabel
                                   product={product}
-                                  price={price}
+                                  price={product.prices[0]}
                                 />
                               </SelectItem>
-                            )),
-                          )}
+                            ))}
                         </SelectContent>
                       </Select>
                     </FormControl>

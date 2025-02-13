@@ -2135,6 +2135,33 @@ class TestConfirm:
                 ),
             )
 
+    async def test_validate_custom_fields_even_if_data_unset(
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_custom_fields: Checkout,
+    ) -> None:
+        """
+        We had a bug where the custom fields validation was actually bypassed
+        if the data was unset.
+        """
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.confirm(
+                session,
+                locker,
+                auth_subject,
+                checkout_custom_fields,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        "customer_billing_address": {"country": "FR"},
+                    }
+                ),
+            )
+
     async def test_calculate_tax_error(
         self,
         calculate_tax_mock: AsyncMock,

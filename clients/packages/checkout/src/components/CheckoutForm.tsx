@@ -110,6 +110,7 @@ const BaseCheckoutForm = ({
     setValue,
     formState: { errors },
   } = form
+
   const country = watch('customerBillingAddress.country')
   const watcher: WatchObserver<CheckoutUpdatePublic> = useCallback(
     async (value, { name, type }) => {
@@ -218,6 +219,22 @@ const BaseCheckoutForm = ({
     }
   }, [taxId])
 
+  const onSubmit = async (data: CheckoutUpdatePublic) => {
+    // Don't send undefined/null data in the custom field object to please the SDK
+    const cleanedFieldData = data.customFieldData
+      ? Object.fromEntries(
+          Object.entries(data.customFieldData).filter(
+            ([_, value]) => value !== undefined && value !== null,
+          ),
+        )
+      : {}
+
+    await confirm({
+      ...data,
+      customFieldData: cleanedFieldData,
+    })
+  }
+
   const checkoutDiscounted = !!checkout.discount
 
   return (
@@ -225,7 +242,7 @@ const BaseCheckoutForm = ({
       <div className="flex flex-col gap-y-12">
         <Form {...form}>
           <form
-            onSubmit={handleSubmit(confirm)}
+            onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-y-12"
           >
             <div className="flex flex-col gap-y-6">
@@ -530,13 +547,14 @@ const BaseCheckoutForm = ({
                   <FormField
                     key={customField.id}
                     control={control}
-                    // @ts-ignore
-                    name={`customFieldFata.${customField.slug}`}
+                    name={`customFieldData.${customField.slug}`}
+                    rules={{
+                      required: required ? 'This field is required' : undefined,
+                    }}
                     render={({ field }) => (
                       <CustomFieldInput
                         customField={customField}
                         required={required}
-                        // @ts-ignore
                         field={field}
                       />
                     )}

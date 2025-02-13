@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import './commandk.scss';
-
 @layer base {
   html {
     @apply text-gray-900;

@@ -2,10 +2,39 @@
 
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import { schemas } from '@polar-sh/client'
-import { Command } from 'cmdk'
+import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@polar-sh/ui/components/ui/command'
+import { ChevronDown } from 'lucide-react'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Item, Left, SelectedBox, Text } from '../Dropdown'
+
+export const SelectedBox = ({
+  onClick,
+  children,
+  classNames,
+}: {
+  onClick: () => void
+  children: React.ReactElement
+  classNames: string
+}) => {
+  return (
+    <div
+      className={twMerge(
+        'dark:hover:bg-polar-700 dark:border-polar-700 dark:bg-polar-800 flex cursor-pointer items-center justify-between space-x-2 rounded-lg border border-gray-200 px-2 py-2 text-sm hover:bg-gray-50',
+        classNames,
+      )}
+      onClick={onClick}
+    >
+      {children}
+      <ChevronDown className="dark:text-polar-300 h-4 w-4 flex-shrink-0 text-gray-500" />
+    </div>
+  )
+}
 
 export function RepoSelection(props: {
   onSelectRepo: (repo: string) => void
@@ -100,52 +129,45 @@ export function RepoSelection(props: {
               value={value}
               onValueChange={onValueChange}
               className={twMerge(
-                width,
                 props.openClassNames,
-                'dark:bg-polar-800 dark:border-polar-700 !absolute z-10 w-max rounded-lg bg-gray-50 shadow-lg dark:border',
+                width,
+                '!absolute z-[100] h-64 w-max',
               )}
             >
-              <div className="flex items-center px-2">
-                <Command.Input
-                  ref={inputRef}
-                  autoFocus
-                  placeholder={'Select a repository'}
-                  className="dark:!text-polar-200 dark:placeholder:text-polar-400 m-0 px-2 py-3 !text-sm !text-gray-900 focus:border-0 focus:ring-0"
-                  value={inputValue}
-                  onValueChange={onInputValueChange}
-                />
-              </div>
-              <hr className="dark:border-polar-700" />
-              <Command.List
+              <CommandInput
+                ref={inputRef}
+                autoFocus
+                placeholder={'Select a repository'}
+                value={inputValue}
+                onValueChange={onInputValueChange}
+              />
+              <CommandList
                 ref={listRef}
                 className="max-h-[500px] overflow-auto overscroll-contain px-2 pb-2"
               >
-                <Command.Empty className="p dark:text-polar-400 !h-auto !justify-start !p-2 !pt-3">
+                <CommandEmpty className="p dark:text-polar-400 !h-auto !justify-start !p-2 !pt-3">
                   No results found.
-                </Command.Empty>
+                </CommandEmpty>
 
-                <Item value="all repositories" onSelect={() => onSelectAll()}>
-                  <Left>
-                    <Text>All repositories</Text>
-                  </Left>
-                </Item>
+                <CommandItem
+                  value="all repositories"
+                  onSelect={() => onSelectAll()}
+                >
+                  All repositories
+                </CommandItem>
 
                 {sortedRepositories &&
                   sortedRepositories.map((r) => (
-                    <Item
+                    <CommandItem
                       value={`${hasSeveralOrganizations ? `${r.organization.name}/` : ''}${r.name}`}
                       key={r.id}
                       onSelect={() => onSelectRepo(r)}
                     >
-                      <Left>
-                        <Text>
-                          {hasSeveralOrganizations && `${r.organization.name}/`}
-                          {r.name}
-                        </Text>
-                      </Left>
-                    </Item>
+                      {hasSeveralOrganizations && `${r.organization.name}/`}
+                      {r.name}
+                    </CommandItem>
                   ))}
-              </Command.List>
+              </CommandList>
             </Command>
           </div>
         </>

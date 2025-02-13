@@ -32,8 +32,12 @@ const unflatten = (entries: Record<string, string>): Record<string, any> =>
       key.split('.').reduceRight(
         (current, part, index, parts) => ({
           ...current,
-          // Transform each loc to camelCase, since the schema from our SDK converts everythng to camelCase
-          [part.replace(/_([a-z])/g, (g) => g[1].toUpperCase())]:
+          // Transform each loc to camelCase, since the schema from our SDK converts everything to camelCase
+          // Don't camel case customFieldData properties, as they are dynamic and non converted to camelCase
+          [index > 0 &&
+          parts[index - 1].match('custom_field_data|customFieldData')
+            ? part
+            : part.replace(/_([a-z])/g, (g) => g[1].toUpperCase())]:
             index === parts.length - 1
               ? value
               : { ...current[part], ...current },

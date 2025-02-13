@@ -14,12 +14,20 @@ export const setValidationErrors = <TFieldValues extends FieldValues>(
     }
 
     // Transform each loc to camelCase, since the schema from our SDK converts everythng to camelCase
-    loc = loc.map((part) => {
-      if (Number.isInteger(part)) {
-        return part
+    for (let i = 0; i < loc.length; i++) {
+      if (Number.isInteger(loc[i])) {
+        continue
       }
-      return (part as string).replace(/[-_](.)/g, (_, c) => c.toUpperCase())
-    })
+
+      loc[i] = (loc[i] as string).replace(/_([a-z])/g, (g) =>
+        g[1].toUpperCase(),
+      )
+
+      // Don't camel case customFieldData properties, as they are dynamic and non converted to camelCase
+      if (loc[i] === 'customFieldData') {
+        break
+      }
+    }
 
     setError(loc.join('.') as FieldPath<TFieldValues>, {
       type: error.type,

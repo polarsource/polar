@@ -131,6 +131,10 @@ class Product(MetadataMixin, RecordModel):
                 return price
         return None
 
+    @property
+    def is_legacy_recurring_price(self) -> bool:
+        return any(price.is_recurring for price in self.prices)
+
     @hybrid_property
     def is_recurring(self) -> bool:
         if self.recurring_interval is not None:

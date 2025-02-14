@@ -1,8 +1,9 @@
 {
   "languages": {
     "Python": {
-      "language_servers": ["pyright", "ruff"],
+      "language_servers": ["pyright", "ruff", "!pylsp"],
       "format_on_save": "on",
+      "wrap_guides": [88],
       "formatter": [
         {
           "code_actions": {
@@ -26,20 +27,6 @@
       "settings": {
         "python": {
           "pythonPath": "server/.venv/bin/python"
-        }
-      }
-    },
-    "pylsp": {
-      "settings": {
-        "plugins": {
-          "mypy": {
-            "enabled": true,
-            "overrides": [
-              "--python-executable",
-              "/home/fvoron/Development/polar/server/.venv/bin/python",
-              true
-            ]
-          }
         }
       }
     }

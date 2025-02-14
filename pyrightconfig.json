@@ -1,0 +1,8 @@
+{
+  "include": ["server"],
+  "executionEnvironments": [
+    {
+      "root": "server"
+    }
+  ]
+}

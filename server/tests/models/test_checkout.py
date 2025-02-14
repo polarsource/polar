@@ -34,8 +34,9 @@ async def test_checkout_expired_status_update(
     session: AsyncSession,
     product_one_time: Product,
 ) -> None:
-    price = product_one_time.prices[0]
-    checkout = await create_checkout(save_fixture, price=price, status=initial_status)
+    checkout = await create_checkout(
+        save_fixture, products=[product_one_time], status=initial_status
+    )
     assert checkout.status == initial_status
 
     checkout.expires_at = datetime(2024, 1, 1, 0, 0, 0, 0, tzinfo=UTC)

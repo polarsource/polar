@@ -1,6 +1,8 @@
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, String, Uuid
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.enums import PaymentProcessor
@@ -9,7 +11,10 @@ from polar.kit.metadata import MetadataMixin
 
 from .discount import Discount
 from .product import Product
-from .product_price import ProductPrice
+
+if TYPE_CHECKING:
+    from .checkout_link_product import CheckoutLinkProduct
+    from .organization import Organization
 
 
 class CheckoutLink(MetadataMixin, RecordModel):
@@ -30,46 +35,38 @@ class CheckoutLink(MetadataMixin, RecordModel):
         Boolean, nullable=False, default=True
     )
 
-    product_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=False
-    )
-
-    product_price_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("product_prices.id", ondelete="set null"), nullable=True
-    )
-
     discount_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
     )
-
-    @declared_attr
-    def product(cls) -> Mapped[Product]:
-        # Eager load since we always need & have a product per link
-        return relationship(Product, lazy="joined", innerjoin=True)
-
-    @declared_attr
-    def product_price(cls) -> Mapped[ProductPrice | None]:
-        # Eager load in case an explicit `product_price_id` is set
-        return relationship(ProductPrice, lazy="joined")
 
     @declared_attr
     def discount(cls) -> Mapped[Discount | None]:
         # Eager loading makes sense here because we always need the discount when present
         return relationship(Discount, lazy="joined")
 
-    @property
-    def checkout_price(self) -> ProductPrice:
-        # Default to the first price unless one is explicitly set
-        price = self.product_price
-        if price and not price.is_archived:
-            return price
+    checkout_link_products: Mapped[list["CheckoutLinkProduct"]] = relationship(
+        "CheckoutLinkProduct",
+        back_populates="checkout_link",
+        cascade="all, delete-orphan",
+        # Products are almost always needed, so eager loading makes sense
+        lazy="selectin",
+    )
 
-        for inner_price in self.product.prices:
-            if not inner_price.is_archived:
-                return inner_price
+    products: AssociationProxy[list["Product"]] = association_proxy(
+        "checkout_link_products", "product"
+    )
 
-        # Going to return the first archived
-        return self.product.prices[0]
+    # Denormalize organization_id to help with validation
+    # when updating products or discount
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("organizations.id", ondelete="cascade"),
+        nullable=False,
+    )
+
+    @declared_attr
+    def organization(cls) -> Mapped["Organization"]:
+        return relationship("Organization", lazy="raise")
 
     @property
     def success_url(self) -> str | None:

@@ -22,6 +22,8 @@ from polar.models import (
     Benefit,
     Checkout,
     CheckoutLink,
+    CheckoutLinkProduct,
+    CheckoutProduct,
     Customer,
     CustomField,
     Discount,
@@ -1277,7 +1279,9 @@ async def products(
 async def create_checkout(
     save_fixture: SaveFixture,
     *,
-    price: ProductPrice,
+    products: list[Product],
+    product: Product | None = None,
+    price: ProductPrice | None = None,
     payment_processor: PaymentProcessor = PaymentProcessor.stripe,
     status: CheckoutStatus = CheckoutStatus.open,
     expires_at: datetime | None = None,
@@ -1292,6 +1296,9 @@ async def create_checkout(
     subscription: Subscription | None = None,
     discount: Discount | None = None,
 ) -> Checkout:
+    product = product or products[0]
+    price = price or product.prices[0]
+
     if isinstance(price, ProductPriceFixed):
         amount = price.price_amount
         currency = price.price_currency
@@ -1316,7 +1323,10 @@ async def create_checkout(
         tax_amount=tax_amount,
         currency=currency,
         product_price=price,
-        product=price.product,
+        product=product,
+        checkout_products=[
+            CheckoutProduct(product=p, order=i) for i, p in enumerate(products)
+        ],
         customer=customer,
         subscription=subscription,
         discount=discount,
@@ -1329,8 +1339,7 @@ async def create_checkout_link(
     save_fixture: SaveFixture,
     *,
     payment_processor: PaymentProcessor = PaymentProcessor.stripe,
-    product: Product,
-    price: ProductPrice | None = None,
+    products: Sequence[Product],
     discount: Discount | None = None,
     client_secret: str | None = None,
     success_url: str | None = None,
@@ -1343,8 +1352,10 @@ async def create_checkout_link(
             "CHECKOUT_CLIENT_SECRET",
         ),
         success_url=success_url,
-        product=product,
-        product_price=price,
+        organization=products[0].organization,
+        checkout_link_products=[
+            CheckoutLinkProduct(product=p, order=i) for i, p in enumerate(products)
+        ],
         discount=discount,
         user_metadata=user_metadata,
     )

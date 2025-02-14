@@ -1,7 +1,8 @@
+import uuid
 from collections.abc import Sequence
 from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -43,6 +44,9 @@ from .product_price import (
     ProductPriceFree,
 )
 from .subscription import Subscription
+
+if TYPE_CHECKING:
+    from .checkout_product import CheckoutProduct
 
 
 def get_expires_at() -> datetime:
@@ -96,10 +100,6 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
         # Eager loading makes sense here because we always need the product
         return relationship(Product, lazy="joined")
 
-    organization: AssociationProxy[Organization] = association_proxy(
-        "product", "organization"
-    )
-
     product_price_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("product_prices.id", ondelete="cascade"), nullable=False
     )
@@ -108,6 +108,22 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def product_price(cls) -> Mapped[ProductPrice]:
         # Eager loading makes sense here because we always need the price
         return relationship(ProductPrice, lazy="joined")
+
+    checkout_products: Mapped[list["CheckoutProduct"]] = relationship(
+        "CheckoutProduct",
+        back_populates="checkout",
+        cascade="all, delete-orphan",
+        # Products are almost always needed, so eager loading makes sense
+        lazy="selectin",
+    )
+
+    products: AssociationProxy[list["Product"]] = association_proxy(
+        "checkout_products", "product"
+    )
+
+    organization: AssociationProxy[Organization] = association_proxy(
+        "product", "organization"
+    )
 
     discount_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
@@ -245,6 +261,12 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     attached_custom_fields: AssociationProxy[Sequence["AttachedCustomFieldMixin"]] = (
         association_proxy("product", "attached_custom_fields")
     )
+
+    def get_product(self, id: uuid.UUID) -> Product | None:
+        for product in self.products:
+            if product.id == id:
+                return product
+        return None
 
 
 @event.listens_for(Checkout, "before_update")

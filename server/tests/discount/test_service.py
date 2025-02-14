@@ -118,7 +118,7 @@ class TestUpdate:
                 duration=DiscountDuration.once,
                 organization=organization,
             )
-        checkout = await create_checkout(save_fixture, price=product.prices[0])
+        checkout = await create_checkout(save_fixture, products=[product])
         await create_discount_redemption(
             save_fixture, discount=discount, checkout=checkout
         )
@@ -352,7 +352,7 @@ class TestIsRedeemableDiscount:
             max_redemptions=max_redemptions,
         )
         for _ in range(max_redemptions):
-            checkout = await create_checkout(save_fixture, price=product.prices[0])
+            checkout = await create_checkout(save_fixture, products=[product])
             await create_discount_redemption(
                 save_fixture, discount=discount, checkout=checkout
             )
@@ -381,7 +381,7 @@ class TestIsRedeemableDiscount:
             max_redemptions=max_redemptions,
         )
         for _ in range(5):
-            checkout = await create_checkout(save_fixture, price=product.prices[0])
+            checkout = await create_checkout(save_fixture, products=[product])
             await create_discount_redemption(
                 save_fixture, discount=discount, checkout=checkout
             )
@@ -410,8 +410,8 @@ class TestRedeemDiscount:
             organization=organization,
             max_redemptions=1,
         )
-        first_checkout = await create_checkout(save_fixture, price=product.prices[0])
-        second_checkout = await create_checkout(save_fixture, price=product.prices[0])
+        first_checkout = await create_checkout(save_fixture, products=[product])
+        second_checkout = await create_checkout(save_fixture, products=[product])
 
         async def _redemption_task(
             session: AsyncSession,
@@ -491,7 +491,7 @@ class TestCodeCaseInsensitivity:
         assert discount_upper
         assert discount_upper.code == "FooBar"
 
-        checkout_product = await create_checkout(save_fixture, price=product.prices[0])
+        checkout_product = await create_checkout(save_fixture, products=[product])
         await checkout_service.update(
             session,
             locker,

@@ -6,6 +6,8 @@ from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .checkout import Checkout
 from .checkout_link import CheckoutLink
+from .checkout_link_product import CheckoutLinkProduct
+from .checkout_product import CheckoutProduct
 from .custom_field import CustomField
 from .customer import Customer
 from .customer_session import CustomerSession
@@ -70,6 +72,8 @@ __all__ = [
     "BenefitGrant",
     "Checkout",
     "CheckoutLink",
+    "CheckoutLinkProduct",
+    "CheckoutProduct",
     "Customer",
     "CustomerSession",
     "CustomerSessionCode",

@@ -293,7 +293,7 @@ class TestCreateSubscriptionFromStripe:
 
         price = product.prices[0]
         checkout = await create_checkout(
-            save_fixture, price=price, status=CheckoutStatus.succeeded
+            save_fixture, products=[product], status=CheckoutStatus.succeeded
         )
         stripe_subscription = construct_stripe_subscription(
             price_id=price.stripe_price_id, metadata={"checkout_id": str(checkout.id)}

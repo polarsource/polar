@@ -55,7 +55,7 @@ def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
 async def checkout_open(
     save_fixture: SaveFixture, product_one_time: Product
 ) -> Checkout:
-    return await create_checkout(save_fixture, price=product_one_time.prices[0])
+    return await create_checkout(save_fixture, products=[product_one_time])
 
 
 async def create_blocked_product(

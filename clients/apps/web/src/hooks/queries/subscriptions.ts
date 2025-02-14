@@ -53,11 +53,11 @@ export const useUpdateSubscription = (id: string) =>
       if (error) {
         return
       }
-      queryClient.setQueriesData(
+      queryClient.setQueriesData<schemas['Subscription']>(
         {
           queryKey: ['subscriptions', { id }],
         },
-        result,
+        data,
       )
       queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
         {

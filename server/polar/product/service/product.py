@@ -20,21 +20,21 @@ from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.models import (
     Benefit,
+    LegacyRecurringProductPriceCustom,
+    LegacyRecurringProductPriceFixed,
+    LegacyRecurringProductPriceFree,
     Organization,
     Product,
     ProductBenefit,
     ProductMedia,
     ProductPrice,
+    ProductPriceCustom,
+    ProductPriceFixed,
     User,
     UserOrganization,
 )
 from polar.models.product_custom_field import ProductCustomField
-from polar.models.product_price import (
-    ProductPriceAmountType,
-    ProductPriceCustom,
-    ProductPriceFixed,
-    ProductPriceType,
-)
+from polar.models.product_price import ProductPriceAmountType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.organization.service import organization as organization_service
@@ -121,15 +121,6 @@ class ProductService(ResourceServiceReader[Product]):
                 order_by_clauses.append(clause_function(Product.created_at))
             elif criterion == ProductSortProperty.product_name:
                 order_by_clauses.append(clause_function(Product.name))
-            elif criterion == ProductSortProperty.price_type:
-                order_by_clauses.append(
-                    clause_function(
-                        case(
-                            (ProductPrice.type == ProductPriceType.one_time, 1),
-                            (ProductPrice.type == ProductPriceType.recurring, 2),
-                        )
-                    )
-                )
             elif criterion == ProductSortProperty.price_amount_type:
                 order_by_clauses.append(
                     clause_function(
@@ -339,9 +330,10 @@ class ProductService(ResourceServiceReader[Product]):
         )
         product.stripe_product_id = stripe_product.id
 
-        for price_create in create_schema.prices:
+        for index, price_create in enumerate(create_schema.prices):
             stripe_price = await stripe_service.create_price_for_product(
-                stripe_product.id, price_create.get_stripe_price_params()
+                stripe_product.id,
+                price_create.get_stripe_price_params(product.recurring_interval),
             )
             model_class = price_create.get_model_class()
             price = model_class(
@@ -381,6 +373,52 @@ class ProductService(ResourceServiceReader[Product]):
                             "prices",
                         ),
                         "msg": "At least one price is required.",
+                        "input": update_schema.prices,
+                    }
+                ]
+            )
+
+        # Prevent non-legacy products from changing their recurring interval
+        if (
+            update_schema.recurring_interval is not None
+            and update_schema.recurring_interval != product.recurring_interval
+            and not all(
+                isinstance(
+                    price,
+                    LegacyRecurringProductPriceFixed
+                    | LegacyRecurringProductPriceCustom
+                    | LegacyRecurringProductPriceFree,
+                )
+                for price in product.prices
+            )
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "recurring_interval"),
+                        "msg": "Recurring interval cannot be changed.",
+                        "input": update_schema.recurring_interval,
+                    }
+                ]
+            )
+
+        # Allow legacy products with both monthly/yearly prices to be updated
+        # but prevent new products from having both prices
+        if (
+            update_schema.prices is not None
+            and len(update_schema.prices) > 1
+            and not all(
+                isinstance(price, ExistingProductPrice)
+                for price in update_schema.prices
+            )
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "prices"),
+                        "msg": "Only one active price is allowed.",
                         "input": update_schema.prices,
                     }
                 ]
@@ -473,7 +511,8 @@ class ProductService(ResourceServiceReader[Product]):
 
                 assert product.stripe_product_id is not None
                 stripe_price = await stripe_service.create_price_for_product(
-                    product.stripe_product_id, price_update.get_stripe_price_params()
+                    product.stripe_product_id,
+                    price_update.get_stripe_price_params(product.recurring_interval),
                 )
                 model_class = price_update.get_model_class()
                 price = model_class(

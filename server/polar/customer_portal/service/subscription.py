@@ -25,7 +25,7 @@ from polar.subscription.service import subscription as subscription_service
 
 from ..schemas.subscription import (
     CustomerSubscriptionUpdate,
-    CustomerSubscriptionUpdatePrice,
+    CustomerSubscriptionUpdateProduct,
 )
 
 
@@ -151,15 +151,15 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         *,
         updates: CustomerSubscriptionUpdate,
     ) -> Subscription:
-        if isinstance(updates, CustomerSubscriptionUpdatePrice):
+        if isinstance(updates, CustomerSubscriptionUpdateProduct):
             organization = subscription.product.organization
             if not organization.allow_customer_updates:
                 raise UpdateSubscriptionNotAllowed()
 
-            return await self.update_product_price(
+            return await self.update_product(
                 session,
                 subscription,
-                product_price_id=updates.product_price_id,
+                product_id=updates.product_id,
             )
 
         cancel = updates.cancel_at_period_end is True
@@ -177,17 +177,15 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
 
         return await self.uncancel(session, subscription)
 
-    async def update_product_price(
+    async def update_product(
         self,
         session: AsyncSession,
         subscription: Subscription,
         *,
-        product_price_id: uuid.UUID,
+        product_id: uuid.UUID,
     ) -> Subscription:
-        return await subscription_service.update_product_price(
-            session,
-            subscription,
-            product_price_id=product_price_id,
+        return await subscription_service.update_product(
+            session, subscription, product_id=product_id
         )
 
     async def uncancel(

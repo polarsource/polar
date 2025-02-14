@@ -11,7 +11,7 @@ from polar.kit.time_queries import (
     TimeInterval,
     is_under_limits,
 )
-from polar.models.product_price import ProductPriceType
+from polar.models.product import ProductBillingType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
@@ -41,11 +41,11 @@ async def get(
     product_id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="ProductID Filter", description="Filter by product ID."
     ),
-    product_price_type: MultipleQueryFilter[ProductPriceType] | None = Query(
+    billing_type: MultipleQueryFilter[ProductBillingType] | None = Query(
         None,
-        title="ProductPriceType Filter",
+        title="ProductBillingType Filter",
         description=(
-            "Filter by product price type. "
+            "Filter by billing type. "
             "`recurring` will filter data corresponding "
             "to subscriptions creations or renewals. "
             "`one_time` will filter data corresponding to one-time purchases."
@@ -81,7 +81,7 @@ async def get(
         interval=interval,
         organization_id=organization_id,
         product_id=product_id,
-        product_price_type=product_price_type,
+        billing_type=billing_type,
         customer_id=customer_id,
     )
 

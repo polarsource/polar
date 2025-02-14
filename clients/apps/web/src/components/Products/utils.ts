@@ -4,20 +4,17 @@ import type { ProductFullMediasMixin } from './ProductForm/ProductForm'
 const isExistingProductPrice = (
   price:
     | schemas['ExistingProductPrice']
-    | schemas['ProductPriceOneTimeCustomCreate']
-    | schemas['ProductPriceOneTimeFixedCreate']
-    | schemas['ProductPriceOneTimeFreeCreate']
-    | schemas['ProductPriceRecurringFixedCreate']
-    | schemas['ProductPriceRecurringFreeCreate'],
+    | schemas['ProductPriceFixedCreate']
+    | schemas['ProductPriceCustomCreate']
+    | schemas['ProductPriceFreeCreate'],
 ): price is schemas['ExistingProductPrice'] => 'id' in price && price.id !== ''
 
 const priceCreateUpdateToPrice = (
+  product: schemas['ProductCreate'] | schemas['ProductUpdate'],
   price:
-    | schemas['ProductPriceOneTimeCustomCreate']
-    | schemas['ProductPriceOneTimeFixedCreate']
-    | schemas['ProductPriceOneTimeFreeCreate']
-    | schemas['ProductPriceRecurringFixedCreate']
-    | schemas['ProductPriceRecurringFreeCreate'],
+    | schemas['ProductPriceFixedCreate']
+    | schemas['ProductPriceCustomCreate']
+    | schemas['ProductPriceFreeCreate'],
 ): schemas['ProductPrice'] => {
   const base = {
     id: '',
@@ -25,49 +22,38 @@ const priceCreateUpdateToPrice = (
     modified_at: null,
     is_archived: false,
     product_id: '',
+    // Legacy deprecated field
+    type: (!product.recurring_interval
+      ? 'one_time'
+      : 'recurring') as schemas['ProductPriceType'],
+    recurring_interval: product.recurring_interval || null,
   }
-  if (price.type === 'one_time') {
-    if (price.amount_type === 'fixed') {
-      return {
-        ...base,
-        ...price,
-        price_amount: price.price_amount ?? 0,
-        price_currency: price.price_currency ?? 'usd',
-      }
-    } else if (price.amount_type === 'custom') {
-      return {
-        ...base,
-        ...price,
-        price_currency: price.price_currency ?? 'usd',
-        minimum_amount: price.minimum_amount ?? null,
-        maximum_amount: price.maximum_amount ?? null,
-        preset_amount: price.preset_amount ?? null,
-      }
-    } else if (price.amount_type === 'free') {
-      return {
-        ...base,
-        ...price,
-      }
+
+  if (price.amount_type === 'fixed') {
+    return {
+      ...base,
+      ...price,
+      price_amount: price.price_amount ?? 0,
+      price_currency: price.price_currency ?? 'usd',
     }
-  } else if (price.type === 'recurring') {
-    if (price.amount_type === 'fixed') {
-      return {
-        ...base,
-        ...price,
-        price_currency: price.price_currency ?? 'usd',
-        recurring_interval: price.recurring_interval ?? 'month',
-      }
-    } else if (price.amount_type === 'free') {
-      return {
-        ...base,
-        ...price,
-      }
+  } else if (price.amount_type === 'custom') {
+    return {
+      ...base,
+      ...price,
+      price_currency: price.price_currency ?? 'usd',
+      minimum_amount: price.minimum_amount ?? null,
+      maximum_amount: price.maximum_amount ?? null,
+      preset_amount: price.preset_amount ?? null,
+    }
+  } else if (price.amount_type === 'free') {
+    return {
+      ...base,
+      ...price,
     }
   }
 
   return {
     ...base,
-    type: 'one_time',
     amount_type: 'fixed',
     price_amount: 0,
     price_currency: 'usd',
@@ -88,7 +74,7 @@ export const productUpdateToProduct = (
       productUpdateRest.prices
         ?.map<
           schemas['ProductPrice']
-        >((price) => (isExistingProductPrice(price) ? (price as schemas['ProductPrice']) : priceCreateUpdateToPrice(price)))
+        >((price) => (isExistingProductPrice(price) ? (price as schemas['ProductPrice']) : priceCreateUpdateToPrice(productUpdate, price)))
         .filter((price): price is schemas['ProductPrice'] => 'type' in price) ??
       [],
     medias: full_medias,
@@ -109,16 +95,14 @@ export const productCreateToProduct = (
     name: productCreateRest.name ?? '',
     description: productCreateRest.description ?? '',
     prices:
-      productCreate.prices
-        ?.map<schemas['ProductPrice']>(priceCreateUpdateToPrice)
-        .filter((price): price is schemas['ProductPrice'] => 'type' in price) ??
-      [],
+      productCreate.prices?.map<schemas['ProductPrice']>((price) =>
+        priceCreateUpdateToPrice(productCreate, price),
+      ) ?? [],
     medias: full_medias,
     benefits,
     created_at: new Date().toISOString(),
     modified_at: new Date().toISOString(),
-    is_recurring:
-      productCreate.prices.some((price) => price.type === 'recurring') ?? false,
+    is_recurring: productCreate.recurring_interval !== null,
     is_archived: false,
     attached_custom_fields: [],
     metadata: {},

@@ -16,7 +16,6 @@ from polar.models.webhook_endpoint import (
     WebhookFormat,
 )
 from polar.models.webhook_event import WebhookEvent
-from polar.subscription.service import subscription as subscription_service
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.tasks import (
     MAX_RETRIES,
@@ -57,15 +56,8 @@ async def test_webhook_send(
     )
     await save_fixture(endpoint)
 
-    # then
-    session.expunge_all()
-
-    # get full subscription, with relations
-    full_sub = await subscription_service.get(session, subscription.id)
-    assert full_sub
-
     await webhook_service.send(
-        session, organization, (WebhookEventType.subscription_created, full_sub)
+        session, organization, (WebhookEventType.subscription_created, subscription)
     )
 
     assert called
@@ -100,15 +92,8 @@ async def test_webhook_send_not_subscribed_to_event(
     )
     await save_fixture(endpoint)
 
-    # then
-    session.expunge_all()
-
-    # get full subscription, with relations
-    full_sub = await subscription_service.get(session, subscription.id)
-    assert full_sub
-
     await webhook_service.send(
-        session, organization, (WebhookEventType.subscription_created, full_sub)
+        session, organization, (WebhookEventType.subscription_created, subscription)
     )
 
     assert called is False
@@ -134,9 +119,6 @@ async def test_webhook_delivery(
 
     event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
     await save_fixture(event)
-
-    # then
-    session.expunge_all()
 
     await webhook_event_send(
         job_context,
@@ -165,9 +147,6 @@ async def test_webhook_delivery_500(
 
     event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
     await save_fixture(event)
-
-    # then
-    session.expunge_all()
 
     # failures
     for job_try in range(MAX_RETRIES):
@@ -211,9 +190,6 @@ async def test_webhook_delivery_http_error(
     event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
     await save_fixture(event)
 
-    # then
-    session.expunge_all()
-
     # failures
     for job_try in range(MAX_RETRIES):
         with pytest.raises(Retry):
@@ -256,9 +232,6 @@ async def test_webhook_standard_webhooks_compatible(
 
     event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
     await save_fixture(event)
-
-    # then
-    session.expunge_all()
 
     await _webhook_event_send(
         session=session,

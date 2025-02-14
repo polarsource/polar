@@ -11,6 +11,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.checkout.schemas import CheckoutProductCreate
 from polar.checkout.service import checkout as checkout_service
+from polar.enums import SubscriptionRecurringInterval
 from polar.integrations.stripe.service import StripeService
 from polar.kit.tax import calculate_tax
 from polar.kit.utils import utc_now
@@ -69,6 +70,7 @@ async def create_blocked_product(
     product = await create_product(
         save_fixture,
         organization=org,
+        recurring_interval=SubscriptionRecurringInterval.month,
         name="Prohibited product",
         is_archived=False,
     )
@@ -336,10 +338,7 @@ class TestClientCreateCheckout:
         self, api_prefix: str, client: AsyncClient, product: Product
     ) -> None:
         response = await client.post(
-            f"{api_prefix}/client/",
-            json={
-                "product_price_id": str(product.prices[0].id),
-            },
+            f"{api_prefix}/client/", json={"product_id": str(product.id)}
         )
 
         assert response.status_code == 403
@@ -348,10 +347,7 @@ class TestClientCreateCheckout:
         self, api_prefix: str, client: AsyncClient, product: Product
     ) -> None:
         response = await client.post(
-            f"{api_prefix}/client/",
-            json={
-                "product_price_id": str(product.prices[0].id),
-            },
+            f"{api_prefix}/client/", json={"product_id": str(product.id)}
         )
 
         assert response.status_code == 201
@@ -365,10 +361,7 @@ class TestClientCreateCheckout:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            f"{api_prefix}/client/",
-            json={
-                "product_price_id": str(product.prices[0].id),
-            },
+            f"{api_prefix}/client/", json={"product_id": str(product.id)}
         )
 
         assert response.status_code == 201

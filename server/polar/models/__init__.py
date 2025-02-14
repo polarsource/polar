@@ -41,6 +41,9 @@ from .product_benefit import ProductBenefit
 from .product_custom_field import ProductCustomField
 from .product_media import ProductMedia
 from .product_price import (
+    LegacyRecurringProductPriceCustom,
+    LegacyRecurringProductPriceFixed,
+    LegacyRecurringProductPriceFree,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
@@ -106,6 +109,9 @@ __all__ = [
     "ProductPriceCustom",
     "ProductPriceFixed",
     "ProductPriceFree",
+    "LegacyRecurringProductPriceFree",
+    "LegacyRecurringProductPriceFixed",
+    "LegacyRecurringProductPriceCustom",
     "Repository",
     "Refund",
     "Subscription",

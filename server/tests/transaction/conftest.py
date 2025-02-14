@@ -4,7 +4,7 @@ from typing import TypeVar
 
 import pytest_asyncio
 
-from polar.enums import AccountType
+from polar.enums import AccountType, SubscriptionRecurringInterval
 from polar.models import (
     Account,
     Customer,
@@ -145,7 +145,11 @@ async def transaction_issue_reward(
 async def transaction_order_subscription(
     save_fixture: SaveFixture, organization: Organization, customer: Customer
 ) -> Order:
-    product = await create_product(save_fixture, organization=organization)
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+    )
     subscription = await create_subscription(
         save_fixture, product=product, customer=customer
     )

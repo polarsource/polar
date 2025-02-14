@@ -277,6 +277,7 @@ export const CheckoutLinkForm = ({
                           >
                             <div className="flex flex-row items-center">
                               <ProductPriceLabel
+                                product={checkoutLink.product}
                                 price={checkoutLink.product_price}
                               />
                               <span className="ml-2 text-xs">(Archived)</span>
@@ -285,7 +286,7 @@ export const CheckoutLinkForm = ({
                         )}
                       {product.prices.map((price) => (
                         <SelectItem key={price.id} value={price.id}>
-                          <ProductPriceLabel price={price} />
+                          <ProductPriceLabel product={product} price={price} />
                         </SelectItem>
                       ))}
                     </SelectContent>

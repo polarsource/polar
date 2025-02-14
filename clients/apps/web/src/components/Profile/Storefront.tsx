@@ -3,9 +3,9 @@
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
 import { ProductCard } from '@/components/Products/ProductCard'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
-import { hasRecurringInterval } from '@/components/Subscriptions/utils'
 import { useRecurringInterval } from '@/hooks/products'
 import { organizationPageLink } from '@/utils/nav'
+import { isLegacyRecurringPrice } from '@/utils/product'
 import { HiveOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -26,7 +26,17 @@ export const Storefront = ({
     useRecurringInterval(products)
 
   const subscriptionProducts = useMemo(
-    () => products.filter(hasRecurringInterval(recurringInterval)),
+    () =>
+      products.filter(
+        (p) =>
+          p.is_recurring &&
+          (p.recurring_interval === recurringInterval ||
+            p.prices.some(
+              (price) =>
+                isLegacyRecurringPrice(price) &&
+                price.recurring_interval === recurringInterval,
+            )),
+      ),
     [products, recurringInterval],
   )
 

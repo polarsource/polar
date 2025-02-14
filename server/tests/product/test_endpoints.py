@@ -49,9 +49,6 @@ class TestListProducts:
             benefits=benefits,
         )
 
-        # then
-        session.expunge_all()
-
         response = await client.get(
             "/v1/products/",
             params={"organization_id": str(organization.id)},
@@ -100,7 +97,6 @@ class TestGetProduct:
     @pytest.mark.auth
     async def test_valid_with_benefits(
         self,
-        session: AsyncSession,
         save_fixture: SaveFixture,
         client: AsyncClient,
         product: Product,
@@ -112,9 +108,6 @@ class TestGetProduct:
             product=product,
             benefits=benefits,
         )
-
-        # then
-        session.expunge_all()
 
         response = await client.get(f"/v1/products/{product.id}")
 
@@ -142,82 +135,18 @@ class TestCreateProduct:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth
-    async def test_cant_create_free_type_tier(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            "/v1/products/",
-            json={
-                "type": "free",
-                "name": "Subscription Tier",
-                "price_amount": 1000,
-                "organization_id": str(organization.id),
-            },
-        )
-
-        assert response.status_code == 422
-
     @pytest.mark.parametrize(
         "payload",
         [
             {"name": "ab"},
             {"name": ""},
-            {
-                "description": (
-                    "This is just a simple product description that should be allowed"
-                )
-            },
             # No price
             {"prices": []},
-            # One recurring and one one-time prices
+            # Two prices
             {
                 "prices": [
-                    {
-                        "type": "recurring",
-                        "recurring_interval": "month",
-                        "price_amount": 1000,
-                    },
-                    {"type": "one_time", "price_amount": 1000},
-                ]
-            },
-            # Three recurring prices
-            {
-                "prices": [
-                    {
-                        "type": "recurring",
-                        "recurring_interval": "month",
-                        "price_amount": 1000,
-                    }
-                    for _ in range(3)
-                ]
-            },
-            # Repeat the same interval
-            {
-                "prices": [
-                    {
-                        "type": "recurring",
-                        "recurring_interval": "month",
-                        "price_amount": 1000,
-                    }
-                    for _ in range(2)
-                ]
-            },
-            # Two one-time prices
-            {
-                "prices": [
-                    {"type": "one_time", "amount_type": "fixed", "price_amount": 1000}
-                    for _ in range(2)
-                ]
-            },
-            # Two free prices
-            {
-                "prices": [
-                    {"type": "one_time", "amount_type": "free", "price_amount": 1000}
-                    for _ in range(2)
+                    {"amount_type": "fixed", "price_amount": 1000},
+                    {"amount_type": "fixed", "price_amount": 10000},
                 ]
             },
         ],
@@ -240,19 +169,14 @@ class TestCreateProduct:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        # then
-        session.expunge_all()
-
         response = await client.post(
             "/v1/products/",
             json={
-                "type": "individual",
+                "name": "Product",
                 "organization_id": str(organization.id),
                 "prices": [
                     {
-                        "type": "recurring",
                         "amount_type": "fixed",
-                        "recurring_interval": "month",
                         "price_amount": 1000,
                         "price_currency": "usd",
                     }
@@ -265,35 +189,93 @@ class TestCreateProduct:
 
     @pytest.mark.auth
     @pytest.mark.parametrize(
-        "prices",
+        "payload",
         (
-            [
+            pytest.param(
                 {
-                    "type": "recurring",
-                    "amount_type": "fixed",
-                    "recurring_interval": "month",
-                    "price_amount": 1000,
-                    "price_currency": "usd",
-                }
-            ],
-            [
-                {
-                    "type": "one_time",
-                    "amount_type": "fixed",
-                    "price_amount": 1000,
-                    "price_currency": "usd",
+                    "recurring_interval": None,
+                    "prices": [
+                        {
+                            "amount_type": "fixed",
+                            "price_amount": 1000,
+                            "price_currency": "usd",
+                        }
+                    ],
                 },
-            ],
+                id="One-time fixed",
+            ),
+            pytest.param(
+                {
+                    "recurring_interval": None,
+                    "prices": [
+                        {
+                            "amount_type": "custom",
+                            "minimum_amount": 1000,
+                            "price_currency": "usd",
+                        }
+                    ],
+                },
+                id="One-time custom",
+            ),
+            pytest.param(
+                {
+                    "recurring_interval": None,
+                    "prices": [
+                        {
+                            "amount_type": "free",
+                            "price_currency": "usd",
+                        }
+                    ],
+                },
+                id="One-time free",
+            ),
+            pytest.param(
+                {
+                    "recurring_interval": "month",
+                    "prices": [
+                        {
+                            "amount_type": "fixed",
+                            "price_amount": 1000,
+                            "price_currency": "usd",
+                        }
+                    ],
+                },
+                id="Recurring fixed",
+            ),
+            pytest.param(
+                {
+                    "recurring_interval": "month",
+                    "prices": [
+                        {
+                            "amount_type": "custom",
+                            "minimum_amount": 1000,
+                            "price_currency": "usd",
+                        }
+                    ],
+                },
+                id="Recurring custom",
+            ),
+            pytest.param(
+                {
+                    "recurring_interval": "month",
+                    "prices": [
+                        {
+                            "amount_type": "free",
+                            "price_currency": "usd",
+                        }
+                    ],
+                },
+                id="Recurring free",
+            ),
         ),
     )
     async def test_valid(
         self,
-        prices: list[dict[str, Any]],
+        payload: dict[str, Any],
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
-        session: AsyncSession,
     ) -> None:
         create_product_mock: MagicMock = stripe_service_mock.create_product
         create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
@@ -303,17 +285,12 @@ class TestCreateProduct:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        # then
-        session.expunge_all()
-
         response = await client.post(
             "/v1/products/",
             json={
-                "type": "individual",
                 "name": "Product",
-                "price_amount": 1000,
                 "organization_id": str(organization.id),
-                "prices": prices,
+                **payload,
             },
         )
 
@@ -379,7 +356,7 @@ class TestUpdateProduct:
                         "price_amount": 2000,
                         "price_currency": "usd",
                         "is_archived": False,
-                        "type": "one_time",
+                        "amount_type": "fixed",
                     }
                 ]
             },

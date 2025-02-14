@@ -146,9 +146,15 @@ export const ClientPage = ({
             cell: ({ cell }) => {
               const value = cell.row.original
               return value && value.product_price ? (
-                <ProductPriceLabel price={value.product_price} />
+                <ProductPriceLabel
+                  product={value.product}
+                  price={value.product_price}
+                />
               ) : (
-                <ProductPriceLabel price={value.product.prices[0]} />
+                <ProductPriceLabel
+                  product={value.product}
+                  price={value.product.prices[0]}
+                />
               )
             },
           },

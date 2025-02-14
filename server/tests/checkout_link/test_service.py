@@ -11,7 +11,7 @@ from polar.enums import PaymentProcessor
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Discount, Organization, Product, User, UserOrganization
 from polar.models.checkout_link import CheckoutLink
-from polar.models.product_price import ProductPriceFixed, ProductPriceType
+from polar.models.product_price import ProductPriceFixed
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -83,7 +83,6 @@ class TestCreate:
         price = await create_product_price_fixed(
             save_fixture,
             product=product_one_time,
-            type=ProductPriceType.one_time,
             is_archived=True,
         )
         with pytest.raises(PolarRequestValidationError):

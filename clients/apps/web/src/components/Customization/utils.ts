@@ -15,12 +15,13 @@ Gravem colentes impetus reminiscitur invitusque blanditur ipse
 Iam maiora
 In quoque extulerat tale semper quidque. Fovebat heros quos gaudent et movent agmina fortis.`
 
-export const PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
+const PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
   id: '123',
   is_recurring: false,
   is_archived: false,
   modified_at: new Date().toISOString(),
   organization_id: '123',
+  recurring_interval: null,
   medias: [
     {
       id: '123',
@@ -47,12 +48,14 @@ export const PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
       id: '123',
       amount_type: 'fixed',
       price_amount: 10000,
-      type: 'one_time',
       price_currency: 'usd',
       is_archived: false,
       created_at: new Date().toISOString(),
       modified_at: new Date().toISOString(),
       product_id: '123',
+      // Legacy deprecated field
+      type: 'one_time',
+      recurring_interval: null,
     },
   ],
   name: 'Pro Tier',
@@ -72,12 +75,13 @@ export const PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
   created_at: new Date().toISOString(),
 }
 
-export const SUBSCRIPTION_PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
+const SUBSCRIPTION_PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
   id: '123',
   is_recurring: false,
   is_archived: false,
   modified_at: new Date().toISOString(),
   organization_id: '123',
+  recurring_interval: 'month',
   medias: [
     {
       id: '123',
@@ -104,13 +108,14 @@ export const SUBSCRIPTION_PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
       id: '123',
       amount_type: 'fixed',
       price_amount: 10000,
+      price_currency: 'usd',
+      is_archived: false,
+      created_at: new Date().toISOString(),
+      modified_at: new Date().toISOString(),
+      product_id: '123',
+      // Legacy deprecated field
       type: 'recurring',
       recurring_interval: 'month',
-      price_currency: 'usd',
-      is_archived: false,
-      created_at: new Date().toISOString(),
-      modified_at: new Date().toISOString(),
-      product_id: '123',
     },
   ],
   name: 'Pro Tier',
@@ -130,7 +135,7 @@ export const SUBSCRIPTION_PRODUCT_PREVIEW: schemas['ProductStorefront'] = {
   created_at: new Date().toISOString(),
 }
 
-export const ORGANIZATION: schemas['Organization'] = {
+const ORGANIZATION: schemas['Organization'] = {
   id: '123',
   name: 'My Organization',
   slug: 'my-organization',

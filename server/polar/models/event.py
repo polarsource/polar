@@ -38,7 +38,7 @@ class Event(Model, MetadataMixin):
 
     @declared_attr
     def customer(cls) -> Mapped["Customer"]:
-        return relationship("Customer", lazy="raise")
+        return relationship("Customer", lazy="joined")
 
     external_customer_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True

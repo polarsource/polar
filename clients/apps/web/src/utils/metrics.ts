@@ -2,7 +2,7 @@ import { ParsedMetricPeriod } from '@/hooks/queries'
 import * as Plot from '@observablehq/plot'
 import { schemas } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import { timeFormat, utcDay } from 'd3'
+import { timeFormat } from 'd3'
 import { format, parse } from 'date-fns'
 import { GeistMono } from 'geist/font/mono'
 
@@ -147,10 +147,12 @@ const getTickFormat = (
   }
 }
 
-export type MetricData = ParsedMetricPeriod[] | {
-  timestamp: Date
-  quantity: number
-}[]
+export type MetricData =
+  | ParsedMetricPeriod[]
+  | {
+      timestamp: Date
+      quantity: number
+    }[]
 
 export type MetricMarksResolver = (config: {
   data: MetricData
@@ -253,7 +255,7 @@ export const barMetricMarks: MetricMarksResolver = ({
   Plot.barY(data, {
     x: 'timestamp',
     y: metric.slug,
-    interval
+    interval,
   }),
   ...(onDataIndexHover
     ? [

@@ -597,36 +597,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
         ip_address: str | None = None,
     ) -> Checkout:
-        price = checkout_link.checkout_price
-
-        if price.is_archived:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_price_id"),
-                        "msg": "Price is archived.",
-                        "input": price.id,
-                    }
-                ]
-            )
-
-        product = checkout_link.product
-        if product.is_archived:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_id"),
-                        "msg": "Product is archived.",
-                        "input": product.id,
-                    }
-                ]
-            )
-
-        product = await self._eager_load_product(session, product)
-        if product.organization.is_blocked():
-            raise NotPermitted()
+        products = checkout_link.products
+        product = products[0]
+        price = product.prices[0]
 
         amount = None
         currency = None
@@ -656,6 +629,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             amount=amount,
             currency=currency,
             allow_discount_codes=checkout_link.allow_discount_codes,
+            checkout_products=[
+                CheckoutProduct(product=p, order=i) for i, p in enumerate(products)
+            ],
             product=product,
             product_price=price,
             discount=discount,
@@ -1370,9 +1346,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 ]
             )
 
+        discount: Discount | None = None
         if discount_id is not None:
-            discount = await discount_service.get_by_id_and_product(
-                session, discount_id, product
+            discount = await discount_service.get_by_id_and_organization(
+                session, discount_id, product.organization, products=[product]
             )
         elif discount_code is not None:
             discount = await discount_service.get_by_code_and_product(

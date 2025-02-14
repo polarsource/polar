@@ -22,6 +22,7 @@ from polar.models import (
     Benefit,
     Checkout,
     CheckoutLink,
+    CheckoutLinkProduct,
     CheckoutProduct,
     Customer,
     CustomField,
@@ -1338,8 +1339,7 @@ async def create_checkout_link(
     save_fixture: SaveFixture,
     *,
     payment_processor: PaymentProcessor = PaymentProcessor.stripe,
-    product: Product,
-    price: ProductPrice | None = None,
+    products: Sequence[Product],
     discount: Discount | None = None,
     client_secret: str | None = None,
     success_url: str | None = None,
@@ -1352,8 +1352,10 @@ async def create_checkout_link(
             "CHECKOUT_CLIENT_SECRET",
         ),
         success_url=success_url,
-        product=product,
-        product_price=price,
+        organization=products[0].organization,
+        checkout_link_products=[
+            CheckoutLinkProduct(product=p, order=i) for i, p in enumerate(products)
+        ],
         discount=discount,
         user_metadata=user_metadata,
     )

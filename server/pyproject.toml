@@ -76,10 +76,7 @@ dev = [
   "minio>=7.2.9",
   "polar-sdk>=0.9.3",
 ]
-backoffice = [
-  "textual",
-  "halo",
-]
+backoffice = ["textual", "halo"]
 
 [tool.taskipy.tasks]
 api = { cmd = "task verify_github_app && env AUTHLIB_INSECURE_TRANSPORT=true uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }
@@ -95,7 +92,7 @@ db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate
 clean = { cmd = "find * -name '*.pyc' -delete && find * -name '__pycache__' -delete", help = "clean up .pyc and __pycache__" }
 verify_github_app = { cmd = "python -m polar.verify_github_app", help = "verify that the github app is correctly configured" }
 generate_dev_jwks = { cmd = "python -m polar.kit.jwk polar_dev > ./.jwks.json", help = "generate a development JWKS file" }
-pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render"}
+pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render" }
 
 [tool.pytest.ini_options]
 markers = [
@@ -110,25 +107,26 @@ asyncio_default_fixture_loop_scope = "function"
 concurrency = ["thread", "greenlet"]
 
 [tool.coverage.report]
-exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]  # See: https://github.com/nedbat/coveragepy/issues/831
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+] # See: https://github.com/nedbat/coveragepy/issues/831
 
 [tool.ruff]
 target-version = "py312"
 
 [tool.ruff.lint]
-  extend-select = ["I", "UP", "T20"]
-  ignore = [
-      "F841", # remove unused variables
-      "UP040"  # new type alias syntax not supported by mypy yet
-  ]
+extend-select = ["I", "UP", "T20"]
+ignore = [
+  "F841",  # remove unused variables
+  "UP040", # new type alias syntax not supported by mypy yet
+]
 
 [tool.ruff.lint.per-file-ignores]
-  "migrations/*" = [
-      "F401", # remove unused import
-  ]
-  "scripts/*" = [
-      "T20"
-  ]
+"migrations/*" = [
+  "F401", # remove unused import
+]
+"scripts/*" = ["T20"]
 
 [tool.mypy]
 ignore_missing_imports = true

@@ -75,7 +75,7 @@ class RepositoryBase(Generic[M]):
 
         items: list[M] = []
         count = 0
-        async for result in results:
+        async for result in results.unique():
             item, count = result._tuple()
             items.append(item)
 

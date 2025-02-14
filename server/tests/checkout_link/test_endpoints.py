@@ -20,8 +20,7 @@ from tests.fixtures.random_objects import (
 async def checkout_link(save_fixture: SaveFixture, product: Product) -> CheckoutLink:
     return await create_checkout_link(
         save_fixture,
-        product=product,
-        price=product.prices[0],
+        products=[product],
         success_url="https://example.com/success",
         user_metadata={"key": "value"},
     )
@@ -34,20 +33,7 @@ class TestCreateCheckoutLink:
             "/v1/checkout-links/",
             json={
                 "payment_processor": "stripe",
-                "product_id": str(product.id),
-            },
-        )
-
-        assert response.status_code == 401
-
-    async def test_anonymous_with_price(
-        self, client: AsyncClient, product: Product
-    ) -> None:
-        response = await client.post(
-            "/v1/checkout-links/",
-            json={
-                "payment_processor": "stripe",
-                "product_price_id": str(product.prices[0].id),
+                "products": [str(product.id)],
             },
         )
 
@@ -59,7 +45,7 @@ class TestCreateCheckoutLink:
             "/v1/checkout-links/",
             json={
                 "payment_processor": "stripe",
-                "product_id": str(product.id),
+                "products": [str(product.id)],
             },
         )
 
@@ -71,10 +57,7 @@ class TestCreateCheckoutLink:
     ) -> None:
         response = await client.post(
             "/v1/checkout-links/",
-            json={
-                "payment_processor": "stripe",
-                "product_price_id": str(product.prices[0].id),
-            },
+            json={"payment_processor": "stripe", "products": [str(product.id)]},
         )
 
         assert response.status_code == 403
@@ -87,7 +70,7 @@ class TestCreateCheckoutLink:
             "/v1/checkout-links/",
             json={
                 "payment_processor": "stripe",
-                "product_id": str(product.id),
+                "products": [str(product.id)],
             },
         )
 
@@ -97,31 +80,6 @@ class TestCreateCheckoutLink:
         assert "client_secret" in json
         assert json["client_secret"] in json["url"]
         assert "metadata" in json
-        assert json["product_price"] is None
-        assert json["product_price_id"] is None
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkout_links_write}))
-    async def test_valid_with_price(
-        self, client: AsyncClient, product: Product, user_organization: UserOrganization
-    ) -> None:
-        price_id = product.prices[0].id
-        response = await client.post(
-            "/v1/checkout-links/",
-            json={
-                "payment_processor": "stripe",
-                "product_price_id": str(price_id),
-            },
-        )
-
-        assert response.status_code == 201
-
-        json = response.json()
-        assert "client_secret" in json
-        assert json["client_secret"] in json["url"]
-        assert "metadata" in json
-        assert json["product_price"] is not None
-        assert json["product_price"]["id"] == str(price_id)
-        assert json["product_price_id"] == str(price_id)
 
 
 @pytest.mark.asyncio
@@ -255,8 +213,6 @@ class TestRedirect:
 
         response = await client.get(f"/v1/checkouts/client/{client_secret}")
         assert response.status_code == 200
-        checkout = response.json()
-        assert checkout.get("product_price_id") == str(price.id)
 
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.get("/v1/checkout-links/not-existing/redirect")
@@ -282,8 +238,7 @@ class TestRedirect:
         )
         checkout_link = await create_checkout_link(
             save_fixture,
-            product=product,
-            price=product.prices[0],
+            products=[product],
             success_url="https://example.com/success",
             user_metadata={"key": "value"},
         )
@@ -301,50 +256,3 @@ class TestRedirect:
 
         assert response.status_code == 307
         assert CHECKOUT_CLIENT_SECRET_PREFIX in response.headers["location"]
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
-    async def test_valid_with_explicit_price(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        product_recurring_monthly_and_yearly: Product,
-    ) -> None:
-        product = product_recurring_monthly_and_yearly
-        second_price = product.prices[1]
-        checkout_link = await create_checkout_link(
-            save_fixture, product=product, price=second_price
-        )
-        await self.assert_checkout_price(client, checkout_link, second_price)
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
-    async def test_no_explicit_price_set(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        product_recurring_monthly_and_yearly: Product,
-    ) -> None:
-        product = product_recurring_monthly_and_yearly
-        checkout_link = await create_checkout_link(
-            save_fixture,
-            product=product,
-        )
-        await self.assert_checkout_price(client, checkout_link, product.prices[0])
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
-    async def test_archived_price_set(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        product_recurring_monthly_and_yearly: Product,
-    ) -> None:
-        product = product_recurring_monthly_and_yearly
-        first_price = product.prices[0]
-        second_price = product.prices[1]
-        checkout_link = await create_checkout_link(
-            save_fixture, product=product, price=product.prices[0]
-        )
-
-        await self.assert_checkout_price(client, checkout_link, first_price)
-        first_price.is_archived = True
-        await save_fixture(first_price)
-        await self.assert_checkout_price(client, checkout_link, second_price)

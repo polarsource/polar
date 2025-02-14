@@ -8,6 +8,9 @@ from polar.kit.sorting import Sorting, SortingGetter
 
 class CheckoutLinkSortProperty(StrEnum):
     created_at = "created_at"
+    label = "label"
+    success_url = "success_url"
+    allow_discount_codes = "allow_discount_codes"
 
 
 ListSorting = Annotated[

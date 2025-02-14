@@ -5,10 +5,11 @@ import pytest_asyncio
 from pydantic import HttpUrl
 
 from polar.auth.models import AuthSubject
-from polar.checkout_link.schemas import CheckoutLinkPriceCreate, CheckoutLinkUpdate
+from polar.checkout_link.schemas import CheckoutLinkCreate, CheckoutLinkUpdate
 from polar.checkout_link.service import checkout_link as checkout_link_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarRequestValidationError
+from polar.kit.pagination import PaginationParams
 from polar.models import Discount, Organization, Product, User, UserOrganization
 from polar.models.checkout_link import CheckoutLink
 from polar.models.product_price import ProductPriceFixed
@@ -17,7 +18,6 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_checkout_link,
-    create_product_price_fixed,
 )
 
 
@@ -25,25 +25,46 @@ from tests.fixtures.random_objects import (
 async def checkout_link(save_fixture: SaveFixture, product: Product) -> CheckoutLink:
     return await create_checkout_link(
         save_fixture,
-        product=product,
-        price=product.prices[0],
+        products=[product],
         success_url="https://example.com/success",
         user_metadata={"key": "value"},
     )
 
 
 @pytest.mark.asyncio
+class TestList:
+    @pytest.mark.auth
+    async def test_product_filter(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        checkout_link: CheckoutLink,
+        product: Product,
+    ) -> None:
+        results, count = await checkout_link_service.list(
+            session,
+            auth_subject,
+            product_id=[product.id],
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert count == 1
+        assert checkout_link in results
+
+
+@pytest.mark.asyncio
 class TestCreate:
     @pytest.mark.auth
-    async def test_not_existing_price(
+    async def test_not_existing_product(
         self, session: AsyncSession, auth_subject: AuthSubject[User]
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
             await checkout_link_service.create(
                 session,
-                CheckoutLinkPriceCreate(
+                CheckoutLinkCreate(
                     payment_processor=PaymentProcessor.stripe,
-                    product_price_id=uuid.uuid4(),
+                    products=[uuid.uuid4()],
                 ),
                 auth_subject,
             )
@@ -52,7 +73,7 @@ class TestCreate:
         AuthSubjectFixture(subject="user_second"),
         AuthSubjectFixture(subject="organization_second"),
     )
-    async def test_not_writable_price(
+    async def test_not_writable_product(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
@@ -61,35 +82,9 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_link_service.create(
                 session,
-                CheckoutLinkPriceCreate(
+                CheckoutLinkCreate(
                     payment_processor=PaymentProcessor.stripe,
-                    product_price_id=product_one_time.prices[0].id,
-                ),
-                auth_subject,
-            )
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_archived_price(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-        product_one_time: Product,
-    ) -> None:
-        price = await create_product_price_fixed(
-            save_fixture,
-            product=product_one_time,
-            is_archived=True,
-        )
-        with pytest.raises(PolarRequestValidationError):
-            await checkout_link_service.create(
-                session,
-                CheckoutLinkPriceCreate(
-                    payment_processor=PaymentProcessor.stripe, product_price_id=price.id
+                    products=[product_one_time.id],
                 ),
                 auth_subject,
             )
@@ -108,12 +103,42 @@ class TestCreate:
     ) -> None:
         product_one_time.is_archived = True
         await save_fixture(product_one_time)
+
         with pytest.raises(PolarRequestValidationError):
             await checkout_link_service.create(
                 session,
-                CheckoutLinkPriceCreate(
+                CheckoutLinkCreate(
                     payment_processor=PaymentProcessor.stripe,
-                    product_price_id=product_one_time.prices[0].id,
+                    products=[product_one_time.id],
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+    )
+    async def test_products_different_organizations(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user: User,
+        user_organization: UserOrganization,
+        product: Product,
+        product_organization_second: Product,
+        organization_second: Organization,
+    ) -> None:
+        user_organization = UserOrganization(
+            user_id=user.id, organization_id=organization_second.id
+        )
+        await save_fixture(user_organization)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_link_service.create(
+                session,
+                CheckoutLinkCreate(
+                    payment_processor=PaymentProcessor.stripe,
+                    products=[product.id, product_organization_second.id],
                 ),
                 auth_subject,
             )
@@ -126,13 +151,11 @@ class TestCreate:
         user_organization: UserOrganization,
         product_one_time: Product,
     ) -> None:
-        price = product_one_time.prices[0]
-        assert isinstance(price, ProductPriceFixed)
         checkout_link = await checkout_link_service.create(
             session,
-            CheckoutLinkPriceCreate(
+            CheckoutLinkCreate(
                 payment_processor=PaymentProcessor.stripe,
-                product_price_id=price.id,
+                products=[product_one_time.id],
                 success_url=HttpUrl(
                     "https://example.com/success?checkout_id={CHECKOUT_ID}"
                 ),
@@ -141,7 +164,7 @@ class TestCreate:
             auth_subject,
         )
 
-        assert checkout_link.product_price == price
+        assert checkout_link.products == [product_one_time]
         assert (
             checkout_link.success_url
             == "https://example.com/success?checkout_id={CHECKOUT_ID}"
@@ -162,9 +185,9 @@ class TestCreate:
         assert isinstance(price, ProductPriceFixed)
         checkout_link = await checkout_link_service.create(
             session,
-            CheckoutLinkPriceCreate(
+            CheckoutLinkCreate(
                 payment_processor=PaymentProcessor.stripe,
-                product_price_id=price.id,
+                products=[product_one_time.id],
                 discount_id=discount_fixed_once.id,
                 success_url=HttpUrl(
                     "https://example.com/success?checkout_id={CHECKOUT_ID}"
@@ -179,7 +202,8 @@ class TestCreate:
 
 @pytest.mark.asyncio
 class TestUpdate:
-    async def test_update_metadata(
+    @pytest.mark.auth
+    async def test_metadata(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
@@ -196,7 +220,8 @@ class TestUpdate:
 
         assert updated_checkout_link.user_metadata == {"key": "updated"}
 
-    async def test_change_label(
+    @pytest.mark.auth
+    async def test_label(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
@@ -213,69 +238,8 @@ class TestUpdate:
 
         assert updated_checkout_link.label == "Hello world link"
 
-    async def test_update_unset_price(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        checkout_link: CheckoutLink,
-    ) -> None:
-        assert checkout_link.product_price
-        updated_checkout_link = await checkout_link_service.update(
-            session,
-            checkout_link,
-            CheckoutLinkUpdate(product_price_id=None),
-            auth_subject,
-        )
-
-        assert updated_checkout_link.product_price is None
-
-    async def test_change_price(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        product_recurring_monthly_and_yearly: Product,
-    ) -> None:
-        product = product_recurring_monthly_and_yearly
-        checkout_link = await create_checkout_link(
-            save_fixture,
-            product=product,
-            price=product.prices[1],
-        )
-        new_price_id = product.prices[1].id
-        updated_checkout_link = await checkout_link_service.update(
-            session,
-            checkout_link,
-            CheckoutLinkUpdate(product_price_id=new_price_id),
-            auth_subject,
-        )
-
-        assert updated_checkout_link.product_price_id == new_price_id
-
-    async def test_deny_change_product_via_price(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        product_one_time: Product,
-        product_recurring_monthly_and_yearly: Product,
-    ) -> None:
-        product = product_recurring_monthly_and_yearly
-        checkout_link = await create_checkout_link(
-            save_fixture,
-            product=product,
-            price=product.prices[1],
-        )
-        new_price_id = product_one_time.prices[0].id
-        with pytest.raises(PolarRequestValidationError):
-            await checkout_link_service.update(
-                session,
-                checkout_link,
-                CheckoutLinkUpdate(product_price_id=new_price_id),
-                auth_subject,
-            )
-
-    async def test_set_discount(
+    @pytest.mark.auth
+    async def test_discount(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
@@ -290,6 +254,57 @@ class TestUpdate:
         )
 
         assert updated_checkout_link.discount == discount_fixed_once
+
+    @pytest.mark.auth
+    async def test_products(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        checkout_link: CheckoutLink,
+        discount_fixed_once: Discount,
+        product: Product,
+        product_one_time: Product,
+    ) -> None:
+        updated_checkout_link = await checkout_link_service.update(
+            session,
+            checkout_link,
+            CheckoutLinkUpdate(products=[product_one_time.id, product.id]),
+            auth_subject,
+        )
+        await session.flush()
+
+        assert updated_checkout_link.products == [product_one_time, product]
+
+    @pytest.mark.auth
+    async def test_products_different_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        checkout_link: CheckoutLink,
+        user: User,
+        user_organization: UserOrganization,
+        product: Product,
+        product_organization_second: Product,
+        organization_second: Organization,
+    ) -> None:
+        user_organization = UserOrganization(
+            user_id=user.id, organization_id=organization_second.id
+        )
+        await save_fixture(user_organization)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_link_service.update(
+                session,
+                checkout_link,
+                CheckoutLinkUpdate(
+                    products=[product.id, product_organization_second.id]
+                ),
+                auth_subject,
+            )
+
+        assert checkout_link.products == [product]
 
 
 @pytest.mark.asyncio

@@ -2,43 +2,32 @@ import uuid
 from collections.abc import Sequence
 from typing import Any, cast
 
-import structlog
-from sqlalchemy import Select, UnaryExpression, asc, desc, select
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy import UnaryExpression, asc, desc
+from sqlalchemy.orm import contains_eager
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import AuthSubject
+from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.discount.service import discount as discount_service
-from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.crypto import generate_token
-from polar.kit.pagination import PaginationParams, paginate
+from polar.kit.pagination import PaginationParams
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
-from polar.logging import Logger
 from polar.models import (
     CheckoutLink,
+    CheckoutLinkProduct,
     Discount,
     Organization,
     Product,
     ProductPrice,
     User,
-    UserOrganization,
 )
 from polar.postgres import AsyncSession
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
 
-from .schemas import (
-    CheckoutLinkCreate,
-    CheckoutLinkPriceCreate,
-    CheckoutLinkUpdate,
-)
+from .schemas import CheckoutLinkCreate, CheckoutLinkUpdate
 from .sorting import CheckoutLinkSortProperty
-
-log: Logger = structlog.get_logger()
-
-
-class CheckoutLinkError(PolarError): ...
-
 
 CHECKOUT_LINK_CLIENT_SECRET_PREFIX = "polar_cl_"
 
@@ -56,24 +45,48 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             (CheckoutLinkSortProperty.created_at, False)
         ],
     ) -> tuple[Sequence[CheckoutLink], int]:
-        statement = self._get_readable_checkout_link_statement(auth_subject)
+        repository = CheckoutLinkRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject)
+        checkout_link_product_load = None
 
         if organization_id is not None:
-            statement = statement.where(Product.organization_id.in_(organization_id))
+            statement = statement.where(
+                CheckoutLink.organization_id.in_(organization_id)
+            )
 
         if product_id is not None:
-            statement = statement.where(Product.id.in_(product_id))
+            statement = statement.join(
+                CheckoutLinkProduct,
+                onclause=CheckoutLinkProduct.checkout_link_id == CheckoutLink.id,
+            ).where(CheckoutLinkProduct.product_id.in_(product_id))
+            checkout_link_product_load = contains_eager(
+                CheckoutLink.checkout_link_products
+            )
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == CheckoutLinkSortProperty.created_at:
                 order_by_clauses.append(clause_function(CheckoutLink.created_at))
+            elif criterion == CheckoutLinkSortProperty.label:
+                order_by_clauses.append(clause_function(CheckoutLink.label))
+            elif criterion == CheckoutLinkSortProperty.success_url:
+                order_by_clauses.append(clause_function(CheckoutLink._success_url))
+            elif criterion == CheckoutLinkSortProperty.allow_discount_codes:
+                order_by_clauses.append(
+                    clause_function(CheckoutLink.allow_discount_codes)
+                )
         statement = statement.order_by(*order_by_clauses)
 
-        statement = statement.options(joinedload(CheckoutLink.discount))
+        statement = statement.options(
+            *repository.get_eager_options(
+                checkout_link_product_load=checkout_link_product_load
+            )
+        )
 
-        return await paginate(session, statement, pagination=pagination)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
     async def get_by_id(
         self,
@@ -81,13 +94,13 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> CheckoutLink | None:
+        repository = CheckoutLinkRepository.from_session(session)
         statement = (
-            self._get_readable_checkout_link_statement(auth_subject)
+            repository.get_readable_statement(auth_subject)
             .where(CheckoutLink.id == id)
-            .options(joinedload(CheckoutLink.discount))
+            .options(*repository.get_eager_options())
         )
-        result = await session.execute(statement)
-        return result.unique().scalar_one_or_none()
+        return await repository.get_one_or_none(statement)
 
     async def create(
         self,
@@ -95,39 +108,33 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         checkout_link_create: CheckoutLinkCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> CheckoutLink:
-        price: ProductPrice | None = None
-        if isinstance(checkout_link_create, CheckoutLinkPriceCreate):
-            product, price = await self._get_validated_price(
-                session,
-                checkout_link_create.product_price_id,
-                auth_subject,
-            )
-        else:
-            product, price = await self._get_validated_product(
-                session,
-                checkout_link_create.product_id,
-                auth_subject,
-            )
+        products = await self._get_validated_products(
+            session, checkout_link_create.products, auth_subject
+        )
+        organization = products[0].organization
 
         discount: Discount | None = None
         if checkout_link_create.discount_id is not None:
             discount = await self._get_validated_discount(
-                session, checkout_link_create.discount_id, product
+                session, checkout_link_create.discount_id, organization, products
             )
 
         checkout_link = CheckoutLink(
             client_secret=generate_token(prefix=CHECKOUT_LINK_CLIENT_SECRET_PREFIX),
-            product=product,
-            product_price=price,
+            organization=organization,
             discount=discount,
+            checkout_link_products=[
+                CheckoutLinkProduct(product=product, order=i)
+                for i, product in enumerate(products)
+            ],
             **checkout_link_create.model_dump(
-                exclude={"product_price_id", "product_id", "discount_id"},
+                exclude={"products", "discount_id"},
                 by_alias=True,
             ),
         )
 
-        session.add(checkout_link)
-        return checkout_link
+        repository = CheckoutLinkRepository.from_session(session)
+        return await repository.create(checkout_link)
 
     async def update(
         self,
@@ -136,110 +143,110 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         checkout_link_update: CheckoutLinkUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> CheckoutLink:
-        if "product_price_id" in checkout_link_update.model_fields_set:
-            if checkout_link_update.product_price_id is None:
-                checkout_link.product_price = None
-            else:
-                product, price = await self._get_validated_price(
-                    session, checkout_link_update.product_price_id, auth_subject
+        if checkout_link_update.products is not None:
+            products = await self._get_validated_products(
+                session, checkout_link_update.products, auth_subject
+            )
+            if checkout_link.organization_id != products[0].organization_id:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "products"),
+                            "msg": (
+                                "Products don't belong to "
+                                "the checkout link's organization."
+                            ),
+                            "input": checkout_link_update.products,
+                        }
+                    ]
                 )
-                if product.id != checkout_link.product_id:
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "product_price_id"),
-                                "msg": "Price does not belong to the same product.",
-                                "input": checkout_link_update.product_price_id,
-                            }
-                        ]
-                    )
-                checkout_link.product_price = price
+            checkout_link.checkout_link_products = []
+            await session.flush()
+            checkout_link.checkout_link_products = [
+                CheckoutLinkProduct(product=product, order=i)
+                for i, product in enumerate(products)
+            ]
 
         if "discount_id" in checkout_link_update.model_fields_set:
             if checkout_link_update.discount_id is None:
                 checkout_link.discount = None
             else:
                 discount = await self._get_validated_discount(
-                    session, checkout_link_update.discount_id, checkout_link.product
+                    session,
+                    checkout_link_update.discount_id,
+                    checkout_link.organization,
+                    checkout_link.products,
                 )
                 checkout_link.discount = discount
 
-        for attr, value in checkout_link_update.model_dump(
-            exclude_unset=True,
-            exclude={"product_price_id", "discount_id"},
-            by_alias=True,
-        ).items():
-            setattr(checkout_link, attr, value)
-
-        session.add(checkout_link)
-        return checkout_link
+        repository = CheckoutLinkRepository.from_session(session)
+        return await repository.update(
+            checkout_link,
+            update_dict=checkout_link_update.model_dump(
+                exclude_unset=True,
+                exclude={"products", "discount_id"},
+                by_alias=True,
+            ),
+        )
 
     async def delete(
         self, session: AsyncSession, checkout_link: CheckoutLink
     ) -> CheckoutLink:
-        checkout_link.set_deleted_at()
-        session.add(checkout_link)
-        return checkout_link
+        repository = CheckoutLinkRepository.from_session(session)
+        return await repository.soft_delete(checkout_link)
 
-    async def get_by_client_secret(
-        self, session: AsyncSession, client_secret: str
-    ) -> CheckoutLink | None:
-        statement = (
-            select(CheckoutLink)
-            .join(
-                Product,
-                onclause=Product.id == CheckoutLink.product_id,
-            )
-            .join(Organization, onclause=Organization.id == Product.organization_id)
-            .where(
-                CheckoutLink.deleted_at.is_(None),
-                CheckoutLink.client_secret == client_secret,
-                Product.deleted_at.is_(None),
-                Organization.deleted_at.is_(None),
-                Organization.blocked_at.is_(None),
-            )
-            .options(
-                contains_eager(CheckoutLink.product).options(
-                    contains_eager(Product.organization)
-                )
-            )
-        )
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
-
-    async def _get_validated_product(
+    async def _get_validated_products(
         self,
         session: AsyncSession,
-        product_id: uuid.UUID,
+        product_ids: Sequence[uuid.UUID],
         auth_subject: AuthSubject[User | Organization],
-    ) -> tuple[Product, None]:
-        product = await product_service.get_by_id(session, auth_subject, product_id)
-        if not product:
-            raise PolarRequestValidationError(
-                [
+    ) -> Sequence[Product]:
+        products: list[Product] = []
+        errors: list[ValidationError] = []
+
+        for index, product_id in enumerate(product_ids):
+            product = await product_service.get_by_id(session, auth_subject, product_id)
+
+            if product is None:
+                errors.append(
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", "products", index),
                         "msg": "Product does not exist.",
                         "input": product_id,
                     }
-                ]
-            )
+                )
+                continue
 
-        if product.is_archived:
-            raise PolarRequestValidationError(
-                [
+            if product.is_archived:
+                errors.append(
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", "products", index),
                         "msg": "Product is archived.",
                         "input": product_id,
                     }
-                ]
+                )
+                continue
+
+            products.append(product)
+
+        organization_ids = {product.organization_id for product in products}
+        if len(organization_ids) > 1:
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "products"),
+                    "msg": "Products must all belong to the same organization.",
+                    "input": products,
+                }
             )
 
-        return (product, None)
+        if len(errors) > 0:
+            raise PolarRequestValidationError(errors)
+
+        return products
 
     async def _get_validated_price(
         self,
@@ -292,10 +299,18 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         return (product, price)
 
     async def _get_validated_discount(
-        self, session: AsyncSession, discount_id: uuid.UUID, product: Product
+        self,
+        session: AsyncSession,
+        discount_id: uuid.UUID,
+        organization: Organization,
+        products: Sequence[Product],
     ) -> Discount:
-        discount = await discount_service.get_by_id_and_product(
-            session, discount_id, product, redeemable=False
+        discount = await discount_service.get_by_id_and_organization(
+            session,
+            discount_id,
+            organization,
+            products=products,
+            redeemable=False,
         )
 
         if discount is None:
@@ -314,38 +329,6 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             )
 
         return discount
-
-    def _get_readable_checkout_link_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[CheckoutLink]]:
-        statement = (
-            select(CheckoutLink)
-            .where(CheckoutLink.deleted_at.is_(None))
-            .join(Product, onclause=Product.id == CheckoutLink.product_id)
-            .options(
-                contains_eager(CheckoutLink.product).options(
-                    joinedload(Product.product_medias),
-                    joinedload(Product.attached_custom_fields),
-                )
-            )
-        )
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Product.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Product.organization_id == auth_subject.subject.id,
-            )
-
-        return statement
 
 
 checkout_link = CheckoutLinkService(CheckoutLink)

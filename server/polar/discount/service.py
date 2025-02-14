@@ -292,17 +292,18 @@ class DiscountService(ResourceServiceReader[Discount]):
         session.add(discount)
         return discount
 
-    async def get_by_id_and_product(
+    async def get_by_id_and_organization(
         self,
         session: AsyncSession,
         id: uuid.UUID,
-        product: Product,
+        organization: Organization,
         *,
+        products: Sequence[Product] | None = None,
         redeemable: bool = True,
     ) -> Discount | None:
         statement = select(Discount).where(
             Discount.id == id,
-            Discount.organization_id == product.organization_id,
+            Discount.organization_id == organization.id,
             Discount.deleted_at.is_(None),
         )
         result = await session.execute(statement)
@@ -311,8 +312,10 @@ class DiscountService(ResourceServiceReader[Discount]):
         if discount is None:
             return None
 
-        if len(discount.products) > 0 and product not in discount.products:
-            return None
+        if len(discount.products) > 0 and products is not None:
+            for product in products:
+                if product not in discount.products:
+                    return None
 
         if redeemable and not await self.is_redeemable_discount(session, discount):
             return None

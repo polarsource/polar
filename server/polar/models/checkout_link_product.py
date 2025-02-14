@@ -7,16 +7,16 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
-    from polar.models import Checkout, Product
+    from polar.models import CheckoutLink, Product
 
 
-class CheckoutProduct(RecordModel):
-    __tablename__ = "checkout_products"
-    __table_args__ = (UniqueConstraint("checkout_id", "order"),)
+class CheckoutLinkProduct(RecordModel):
+    __tablename__ = "checkout_link_products"
+    __table_args__ = (UniqueConstraint("checkout_link_id", "order"),)
 
-    checkout_id: Mapped[UUID] = mapped_column(
+    checkout_link_id: Mapped[UUID] = mapped_column(
         Uuid,
-        ForeignKey("checkouts.id", ondelete="cascade"),
+        ForeignKey("checkout_links.id", ondelete="cascade"),
         primary_key=True,
     )
     product_id: Mapped[UUID] = mapped_column(
@@ -27,8 +27,8 @@ class CheckoutProduct(RecordModel):
     order: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
 
     @declared_attr
-    def checkout(cls) -> Mapped["Checkout"]:
-        return relationship("Checkout", back_populates="checkout_products")
+    def checkout_link(cls) -> Mapped["CheckoutLink"]:
+        return relationship("CheckoutLink", back_populates="checkout_link_products")
 
     @declared_attr
     def product(cls) -> Mapped["Product"]:

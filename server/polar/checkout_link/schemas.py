@@ -14,14 +14,12 @@ from polar.kit.schemas import (
     IDSchema,
     MergeJSONSchema,
     Schema,
-    SetSchemaReference,
     TimestampedSchema,
 )
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
     ProductMediaList,
-    ProductPrice,
     ProductPriceList,
 )
 
@@ -48,7 +46,13 @@ _discount_id_description = (
 )
 
 
-class CheckoutLinkCreateBase(MetadataInputMixin, Schema):
+class CheckoutLinkCreate(MetadataInputMixin, Schema):
+    """Schema to create a new checkout link."""
+
+    products: list[UUID4] = Field(
+        description="List of products that will be available to select at checkout.",
+        min_length=1,
+    )
     payment_processor: Literal[PaymentProcessor.stripe] = Field(
         description="Payment processor to use. Currently only Stripe is supported."
     )
@@ -64,30 +68,18 @@ class CheckoutLinkCreateBase(MetadataInputMixin, Schema):
     success_url: SuccessURL = None
 
 
-class CheckoutLinkPriceCreate(CheckoutLinkCreateBase):
-    product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
-
-
-class CheckoutLinkProductCreate(CheckoutLinkCreateBase):
-    product_id: UUID4 = Field(
-        description="ID of the product to checkout. First available price will be selected."
-    )
-
-
-CheckoutLinkCreate = Annotated[
-    CheckoutLinkProductCreate | CheckoutLinkPriceCreate,
-    SetSchemaReference("CheckoutLinkCreate"),
-]
-
-
 class CheckoutLinkUpdate(OptionalMetadataInputMixin):
     """Schema to update an existing checkout link."""
 
+    products: list[UUID4] | None = Field(
+        default=None,
+        description="List of products that will be available to select at checkout.",
+        min_length=1,
+    )
     label: str | None = None
     allow_discount_codes: bool | None = Field(
         default=None, description=_allow_discount_codes_description
     )
-    product_price_id: UUID4 | None = None
     discount_id: UUID4 | None = Field(
         default=None, description=_discount_id_description
     )
@@ -108,10 +100,6 @@ class CheckoutLinkBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
         description="Optional label to distinguish links internally"
     )
     allow_discount_codes: bool = Field(description=_allow_discount_codes_description)
-    product_id: UUID4 = Field(description="ID of the product to checkout.")
-    product_price_id: UUID4 | None = Field(
-        description="ID of the product price to checkout. First available price will be selected unless an explicit price ID is set."
-    )
     discount_id: UUID4 | None = Field(description=_discount_id_description)
 
     @computed_field  # type: ignore[prop-decorator]
@@ -136,6 +124,5 @@ CheckoutLinkDiscount = Annotated[
 class CheckoutLink(CheckoutLinkBase):
     """Checkout link data."""
 
-    product: CheckoutLinkProduct
-    product_price: ProductPrice | None
+    products: list[CheckoutLinkProduct]
     discount: CheckoutLinkDiscount | None

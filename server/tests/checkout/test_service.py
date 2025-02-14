@@ -1293,38 +1293,6 @@ class TestClientCreate:
 
 @pytest.mark.asyncio
 class TestCheckoutLinkCreate:
-    async def test_archived_price(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product_one_time: Product,
-    ) -> None:
-        first_price = product_one_time.prices[0]
-        price = await create_product_price_fixed(
-            save_fixture,
-            product=product_one_time,
-            is_archived=True,
-        )
-        checkout_link = await create_checkout_link(
-            save_fixture, product=product_one_time, price=price
-        )
-        checkout = await checkout_service.checkout_link_create(session, checkout_link)
-        assert checkout.product_price.id == first_price.id
-
-    async def test_archived_product(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product_one_time: Product,
-    ) -> None:
-        product_one_time.is_archived = True
-        await save_fixture(product_one_time)
-        checkout_link = await create_checkout_link(
-            save_fixture, product=product_one_time, price=product_one_time.prices[0]
-        )
-        with pytest.raises(PolarRequestValidationError):
-            await checkout_service.checkout_link_create(session, checkout_link)
-
     async def test_valid(
         self,
         save_fixture: SaveFixture,
@@ -1334,8 +1302,7 @@ class TestCheckoutLinkCreate:
         price = product_one_time.prices[0]
         checkout_link = await create_checkout_link(
             save_fixture,
-            product=product_one_time,
-            price=price,
+            products=[product_one_time],
             success_url="https://example.com/success",
             user_metadata={"key": "value"},
         )
@@ -1343,6 +1310,7 @@ class TestCheckoutLinkCreate:
 
         assert checkout.product_price == price
         assert checkout.product == product_one_time
+        assert checkout.products == [product_one_time]
         assert checkout.success_url == "https://example.com/success"
         assert checkout.user_metadata == {"key": "value"}
 
@@ -1356,13 +1324,12 @@ class TestCheckoutLinkCreate:
         price = product_one_time.prices[0]
         checkout_link = await create_checkout_link(
             save_fixture,
-            product=product_one_time,
-            price=price,
+            products=[product_one_time],
             discount=discount_fixed_once,
         )
+
         checkout = await checkout_service.checkout_link_create(session, checkout_link)
 
-        assert checkout.product_price == price
         assert checkout.discount == discount_fixed_once
 
 

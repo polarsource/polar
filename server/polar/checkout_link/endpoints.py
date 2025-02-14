@@ -7,7 +7,8 @@ from pydantic import UUID4
 
 from polar.checkout import ip_geolocation
 from polar.checkout.service import checkout as checkout_service
-from polar.exceptions import ResourceNotFound
+from polar.checkout_link.repository import CheckoutLinkRepository
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import CheckoutLink
@@ -163,12 +164,14 @@ async def redirect(
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
     """Use a checkout link to create a checkout session and redirect to it."""
-    checkout_link = await checkout_link_service.get_by_client_secret(
-        session, client_secret
-    )
+    repository = CheckoutLinkRepository.from_session(session)
+    checkout_link = await repository.get_by_client_secret(client_secret)
 
     if checkout_link is None:
         raise ResourceNotFound()
+
+    if checkout_link.organization.is_blocked():
+        raise NotPermitted()
 
     ip_address = request.client.host if request.client else None
     checkout = await checkout_service.checkout_link_create(

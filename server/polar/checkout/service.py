@@ -21,6 +21,7 @@ from polar.checkout.schemas import (
     CheckoutCreate,
     CheckoutCreatePublic,
     CheckoutPriceCreate,
+    CheckoutProductCreate,
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
@@ -67,6 +68,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.checkout import CheckoutStatus
+from polar.models.checkout_product import CheckoutProduct
 from polar.models.discount import DiscountDuration
 from polar.models.product_price import (
     ProductPriceAmountType,
@@ -256,13 +258,19 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
         if isinstance(checkout_create, CheckoutPriceCreate):
-            product, price = await self._get_validated_price(
+            products, product, price = await self._get_validated_price(
                 session, auth_subject, checkout_create.product_price_id
             )
-        else:
-            product, price = await self._get_validated_product(
+        elif isinstance(checkout_create, CheckoutProductCreate):
+            products, product, price = await self._get_validated_product(
                 session, auth_subject, checkout_create.product_id
             )
+        else:
+            products = await self._get_validated_products(
+                session, auth_subject, checkout_create.products
+            )
+            product = products[0]
+            price = products[0].prices[0]
 
         if product.organization.is_blocked():
             raise NotPermitted()
@@ -378,11 +386,17 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             validate_required=False,
         )
 
+        checkout_products = [
+            CheckoutProduct(product=product, order=i)
+            for i, product in enumerate(products)
+        ]
+
         checkout = Checkout(
             payment_processor=PaymentProcessor.stripe,
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
             currency=currency,
+            checkout_products=checkout_products,
             product=product,
             product_price=price,
             discount=discount,
@@ -394,6 +408,8 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             **checkout_create.model_dump(
                 exclude={
                     "product_price_id",
+                    "product_id",
+                    "products",
                     "amount",
                     "customer_billing_address",
                     "customer_tax_id",
@@ -512,6 +528,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
             amount=amount,
             currency=currency,
+            checkout_products=[CheckoutProduct(product=product, order=0)],
             product=product,
             product_price=price,
             customer=None,
@@ -1150,6 +1167,11 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     selectinload(Product.product_medias),
                     selectinload(Product.attached_custom_fields),
                 ),
+                selectinload(Checkout.checkout_products).options(
+                    joinedload(CheckoutProduct.product).options(
+                        selectinload(Product.product_medias),
+                    )
+                ),
             )
         )
         result = await session.execute(statement)
@@ -1172,7 +1194,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         product_price_id: uuid.UUID,
-    ) -> tuple[Product, ProductPrice]:
+    ) -> tuple[Sequence[Product], Product, ProductPrice]:
         price = await product_price_service.get_writable_by_id(
             session, product_price_id, auth_subject
         )
@@ -1214,14 +1236,14 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 ]
             )
 
-        return product, price
+        return [product], product, price
 
     async def _get_validated_product(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         product_id: uuid.UUID,
-    ) -> tuple[Product, ProductPrice]:
+    ) -> tuple[Sequence[Product], Product, ProductPrice]:
         product = await product_service.get_by_id(session, auth_subject, product_id)
 
         if product is None:
@@ -1248,7 +1270,59 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 ]
             )
 
-        return product, product.prices[0]
+        return [product], product, product.prices[0]
+
+    async def _get_validated_products(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product_ids: Sequence[uuid.UUID],
+    ) -> Sequence[Product]:
+        products: list[Product] = []
+        errors: list[ValidationError] = []
+
+        for index, product_id in enumerate(product_ids):
+            product = await product_service.get_by_id(session, auth_subject, product_id)
+
+            if product is None:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "products", index),
+                        "msg": "Product does not exist.",
+                        "input": product_id,
+                    }
+                )
+                continue
+
+            if product.is_archived:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "products", index),
+                        "msg": "Product is archived.",
+                        "input": product_id,
+                    }
+                )
+                continue
+
+            products.append(product)
+
+        organization_ids = {product.organization_id for product in products}
+        if len(organization_ids) > 1:
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "products"),
+                    "msg": "Products must all belong to the same organization.",
+                    "input": products,
+                }
+            )
+
+        if len(errors) > 0:
+            raise PolarRequestValidationError(errors)
+
+        return products
 
     @typing.overload
     async def _get_validated_discount(
@@ -1415,49 +1489,40 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         if checkout.status != CheckoutStatus.open:
             raise NotOpenCheckout(checkout)
 
-        if checkout_update.product_price_id is not None:
-            price = await product_price_service.get_by_id(
-                session, checkout_update.product_price_id
+        if checkout_update.product_id is not None:
+            product_repository = ProductRepository.from_session(session)
+            product = await product_repository.get_by_id_and_checkout(
+                checkout_update.product_id,
+                checkout.id,
+                options=product_repository.get_eager_options(),
             )
-            if (
-                price is None
-                or price.product.organization_id != checkout.product.organization_id
-            ):
+
+            if product is None:
                 raise PolarRequestValidationError(
                     [
                         {
                             "type": "value_error",
-                            "loc": ("body", "product_price_id"),
-                            "msg": "Price does not exist.",
-                            "input": checkout_update.product_price_id,
+                            "loc": ("body", "product_id"),
+                            "msg": "Product is not available in this checkout.",
+                            "input": checkout_update.product_id,
                         }
                     ]
                 )
 
-            if price.is_archived:
+            if product.is_archived:
                 raise PolarRequestValidationError(
                     [
                         {
                             "type": "value_error",
-                            "loc": ("body", "product_price_id"),
-                            "msg": "Price is archived.",
-                            "input": checkout_update.product_price_id,
+                            "loc": ("body", "product_id"),
+                            "msg": "Product is archived.",
+                            "input": checkout_update.product_id,
                         }
                     ]
                 )
 
-            if price.product_id != checkout.product_id:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "product_price_id"),
-                            "msg": "Price does not belong to the product.",
-                            "input": checkout_update.product_price_id,
-                        }
-                    ]
-                )
-
+            checkout.product = product
+            price = product.prices[0]
             checkout.product_price = price
             if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
                 checkout.amount = price.price_amount
@@ -1885,9 +1950,14 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             .options(
                 contains_eager(Checkout.product).options(
                     joinedload(Product.organization),
-                    joinedload(Product.product_medias),
-                    joinedload(Product.attached_custom_fields),
-                )
+                    selectinload(Product.product_medias),
+                    selectinload(Product.attached_custom_fields),
+                ),
+                selectinload(Checkout.checkout_products).options(
+                    joinedload(CheckoutProduct.product).options(
+                        selectinload(Product.product_medias),
+                    )
+                ),
             )
         )
 

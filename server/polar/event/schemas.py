@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import UUID4, AfterValidator, AwareDatetime, Field
 
+from polar.customer.schemas import Customer
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import IDSchema, Schema
 from polar.models.event import EventSource
@@ -83,6 +84,9 @@ class Event(IDSchema, MetadataOutputMixin):
         description=(
             "ID of the customer in your Polar organization associated with the event."
         )
+    )
+    customer: Customer | None = Field(
+        description="The customer associated with the event."
     )
     external_customer_id: str | None = Field(
         description="ID of the customer in your system associated with the event."

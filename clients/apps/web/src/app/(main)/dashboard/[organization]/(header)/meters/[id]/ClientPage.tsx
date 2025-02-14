@@ -68,6 +68,7 @@ export default function ClientPage({
   )
 
   const { data } = useMeterEvents(_meter.id)
+
   const meterEvents = useMemo(() => {
     if (!data) return []
     return data.pages[0].items
@@ -184,16 +185,19 @@ export default function ClientPage({
               </Card>
             </div>
           </div>
-          <MeterGetStarted meter={meter} />
-          <div className="flex flex-col gap-y-6">
-            <div className="flex flex-col gap-y-2">
-              <h3 className="text-xl">Latest meter events</h3>
-              <p className="dark:text-polar-500 text-gray-500">
-                Recently received meter events
-              </p>
+          {meterEvents.length > 0 ? (
+            <div className="flex flex-col gap-y-6">
+              <div className="flex flex-col gap-y-2">
+                <h3 className="text-xl">Latest meter events</h3>
+                <p className="dark:text-polar-500 text-gray-500">
+                  Recently received meter events
+                </p>
+              </div>
+              <MeterEvents events={meterEvents} />
             </div>
-            <MeterEvents events={meterEvents} />
-          </div>
+          ) : (
+            <MeterGetStarted meter={meter} />
+          )}
         </TabsContent>
         <TabsContent value="events">
           <MeterEventsTab meter={meter} />

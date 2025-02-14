@@ -9809,6 +9809,8 @@ export interface components {
              * @description ID of the customer in your Polar organization associated with the event.
              */
             customer_id: string | null;
+            /** @description The customer associated with the event. */
+            customer: components["schemas"]["Customer"] | null;
             /**
              * External Customer Id
              * @description ID of the customer in your system associated with the event.

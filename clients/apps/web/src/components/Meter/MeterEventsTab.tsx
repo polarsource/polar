@@ -20,6 +20,7 @@ const MeterEventsTab = ({ meter }: { meter: schemas['Meter'] }) => {
       <MeterEvents events={meterEvents} />
       {hasNextPage && (
         <Button
+          className="self-start"
           variant="secondary"
           onClick={() => fetchNextPage()}
           loading={isFetching}

@@ -147,8 +147,13 @@ const getTickFormat = (
   }
 }
 
+export type MetricData = ParsedMetricPeriod[] | {
+  timestamp: Date
+  quantity: number
+}[]
+
 export type MetricMarksResolver = (config: {
-  data: ParsedMetricPeriod[]
+  data: MetricData
   metric: schemas['Metric']
   interval: schemas['TimeInterval']
   onDataIndexHover?: (index: number | undefined) => void
@@ -162,7 +167,7 @@ export const defaultMetricMarks: MetricMarksResolver = ({
   onDataIndexHover,
   ticks,
 }: {
-  data: ParsedMetricPeriod[]
+  data: MetricData
   metric: schemas['Metric']
   interval: schemas['TimeInterval']
   onDataIndexHover?: (index: number | undefined) => void
@@ -245,10 +250,10 @@ export const barMetricMarks: MetricMarksResolver = ({
     stroke: 'none',
     fontFamily: GeistMono.style.fontFamily,
   }),
-  Plot.rectY(data, {
+  Plot.barY(data, {
     x: 'timestamp',
     y: metric.slug,
-    interval: utcDay,
+    interval
   }),
   ...(onDataIndexHover
     ? [

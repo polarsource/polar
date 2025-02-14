@@ -17,6 +17,7 @@ from polar.checkout.schemas import (
     CheckoutCreatePublic,
     CheckoutPriceCreate,
     CheckoutProductCreate,
+    CheckoutProductsCreate,
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
@@ -46,6 +47,7 @@ from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import (
     Checkout,
+    CheckoutProduct,
     Customer,
     Discount,
     DiscountRedemption,
@@ -97,41 +99,35 @@ def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
 async def checkout_one_time_fixed(
     save_fixture: SaveFixture, product_one_time: Product
 ) -> Checkout:
-    return await create_checkout(save_fixture, price=product_one_time.prices[0])
+    return await create_checkout(save_fixture, products=[product_one_time])
 
 
 @pytest_asyncio.fixture
 async def checkout_one_time_custom(
     save_fixture: SaveFixture, product_one_time_custom_price: Product
 ) -> Checkout:
-    return await create_checkout(
-        save_fixture, price=product_one_time_custom_price.prices[0]
-    )
+    return await create_checkout(save_fixture, products=[product_one_time_custom_price])
 
 
 @pytest_asyncio.fixture
 async def checkout_one_time_free(
     save_fixture: SaveFixture, product_one_time_free_price: Product
 ) -> Checkout:
-    return await create_checkout(
-        save_fixture, price=product_one_time_free_price.prices[0]
-    )
+    return await create_checkout(save_fixture, products=[product_one_time_free_price])
 
 
 @pytest_asyncio.fixture
 async def checkout_recurring_fixed(
     save_fixture: SaveFixture, product: Product
 ) -> Checkout:
-    return await create_checkout(save_fixture, price=product.prices[0])
+    return await create_checkout(save_fixture, products=[product])
 
 
 @pytest_asyncio.fixture
 async def checkout_recurring_free(
     save_fixture: SaveFixture, product_recurring_free_price: Product
 ) -> Checkout:
-    return await create_checkout(
-        save_fixture, price=product_recurring_free_price.prices[0]
-    )
+    return await create_checkout(save_fixture, products=[product_recurring_free_price])
 
 
 @pytest_asyncio.fixture
@@ -139,7 +135,7 @@ async def checkout_confirmed_one_time(
     save_fixture: SaveFixture, product_one_time: Product
 ) -> Checkout:
     return await create_checkout(
-        save_fixture, price=product_one_time.prices[0], status=CheckoutStatus.confirmed
+        save_fixture, products=[product_one_time], status=CheckoutStatus.confirmed
     )
 
 
@@ -148,7 +144,7 @@ async def checkout_confirmed_recurring(
     save_fixture: SaveFixture, product: Product
 ) -> Checkout:
     return await create_checkout(
-        save_fixture, price=product.prices[0], status=CheckoutStatus.confirmed
+        save_fixture, products=[product], status=CheckoutStatus.confirmed
     )
 
 
@@ -164,7 +160,7 @@ async def checkout_confirmed_recurring_upgrade(
     )
     return await create_checkout(
         save_fixture,
-        price=product.prices[0],
+        products=[product],
         status=CheckoutStatus.confirmed,
         subscription=subscription,
     )
@@ -176,7 +172,7 @@ async def checkout_discount_percentage_100(
 ) -> Checkout:
     return await create_checkout(
         save_fixture,
-        price=product.prices[0],
+        products=[product],
         status=CheckoutStatus.open,
         discount=discount_percentage_100,
     )
@@ -210,7 +206,7 @@ async def product_custom_fields(
 async def checkout_custom_fields(
     save_fixture: SaveFixture, product_custom_fields: Product
 ) -> Checkout:
-    return await create_checkout(save_fixture, price=product_custom_fields.prices[0])
+    return await create_checkout(save_fixture, products=[product_custom_fields])
 
 
 @pytest_asyncio.fixture
@@ -229,9 +225,7 @@ async def product_tax_not_applicable(
 async def checkout_tax_not_applicable(
     save_fixture: SaveFixture, product_tax_not_applicable: Product
 ) -> Checkout:
-    return await create_checkout(
-        save_fixture, price=product_tax_not_applicable.prices[0]
-    )
+    return await create_checkout(save_fixture, products=[product_tax_not_applicable])
 
 
 @pytest.mark.asyncio
@@ -512,6 +506,7 @@ class TestCreate:
 
         assert checkout.product_price == price
         assert checkout.product == product_one_time
+        assert checkout.products == [product_one_time]
         assert checkout.amount == price.price_amount
         assert checkout.currency == price.price_currency
         assert checkout.user_metadata == {"key": "value"}
@@ -543,6 +538,7 @@ class TestCreate:
 
         assert checkout.product_price == price
         assert checkout.product == product_one_time_free_price
+        assert checkout.products == [product_one_time_free_price]
         assert checkout.amount is None
         assert checkout.currency is None
         assert checkout.user_metadata == {"key": "value"}
@@ -577,6 +573,7 @@ class TestCreate:
 
         assert checkout.product_price == price
         assert checkout.product == product_one_time_custom_price
+        assert checkout.products == [product_one_time_custom_price]
         if amount is None:
             assert checkout.amount == price.preset_amount
         else:
@@ -973,6 +970,91 @@ class TestCreate:
 
         assert checkout.product == product_one_time
         assert checkout.product_price == product_one_time.prices[0]
+        assert checkout.products == [product_one_time]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_products_archived(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product: Product,
+        product_one_time: Product,
+    ) -> None:
+        product_one_time.is_archived = True
+        await save_fixture(product_one_time)
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutProductsCreate(products=[product_one_time.id, product.id]),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+    )
+    async def test_products_different_organizations(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user: User,
+        user_organization: UserOrganization,
+        product: Product,
+        product_organization_second: Product,
+        organization_second: Organization,
+    ) -> None:
+        user_organization = UserOrganization(
+            user_id=user.id, organization_id=organization_second.id
+        )
+        await save_fixture(user_organization)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.create(
+                session,
+                CheckoutProductsCreate(
+                    products=[product.id, product_organization_second.id]
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_products_valid(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product: Product,
+        product_one_time: Product,
+        product_one_time_custom_price: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[
+                    product.id,
+                    product_one_time.id,
+                    product_one_time_custom_price.id,
+                ]
+            ),
+            auth_subject,
+        )
+
+        assert checkout.products == [
+            product,
+            product_one_time,
+            product_one_time_custom_price,
+        ]
+        assert checkout.product == product
+        assert checkout.product_price == product.prices[0]
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1286,7 +1368,7 @@ class TestCheckoutLinkCreate:
 
 @pytest.mark.asyncio
 class TestUpdate:
-    async def test_not_existing_price(
+    async def test_not_existing_product(
         self,
         session: AsyncSession,
         locker: Locker,
@@ -1298,34 +1380,11 @@ class TestUpdate:
                 locker,
                 checkout_one_time_fixed,
                 CheckoutUpdate(
-                    product_price_id=uuid.uuid4(),
+                    product_id=uuid.uuid4(),
                 ),
             )
 
-    async def test_archived_price(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        locker: Locker,
-        product_one_time: Product,
-        checkout_one_time_fixed: Checkout,
-    ) -> None:
-        price = await create_product_price_fixed(
-            save_fixture,
-            product=product_one_time,
-            is_archived=True,
-        )
-        with pytest.raises(PolarRequestValidationError):
-            await checkout_service.update(
-                session,
-                locker,
-                checkout_one_time_fixed,
-                CheckoutUpdate(
-                    product_price_id=price.id,
-                ),
-            )
-
-    async def test_price_from_different_product(
+    async def test_product_not_on_checkout(
         self,
         session: AsyncSession,
         locker: Locker,
@@ -1337,9 +1396,7 @@ class TestUpdate:
                 session,
                 locker,
                 checkout_one_time_fixed,
-                CheckoutUpdate(
-                    product_price_id=product_one_time_custom_price.prices[0].id,
-                ),
+                CheckoutUpdate(product_id=product_one_time_custom_price.id),
             )
 
     @pytest.mark.parametrize("amount", [10, 20_000_000_000])
@@ -1530,7 +1587,7 @@ class TestUpdate:
                 CheckoutUpdatePublic(discount_code=recurring_discount.code),
             )
 
-    async def test_valid_price_fixed_change(
+    async def test_valid_product_change(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -1538,20 +1595,31 @@ class TestUpdate:
         product: Product,
         checkout_recurring_fixed: Checkout,
     ) -> None:
-        new_price = await create_product_price_fixed(
-            save_fixture, product=product, amount=4242
+        new_product = await create_product(
+            save_fixture,
+            organization=product.organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(4242,)],
         )
+        checkout_recurring_fixed.checkout_products.append(
+            CheckoutProduct(product=new_product, order=1)
+        )
+        await save_fixture(checkout_recurring_fixed)
+
         checkout = await checkout_service.update(
             session,
             locker,
             checkout_recurring_fixed,
             CheckoutUpdate(
-                product_price_id=new_price.id,
+                product_id=new_product.id,
             ),
         )
 
+        new_price = new_product.prices[0]
+        assert isinstance(new_price, ProductPriceFixed)
+
         assert checkout.product_price == new_price
-        assert checkout.product == product
+        assert checkout.product == new_product
         assert checkout.amount == new_price.price_amount
         assert checkout.currency == new_price.price_currency
 
@@ -2900,7 +2968,7 @@ class TestHandleFreeSuccess:
     ) -> None:
         checkout = await create_checkout(
             save_fixture,
-            price=product_one_time_custom_price.prices[0],
+            products=[product_one_time_custom_price],
             amount=1000,
             status=CheckoutStatus.confirmed,
             discount=discount_percentage_100,
@@ -2924,22 +2992,21 @@ class TestExpireOpenCheckouts:
     async def test_valid(
         self, save_fixture: SaveFixture, session: AsyncSession, product: Product
     ) -> None:
-        price = product.prices[0]
         open_checkout = await create_checkout(
             save_fixture,
-            price=price,
+            products=[product],
             status=CheckoutStatus.open,
             expires_at=utc_now() + timedelta(days=1),
         )
         expired_checkout = await create_checkout(
             save_fixture,
-            price=price,
+            products=[product],
             status=CheckoutStatus.open,
             expires_at=utc_now() - timedelta(days=1),
         )
         successful_checkout = await create_checkout(
             save_fixture,
-            price=price,
+            products=[product],
             status=CheckoutStatus.succeeded,
             expires_at=utc_now() - timedelta(days=1),
         )

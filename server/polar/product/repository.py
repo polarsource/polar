@@ -9,7 +9,7 @@ from polar.kit.repository import (
     RepositoryIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models.product import Product
+from polar.models import CheckoutProduct, Product
 
 
 class ProductRepository(
@@ -26,10 +26,29 @@ class ProductRepository(
         *,
         options: Sequence[ExecutableOption] = (),
     ) -> Product | None:
-        statement = self.get_base_statement()
-        statement = statement.where(
-            Product.id == id, Product.organization_id == organization_id
-        ).options(*options)
+        statement = (
+            self.get_base_statement()
+            .where(Product.id == id, Product.organization_id == organization_id)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_by_id_and_checkout(
+        self,
+        id: UUID,
+        checkout_id: UUID,
+        *,
+        options: Sequence[ExecutableOption] = (),
+    ) -> Product | None:
+        statement = (
+            self.get_base_statement()
+            .join(CheckoutProduct, onclause=Product.id == CheckoutProduct.product_id)
+            .where(
+                Product.id == id,
+                CheckoutProduct.checkout_id == checkout_id,
+            )
+            .options(*options)
+        )
         return await self.get_one_or_none(statement)
 
     def get_eager_options(self) -> Sequence[ExecutableOption]:

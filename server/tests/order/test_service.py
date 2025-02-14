@@ -1027,7 +1027,7 @@ class TestCreateOrderFromStripe:
 
         price = product_one_time.prices[0]
         checkout = await create_checkout(
-            save_fixture, price=price, status=CheckoutStatus.succeeded
+            save_fixture, products=[product_one_time], status=CheckoutStatus.succeeded
         )
 
         created_datetime, created_unix_timestamp = event_creation_time

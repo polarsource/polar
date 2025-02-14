@@ -165,6 +165,8 @@ class CheckoutPriceCreate(CheckoutCreateBase):
     """
     Create a new checkout session from a product price.
 
+    **Deprecated**: Use `CheckoutProductsCreate` instead.
+
     Metadata set on the checkout will be copied
     to the resulting order and/or subscription.
     """
@@ -176,17 +178,39 @@ class CheckoutProductCreate(CheckoutCreateBase):
     """
     Create a new checkout session from a product.
 
+    **Deprecated**: Use `CheckoutProductsCreate` instead.
+
     Metadata set on the checkout will be copied
     to the resulting order and/or subscription.
     """
 
     product_id: UUID4 = Field(
-        description="ID of the product to checkout. First available price will be selected."
+        description=(
+            "ID of the product to checkout. First available price will be selected."
+        )
+    )
+
+
+class CheckoutProductsCreate(CheckoutCreateBase):
+    """
+    Create a new checkout session from a list of products.
+    Customers will be able to switch between those products.
+
+    Metadata set on the checkout will be copied
+    to the resulting order and/or subscription.
+    """
+
+    products: list[UUID4] = Field(
+        description=(
+            "List of product IDs available to select at that checkout. "
+            "The first one will be selected by default."
+        ),
+        min_length=1,
     )
 
 
 CheckoutCreate = Annotated[
-    CheckoutProductCreate | CheckoutPriceCreate,
+    CheckoutProductsCreate | CheckoutProductCreate | CheckoutPriceCreate,
     SetSchemaReference("CheckoutCreate"),
 ]
 
@@ -207,11 +231,11 @@ class CheckoutCreatePublic(Schema):
 
 
 class CheckoutUpdateBase(OptionalCustomFieldDataInputMixin, Schema):
-    product_price_id: UUID4 | None = Field(
+    product_id: UUID4 | None = Field(
         default=None,
         description=(
-            "ID of the product price to checkout. "
-            "Must correspond to a price linked to the same product."
+            "ID of the product to checkout. "
+            "Must be present in the checkout's product list."
         ),
     )
     amount: Amount | None = None
@@ -418,8 +442,11 @@ CheckoutDiscount = Annotated[
 class Checkout(MetadataOutputMixin, CheckoutBase):
     """Checkout session data retrieved using an access token."""
 
-    product: CheckoutProduct
-    product_price: ProductPrice
+    products: list[CheckoutProduct] = Field(
+        description="List of products available to select."
+    )
+    product: CheckoutProduct = Field(description="Product selected to checkout.")
+    product_price: ProductPrice = Field(description="Price of the selected product.")
     discount: CheckoutDiscount | None
     subscription_id: UUID4 | None
     attached_custom_fields: list[AttachedCustomField]
@@ -429,8 +456,11 @@ class Checkout(MetadataOutputMixin, CheckoutBase):
 class CheckoutPublic(CheckoutBase):
     """Checkout session data retrieved using the client secret."""
 
-    product: CheckoutProduct
-    product_price: ProductPrice
+    products: list[CheckoutProduct] = Field(
+        description="List of products available to select."
+    )
+    product: CheckoutProduct = Field(description="Product selected to checkout.")
+    product_price: ProductPrice = Field(description="Price of the selected product.")
     discount: CheckoutDiscount | None
     organization: Organization
     attached_custom_fields: list[AttachedCustomField]

@@ -173,7 +173,7 @@ class TestOnEventSuccess:
         publish_checkout_event_mock = mocker.patch(
             "polar.webhook.service.publish_checkout_event"
         )
-        checkout = await create_checkout(save_fixture, price=product.prices[0])
+        checkout = await create_checkout(save_fixture, products=[product])
         event = WebhookEvent(
             webhook_endpoint=webhook_endpoint_organization,
             succeeded=True,

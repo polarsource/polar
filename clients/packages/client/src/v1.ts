@@ -5956,7 +5956,7 @@ export interface components {
              */
             custom_field_data?: {
                 [key: string]: string | number | boolean | null;
-            } | null;
+            };
             /**
              * Product Price Id
              * @description ID of the product price to checkout. Must correspond to a price linked to the same product.
@@ -8392,6 +8392,15 @@ export interface components {
             /** Customer Cancellation Comment */
             customer_cancellation_comment: string | null;
         };
+        /**
+         * CustomerOrganization
+         * @description Schema of an organization and related data for customer portal.
+         */
+        CustomerOrganization: {
+            organization: components["schemas"]["Organization"];
+            /** Products */
+            products: components["schemas"]["CustomerProduct"][];
+        };
         /** CustomerPortalCustomer */
         CustomerPortalCustomer: {
             /**
@@ -8434,6 +8443,70 @@ export interface components {
             account_id: string;
             /** Account Username */
             account_username: string | null;
+        };
+        /**
+         * CustomerProduct
+         * @description Schema of a product for customer portal.
+         */
+        CustomerProduct: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the product.
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the product.
+             */
+            name: string;
+            /**
+             * Description
+             * @description The description of the product.
+             */
+            description: string | null;
+            /**
+             * Is Recurring
+             * @description Whether the product is a subscription tier.
+             */
+            is_recurring: boolean;
+            /**
+             * Is Archived
+             * @description Whether the product is archived and no longer available.
+             */
+            is_archived: boolean;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the product.
+             */
+            organization_id: string;
+            /**
+             * Prices
+             * @description List of available prices for this product.
+             */
+            prices: components["schemas"]["ProductPrice"][];
+            /**
+             * BenefitPublic
+             * @description The benefits granted by the product.
+             */
+            benefits: components["schemas"]["BenefitBase"][];
+            /**
+             * Medias
+             * @description The medias associated to the product.
+             */
+            medias: components["schemas"]["ProductMediaFileRead"][];
         };
         /**
          * CustomerSession
@@ -22705,7 +22778,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Organization"];
+                    "application/json": components["schemas"]["CustomerOrganization"];
                 };
             };
             /** @description Organization not found. */

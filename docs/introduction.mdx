@@ -1,0 +1,145 @@
+---
+title: "Modern Billing for Developers & Designers"
+sidebarTitle: "Getting Started"
+description: "An open source Merchant of Record with 20% lower fees"
+---
+
+<img height="200" src="/assets/welcome.png" />
+
+Polar is purpose-built for developers, designers and startups to monetize their
+digital products and software with ease.
+
+**Highlighted Features**
+
+<AccordionGroup>
+  <Accordion title="Integrate with 5 Lines of Code" icon="code">
+    We obsess over developer ergonomics and ease. Just checkout our
+    [Next.js](/guides/nextjs) guide below.
+
+    ```bash
+    pnpm install @polar-sh/nextjs zod
+    ```
+
+    ```typescript
+    // checkout/route.ts
+    import { Checkout } from "@polar-sh/nextjs";
+
+    export const GET = Checkout({
+      accessToken: process.env.POLAR_ACCESS_TOKEN,
+      successUrl: process.env.SUCCESS_URL,
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="First-class No-Code Support" icon="gauge">
+    Our dashboard is built to be delightfully intuitive and easy to use even
+    without ever integrating our API.
+
+    See how you can easily create powerful [Checkout Links](/features/checkout/links).
+  </Accordion>
+
+  <Accordion title="Merchant of Record" icon="globe">
+    Sell internationally and leave the headache of calculating, capturing and
+    remitting taxes world-wide to us as your [Merchant of Record](/merchant-of-record/introduction).
+  </Accordion>
+
+  <Accordion title="20% Lower Fees" icon="badge-percent">
+    - No fixed monthly costs
+    - 4% + 40¢ on transactions - we earn when you do
+    - Some payments may be subject to additional [fees](/merchant-of-record/fees)
+    - Large or fast-growing business? [Reach out](mailto:support@polar.sh) to us for volume discounts
+  </Accordion>
+
+  <Accordion title="Automated Benefits (Entitlements)" icon="battery-bolt">
+    Focus on building your core product vs. common product benefits.
+
+    Use our built-in automations for:
+    - [File Downloads](/features/benefits/file-donwloads)
+    - [License Keys](/features/benefits/license-keys)
+    - [GitHub Repo Access](/features/benefits/github-access)
+    - [Discord Access](/features/benefits/github-access)
+  </Accordion>
+
+  <Accordion title="Powerful Checkout" icon="money-bill">
+    <img className="block dark:hidden" src="/assets/features/checkout/links/checkout.light.png" />
+    <img className="hidden dark:block" src="/assets/features/checkout/links/checkout.dark.png" />
+
+    Offer a powerful and custom branded checkout in minutes.
+    - [Checkout Links](/features/checkout/links)
+    - [Embedded Checkout](/features/checkout/embed) on your site
+    - [Checkout API](/features/checkout/embed) to programmatically create
+      dynamic sessions
+  </Accordion>
+
+  <Accordion title="Open Source" icon="osi">
+    - Our product, code and docs are available on [GitHub](https://github.com/polarsource/polar) (Apache 2.0)
+    - 36 contributors and growing (Contributions welcome)
+    - Feature requests, feedback and issues - all in public
+    - Self-hosting while possible is not supported or encouraged (no MoR benefits)
+  </Accordion>
+</AccordionGroup>
+
+## Quickstart
+Get up and running in 5 minutes
+
+<Steps>
+  <Step title="Sign up">
+    <img className="block dark:hidden" src="/assets/create-org.light.png" />
+    <img className="hidden dark:block" src="/assets/create-org.dark.png" />
+
+    [Sign up](https://polar.sh/signup) to Polar easily using GitHub, Google or email.
+    Create an organization (store) for your products, customers and checkouts.
+  </Step>
+  <Step title="Create your first product">
+    <img className="block dark:hidden" src="/assets/features/products/create.light.png" />
+    <img className="hidden dark:block" src="/assets/features/products/create.dark.png" />
+
+    You can now [create products](/features/products) in minutes with ease. From
+    one-time purchases to subscription tiers.
+
+    Using our built-in product benefits to easily offer
+    [File Downloads](/features/benefits/file-donwloads),
+    [License Keys](/features/benefits/license-keys),
+    [GitHub Repo Access](/features/benefits/github-access) and
+    [Discord Access](/features/benefits/github-access).
+  </Step>
+  <Step title="Create and share Checkout Links">
+    <img className="block dark:hidden" src="/assets/features/checkout/links/create.light.png" />
+    <img className="hidden dark:block" src="/assets/features/checkout/links/create.dark.png" />
+
+    You can now easily create and share a checkout link to drive sales.
+  </Step>
+  <Step title="Get sales & payouts 🎉">
+    <img className="block dark:hidden" src="/assets/features/analytics/overview.light.png" />
+    <img className="hidden dark:block" src="/assets/features/analytics/overview.dark.png" />
+
+    Easily monitor your
+    [Analytics](/features/analytics),
+    [Sales](/features/orders),
+    [Financial Balance](/features/finance/balance)
+    and [get payouts](/features/finance/payouts) at any time.
+
+    <Note>
+      We perform [account reviews](/merchant-of-record/account-reviews) to ensure
+      [acceptable use](/merchant-of-record/acceptable-use) ahead of the first
+      payout.
+    </Note>
+  </Step>
+</Steps>
+
+## Quickstart from CLI
+
+The fastest way to get started with Polar in your Next.js or Nuxt.js app. Setup SaaS products & the necessary files for your framework in seconds.
+
+```bash
+npx polar-init
+```
+
+**Supported Frameworks**
+- Next.js
+- Nuxt.js
+
+**Open Source**
+
+The code is open source and available on [GitHub](https://github.com/polarsource/polar-init)
+

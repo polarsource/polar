@@ -1,0 +1,89 @@
+---
+title: "Webhook Events"
+sidebarTitle: "Events"
+description: "All our webhook events and their payload samples."
+---
+
+import BenefitGrantCreated from '/snippets/webhooks/benefit_grant.created/full.mdx';
+import BenefitGrantUpdated from '/snippets/webhooks/benefit_grant.updated/full.mdx';
+import BenefitGrantRevoked from '/snippets/webhooks/benefit_grant.revoked/full.mdx';
+import CheckoutCreated from '/snippets/webhooks/checkout.created/full.mdx';
+import CheckoutUpdated from '/snippets/webhooks/checkout.updated/full.mdx';
+import OrderCreated from '/snippets/webhooks/order.created/full.mdx';
+import OrderRefunded from '/snippets/webhooks/order.refunded/full.mdx';
+import RefundCreated from '/snippets/webhooks/refund.created/full.mdx';
+import RefundUpdated from '/snippets/webhooks/refund.updated/full.mdx';
+import SubscriptionCreated from '/snippets/webhooks/subscription.created/full.mdx';
+import SubscriptionActive from '/snippets/webhooks/subscription.active/full.mdx';
+import SubscriptionUpdated from '/snippets/webhooks/subscription.updated/full.mdx';
+import SubscriptionRevoked from '/snippets/webhooks/subscription.revoked/full.mdx';
+import SubscriptionCanceled from '/snippets/webhooks/subscription.canceled/full.mdx';
+import SubscriptionUncanceled from '/snippets/webhooks/subscription.uncanceled/full.mdx';
+
+import BenefitCreated from '/snippets/webhooks/benefit.created/full.mdx';
+import BenefitUpdated from '/snippets/webhooks/benefit.updated/full.mdx';
+import ProductCreated from '/snippets/webhooks/product.created/full.mdx';
+import ProductUpdated from '/snippets/webhooks/product.updated/full.mdx';
+import OrganizationUpdated from '/snippets/webhooks/organization.updated/full.mdx';
+
+## Billing Events
+
+### Checkout
+
+<CheckoutCreated />
+<CheckoutUpdated />
+
+### Subscriptions
+
+In order to properly implement logic for handling subscriptions, you should look into the following events.
+
+**[`subscription.created`](#subscription-created)**
+
+Fired when a new subscription has been created.
+
+**[`subscription.updated`](#subscription-updated)**
+
+Use this event if you want to handle cancellations, un-cancellations, etc. The updated event is a catch-all event for `subscription.active` , `subscription.canceled` , `subscription.uncanceled` & `subscription.revoked`
+
+**[`order.created`](#order-created)**
+
+In case you want to do logic when a subscription is renewed, you should listen to `order.created` and the `billing_reason` field. It can be `purchase` , `subscription_create` , `subscription_cycle` & `subscription_update` . `subscription_cycle` is used when subscriptions renew.
+
+<SubscriptionCreated />
+<SubscriptionActive />
+<SubscriptionUpdated />
+<SubscriptionCanceled />
+<SubscriptionUncanceled />
+<SubscriptionRevoked />
+
+### Order
+
+<OrderCreated />
+<OrderRefunded />
+
+### Refunds
+
+<RefundCreated />
+<RefundUpdated />
+
+### Benefit Grants
+
+<BenefitGrantCreated />
+<BenefitGrantUpdated />
+<BenefitGrantRevoked />
+
+## Organization Events
+
+### Benefits
+
+<BenefitCreated />
+<BenefitUpdated />
+
+### Products
+
+<ProductCreated />
+<ProductUpdated />
+
+### Organization
+
+<OrganizationUpdated />

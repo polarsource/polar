@@ -1,0 +1,60 @@
+---
+title: "TypeScript SDK"
+sidebarTitle: "TypeScript"
+icon: js
+description: SDK for JavaScript runtimes (Node.js and browsers)
+---
+
+### Quickstart
+
+```bash
+pnpm add @polar-sh/sdk
+```
+
+```typescript
+import { Polar } from '@polar-sh/sdk'
+
+const polar = new Polar({
+  accessToken: process.env['POLAR_ACCESS_TOKEN'] ?? '',
+})
+
+async function run() {
+  const result = await polar.users.benefits.list({})
+
+  for await (const page of result) {
+    // Handle the page
+    console.log(page)
+  }
+}
+
+run()
+```
+
+[Read more](https://github.com/polarsource/polar-js)
+
+### Framework Adapters
+
+Implement Checkout & Webhook handlers in 5 lines of code.
+
+- [Next.js](/sdk/adapters/nextjs)
+- [Astro](/sdk/adapters/astro)
+- [Remix](/sdk/adapters/remix)
+- [Sveltekit](/sdk/adapters/sveltekit)
+- [Deno](/sdk/adapters/deno)
+- [Elysia](/sdk/adapters/elysia)
+- [Express](/sdk/adapters/express)
+- [Fastify](/sdk/adapters/fastify)
+- [Hono](/sdk/adapters/hono)
+
+
+### Sandbox Environment
+
+You can configure the SDK so it hits the [sandbox environment](/docs/developers/sandbox) instead of the production one. You just need to add the `server` property to the configuration object:
+
+```typescript
+const polar = new Polar({
+  server: 'sandbox',
+  accessToken: process.env['POLAR_ACCESS_TOKEN'] ?? '',
+})
+```
+

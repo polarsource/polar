@@ -1,0 +1,48 @@
+---
+title: "Python SDK"
+sidebarTitle: "Python"
+icon: python
+---
+
+Fully type-hinted and allows both synchronous and asynchronous usage, thanks to [HTTPX](https://www.python-httpx.org/).
+Under the hood, schemas are validated by [Pydantic](https://docs.pydantic.dev/latest/).
+
+### Quickstart
+
+```bash
+pip install polar-sdk
+```
+
+```python
+# Synchronous Example
+from polar_sdk import Polar
+
+s = Polar(
+    access_token="<YOUR_BEARER_TOKEN_HERE>",
+)
+
+
+res = s.users.benefits.list()
+
+if res is not None:
+    while True:
+        # handle items
+
+        res = res.Next()
+        if res is None:
+            break
+```
+
+[Read more](https://github.com/polarsource/polar-python)
+
+### Sandbox Environment
+
+You can configure the SDK so it hits the [sandbox environment](/docs/developers/sandbox) instead of the production one. You just need to add the `server` argument when instantiating the client:
+
+```python
+s = Polar(
+    server="sandbox",
+    access_token="<YOUR_BEARER_TOKEN_HERE>",
+)
+```
+

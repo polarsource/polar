@@ -1,0 +1,148 @@
+---
+title: "Merchant of Record"
+sidebarTitle: "Benefits & How it works"
+description: "An open source and transparent Merchant of Record"
+---
+
+### What is a Merchant of Record?
+
+We take on the liability of international sales taxes globally for you.
+So you can focus on growing your business vs. accounting bills. Leave billing
+infrastructure and international sales tax headaches to us.
+
+### Payment Service Providers vs. Merchant of Records
+
+**Payment Service Providers (PSPs)**
+
+<img src="/assets/merchant-of-record/introduction/psp.jpeg" />
+
+Stripe and other Payment Service Providers (PSPs) offer an accessible and convenient abstraction to faciliate transactions on top of underlying credit card networks & banks.
+
+* ✅ Powerful, flexibile & low-level APIs to facilitate transactions
+* ✅ Can be used to power all business- and pricing models under the sun.
+* ❌ You are responsible for all liabilities associated with transactions, e.g international taxes
+* ❌ Low-level APIs require more development even for common use cases
+
+**Merchant of Records (MoRs)**
+
+<img src="/assets/merchant-of-record/introduction/mor.jpeg" />
+
+Merchant of Records offer yet another layer of convenient abstraction to facilitate digital orders on top of the underlying PSPs and transactions. E.g Polar is built on Stripe (+ more PSPs in the future).
+
+* ✅ Higher-level Dashboard, APIs & SDKs to better facilitate digital products, services & orders beyond the underlying transactions
+* ✅ The platform (Polar) handles international taxes by being a reseller of your digital goods & services. Of course, without being in the way of your relationship with your customers.
+* ❌ Less flexibility & control in terms of advanced business- and pricing models.
+* ❌ Higher fees per payment
+
+**What should you choose?**
+
+**Ship with what you feel comfortable with vs. others tell you to**
+
+Just like in programming, abstractions are super helpful to ship faster with fewer low-level concerns, but in exchange for reduced flexibility and higher costs. So what's the right level of abstraction for you? As always, it depends (tm).
+
+**Go with Stripe (PSP) if...**
+
+* You've already integrated it? Just ship already - we salute builders however they ship
+* You're comfortable with the Stripe API and prefer absolute control with low-level APIs.
+* You're looking for the lowest fees possible.
+* You're fine with handling international taxes yourself (you absolutely can).
+
+**Go with Polar (MoR) if...**
+
+* You want product-, customer-, order- and subscription management via an intuitive and easy dashboard
+* You want to offer file downloads, license keys, Discord- and/or private GitHub repository invites with ease - with more built-in automations to come.
+* You prefer a more high-level API optimized for making monetization easier. We're only getting started here and have some big things coming
+* You want us to handle international taxes for you
+
+### Polar MoR
+
+**tl;dr We take on the liability of international sales taxes globally for you. So you can focus on building your passion. Leaving billing infrastructure and sales tax headaches to us.**
+
+So how does Polar offer a Merchant of Record (MoR) service and handle international sale taxes? All other Merchant of Records simply state they handle it internationally - don't worry about it. We do too.
+
+But we believe in transparency and don't want to scare customers into thinking it's impossible to manage it themselves. So below we'll share how exactly we go about doing this.
+
+#### International Sales Taxes
+
+Most countries, states and jurisdictions globally impose sales taxes on digital goods and services (VAT, GST, US Sales Tax etc). Regardless of whether the merchant (seller) is a resident there or not - they're doing business there.
+
+For example, a $10/month subscription should cost $12.5/month for a Swedish (25% VAT) consumer, but $10/month for a Swedish business with VAT registration (reverse charge).
+
+Merchants are responsible for 1) capturing & 2) remitting sales taxes to the local tax authorities. What does that mean in our example?
+
+1. **Capturing**. Charging the Swedish consumer $12.5/month and saving $2.5/month for the Swedish tax authorities. Stripe Tax is an excellent service to automate this and the one Polar uses today.
+2. **Remitting**. Filing & paying the captured sales taxes with the tax authorities on time. Stripe Tax does not do this, i.e the merchant is liable to register, file and pay taxes to local tax authorities.
+
+Many jurisdictions, however, don't require this until you reach a certain threshold in terms of sales volume. But others require registration even before the first sale - or after a very low threshold. In addition to having different rates and rules on which goods are taxable and whether they're deductable or not for business customers.
+
+For example, United Kingdom and EU countries require upfront registration for international companies, but Texas (United States) does not until you've sold for more than $500,000 🇺🇸🦅
+
+In short: It's complex and hard. Even large and well-known businesses don't do it perfectly. Arguably, it's almost impossible and at least highly impracticle and expensive to comply perfectly upfront. Many companies even delay compliance as a calculated risk, i.e focus on validating & growing their business with the risk of paying back taxes + penalities later.
+
+**PSP (Stripe)**
+
+* ✅ Your volume alone is what counts towards international thresholds vs. the MoR platform, i.e customers might not need to pay sales taxes with you, but would via a MoR.
+* ✅ You can deduct inbound VAT against purchases your business does with VAT
+* ❌ You're liable for capturing & remitting international sales taxes
+* ❌ Stripe Tax is great to monitor & automate capturing, but registration and remittance is up to you.
+
+**MoR (Polar)**
+
+* ✅ We are liable for all of the above as your reseller, i.e we have to worry about it vs. you.
+* ✅ Offer EU VAT for B2B sales (expected and desired within EU for businesses) without having to register, capture and remit it yourself.
+* ❌ Sales taxes would be added for more customers vs. with you selling directly
+* ❌ You cannot leverage inbound VAT towards VAT expense deductions yourself
+
+
+
+Merchant of Records (MoR) handles sales taxes, e.g US Sales Tax, EU VAT,
+Canadian GST etc. **However, you're always responsible for your own
+income/revenue tax** in your country of residency.
+
+
+
+#### Polar Coverage
+
+**tl;dr We support global payments and are liable for all international sales taxes. We continuously monitor and work with our accounting firms to expand registrations as needed on our end.**
+
+**Global Payments & Tax Liabilities**
+
+As your Merchant of Record, Polar is liable for tax compliance globally on all sales internationally via our platform, hosted- or embedded checkoutsfrom payments anywhere in the world.
+
+**Current Polar Tax Registrations**
+
+1. Polar Software Inc. is incorporated as a US Delaware C Corp and will register for US State Sales Taxes upon reaching thresholds
+2. EU VAT (Irish OSS VAT)
+3. UK VAT
+
+No Merchant of Record (MoR) or business registers upfront in all global jurisdictions. Since it would be 1) unnecessary in case of thresholds & 2) incredibly expensive with uncertain return on investment (ROI) in all markets.
+
+We work with global accounting firms specialized in registering, filing and remitting taxes in all countries. So we can easily scale registrations and remittance as needed. Below is our process and evaluation for expanding registrations.
+
+**Expanding Registrations**
+
+Below are the fees the global acounting firms we work with charge us - on average per market:
+
+* ~$500 upfront for registration
+* ~$300 per filing and remittance (~quarterly)
+* *Excluding consultations (billed hourly) and our internal efforts and automations to transform Stripe Tax reports into correct output for the accounting firms.*
+
+So on average $1,700 in year one and $1,200 therafter for each market at a minimum. Businesses (and you if you handle this yourself) therefore need to ask themselves: Do I anticipate more in sales from a given market vs. costs of operating there?
+
+Let's imagine a country with 20% sales tax.
+
+1. At $6,000+ the tax liability start outgrowing the accounting costs for you standalone ($1,200/20%)
+2. Polar with a 1.1% premium vs. Stripe would need to help facilitate $109,090 in sales for the given market in order for it to cover our accounting costs ($1,200/1.1%)
+
+Our customers are selling mostly in the US, UK & EU. Given US thresholds and our current registrations, it's therefore a non-issue.
+
+In markets we're not registered, we still have the liability and take it on (#1) to assess the potential for our customers and us long-term. In addition to being comfortable betting on markets a lot earlier than it becomes profitable for us (#2).
+
+However, in case of neither we reserve the right to block payments from such countries in the short-term until the opportunity for our customers and us changes in the given market.
+
+**Want to do this yourself?**
+
+Selling a lot and want to handle this yourself, i.e worth the ongoing costs? Feel free to reach out and we'd be happy to introduce you to our contacts at the accounting firms we use.
+
+We consider MoR a key value-add to Polar, but not the sole reason for Polar to exist. Our ambition is to be the easiest way to monetize for developers. However, we're never going to be the right solution for all use cases. But we'll always salute and help anyone who ships software - regardless of billing platform.
+

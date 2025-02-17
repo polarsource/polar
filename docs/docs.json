@@ -1,0 +1,477 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "palm",
+  "appearance": {
+    "default": "dark"
+  },
+  "name": "Polar",
+  "colors": {
+    "primary": "#2AB673",
+    "light": "#55D799",
+    "dark": "#117866"
+  },
+  "background": {
+    "dark": "#131316"
+  },
+  "favicon": "./logo/favicon.png",
+  "navigation": {
+    "anchors": [
+      {
+        "anchor": "Docs",
+        "icon": "compass",
+        "groups": [
+          { 
+            "group": "Bootup",
+            "pages": [
+              "introduction",
+              "migrate"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "features/products",
+              {
+                "group": "Benefits",
+                "pages": [
+                  "features/benefits/introduction",
+                  "features/benefits/license-keys",
+                  "features/benefits/file-downloads",
+                  "features/benefits/discord-access",
+                  "features/benefits/github-access",
+                  "features/benefits/custom"
+                ]
+              },
+              {
+                "group": "Checkout",
+                "pages": [
+                  "features/checkout/links",
+                  "features/checkout/embed",
+                  "features/checkout/session"
+                ]
+              },
+              "features/discounts",
+              "features/orders",
+              "features/refunds",
+              "features/analytics",
+              "features/customer-management",
+              "features/customer-portal",
+              {
+                "group": "Finance & Payouts",
+                "pages": [
+                  "features/finance/accounts",
+                  "features/finance/balance",
+                  "features/finance/payouts"
+                ]
+              },
+              {
+                "group": "Integrations",
+                "pages": [
+                  "features/integrations/raycast",
+                  "features/integrations/framer",
+                  "features/integrations/zapier",
+                  "features/integrations/paritydeals"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Integrate",
+            "pages": [
+              "integrate/authentication",
+              "integrate/sandbox",
+              {
+                "group": "SDKs",
+                "pages": [
+                  "integrate/sdk/typescript",
+                  "integrate/sdk/python",
+                  "integrate/sdk/php",
+                  "integrate/sdk/golang",
+                  {
+                    "group": "Framework Adapters",
+                    "icon": "js",
+                    "pages": [
+                      "integrate/sdk/adapters/nextjs",
+                      "integrate/sdk/adapters/astro",
+                      "integrate/sdk/adapters/remix",
+                      "integrate/sdk/adapters/sveltekit",
+                      "integrate/sdk/adapters/deno",
+                      "integrate/sdk/adapters/elysia",
+                      "integrate/sdk/adapters/express",
+                      "integrate/sdk/adapters/fastify",
+                      "integrate/sdk/adapters/hono"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Webhooks",
+                "pages": [
+                  "integrate/webhooks/endpoints",
+                  "integrate/webhooks/delivery",
+                  "integrate/webhooks/events"
+                ]
+              },
+              {
+                "group": "Framework Guides",
+                "pages": [
+                  "guides/nextjs",
+                  "guides/laravel"
+                ]
+              },
+              {
+                "group": "OAuth 2.0",
+                "pages": [
+                  "integrate/oauth2/intro",
+                  "integrate/oauth2/setup",
+                  "integrate/oauth2/connect"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Merchant of Record (MoR)",
+            "pages": [
+              "merchant-of-record/introduction",
+              "merchant-of-record/fees",
+              "merchant-of-record/supported-countries",
+              "merchant-of-record/acceptable-use",
+              "merchant-of-record/account-reviews"
+            ]
+          }
+        ]
+      },
+      {
+        "anchor": "API Reference",
+        "icon": "rectangle-terminal",
+        "groups": [
+          {
+            "group": "Core API",
+            "pages": [
+              {
+                "group": "Checkout",
+                "pages": [
+                  "api-reference/checkouts/create-session",
+                  "api-reference/checkouts/get-session",
+                  "api-reference/checkouts/list-sessions",
+                  "api-reference/checkouts/update-session",
+                  "api-reference/checkouts/get-session-from-client",
+                  "api-reference/checkouts/update-session-from-client",
+                  "api-reference/checkouts/confirm-session-from-client"
+                ]
+              },
+              {
+                "group": "Checkout Links",
+                "pages": [
+                  "api-reference/checkout-links/create",
+                  "api-reference/checkout-links/get",
+                  "api-reference/checkout-links/list",
+                  "api-reference/checkout-links/update",
+                  "api-reference/checkout-links/delete"
+                ]
+              },
+              {
+                "group": "Custom Checkout Fields",
+                "pages": [
+                  "api-reference/custom-fields/create",
+                  "api-reference/custom-fields/get",
+                  "api-reference/custom-fields/list",
+                  "api-reference/custom-fields/update",
+                  "api-reference/custom-fields/delete"
+                ]
+              },
+              {
+                "group": "Customers",
+                "pages": [
+                  "api-reference/customers/get",
+                  "api-reference/customers/list",
+                  "api-reference/customers/create",
+                  "api-reference/customers/update",
+                  "api-reference/customers/delete"
+                ]
+              },
+              {
+                "group": "Subscriptions",
+                "pages": [
+                  "api-reference/subscriptions/get",
+                  "api-reference/subscriptions/list",
+                  "api-reference/subscriptions/update",
+                  "api-reference/subscriptions/revoke"
+                ]
+              },
+              {
+                "group": "Orders",
+                "pages": [
+                  "api-reference/orders/get",
+                  "api-reference/orders/list",
+                  "api-reference/orders/get-invoice"
+                ]
+              },
+              {
+                "group": "Discounts",
+                "pages": [
+                  "api-reference/discounts/get",
+                  "api-reference/discounts/list",
+                  "api-reference/discounts/create",
+                  "api-reference/discounts/update",
+                  "api-reference/discounts/delete"
+                ]
+              },
+              {
+                "group": "Refunds",
+                "pages": [
+                  "api-reference/refunds/create",
+                  "api-reference/refunds/list"
+                ]
+              },
+              {
+                "group": "Products",
+                "pages": [
+                  "api-reference/products/get",
+                  "api-reference/products/list",
+                  "api-reference/products/create",
+                  "api-reference/products/update",
+                  "api-reference/products/update-benefits"
+                ]
+              },
+              {
+                "group": "Benefits",
+                "pages": [
+                  "api-reference/benefits/create",
+                  "api-reference/benefits/get",
+                  "api-reference/benefits/list",
+                  "api-reference/benefits/list-grants",
+                  "api-reference/benefits/update",
+                  "api-reference/benefits/delete"
+                ]
+              },
+              {
+                "group": "License Keys",
+                "pages": [
+                  "api-reference/license-keys/get",
+                  "api-reference/license-keys/list",
+                  "api-reference/license-keys/update",
+                  "api-reference/license-keys/get-activation"
+                ]
+              },
+              {
+                "group": "Files",
+                "pages": [
+                  "api-reference/files/create",
+                  "api-reference/files/list",
+                  "api-reference/files/update",
+                  "api-reference/files/delete",
+                  "api-reference/files/complete-upload"
+                ]
+              },
+              {
+                "group": "Organizations",
+                "pages": [
+                  "api-reference/organizations/get",
+                  "api-reference/organizations/list",
+                  "api-reference/organizations/create",
+                  "api-reference/organizations/update"
+                ]
+              },
+              {
+                "group": "Metrics",
+                "pages": [
+                  "api-reference/metrics/get",
+                  "api-reference/metrics/get-limits"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Customer Portal API",
+            "pages": [
+              "api-reference/customer-portal/get-customer",
+              "api-reference/customer-portal/get-organization",
+              {
+                "group": "Sessions",
+                "pages": [
+                  "api-reference/customer-portal/sessions/create"
+                ]
+              },
+              {
+                "group": "Subscriptions",
+                "pages": [
+                  "api-reference/customer-portal/subscriptions/get",
+                  "api-reference/customer-portal/subscriptions/list",
+                  "api-reference/customer-portal/subscriptions/update",
+                  "api-reference/customer-portal/subscriptions/cancel"
+                ]
+              },
+              {
+                "group": "Orders",
+                "pages": [
+                  "api-reference/customer-portal/orders/get",
+                  "api-reference/customer-portal/orders/list",
+                  "api-reference/customer-portal/orders/get-invoice"
+                ]
+              },
+              {
+                "group": "License Keys",
+                "pages": [
+                  "api-reference/customer-portal/license-keys/validate",
+                  "api-reference/customer-portal/license-keys/activate",
+                  "api-reference/customer-portal/license-keys/deactivate",
+                  "api-reference/customer-portal/license-keys/get",
+                  "api-reference/customer-portal/license-keys/list"
+                ]
+              },
+              {
+                "group": "File Downloads",
+                "pages": [
+                  "api-reference/customer-portal/downloadables/get",
+                  "api-reference/customer-portal/downloadables/list"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "OAuth 2.0 API",
+            "pages": [
+              {
+                "group": "Connect",
+                "pages": [
+                  "api-reference/oauth2/connect/authorize",
+                  "api-reference/oauth2/connect/request-token",
+                  "api-reference/oauth2/connect/introspect-token",
+                  "api-reference/oauth2/connect/revoke-token",
+                  "api-reference/oauth2/connect/get-user-info"
+                ]
+              },
+              {
+                "group": "Clients",
+                "pages": [
+                  "api-reference/oauth2/clients/create",
+                  "api-reference/oauth2/clients/get",
+                  "api-reference/oauth2/clients/list",
+                  "api-reference/oauth2/clients/update",
+                  "api-reference/oauth2/clients/delete"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "anchor": "Changelog",
+        "icon": "signal-stream",
+        "groups": [
+          {
+            "group": "Changelog",
+            "pages": [
+              "changelog/recent"
+            ]
+          }
+        ]
+      },
+      {
+        "anchor": "Support",
+        "icon": "question",
+        "groups": [
+          {
+            "group": "Contact Us",
+            "pages": [
+              "support"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "./logo/light.png",
+    "dark": "./logo/dark.png",
+    "href": "https://polar.sh"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Discord",
+        "href": "https://dub.sh/polar-discord"
+      },
+      {
+        "label": "GitHub",
+        "href": "https://github.com/polarsource/polar"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get Started",
+      "href": "https://polar.sh"
+    }
+  },
+  "footer": {
+    "socials": {
+      "x": "https://x.com/polar_sh",
+      "github": "https://github.com/polarsource/polar",
+      "discord": "https://dub.sh/polar-discord"
+    }
+  },
+  "redirects": [
+    { "source": "/api", "destination": "/api-reference" },
+    { "source": "/api/:path*", "destination": "/api-reference" },
+    { "source": "/docs/api", "destination": "/api-reference" },
+    { "source": "/docs/api/:path*", "destination": "/api-reference" },
+
+    { "source": "/documentation/welcome-to-polar", "destination": "/introduction" },
+    { "source": "/documentation/tools/polar-migrate", "destination": "/migrate" },
+    { "source": "/documentation/tools/polar-init", "destination": "/introduction#quickstart-from-cli" },
+    { "source": "/documentation/basics/getting-started", "destination": "/introduction" },
+    { "source": "/documentation/features/products", "destination": "/features/products" },
+    { "source": "/documentation/support", "destination": "/support" },
+
+    { "source": "/documentation/features/benefits", "destination": "/features/benefits/introduction" },
+    { "source": "/documentation/features/benefits/license-keys", "destination": "/features/benefits/license-keys" },
+    { "source": "/documentation/features/benefits/discord-server-roles", "destination": "/features/benefits/discord-access" },
+    { "source": "/documentation/features/benefits/github-repository-access", "destination": "/features/benefits/github-access" },
+    { "source": "/documentation/features/benefits/file-downloads", "destination": "/features/benefits/file-downloads" },
+    { "source": "/documentation/features/benefits/custom-benefit", "destination": "/features/benefits/custom" },
+
+    { "source": "/documentation/features/checkouts/checkout-links", "destination": "/features/checkout/links" },
+    { "source": "/documentation/tools/checkout-link", "destination": "/features/checkout/links#checkout-links-cli" },
+    { "source": "/documentation/features/checkouts/checkout-embed", "destination": "/features/checkout/embed" },
+    { "source": "/documentation/features/checkouts/checkout-sessions", "destination": "/features/checkout/session" },
+
+    { "source": "/documentation/features/products/discounts", "destination": "/features/discounts" },
+    { "source": "/documentation/features/orders-subscriptions", "destination": "/features/orders" },
+    { "source": "/documentation/features/refunds", "destination": "/features/refunds" },
+    { "source": "/documentation/features/analytics", "destination": "/features/analytics" },
+
+    { "source": "/documentation/features/customer-management", "destination": "/features/customer-management" },
+    { "source": "/documentation/features/customer-portal", "destination": "/features/customer-portal" },
+
+    { "source": "/documentation/features/finance/accounts", "destination": "/features/finance/accounts" },
+    { "source": "/documentation/features/finance/balance", "destination": "/features/finance/balance" },
+    { "source": "/documentation/features/finance/payouts", "destination": "/features/finance/payouts" },
+
+    { "source": "/documentation/integrations/polar-for-raycast", "destination": "/features/integrations/raycast" },
+    { "source": "/documentation/integrations/polar-for-framer", "destination": "/features/integrations/framer" },
+    { "source": "/documentation/integrations/polar-for-zapier", "destination": "/features/integrations/zapier" },
+    { "source": "/documentation/features/products/purchasing-power-parity", "destination": "/features/integrations/paritydeals" },
+
+    { "source": "/documentation/integration-guides/webhooks", "destination": "/integrate/webhooks/intro" },
+    { "source": "/documentation/features/sandbox", "destination": "/integrate/sandbox" },
+    { "source": "/documentation/integration-guides/authenticating-with-polar", "destination": "/integrate/authentication" },
+    { "source": "/documentation/integration-guides/nextjs", "destination": "/guides/nextjs" },
+    { "source": "/documentation/integration-guides/laravel", "destination": "/guides/laravel" },
+    { "source": "/documentation/adapters/polar-shnextjs", "destination": "/integrate/sdk/adapters/nextjs" },
+    { "source": "/documentation/adapters/polar-shastro", "destination": "/integrate/sdk/adapters/astro" },
+    { "source": "/documentation/adapters/polar-shremix", "destination": "/integrate/sdk/adapters/remix" },
+    { "source": "/documentation/adapters/polar-shsveltekit", "destination": "/integrate/sdk/adapters/sveltekit" },
+    { "source": "/documentation/adapters/polar-shdeno", "destination": "/integrate/sdk/adapters/deno" },
+    { "source": "/documentation/adapters/polar-shelysia", "destination": "/integrate/sdk/adapters/elysia" },
+    { "source": "/documentation/adapters/polar-shexpress", "destination": "/integrate/sdk/adapters/express" },
+    { "source": "/documentation/adapters/polar-shfastify", "destination": "/integrate/sdk/adapters/fastify" },
+    { "source": "/documentation/adapters/polar-shhono", "destination": "/integrate/sdk/adapters/hono" },
+
+    { "source": "/documentation/polar-as-merchant-of-record/tax", "destination": "/merchant-of-record/introduction" },
+    { "source": "/documentation/polar-as-merchant-of-record/fees", "destination": "/merchant-of-record/fees" },
+    { "source": "/documentation/polar-as-merchant-of-record/supported-countries", "destination": "/merchant-of-record/supported-countries" },
+    { "source": "/documentation/polar-as-merchant-of-record/acceptable-products-use", "destination": "/merchant-of-record/acceptable-use" },
+    { "source": "/documentation/polar-as-merchant-of-record/account-reviews", "destination": "/merchant-of-record/account-reviews" }
+  ]
+}

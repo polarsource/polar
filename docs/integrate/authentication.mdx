@@ -1,0 +1,29 @@
+---
+title: "Authentication"
+sidebarTitle: "Authentication"
+---
+
+<Info>
+All bearer tokens should be kept private and never shared or exposed in client-side code.
+</Info>
+
+To authenticate requests, Polar API has two mechanisms.
+1. Organization Access Tokens (OAT) - Recommended
+2. [OAuth 2.0 Provider](/integrate/oauth2/introduction) (Partner Integrations)
+
+
+## Organization Access Tokens (OAT)
+
+They are tied to **one** of your organization. You can create them from your organization settings.
+
+
+## Security
+
+To protect your data and ensure the security of Polar, we've several mechanisms in place to automatically revoke tokens that may have been leaked publicly on the web.
+
+In particular, we're part of the [GitHub Secret Scanning Program](https://docs.github.com/en/code-security/secret-scanning/about-secret-scanning). If GitHub systems detect a Polar token in a code repository or public discussion, our systems are notified and the tokens are immediately revoked.
+
+If you received an email about one of your token being leaked, it means that we were notified of such situation. The email contains the details about the nature of the token and the source of the leak.
+
+In the future, it's crucial that you remain extra cautious about not leaking your tokens publicly online. You can read more about the good practices to manage secrets in the [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html).
+

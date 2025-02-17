@@ -1,0 +1,7 @@
+.dark\:bg-background-dark:is(.dark *) {
+  background-color: #131316;
+}
+
+#content-area {
+  max-width: 48rem;
+}

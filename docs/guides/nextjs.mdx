@@ -1,0 +1,293 @@
+---
+title: "Integrate Polar with Next.js"
+sidebarTitle: "NextJS"
+description: "In this guide, we'll show you how to integrate Polar with Next.js."
+---
+
+Feel free to use our quick-start script to get started inside a new Next.js project:
+
+```bash
+# Inside a new Next.js project
+npx polar-init
+```
+
+Consider following this guide while using the Polar Sandbox Environment. This will allow you to test your integration without affecting your production data.
+
+[A complete code-example of this guide can be found on GitHub](https://github.com/polarsource/polar-next).
+
+Install the Polar JavaScript SDK
+---------------------------------------
+
+To get started, you need to install the Polar JavaScript SDK and the Polar Nextjs helper package. You can do this by running the following command:
+
+```bash
+pnpm install @polar-sh/sdk @polar-sh/nextjs
+```
+
+Setting up environment variables
+---------------------------------------
+
+### Polar Access Token
+
+To authenticate with Polar, you need create an access token, and supply it to Next.js using a `POLAR_ACCESS_TOKEN` environment variable.
+
+You can create an organization access token from your organization settings.
+
+Configuring a Polar API Client
+-------------------------------------
+
+To interact with the Polar API, you need to create a new instance of the `Polar` class. This class uses the provided access token to authenticate with the Polar API.
+
+```typescript
+// src/polar.ts
+import { Polar } from '@polar-sh/sdk'
+
+export const api = new Polar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+  server: 'sandbox', // Use this option if you're using the sandbox environment - else use 'production' or omit the parameter
+})
+```
+
+Remember to replace `sandbox` with `production` when you're ready to switch to the production environment.
+
+Fetching Polar Products for display
+------------------------------------------
+
+Fetching products using the Polar API is simple using the `polar.products.list` method. This method returns a list of products that are associated with the organization.
+
+```typescript
+const { result } = await api.products.list({
+  isArchived: false, // Only fetch products which are published
+})
+```
+### Creating a Product Card
+
+Let's create a simple component which takes a single product and displays it in a card format.
+
+Remember to handle multiple prices if you support monthly & yearly pricing plans. This example assumes you only have a single price configured for each product.
+
+```typescript
+// src/components/ProductCard.tsx
+import Link from "next/link";
+import type { Product } from "@polar-sh/sdk/models/components";
+
+interface ProductCardProps {
+    product: Product
+}
+
+export const ProductCard = ({ product }: ProductCardProps) => {
+    // Handling just a single price for now
+    // Remember to handle multiple prices for products if you support monthly & yearly pricing plans
+    const firstPrice = product.prices[0]
+
+    const price = useMemo(() => {
+        switch(firstPrice.amountType) {
+            case 'fixed':
+                // The Polar API returns prices in cents - Convert to dollars for display
+                return `$${firstPrice.priceAmount / 100}`
+            case 'free':
+                return 'Free'
+            default:
+                return 'Pay what you want'
+        }
+    }, [firstPrice])
+
+    return (
+        <div className="flex flex-col gap-y-24 justify-between p-12 rounded-3xl bg-neutral-950 h-full border border-neutral-900">
+            <div className="flex flex-col gap-y-8">
+            <h1 className="text-3xl">{product.name}</h1>
+            <p className="text-neutral-400">{product.description}</p>
+            <ul>
+                {product.benefits.map((benefit) => (
+                    <li key={benefit.id} className="flex flex-row gap-x-2 items-center">
+                        {benefit.description}
+                    </li>
+                ))}
+            </ul>
+           </div>
+            <div className="flex flex-row gap-x-4 justify-between items-center">
+                <Link className="h-8 flex flex-row items-center justify-center rounded-full bg-white text-black font-medium px-4" href={`/checkout?productId=${product.id}`}>Buy</Link>
+                <span className="text-neutral-500">{price}</span>
+            </div>
+        </div>
+    )
+}
+```
+
+Notice that we create a link to `/checkout` with a query parameter `productId`. We will configure this route in the next section.
+
+Displaying Products
+--------------------------
+
+Let's create a simple server-side rendered page that fetches products from Polar and displays them.
+
+```typescript
+// src/app/page.tsx
+import Link from 'next/link'
+import { api } from '@/polar'
+import { ProductCard } from '@/components/ProductCard'
+
+export default async function Page() {
+  const { result } = await api.products.list({
+    isArchived: false, // Only fetch products which are published
+  })
+
+  return (
+    <div className="flex flex-col gap-y-32">
+      <h1 className="text-5xl">Products</h1>
+      <div className="grid grid-cols-4 gap-12">
+        {result.items.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+    </div>
+  )
+}
+```
+
+Generating Polar Checkout Sessions
+-----------------------------------------
+
+Next up, we need to create a checkout endpoint to handle the creation of checkout sessions. This endpoint will be responsible for creating a new checkout session, redirecting the user to the Polar Checkout page & redirect back to a configured confirmation page.
+
+Go ahead and create a new GET route in Next.js.
+
+```typescript
+// src/app/checkout/route.ts
+import { Checkout } from '@polar-sh/nextjs'
+
+export const GET = Checkout({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+  successUrl: '/confirmation',
+  server: 'sandbox', // Use this option if you're using the sandbox environment - else use 'production' or omit the parameter
+});
+```
+
+We can now easily create a checkout session & redirect there by creating a link to `/checkout?productId={productId}`. Just like we did in the `ProductCard` component.
+
+Handling the Confirmation Page
+-------------------------------------
+
+Create a new page in Next.js to handle the confirmation page. This is where the user will be redirected to after the Polar checkout session is done & checkout is confirmed.
+
+```typescript
+// src/app/confirmation/page.tsx
+export default function Page({
+  searchParams: { checkoutId },
+}: {
+  searchParams: {
+    checkoutId: string
+  }
+}) {
+  return <div>Thank you! Your checkout is now being processed.</div>
+}
+```
+
+
+
+The checkout is not considered "successful" yet however. It's initially marked as `confirmed` until you've received a webhook event `checkout.updated` with a status set to `succeeded`. We'll cover this in the next section.
+
+
+
+Handling Polar Webhooks
+------------------------------
+
+Polar can send you events about various things happening in your organization. This is very useful for keeping your database in sync with Polar checkouts, orders, subscriptions, etc.
+
+Configuring a webhook is simple. Head over to your organization's settings page and click on the "Add Endpoint" button to create a new webhook.
+
+### Tunneling webhook events to your local development environment
+
+If you're developing locally, you can use a tool like [ngrok](https://ngrok.com/) to tunnel webhook events to your local development environment. This will allow you to test your webhook handlers without deploying them to a live server.
+
+Run the following command to start an ngrok tunnel:
+
+```bash
+ngrok http 3000
+```
+### Add Webhook Endpoint
+
+1. Point the Webhook to `your-app.com/api/webhook/polar`. This must be an absolute URL which Polar can reach. If you use ngrok, the URL will look something like this: `https://<your-ngrok-id>.ngrok-free.app/api/webhook/polar`.
+2. Select which events you want to be notified about. You can read more about the available events in the [Events section](/api-reference#webhooks).
+3. Generate a secret key to sign the requests. This will allow you to verify that the requests are truly coming from Polar.
+4. Add the secret key to your environment variables.
+
+```bash
+# .env
+POLAR_ACCESS_TOKEN="polar_pat..."
+POLAR_WEBHOOK_SECRET="..."
+```
+### Setting up the Webhook handler
+
+```typescript
+// src/app/api/webhook/polar/route.ts
+import { Webhooks } from "@polar-sh/nextjs";
+
+export const POST = Webhooks({
+	webhookSecret: process.env.POLAR_WEBHOOK_SECRET,
+	onPayload: async (payload) => // Handle payload...
+});
+```
+
+The webhook event is now verified and you can proceed to handle the payload data.
+
+### Handling Webhook Events
+
+Depending on which events you've subscribed to, you'll receive different payloads. This is where you can update your database, send notifications, etc.
+
+```typescript
+// src/app/api/webhook/polar/route.ts
+import { Webhooks } from "@polar-sh/nextjs";
+
+export const POST = Webhooks({
+	webhookSecret: process.env.POLAR_WEBHOOK_SECRET,
+	onPayload: async (payload) => {
+    switch (payload.type) {
+        case 'checkout.created':
+          // Handle the checkout created event
+          // supabase.from('checkouts').insert(webhookPayload.data)
+          break
+        case 'checkout.updated':
+          // Handle the checkout updated event
+          // supabase.from('checkouts').update(webhookPayload.data).match({ id: webhookPayload.data.id })
+          break
+        case 'subscription.created':
+          // Handle the subscription created event
+          break
+        case 'subscription.updated':
+          // Handle the subscription updated event
+          break
+        case 'subscription.active':
+          // Handle the subscription active event
+          break
+        case 'subscription.revoked':
+          // Handle the subscription revoked event
+          break
+        case 'subscription.canceled':
+          // Handle the subscription canceled event
+          break
+        default:
+          // Handle unknown event
+          console.log('Unknown event', webhookPayload.type)
+          break
+      }
+  }
+});
+```
+
+If you're keeping track of active and inactive subscriptions in your database, make sure to handle the `subscription.active` and `subscription.revoked` events accordingly.
+
+The cancellation of a subscription is handled by the `subscription.canceled` event. The user has probably canceled their subscription before the end of the billing period. Do not revoke any kind of access immediately, but rather wait until the end of the billing period or when you receive the `subscription.revoked` event.
+
+
+### Notifying the client about the event
+
+If you're building a real-time application, you might want to notify the client about the event. On the confirmation-page, you can listen for the `checkout.updated` event and update the UI accordingly when it reaches the succeeded status.
+
+Conclusion
+-----------------
+
+[A complete code-example of this guide can be found on GitHub](https://github.com/polarsource/polar-next).
+
+If you have issues or need support, feel free to join [our Discord](https://discord.gg/Pnhfz3UThd).
+

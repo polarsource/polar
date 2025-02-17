@@ -1,0 +1,60 @@
+---
+title: "Customer Portal"
+sidebarTitle: "Customer Portal"
+description: "Enable customers to view & manage orders and subscriptions easily"
+---
+
+The Customer Portal is a destination where your customers can see their orders and ongoing subscriptions. It’s also where they’re able to get hands on receipts, benefits, and more.
+
+<img className="block dark:hidden" src="/assets/features/customer-portal/overview.light.png" />
+<img className="hidden dark:block" src="/assets/features/customer-portal/overview.dark.png" />
+
+Redirect to your Customer Portal
+---------------------------------------
+
+The customer portal is directly available from the URL `https://polar.sh/your-org-slug/portal`. Your customers will be able to authenticate there by entering the email they used to purchase or subscribe to your products.
+
+<img className="block dark:hidden" src="/assets/features/customer-portal/signin.light.png" />
+<img className="hidden dark:block" src="/assets/features/customer-portal/signin.dark.png" />
+
+
+Customer Portal Sign In
+
+
+Creating an authenticated Customer Portal Link
+-----------------------------------------------------
+
+You can provide a pre-authenticated Customer Portal Link to your customers. This is handy if you want to redirect them directly from your application.
+
+Using the Polar API, all you need is to call the `customerSessions` endpoint. Here’s an example using our TypeScript SDK.
+
+```typescript
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+});
+
+async function run() {
+  const result = await polar.customerSessions.create({
+    customerId: "<value>",
+  });
+
+  redirect(result.customerPortalUrl)
+}
+
+run();
+```
+
+Or, if you use NextJS as your framework, we have a handy utility which shortens down your code significantly.
+
+```typescript
+// app/portal/route.ts
+import { CustomerPortal } from "@polar-sh/nextjs";
+
+export const GET = CustomerPortal({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+  getCustomerId: async (req) => '<value>'
+});
+```
+

@@ -1,0 +1,82 @@
+---
+title: "Embedded Checkout"
+sidebarTitle: "Embedded Checkout"
+description: "Embed our checkout on your site vs. redirect to ours"
+---
+
+<img src="/assets/features/checkout/embed/demo.png" />
+
+You can either copy and paste our code snippet to get up and running in a second or use our JavaScript library for more advanced integrations.
+
+Code Snippet
+-------------------
+
+The code snippet can be used on any website or CMS that allows you to insert HTML.
+
+First, create a [Checkout Link](/features/checkout/links) as described in the previous section. The code snippet can directly be copied from there by clicking on `Copy Embed Code`.
+
+The snippet looks like this:
+
+```typescript
+<a
+  href="__CHECKOUT_LINK__"
+  data-polar-checkout
+  data-polar-checkout-theme="light"
+>
+  Purchase
+</a>
+<script
+  src="https://cdn.jsdelivr.net/npm/@polar-sh/checkout@0.1/dist/embed.global.js"
+  defer
+  data-auto-init
+></script>
+```
+
+This will display a `Purchase` link which will open an inline checkout when clicked.
+
+You can style the trigger element any way you want, as long as you keep the data-polar-checkout attribute.
+
+
+Import Library
+---------------------
+
+If you have a more advanced project in JavaScript, like a React app, adding the `<script>` tag may not be an option. In this case, you can install our dedicated library.
+
+```bash
+pnpm add @polar-sh/checkout
+```
+
+Then, you should import the `PolarEmbedCheckout` helper class and manually call `PolarEmbedCheckout.init()`. This will add the required handlers on elements having the `data-polar-checkout` attribute.
+
+Here is an example in React:
+
+```typescript
+import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
+import { useEffect } from 'react'
+
+const PurchaseLink = () => {
+  useEffect(() => {
+    PolarEmbedCheckout.init()
+  }, [])
+
+  return (
+    <a
+      href="__CHECKOUT_LINK__"
+      data-polar-checkout
+      data-polar-checkout-theme="light"
+    >
+      Purchase
+    </a>
+  )
+}
+
+export default PurchaseLink
+```
+
+Enabling Wallet Payment Methods (Apple Pay, Google Pay, etc.)
+--------------------------------------------------------------------
+
+By default, wallet payment methods such as Apple Pay and Google Pay are not enabled when embedding our checkout form into your website. For security reasons, your website domain needs to be manually validated.
+
+To enable wallet payment methods on your website, please [email us](mailto:support@polar.sh) with your organization slug and the domain you wish to allow.
+

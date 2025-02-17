@@ -48,6 +48,7 @@ class CheckoutLink(MetadataMixin, RecordModel):
         "CheckoutLinkProduct",
         back_populates="checkout_link",
         cascade="all, delete-orphan",
+        order_by="CheckoutLinkProduct.order",
         # Products are almost always needed, so eager loading makes sense
         lazy="selectin",
     )

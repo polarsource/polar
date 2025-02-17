@@ -112,6 +112,7 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
         "CheckoutProduct",
         back_populates="checkout",
         cascade="all, delete-orphan",
+        order_by="CheckoutProduct.order",
         # Products are almost always needed, so eager loading makes sense
         lazy="selectin",
     )

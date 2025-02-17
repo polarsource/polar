@@ -12,19 +12,18 @@ if TYPE_CHECKING:
 
 class CheckoutProduct(RecordModel):
     __tablename__ = "checkout_products"
-    __table_args__ = (UniqueConstraint("checkout_id", "order"),)
+    __table_args__ = (
+        UniqueConstraint("checkout_id", "product_id"),
+        UniqueConstraint("checkout_id", "order"),
+    )
 
     checkout_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("checkouts.id", ondelete="cascade"),
-        primary_key=True,
+        Uuid, ForeignKey("checkouts.id", ondelete="cascade")
     )
     product_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("products.id", ondelete="cascade"),
-        primary_key=True,
+        Uuid, ForeignKey("products.id", ondelete="cascade")
     )
-    order: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
+    order: Mapped[int] = mapped_column(Integer, nullable=False)
 
     @declared_attr
     def checkout(cls) -> Mapped["Checkout"]:

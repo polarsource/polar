@@ -5,7 +5,7 @@ import { cache } from 'react'
 const _getOrganizationOrNotFound = async (
   api: Client,
   slug: string,
-): Promise<schemas['Organization']> => {
+): Promise<schemas['CustomerOrganization']> => {
   return unwrap(
     api.GET('/v1/customer-portal/organizations/{slug}', {
       params: {

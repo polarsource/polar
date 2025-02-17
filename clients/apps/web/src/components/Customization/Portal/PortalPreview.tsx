@@ -12,6 +12,7 @@ export const PortalPreview = () => {
     <ShadowBox className="dark:bg-polar-950 flex h-full w-full flex-col items-center overflow-y-auto bg-white p-0">
       <CustomerPortal
         organization={org as schemas['Organization']}
+        products={[]}
         subscriptions={
           [SUBSCRIPTION_ORDER_PREVIEW] as schemas['CustomerSubscription'][]
         }

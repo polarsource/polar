@@ -12,7 +12,10 @@ export default async function Layout({
   children: React.ReactNode
 }) {
   const api = getServerSideAPI()
-  const organization = await getOrganizationOrNotFound(api, params.organization)
+  const { organization } = await getOrganizationOrNotFound(
+    api,
+    params.organization,
+  )
 
   return (
     <div className="dark:bg-polar-950 h-full bg-white dark:text-white">

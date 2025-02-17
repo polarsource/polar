@@ -34,6 +34,7 @@ const PortalSectionLayout = ({
 
 export interface CustomerPortalProps {
   organization: schemas['Organization']
+  products: schemas['CustomerProduct'][]
   subscriptions: schemas['CustomerSubscription'][]
   orders: schemas['CustomerOrder'][]
   customerSessionToken?: string
@@ -41,6 +42,7 @@ export interface CustomerPortalProps {
 
 export const CustomerPortal = ({
   organization,
+  products,
   subscriptions,
   orders,
   customerSessionToken,
@@ -119,7 +121,13 @@ export const CustomerPortal = ({
         </div>
       </PortalSectionLayout>
       <PortalSectionLayout className="hidden md:flex">
-        {selectedItem && <SelectedItemDetails item={selectedItem} api={api} />}
+        {selectedItem && (
+          <SelectedItemDetails
+            item={selectedItem}
+            products={products}
+            api={api}
+          />
+        )}
       </PortalSectionLayout>
     </div>
   )
@@ -189,14 +197,20 @@ const OrderItem = ({
 
 const SelectedItemDetails = ({
   item,
+  products,
   api,
 }: {
   item: schemas['CustomerSubscription'] | schemas['CustomerOrder']
+  products: schemas['CustomerProduct'][]
   api: Client
 }) => {
   // Render order details
   return 'recurring_interval' in item ? (
-    <CustomerPortalSubscription api={api} subscription={item} />
+    <CustomerPortalSubscription
+      api={api}
+      subscription={item}
+      products={products}
+    />
   ) : (
     <CustomerPortalOrder api={api} order={item} />
   )

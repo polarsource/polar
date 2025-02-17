@@ -18,12 +18,14 @@ import CustomerCancellationModal from './CustomerCancellationModal'
 
 const CustomerSubscriptionDetails = ({
   subscription,
+  products,
   api,
   cancelSubscription,
   onUserSubscriptionUpdate,
   isCanceled,
 }: {
   subscription: schemas['CustomerSubscription']
+  products: schemas['CustomerProduct'][]
   api: Client
   cancelSubscription: ReturnType<typeof useCustomerCancelSubscription>
   onUserSubscriptionUpdate: (
@@ -191,6 +193,7 @@ const CustomerSubscriptionDetails = ({
           <ChangePlanModal
             api={api}
             organization={organization}
+            products={products}
             subscription={subscription}
             hide={() => setShowChangePlanModal(false)}
             onUserSubscriptionUpdate={onUserSubscriptionUpdate}

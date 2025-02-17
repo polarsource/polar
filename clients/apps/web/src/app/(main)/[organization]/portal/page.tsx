@@ -17,7 +17,10 @@ export async function generateMetadata({
   params: { organization: string }
 }): Promise<Metadata> {
   const api = getServerSideAPI()
-  const organization = await getOrganizationOrNotFound(api, params.organization)
+  const { organization } = await getOrganizationOrNotFound(
+    api,
+    params.organization,
+  )
 
   return {
     title: `Customer Portal | ${organization.name}`, // " | Polar is added by the template"
@@ -58,7 +61,10 @@ export default async function Page({
   searchParams: { customer_session_token?: string }
 }) {
   const api = getServerSideAPI(searchParams.customer_session_token)
-  const organization = await getOrganizationOrNotFound(api, params.organization)
+  const { organization, products } = await getOrganizationOrNotFound(
+    api,
+    params.organization,
+  )
 
   const {
     data: subscriptions,
@@ -106,6 +112,7 @@ export default async function Page({
   return (
     <ClientPage
       organization={organization}
+      products={products}
       subscriptions={subscriptions}
       orders={oneTimePurchases}
       customerSessionToken={searchParams.customer_session_token}

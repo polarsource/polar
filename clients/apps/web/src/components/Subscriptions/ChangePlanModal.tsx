@@ -1,7 +1,7 @@
 'use client'
 
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
-import { useCustomerUpdateSubscription, useProducts } from '@/hooks/queries'
+import { useCustomerUpdateSubscription } from '@/hooks/queries'
 import { Client, schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
@@ -40,12 +40,14 @@ const ProductPriceListItem = ({
 const ChangePlanModal = ({
   api,
   organization,
+  products: _products,
   subscription,
   hide,
   onUserSubscriptionUpdate,
 }: {
   api: Client
   organization: schemas['Organization']
+  products: schemas['CustomerProduct'][]
   subscription: schemas['CustomerSubscription']
   hide: () => void
   onUserSubscriptionUpdate: (
@@ -53,10 +55,10 @@ const ChangePlanModal = ({
   ) => void
 }) => {
   const router = useRouter()
-  const { data: products } = useProducts(organization.id, {
-    limit: 100,
-    is_recurring: true,
-  })
+  const products = useMemo(
+    () => _products.filter((p) => p.is_recurring),
+    [_products],
+  )
 
   const currentPrice = subscription.price as
     | schemas['ProductPriceRecurringFixed']
@@ -212,7 +214,7 @@ const ChangePlanModal = ({
         </List>
         <h3 className="font-medium">Available Plans</h3>
         <List size="small">
-          {products?.items.map((product) => (
+          {products.map((product) => (
             <>
               {product.prices
                 .filter((price) => price.id !== subscription.price_id)

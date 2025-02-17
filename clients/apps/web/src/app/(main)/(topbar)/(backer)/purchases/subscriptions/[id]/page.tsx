@@ -19,5 +19,5 @@ export default async function Page({ params }: { params: { id: string } }) {
     },
   )
 
-  return <ClientPage subscription={subscription} />
+  return <ClientPage subscription={subscription} products={[]} />
 }

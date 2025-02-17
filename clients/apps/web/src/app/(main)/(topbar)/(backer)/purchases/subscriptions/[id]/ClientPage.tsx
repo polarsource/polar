@@ -8,8 +8,10 @@ import Link from 'next/link'
 
 const ClientPage = ({
   subscription,
+  products,
 }: {
   subscription: schemas['CustomerSubscription']
+  products: schemas['CustomerProduct'][]
 }) => {
   return (
     <div className="flex flex-col gap-y-8">
@@ -20,7 +22,11 @@ const ClientPage = ({
         <ArrowBackOutlined fontSize="inherit" />
         <span>Back to Purchases</span>
       </Link>
-      <CustomerPortalSubscription api={api} subscription={subscription} />
+      <CustomerPortalSubscription
+        api={api}
+        products={products}
+        subscription={subscription}
+      />
     </div>
   )
 }

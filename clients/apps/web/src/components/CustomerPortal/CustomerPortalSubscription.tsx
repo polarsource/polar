@@ -20,9 +20,11 @@ import CustomerSubscriptionDetails from '../Subscriptions/CustomerSubscriptionDe
 const CustomerPortalSubscription = ({
   api,
   subscription,
+  products,
 }: {
   api: Client
   subscription: schemas['CustomerSubscription']
+  products: schemas['CustomerProduct'][]
 }) => {
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     subscription_id: subscription.id,
@@ -65,6 +67,7 @@ const CustomerPortalSubscription = ({
           <CustomerSubscriptionDetails
             api={api}
             subscription={subscription}
+            products={products}
             onUserSubscriptionUpdate={onSubscriptionUpdate}
             cancelSubscription={cancelSubscription}
             isCanceled={isCanceled}

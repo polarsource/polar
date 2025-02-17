@@ -1,0 +1,45 @@
+---
+title: "Customer Management"
+sidebarTitle: "Customer Management"
+description: "Get insights on your customers and sales"
+---
+
+<img className="block dark:hidden" src="/assets/features/customer-management/details.light.png" />
+<img className="hidden dark:block" src="/assets/features/customer-management/details.dark.png" />
+
+Managing Customers
+-------------------------
+
+Polar has a built in feature to view and manage your Customers.
+
+Everyone who has ever purchased something from you will be recorded as a Customer to your Organization. You’re able to see past orders and their ongoing subscriptions, as well as some additional metrics.
+
+Customer Metadata
+------------------------
+
+You may set additional metadata on Customers. This can be very useful to reconcile customers or users in your own product. You can use our Customer API or add metadata directly from the Customer page.
+
+<img className="block dark:hidden" src="/assets/features/customer-management/edit.light.png" />
+<img className="hidden dark:block" src="/assets/features/customer-management/edit.dark.png" />
+
+```typescript
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+});
+
+async function run() {
+  const result = await polar.customers.create({
+    email: "janedoe@example.com",
+    metadata: {
+      customerId: '123'
+    }
+  });
+
+  // Handle the result
+  console.log(result);
+}
+
+run();
+```

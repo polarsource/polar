@@ -1,0 +1,79 @@
+---
+title: "Checkout Links"
+sidebarTitle: "Checkout Links"
+description: "Sell your digital products with ease by sharing a checkout link to select products"
+---
+
+Checkout links can be shared or linked on your website which automatically
+creates a checkout session for customers.
+
+<img className="block dark:hidden" src="/assets/features/checkout/links/checkout.light.png" />
+<img className="hidden dark:block" src="/assets/features/checkout/links/checkout.dark.png" />
+
+## No-Code Checkout Links
+
+### Creating a Checkout Link
+
+Checkout Links can be created by pressing the "context-menu" button on the Products Overview Page. This will open a modal where you can select price and optionally set a success URL.
+
+<img className="block dark:hidden" src="/assets/features/checkout/links/create.light.png" />
+<img className="hidden dark:block" src="/assets/features/checkout/links/create.dark.png" />
+
+You can also optionally set `Metadata`. This is a key-value object allowing you to store additional information which may be useful for you when handling the order. This metadata will be copied to the generated Checkout object and, if the checkout succeeds, to the resulting Order and/or Subscription.
+
+### Using Checkout Links
+
+Add this Checkout Link on your webpage or share to customers.
+
+<img className="block dark:hidden" src="/assets/features/checkout/links/new.light.png" />
+<img className="hidden dark:block" src="/assets/features/checkout/links/new.dark.png" />
+
+
+<Note>
+**Important**
+
+Checkout Links will go against our API, and redirect to short-lived Checkout session. This means that the Checkout page the user will end up on, are temporary and expires after a while if no successful purchase is made.
+
+This means that you need to make sure to always use this Checkout Link URL (as shown above). If you mistakenly copy the URL from a Checkout Session, the link will expire.
+</Note>
+
+
+### Checkout Link Parameters
+
+You can pass optional query params to your Checkout Links to pre-populate a variety of options on the Checkout Form.
+
+<ParamField path="customer_email" type="string">
+  Prefill customer email at checkout
+</ParamField>
+
+<ParamField path="customer_name" type="string">
+  Prefill customer name at checkout
+</ParamField>
+
+<ParamField path="discount_code" type="string">
+  Prefill discount code
+</ParamField>
+
+<ParamField path="amount" type="string">
+  Prefill amount in case of Pay What You Want pricing
+</ParamField>
+
+## Checkout Links CLI
+
+The fastest way to sell any file from your terminal.
+
+Generate a checkout link for any kind of file from the command line.
+
+### Getting Started
+
+```bash
+npx checkout-link ./path/to/file.zip
+```
+
+### Open Source
+
+The code is open source and available on GitHub
+
+[View Code on GitHub](https://github.com/polarsource/checkout-link)
+
+

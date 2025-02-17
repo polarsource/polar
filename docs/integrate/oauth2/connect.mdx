@@ -1,0 +1,103 @@
+---
+title: "OAuth 2.0 Connect"
+sidebarTitle: "Connect users"
+---
+
+## Authorize
+
+To start the authorization flow you need to redirect the user to the authorization URL. It looks like this:
+
+```
+https://polar.sh/oauth2/authorize?
+  response_type=code
+  &client_id=CLIENT_ID
+  &redirect_uri=https%3A%2F%2Fexample.com%2Fcallback
+  &scope=openid%20email
+```
+
+The parameters are the one described in the [OpenID Connect specification](https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest). The most important ones are:
+
+<ParamField path="response_type=code" type="string" required>
+  Indicates that you want to use the authorization code flow. Most common and
+  the only one supported by Polar.
+</ParamField>
+
+<ParamField path="client_id" type="string" required>
+  The Client ID you got when creating the OAuth 2.0 client.
+</ParamField>
+
+<ParamField path="redirect_uri" type="string" required>
+  The URL where the user will be redirected after granting access to their data. Make sure you declared it when creating the OAuth2 client.
+</ParamField>
+
+<ParamField path="scope" type="string" required>
+  A space-separated list of scopes you want to ask for. Make sure they are part of the scopes you declared when creating the OAuth2 client.
+</ParamField>
+
+If you redirect the user to this URL, they'll see a page asking them to grant access to their data, corresponding to the scopes you asked for.
+
+<img src="/assets/integrate/oauth2/connect.png" />
+
+If they allow it, they'll be redirected to your `redirect_uri` with a `code` parameter in the query string. This code is a one-time code that you can exchange for an access token.
+
+#### Exchange code token
+
+Once you have the authorization code, you can exchange it for an access token. To do so, you'll need to make a `POST` request to the token endpoint. This call needs to be authenticated with the Client ID and Client Secret you got when creating the OAuth2 client.
+
+Here is an example with cURL:
+
+```bash
+curl -X POST https://api.polar.sh/v1/oauth2/token \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'grant_type=authorization_code&code=AUTHORIZATION_CODE&client_id=CLIENT_ID&client_secret=CLIENT_SECRET&redirect_uri=https://example.com/callback'
+```
+
+You should get the following response:
+
+```json
+{
+  "token_type": "Bearer",
+  "access_token": "polar_at_XXX",
+  "expires_in": 864000,
+  "refresh_token": "polar_rt_XXX",
+  "scope": "openid email",
+  "id_token": "ID_TOKEN"
+}
+```
+
+The `access_token` will allow you to make authenticated API requests on behalf of the user. The `refresh_token` is a long-lived token that you can use to get new access tokens when the current one expires. The `id_token` is a signed JWT token containing information about the user, as per the [OpenID Connect specification](https://openid.net/specs/openid-connect-core-1_0.html#IDToken).
+
+#### User vs Organization Access Tokens
+
+We support the concept of access tokens at **organization level**. Contrary to the standard access tokens, those tokens are not tied to a user but to an organization. They can be used to make requests operating only on a specific organization data, improving privacy and security.
+
+To ask for a organization access token, you need to add the parameter `sub_type=organization` to the authorization URL:
+
+```
+https://polar.sh/oauth2/authorize?response_type=code&client_id=polar_ci_j3X95_MgfdSCeCd2qkFnUw&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&scope=openid%20email&sub_type=organization
+```
+
+At this point, the user will be prompted to select one of their organization before allowing access to their data.
+
+The rest of the flow remains unchanged. The access token you'll get will be tied to the selected organization.
+
+
+Bear in mind that some endpoints might not support organization access tokens.
+Typically, user-specific endpoints like `/v1/users/benefit` will not work with
+organization access tokens.
+
+
+#### Public Clients
+
+Public clients are clients where the Client Secret can't be kept safe, as it would be accessible by the final user. This is the case for SPA, mobile applications, or any client running on the user's device.
+
+In this case, **and only if the client is configured as a Public Client**, the request to the token endpoint won't require the `client_secret` parameter. However, the [PKCE](https://oauth.net/2/pkce/) method will be required to maximize security.
+
+### Make authenticated requests
+
+Once you have an access token, either from a Personal Access Token or from the OpenID Connect flow, you can make authenticated requests to the API. Here is a simple example with cURL:
+
+```bash
+curl -X GET https://api.polar.sh/v1/oauth2/userinfo \
+  -H 'Authorization: Bearer polar_at_XXX'
+```

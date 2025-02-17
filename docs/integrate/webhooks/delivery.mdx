@@ -1,0 +1,164 @@
+---
+title: "Handle & monitor webhook deliveries"
+sidebarTitle: "Handle incoming webhooks"
+description: "How to parse, validate and handle webhooks and monitor their
+deliveries on Polar"
+---
+
+<img className="block dark:hidden" src="/assets/integrate/webhooks/delivery.light.png" />
+<img className="hidden dark:block" src="/assets/integrate/webhooks/delivery.dark.png" />
+
+Once a webhook endpoint is setup you will have access to the delivery overview
+page. Here you can:
+
+- See historic deliveries
+- Review payload sent
+- Trigger redelivery in case of failure
+
+Now, let's integrate our endpoint route to validate, parse & handle incoming webhooks.
+
+## Validate & parse webhooks
+
+You now need to setup a route handler for the endpoint registered on Polar to
+receive, validate and parse webhooks before handling them according to your
+needs.
+
+### Using our SDKs
+
+Our TypeScript & Python SDKs come with a built-in helper function to easily
+validate and parse the webhook event - see full examples below.
+
+<CodeGroup>
+```typescript JS (Express)
+import express, { Request, Response } from 'express'
+import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks'
+
+const app = express()
+
+app.post(
+  '/webhook',
+  express.raw({ type: 'application/json' }),
+  (req: Request, res: Response) => {
+    try {
+      const event = validateEvent(
+        req.body,
+        req.headers,
+        process.env['POLAR_WEBHOOK_SECRET'] ?? '',
+      )
+
+      // Process the event
+
+      res.status(202).send('')
+    } catch (error) {
+      if (error instanceof WebhookVerificationError) {
+        res.status(403).send('')
+      }
+      throw error
+    }
+  },
+)
+```
+
+```python Python (Flask)
+import os
+from flask import Flask, request
+from polar_sdk.webhooks import validate_event, WebhookVerificationError
+
+app = Flask(__name__)
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    try:
+        event = validate_event(
+            payload=request.data,
+            headers=request.headers,
+            secret=os.getenv('POLAR_WEBHOOK_SECRET', ''),
+        )
+
+        # Process the event
+
+        return "", 202
+    except WebhookVerificationError as e:
+        return "", 403
+```
+
+</CodeGroup>
+
+Both examples above expect an environment variable named `POLAR_WEBHOOK_SECRET`
+to be set to the secret you configured during the endpoint setup.
+
+
+### Custom validation
+
+We follow the [Standard Webhooks](https://www.standardwebhooks.com/)
+standard which offers [many libraries across languages](https://github.com/standard-webhooks/standard-webhooks/tree/main/libraries) to
+easily validate signatures. Or you can follow their
+[specification](https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md)
+in case you want to roll your own.
+
+<Info>
+  **Note: Secret needs to be base64 encoded**
+
+  One common gotcha with the specification is that the webhook secret is expected to be
+  base64 encoded. You don't have to do this with our SDK as it takes care of the
+  implementation details with better developer ergonomics.
+</Info>
+
+
+## Failure Handling
+
+### Delivery Retries
+
+If we hit an error while trying to reach your endpoint, whether it is a temporary network error or a bug, we'll retry to send the event up to **10 times** with an exponential backoff.
+
+### Delivery Timeouts
+
+We timeout our requests to your endpoint after **20 seconds**. Triggering a
+retry attempt after a delay as explained above. However, we strongly recommend you optimize your endpoint route to be fast. A
+best practice is for your webhook handler to queue a background worker task to handle the
+payload asynchronously.
+
+## Troubleshooting
+
+### Not receiving webhooks
+
+Seeing deliveries on Polar, but not receiving them on your end? Below are some
+common techniques to resolve the issue depending on the reported error status.
+
+**General**
+
+_Start ngrok or similar_
+
+Make sure you have started `ngrok` or whatever tunneling service you're using
+during local development.
+
+_Add excessive logging_
+
+E.g
+`console.log('webhook.handler_called')`,
+`console.log('webhook.validate_signature')`,
+`console.log('webhook.signature_validated')` etc.
+
+So you can easily confirm if the handler is called and how far it gets before
+any issues arise.
+
+
+`HTTP 404`
+
+- Try `curl -vvv -X POST <copy-paste-endpoint-url>` in your terminal to confirm the
+route exists and see any issues along the way
+- Try adding trailing `/` to the URL on Polar. Often `/foo` is resolved to
+  `/foo/` by frameworks.
+
+`HTTP 403`
+
+- Using middleware for authorization? Make sure to exclude the webhook route
+  from it since it needs to be publicly accessible
+- Using Cloudflare? Check the firewall logs to verify if they are blocking our
+  requests and setup a custom WAF rule to accept incoming requests from Polar.
+
+### Invalid signature exceptions
+
+Rolling your own webhook validation logic? Make sure to base64 encode the secret
+you configured on Polar in your code before generating the signature to validate
+against.

@@ -1,0 +1,37 @@
+---
+title: "Checkout API"
+sidebarTitle: "Checkout API"
+description: "Create checkout sessions programmatically for complete control"
+---
+
+If you want to integrate more deeply the checkout process with your website or application, you can use our dedicated API.
+
+The first step is to [create a Checkout session](/api-reference/checkouts/create-session). For this you'll need at least your **Product ID**.
+
+You can retrieve your Product ID from Products in your dashboard, click on "context-menu" button in front of your product and click on Copy Product ID.
+
+The API will return you an object containing all the information about the session, including **an URL where you should redirect your customer** so they can complete their order.
+
+TypeScript Example
+-------------------------
+
+Using our TypeScript SDK, creating a checkout session is quite straight forward.
+
+```typescript
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+});
+
+async function run() {
+  const checkout = await polar.checkouts.custom.create({
+    productId: "<value>",
+  });
+
+  redirect(checkout.url)
+}
+
+run();
+```
+

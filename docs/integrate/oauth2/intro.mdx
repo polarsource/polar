@@ -1,0 +1,16 @@
+---
+title: "Introduction"
+sidebarTitle: "Introduction"
+description: "For partners building services and extensions for Polar customers"
+---
+
+### OpenID Connect (OAuth2)
+
+Only use our **OpenID Connect** in case you want to act on the behalf of other users via our API, e.g building an app/service for Polar customers. Otherwise, always use an **Organization Access Token (OAT)** to integrate Polar for your own service.
+
+Polar implements the [OpenID Connect specification](https://openid.net/developers/how-connect-works/) to enable third-party authentication. It's a layer on top of the OAuth2 framework aiming at making integration more standard and predictable.
+
+In particular, it comes with a **discovery endpoint** allowing compatible clients to automatically work with the OpenID Connect server. Here is Polar's one:
+
+[OpenID Configuration](https://api.polar.sh/.well-known/openid-configuration)
+

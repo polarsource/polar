@@ -5932,8 +5932,17 @@ export interface components {
             metadata: {
                 [key: string]: string | number | boolean;
             };
+            /**
+             * Products
+             * @description List of products available to select.
+             */
+            products: components["schemas"]["CheckoutProduct"][];
+            /** @description Product selected to checkout. */
             product: components["schemas"]["CheckoutProduct"];
-            /** Product Price */
+            /**
+             * Product Price
+             * @description Price of the selected product.
+             */
             product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /** Discount */
             discount: (components["schemas"]["CheckoutDiscountFixedOnceForeverDuration"] | components["schemas"]["CheckoutDiscountFixedRepeatDuration"] | components["schemas"]["CheckoutDiscountPercentageOnceForeverDuration"] | components["schemas"]["CheckoutDiscountPercentageRepeatDuration"]) | null;
@@ -5959,8 +5968,14 @@ export interface components {
                 [key: string]: string | number | boolean | null;
             };
             /**
+             * Product Id
+             * @description ID of the product to checkout. Must be present in the checkout's product list.
+             */
+            product_id?: string | null;
+            /**
              * Product Price Id
-             * @description ID of the product price to checkout. Must correspond to a price linked to the same product.
+             * @deprecated
+             * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
              */
             product_price_id?: string | null;
             /** Amount */
@@ -5983,7 +5998,7 @@ export interface components {
              */
             confirmation_token_id?: string | null;
         };
-        CheckoutCreate: components["schemas"]["CheckoutProductCreate"] | components["schemas"]["CheckoutPriceCreate"];
+        CheckoutCreate: components["schemas"]["CheckoutProductsCreate"] | components["schemas"]["CheckoutProductCreate"] | components["schemas"]["CheckoutPriceCreate"];
         /**
          * CheckoutCreatePublic
          * @description Create a new checkout session from a client.
@@ -6143,32 +6158,28 @@ export interface components {
              */
             allow_discount_codes: boolean;
             /**
-             * Product Id
-             * Format: uuid4
-             * @description ID of the product to checkout.
-             */
-            product_id: string;
-            /**
-             * Product Price Id
-             * @description ID of the product price to checkout. First available price will be selected unless an explicit price ID is set.
-             */
-            product_price_id: string | null;
-            /**
              * Discount Id
              * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
              */
             discount_id: string | null;
-            product: components["schemas"]["CheckoutLinkProduct"];
-            /** Product Price */
-            product_price: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"]) | null;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The organization ID.
+             */
+            organization_id: string;
+            /** Products */
+            products: components["schemas"]["CheckoutLinkProduct"][];
             /** Discount */
             discount: (components["schemas"]["DiscountFixedOnceForeverDurationBase"] | components["schemas"]["DiscountFixedRepeatDurationBase"] | components["schemas"]["DiscountPercentageOnceForeverDurationBase"] | components["schemas"]["DiscountPercentageRepeatDurationBase"]) | null;
             /** Url */
             readonly url: string;
         };
-        CheckoutLinkCreate: components["schemas"]["CheckoutLinkProductCreate"] | components["schemas"]["CheckoutLinkPriceCreate"];
-        /** CheckoutLinkPriceCreate */
-        CheckoutLinkPriceCreate: {
+        /**
+         * CheckoutLinkCreate
+         * @description Schema to create a new checkout link.
+         */
+        CheckoutLinkCreate: {
             /**
              * Metadata
              * @description Key-value object allowing you to store additional information.
@@ -6185,6 +6196,11 @@ export interface components {
             metadata?: {
                 [key: string]: string | number | boolean;
             };
+            /**
+             * Products
+             * @description List of products that will be available to select at checkout.
+             */
+            products: string[];
             /**
              * Payment Processor
              * @description Payment processor to use. Currently only Stripe is supported.
@@ -6212,12 +6228,6 @@ export interface components {
              * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
              */
             success_url?: string | null;
-            /**
-             * Product Price Id
-             * Format: uuid4
-             * @description ID of the product price to checkout.
-             */
-            product_price_id: string;
         };
         /**
          * CheckoutLinkProduct
@@ -6285,58 +6295,6 @@ export interface components {
              */
             medias: components["schemas"]["ProductMediaFileRead"][];
         };
-        /** CheckoutLinkProductCreate */
-        CheckoutLinkProductCreate: {
-            /**
-             * Metadata
-             * @description Key-value object allowing you to store additional information.
-             *
-             *     The key must be a string with a maximum length of **40 characters**.
-             *     The value must be either:
-             *
-             *     * A string with a maximum length of **500 characters**
-             *     * An integer
-             *     * A boolean
-             *
-             *     You can store up to **50 key-value pairs**.
-             */
-            metadata?: {
-                [key: string]: string | number | boolean;
-            };
-            /**
-             * Payment Processor
-             * @description Payment processor to use. Currently only Stripe is supported.
-             * @constant
-             */
-            payment_processor: "stripe";
-            /**
-             * Label
-             * @description Optional label to distinguish links internally
-             */
-            label?: string | null;
-            /**
-             * Allow Discount Codes
-             * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
-             * @default true
-             */
-            allow_discount_codes: boolean;
-            /**
-             * Discount Id
-             * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
-             */
-            discount_id?: string | null;
-            /**
-             * Success Url
-             * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
-             */
-            success_url?: string | null;
-            /**
-             * Product Id
-             * Format: uuid4
-             * @description ID of the product to checkout. First available price will be selected.
-             */
-            product_id: string;
-        };
         /**
          * CheckoutLinkSortProperty
          * @enum {string}
@@ -6351,6 +6309,11 @@ export interface components {
             metadata?: {
                 [key: string]: string | number | boolean;
             } | null;
+            /**
+             * Products
+             * @description List of products that will be available to select at checkout.
+             */
+            products?: string[] | null;
             /** Label */
             label?: string | null;
             /**
@@ -6358,8 +6321,6 @@ export interface components {
              * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
              */
             allow_discount_codes?: boolean | null;
-            /** Product Price Id */
-            product_price_id?: string | null;
             /**
              * Discount Id
              * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
@@ -6374,6 +6335,8 @@ export interface components {
         /**
          * CheckoutPriceCreate
          * @description Create a new checkout session from a product price.
+         *
+         *     **Deprecated**: Use `CheckoutProductsCreate` instead.
          *
          *     Metadata set on the checkout will be copied
          *     to the resulting order and/or subscription.
@@ -6537,6 +6500,8 @@ export interface components {
          * CheckoutProductCreate
          * @description Create a new checkout session from a product.
          *
+         *     **Deprecated**: Use `CheckoutProductsCreate` instead.
+         *
          *     Metadata set on the checkout will be copied
          *     to the resulting order and/or subscription.
          */
@@ -6628,6 +6593,102 @@ export interface components {
              * @description ID of the product to checkout. First available price will be selected.
              */
             product_id: string;
+        };
+        /**
+         * CheckoutProductsCreate
+         * @description Create a new checkout session from a list of products.
+         *     Customers will be able to switch between those products.
+         *
+         *     Metadata set on the checkout will be copied
+         *     to the resulting order and/or subscription.
+         */
+        CheckoutProductsCreate: {
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Custom Field Data
+             * @description Key-value object storing custom field values.
+             */
+            custom_field_data?: {
+                [key: string]: string | number | boolean | null;
+            };
+            /**
+             * Discount Id
+             * @description ID of the discount to apply to the checkout.
+             */
+            discount_id?: string | null;
+            /**
+             * Allow Discount Codes
+             * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+             * @default true
+             */
+            allow_discount_codes: boolean;
+            /** Amount */
+            amount?: number | null;
+            /**
+             * Customer Id
+             * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
+             */
+            customer_id?: string | null;
+            /** Customer Name */
+            customer_name?: string | null;
+            /** Customer Email */
+            customer_email?: string | null;
+            /** Customer Ip Address */
+            customer_ip_address?: string | null;
+            customer_billing_address?: components["schemas"]["Address"] | null;
+            /** Customer Tax Id */
+            customer_tax_id?: string | null;
+            /**
+             * Customer Metadata
+             * @description Key-value object allowing you to store additional information that'll be copied to the created customer.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            customer_metadata?: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Subscription Id
+             * @description ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
+             */
+            subscription_id?: string | null;
+            /**
+             * Success Url
+             * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
+             */
+            success_url?: string | null;
+            /**
+             * Embed Origin
+             * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
+             */
+            embed_origin?: string | null;
+            /**
+             * Products
+             * @description List of product IDs available to select at that checkout. The first one will be selected by default.
+             */
+            products: string[];
         };
         /**
          * CheckoutPublic
@@ -6778,8 +6839,17 @@ export interface components {
             payment_processor_metadata: {
                 [key: string]: string;
             };
+            /**
+             * Products
+             * @description List of products available to select.
+             */
+            products: components["schemas"]["CheckoutProduct"][];
+            /** @description Product selected to checkout. */
             product: components["schemas"]["CheckoutProduct"];
-            /** Product Price */
+            /**
+             * Product Price
+             * @description Price of the selected product.
+             */
             product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /** Discount */
             discount: (components["schemas"]["CheckoutDiscountFixedOnceForeverDuration"] | components["schemas"]["CheckoutDiscountFixedRepeatDuration"] | components["schemas"]["CheckoutDiscountPercentageOnceForeverDuration"] | components["schemas"]["CheckoutDiscountPercentageRepeatDuration"]) | null;
@@ -6942,8 +7012,17 @@ export interface components {
             payment_processor_metadata: {
                 [key: string]: string;
             };
+            /**
+             * Products
+             * @description List of products available to select.
+             */
+            products: components["schemas"]["CheckoutProduct"][];
+            /** @description Product selected to checkout. */
             product: components["schemas"]["CheckoutProduct"];
-            /** Product Price */
+            /**
+             * Product Price
+             * @description Price of the selected product.
+             */
             product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /** Discount */
             discount: (components["schemas"]["CheckoutDiscountFixedOnceForeverDuration"] | components["schemas"]["CheckoutDiscountFixedRepeatDuration"] | components["schemas"]["CheckoutDiscountPercentageOnceForeverDuration"] | components["schemas"]["CheckoutDiscountPercentageRepeatDuration"]) | null;
@@ -6976,8 +7055,14 @@ export interface components {
                 [key: string]: string | number | boolean | null;
             } | null;
             /**
+             * Product Id
+             * @description ID of the product to checkout. Must be present in the checkout's product list.
+             */
+            product_id?: string | null;
+            /**
              * Product Price Id
-             * @description ID of the product price to checkout. Must correspond to a price linked to the same product.
+             * @deprecated
+             * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
              */
             product_price_id?: string | null;
             /** Amount */
@@ -7045,8 +7130,14 @@ export interface components {
                 [key: string]: string | number | boolean | null;
             } | null;
             /**
+             * Product Id
+             * @description ID of the product to checkout. Must be present in the checkout's product list.
+             */
+            product_id?: string | null;
+            /**
              * Product Price Id
-             * @description ID of the product price to checkout. Must correspond to a price linked to the same product.
+             * @deprecated
+             * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
              */
             product_price_id?: string | null;
             /** Amount */

@@ -6,9 +6,9 @@
   },
   "name": "Polar",
   "colors": {
-    "primary": "#2AB673",
-    "light": "#55D799",
-    "dark": "#117866"
+    "primary": "#0062FF",
+    "light": "#3381FF",
+    "dark": "#0054DB"
   },
   "background": {
     "dark": "#131316"

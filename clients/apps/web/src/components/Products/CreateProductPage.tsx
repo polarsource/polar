@@ -44,6 +44,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
 
   const form = useForm<schemas['ProductCreate'] & ProductFullMediasMixin>({
     defaultValues: {
+      recurring_interval: null,
       ...{
         prices: [
           {

@@ -125,3 +125,21 @@ class TestSDK:
         assert response is not None
 
         assert response.product_id == str(product.id)
+
+    async def test_create_checkout_link(
+        self,
+        save_fixture: SaveFixture,
+        polar: Polar,
+        product: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await polar.checkout_links.create_async(
+            request={
+                "payment_processor": "stripe",
+                "product_id": str(product.id),
+            }
+        )
+        assert response is not None
+
+        assert response.product_id == str(product.id)

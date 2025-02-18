@@ -26,7 +26,13 @@ from polar.postgres import AsyncSession
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
 
-from .schemas import CheckoutLinkCreate, CheckoutLinkUpdate
+from .schemas import (
+    CheckoutLinkCreate,
+    CheckoutLinkCreateProduct,
+    CheckoutLinkCreateProductPrice,
+    CheckoutLinkCreateProducts,
+    CheckoutLinkUpdate,
+)
 from .sorting import CheckoutLinkSortProperty
 
 CHECKOUT_LINK_CLIENT_SECRET_PREFIX = "polar_cl_"
@@ -108,9 +114,19 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         checkout_link_create: CheckoutLinkCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> CheckoutLink:
-        products = await self._get_validated_products(
-            session, checkout_link_create.products, auth_subject
-        )
+        if isinstance(checkout_link_create, CheckoutLinkCreateProducts):
+            products = await self._get_validated_products(
+                session, checkout_link_create.products, auth_subject
+            )
+        elif isinstance(checkout_link_create, CheckoutLinkCreateProduct):
+            products = await self._get_validated_products(
+                session, [checkout_link_create.product_id], auth_subject
+            )
+        elif isinstance(checkout_link_create, CheckoutLinkCreateProductPrice):
+            product, _ = await self._get_validated_price(
+                session, checkout_link_create.product_price_id, auth_subject
+            )
+            products = [product]
         organization = products[0].organization
 
         discount: Discount | None = None
@@ -128,7 +144,12 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                 for i, product in enumerate(products)
             ],
             **checkout_link_create.model_dump(
-                exclude={"products", "discount_id"},
+                exclude={
+                    "products",
+                    "product_id",
+                    "product_price_id",
+                    "discount_id",
+                },
                 by_alias=True,
             ),
         )

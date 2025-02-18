@@ -32,7 +32,7 @@ class ProductPriceService(ResourceServiceReader[ProductPrice]):
         statement = (
             select(ProductPrice)
             .where(ProductPrice.stripe_price_id == stripe_price_id)
-            .options(joinedload(ProductPrice.product))
+            .options(joinedload(ProductPrice.product).selectinload(Product.prices))
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()

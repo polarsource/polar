@@ -238,6 +238,17 @@ class CheckoutUpdateBase(OptionalCustomFieldDataInputMixin, Schema):
             "Must be present in the checkout's product list."
         ),
     )
+    product_price_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "ID of the product price to checkout. "
+            "Must correspond to a price present in the checkout's product list."
+        ),
+        deprecated=(
+            "Use `product_id` unless you have a product with legacy pricing "
+            "including several recurring intervals."
+        ),
+    )
     amount: Amount | None = None
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None

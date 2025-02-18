@@ -1499,7 +1499,23 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 )
 
             checkout.product = product
-            price = product.prices[0]
+
+            if checkout_update.product_price_id is not None:
+                price = product.get_price(checkout_update.product_price_id)
+                if price is None:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "product_price_id"),
+                                "msg": "Price is not available in this checkout.",
+                                "input": checkout_update.product_price_id,
+                            }
+                        ]
+                    )
+            else:
+                price = product.prices[0]
+
             checkout.product_price = price
             if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
                 checkout.amount = price.price_amount
@@ -1507,6 +1523,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             elif isinstance(
                 price, ProductPriceCustom | LegacyRecurringProductPriceCustom
             ):
+                checkout.amount = price.preset_amount
                 checkout.currency = price.price_currency
             elif isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
                 checkout.amount = None
@@ -1631,6 +1648,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         )
 
         exclude = {
+            "product_id",
             "product_price_id",
             "amount",
             "customer_billing_address",
@@ -1871,6 +1889,11 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 joinedload(Checkout.product).options(
                     selectinload(Product.product_medias),
                     selectinload(Product.attached_custom_fields),
+                ),
+                selectinload(Checkout.checkout_products).options(
+                    joinedload(CheckoutProduct.product).options(
+                        selectinload(Product.product_medias),
+                    )
                 ),
                 joinedload(Checkout.product_price),
             ),

@@ -57,12 +57,74 @@ Sent when a checkout is updated.
       "property1": "string",
       "property2": "string"
     },
+    "products": [
+      {
+        "created_at": "2019-08-24T14:15:22Z",
+        "modified_at": "2019-08-24T14:15:22Z",
+        "id": "string",
+        "name": "string",
+        "description": "string",
+        "recurring_interval": "month",
+        "is_recurring": true,
+        "is_archived": true,
+        "organization_id": "string",
+        "prices": [
+          {
+            "created_at": "2019-08-24T14:15:22Z",
+            "modified_at": "2019-08-24T14:15:22Z",
+            "id": "string",
+            "amount_type": "fixed",
+            "is_archived": true,
+            "product_id": "string",
+            "type": "recurring",
+            "recurring_interval": "month",
+            "price_currency": "string",
+            "price_amount": 0,
+            "legacy": true
+          }
+        ],
+        "benefits": [
+          {
+            "created_at": "2019-08-24T14:15:22Z",
+            "modified_at": "2019-08-24T14:15:22Z",
+            "id": "string",
+            "type": "custom",
+            "description": "string",
+            "selectable": true,
+            "deletable": true,
+            "organization_id": "string"
+          }
+        ],
+        "medias": [
+          {
+            "id": "string",
+            "organization_id": "string",
+            "name": "string",
+            "path": "string",
+            "mime_type": "string",
+            "size": 0,
+            "storage_version": "string",
+            "checksum_etag": "string",
+            "checksum_sha256_base64": "string",
+            "checksum_sha256_hex": "string",
+            "last_modified_at": "2019-08-24T14:15:22Z",
+            "version": "string",
+            "service": "product_media",
+            "is_uploaded": true,
+            "created_at": "2019-08-24T14:15:22Z",
+            "size_readable": "string",
+            "public_url": "string"
+          }
+        ]
+      }
+    ],
     "product": {
       "created_at": "2019-08-24T14:15:22Z",
       "modified_at": "2019-08-24T14:15:22Z",
       "id": "string",
       "name": "string",
       "description": "string",
+      "recurring_interval": "month",
       "is_recurring": true,
       "is_archived": true,
       "organization_id": "string",
@@ -74,10 +136,11 @@ Sent when a checkout is updated.
           "amount_type": "fixed",
           "is_archived": true,
           "product_id": "string",
+          "type": "recurring",
+          "recurring_interval": "month",
           "price_currency": "string",
           "price_amount": 0,
-          "type": "recurring",
-          "recurring_interval": "month"
+          "legacy": true
         }
       ],
       "benefits": [
@@ -121,10 +184,11 @@ Sent when a checkout is updated.
       "amount_type": "fixed",
       "is_archived": true,
       "product_id": "string",
+      "type": "recurring",
+      "recurring_interval": "month",
       "price_currency": "string",
       "price_amount": 0,
-      "type": "recurring",
-      "recurring_interval": "month"
+      "legacy": true
     },
     "discount": {
       "duration": "once",

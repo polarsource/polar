@@ -81,6 +81,7 @@ To listen specifically for renewals, you can listen to `order.created` events an
       "id": "string",
       "name": "string",
       "description": "string",
+      "recurring_interval": "month",
       "is_recurring": true,
       "is_archived": true,
       "organization_id": "string",
@@ -96,10 +97,11 @@ To listen specifically for renewals, you can listen to `order.created` events an
           "amount_type": "fixed",
           "is_archived": true,
           "product_id": "string",
+          "type": "recurring",
+          "recurring_interval": "month",
           "price_currency": "string",
           "price_amount": 0,
-          "type": "recurring",
-          "recurring_interval": "month"
+          "legacy": true
         }
       ],
       "benefits": [
@@ -175,10 +177,11 @@ To listen specifically for renewals, you can listen to `order.created` events an
       "amount_type": "fixed",
       "is_archived": true,
       "product_id": "string",
+      "type": "recurring",
+      "recurring_interval": "month",
       "price_currency": "string",
       "price_amount": 0,
-      "type": "recurring",
-      "recurring_interval": "month"
+      "legacy": true
     },
     "discount": {
       "duration": "once",

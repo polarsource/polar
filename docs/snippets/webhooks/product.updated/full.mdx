@@ -13,6 +13,7 @@ Sent when a product is updated.
     "id": "string",
     "name": "string",
     "description": "string",
+    "recurring_interval": "month",
     "is_recurring": true,
     "is_archived": true,
     "organization_id": "string",
@@ -28,10 +29,11 @@ Sent when a product is updated.
         "amount_type": "fixed",
         "is_archived": true,
         "product_id": "string",
+        "type": "recurring",
+        "recurring_interval": "month",
         "price_currency": "string",
         "price_amount": 0,
-        "type": "recurring",
-        "recurring_interval": "month"
+        "legacy": true
       }
     ],
     "benefits": [

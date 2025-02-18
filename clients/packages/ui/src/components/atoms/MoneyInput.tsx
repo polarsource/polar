@@ -1,5 +1,11 @@
 import { DollarSign } from 'lucide-react'
-import { ChangeEvent, FocusEvent, useCallback, useState } from 'react'
+import {
+  ChangeEvent,
+  FocusEvent,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 import Input from './Input'
 
@@ -26,6 +32,10 @@ const getCents = (value: string): number => {
   return Math.round(newAmount * 100)
 }
 
+const getInternalValue = (value: number | undefined): string | undefined => {
+  return value ? (value / 100).toFixed(2) : undefined
+}
+
 const MoneyInput = (props: Props) => {
   let {
     id,
@@ -39,14 +49,24 @@ const MoneyInput = (props: Props) => {
     onFocus,
     disabled,
   } = props
+  const [previousValue, setPreviousValue] = useState<number | undefined>(value)
   const [internalValue, setInternalValue] = useState<string | undefined>(
-    value ? (value / 100).toFixed(2) : undefined,
+    getInternalValue(value),
   )
+
+  useEffect(() => {
+    if (value !== previousValue) {
+      setPreviousValue(value)
+      setInternalValue(getInternalValue(value))
+    }
+  }, [value, previousValue])
 
   const onChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       if (_onChange) {
-        _onChange(getCents(e.target.value))
+        const newValue = getCents(e.target.value)
+        setPreviousValue(newValue)
+        _onChange(newValue)
       }
       setInternalValue(e.target.value)
     },

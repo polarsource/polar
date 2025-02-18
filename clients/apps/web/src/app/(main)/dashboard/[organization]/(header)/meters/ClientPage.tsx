@@ -29,7 +29,6 @@ const ClientPage = ({
   pagination: PaginationState
   organization: schemas['Organization']
 }) => {
-  console.log('ClientPage', sorting, pagination, organization)
   const router = useRouter()
 
   const { data: meters, isLoading } = useMeters(organization?.id)

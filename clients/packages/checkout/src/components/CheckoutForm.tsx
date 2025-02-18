@@ -97,10 +97,7 @@ const BaseCheckoutForm = ({
   disabled,
   children,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
-  const interval =
-    checkout.productPrice.type === 'recurring'
-      ? checkout.productPrice.recurringInterval
-      : undefined
+  const interval = checkout.product.recurringInterval
   const {
     control,
     handleSubmit,

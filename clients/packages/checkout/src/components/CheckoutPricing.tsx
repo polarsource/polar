@@ -2,9 +2,7 @@
 
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
-import type { SubscriptionRecurringInterval } from '@polar-sh/sdk/models/components/subscriptionrecurringinterval'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import {
   Form,
   FormField,
@@ -12,8 +10,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useMemo, useState } from 'react'
-import { type SubmitHandler, useForm } from 'react-hook-form'
+import { useEffect, useMemo } from 'react'
+import { useForm } from 'react-hook-form'
 import useDebouncedCallback from '../hooks/debounce'
 import { formatCurrencyNumber } from '../utils/money'
 import { hasRecurringIntervals } from '../utils/product'
@@ -50,67 +48,40 @@ const CheckoutPricing = ({
   update,
   disabled,
 }: CheckoutPricingProps) => {
-  const { product, productPrice } = checkout
+  const { product, productPrice, amount } = checkout
   const [, , hasBothIntervals] = useMemo(
     () => hasRecurringIntervals(product),
     [product],
   )
-  const [recurringInterval, setRecurringInterval] =
-    useState<SubscriptionRecurringInterval>(
-      productPrice.type === 'recurring'
-        ? productPrice.recurringInterval
-        : 'month',
-    )
-
-  const onRecurringIntervalChange = useCallback(
-    (recurringInterval: SubscriptionRecurringInterval) => {
-      setRecurringInterval(recurringInterval)
-      for (const price of product.prices) {
-        if (
-          price.type === 'recurring' &&
-          price.recurringInterval === recurringInterval
-        ) {
-          if (price.id === productPrice.id) {
-            return
-          }
-          update?.({ productPriceId: price.id })
-          return
-        }
-      }
-    },
-    [product, productPrice, update],
-  )
 
   const form = useForm<{ amount: number }>({
-    defaultValues: { amount: checkout.amount || 0 },
+    defaultValues: { amount: amount || 0 },
   })
-  const { control, handleSubmit, setValue, trigger } = form
-  const onAmountChangeSubmit: SubmitHandler<{ amount: number }> = useCallback(
-    async ({ amount }) => {
-      update?.({ amount })
-    },
-    [update],
-  )
-
-  const submitAmountUpdate = () => {
-    handleSubmit(onAmountChangeSubmit)()
-  }
+  const { control, trigger, reset, watch } = form
 
   const debouncedAmountUpdate = useDebouncedCallback(
-    async () => {
+    async (amount: number) => {
       const isValid = await trigger('amount')
       if (isValid) {
-        submitAmountUpdate()
+        update?.({ amount })
       }
     },
     600,
-    [onAmountChangeSubmit, submitAmountUpdate, trigger],
+    [update, trigger],
   )
 
-  const onAmountChange = (amount: number) => {
-    setValue('amount', amount)
-    debouncedAmountUpdate()
-  }
+  useEffect(() => {
+    const subscription = watch(async (value, { name }) => {
+      if (name === 'amount' && value.amount !== undefined) {
+        debouncedAmountUpdate(value.amount)
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [watch, debouncedAmountUpdate])
+
+  useEffect(() => {
+    reset({ amount: amount || 0 })
+  }, [amount, reset])
 
   let customAmountMinLabel = null
   let customAmountMaxLabel = null
@@ -130,34 +101,10 @@ const CheckoutPricing = ({
 
   return (
     <div className="flex flex-col gap-6">
-      {!disabled && hasBothIntervals && (
-        <Tabs
-          onValueChange={onRecurringIntervalChange as (value: string) => void}
-          value={recurringInterval}
-        >
-          <TabsList className="dark:bg-polar-700 w-full flex-row rounded-full bg-gray-200">
-            {[
-              ['month', 'Monthly Billing'],
-              ['year', 'Yearly Billing'],
-            ].map(([value, label]) => {
-              return (
-                <TabsTrigger
-                  key={value}
-                  className="dark:data-[state=active]:bg-polar-800 w-1/2 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
-                  value={value}
-                  size="small"
-                >
-                  {label}
-                </TabsTrigger>
-              )
-            })}
-          </TabsList>
-        </Tabs>
-      )}
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-light">
           {productPrice.amountType !== 'custom' && (
-            <ProductPriceLabel price={productPrice} />
+            <ProductPriceLabel product={product} price={productPrice} />
           )}
           {productPrice.amountType === 'custom' && (
             <>
@@ -168,10 +115,7 @@ const CheckoutPricing = ({
                 )
               ) : (
                 <Form {...form}>
-                  <form
-                    className="flex w-full flex-col gap-3"
-                    onSubmit={submitAmountUpdate}
-                  >
+                  <form className="flex w-full flex-col gap-3">
                     <FormLabel>
                       Name a fair price{' '}
                       <span className="text-gray-400">
@@ -181,6 +125,7 @@ const CheckoutPricing = ({
                     <div className="flex flex-row items-center gap-2">
                       <FormField
                         control={control}
+                        shouldUnregister={true}
                         name="amount"
                         rules={{
                           min: {
@@ -203,7 +148,7 @@ const CheckoutPricing = ({
                                 className="text-md dark:border-polar-600"
                                 name={field.name}
                                 value={field.value || undefined}
-                                onChange={onAmountChange}
+                                onChange={field.onChange}
                                 placeholder={0}
                                 disabled={field.disabled}
                                 preSlot={<DollarSignIcon className="h-4 w-4" />}

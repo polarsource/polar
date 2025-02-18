@@ -27,46 +27,44 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
-import ProductPriceLabel from '../Products/ProductPriceLabel'
+import ProductSelect from '../Products/ProductSelect'
 import { toast } from '../Toast/use-toast'
 
-type CheckoutLinksForm = Omit<
-  schemas['CheckoutLinkProductCreate'],
+type CheckoutLinkCreateForm = Omit<
+  schemas['CheckoutLinkCreate'],
   'payment_processor' | 'metadata'
 > & {
-  product_price_id?: string
   metadata: { key: string; value: string | number | boolean }[]
 }
 
 export interface CheckoutLinkFormProps {
-  product: schemas['Product']
+  organization: schemas['Organization']
   checkoutLink?: schemas['CheckoutLink']
   onClose: (checkoutLink: schemas['CheckoutLink']) => void
 }
 
 export const CheckoutLinkForm = ({
-  product,
+  organization,
   checkoutLink,
   onClose,
 }: CheckoutLinkFormProps) => {
-  const { data: discounts } = useDiscounts(product.organization_id, {
+  const { data: discounts } = useDiscounts(organization.id, {
     limit: 100,
     sorting: ['name'],
   })
 
-  const generateDefaultValues = (): CheckoutLinksForm => {
+  const defaultValues = useMemo<CheckoutLinkCreateForm>(() => {
     if (checkoutLink) {
       return {
         label: checkoutLink.label ?? null,
         metadata: Object.entries(checkoutLink.metadata ?? {}).map(
           ([key, value]) => ({ key, value }),
         ),
-        product_id: product.id,
-        product_price_id: checkoutLink.product_price_id ?? undefined,
+        products: checkoutLink.products.map(({ id }) => id),
         allow_discount_codes: checkoutLink.allow_discount_codes ?? true,
         success_url: checkoutLink.success_url ?? '',
         discount_id: checkoutLink.discount_id ?? '',
@@ -76,16 +74,15 @@ export const CheckoutLinkForm = ({
     return {
       label: null,
       metadata: [],
-      product_id: product.id,
-      product_price_id: undefined,
+      products: [],
       allow_discount_codes: true,
       success_url: '',
       discount_id: '',
     }
-  }
+  }, [checkoutLink])
 
-  const form = useForm<CheckoutLinksForm>({
-    defaultValues: generateDefaultValues(),
+  const form = useForm<CheckoutLinkCreateForm>({
+    defaultValues,
   })
 
   const { control, handleSubmit, setError, reset } = form
@@ -99,10 +96,8 @@ export const CheckoutLinkForm = ({
 
   useEffect(() => {
     if (!checkoutLink) return
-
-    const defaultValues = generateDefaultValues()
     reset(defaultValues)
-  }, [checkoutLink])
+  }, [checkoutLink, reset, defaultValues])
 
   const { mutateAsync: createCheckoutLink, isPending: isCreatePending } =
     useCreateCheckoutLink()
@@ -137,46 +132,34 @@ export const CheckoutLinkForm = ({
     hide: hideDeleteModal,
   } = useModal()
 
-  const handleValidationError = (
-    data: CheckoutLinksForm,
-    errors: schemas['ValidationError'][],
-  ) => {
-    setValidationErrors(errors, setError)
-    errors.forEach((error) => {
-      if (error.loc[1] === 'metadata') {
-        const metadataKey = error.loc[2]
-        const metadataIndex = data.metadata.findIndex(
-          ({ key }) => key === metadataKey,
-        )
-        if (metadataIndex > -1) {
-          const field = error.loc[3] === '[key]' ? 'key' : 'value'
-          setError(`metadata.${metadataIndex}.${field}`, {
-            message: error.msg,
-          })
+  const handleValidationError = useCallback(
+    (data: CheckoutLinkCreateForm, errors: schemas['ValidationError'][]) => {
+      setValidationErrors(errors, setError)
+      errors.forEach((error) => {
+        if (error.loc[1] === 'metadata') {
+          const metadataKey = error.loc[2]
+          const metadataIndex = data.metadata.findIndex(
+            ({ key }) => key === metadataKey,
+          )
+          if (metadataIndex > -1) {
+            const field = error.loc[3] === '[key]' ? 'key' : 'value'
+            setError(`metadata.${metadataIndex}.${field}`, {
+              message: error.msg,
+            })
+          }
         }
-      }
-    })
-  }
+      })
+    },
+    [setError],
+  )
 
-  const onSubmit: SubmitHandler<CheckoutLinksForm> = useCallback(
+  const onSubmit: SubmitHandler<CheckoutLinkCreateForm> = useCallback(
     async (data) => {
-      const { product_price_id, product_id, ...params } = data
-      if (params.discount_id === '') {
-        params.discount_id = null
-      }
-      if (params.success_url === '') {
-        params.success_url = null
-      }
       const body: schemas['CheckoutLinkCreate'] = {
         payment_processor: 'stripe',
-        ...params,
-        ...(product_price_id
-          ? {
-              product_price_id,
-            }
-          : {
-              product_id,
-            }),
+        ...data,
+        discount_id: data.discount_id || null,
+        success_url: data.success_url || null,
         metadata: data.metadata.reduce(
           (acc, { key, value }) => ({ ...acc, [key]: value }),
           {},
@@ -227,7 +210,14 @@ export const CheckoutLinkForm = ({
 
       onClose(newCheckoutLink)
     },
-    [onClose, checkoutLink, createCheckoutLink, updateCheckoutLink, setError],
+    [
+      onClose,
+      checkoutLink,
+      createCheckoutLink,
+      updateCheckoutLink,
+      setError,
+      handleValidationError,
+    ],
   )
 
   return (
@@ -253,52 +243,34 @@ export const CheckoutLinkForm = ({
               </FormItem>
             )}
           />
-          {((checkoutLink && checkoutLink.product_price_id) ||
-            product.prices.length > 1) && (
-            <FormField
-              control={control}
-              name="product_price_id"
-              render={({ field }) => (
+          <FormField
+            control={control}
+            name="products"
+            rules={{
+              validate: (value) =>
+                value.length < 1 ? 'At least one product is required' : true,
+            }}
+            render={({ field }) => {
+              return (
                 <FormItem>
-                  <FormLabel>Price</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value ?? product.prices[0].id}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select price" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {checkoutLink &&
-                        checkoutLink.product_price?.is_archived && (
-                          <SelectItem
-                            key={checkoutLink.product_price.id}
-                            value={checkoutLink.product_price.id}
-                          >
-                            <div className="flex flex-row items-center">
-                              <ProductPriceLabel
-                                product={checkoutLink.product}
-                                price={checkoutLink.product_price}
-                              />
-                              <span className="ml-2 text-xs">(Archived)</span>
-                            </div>
-                          </SelectItem>
-                        )}
-                      {product.prices.map((price) => (
-                        <SelectItem key={price.id} value={price.id}>
-                          <ProductPriceLabel product={product} price={price} />
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription className="text-xs">
-                    Default checkout price
-                  </FormDescription>
+                  <FormLabel>Products</FormLabel>
+                  <FormControl>
+                    <ProductSelect
+                      organization={organization}
+                      value={field.value || []}
+                      onChange={field.onChange}
+                      emptyLabel="Select one or more products"
+                    />
+                  </FormControl>
                   <FormMessage />
+                  <FormDescription>
+                    The customer will be able to switch between these products
+                    at checkout.
+                  </FormDescription>
                 </FormItem>
-              )}
-            />
-          )}
+              )
+            }}
+          />
           <FormField
             control={control}
             name="success_url"

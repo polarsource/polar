@@ -246,7 +246,7 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
             e.preventDefault()
 
             router.push(
-              `/dashboard/${organization.slug}/products/${product.id}/checkout-links`,
+              `/dashboard/${organization.slug}/products/checkout-links?product_id=${product.id}`,
             )
           }}
         >

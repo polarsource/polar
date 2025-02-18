@@ -53,6 +53,7 @@ class CheckoutLinkRepository(
         return (
             checkout_link_product_load.options(
                 joinedload(CheckoutLinkProduct.product).options(
+                    joinedload(Product.organization),
                     joinedload(Product.product_medias),
                     joinedload(Product.attached_custom_fields),
                 )

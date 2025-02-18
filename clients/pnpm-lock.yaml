@@ -93,8 +93,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/mdx
       '@polar-sh/sdk':
-        specifier: ^0.25.0
-        version: 0.25.0(zod@3.24.1)
+        specifier: ^0.26.0
+        version: 0.26.0(zod@3.24.2)
       '@polar-sh/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -415,8 +415,8 @@ importers:
         specifier: workspace:^
         version: link:../../packages/checkout
       '@polar-sh/sdk':
-        specifier: ^0.25.0
-        version: 0.25.0(zod@3.24.1)
+        specifier: ^0.26.0
+        version: 0.26.0(zod@3.24.2)
       '@stripe/react-stripe-js':
         specifier: ^3.1.1
         version: 3.1.1(@stripe/stripe-js@5.6.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -473,8 +473,8 @@ importers:
   packages/checkout:
     dependencies:
       '@polar-sh/sdk':
-        specifier: ^0.25.0
-        version: 0.25.0(zod@3.24.1)
+        specifier: ^0.26.0
+        version: 0.26.0(zod@3.24.2)
       '@polar-sh/ui':
         specifier: workspace:^
         version: link:../ui
@@ -2625,8 +2625,8 @@ packages:
     resolution: {integrity: sha512-UA91GwWPhFExt3IizW6bOeY/pQ0BkuNwKjk9iQW9KqxluGCrg4VenZ0/L+2Y0+ZOtme72EVvg6v0zo3AMQRCeA==}
     engines: {node: '>=12'}
 
-  '@polar-sh/sdk@0.25.0':
-    resolution: {integrity: sha512-D4aMPr/XnZeUsZ62g9ZtnQXmudsJDviPuuP4nlE+6JuabQ15G0t+Pq+siQaksg7e1mPUKYPZgA63zYVH9XmMPQ==}
+  '@polar-sh/sdk@0.26.0':
+    resolution: {integrity: sha512-ajtxB6SNRLh/UzqtD/1ceH20A1LyA9whAASotnVNoMpj7zgHDHCeqhqXmDU3u+bJWoYQwwLKfk+Ur8s8TV3lDg==}
     peerDependencies:
       zod: '>= 3'
 
@@ -9791,8 +9791,8 @@ packages:
   yoga-wasm-web@0.3.3:
     resolution: {integrity: sha512-N+d4UJSJbt/R3wqY7Coqs5pcV0aUj2j9IaQ3rNj9bVCLld8tTGKRa2USARjnvZJWVx1NDmQev8EknoczaOQDOA==}
 
-  zod@3.24.1:
-    resolution: {integrity: sha512-muH7gBL9sI1nciMZV67X5fTKKBLtwpZ5VBp1vsOQzj1MhrBZ4wlVCm3gedKZWLp0Oyel8sIGfeiz54Su+OVT+A==}
+  zod@3.24.2:
+    resolution: {integrity: sha512-lY7CDW43ECgW9u1TcT3IoXHflywfVqDYze4waEz812jR/bZ8FHDsl7pFQoSZTz5N+2NqRXs8GBwnAwo3ZNxqhQ==}
 
   zustand@5.0.3:
     resolution: {integrity: sha512-14fwWQtU3pH4dE0dOpdMiWjddcH+QzKIgk1cl8epwSE7yag43k/AD/m4L6+K7DytAOr9gGBe3/EXj9g7cdostg==}
@@ -12197,10 +12197,10 @@ snapshots:
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
 
-  '@polar-sh/sdk@0.25.0(zod@3.24.1)':
+  '@polar-sh/sdk@0.26.0(zod@3.24.2)':
     dependencies:
       standardwebhooks: 1.0.0
-      zod: 3.24.1
+      zod: 3.24.2
 
   '@polka/url@1.0.0-next.25': {}
 
@@ -21290,7 +21290,7 @@ snapshots:
 
   yoga-wasm-web@0.3.3: {}
 
-  zod@3.24.1: {}
+  zod@3.24.2: {}
 
   zustand@5.0.3(@types/react@18.3.18)(react@18.3.1)(use-sync-external-store@1.4.0(react@18.3.1)):
     optionalDependencies:

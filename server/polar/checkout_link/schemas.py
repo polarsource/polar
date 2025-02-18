@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import UUID4, Field, HttpUrl, computed_field
+from pydantic import UUID4, AliasPath, Field, HttpUrl, computed_field
 
 from polar.config import settings
 from polar.discount.schemas import DiscountMinimal
@@ -21,6 +21,7 @@ from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
     ProductMediaList,
+    ProductPrice,
     ProductPriceList,
 )
 
@@ -47,13 +48,7 @@ _discount_id_description = (
 )
 
 
-class CheckoutLinkCreate(MetadataInputMixin, Schema):
-    """Schema to create a new checkout link."""
-
-    products: list[UUID4] = Field(
-        description="List of products that will be available to select at checkout.",
-        min_length=1,
-    )
+class CheckoutLinkCreateBase(MetadataInputMixin, Schema):
     payment_processor: Literal[PaymentProcessor.stripe] = Field(
         description="Payment processor to use. Currently only Stripe is supported."
     )
@@ -67,6 +62,42 @@ class CheckoutLinkCreate(MetadataInputMixin, Schema):
         default=None, description=_discount_id_description
     )
     success_url: SuccessURL = None
+
+
+class CheckoutLinkCreateProductPrice(CheckoutLinkCreateBase):
+    """
+    Schema to create a new checkout link from a a single product price.
+
+    **Deprecated**: Use `CheckoutLinkCreateProducts` instead.
+    """
+
+    product_price_id: UUID4
+
+
+class CheckoutLinkCreateProduct(CheckoutLinkCreateBase):
+    """
+    Schema to create a new checkout link from a a single product.
+
+    **Deprecated**: Use `CheckoutLinkCreateProducts` instead.
+    """
+
+    product_id: UUID4
+
+
+class CheckoutLinkCreateProducts(CheckoutLinkCreateBase):
+    """Schema to create a new checkout link."""
+
+    products: list[UUID4] = Field(
+        description="List of products that will be available to select at checkout.",
+        min_length=1,
+    )
+
+
+CheckoutLinkCreate = (
+    CheckoutLinkCreateProductPrice
+    | CheckoutLinkCreateProduct
+    | CheckoutLinkCreateProducts
+)
 
 
 class CheckoutLinkUpdate(OptionalMetadataInputMixin):
@@ -128,3 +159,21 @@ class CheckoutLink(CheckoutLinkBase):
 
     products: list[CheckoutLinkProduct]
     discount: CheckoutLinkDiscount | None
+
+    # Deprecated fields for backward compatibility
+    product_id: UUID4 = Field(
+        validation_alias=AliasPath("products", 0, "id"),
+        deprecated="Use `products` instead.",
+    )
+    product_price_id: UUID4 = Field(
+        validation_alias=AliasPath("products", 0, "prices", 0, "id"),
+        deprecated="Use `products` instead.",
+    )
+    product: CheckoutLinkProduct = Field(
+        validation_alias=AliasPath("products", 0),
+        deprecated="Use `products` instead.",
+    )
+    product_price: ProductPrice = Field(
+        validation_alias=AliasPath("products", 0, "prices", 0),
+        deprecated="Use `products` instead.",
+    )

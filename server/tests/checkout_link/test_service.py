@@ -5,7 +5,10 @@ import pytest_asyncio
 from pydantic import HttpUrl
 
 from polar.auth.models import AuthSubject
-from polar.checkout_link.schemas import CheckoutLinkCreate, CheckoutLinkUpdate
+from polar.checkout_link.schemas import (
+    CheckoutLinkCreateProducts,
+    CheckoutLinkUpdate,
+)
 from polar.checkout_link.service import checkout_link as checkout_link_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarRequestValidationError
@@ -62,7 +65,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_link_service.create(
                 session,
-                CheckoutLinkCreate(
+                CheckoutLinkCreateProducts(
                     payment_processor=PaymentProcessor.stripe,
                     products=[uuid.uuid4()],
                 ),
@@ -82,7 +85,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_link_service.create(
                 session,
-                CheckoutLinkCreate(
+                CheckoutLinkCreateProducts(
                     payment_processor=PaymentProcessor.stripe,
                     products=[product_one_time.id],
                 ),
@@ -107,7 +110,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_link_service.create(
                 session,
-                CheckoutLinkCreate(
+                CheckoutLinkCreateProducts(
                     payment_processor=PaymentProcessor.stripe,
                     products=[product_one_time.id],
                 ),
@@ -136,7 +139,7 @@ class TestCreate:
         with pytest.raises(PolarRequestValidationError):
             await checkout_link_service.create(
                 session,
-                CheckoutLinkCreate(
+                CheckoutLinkCreateProducts(
                     payment_processor=PaymentProcessor.stripe,
                     products=[product.id, product_organization_second.id],
                 ),
@@ -153,7 +156,7 @@ class TestCreate:
     ) -> None:
         checkout_link = await checkout_link_service.create(
             session,
-            CheckoutLinkCreate(
+            CheckoutLinkCreateProducts(
                 payment_processor=PaymentProcessor.stripe,
                 products=[product_one_time.id],
                 success_url=HttpUrl(
@@ -185,7 +188,7 @@ class TestCreate:
         assert isinstance(price, ProductPriceFixed)
         checkout_link = await checkout_link_service.create(
             session,
-            CheckoutLinkCreate(
+            CheckoutLinkCreateProducts(
                 payment_processor=PaymentProcessor.stripe,
                 products=[product_one_time.id],
                 discount_id=discount_fixed_once.id,

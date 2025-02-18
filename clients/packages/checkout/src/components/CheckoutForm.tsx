@@ -234,6 +234,13 @@ const BaseCheckoutForm = ({
 
   const checkoutDiscounted = !!checkout.discount
 
+  // Make sure to clear the discount code field if the discount is removed by the API
+  useEffect(() => {
+    if (!checkout.discount) {
+      resetField('discountCode')
+    }
+  }, [checkout, resetField])
+
   return (
     <div className="flex flex-col justify-between gap-y-24">
       <div className="flex flex-col gap-y-12">

@@ -15,7 +15,7 @@ pnpm install
 
 **Development Server**
 ```bash
-pnpm mintlify dev
+pnpm dev
 ```
 
 ## Generate API & Webhook Code Samples

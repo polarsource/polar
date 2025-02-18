@@ -190,6 +190,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
         session: AsyncSession,
         id: UUID,
         allow_deleted: bool = False,
+        allow_blocked: bool = False,
         *,
         options: Sequence[sql.ExecutableOption] | None = None,
     ) -> Organization | None:
@@ -197,7 +198,9 @@ class OrganizationService(ResourceServiceReader[Organization]):
         if not allow_deleted:
             conditions.append(Organization.deleted_at.is_(None))
 
-        conditions.append(Organization.blocked_at.is_(None))
+        if not allow_blocked:
+            conditions.append(Organization.blocked_at.is_(None))
+
         query = sql.select(Organization).where(*conditions)
 
         if options is not None:

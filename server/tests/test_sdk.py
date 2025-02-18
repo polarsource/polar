@@ -6,8 +6,10 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from polar_sdk import Polar
 
+from polar.auth.scope import Scope
 from polar.kit.utils import utc_now
 from polar.models import Benefit, Customer, Product, UserOrganization
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_order, create_subscription
 
@@ -103,3 +105,23 @@ class TestSDK:
         assert response is not None
 
         assert len(response.result.items) == len(subscriptions)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user", scopes={Scope.checkouts_write})
+    )
+    async def test_create_checkout(
+        self,
+        save_fixture: SaveFixture,
+        polar: Polar,
+        product: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await polar.checkouts.custom.create_async(
+            request={
+                "product_id": str(product.id),
+            }
+        )
+        assert response is not None
+
+        assert response.product_id == str(product.id)

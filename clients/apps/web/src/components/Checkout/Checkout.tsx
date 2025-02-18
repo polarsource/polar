@@ -1,7 +1,11 @@
 'use client'
 
 import { CONFIG } from '@/utils/config'
-import { CheckoutForm, CheckoutPricing } from '@polar-sh/checkout/components'
+import {
+  CheckoutForm,
+  CheckoutPricing,
+  CheckoutProductSwitcher,
+} from '@polar-sh/checkout/components'
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
@@ -113,7 +117,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
       }
 
       if (isInternalURL || !embed) {
-        await router.push(parsedURL.toString())
+        router.push(parsedURL.toString())
       }
 
       return confirmedCheckout
@@ -148,6 +152,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           product={checkout.product}
         />
         <CheckoutCard checkout={checkout} update={update} />
+        <CheckoutProductSwitcher checkout={checkout} update={update} />
       </div>
       <div className="flex flex-col gap-y-8 md:p-12 lg:p-20">
         <CheckoutForm

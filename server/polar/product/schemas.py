@@ -3,6 +3,7 @@ from typing import Annotated, Any, Literal
 
 import stripe as stripe_lib
 from pydantic import UUID4, Discriminator, Field, Tag, computed_field
+from pydantic.aliases import AliasChoices
 
 from polar.benefit.schemas import Benefit, BenefitID, BenefitPublic
 from polar.custom_field.attachment import (
@@ -326,14 +327,16 @@ class ProductPriceBase(TimestampedSchema):
     product_id: UUID4 = Field(description="The ID of the product owning the price.")
 
     type: ProductPriceType = Field(
-        validation_alias="legacy_type",
+        validation_alias=AliasChoices("legacy_type", "type"),
         deprecated=(
             "This field is actually set from Product. "
             "It's only kept for backward compatibility."
         ),
     )
     recurring_interval: SubscriptionRecurringInterval | None = Field(
-        validation_alias="legacy_recurring_interval",
+        validation_alias=AliasChoices(
+            "legacy_recurring_interval", "recurring_interval"
+        ),
         deprecated=(
             "This field is actually set from Product. "
             "It's only kept for backward compatibility."

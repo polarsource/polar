@@ -499,6 +499,9 @@ class ProductService(ResourceServiceReader[Product]):
                 product.stripe_product_id, **product_update
             )
 
+        if update_schema.recurring_interval is not None:
+            product.recurring_interval = update_schema.recurring_interval
+
         existing_prices: set[ProductPrice] = set()
         added_prices: list[ProductPrice] = []
         if update_schema.prices is not None:

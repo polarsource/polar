@@ -1,9 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { getProductById } from '@/utils/product'
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 import { ClientPage } from './ClientPage'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -16,8 +14,10 @@ export default async function Page({
   params,
   searchParams,
 }: {
-  params: { organization: string; id: string }
-  searchParams: DataTableSearchParams
+  params: { organization: string }
+  searchParams: DataTableSearchParams & {
+    product_id?: string[] | string
+  }
 }) {
   const api = getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
@@ -25,22 +25,22 @@ export default async function Page({
     params.organization,
   )
 
-  const product = await getProductById(api, params.id)
-
-  if (!product) {
-    return notFound()
-  }
-
   const { pagination, sorting } = parseSearchParams(searchParams, [
     { id: 'created_at', desc: true },
   ])
 
+  const productId = searchParams.product_id
+    ? Array.isArray(searchParams.product_id)
+      ? searchParams.product_id
+      : [searchParams.product_id]
+    : undefined
+
   return (
     <ClientPage
       organization={organization}
-      product={product}
       pagination={pagination}
       sorting={sorting}
+      productId={productId}
     />
   )
 }

@@ -173,6 +173,10 @@ const generalRoutesList = (
         link: `/dashboard/${org.slug}/products`,
       },
       {
+        title: 'Checkout Links',
+        link: `/dashboard/${org.slug}/products/checkout-links`,
+      },
+      {
         title: 'Discounts',
         link: `/dashboard/${org.slug}/products/discounts`,
       },

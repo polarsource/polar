@@ -42,7 +42,7 @@ export const useCreateCheckoutLink = () =>
           queryKey: [
             'checkout_links',
             {
-              product_id: data.product.id,
+              organizatonId: data.organization_id,
             },
           ],
         },
@@ -91,7 +91,10 @@ export const useUpdateCheckoutLink = () =>
       }
       queryClient.setQueriesData<schemas['ListResource_CheckoutLink_']>(
         {
-          queryKey: ['checkout_links', { product_id: data.product.id }],
+          queryKey: [
+            'checkout_links',
+            { organizationId: data.organization_id },
+          ],
         },
         (old) => {
           if (!old) {
@@ -134,7 +137,7 @@ export const useDeleteCheckoutLink = () =>
         queryKey: [
           'checkout_links',
           {
-            productId: variables.product.id,
+            organizationId: variables.organization_id,
           },
         ],
       })

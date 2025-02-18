@@ -72,6 +72,7 @@ interface ProductSelectProps {
   organization: schemas['Organization']
   value: string[]
   onChange: (value: string[]) => void
+  emptyLabel?: string
   className?: string
 }
 
@@ -79,6 +80,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   organization,
   value,
   onChange,
+  emptyLabel,
   className,
 }) => {
   const [open, setOpen] = useState(false)
@@ -144,13 +146,13 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
 
   const buttonLabel = useMemo(() => {
     if (value.length === 0) {
-      return 'All products'
+      return emptyLabel || 'All products'
     }
     if (value.length === 1) {
       return selectedProducts?.[0].name
     }
     return `${value.length} products`
-  }, [value, selectedProducts])
+  }, [value, emptyLabel, selectedProducts])
 
   const onSelectProduct = useCallback(
     (product: schemas['Product']) => {

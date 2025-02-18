@@ -14,13 +14,13 @@ import { toast } from '../Toast/use-toast'
 import { CheckoutLinkForm } from './CheckoutLinkForm'
 
 export interface CheckoutLinkContextViewProps {
-  product: schemas['Product']
+  organization: schemas['Organization']
   checkoutLink: schemas['CheckoutLink']
   onUpdate: (checkoutLink: schemas['CheckoutLink']) => void
 }
 
 export const CheckoutLinkContextView = ({
-  product,
+  organization,
   checkoutLink,
   onUpdate,
 }: CheckoutLinkContextViewProps) => {
@@ -31,10 +31,10 @@ export const CheckoutLinkContextView = ({
     const theme = darkmode ? 'dark' : 'light'
 
     return `
-<a href="${checkoutLink?.url}" data-polar-checkout data-polar-checkout-theme="${theme}">Purchase ${product.name}</a>
+<a href="${checkoutLink?.url}" data-polar-checkout data-polar-checkout-theme="${theme}">Purchase</a>
 <script src="${CONFIG.CHECKOUT_EMBED_SCRIPT_SRC}" defer data-auto-init></script>
   `.trim()
-  }, [checkoutLink, product, darkmode])
+  }, [checkoutLink, darkmode])
 
   const showDarkmodeToggle = embedType === 'svg' || embedType === 'checkout'
 
@@ -104,7 +104,7 @@ export const CheckoutLinkContextView = ({
         )}
       </Tabs>
       <CheckoutLinkForm
-        product={product}
+        organization={organization}
         checkoutLink={checkoutLink}
         onClose={onUpdate}
       />

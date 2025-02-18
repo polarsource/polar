@@ -1,11 +1,11 @@
 'use client'
 
 import { CheckoutLinkContextView } from '@/components/Checkout/CheckoutLinkContextView'
-import { CheckoutLinkMangementModal } from '@/components/Checkout/CheckoutLinkMangementModal'
+import { CheckoutLinkManagementModal } from '@/components/Checkout/CheckoutLinkManagementModal'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
-import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
+import ProductSelect from '@/components/Products/ProductSelect'
 import { toast } from '@/components/Toast/use-toast'
 import { useCheckoutLinks } from '@/hooks/queries'
 import {
@@ -17,7 +17,10 @@ import {
 import { AddOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
+import {
+  DataTable,
+  DataTableColumnHeader,
+} from '@polar-sh/ui/components/atoms/DataTable'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { RowSelectionState } from '@tanstack/react-table'
 import { usePathname, useRouter } from 'next/navigation'
@@ -27,15 +30,16 @@ import { twMerge } from 'tailwind-merge'
 
 interface ClientPageProps {
   organization: schemas['Organization']
-  product: schemas['Product']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
+  productId?: string[]
 }
 
 export const ClientPage = ({
-  product,
+  organization,
   pagination,
   sorting,
+  productId,
 }: ClientPageProps) => {
   const [selectionState, setSelectionState] = useQueryState(
     'selectionState',
@@ -48,16 +52,27 @@ export const ClientPage = ({
     show: showManagementModal,
   } = useModal()
 
-  const { data: checkoutLinks, isLoading } = useCheckoutLinks(
-    product.organization_id,
-    {
-      product_id: product.id,
-      ...getAPIParams(pagination, sorting),
-    },
-  )
+  const { data: checkoutLinks, isLoading } = useCheckoutLinks(organization.id, {
+    ...getAPIParams(pagination, sorting),
+    product_id: productId,
+  })
 
   const router = useRouter()
   const pathname = usePathname()
+
+  const getSearchParams = (
+    pagination: DataTablePaginationState,
+    sorting: DataTableSortingState,
+    productId?: string[],
+  ) => {
+    const params = serializeSearchParams(pagination, sorting)
+
+    if (productId) {
+      productId.forEach((id) => params.append('product_id', id))
+    }
+
+    return params
+  }
 
   const setPagination = (
     updaterOrValue:
@@ -70,7 +85,7 @@ export const ClientPage = ({
         : updaterOrValue
 
     router.push(
-      `${pathname}?${serializeSearchParams(updatedPagination, sorting)}`,
+      `${pathname}?${getSearchParams(updatedPagination, sorting, productId)}`,
     )
   }
 
@@ -85,8 +100,12 @@ export const ClientPage = ({
         : updaterOrValue
 
     router.push(
-      `${pathname}?${serializeSearchParams(pagination, updatedSorting)}`,
+      `${pathname}?${getSearchParams(pagination, updatedSorting, productId)}`,
     )
+  }
+
+  const onProductSelect = (value: string[]) => {
+    router.push(`${pathname}?${getSearchParams(pagination, sorting, value)}`)
   }
 
   const selectedLink = useMemo(() => {
@@ -100,22 +119,11 @@ export const ClientPage = ({
 
   return (
     <DashboardBody
-      title={
-        <div className="flex flex-col gap-y-2">
-          <h1 className="text-2xl">Checkout Links</h1>
-        </div>
-      }
-      header={
-        <Button onClick={showManagementModal}>
-          <AddOutlined className="mr-2" />
-          New Link
-        </Button>
-      }
       className="flex flex-col gap-y-8"
       contextView={
         selectedLink ? (
           <CheckoutLinkContextView
-            product={product}
+            organization={organization}
             checkoutLink={selectedLink}
             onUpdate={(link) => {
               setSelectionState({ [link.id]: true })
@@ -124,7 +132,22 @@ export const ClientPage = ({
         ) : undefined
       }
     >
-      <h2 className="text-lg">{product.name}</h2>
+      <div className="flex flex-row items-center justify-between gap-6">
+        <ProductSelect
+          organization={organization}
+          value={productId || []}
+          onChange={onProductSelect}
+          className="w-[300px]"
+        />
+        <Button
+          type="button"
+          wrapperClassNames="flex flex-row items-center gap-x-2"
+          onClick={showManagementModal}
+        >
+          <AddOutlined fontSize="small" />
+          <span>New Link</span>
+        </Button>
+      </div>
       <DataTable
         isLoading={isLoading}
         data={checkoutLinks?.items ?? []}
@@ -135,31 +158,28 @@ export const ClientPage = ({
         onSortingChange={setSorting}
         columns={[
           {
-            header: 'Label',
+            header: ({ column }) => (
+              <DataTableColumnHeader column={column} title="Label" />
+            ),
             accessorKey: 'label',
             cell: ({ cell }) =>
               cell.getValue() ? cell.getValue() : 'Unlabeled Link',
           },
           {
-            header: 'Default Price',
-            accessorKey: 'product_price',
+            header: ({ column }) => (
+              <DataTableColumnHeader column={column} title="Products" />
+            ),
+            enableSorting: false,
+            accessorKey: 'products',
             cell: ({ cell }) => {
               const value = cell.row.original
-              return value && value.product_price ? (
-                <ProductPriceLabel
-                  product={value.product}
-                  price={value.product_price}
-                />
-              ) : (
-                <ProductPriceLabel
-                  product={value.product}
-                  price={value.product.prices[0]}
-                />
-              )
+              return value.products.map((product) => product.name).join(', ')
             },
           },
           {
-            header: 'Allow Discount Codes',
+            header: ({ column }) => (
+              <DataTableColumnHeader column={column} title="Discount Codes" />
+            ),
             accessorKey: 'allow_discount_codes',
             cell: ({ cell }) => {
               const value = cell.row.original
@@ -179,7 +199,9 @@ export const ClientPage = ({
             },
           },
           {
-            header: 'Success URL',
+            header: ({ column }) => (
+              <DataTableColumnHeader column={column} title="Success URL" />
+            ),
             accessorKey: 'success_url',
             cell: ({ cell }) => {
               return cell.row.original.success_url ? (
@@ -197,6 +219,7 @@ export const ClientPage = ({
           {
             header: '',
             accessorKey: 'actions',
+            enableSorting: false,
             cell: ({ cell }) => {
               return (
                 <span className="flex flex-row items-center justify-end">
@@ -238,8 +261,8 @@ export const ClientPage = ({
         isShown={isManagementModalShown}
         hide={hideManagementModal}
         modalContent={
-          <CheckoutLinkMangementModal
-            product={product}
+          <CheckoutLinkManagementModal
+            organization={organization}
             onClose={(checkoutLink) => {
               setSelectionState({ [checkoutLink.id]: true })
               hideManagementModal()

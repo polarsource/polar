@@ -78,6 +78,7 @@ Happens when the subscription is canceled, or payment is past due.
       "id": "string",
       "name": "string",
       "description": "string",
+      "recurring_interval": "month",
       "is_recurring": true,
       "is_archived": true,
       "organization_id": "string",
@@ -93,10 +94,11 @@ Happens when the subscription is canceled, or payment is past due.
           "amount_type": "fixed",
           "is_archived": true,
           "product_id": "string",
+          "type": "recurring",
+          "recurring_interval": "month",
           "price_currency": "string",
           "price_amount": 0,
-          "type": "recurring",
-          "recurring_interval": "month"
+          "legacy": true
         }
       ],
       "benefits": [
@@ -172,10 +174,11 @@ Happens when the subscription is canceled, or payment is past due.
       "amount_type": "fixed",
       "is_archived": true,
       "product_id": "string",
+      "type": "recurring",
+      "recurring_interval": "month",
       "price_currency": "string",
       "price_amount": 0,
-      "type": "recurring",
-      "recurring_interval": "month"
+      "legacy": true
     },
     "discount": {
       "duration": "once",

@@ -20,7 +20,7 @@
         "anchor": "Docs",
         "icon": "compass",
         "groups": [
-          { 
+          {
             "group": "Bootup",
             "pages": [
               "introduction",
@@ -122,7 +122,7 @@
               {
                 "group": "OAuth 2.0",
                 "pages": [
-                  "integrate/oauth2/intro",
+                  "integrate/oauth2/introduction",
                   "integrate/oauth2/setup",
                   "integrate/oauth2/connect"
                 ]
@@ -416,6 +416,8 @@
     { "source": "/api/:path*", "destination": "/api-reference" },
     { "source": "/docs/api", "destination": "/api-reference" },
     { "source": "/docs/api/:path*", "destination": "/api-reference" },
+    { "source": "/docs/developers/sandbox", "destination": "/integrate/sandbox" },
+    { "source": "/docs/support", "destination": "/suppport" },
 
     { "source": "/documentation/welcome-to-polar", "destination": "/introduction" },
     { "source": "/documentation/tools/polar-migrate", "destination": "/migrate" },

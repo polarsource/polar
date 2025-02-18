@@ -180,6 +180,7 @@ export const createCheckoutPreview = (
     status: 'open',
     expires_at: new Date().toISOString(),
     client_secret: 'CLIENT_SECRET',
+    products: [product],
     product: product,
     product_id: product.id,
     product_price: price,

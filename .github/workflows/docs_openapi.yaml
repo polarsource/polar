@@ -43,7 +43,7 @@ jobs:
         run: curl -o openapi.yaml https://spec.speakeasy.com/polar/polar/polar-oas-with-code-samples
 
       - name: Update webhooks
-        run: pnpm run update-webhooks
+        run: pnpm run generate-webhooks
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7

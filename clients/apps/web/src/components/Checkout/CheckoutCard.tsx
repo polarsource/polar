@@ -18,6 +18,7 @@ export const CheckoutCard = ({
   disabled,
 }: CheckoutCardProps) => {
   const { product } = checkout
+
   return (
     <ShadowBox className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-6 rounded-3xl bg-gray-50">
       <CheckoutPricing
@@ -25,6 +26,7 @@ export const CheckoutCard = ({
         update={update}
         disabled={disabled}
       />
+
       {product.benefits.length > 0 ? (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">

@@ -6,7 +6,7 @@ import { formatCurrencyNumber } from '../utils/money'
 interface AmountLabelProps {
   amount: number
   currency: string
-  interval?: SubscriptionRecurringInterval
+  interval?: SubscriptionRecurringInterval | null
 }
 
 const AmountLabel: React.FC<AmountLabelProps> = ({

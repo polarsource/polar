@@ -48,6 +48,7 @@ async def get_product(
             id=product.id,
             name=product.name,
             description=product.description,
+            recurring_interval=product.recurring_interval,
             is_recurring=product.is_recurring,
             is_archived=product.is_archived,
             organization_id=product.organization_id,

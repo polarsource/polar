@@ -8,7 +8,6 @@ import {
   useCustomerUncancelSubscription,
 } from '@/hooks/queries'
 import { Client, schemas } from '@polar-sh/client'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useMemo, useState } from 'react'
@@ -20,21 +19,25 @@ const CustomerSubscriptionDetails = ({
   subscription,
   products,
   api,
-  cancelSubscription,
   onUserSubscriptionUpdate,
-  isCanceled,
 }: {
   subscription: schemas['CustomerSubscription']
   products: schemas['CustomerProduct'][]
   api: Client
-  cancelSubscription: ReturnType<typeof useCustomerCancelSubscription>
   onUserSubscriptionUpdate: (
     subscription: schemas['CustomerSubscription'],
   ) => void
-  isCanceled: boolean
 }) => {
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
+
+  const cancelSubscription = useCustomerCancelSubscription(api)
+
+  const isCanceled =
+    cancelSubscription.isPending ||
+    cancelSubscription.isSuccess ||
+    !!subscription.ended_at ||
+    !!subscription.ends_at
 
   const organization = subscription.product.organization
 
@@ -81,16 +84,6 @@ const CustomerSubscriptionDetails = ({
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-col gap-y-4">
           <h3 className="truncate text-2xl">{subscription.product.name}</h3>
-          <div className="flex flex-row items-center gap-x-3">
-            <Avatar
-              className="h-8 w-8"
-              avatar_url={organization.avatar_url}
-              name={organization.name}
-            />
-            <p className="dark:text-polar-500 text-sm text-gray-500">
-              {organization.name}
-            </p>
-          </div>
         </div>
       </div>
       <div className="flex flex-col gap-y-2 text-sm">

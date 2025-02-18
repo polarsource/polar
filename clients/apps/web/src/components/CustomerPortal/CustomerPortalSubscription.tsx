@@ -1,21 +1,18 @@
 'use client'
 
-import revalidate from '@/app/actions'
 import { BenefitGrant } from '@/components/Benefit/BenefitGrant'
 import {
   useCustomerBenefitGrants,
-  useCustomerCancelSubscription,
   useCustomerOrderInvoice,
   useCustomerOrders,
 } from '@/hooks/queries'
-import { ReceiptOutlined } from '@mui/icons-material'
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useCallback } from 'react'
-import CustomerSubscriptionDetails from '../Subscriptions/CustomerSubscriptionDetails'
 
 const CustomerPortalSubscription = ({
   api,
@@ -38,10 +35,6 @@ const CustomerPortalSubscription = ({
     sorting: ['-created_at'],
   })
 
-  const onSubscriptionUpdate = useCallback(async () => {
-    await revalidate(`customer_portal`)
-  }, [])
-
   const orderInvoiceMutation = useCustomerOrderInvoice(api)
   const openInvoice = useCallback(
     async (order: schemas['CustomerOrder']) => {
@@ -53,26 +46,10 @@ const CustomerPortalSubscription = ({
 
   const hasInvoices = orders?.items && orders.items.length > 0
 
-  const cancelSubscription = useCustomerCancelSubscription(api)
-  const isCanceled =
-    cancelSubscription.isPending ||
-    cancelSubscription.isSuccess ||
-    !!subscription.ended_at ||
-    !!subscription.ends_at
-
   return (
     <>
-      <div className="flex h-full flex-col gap-12">
+      <div className="flex h-full flex-col gap-8">
         <div className="flex w-full flex-col gap-8">
-          <CustomerSubscriptionDetails
-            api={api}
-            subscription={subscription}
-            products={products}
-            onUserSubscriptionUpdate={onSubscriptionUpdate}
-            cancelSubscription={cancelSubscription}
-            isCanceled={isCanceled}
-          />
-
           {(benefitGrants?.items.length ?? 0) > 0 && (
             <div className="flex flex-col gap-4">
               <List>
@@ -91,43 +68,59 @@ const CustomerPortalSubscription = ({
 
         <div className="flex w-full flex-col gap-8">
           {hasInvoices && (
-            <div className="flex flex-col gap-y-4">
-              <h3 className="font-medium">Invoices</h3>
-              <List size="small">
-                {orders.items?.map((order) => (
-                  <ListItem
-                    key={order.id}
-                    className="flex flex-row items-center justify-between"
-                    size="small"
-                  >
-                    <div className="flex flex-col">
-                      <span className="text-sm">
-                        <FormattedDateTime
-                          datetime={order.created_at}
-                          dateStyle="medium"
-                          resolution="day"
-                        />
-                      </span>
+            <div className="flex flex-col gap-y-6">
+              <h3 className="text-xl">Invoices</h3>
+              <DataTable
+                data={orders.items ?? []}
+                isLoading={false}
+                columns={[
+                  {
+                    accessorKey: 'created_at',
+                    header: 'Date',
+                    cell: ({ row }) => (
+                      <FormattedDateTime
+                        datetime={row.original.created_at}
+                        dateStyle="medium"
+                        resolution="day"
+                      />
+                    ),
+                  },
+                  {
+                    accessorKey: 'product.name',
+                    header: 'Product',
+                    cell: ({ row }) => row.original.product.name,
+                  },
+                  {
+                    accessorKey: 'amount',
+                    header: 'Amount',
+                    cell: ({ row }) => (
                       <span className="dark:text-polar-500 text-sm text-gray-500">
                         {formatCurrencyAndAmount(
-                          order.amount,
-                          order.currency,
+                          row.original.amount,
+                          row.original.currency,
                           0,
                         )}
                       </span>
-                    </div>
-                    <Button
-                      className="h-8 w-8 rounded-full"
-                      variant="secondary"
-                      onClick={() => openInvoice(order)}
-                      loading={orderInvoiceMutation.isPending}
-                      disabled={orderInvoiceMutation.isPending}
-                    >
-                      <ReceiptOutlined fontSize="inherit" />
-                    </Button>
-                  </ListItem>
-                ))}
-              </List>
+                    ),
+                  },
+                  {
+                    accessorKey: 'id',
+                    header: '',
+                    cell: ({ row }) => (
+                      <span className="flex justify-end">
+                        <Button
+                          variant="secondary"
+                          onClick={() => openInvoice(row.original)}
+                          loading={orderInvoiceMutation.isPending}
+                          disabled={orderInvoiceMutation.isPending}
+                        >
+                          <span className="">View Invoice</span>
+                        </Button>
+                      </span>
+                    ),
+                  },
+                ]}
+              />
             </div>
           )}
         </div>

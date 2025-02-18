@@ -1590,6 +1590,58 @@ class TestUpdate:
         assert checkout.amount == new_price.price_amount
         assert checkout.currency == new_price.price_currency
 
+    async def test_valid_product_change_not_applicable_discount(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        product: Product,
+        checkout_recurring_fixed: Checkout,
+    ) -> None:
+        """
+        If the Checkout has a discount that is not applicable to the new product,
+        the discount should be removed.
+        """
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amount=1000,
+            currency="usd",
+            duration=DiscountDuration.forever,
+            organization=product.organization,
+            products=[product],
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=product.organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(4242,)],
+        )
+
+        checkout_recurring_fixed.checkout_products.append(
+            CheckoutProduct(product=new_product, order=1)
+        )
+        checkout_recurring_fixed.discount = discount
+        await save_fixture(checkout_recurring_fixed)
+
+        checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout_recurring_fixed,
+            CheckoutUpdate(
+                product_id=new_product.id,
+            ),
+        )
+
+        new_price = new_product.prices[0]
+        assert isinstance(new_price, ProductPriceFixed)
+
+        assert checkout.product_price == new_price
+        assert checkout.product == new_product
+        assert checkout.amount == new_price.price_amount
+        assert checkout.currency == new_price.price_currency
+        assert checkout.discount is None
+
     async def test_valid_fixed_price_amount_update(
         self,
         session: AsyncSession,

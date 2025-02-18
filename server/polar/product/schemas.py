@@ -458,9 +458,8 @@ NewProductPrice = Annotated[
 
 def _get_discriminator_value(v: Any) -> Literal["legacy", "new"]:
     if isinstance(v, dict):
-        type = v.get("type")
-    else:
-        type = getattr(v, "type", None)
+        return "legacy" if "legacy" in v else "new"
+    type = getattr(v, "type", None)
     return "legacy" if type is not None else "new"
 
 

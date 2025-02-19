@@ -1,8 +1,11 @@
+import uuid
 from collections.abc import Sequence
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 import structlog
+from sqlalchemy import UnaryExpression, asc, desc
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
@@ -12,6 +15,7 @@ from polar.enums import TokenType
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.pagination import PaginationParams
+from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import OrganizationAccessToken, User
@@ -23,6 +27,7 @@ from polar.user_organization.service import (
 
 from .repository import OrganizationAccessTokenRepository
 from .schemas import OrganizationAccessTokenCreate, OrganizationAccessTokenUpdate
+from .sorting import OrganizationAccessTokenSortProperty
 
 log: Logger = structlog.get_logger()
 
@@ -35,10 +40,41 @@ class OrganizationAccessTokenService:
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         *,
+        organization_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
+        sorting: list[Sorting[OrganizationAccessTokenSortProperty]] = [
+            (OrganizationAccessTokenSortProperty.created_at, False)
+        ],
     ) -> tuple[Sequence[OrganizationAccessToken], int]:
         repository = OrganizationAccessTokenRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject)
+
+        if organization_id is not None:
+            statement = statement.where(
+                OrganizationAccessToken.organization_id.in_(organization_id)
+            )
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == OrganizationAccessTokenSortProperty.created_at:
+                order_by_clauses.append(
+                    clause_function(OrganizationAccessToken.created_at)
+                )
+            elif criterion == OrganizationAccessTokenSortProperty.comment:
+                order_by_clauses.append(
+                    clause_function(OrganizationAccessToken.comment)
+                )
+            elif criterion == OrganizationAccessTokenSortProperty.last_used_at:
+                order_by_clauses.append(
+                    clause_function(OrganizationAccessToken.last_used_at)
+                )
+            elif criterion == OrganizationAccessTokenSortProperty.organization_id:
+                order_by_clauses.append(
+                    clause_function(OrganizationAccessToken.organization_id)
+                )
+        statement = statement.order_by(*order_by_clauses)
+
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page
         )

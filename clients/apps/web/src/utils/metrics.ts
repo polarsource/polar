@@ -296,6 +296,7 @@ export const metricToCumulativeType: Record<
   renewed_subscriptions_revenue: 'sum',
   active_subscriptions: 'lastValue',
   monthly_recurring_revenue: 'lastValue',
+  quantity: 'sum',
 }
 
 export type MetricCumulativeType = 'sum' | 'average' | 'lastValue'

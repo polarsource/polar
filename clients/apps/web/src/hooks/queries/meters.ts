@@ -65,16 +65,24 @@ export const useMeterQuantities = (
   startTimestamp: Date,
   endTimestamp: Date,
   interval: schemas['TimeInterval'],
+  customerId?: string,
   parameters?: Omit<
     NonNullable<operations['meters:quantities']['parameters']['query']>,
-    'id' | 'startTimestamp' | 'endTimestamp' | 'interval'
+    'id' | 'startTimestamp' | 'endTimestamp' | 'interval' | 'customer_id'
   >,
 ): UseQueryResult<ParsedMeterQuantities, Error> =>
   useQuery({
     queryKey: [
       'meters',
       'quantities',
-      { id, startTimestamp, endTimestamp, interval, ...(parameters || {}) },
+      {
+        id,
+        startTimestamp,
+        endTimestamp,
+        interval,
+        customerId,
+        ...(parameters || {}),
+      },
     ],
     queryFn: async () => {
       const result = await unwrap(

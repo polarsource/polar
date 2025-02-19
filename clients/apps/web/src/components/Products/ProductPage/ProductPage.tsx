@@ -32,6 +32,13 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
     startDate: new Date(product.created_at),
     endDate: new Date(),
   })
+  const { data: todayMetrics } = useMetrics({
+    organization_id: organization.id,
+    startDate: new Date(),
+    endDate: new Date(),
+    interval: 'day',
+    product_id: [product.id],
+  })
 
   return (
     <Tabs defaultValue="overview" className="h-full">
@@ -68,8 +75,8 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
         </TabsList>
         <TabsContent value="overview">
           <ProductOverview
-            metrics={metrics?.metrics}
-            periods={metrics?.periods}
+            metrics={metrics}
+            todayMetrics={todayMetrics}
             organization={organization}
             product={product}
           />

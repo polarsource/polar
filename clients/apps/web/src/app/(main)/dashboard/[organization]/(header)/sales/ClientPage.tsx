@@ -209,6 +209,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
     interval: dateToInterval(new Date(organization.created_at)),
     product_id: productId,
   })
+  const { data: todayMetricsData } = useMetrics({
+    organization_id: organization.id,
+    startDate: new Date(),
+    endDate: new Date(),
+    interval: 'day',
+    product_id: productId,
+  })
 
   return (
     <DashboardBody>
@@ -233,8 +240,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
           />
           <MiniMetricChartBox
             title="Today's Revenue"
-            value={metricsData?.periods[metricsData.periods.length - 1].revenue}
-            metric={metricsData?.metrics.revenue}
+            value={
+              todayMetricsData?.periods[todayMetricsData.periods.length - 1]
+                .revenue
+            }
+            metric={todayMetricsData?.metrics.revenue}
           />
           <MiniMetricChartBox
             value={

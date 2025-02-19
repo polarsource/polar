@@ -8,6 +8,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
+import { useMemo } from 'react'
 import { DashboardBody } from '../../Layout/DashboardLayout'
 import { ProductThumbnail } from '../ProductThumbnail'
 import { ProductMetricsView } from './ProductMetricsView'
@@ -25,10 +26,14 @@ export interface ProductPageProps {
 }
 
 export const ProductPage = ({ organization, product }: ProductPageProps) => {
+  const interval = useMemo(
+    () => dateToInterval(new Date(product.created_at)),
+    [product.created_at],
+  )
   const { data: metrics, isLoading: metricsLoading } = useMetrics({
     organization_id: organization.id,
     product_id: [product.id],
-    interval: dateToInterval(new Date(product.created_at)),
+    interval,
     startDate: new Date(product.created_at),
     endDate: new Date(),
   })
@@ -85,6 +90,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
           <ProductMetricsView
             metrics={metrics?.metrics}
             periods={metrics?.periods}
+            interval={interval}
             loading={metricsLoading}
           />
         </TabsContent>

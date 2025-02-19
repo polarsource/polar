@@ -4,7 +4,6 @@ import Spinner from '@/components/Shared/Spinner'
 import { ParsedMetricPeriod } from '@/hooks/queries'
 import {
   computeCumulativeValue,
-  dateToInterval,
   metricDisplayNames,
   MetricMarksResolver,
 } from '@/utils/metrics'
@@ -39,6 +38,7 @@ interface MetricChartBoxProps {
 const MetricChartBox: React.FC<MetricChartBoxProps> = ({
   className,
   data,
+  interval,
   metric,
   height = 300,
   maxTicks,
@@ -175,7 +175,7 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
           <MetricChart
             height={height}
             data={data}
-            interval={dateToInterval(data[0].timestamp)}
+            interval={interval}
             marks={marks}
             maxTicks={maxTicks}
             metric={

@@ -97,12 +97,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
   const [selectedRange, setSelectedRange] = React.useState<Range>('all_time')
 
   const startDate = getRangeStartDate(selectedRange, customer)
-
+  const interval = useMemo(() => dateToInterval(startDate), [startDate])
   const { data: metricsData, isLoading: metricsLoading } = useMetrics({
     startDate: startDate,
     endDate: new Date(),
     organization_id: organization.id,
-    interval: dateToInterval(startDate),
+    interval,
     customer_id: [customer.id],
   })
 
@@ -218,7 +218,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
                 <MetricChart
                   height={300}
                   data={metricsData.periods}
-                  interval={dateToInterval(startDate)}
+                  interval={interval}
                   marks={defaultMetricMarks}
                   metric={metricsData.metrics[selectedMetric]}
                   onDataIndexHover={(period) =>

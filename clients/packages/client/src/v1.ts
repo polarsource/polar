@@ -6172,14 +6172,35 @@ export interface components {
             products: components["schemas"]["CheckoutLinkProduct"][];
             /** Discount */
             discount: (components["schemas"]["DiscountFixedOnceForeverDurationBase"] | components["schemas"]["DiscountFixedRepeatDurationBase"] | components["schemas"]["DiscountPercentageOnceForeverDurationBase"] | components["schemas"]["DiscountPercentageRepeatDurationBase"]) | null;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @deprecated
+             */
+            product_id: string;
+            /**
+             * Product Price Id
+             * Format: uuid4
+             * @deprecated
+             */
+            product_price_id: string;
+            /** @deprecated */
+            product: components["schemas"]["CheckoutLinkProduct"];
+            /**
+             * Product Price
+             * @deprecated
+             */
+            product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /** Url */
             readonly url: string;
         };
         /**
-         * CheckoutLinkCreate
-         * @description Schema to create a new checkout link.
+         * CheckoutLinkCreateProduct
+         * @description Schema to create a new checkout link from a a single product.
+         *
+         *     **Deprecated**: Use `CheckoutLinkCreateProducts` instead.
          */
-        CheckoutLinkCreate: {
+        CheckoutLinkCreateProduct: {
             /**
              * Metadata
              * @description Key-value object allowing you to store additional information.
@@ -6196,11 +6217,6 @@ export interface components {
             metadata?: {
                 [key: string]: string | number | boolean;
             };
-            /**
-             * Products
-             * @description List of products that will be available to select at checkout.
-             */
-            products: string[];
             /**
              * Payment Processor
              * @description Payment processor to use. Currently only Stripe is supported.
@@ -6228,6 +6244,121 @@ export interface components {
              * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
              */
             success_url?: string | null;
+            /**
+             * Product Id
+             * Format: uuid4
+             */
+            product_id: string;
+        };
+        /**
+         * CheckoutLinkCreateProductPrice
+         * @description Schema to create a new checkout link from a a single product price.
+         *
+         *     **Deprecated**: Use `CheckoutLinkCreateProducts` instead.
+         */
+        CheckoutLinkCreateProductPrice: {
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Payment Processor
+             * @description Payment processor to use. Currently only Stripe is supported.
+             * @constant
+             */
+            payment_processor: "stripe";
+            /**
+             * Label
+             * @description Optional label to distinguish links internally
+             */
+            label?: string | null;
+            /**
+             * Allow Discount Codes
+             * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+             * @default true
+             */
+            allow_discount_codes: boolean;
+            /**
+             * Discount Id
+             * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
+             */
+            discount_id?: string | null;
+            /**
+             * Success Url
+             * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
+             */
+            success_url?: string | null;
+            /**
+             * Product Price Id
+             * Format: uuid4
+             */
+            product_price_id: string;
+        };
+        /**
+         * CheckoutLinkCreateProducts
+         * @description Schema to create a new checkout link.
+         */
+        CheckoutLinkCreateProducts: {
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Payment Processor
+             * @description Payment processor to use. Currently only Stripe is supported.
+             * @constant
+             */
+            payment_processor: "stripe";
+            /**
+             * Label
+             * @description Optional label to distinguish links internally
+             */
+            label?: string | null;
+            /**
+             * Allow Discount Codes
+             * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+             * @default true
+             */
+            allow_discount_codes: boolean;
+            /**
+             * Discount Id
+             * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
+             */
+            discount_id?: string | null;
+            /**
+             * Success Url
+             * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
+             */
+            success_url?: string | null;
+            /**
+             * Products
+             * @description List of products that will be available to select at checkout.
+             */
+            products: string[];
         };
         /**
          * CheckoutLinkProduct
@@ -6299,7 +6430,7 @@ export interface components {
          * CheckoutLinkSortProperty
          * @enum {string}
          */
-        CheckoutLinkSortProperty: "created_at" | "-created_at";
+        CheckoutLinkSortProperty: "created_at" | "-created_at" | "label" | "-label" | "success_url" | "-success_url" | "allow_discount_codes" | "-allow_discount_codes";
         /**
          * CheckoutLinkUpdate
          * @description Schema to update an existing checkout link.
@@ -12411,6 +12542,12 @@ export interface components {
             comment: string;
             /** Last Used At */
             last_used_at: string | null;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The organization ID.
+             */
+            organization_id: string;
         };
         /** OrganizationAccessTokenCreate */
         OrganizationAccessTokenCreate: {
@@ -12432,6 +12569,11 @@ export interface components {
             /** Token */
             token: string;
         };
+        /**
+         * OrganizationAccessTokenSortProperty
+         * @enum {string}
+         */
+        OrganizationAccessTokenSortProperty: "created_at" | "-created_at" | "comment" | "-comment" | "last_used_at" | "-last_used_at" | "organization_id" | "-organization_id";
         /** OrganizationAccessTokenUpdate */
         OrganizationAccessTokenUpdate: {
             /** Comment */
@@ -21192,7 +21334,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CheckoutLinkCreate"];
+                "application/json": components["schemas"]["CheckoutLinkCreateProductPrice"] | components["schemas"]["CheckoutLinkCreateProduct"] | components["schemas"]["CheckoutLinkCreateProducts"];
             };
         };
         responses: {
@@ -23501,10 +23643,14 @@ export interface operations {
     "organization_access_token:list": {
         parameters: {
             query?: {
+                /** @description Filter by organization ID. */
+                organization_id?: string | string[] | null;
                 /** @description Page number, defaults to 1. */
                 page?: number;
                 /** @description Size of a page, defaults to 10. Maximum is 100. */
                 limit?: number;
+                /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+                sorting?: components["schemas"]["OrganizationAccessTokenSortProperty"][] | null;
             };
             header?: never;
             path?: never;
@@ -24423,7 +24569,7 @@ export const benefitLicenseKeyExpirationPropertiesTimeframeValues: ReadonlyArray
 export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeysCreate"]["type"]> = ["license_keys"];
 export const benefitTypeValues: ReadonlyArray<components["schemas"]["BenefitType"]> = ["custom", "ads", "discord", "github_repository", "downloadables", "license_keys"];
 export const body_oauth2_consentActionValues: ReadonlyArray<components["schemas"]["Body_oauth2_consent"]["action"]> = ["allow", "deny"];
-export const checkoutLinkSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutLinkSortProperty"]> = ["created_at", "-created_at"];
+export const checkoutLinkSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutLinkSortProperty"]> = ["created_at", "-created_at", "label", "-label", "success_url", "-success_url", "allow_discount_codes", "-allow_discount_codes"];
 export const checkoutSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutSortProperty"]> = ["created_at", "-created_at", "expires_at", "-expires_at"];
 export const checkoutStatusValues: ReadonlyArray<components["schemas"]["CheckoutStatus"]> = ["open", "expired", "confirmed", "succeeded", "failed"];
 export const countAggregationFuncValues: ReadonlyArray<components["schemas"]["CountAggregation"]["func"]> = ["count"];
@@ -24497,6 +24643,7 @@ export const oAuth2ClientConfigurationUpdateGrant_typesValues: ReadonlyArray<com
 export const oAuthPlatformValues: ReadonlyArray<components["schemas"]["OAuthPlatform"]> = ["github", "github_repository_benefit", "google"];
 export const orderBillingReasonValues: ReadonlyArray<components["schemas"]["OrderBillingReason"]> = ["purchase", "subscription_create", "subscription_cycle", "subscription_update"];
 export const orderSortPropertyValues: ReadonlyArray<components["schemas"]["OrderSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "customer", "-customer", "product", "-product", "discount", "-discount", "subscription", "-subscription"];
+export const organizationAccessTokenSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationAccessTokenSortProperty"]> = ["created_at", "-created_at", "comment", "-comment", "last_used_at", "-last_used_at", "organization_id", "-organization_id"];
 export const organizationAvatarFileCreateServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileCreate"]["service"]> = ["organization_avatar"];
 export const organizationAvatarFileReadServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileRead"]["service"]> = ["organization_avatar"];
 export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationSortProperty"]> = ["created_at", "-created_at", "name", "-name"];

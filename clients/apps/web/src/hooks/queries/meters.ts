@@ -38,7 +38,7 @@ export const useMeter = (id: string, initialData?: schemas['Meter']) =>
     initialData,
   })
 
-interface ParsedMeterQuantities {
+export interface ParsedMeterQuantities {
   quantities: {
     timestamp: Date
     quantity: number

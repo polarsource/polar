@@ -50,7 +50,7 @@ const DashboardSidebar = () => {
   return (
     <aside
       className={twMerge(
-        'flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto md:w-[240px] md:overflow-y-visible',
+        'flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto md:w-[220px] md:overflow-y-visible',
       )}
     >
       <div className="flex h-full flex-col gap-y-6">
@@ -89,7 +89,7 @@ const DashboardLayout = (
 
   return (
     <DashboardProvider organization={organization}>
-      <div className="relative flex h-full w-full flex-col gap-x-8 bg-gray-100 md:flex-row md:p-6 dark:bg-transparent">
+      <div className="relative flex h-full w-full flex-col gap-x-8 bg-gray-100 md:flex-row md:p-4 dark:bg-transparent">
         <MobileNav />
         <div className="hidden md:flex">
           <DashboardSidebar />

@@ -96,7 +96,7 @@ export const ProductOverview = ({
                       avatar_url={customer.avatar_url}
                       name={customer.name || customer.email}
                     />
-                    <div className="fw-medium">{customer.email}</div>
+                    <div className="fw-medium truncate">{customer.email}</div>
                   </div>
                 )
               },

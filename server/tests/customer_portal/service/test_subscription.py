@@ -194,6 +194,11 @@ class TestUpdate:
             new_price=product_second.prices[0].stripe_price_id,
             proration_behavior="create_prorations",
             error_if_incomplete=False,
+            metadata={
+                "type": "product",
+                "product_id": str(product_second.id),
+                "product_price_id": str(new_price.id),
+            },
         )
 
 

@@ -134,6 +134,11 @@ class TestCustomerSubscriptionProductUpdate:
             new_price=new_price.stripe_price_id,
             proration_behavior=organization.proration_behavior.to_stripe(),
             error_if_incomplete=previous_free,
+            metadata={
+                "type": "product",
+                "product_id": str(product_second.id),
+                "product_price_id": str(new_price_id),
+            },
         )
 
         updated_subscription = response.json()

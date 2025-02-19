@@ -402,6 +402,7 @@ class StripeService:
         new_price: str,
         proration_behavior: Literal["always_invoice", "create_prorations", "none"],
         error_if_incomplete: bool,
+        metadata: dict[str, str],
     ) -> stripe_lib.Subscription:
         subscription = await stripe_lib.Subscription.retrieve_async(id)
 
@@ -420,6 +421,7 @@ class StripeService:
                 payment_behavior=(
                     "error_if_incomplete" if error_if_incomplete else "allow_incomplete"
                 ),
+                metadata=metadata,
             )
         except stripe_lib.InvalidRequestError as e:
             error = e.error

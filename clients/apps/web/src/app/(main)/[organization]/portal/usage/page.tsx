@@ -1,8 +1,8 @@
+import { CustomerUsage } from '@/components/CustomerPortal/CustomerUsage'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import ClientPage from './ClientPage'
 
 const cacheConfig = {
   cache: 'no-store' as RequestCache,
@@ -89,7 +89,6 @@ export default async function Page({
     params: {
       query: {
         organization_id: organization.id,
-        product_billing_type: 'one_time',
         limit: 100,
       },
     },
@@ -111,13 +110,5 @@ export default async function Page({
     throw oneTimePurchasesError
   }
 
-  return (
-    <ClientPage
-      organization={organization}
-      products={products}
-      subscriptions={subscriptions}
-      orders={oneTimePurchases}
-      customerSessionToken={searchParams.customer_session_token}
-    />
-  )
+  return <CustomerUsage organizationId={organization.id} />
 }

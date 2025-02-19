@@ -2,7 +2,8 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "palm",
   "appearance": {
-    "default": "system"
+    "default": "system",
+    "strict": true
   },
   "name": "Polar",
   "description": "Payments & Billing with 6 lines of code. Open Source & Global Merchant of Record.",

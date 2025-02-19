@@ -125,8 +125,11 @@ class Product(MetadataMixin, RecordModel):
     def get_stripe_name(self) -> str:
         return f"{self.organization.slug} - {self.name}"
 
-    def get_price(self, id: UUID) -> "ProductPrice | None":
-        for price in self.prices:
+    def get_price(
+        self, id: UUID, *, include_archived: bool = False
+    ) -> "ProductPrice | None":
+        prices = self.all_prices if include_archived else self.prices
+        for price in prices:
             if price.id == id:
                 return price
         return None

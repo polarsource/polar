@@ -54,12 +54,6 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
             />
           </div>
         }
-        header={
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="metrics">Metrics</TabsTrigger>
-          </TabsList>
-        }
         contextViewClassName="hidden md:block"
         contextView={
           <ProductPageContextView
@@ -68,6 +62,10 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
           />
         }
       >
+        <TabsList className="pb-8">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="metrics">Metrics</TabsTrigger>
+        </TabsList>
         <TabsContent value="overview">
           <ProductOverview
             metrics={metrics?.metrics}

@@ -3,7 +3,6 @@
 import { useCustomerOrderInvoice } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
 import { Client, schemas } from '@polar-sh/client'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -41,19 +40,7 @@ export const CustomerPortal = ({
   )
 
   return (
-    <div className="flex flex-col gap-y-16 py-12">
-      <div className="flex flex-row items-center gap-x-4">
-        <Avatar
-          className="h-12 w-12"
-          avatar_url={organization.avatar_url}
-          name={organization.name}
-        />
-        <h3 className="text-lg">{organization.name}</h3>
-      </div>
-      <div>
-        <h2 className="text-4xl">Customer Portal</h2>
-      </div>
-
+    <div className="flex flex-col gap-y-16">
       <CustomerPortalOverview
         api={api}
         organization={organization}

@@ -13,8 +13,10 @@ import {
 import { useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import useDebouncedCallback from '../hooks/debounce'
+import { getDiscountDisplay } from '../utils/discount'
 import { formatCurrencyNumber } from '../utils/money'
-import { hasRecurringIntervals } from '../utils/product'
+import { hasRecurringIntervals, isLegacyRecurringPrice } from '../utils/product'
+import AmountLabel from './AmountLabel'
 import ProductPriceLabel from './ProductPriceLabel'
 
 const DollarSignIcon = ({ className }: { className?: string }) => {
@@ -34,6 +36,43 @@ const DollarSignIcon = ({ className }: { className?: string }) => {
       <line x1="12" x2="12" y1="2" y2="22" />
       <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
     </svg>
+  )
+}
+
+const CheckoutProductAmountLabel = ({
+  checkout,
+}: {
+  checkout: CheckoutPublic
+}) => {
+  const { product, productPrice, discount } = checkout
+  if (!discount || productPrice.amountType !== 'fixed') {
+    return <ProductPriceLabel product={product} price={productPrice} />
+  }
+
+  return (
+    <div className="flex flex-row justify-between">
+      <AmountLabel
+        amount={checkout.subtotalAmount || 0}
+        currency={checkout.currency || 'USD'}
+        interval={
+          isLegacyRecurringPrice(productPrice)
+            ? productPrice.recurringInterval
+            : product.recurringInterval
+        }
+      />
+      <div className="flex flex-row items-center gap-x-2 text-lg">
+        <div className="text-gray-400 line-through">
+          <ProductPriceLabel product={product} price={productPrice} />
+        </div>
+
+        <div className="relative rounded bg-gradient-to-br from-gray-400 to-gray-500 px-3 py-0.5 text-center text-sm text-white shadow-md dark:from-gray-600 dark:to-gray-700">
+          <span>{getDiscountDisplay(discount)}</span>
+
+          <div className="dark:bg-polar-800 absolute left-0 top-1/2 -ml-1 flex h-2 w-2 -translate-y-1/2 transform rounded-full bg-gray-50"></div>
+          <div className="dark:bg-polar-800 absolute right-0 top-1/2 -mr-1 flex h-2 w-2 -translate-y-1/2 transform rounded-full bg-gray-50"></div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -104,7 +143,7 @@ const CheckoutPricing = ({
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-light">
           {productPrice.amountType !== 'custom' && (
-            <ProductPriceLabel product={product} price={productPrice} />
+            <CheckoutProductAmountLabel checkout={checkout} />
           )}
           {productPrice.amountType === 'custom' && (
             <>

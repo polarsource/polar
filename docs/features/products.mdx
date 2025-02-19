@@ -1,6 +1,5 @@
 ---
-title: "Create Products"
-sidebarTitle: "Products"
+title: "Products"
 description: "Create digital products on Polar in minutes"
 ---
 
@@ -13,15 +12,16 @@ Subscriptions or pay once products are both considered a product in Polar (API &
 <img className="block dark:hidden" src="/assets/features/products/create.light.png" />
 <img className="hidden dark:block" src="/assets/features/products/create.dark.png" />
 
+## Create a product
 
-## Name & Description
+### Name & Description
 
 Starting off with the basic.
 
 * **Name** The title of your product.
 * **Description** Markdown is supported here too.
 
-## Pricing
+### Pricing
 
 Determine how you want to charge your customers for this product.
 
@@ -43,19 +43,23 @@ Determine how you want to charge your customers for this product.
   </Step>
 </Steps>
 
+<Warning>
+  Billing cycle and pricing type cannot be changed after the product is created.
+</Warning>
+
 <Note>
   **What if I want both a monthly and yearly pricing?**
 
   Polar has a unique approach to what the industry typically calls **variants**. Each product has a single pricing model, but you can create multiple products with different pricing models, and showcase them both at checkout.
 </Note>
 
-## Product Media
+### Product Media
 
 * You can upload public product images to be displayed on product pages
 * They can be up to 10MB each
 * You can remove and re-arrange images
 
-## Checkout Fields
+### Checkout Fields
 
 You can collect additional information from your customers at checkout. This can be useful for things like phone number, terms of service agreement or specific data you need to collect.
 
@@ -74,7 +78,7 @@ Fields are managed from your organization settings, and you can choose which fie
 
 The data collected will be available in the order and subscription details.
 
-## Automated Entitlements
+### Automated Entitlements
 
 Finally, you can enable or create new entitlements (what we call Benefits) that you tie to the product.
 
@@ -92,4 +96,20 @@ Polar has a unique approach regarding what the industry typically calls **varian
 
 We believe having a single product with multiple pricing models and benefits adds unneccessary complexity to the user and to the API. Instead, we chose to treat everything as a product, giving you maximum flexibility about the pricing and benefits you want to offer.
 
-Of course, you can showcase several products at checkout, allowing the customer to switch between them. Typically, you can offer a monthly and a yearly product, with specific pricing and benefits for each.
+You can showcase several products at checkout, allowing the customer to switch between them. Typically, you can offer a monthly and a yearly product, with specific pricing and benefits for each. Read more about how to do so using [Checkout Links](/features/checkout/links) or the [Checkout Session API](/features/checkout/session).
+
+## Update a product
+
+You can edit any product details, except the **billing cycle** and **pricing type**.
+
+For fixed price products, you can change the price. Existing subscribers will remain on their current pricing.
+
+If you add benefits, existing subscribers will get them automatically. If you remove benefits, existing subscribers will lose access to them.
+
+## Archive a product
+
+Products on Polar can't be deleted, but they can be **archived**. You can do so by clicking the **Archive** button on the bottom right of the product page.
+
+Existing customers will keep their access to the product, and subscriptions will continue to renew. However, the product will no longer be available for new purchases.
+
+It's possible to unarchive a product using the [Products Update API](/api-reference/products/update#body-is-archived).

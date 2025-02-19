@@ -1,6 +1,6 @@
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
 import { OrderAmountWithRefund } from '@/components/Refunds/OrderAmountWithRefund'
-import { ParsedMetricPeriod, useDiscounts } from '@/hooks/queries'
+import { useDiscounts } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { getDiscountDisplay } from '@/utils/discount'
 import { schemas } from '@polar-sh/client'
@@ -16,15 +16,15 @@ import Link from 'next/link'
 export interface ProductOverviewProps {
   organization: schemas['Organization']
   product: schemas['Product']
-  metrics?: schemas['Metrics']
-  periods?: ParsedMetricPeriod[]
+  metrics?: schemas['MetricsResponse']
+  todayMetrics?: schemas['MetricsResponse']
 }
 
 export const ProductOverview = ({
   organization,
   product,
   metrics,
-  periods,
+  todayMetrics,
 }: ProductOverviewProps) => {
   const { data: productOrders, isLoading: productOrdersIsLoading } = useOrders(
     organization.id,
@@ -47,21 +47,28 @@ export const ProductOverview = ({
       discount.products.some((p) => p.id === product.id),
   )
 
+  console.log(todayMetrics)
+
   return (
     <div className="flex flex-col gap-y-16">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         <MiniMetricChartBox
-          metric={metrics?.orders}
-          value={periods?.reduce((acc, current) => acc + current.orders, 0)}
+          metric={metrics?.metrics.orders}
+          value={metrics?.periods.reduce(
+            (acc, current) => acc + current.orders,
+            0,
+          )}
         />
         <MiniMetricChartBox
           title="Today's Revenue"
-          metric={metrics?.revenue}
-          value={periods?.[periods.length - 1].revenue}
+          metric={todayMetrics?.metrics.revenue}
+          value={todayMetrics?.periods[todayMetrics.periods.length - 1].revenue}
         />
         <MiniMetricChartBox
-          metric={metrics?.cumulative_revenue}
-          value={periods?.[periods.length - 1].cumulative_revenue}
+          metric={metrics?.metrics.cumulative_revenue}
+          value={
+            metrics?.periods[metrics?.periods.length - 1].cumulative_revenue
+          }
         />
       </div>
       <div className="flex flex-col gap-y-6">

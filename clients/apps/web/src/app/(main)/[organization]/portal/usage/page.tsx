@@ -2,7 +2,6 @@ import { CustomerUsage } from '@/components/CustomerPortal/CustomerUsage'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
 
 const cacheConfig = {
   cache: 'no-store' as RequestCache,
@@ -61,54 +60,10 @@ export default async function Page({
   searchParams: { customer_session_token?: string }
 }) {
   const api = getServerSideAPI(searchParams.customer_session_token)
-  const { organization, products } = await getOrganizationOrNotFound(
+  const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,
   )
-
-  const {
-    data: subscriptions,
-    error: subscriptionsError,
-    response: subscriptionsResponse,
-  } = await api.GET('/v1/customer-portal/subscriptions/', {
-    params: {
-      query: {
-        organization_id: organization.id,
-        active: true,
-        limit: 100,
-      },
-    },
-    ...cacheConfig,
-  })
-
-  const {
-    data: oneTimePurchases,
-    error: oneTimePurchasesError,
-    response: oneTimePurchasesResponse,
-  } = await api.GET('/v1/customer-portal/orders/', {
-    params: {
-      query: {
-        organization_id: organization.id,
-        limit: 100,
-      },
-    },
-    ...cacheConfig,
-  })
-
-  if (
-    subscriptionsResponse.status === 401 ||
-    oneTimePurchasesResponse.status === 401
-  ) {
-    redirect(`/${organization.slug}/portal/request`)
-  }
-
-  if (subscriptionsError) {
-    throw subscriptionsError
-  }
-
-  if (oneTimePurchasesError) {
-    throw oneTimePurchasesError
-  }
 
   return <CustomerUsage organizationId={organization.id} />
 }

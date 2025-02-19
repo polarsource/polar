@@ -12,26 +12,52 @@ You can retrieve your Product ID from Products in your dashboard, click on "cont
 
 The API will return you an object containing all the information about the session, including **an URL where you should redirect your customer** so they can complete their order.
 
-TypeScript Example
--------------------------
+## Multiple products
 
-Using our TypeScript SDK, creating a checkout session is quite straight forward.
+You can create a checkout session with multiple products. This is useful if you want to allow your customers to choose between different products before they checkout.
 
-```typescript
-import { Polar } from "@polar-sh/sdk";
+<img className="block dark:hidden" src="/assets/features/checkout/session/checkout_multiple_products.light.png" />
+<img className="hidden dark:block" src="/assets/features/checkout/session/checkout_multiple_products.dark.png" />
 
-const polar = new Polar({
-  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
-});
+## SDK examples
 
-async function run() {
-  const checkout = await polar.checkouts.custom.create({
-    productId: "<value>",
-  });
+Using our SDK, creating a checkout session is quite straightforward.
 
-  redirect(checkout.url)
-}
 
-run();
-```
+<Tabs>
+  <Tab title="TypeScript">
+    ```ts
+    import { Polar } from "@polar-sh/sdk";
 
+    const polar = new Polar({
+      accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+    });
+
+    async function run() {
+      const checkout = await polar.checkouts.create({
+        products: ["productId"]
+      });
+
+      console.log(checkout.url)
+    }
+
+    run();
+    ```
+  </Tab>
+  <Tab title="Python">
+    ```python
+    from polar_sdk import Polar
+
+    with Polar(
+        access_token="<YOUR_BEARER_TOKEN_HERE>",
+    ) as polar:
+
+        checkout = polar.checkouts.create(request={
+            "allow_discount_codes": True,
+            "product_id": "<value>",
+        })
+
+        print(checkout.url)
+    ```
+  </Tab>
+</Tabs>

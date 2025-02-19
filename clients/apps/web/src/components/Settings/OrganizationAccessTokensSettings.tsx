@@ -324,7 +324,7 @@ const AccessTokenItem = ({
   const deleteToken = useDeleteOrganizationAccessToken()
 
   const onDelete = useCallback(async () => {
-    deleteToken.mutateAsync({ id: token.id }).then(({ error }) => {
+    deleteToken.mutateAsync(token).then(({ error }) => {
       if (error) {
         toast({
           title: 'Access Token Deletion Failed',
@@ -441,7 +441,7 @@ const OrganizationAccessTokensSettings = ({
 }: {
   organization: schemas['Organization']
 }) => {
-  const tokens = useOrganizationAccessTokens()
+  const tokens = useOrganizationAccessTokens(organization.id)
   const [createdToken, setCreatedToken] =
     useState<schemas['OrganizationAccessTokenCreateResponse']>()
 

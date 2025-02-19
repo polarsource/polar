@@ -126,14 +126,35 @@ export const useOrganizationAccount = (id?: string) =>
     enabled: !!id,
   })
 
-export const useOrganizationAccessTokens = () =>
+export const useOrganizationAccessTokens = (
+  organization_id: string,
+  params?: Omit<
+    NonNullable<
+      operations['organization_access_token:list']['parameters']['query']
+    >,
+    'organization_id'
+  >,
+) =>
   useQuery({
-    queryKey: ['organization_access_tokens'],
-    queryFn: () => unwrap(api.GET('/v1/organization-access-tokens/')),
+    queryKey: [
+      'organization_access_tokens',
+      { organization_id, ...(params || {}) },
+    ],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organization-access-tokens/', {
+          params: {
+            query: {
+              organization_id,
+              ...(params || {}),
+            },
+          },
+        }),
+      ),
     retry: defaultRetry,
   })
 
-export const useCreateOrganizationAccessToken = (id: string) =>
+export const useCreateOrganizationAccessToken = (organization_id: string) =>
   useMutation({
     mutationFn: (
       body: Omit<schemas['OrganizationAccessTokenCreate'], 'organization_id'>,
@@ -141,7 +162,7 @@ export const useCreateOrganizationAccessToken = (id: string) =>
       return api.POST('/v1/organization-access-tokens/', {
         body: {
           ...body,
-          organization_id: id,
+          organization_id,
         },
       })
     },
@@ -151,7 +172,7 @@ export const useCreateOrganizationAccessToken = (id: string) =>
         return
       }
       queryClient.invalidateQueries({
-        queryKey: ['organization_access_tokens'],
+        queryKey: ['organization_access_tokens', { organization_id }],
       })
     },
   })
@@ -165,30 +186,36 @@ export const useUpdateOrganizationAccessToken = (id: string) =>
       })
     },
     onSuccess: (result, _variables, _ctx) => {
-      const { error } = result
+      const { data, error } = result
       if (error) {
         return
       }
       queryClient.invalidateQueries({
-        queryKey: ['organization_access_tokens'],
+        queryKey: [
+          'organization_access_tokens',
+          { organization_id: data.organization_id },
+        ],
       })
     },
   })
 
 export const useDeleteOrganizationAccessToken = () =>
   useMutation({
-    mutationFn: (variables: { id: string }) => {
+    mutationFn: (variables: schemas['OrganizationAccessToken']) => {
       return api.DELETE('/v1/organization-access-tokens/{id}', {
         params: { path: { id: variables.id } },
       })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result, variables, _ctx) => {
       const { error } = result
       if (error) {
         return
       }
       queryClient.invalidateQueries({
-        queryKey: ['organization_access_tokens'],
+        queryKey: [
+          'organization_access_tokens',
+          { organization_id: variables.organization_id },
+        ],
       })
     },
   })

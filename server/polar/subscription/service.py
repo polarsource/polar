@@ -370,14 +370,18 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id(
-            uuid.UUID(product_id), options=product_repository.get_eager_options()
+            uuid.UUID(product_id),
+            options=(
+                *product_repository.get_eager_options(),
+                selectinload(Product.all_prices),
+            ),
         )
         if product is None:
             raise AssociatedProductDoesNotExist(stripe_subscription.id, product_id)
         if not product.is_recurring:
             raise NotARecurringProduct(stripe_subscription.id, price_id)
 
-        price = product.get_price(uuid.UUID(price_id))
+        price = product.get_price(uuid.UUID(price_id), include_archived=True)
         if price is None:
             raise AssociatedPriceDoesNotExist(stripe_subscription.id, price_id)
 
@@ -528,14 +532,18 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id(
-            uuid.UUID(product_id), options=product_repository.get_eager_options()
+            uuid.UUID(product_id),
+            options=(
+                *product_repository.get_eager_options(),
+                selectinload(Product.all_prices),
+            ),
         )
         if product is None:
             raise AssociatedProductDoesNotExist(stripe_subscription.id, product_id)
         if not product.is_recurring:
             raise NotARecurringProduct(stripe_subscription.id, price_id)
 
-        price = product.get_price(uuid.UUID(price_id))
+        price = product.get_price(uuid.UUID(price_id), include_archived=True)
         if price is None:
             raise AssociatedPriceDoesNotExist(stripe_subscription.id, price_id)
 

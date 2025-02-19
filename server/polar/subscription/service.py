@@ -29,6 +29,7 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ResourceUnavailable,
 )
+from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.db.postgres import AsyncSession
@@ -73,7 +74,6 @@ from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
 
 from ..product.service.product import product as product_service
-from ..product.service.product_price import product_price as product_price_service
 from .schemas import (
     SubscriptionUpdate,
     SubscriptionUpdateProduct,
@@ -83,6 +83,27 @@ log: Logger = structlog.get_logger()
 
 
 class SubscriptionError(PolarError): ...
+
+
+class InvalidSubscriptionMetadata(SubscriptionError):
+    def __init__(self, stripe_subscription_id: str) -> None:
+        self.stripe_subscription_id = stripe_subscription_id
+        message = (
+            f"Received the subscription {stripe_subscription_id} from Stripe, "
+            "but the metadata doesn't contain the product ID and product price ID."
+        )
+        super().__init__(message)
+
+
+class AssociatedProductDoesNotExist(SubscriptionError):
+    def __init__(self, stripe_subscription_id: str, product_id: str) -> None:
+        self.subscription_id = stripe_subscription_id
+        self.product_id = product_id
+        message = (
+            f"Received the subscription {stripe_subscription_id} from Stripe "
+            f"with product {product_id}, but no associated Product exists."
+        )
+        super().__init__(message)
 
 
 class AssociatedPriceDoesNotExist(SubscriptionError):
@@ -342,17 +363,25 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def create_subscription_from_stripe(
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
     ) -> Subscription:
-        price_id = stripe_subscription["items"].data[0].price.id
-        price = await product_price_service.get_by_stripe_price_id(session, price_id)
-        if price is None:
-            raise AssociatedPriceDoesNotExist(stripe_subscription.id, price_id)
+        product_id = stripe_subscription.metadata.get("product_id")
+        price_id = stripe_subscription.metadata.get("product_price_id")
+        if product_id is None or price_id is None:
+            raise InvalidSubscriptionMetadata(stripe_subscription.id)
 
-        product = price.product
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(
+            uuid.UUID(product_id), options=product_repository.get_eager_options()
+        )
+        if product is None:
+            raise AssociatedProductDoesNotExist(stripe_subscription.id, product_id)
         if not product.is_recurring:
             raise NotARecurringProduct(stripe_subscription.id, price_id)
 
-        organization = await organization_service.get(session, product.organization_id)
-        assert organization is not None
+        price = product.get_price(uuid.UUID(price_id))
+        if price is None:
+            raise AssociatedPriceDoesNotExist(stripe_subscription.id, price_id)
+
+        organization = product.organization
 
         # Get Discount if available
         discount: Discount | None = None
@@ -492,10 +521,24 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.set_started_at()
         self.update_cancellation_from_stripe(subscription, stripe_subscription)
 
-        price_id = stripe_subscription["items"].data[0].price.id
-        price = await product_price_service.get_by_stripe_price_id(session, price_id)
+        product_id = stripe_subscription.metadata.get("product_id")
+        price_id = stripe_subscription.metadata.get("product_price_id")
+        if product_id is None or price_id is None:
+            raise InvalidSubscriptionMetadata(stripe_subscription.id)
+
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(
+            uuid.UUID(product_id), options=product_repository.get_eager_options()
+        )
+        if product is None:
+            raise AssociatedProductDoesNotExist(stripe_subscription.id, product_id)
+        if not product.is_recurring:
+            raise NotARecurringProduct(stripe_subscription.id, price_id)
+
+        price = product.get_price(uuid.UUID(price_id))
         if price is None:
             raise AssociatedPriceDoesNotExist(stripe_subscription.id, price_id)
+
         subscription.price = price
         subscription.product = price.product
 
@@ -685,6 +728,11 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             new_price=price.stripe_price_id,
             proration_behavior=proration_behavior.to_stripe(),
             error_if_incomplete=isinstance(subscription.price, ProductPriceFree),
+            metadata={
+                "type": ProductType.product,
+                "product_id": str(product.id),
+                "product_price_id": str(price.id),
+            },
         )
         subscription.product = product
         subscription.price = price

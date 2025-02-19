@@ -4,6 +4,7 @@ from typing import Any, Generic, Protocol, Self, TypeVar
 
 from sqlalchemy import Select, func, over, select
 from sqlalchemy.orm import Mapped
+from sqlalchemy.sql.base import ExecutableOption
 
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
@@ -117,9 +118,14 @@ class RepositoryBase(Generic[M]):
 
 class RepositoryIDMixin(Generic[MODEL_ID, ID_TYPE]):
     async def get_by_id(
-        self: RepositoryProtocol[MODEL_ID], id: ID_TYPE
+        self: RepositoryProtocol[MODEL_ID],
+        id: ID_TYPE,
+        *,
+        options: Sequence[ExecutableOption] = (),
     ) -> MODEL_ID | None:
-        statement = self.get_base_statement().where(self.model.id == id)
+        statement = (
+            self.get_base_statement().where(self.model.id == id).options(*options)
+        )
         return await self.get_one_or_none(statement)
 
 

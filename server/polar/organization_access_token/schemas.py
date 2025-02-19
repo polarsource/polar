@@ -5,6 +5,7 @@ from pydantic import UUID4
 
 from polar.auth.scope import RESERVED_SCOPES, Scope
 from polar.kit.schemas import Schema, TimestampedSchema
+from polar.organization.schemas import OrganizationID
 
 AvailableScope = StrEnum(  # type: ignore
     "AvailableScope", {s: s.value for s in Scope if s not in RESERVED_SCOPES}
@@ -29,6 +30,7 @@ class OrganizationAccessToken(TimestampedSchema):
     expires_at: datetime | None
     comment: str
     last_used_at: datetime | None
+    organization_id: OrganizationID
 
 
 class OrganizationAccessTokenCreateResponse(Schema):

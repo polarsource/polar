@@ -35,7 +35,7 @@ import ProductSelect from '../Products/ProductSelect'
 import { toast } from '../Toast/use-toast'
 
 type CheckoutLinkCreateForm = Omit<
-  schemas['CheckoutLinkCreate'],
+  schemas['CheckoutLinkCreateProducts'],
   'payment_processor' | 'metadata'
 > & {
   metadata: { key: string; value: string | number | boolean }[]
@@ -155,7 +155,7 @@ export const CheckoutLinkForm = ({
 
   const onSubmit: SubmitHandler<CheckoutLinkCreateForm> = useCallback(
     async (data) => {
-      const body: schemas['CheckoutLinkCreate'] = {
+      const body: schemas['CheckoutLinkCreateProducts'] = {
         payment_processor: 'stripe',
         ...data,
         discount_id: data.discount_id || null,

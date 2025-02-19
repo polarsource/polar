@@ -29,7 +29,7 @@ export const useCheckoutLinks = (
 
 export const useCreateCheckoutLink = () =>
   useMutation({
-    mutationFn: (body: schemas['CheckoutLinkCreate']) => {
+    mutationFn: (body: schemas['CheckoutLinkCreateProducts']) => {
       return api.POST('/v1/checkout-links/', { body })
     },
     onSuccess: (result, _variables, _ctx) => {

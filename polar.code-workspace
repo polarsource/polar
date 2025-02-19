@@ -1,23 +1,27 @@
 {
-	"folders": [
-		{
-			"path": "clients",
-			"name": "clients"
-		},
-		{
-			"path": "server",
-			"name": "server"
-		},
-		{
-			"path": ".",
-			"name": "root",
-		}
-	],
-	"settings": {
-		// Set the Python interpreter globally, so VS Code stops complaining about invalid interpreter on other folders
-		// Also fix the Ruff extension
-		"python.defaultInterpreterPath": "${workspaceFolder:server}/.venv/bin/python",
+  "folders": [
+    {
+      "path": "clients",
+      "name": "clients"
+    },
+    {
+      "path": "server",
+      "name": "server"
+    },
+    {
+      "path": ".",
+      "name": "root"
+    },
+    {
+      "path": "docs",
+      "name": "docs"
+    }
+  ],
+  "settings": {
+    // Set the Python interpreter globally, so VS Code stops complaining about invalid interpreter on other folders
+    // Also fix the Ruff extension
+    "python.defaultInterpreterPath": "${workspaceFolder:server}/.venv/bin/python",
     // Use our own version of mypy, to avoid cache conflicts between the extension version and our own version
-		"mypy-type-checker.importStrategy": "fromEnvironment",
-	}
+    "mypy-type-checker.importStrategy": "fromEnvironment"
+  }
 }

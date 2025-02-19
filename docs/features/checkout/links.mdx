@@ -7,40 +7,57 @@ description: "Sell your digital products with ease by sharing a checkout link to
 Checkout links can be shared or linked on your website which automatically
 creates a checkout session for customers.
 
-<img className="block dark:hidden" src="/assets/features/checkout/links/checkout.light.png" />
-<img className="hidden dark:block" src="/assets/features/checkout/links/checkout.dark.png" />
+<Tip>
+  Looking for a way to generate Checkout session programmatically? Checkout Links might not be the right tool for you. Instead, you should use the [Checkout API](/features/checkout/session).
+</Tip>
 
-## No-Code Checkout Links
+## Create a Checkout Link
 
-### Creating a Checkout Link
+Checkout Links can be managed from the **Checkout Links** tabs of the Products section. Click on **New Link** to create a new one.
 
-Checkout Links can be created by pressing the "context-menu" button on the Products Overview Page. This will open a modal where you can select price and optionally set a success URL.
+<Frame>
+  <img className="block dark:hidden" src="/assets/features/checkout/links/create.light.png" />
+  <img className="hidden dark:block" src="/assets/features/checkout/links/create.dark.png" />
+</Frame>
 
-<img className="block dark:hidden" src="/assets/features/checkout/links/create.light.png" />
-<img className="hidden dark:block" src="/assets/features/checkout/links/create.dark.png" />
+#### Label
 
-You can also optionally set `Metadata`. This is a key-value object allowing you to store additional information which may be useful for you when handling the order. This metadata will be copied to the generated Checkout object and, if the checkout succeeds, to the resulting Order and/or Subscription.
+This is an internal name for the Checkout Link. It's only visible to you.
 
-### Using Checkout Links
+#### Products
 
-Add this Checkout Link on your webpage or share to customers.
+You can select one or **several** products. With several products, customers will be able to switch between them on the checkout page.
 
-<img className="block dark:hidden" src="/assets/features/checkout/links/new.light.png" />
-<img className="hidden dark:block" src="/assets/features/checkout/links/new.dark.png" />
+<img className="block dark:hidden" src="/assets/features/checkout/links/checkout_multiple_products.light.png" />
+<img className="hidden dark:block" src="/assets/features/checkout/links/checkout_multiple_products.dark.png" />
+
+#### Discount
+
+You can disable discount codes, if you wish to prevent customers from using them.
+
+You can also preset a discount: it'll be automatically applied when the customer lands on the checkout page.
+
+#### Metadata
+
+This is an optional key-value object allowing you to store additional information which may be useful for you when handling the order. This metadata will be copied to the generated Checkout object and, if the checkout succeeds, to the resulting Order and/or Subscription.
+
+## Using Checkout Links
+
+You can share the Checkout Link URL on your webpage, social media, or directly to customers.
+
+<img className="block dark:hidden" src="/assets/features/checkout/links/checkout_link.light.png" />
+<img className="hidden dark:block" src="/assets/features/checkout/links/checkout_link.dark.png" />
+
+<Warning>
+  Checkout Links will go against our API, and redirect to short-lived Checkout session. This means that the Checkout page the user will end up on, are temporary and expires after a while if no successful purchase is made.
+
+  This means that you need to make sure to always use this Checkout Link URL (as shown above). If you mistakenly copy the URL from a Checkout Session, the link will expire.
+</Warning>
 
 
-<Note>
-**Important**
+### Query parameters
 
-Checkout Links will go against our API, and redirect to short-lived Checkout session. This means that the Checkout page the user will end up on, are temporary and expires after a while if no successful purchase is made.
-
-This means that you need to make sure to always use this Checkout Link URL (as shown above). If you mistakenly copy the URL from a Checkout Session, the link will expire.
-</Note>
-
-
-### Checkout Link Parameters
-
-You can pass optional query params to your Checkout Links to pre-populate a variety of options on the Checkout Form.
+You can pass optional query parameters to your Checkout Links to pre-populate a variety of options on the Checkout Form.
 
 <ParamField path="customer_email" type="string">
   Prefill customer email at checkout
@@ -58,22 +75,6 @@ You can pass optional query params to your Checkout Links to pre-populate a vari
   Prefill amount in case of Pay What You Want pricing
 </ParamField>
 
-## Checkout Links CLI
-
-The fastest way to sell any file from your terminal.
-
-Generate a checkout link for any kind of file from the command line.
-
-### Getting Started
-
-```bash
-npx checkout-link ./path/to/file.zip
-```
-
-### Open Source
-
-The code is open source and available on GitHub
-
-[View Code on GitHub](https://github.com/polarsource/checkout-link)
-
-
+<ParamField path="custom_field_data.{slug}" type="string">
+  Prefill checkout fields data, where `{slug}` is the slug of the custom field.
+</ParamField>

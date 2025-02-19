@@ -14,45 +14,69 @@ Subscriptions or pay once products are both considered a product in Polar (API &
 <img className="hidden dark:block" src="/assets/features/products/create.dark.png" />
 
 
-Name & Description
--------------------------
+## Name & Description
 
 Starting off with the basic.
 
-* **Name.** The title of your product.
-* **Description.** Markdown is supported here too.
+* **Name** The title of your product.
+* **Description** Markdown is supported here too.
 
-Pricing
---------------
+## Pricing
 
-How much you want to charge and with what frequency (once or recurring).
+Determine how you want to charge your customers for this product.
 
-### Pay Once 
+<Steps>
+  <Step title="Billing cycle">
+    * **One-time purchase** Customer is charged once and gets access to the product forever.
+    * **Monthly** Customer is charged every month.
+    * **Yearly** Customer is charged every year.
+  </Step>
+  <Step title="Pricing type">
+    * **Fixed price** Set a fixed price for the product.
+    * **Pay what you want** Let customers decide how much they want to pay.
+    * **Free** No charge for the product.
+  </Step>
+  <Step title="Price">
+    For fixed price products, set the amount you want to charge.
 
-* Price which will be charged upon checkout
-* Price is exclusive from tax
+    For pay what you want products, you can set a minimum amount and a default amount that will be preset on checkout.
+  </Step>
+</Steps>
 
-### Subscription
+<Note>
+  **What if I want both a monthly and yearly pricing?**
 
-* You can `Add yearly pricing` (Annual billing upfront)
-* You can remove monthly pricing too if you only want annual billing
+  Polar has a unique approach to what the industry typically calls **variants**. Each product has a single pricing model, but you can create multiple products with different pricing models, and showcase them both at checkout.
+</Note>
 
-### Pay what you want
-
-* You can set a minimum amount
-* Set a default amount which will be preselected on checkout
-
-Product Media
---------------------
+## Product Media
 
 * You can upload public product images to be displayed on product pages
 * They can be up to 10MB each
 * You can remove and re-arrange images
 
-Automated Entitlements
------------------------------
+## Checkout Fields
 
-Finally, we can enable or create new entitlements (what we call Benefits) that we tie to the product.
+You can collect additional information from your customers at checkout. This can be useful for things like phone number, terms of service agreement or specific data you need to collect.
+
+<img className="block dark:hidden" src="/assets/features/products/checkout_fields.light.png" />
+<img className="hidden dark:block" src="/assets/features/products/checkout_fields.dark.png" />
+
+Fields are managed from your organization settings, and you can choose which fields to show on a per-product basis, and set if they are required or not. We support the following field types:
+
+* Text
+* Number
+* Date
+* Checkbox
+* Select
+
+<Tip>If you make a checkbox **required**, the customer will need to check it before confirming their purchase. Very handy for legal terms!</Tip>
+
+The data collected will be available in the order and subscription details.
+
+## Automated Entitlements
+
+Finally, you can enable or create new entitlements (what we call Benefits) that you tie to the product.
 
 Read more in our [product benefits guide](/features/benefits/introduction) on how they work and how to customize the built-in ones we offer:
 
@@ -61,3 +85,11 @@ Read more in our [product benefits guide](/features/benefits/introduction) on ho
 * GitHub Repository Access
 * File Downloads
 * Custom Benefit
+
+## Variants
+
+Polar has a unique approach regarding what the industry typically calls **variants**.
+
+We believe having a single product with multiple pricing models and benefits adds unneccessary complexity to the user and to the API. Instead, we chose to treat everything as a product, giving you maximum flexibility about the pricing and benefits you want to offer.
+
+Of course, you can showcase several products at checkout, allowing the customer to switch between them. Typically, you can offer a monthly and a yearly product, with specific pricing and benefits for each.

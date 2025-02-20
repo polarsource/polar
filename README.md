@@ -38,7 +38,8 @@
 </div>
 <hr />
 
-## Polar: Open source Lemon Squeezy & Paddle alternative
+## Polar: Open Source payments infrastructure for the 21st century
+
 Focus on building your passion, while we focus on the infrastructure to get you paid.
 
 - Sell SaaS and digital products in minutes

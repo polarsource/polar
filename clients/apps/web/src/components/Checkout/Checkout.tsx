@@ -129,6 +129,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     return (
       <ShadowBox className="dark:bg-polar-900 flex flex-col gap-y-12 bg-white">
         <ShadowBox className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-6 rounded-3xl bg-gray-50">
+          <CheckoutProductSwitcher checkout={checkout} update={update} />
           <CheckoutPricing checkout={checkout} update={update} />
         </ShadowBox>
         <CheckoutForm

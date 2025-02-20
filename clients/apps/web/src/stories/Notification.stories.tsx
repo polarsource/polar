@@ -13,7 +13,7 @@ import {
 import {
   MaintainerPledgeConfirmationPending,
   Notification,
-} from '../components/Notifications/Popover'
+} from '../components/Notifications/NotificationsPopover'
 
 const meta: Meta<typeof Notification> = {
   title: 'Organisms/Notification',

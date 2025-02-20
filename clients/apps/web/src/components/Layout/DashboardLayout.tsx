@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/auth'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { setLastVisitedOrg } from '@/utils/cookies'
 import { organizationPageLink } from '@/utils/nav'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import { Menu, X } from 'lucide-react'
@@ -24,8 +25,9 @@ import MaintainerNavigation from '../Dashboard/DashboardNavigation'
 import { DashboardProvider } from '../Dashboard/DashboardProvider'
 import { SubRouteWithActive } from '../Dashboard/navigation'
 import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
-import DashboardTopbar from '../Navigation/DashboardTopbar'
+import PublicProfileDropdown from '../Navigation/PublicProfileDropdown'
 import { useRoute } from '../Navigation/useRoute'
+import { NotificationsPopover } from '../Notifications/NotificationsPopover'
 import { BrandingMenu } from './Public/BrandingMenu'
 import TopbarRight from './Public/TopbarRight'
 
@@ -71,13 +73,39 @@ const DashboardSidebar = () => {
           </div>
         </div>
       </div>
+      <DashboardBottom authenticatedUser={currentUser} />
     </aside>
+  )
+}
+
+const DashboardBottom = ({
+  authenticatedUser,
+}: {
+  authenticatedUser: schemas['UserRead']
+}) => {
+  return (
+    <div className="flex flex-row items-center justify-between gap-x-5">
+      <div className="flex w-full min-w-0 flex-grow-0 flex-row items-center gap-x-2">
+        <PublicProfileDropdown
+          authenticatedUser={authenticatedUser}
+          anchor="bottombar"
+        />
+        <div className="flex w-full min-w-0 flex-col">
+          <span className="w-full truncate text-xs">
+            {authenticatedUser.email}
+          </span>
+          <span className="dark:text-polar-500 text-xs text-gray-500">
+            User Account
+          </span>
+        </div>
+      </div>
+      <NotificationsPopover />
+    </div>
   )
 }
 
 const DashboardLayout = (
   props: PropsWithChildren<{
-    breadcrumb?: React.ReactNode
     className?: string
   }>,
 ) => {
@@ -100,7 +128,6 @@ const DashboardLayout = (
             props.className,
           )}
         >
-          <DashboardTopbar breadcrumb={props.breadcrumb} />
           {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
           <main className="relative flex min-h-0 w-full flex-grow flex-col">
             {props.children}
@@ -237,7 +264,7 @@ export const DashboardBody = ({
           'relative flex w-full flex-col items-center px-4 md:overflow-y-auto',
           transparent
             ? 'bg-transparent dark:bg-transparent'
-            : 'dark:md:bg-polar-900 dark:border-polar-700 rounded-2xl border-gray-200 md:border md:bg-white md:px-12 md:shadow-sm',
+            : 'dark:md:bg-polar-900 dark:border-polar-800 rounded-2xl border-gray-200 md:border md:bg-white md:px-12 md:shadow-sm',
           transparent && scrolled
             ? 'dark:border-polar-700 border-t border-gray-200'
             : '',

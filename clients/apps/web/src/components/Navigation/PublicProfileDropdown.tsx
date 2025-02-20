@@ -21,9 +21,11 @@ import { LinkItem, ListItem, Profile } from './Navigation'
 const PublicProfileDropdown = ({
   className,
   authenticatedUser,
+  anchor,
 }: {
   className?: string
   authenticatedUser: schemas['UserRead'] | undefined
+  anchor?: 'topbar' | 'bottombar'
 }) => {
   const classNames = twMerge('relative', className)
 
@@ -48,12 +50,12 @@ const PublicProfileDropdown = ({
       <div className={classNames}>
         <div
           className={twMerge(
-            'dark:border-polar-700 dark:hover:border-polar-600 relative flex flex-shrink-0 cursor-pointer flex-row items-center rounded-full border-2 border-gray-50 shadow-sm transition-colors hover:border-blue-100',
+            'dark:border-polar-800 dark:hover:border-polar-700 relative flex flex-shrink-0 cursor-pointer flex-row items-center rounded-full border-2 border-gray-50 shadow-sm transition-colors hover:border-blue-100',
           )}
           onClick={() => setOpen(true)}
         >
           <Avatar
-            className="h-9 w-9"
+            className="h-8 w-8"
             name={loggedUser.email}
             avatar_url={loggedUser.avatar_url}
           />
@@ -63,7 +65,8 @@ const PublicProfileDropdown = ({
           <div
             ref={ref}
             className={twMerge(
-              'dark:bg-polar-900 dark:text-polar-400 dark:border-polar-700 absolute right-0 top-12 z-50 w-[300px] overflow-hidden rounded-3xl bg-white p-2 shadow-xl dark:border',
+              'dark:bg-polar-900 dark:text-polar-400 dark:border-polar-700 absolute z-50 w-[300px] overflow-hidden rounded-3xl bg-white p-2 shadow-xl dark:border',
+              anchor === 'bottombar' ? 'bottom-12 left-0' : 'right-0 top-12',
             )}
           >
             <Link

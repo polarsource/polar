@@ -1,7 +1,7 @@
 'use client'
 
 import { usePersonalFinanceSubRoutes } from '@/components/Dashboard/navigation'
-import { SubNav } from '@/components/Navigation/DashboardTopbar'
+import { SubNav } from '@/components/Navigation/SubNav'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const subRoutes = usePersonalFinanceSubRoutes()

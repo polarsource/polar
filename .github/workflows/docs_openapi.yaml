@@ -25,25 +25,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: docs/.node-version
-          cache: "pnpm"
-          cache-dependency-path: "docs/pnpm-lock.yaml"
-
-      - name: Install dependencies
-        run: pnpm install
-
       - name: Download OpenAPI schema
         run: curl -o openapi.yaml https://spec.speakeasy.com/polar/polar/polar-oas-with-code-samples
 
       - name: Update webhooks
-        run: pnpm run generate-webhooks
+        run: ./polar/webhooks.sh
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7

@@ -24,9 +24,8 @@ You can create a checkout session with multiple products. This is useful if you 
 Using our SDK, creating a checkout session is quite straightforward.
 
 
-<Tabs>
-  <Tab title="TypeScript">
-    ```ts
+<CodeGroup>
+    ```ts TypeScript
     import { Polar } from "@polar-sh/sdk";
 
     const polar = new Polar({
@@ -43,9 +42,8 @@ Using our SDK, creating a checkout session is quite straightforward.
 
     run();
     ```
-  </Tab>
-  <Tab title="Python">
-    ```python
+
+    ```py Python
     from polar_sdk import Polar
 
     with Polar(
@@ -59,5 +57,4 @@ Using our SDK, creating a checkout session is quite straightforward.
 
         print(checkout.url)
     ```
-  </Tab>
-</Tabs>
+</CodeGroup>

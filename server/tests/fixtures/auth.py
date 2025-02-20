@@ -29,13 +29,20 @@ class AuthSubjectFixture:
         self.method = method
 
     def __repr__(self) -> str:
-        scopes = "{" + ", ".join(repr(scope.value) for scope in self.scopes) + "}"
+        scopes = (
+            "{" + ", ".join(repr(scope.value) for scope in sorted(self.scopes)) + "}"
+        )
         return (
             "AuthSubjectFixture("
             f"subject={self.subject!r}, "
             f"scopes={scopes}, "
             f"method={self.method})"
         )
+
+
+CUSTOMER_AUTH_SUBJECT = AuthSubjectFixture(
+    subject="customer", scopes={Scope.customer_portal_read, Scope.customer_portal_write}
+)
 
 
 @pytest.fixture

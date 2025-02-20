@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import Select, UnaryExpression, asc, desc, nulls_first, or_, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload
 
-from polar.auth.models import AuthSubject, is_customer, is_user
+from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
@@ -18,7 +18,6 @@ from polar.models import (
     Product,
     ProductPrice,
     Subscription,
-    User,
 )
 from polar.models.subscription import CustomerCancellationReason
 from polar.subscription.service import subscription as subscription_service
@@ -49,7 +48,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Customer],
+        auth_subject: AuthSubject[Customer],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
@@ -125,7 +124,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
     async def get_by_id(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Customer],
+        auth_subject: AuthSubject[Customer],
         id: uuid.UUID,
     ) -> Subscription | None:
         statement = (
@@ -214,24 +213,12 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         )
 
     def _get_readable_subscription_statement(
-        self, auth_subject: AuthSubject[User | Customer]
+        self, auth_subject: AuthSubject[Customer]
     ) -> Select[tuple[Subscription]]:
-        statement = select(Subscription).where(Subscription.deleted_at.is_(None))
-
-        if is_user(auth_subject):
-            statement = statement.where(
-                Subscription.customer_id.in_(
-                    select(Customer.id).where(
-                        Customer.user_id == auth_subject.subject.id
-                    )
-                )
-            )
-        elif is_customer(auth_subject):
-            statement = statement.where(
-                Subscription.customer_id == auth_subject.subject.id
-            )
-
-        return statement
+        return select(Subscription).where(
+            Subscription.deleted_at.is_(None),
+            Subscription.customer_id == auth_subject.subject.id,
+        )
 
 
 customer_subscription = CustomerSubscriptionService(Subscription)

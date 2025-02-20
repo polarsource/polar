@@ -12,7 +12,7 @@ from polar.customer_portal.schemas.downloadables import DownloadableRead
 from polar.models import Customer, File, Organization, Product
 from polar.postgres import AsyncSession, sql
 from polar.redis import Redis
-from tests.fixtures.auth import AuthSubjectFixture
+from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.downloadable import TestDownloadable
 
@@ -27,7 +27,7 @@ class TestDownloadablesEndpoints:
         response = await client.get("/v1/customer-portal/downloadables/i-am-hacker")
         assert response.status_code == 404
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_wrong_token_404s(
         self,
         session: AsyncSession,
@@ -70,7 +70,7 @@ class TestDownloadablesEndpoints:
         )
         assert response.status_code == 404
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_expired_token_410s(
         self,
         session: AsyncSession,
@@ -116,7 +116,7 @@ class TestDownloadablesEndpoints:
             response = await client.get(polar_download_url, follow_redirects=False)
             assert response.status_code == 410
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_signatureless_url_403s(
         self,
         session: AsyncSession,
@@ -164,7 +164,7 @@ class TestDownloadablesEndpoints:
 
         assert response.status_code == 403
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_polar_disabled_file_vanishes(
         self,
         session: AsyncSession,
@@ -215,7 +215,7 @@ class TestDownloadablesEndpoints:
         assert pagination["total_count"] == 0
         assert len(downloadable_list) == 0
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_download(
         self,
         session: AsyncSession,

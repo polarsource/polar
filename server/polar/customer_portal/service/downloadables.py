@@ -6,7 +6,7 @@ import structlog
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.auth.models import AuthSubject, is_customer, is_user
+from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.exceptions import (
     BadRequest,
@@ -18,7 +18,7 @@ from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
-from polar.models import Benefit, Customer, User
+from polar.models import Benefit, Customer
 from polar.models.downloadable import Downloadable, DownloadableStatus
 from polar.models.file import File
 from polar.postgres import AsyncSession, sql
@@ -43,7 +43,7 @@ class DownloadableService(
     async def get_list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Customer],
+        auth_subject: AuthSubject[Customer],
         *,
         pagination: PaginationParams,
         organization_id: Sequence[UUID] | None = None,
@@ -222,9 +222,9 @@ class DownloadableService(
         )
 
     def _get_base_query(
-        self, auth_subject: AuthSubject[User | Customer]
+        self, auth_subject: AuthSubject[Customer]
     ) -> sql.Select[tuple[Downloadable]]:
-        statement = (
+        return (
             sql.select(Downloadable)
             .join(File)
             .join(Benefit)
@@ -236,24 +236,10 @@ class DownloadableService(
                 File.is_uploaded == True,  # noqa
                 File.is_enabled == True,  # noqa
                 Benefit.deleted_at.is_(None),
+                Downloadable.customer_id == auth_subject.subject.id,
             )
             .order_by(Downloadable.created_at.desc())
         )
-
-        if is_user(auth_subject):
-            statement = statement.where(
-                Downloadable.customer_id.in_(
-                    sql.select(Customer.id).where(
-                        Customer.user_id == auth_subject.subject.id
-                    )
-                )
-            )
-        elif is_customer(auth_subject):
-            statement = statement.where(
-                Downloadable.customer_id == auth_subject.subject.id
-            )
-
-        return statement
 
 
 downloadable = DownloadableService(Downloadable)

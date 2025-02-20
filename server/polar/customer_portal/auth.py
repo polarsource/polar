@@ -3,33 +3,28 @@ from typing import Annotated
 from fastapi import Depends
 
 from polar.auth.dependencies import Authenticator
-from polar.auth.models import Anonymous, AuthSubject, Customer, User
+from polar.auth.models import Anonymous, AuthSubject, Customer
 from polar.auth.scope import Scope
 
 _CustomerPortalRead = Authenticator(
     required_scopes={
-        Scope.web_default,
         Scope.customer_portal_read,
         Scope.customer_portal_write,
     },
-    allowed_subjects={User, Customer},
+    allowed_subjects={Customer},
 )
-CustomerPortalRead = Annotated[
-    AuthSubject[User | Customer], Depends(_CustomerPortalRead)
-]
+CustomerPortalRead = Annotated[AuthSubject[Customer], Depends(_CustomerPortalRead)]
 
 _CustomerPortalWrite = Authenticator(
-    required_scopes={Scope.web_default, Scope.customer_portal_write},
-    allowed_subjects={User, Customer},
+    required_scopes={Scope.customer_portal_write},
+    allowed_subjects={Customer},
 )
-CustomerPortalWrite = Annotated[
-    AuthSubject[User | Customer], Depends(_CustomerPortalWrite)
-]
+CustomerPortalWrite = Annotated[AuthSubject[Customer], Depends(_CustomerPortalWrite)]
 
 _CustomerPortalOAuthAccount = Authenticator(
-    required_scopes={Scope.web_default, Scope.customer_portal_write},
-    allowed_subjects={User, Anonymous},
+    required_scopes={Scope.customer_portal_write},
+    allowed_subjects={Customer, Anonymous},
 )
 CustomerPortalOAuthAccount = Annotated[
-    AuthSubject[User | Anonymous], Depends(_CustomerPortalOAuthAccount)
+    AuthSubject[Customer | Anonymous], Depends(_CustomerPortalOAuthAccount)
 ]

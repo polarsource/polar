@@ -1,14 +1,14 @@
 from uuid import UUID
 
 import structlog
-from sqlalchemy import func, update
+from sqlalchemy import func
 
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import PolarError
 from polar.kit.services import ResourceService
 from polar.logging import Logger
-from polar.models import Customer, OAuthAccount, User
+from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession, sql
 from polar.user.schemas.user import UserSignupAttribution
@@ -119,17 +119,6 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         user.account = account
         session.add(user)
         return user
-
-    async def link_customers(self, session: AsyncSession, user: User) -> None:
-        statement = (
-            update(Customer)
-            .values(user_id=user.id)
-            .where(
-                func.lower(Customer.email) == user.email.lower(),
-                Customer.user_id.is_(None),
-            )
-        )
-        await session.execute(statement)
 
 
 user = UserService(User)

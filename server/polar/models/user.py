@@ -25,7 +25,7 @@ from polar.kit.schemas import Schema
 from .account import Account
 
 if TYPE_CHECKING:
-    from .customer import Customer
+    pass
 
 
 class OAuthPlatform(StrEnum):
@@ -111,15 +111,6 @@ class User(RecordModel):
     @declared_attr
     def oauth_accounts(cls) -> Mapped[list[OAuthAccount]]:
         return relationship(OAuthAccount, lazy="joined", back_populates="user")
-
-    @declared_attr
-    def customers(cls) -> Mapped[list["Customer"]]:
-        return relationship(
-            "Customer",
-            lazy="raise",
-            back_populates="user",
-            foreign_keys="[Customer.user_id]",
-        )
 
     accepted_terms_of_service: Mapped[bool] = mapped_column(
         Boolean,

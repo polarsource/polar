@@ -74,7 +74,7 @@ async def list(
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[CustomerBenefitGrant]:
-    """List benefits grants of the authenticated customer or user."""
+    """List benefits grants of the authenticated customer."""
     results, count = await customer_benefit_grant_service.list(
         session,
         auth_subject,
@@ -106,7 +106,7 @@ async def get(
     auth_subject: auth.CustomerPortalRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> BenefitGrant:
-    """Get a benefit grant by ID for the authenticated customer or user."""
+    """Get a benefit grant by ID for the authenticated customer."""
     benefit_grant = await customer_benefit_grant_service.get_by_id(
         session, auth_subject, id
     )
@@ -136,7 +136,7 @@ async def update(
     auth_subject: auth.CustomerPortalWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> BenefitGrant:
-    """Update a benefit grant for the authenticated customer or user."""
+    """Update a benefit grant for the authenticated customer."""
     benefit_grant = await customer_benefit_grant_service.get_by_id(
         session, auth_subject, id
     )

@@ -6,7 +6,7 @@ import {
   notification_maintainerPledgePendingNotification,
   notification_pledgerPledgePendingNotification,
 } from '@/utils/testdata'
-import { List } from '../components/Notifications/Popover'
+import { List } from '../components/Notifications/NotificationsPopover'
 
 const meta: Meta<typeof List> = {
   title: 'Organisms/NotificationList',

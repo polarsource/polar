@@ -7,10 +7,19 @@ import {
   useNotificationsMarkRead,
 } from '@/hooks/queries'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import { Announcement, Notifications, VerifiedUser } from '@mui/icons-material'
+import {
+  Announcement,
+  LightbulbOutlined,
+  VerifiedUser,
+} from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@polar-sh/ui/components/ui/popover'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -23,7 +32,7 @@ import { useModal } from '../Modal/useModal'
 
 type NotificationSchema = schemas['NotificationsList']['notifications'][number]
 
-const Popover = () => {
+export const NotificationsPopover = () => {
   const [show, setShow] = useState(false)
   const [showBadge, setShowBadge] = useState(false)
 
@@ -54,10 +63,6 @@ const Popover = () => {
     }
   }
 
-  const notificationsContainerClassnames = twMerge(
-    'pointer-events-none z-40 flex items-end right-4 md:right-0 w-72 md:w-96 top-12 absolute',
-  )
-
   const [inNestedModal, setIsInNestedModal] = useState(false)
 
   const ref = useRef(null)
@@ -87,31 +92,26 @@ const Popover = () => {
   }, [notifs, notifs.data])
 
   return (
-    <>
-      <div className="flex">
-        <Notifications
-          className="dark:text-polar-500 dark:hover:text-polar-300 h-6 w-6 cursor-pointer text-gray-400 transition-colors duration-100 hover:text-gray-900"
+    <Popover>
+      <PopoverTrigger className="dark:bg-polar-800 dark:hover:bg-polar-700 flex h-8 w-8 flex-shrink-0 flex-row items-center justify-center rounded-full bg-white hover:bg-gray-50">
+        <LightbulbOutlined
+          fontSize="inherit"
+          className="dark:text-polar-500 dark:hover:text-polar-300 cursor-pointer text-gray-400 transition-colors duration-100 hover:text-gray-900"
           aria-hidden="true"
           onMouseDown={clickBell}
         />
         {showBadge && (
           <div className="dark:border-polar-700 -ml-3 h-3 w-3 rounded-full border-2 border-white bg-blue-500"></div>
         )}
-      </div>
+      </PopoverTrigger>
 
-      {show && notifs.data && (
-        <div
-          aria-live="assertive"
-          className={notificationsContainerClassnames}
-          ref={ref}
-        >
-          <List
-            notifications={notifs.data.notifications}
-            setIsInNestedModal={setIsInNestedModal}
-          />
-        </div>
-      )}
-    </>
+      <PopoverContent sideOffset={12} align="start">
+        <List
+          notifications={notifs.data?.notifications ?? []}
+          setIsInNestedModal={setIsInNestedModal}
+        />
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -125,30 +125,21 @@ export const List = ({
   setIsInNestedModal: (_: boolean) => void
 }) => {
   return (
-    <div className="flex w-full flex-col items-center space-y-4 sm:items-end">
-      <>
-        {/*<div className="z-10 mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-gray-50 dark:bg-polar-700"></div>*/}
-        <div className={twMerge('z-20 h-full w-full max-w-md')}>
-          <div className="dark:bg-polar-800 shadow-3xl dark:border-polar-700 pointer-events-auto w-full rounded-3xl border border-transparent bg-white">
-            <div className="h-full max-h-[800px] space-y-5 overflow-x-scroll p-5">
-              {notifications.length === 0 && (
-                <div className="dark:text-polar-400 flex w-full flex-row items-center justify-center p-4 text-center text-sm text-black/60">
-                  You don&apos;t have any notifications... yet!
-                </div>
-              )}
-              {notifications.map((n) => {
-                return (
-                  <Notification
-                    n={n}
-                    key={n.id}
-                    setIsInNestedModal={setIsInNestedModal}
-                  />
-                )
-              })}
-            </div>
-          </div>
+    <div className="h-full max-h-[800px] space-y-5 overflow-x-scroll">
+      {notifications.length === 0 && (
+        <div className="dark:text-polar-400 flex w-full flex-row items-center justify-center p-4 text-center text-sm text-black/60">
+          You don&apos;t have any notifications... yet!
         </div>
-      </>
+      )}
+      {notifications.map((n) => {
+        return (
+          <Notification
+            n={n}
+            key={n.id}
+            setIsInNestedModal={setIsInNestedModal}
+          />
+        )
+      })}
     </div>
   )
 }

@@ -169,6 +169,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
           />
         </div>
       }
+      wide
     >
       <div className="rounded-4xl dark:border-polar-700 dark:divide-polar-700 flex flex-col gap-y-8 divide-y divide-gray-200 border border-gray-200">
         <Form {...form}>

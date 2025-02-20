@@ -3,7 +3,7 @@ import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { useState } from 'react'
 
-const MeterEventRow = ({ event }: { event: schemas['Event'] }) => {
+const EventRow = ({ event }: { event: schemas['Event'] }) => {
   const [isExpanded, setIsExpanded] = useState(false)
 
   const handleToggleExpand = () => {
@@ -67,7 +67,7 @@ const MeterEventRow = ({ event }: { event: schemas['Event'] }) => {
   )
 }
 
-export const MeterEvents = ({ events }: { events: schemas['Event'][] }) => {
+export const Events = ({ events }: { events: schemas['Event'][] }) => {
   return (
     <List className="flex flex-col" size="small">
       <ListItem className="flex flex-row items-center justify-start gap-x-8 font-mono text-xs">
@@ -85,7 +85,7 @@ export const MeterEvents = ({ events }: { events: schemas['Event'][] }) => {
         </div>
       </ListItem>
       {events.map((event) => (
-        <MeterEventRow key={event.id} event={event} />
+        <EventRow key={event.id} event={event} />
       ))}
     </List>
   )

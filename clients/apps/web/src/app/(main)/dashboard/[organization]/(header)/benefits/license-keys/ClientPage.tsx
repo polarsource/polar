@@ -216,6 +216,7 @@ export const ClientPage = ({
     <DashboardBody
       className="flex flex-col gap-y-6"
       contextView={LicenseKeyContextView}
+      wide
     >
       <Select
         defaultValue="all"

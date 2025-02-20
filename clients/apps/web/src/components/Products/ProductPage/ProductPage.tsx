@@ -73,6 +73,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
             product={product}
           />
         }
+        wide
       >
         <TabsList className="pb-8">
           <TabsTrigger value="overview">Overview</TabsTrigger>

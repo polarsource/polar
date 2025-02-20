@@ -152,6 +152,33 @@ export const CustomerContextView = ({ customer }: CustomerContextViewProps) => {
         )}
       </div>
       <div className="flex flex-col gap-4">
+        <div className="flex flex-col">
+          <DetailRow label="ID" value={customer.id} />
+          <DetailRow label="Email" value={customer.email} />
+          <DetailRow label="Name" value={customer.name} />
+          <DetailRow label="Tax ID" value={customer.tax_id} />
+          <DetailRow
+            label="Created At"
+            value={<FormattedDateTime datetime={customer.created_at} />}
+          />
+        </div>
+        <h4 className="text-lg">Billing Address</h4>
+        <div className="flex flex-col">
+          <DetailRow label="Line 1" value={customer.billing_address?.line1} />
+          <DetailRow label="Line 2" value={customer.billing_address?.line2} />
+          <DetailRow label="City" value={customer.billing_address?.city} />
+          <DetailRow label="State" value={customer.billing_address?.state} />
+          <DetailRow
+            label="Postal Code"
+            value={customer.billing_address?.postal_code}
+          />
+          <DetailRow
+            label="Country"
+            value={customer.billing_address?.country}
+          />
+        </div>
+      </div>
+      <div className="flex flex-col gap-4">
         <div className="flex flex-row items-center justify-between gap-2">
           <h3 className="text-lg">Metadata</h3>
           <Button className="h-8 w-8" variant="secondary" onClick={showModal}>

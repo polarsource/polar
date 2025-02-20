@@ -309,7 +309,7 @@ export const DashboardBody = ({
       {contextView ? (
         <div
           className={twMerge(
-            'dark:bg-polar-900 dark:border-polar-700 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white md:max-w-[320px] md:shadow-sm xl:max-w-[440px]',
+            'dark:bg-polar-900 dark:border-polar-800 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white md:max-w-[320px] md:shadow-sm xl:max-w-[440px]',
             contextViewClassName,
           )}
         >

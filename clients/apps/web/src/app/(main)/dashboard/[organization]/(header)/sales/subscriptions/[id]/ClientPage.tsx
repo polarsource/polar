@@ -98,6 +98,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           customer={subscription.customer as schemas['Customer']}
         />
       }
+      wide
     >
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0">
         <div className="flex flex-col gap-6 p-8">

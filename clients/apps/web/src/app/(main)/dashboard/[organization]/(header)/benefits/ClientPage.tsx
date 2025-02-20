@@ -109,7 +109,7 @@ const ClientPage = ({
   }, [selectedBenefit, benefitProducts, organization])
 
   return (
-    <DashboardBody contextView={selectedBenefitContextView}>
+    <DashboardBody contextView={selectedBenefitContextView} wide>
       <div className="flex flex-row items-start gap-x-16">
         <div className="flex w-full flex-col gap-y-8">
           <div className="flex flex-row items-center justify-between">

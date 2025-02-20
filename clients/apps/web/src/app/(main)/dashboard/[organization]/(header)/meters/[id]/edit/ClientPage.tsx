@@ -61,6 +61,7 @@ const ClientPage = ({
           Update Meter
         </Button>
       }
+      wide
     >
       <Form {...form}>
         <form

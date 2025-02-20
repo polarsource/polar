@@ -98,7 +98,7 @@ export default function ClientPage({
   })
 
   return (
-    <DashboardBody>
+    <DashboardBody wide>
       <div className="flex flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between gap-6">
           <Input

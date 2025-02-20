@@ -1,6 +1,7 @@
 'use client'
 
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
+import { CustomerEventsView } from '@/components/Customer/CustomerEventsView'
 import { CustomerUsageView } from '@/components/Customer/CustomerUsageView'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MetricChart from '@/components/Metrics/MetricChart'
@@ -141,12 +142,16 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
         </div>
       }
       contextView={<CustomerContextView customer={customer} />}
+      wide
     >
       <Tabs defaultValue="overview" className="flex flex-col">
         <TabsList className="mb-8">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           {isFeatureEnabled('usage_based_billing') && (
             <TabsTrigger value="usage">Usage</TabsTrigger>
+          )}
+          {isFeatureEnabled('usage_based_billing') && (
+            <TabsTrigger value="events">Events</TabsTrigger>
           )}
         </TabsList>
         <TabsContent value="overview" className="flex flex-col gap-y-12">
@@ -234,125 +239,126 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
               )}
             </div>
           </ShadowBox>
-          <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-gray-100 bg-transparent p-0">
-            <div className="flex flex-col gap-4 p-12">
-              <h3 className="text-lg">Subscriptions</h3>
-              <DataTable
-                data={subscriptions?.items ?? []}
-                columns={[
-                  {
-                    header: 'Product Name',
-                    accessorKey: 'product.name',
-                    cell: ({ row: { original } }) => (
-                      <span>{original.product.name}</span>
-                    ),
-                  },
-                  {
-                    header: 'Status',
-                    accessorKey: 'status',
-                    cell: ({ row: { original } }) => (
-                      <SubscriptionStatusLabel
-                        className="text-xs"
-                        subscription={original}
-                      />
-                    ),
-                  },
-                  {
-                    header: 'Amount',
-                    accessorKey: 'amount',
-                    cell: ({ row: { original } }) =>
-                      original.amount && original.currency ? (
-                        <AmountLabel
-                          amount={original.amount}
-                          currency={original.currency}
-                          interval={original.recurring_interval}
-                        />
-                      ) : (
-                        <span>—</span>
-                      ),
-                  },
-                  {
-                    header: '',
-                    accessorKey: 'action',
-                    cell: ({ row: { original } }) => (
-                      <div className="flex justify-end">
-                        <Link
-                          href={`/dashboard/${organization.slug}/sales/subscriptions/${original.id}`}
-                        >
-                          <Button variant="secondary" size="sm">
-                            View
-                          </Button>
-                        </Link>
-                      </div>
-                    ),
-                  },
-                ]}
-                isLoading={subscriptionsLoading}
-                className="text-sm"
-              />
-            </div>
-            <div className="flex flex-col gap-4 p-12">
-              <h3 className="text-lg">Orders</h3>
-
-              <DataTable
-                data={orders?.items ?? []}
-                columns={[
-                  {
-                    header: 'Product Name',
-                    accessorKey: 'product.name',
-                    cell: ({ row: { original } }) => (
-                      <Link
-                        href={`/dashboard/${organization?.slug}/sales/${original.id}`}
-                        key={original.id}
-                      >
-                        <span>{original.product.name}</span>
-                      </Link>
-                    ),
-                  },
-                  {
-                    header: 'Created At',
-                    accessorKey: 'created_at',
-                    cell: ({ row: { original } }) => (
-                      <span className="dark:text-polar-500 text-xs text-gray-500">
-                        <FormattedDateTime datetime={original.created_at} />
-                      </span>
-                    ),
-                  },
-                  {
-                    header: 'Amount',
-                    accessorKey: 'amount',
-                    cell: ({ row: { original } }) => (
+          <div className="flex flex-col gap-4">
+            <h3 className="text-lg">Subscriptions</h3>
+            <DataTable
+              data={subscriptions?.items ?? []}
+              columns={[
+                {
+                  header: 'Product Name',
+                  accessorKey: 'product.name',
+                  cell: ({ row: { original } }) => (
+                    <span>{original.product.name}</span>
+                  ),
+                },
+                {
+                  header: 'Status',
+                  accessorKey: 'status',
+                  cell: ({ row: { original } }) => (
+                    <SubscriptionStatusLabel
+                      className="text-xs"
+                      subscription={original}
+                    />
+                  ),
+                },
+                {
+                  header: 'Amount',
+                  accessorKey: 'amount',
+                  cell: ({ row: { original } }) =>
+                    original.amount && original.currency ? (
                       <AmountLabel
                         amount={original.amount}
                         currency={original.currency}
+                        interval={original.recurring_interval}
                       />
+                    ) : (
+                      <span>—</span>
                     ),
-                  },
-                  {
-                    header: '',
-                    accessorKey: 'action',
-                    cell: ({ row: { original } }) => (
-                      <div className="flex justify-end">
-                        <Link
-                          href={`/dashboard/${organization.slug}/sales/${original.id}`}
-                        >
-                          <Button variant="secondary" size="sm">
-                            View
-                          </Button>
-                        </Link>
-                      </div>
-                    ),
-                  },
-                ]}
-                isLoading={ordersLoading}
-                className="text-sm"
-              />
-            </div>
-          </ShadowBox>
+                },
+                {
+                  header: '',
+                  accessorKey: 'action',
+                  cell: ({ row: { original } }) => (
+                    <div className="flex justify-end">
+                      <Link
+                        href={`/dashboard/${organization.slug}/sales/subscriptions/${original.id}`}
+                      >
+                        <Button variant="secondary" size="sm">
+                          View
+                        </Button>
+                      </Link>
+                    </div>
+                  ),
+                },
+              ]}
+              isLoading={subscriptionsLoading}
+              className="text-sm"
+            />
+          </div>
+          <div className="flex flex-col gap-4">
+            <h3 className="text-lg">Orders</h3>
+
+            <DataTable
+              data={orders?.items ?? []}
+              columns={[
+                {
+                  header: 'Product Name',
+                  accessorKey: 'product.name',
+                  cell: ({ row: { original } }) => (
+                    <Link
+                      href={`/dashboard/${organization?.slug}/sales/${original.id}`}
+                      key={original.id}
+                    >
+                      <span>{original.product.name}</span>
+                    </Link>
+                  ),
+                },
+                {
+                  header: 'Created At',
+                  accessorKey: 'created_at',
+                  cell: ({ row: { original } }) => (
+                    <span className="dark:text-polar-500 text-xs text-gray-500">
+                      <FormattedDateTime datetime={original.created_at} />
+                    </span>
+                  ),
+                },
+                {
+                  header: 'Amount',
+                  accessorKey: 'amount',
+                  cell: ({ row: { original } }) => (
+                    <AmountLabel
+                      amount={original.amount}
+                      currency={original.currency}
+                    />
+                  ),
+                },
+                {
+                  header: '',
+                  accessorKey: 'action',
+                  cell: ({ row: { original } }) => (
+                    <div className="flex justify-end">
+                      <Link
+                        href={`/dashboard/${organization.slug}/sales/${original.id}`}
+                      >
+                        <Button variant="secondary" size="sm">
+                          View
+                        </Button>
+                      </Link>
+                    </div>
+                  ),
+                },
+              ]}
+              isLoading={ordersLoading}
+              className="text-sm"
+            />
+          </div>
         </TabsContent>
         {isFeatureEnabled('usage_based_billing') && (
           <CustomerUsageView customer={customer} />
         )}
+        <TabsContent value="events">
+          <CustomerEventsView customer={customer} />
+        </TabsContent>
       </Tabs>
     </DashboardBody>
   )

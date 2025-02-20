@@ -100,6 +100,7 @@ const ClientPage = ({
           </Button>
         </Link>
       }
+      wide
     >
       <MetersList
         meters={meters?.items ?? []}

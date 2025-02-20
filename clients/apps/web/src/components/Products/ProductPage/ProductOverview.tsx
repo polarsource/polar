@@ -47,8 +47,6 @@ export const ProductOverview = ({
       discount.products.some((p) => p.id === product.id),
   )
 
-  console.log(todayMetrics)
-
   return (
     <div className="flex flex-col gap-y-16">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">

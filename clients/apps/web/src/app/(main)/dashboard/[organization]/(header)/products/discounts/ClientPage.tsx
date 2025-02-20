@@ -267,7 +267,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const deleteDiscount = useDeleteDiscount()
 
   return (
-    <DashboardBody>
+    <DashboardBody wide>
       <div className="flex flex-col gap-8">
         <div className="flex flex-row items-center justify-between gap-6">
           <Input

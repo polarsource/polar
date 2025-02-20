@@ -76,6 +76,7 @@ const ClientPage = ({
           Create Meter
         </Button>
       }
+      wide
     >
       <div className="flex flex-col gap-y-6">
         <Form {...form}>

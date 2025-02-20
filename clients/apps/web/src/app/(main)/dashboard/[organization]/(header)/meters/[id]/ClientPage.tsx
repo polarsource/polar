@@ -1,9 +1,9 @@
 'use client'
 
+import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { MeterChart } from '@/components/Meter/MeterChart'
 import { MeterContextView } from '@/components/Meter/MeterContextView'
-import { MeterEvents } from '@/components/Meter/MeterEvents'
 import MeterEventsTab from '@/components/Meter/MeterEventsTab'
 import { MeterGetStarted } from '@/components/Meter/MeterGetStarted'
 import Spinner from '@/components/Shared/Spinner'
@@ -100,6 +100,7 @@ export default function ClientPage({
       }
       contextView={<MeterContextView meter={meter} />}
       contextViewClassName="xl:max-w-[400px]"
+      wide
     >
       <Tabs defaultValue="overview" className="flex flex-col">
         <TabsList className="mb-4">
@@ -193,7 +194,7 @@ export default function ClientPage({
                   Recently received meter events
                 </p>
               </div>
-              <MeterEvents events={meterEvents} />
+              <Events events={meterEvents} />
             </div>
           ) : (
             <MeterGetStarted meter={meter} />

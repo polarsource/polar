@@ -20,7 +20,7 @@ const TopbarRight = ({
 }) => {
   const posthog = usePostHog()
   const pathname = usePathname()
-  const loginReturnTo = pathname ?? '/purchases'
+  const loginReturnTo = pathname ?? '/start'
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
 
   const onLoginClick = () => {

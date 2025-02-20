@@ -794,40 +794,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/payment_methods": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List */
-        get: operations["payment_methods:list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/payment_methods/{id}/detach": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Detach */
-        post: operations["payment_methods:detach"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/accounts/search": {
         parameters: {
             query?: never;
@@ -2739,7 +2705,7 @@ export interface paths {
         };
         /**
          * List Benefit Grants
-         * @description List benefits grants of the authenticated customer or user.
+         * @description List benefits grants of the authenticated customer.
          */
         get: operations["customer_portal:benefit-grants:list"];
         put?: never;
@@ -2759,7 +2725,7 @@ export interface paths {
         };
         /**
          * Get Benefit Grant
-         * @description Get a benefit grant by ID for the authenticated customer or user.
+         * @description Get a benefit grant by ID for the authenticated customer.
          */
         get: operations["customer_portal:benefit-grants:get"];
         put?: never;
@@ -2769,12 +2735,12 @@ export interface paths {
         head?: never;
         /**
          * Update Benefit Grant
-         * @description Update a benefit grant for the authenticated customer or user.
+         * @description Update a benefit grant for the authenticated customer.
          */
         patch: operations["customer_portal:benefit-grants:update"];
         trace?: never;
     };
-    "/v1/customer-portal/customers/{id}": {
+    "/v1/customer-portal/customers/me": {
         parameters: {
             query?: never;
             header?: never;
@@ -2783,7 +2749,7 @@ export interface paths {
         };
         /**
          * Get Customer
-         * @description Get a customer by ID for the authenticated customer or user.
+         * @description Get authenticated customer.
          */
         get: operations["customer_portal:customers:get"];
         put?: never;
@@ -3002,7 +2968,7 @@ export interface paths {
         };
         /**
          * List Orders
-         * @description List orders of the authenticated customer or user.
+         * @description List orders of the authenticated customer.
          */
         get: operations["customer_portal:orders:list"];
         put?: never;
@@ -3022,7 +2988,7 @@ export interface paths {
         };
         /**
          * Get Order
-         * @description Get an order by ID for the authenticated customer or user.
+         * @description Get an order by ID for the authenticated customer.
          */
         get: operations["customer_portal:orders:get"];
         put?: never;
@@ -3082,7 +3048,7 @@ export interface paths {
         };
         /**
          * List Subscriptions
-         * @description List subscriptions of the authenticated customer or user.
+         * @description List subscriptions of the authenticated customer.
          */
         get: operations["customer_portal:subscriptions:list"];
         put?: never;
@@ -3102,21 +3068,21 @@ export interface paths {
         };
         /**
          * Get Subscription
-         * @description Get a subscription for the authenticated customer or user.
+         * @description Get a subscription for the authenticated customer.
          */
         get: operations["customer_portal:subscriptions:get"];
         put?: never;
         post?: never;
         /**
          * Cancel Subscription
-         * @description Cancel a subscription of the authenticated customer or user.
+         * @description Cancel a subscription of the authenticated customer.
          */
         delete: operations["customer_portal:subscriptions:cancel"];
         options?: never;
         head?: never;
         /**
          * Update Subscription
-         * @description Update a subscription of the authenticated customer or user.
+         * @description Update a subscription of the authenticated customer.
          */
         patch: operations["customer_portal:subscriptions:update"];
         trace?: never;
@@ -11242,12 +11208,6 @@ export interface components {
             items: components["schemas"]["Organization"][];
             pagination: components["schemas"]["Pagination"];
         };
-        /** ListResource[PaymentMethod] */
-        ListResource_PaymentMethod_: {
-            /** Items */
-            items: components["schemas"]["PaymentMethod"][];
-            pagination: components["schemas"]["Pagination"];
-        };
         /** ListResource[PersonalAccessToken] */
         ListResource_PersonalAccessToken_: {
             /** Items */
@@ -12873,24 +12833,6 @@ export interface components {
             error: "PaymentError";
             /** Detail */
             detail: string;
-        };
-        /** PaymentMethod */
-        PaymentMethod: {
-            /** Stripe Payment Method Id */
-            stripe_payment_method_id: string;
-            /**
-             * Type
-             * @enum {unknown}
-             */
-            type: "card" | null;
-            /** Brand */
-            brand: string | null;
-            /** Last4 */
-            last4: string;
-            /** Exp Month */
-            exp_month: number;
-            /** Exp Year */
-            exp_year: number;
         };
         /**
          * PaymentProcessor
@@ -17161,57 +17103,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "payment_methods:list": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListResource_PaymentMethod_"];
-                };
-            };
-        };
-    };
-    "payment_methods:detach": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaymentMethod"];
-                };
             };
             /** @description Validation Error */
             422: {
@@ -22318,15 +22209,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CustomerPortalCustomer"];
-                };
-            };
-            /** @description Customer not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceNotFound"];
                 };
             };
             /** @description Validation Error */

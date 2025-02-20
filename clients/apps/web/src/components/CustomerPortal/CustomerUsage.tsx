@@ -51,6 +51,22 @@ const mockedMeters = (organizationId: string): schemas['Meter'][] => [
     modified_at: '2021-01-01',
     organization_id: organizationId,
   },
+  {
+    id: '3',
+    name: 'Storage',
+    filter: {
+      conjunction: 'and',
+      clauses: [],
+    },
+    aggregation: {
+      func: 'sum',
+      property: 'value',
+    },
+    metadata: {},
+    created_at: '2021-01-01',
+    modified_at: '2021-01-01',
+    organization_id: organizationId,
+  },
 ]
 
 const mockedEvents = (organizationId: string): schemas['Event'][] => [

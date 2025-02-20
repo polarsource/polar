@@ -40,7 +40,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@polar-sh/sdk": "^0.26.0",
+    "@polar-sh/sdk": "^0.26.1",
     "@polar-sh/ui": "workspace:^",
     "event-source-plus": "^0.1.8",
     "eventemitter3": "^5.0.1",

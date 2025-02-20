@@ -34,7 +34,7 @@
     "@polar-sh/checkout": "workspace:^",
     "@polar-sh/client": "workspace:*",
     "@polar-sh/mdx": "workspace:*",
-    "@polar-sh/sdk": "^0.26.0",
+    "@polar-sh/sdk": "^0.26.1",
     "@polar-sh/ui": "workspace:*",
     "@radix-ui/react-dropdown-menu": "^2.1.6",
     "@radix-ui/react-toast": "^1.2.6",

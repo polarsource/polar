@@ -922,7 +922,6 @@ async def create_customer(
     name: str = "Customer",
     stripe_customer_id: str = "STRIPE_CUSTOMER_ID",
     user_metadata: dict[str, Any] = {},
-    user: User | None = None,
 ) -> Customer:
     customer = Customer(
         email=email,
@@ -931,7 +930,6 @@ async def create_customer(
         stripe_customer_id=stripe_customer_id,
         organization=organization,
         user_metadata=user_metadata,
-        user=user,
     )
     await save_fixture(customer)
     return customer

@@ -5,7 +5,7 @@ import structlog
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.auth.models import AuthSubject, is_customer, is_organization, is_user
+from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
@@ -436,7 +436,7 @@ class LicenseKeyService(
     async def get_customer_list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Customer],
+        auth_subject: AuthSubject[Customer],
         *,
         pagination: PaginationParams,
         benefit_id: UUID | None = None,
@@ -461,7 +461,7 @@ class LicenseKeyService(
     async def get_customer_license_key(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Customer],
+        auth_subject: AuthSubject[Customer],
         license_key_id: UUID,
     ) -> LicenseKey | None:
         query = (
@@ -480,22 +480,11 @@ class LicenseKeyService(
         )
 
     def _get_select_customer_base(
-        self, auth_subject: AuthSubject[User | Customer]
+        self, auth_subject: AuthSubject[Customer]
     ) -> Select[tuple[LicenseKey]]:
-        statement = self._get_select_base()
-        if is_user(auth_subject):
-            statement = statement.where(
-                LicenseKey.customer_id.in_(
-                    select(Customer.id).where(
-                        Customer.user_id == auth_subject.subject.id
-                    )
-                )
-            )
-        elif is_customer(auth_subject):
-            statement = statement.where(
-                LicenseKey.customer_id == auth_subject.subject.id
-            )
-        return statement
+        return self._get_select_base().where(
+            LicenseKey.customer_id == auth_subject.subject.id
+        )
 
 
 license_key = LicenseKeyService(LicenseKey)

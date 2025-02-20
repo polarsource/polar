@@ -18,14 +18,11 @@ from polar.subscription.schemas import SubscriptionID
 from polar.subscription.service import AlreadyCanceledSubscription
 
 from .. import auth
-from ..schemas.subscription import (
-    CustomerSubscription,
-    CustomerSubscriptionUpdate,
-)
+from ..schemas.subscription import CustomerSubscription, CustomerSubscriptionUpdate
+from ..service.subscription import CustomerSubscriptionSortProperty
 from ..service.subscription import (
-    CustomerSubscriptionSortProperty,
+    customer_subscription as customer_subscription_service,
 )
-from ..service.subscription import customer_subscription as user_subscription_service
 
 log = structlog.get_logger()
 
@@ -66,8 +63,8 @@ async def list(
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[CustomerSubscription]:
-    """List subscriptions of the authenticated customer or user."""
-    results, count = await user_subscription_service.list(
+    """List subscriptions of the authenticated customer."""
+    results, count = await customer_subscription_service.list(
         session,
         auth_subject,
         organization_id=organization_id,
@@ -96,8 +93,10 @@ async def get(
     auth_subject: auth.CustomerPortalRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
-    """Get a subscription for the authenticated customer or user."""
-    subscription = await user_subscription_service.get_by_id(session, auth_subject, id)
+    """Get a subscription for the authenticated customer."""
+    subscription = await customer_subscription_service.get_by_id(
+        session, auth_subject, id
+    )
 
     if subscription is None:
         raise ResourceNotFound()
@@ -127,8 +126,10 @@ async def update(
     auth_subject: auth.CustomerPortalWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
-    """Update a subscription of the authenticated customer or user."""
-    subscription = await user_subscription_service.get_by_id(session, auth_subject, id)
+    """Update a subscription of the authenticated customer."""
+    subscription = await customer_subscription_service.get_by_id(
+        session, auth_subject, id
+    )
 
     if subscription is None:
         raise ResourceNotFound()
@@ -139,7 +140,7 @@ async def update(
         customer_id=auth_subject.subject.id,
         updates=subscription_update,
     )
-    return await user_subscription_service.update(
+    return await customer_subscription_service.update(
         session, subscription, updates=subscription_update
     )
 
@@ -165,8 +166,10 @@ async def cancel(
     auth_subject: auth.CustomerPortalWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
-    """Cancel a subscription of the authenticated customer or user."""
-    subscription = await user_subscription_service.get_by_id(session, auth_subject, id)
+    """Cancel a subscription of the authenticated customer."""
+    subscription = await customer_subscription_service.get_by_id(
+        session, auth_subject, id
+    )
 
     if subscription is None:
         raise ResourceNotFound()
@@ -176,4 +179,4 @@ async def cancel(
         id=id,
         customer_id=auth_subject.subject.id,
     )
-    return await user_subscription_service.cancel(session, subscription)
+    return await customer_subscription_service.cancel(session, subscription)

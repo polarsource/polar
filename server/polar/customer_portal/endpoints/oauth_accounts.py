@@ -10,12 +10,7 @@ from httpx_oauth.exceptions import GetProfileError
 from httpx_oauth.oauth2 import BaseOAuth2, GetAccessTokenError
 from pydantic import UUID4
 
-from polar.auth.models import (
-    Customer,
-    is_anonymous,
-    is_customer,
-    is_user,
-)
+from polar.auth.models import Customer, is_anonymous, is_customer
 from polar.config import settings
 from polar.customer.service import customer as customer_service
 from polar.customer_session.service import customer_session as customer_session_service
@@ -63,17 +58,7 @@ async def authorize(
     customer_id: UUID4 = Query(...),
     session: AsyncSession = Depends(get_db_session),
 ) -> AuthorizeResponse:
-    customer: Customer | None = None
-    if is_user(auth_subject):
-        customer = await customer_service.get_by_id_and_user(
-            session, customer_id, auth_subject.subject
-        )
-    elif is_customer(auth_subject) and auth_subject.subject.id == customer_id:
-        customer = auth_subject.subject
-
-    if customer is None:
-        raise Forbidden("Invalid customer")
-
+    customer = auth_subject.subject
     state = {
         "customer_id": str(customer.id),
         "platform": platform,
@@ -111,10 +96,8 @@ async def callback(
 
     customer_id = uuid.UUID(state_data.get("customer_id"))
     customer: Customer | None = None
-    if is_user(auth_subject):
-        customer = await customer_service.get_by_id_and_user(
-            session, customer_id, auth_subject.subject
-        )
+    if is_customer(auth_subject):
+        customer = auth_subject.subject
     elif is_anonymous(auth_subject):
         # Trust the customer ID in the state for anonymous users
         customer = await customer_service.get(session, customer_id)
@@ -126,7 +109,7 @@ async def callback(
     platform = CustomerOAuthPlatform(state_data["platform"])
 
     redirect_url = get_safe_return_url(return_to)
-    # If the user is not authenticated, create a new customer session, we trust the customer ID in the state
+    # If not authenticated, create a new customer session, we trust the customer ID in the state
     if is_anonymous(auth_subject):
         token, _ = await customer_session_service.create_customer_session(
             session, customer

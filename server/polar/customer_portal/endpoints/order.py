@@ -61,7 +61,7 @@ async def list(
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[CustomerOrder]:
-    """List orders of the authenticated customer or user."""
+    """List orders of the authenticated customer."""
     results, count = await customer_order_service.list(
         session,
         auth_subject,
@@ -92,7 +92,7 @@ async def get(
     auth_subject: auth.CustomerPortalRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
-    """Get an order by ID for the authenticated customer or user."""
+    """Get an order by ID for the authenticated customer."""
     order = await customer_order_service.get_by_id(session, auth_subject, id)
 
     if order is None:

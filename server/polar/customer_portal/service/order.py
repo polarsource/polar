@@ -6,14 +6,14 @@ from typing import Any
 from sqlalchemy import Select, UnaryExpression, asc, desc, or_, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload
 
-from polar.auth.models import AuthSubject, is_customer, is_user
+from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
-from polar.models import Customer, Order, Organization, Product, ProductPrice, User
+from polar.models import Customer, Order, Organization, Product, ProductPrice
 from polar.models.product_price import ProductPriceType
 
 
@@ -39,7 +39,7 @@ class CustomerOrderService(ResourceServiceReader[Order]):
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Customer],
+        auth_subject: AuthSubject[Customer],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
@@ -109,7 +109,7 @@ class CustomerOrderService(ResourceServiceReader[Order]):
     async def get_by_id(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Customer],
+        auth_subject: AuthSubject[Customer],
         id: uuid.UUID,
     ) -> Order | None:
         statement = (
@@ -141,28 +141,17 @@ class CustomerOrderService(ResourceServiceReader[Order]):
         return stripe_invoice.hosted_invoice_url
 
     def _get_readable_order_statement(
-        self, auth_subject: AuthSubject[User | Customer]
+        self, auth_subject: AuthSubject[Customer]
     ) -> Select[tuple[Order]]:
-        statement = (
+        return (
             select(Order)
-            .where(Order.deleted_at.is_(None))
+            .where(
+                Order.deleted_at.is_(None),
+                Order.customer_id == auth_subject.subject.id,
+            )
             .join(Order.product)
             .options(contains_eager(Order.product))
         )
-
-        if is_user(auth_subject):
-            statement = statement.where(
-                Order.customer_id.in_(
-                    select(Customer.id).where(
-                        Customer.user_id == auth_subject.subject.id
-                    )
-                )
-            )
-        elif is_customer(auth_subject):
-            customer = auth_subject.subject
-            statement = statement.where(Order.customer_id == customer.id)
-
-        return statement
 
 
 customer_order = CustomerOrderService(Order)

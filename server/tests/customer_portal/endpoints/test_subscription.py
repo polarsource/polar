@@ -9,7 +9,7 @@ from polar.integrations.stripe.service import StripeService
 from polar.models import Customer, Organization, Product, ProductPriceFree, Subscription
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
-from tests.fixtures.auth import AuthSubjectFixture
+from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -41,7 +41,7 @@ class TestCustomerSubscriptionProductUpdate:
         )
         assert response.status_code == 401
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_non_existing_product(
         self, client: AsyncClient, session: AsyncSession, subscription: Subscription
     ) -> None:
@@ -52,7 +52,7 @@ class TestCustomerSubscriptionProductUpdate:
         )
         assert response.status_code == 422
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_non_recurring_product(
         self,
         client: AsyncClient,
@@ -70,7 +70,7 @@ class TestCustomerSubscriptionProductUpdate:
         )
         assert response.status_code == 422
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_extraneous_tier(
         self,
         client: AsyncClient,
@@ -83,7 +83,7 @@ class TestCustomerSubscriptionProductUpdate:
         )
         assert response.status_code == 422
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_non_existing_stripe_subscription(
         self,
         client: AsyncClient,
@@ -100,7 +100,7 @@ class TestCustomerSubscriptionProductUpdate:
         )
         assert response.status_code == 400
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_valid(
         self,
         client: AsyncClient,
@@ -168,7 +168,7 @@ class TestCustomerSubscriptionUpdateCancel:
         )
         assert response.status_code == 401
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_tampered(
         self,
         client: AsyncClient,
@@ -189,7 +189,7 @@ class TestCustomerSubscriptionUpdateCancel:
         )
         assert response.status_code == 404
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_valid(
         self,
         client: AsyncClient,
@@ -259,7 +259,7 @@ class TestSubscriptionUpdateUncancel:
         )
         assert response.status_code == 401
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_tampered(
         self,
         save_fixture: SaveFixture,
@@ -281,7 +281,7 @@ class TestSubscriptionUpdateUncancel:
         )
         assert response.status_code == 404
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_uncancel_revoked(
         self,
         save_fixture: SaveFixture,
@@ -300,7 +300,7 @@ class TestSubscriptionUpdateUncancel:
         )
         assert response.status_code == 410
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_valid(
         self,
         save_fixture: SaveFixture,
@@ -360,7 +360,7 @@ class TestCustomerSubscriptionCancel:
         )
         assert response.status_code == 401
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_tampered(
         self,
         client: AsyncClient,
@@ -379,7 +379,7 @@ class TestCustomerSubscriptionCancel:
         )
         assert response.status_code == 404
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_valid(
         self,
         client: AsyncClient,

@@ -12,7 +12,6 @@ from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from polar.auth.models import (
     Anonymous,
     AuthSubject,
-    is_direct_user,
     is_organization,
     is_user,
 )
@@ -533,29 +532,8 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             product_price=price,
             customer=None,
             subscription=None,
+            customer_email=checkout_create.customer_email,
         )
-        if is_direct_user(auth_subject):
-            customer = await customer_service.get_by_user_and_organization(
-                session, auth_subject.subject, product.organization
-            )
-            if customer is not None:
-                checkout.customer = customer
-                checkout.customer_email = customer.email
-                if checkout_create.subscription_id is not None:
-                    (
-                        subscription,
-                        subscription_customer,
-                    ) = await self._get_validated_subscription(
-                        session,
-                        checkout_create.subscription_id,
-                        product.organization_id,
-                    )
-                    if subscription_customer == customer:
-                        checkout.subscription = subscription
-            else:
-                checkout.customer_email = auth_subject.subject.email
-        elif checkout_create.customer_email is not None:
-            checkout.customer_email = checkout_create.customer_email
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             checkout.payment_processor_metadata = {
@@ -1845,13 +1823,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         session.add(customer)
         await session.flush()
-
-        if is_direct_user(auth_subject):
-            user = auth_subject.subject
-            if user.email_verified and user.email.lower() == customer.email.lower():
-                await customer_service.link_user(
-                    session, customer, auth_subject.subject
-                )
 
         return customer
 

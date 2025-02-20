@@ -2,14 +2,14 @@ import pytest
 from httpx import AsyncClient
 
 from polar.models import Benefit, Customer, Subscription
-from tests.fixtures.auth import AuthSubjectFixture
+from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit_grant
 
 
 @pytest.mark.asyncio
 class TestListBenefitGrants:
-    @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_customer(
         self,
         client: AsyncClient,

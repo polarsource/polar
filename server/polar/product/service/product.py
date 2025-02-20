@@ -8,7 +8,7 @@ from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
-from polar.benefit.service.benefit import benefit as benefit_service
+from polar.benefit.service import benefit as benefit_service
 from polar.custom_field.service import custom_field as custom_field_service
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.file.service import file as file_service
@@ -706,8 +706,10 @@ class ProductService(ResourceServiceReader[Product]):
         self,
         session: AsyncSession,
         product: Product,
-        event_type: Literal[WebhookEventType.product_created]
-        | Literal[WebhookEventType.product_updated],
+        event_type: (
+            Literal[WebhookEventType.product_created]
+            | Literal[WebhookEventType.product_updated]
+        ),
     ) -> None:
         # mypy 1.9 is does not allow us to do
         #    event = (event_type, subscription)

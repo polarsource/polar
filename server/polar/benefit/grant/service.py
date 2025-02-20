@@ -6,9 +6,9 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from polar.benefit.benefits import get_benefit_service
-from polar.benefit.benefits.base import BenefitActionRequiredError
+from polar.benefit.registry import get_benefit_strategy
 from polar.benefit.schemas import BenefitGrantWebhook
+from polar.benefit.strategies.base import BenefitActionRequiredError
 from polar.customer.service import customer as customer_service
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
@@ -25,7 +25,7 @@ from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookPayloadTypeAdapter
 from polar.worker import enqueue_job
 
-from .benefit_grant_scope import scope_to_args
+from .scope import scope_to_args
 
 log: Logger = structlog.get_logger()
 
@@ -149,9 +149,9 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             return grant
 
         previous_properties = grant.properties
-        benefit_service = get_benefit_service(benefit.type, session, redis)
+        benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
         try:
-            properties = await benefit_service.grant(
+            properties = await benefit_strategy.grant(
                 benefit,
                 customer,
                 grant.properties,
@@ -214,7 +214,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         previous_properties = grant.properties
 
-        benefit_service = get_benefit_service(benefit.type, session, redis)
+        benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
         # Call the revoke logic in two cases:
         # * If the service requires grants to be revoked individually
         # * If there is only one grant remaining for this benefit,
@@ -222,9 +222,9 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         other_grants = await self._get_granted_by_benefit_and_customer(
             session, benefit, customer
         )
-        if benefit_service.should_revoke_individually or len(other_grants) < 2:
+        if benefit_strategy.should_revoke_individually or len(other_grants) < 2:
             try:
-                properties = await benefit_service.revoke(
+                properties = await benefit_strategy.revoke(
                     benefit,
                     customer,
                     grant.properties,
@@ -296,8 +296,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         benefit: Benefit,
         previous_properties: BenefitProperties,
     ) -> None:
-        benefit_service = get_benefit_service(benefit.type, session, redis)
-        if not await benefit_service.requires_update(benefit, previous_properties):
+        benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
+        if not await benefit_strategy.requires_update(benefit, previous_properties):
             return
 
         grants = await self._get_granted_by_benefit(session, benefit)
@@ -322,9 +322,9 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         assert customer is not None
 
         previous_properties = grant.properties
-        benefit_service = get_benefit_service(benefit.type, session, redis)
+        benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
         try:
-            properties = await benefit_service.grant(
+            properties = await benefit_strategy.grant(
                 benefit,
                 customer,
                 grant.properties,
@@ -374,8 +374,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         assert customer is not None
 
         previous_properties = grant.properties
-        benefit_service = get_benefit_service(benefit.type, session, redis)
-        properties = await benefit_service.revoke(
+        benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
+        properties = await benefit_strategy.revoke(
             benefit,
             customer,
             grant.properties,

@@ -36,7 +36,9 @@ export const useDiscounts = (
     queryFn: () =>
       unwrap(
         api.GET('/v1/discounts/', {
-          query: { organization_id: organizationId, ...(parameters || {}) },
+          params: {
+            query: { organization_id: organizationId, ...(parameters || {}) },
+          },
         }),
       ),
     retry: defaultRetry,

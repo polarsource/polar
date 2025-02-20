@@ -39,23 +39,17 @@ You can style the trigger element any way you want, as long as you keep the `dat
 
 If you have a more advanced project in JavaScript, like a React app, adding the `<script>` tag may not be an option. In this case, you can install our dedicated library.
 
-<Tabs>
-  <Tab title="npm">
-    ```bash
-    npm install @polar-sh/checkout
-    ```
-  </Tab>
-  <Tab title="pnpm">
-    ```bash
-    pnpm add @polar-sh/checkout
-    ```
-  </Tab>
-  <Tab title="yarn">
-    ```bash
-    yarn add @polar-sh/checkout
-    ```
-  </Tab>
-</Tabs>
+<CodeGroup>
+  ```bash npm
+  npm install @polar-sh/checkout
+  ```
+  ```bash pnpm
+  pnpm add @polar-sh/checkout
+  ```
+  ```bash yarn
+  yarn add @polar-sh/checkout
+  ```
+</CodeGroup>
 
 Then, you should import the `PolarEmbedCheckout` helper class and manually call `PolarEmbedCheckout.init()`. This will add the required handlers on elements having the `data-polar-checkout` attribute.
 

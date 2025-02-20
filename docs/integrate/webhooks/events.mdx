@@ -1,89 +1,88 @@
 ---
 title: "Webhook Events"
 sidebarTitle: "Events"
-description: "All our webhook events and their payload samples."
+description: "Our webhook events and in which context they are useful"
 ---
-
-import BenefitGrantCreated from '/snippets/webhooks/benefit_grant.created/full.mdx';
-import BenefitGrantUpdated from '/snippets/webhooks/benefit_grant.updated/full.mdx';
-import BenefitGrantRevoked from '/snippets/webhooks/benefit_grant.revoked/full.mdx';
-import CheckoutCreated from '/snippets/webhooks/checkout.created/full.mdx';
-import CheckoutUpdated from '/snippets/webhooks/checkout.updated/full.mdx';
-import OrderCreated from '/snippets/webhooks/order.created/full.mdx';
-import OrderRefunded from '/snippets/webhooks/order.refunded/full.mdx';
-import RefundCreated from '/snippets/webhooks/refund.created/full.mdx';
-import RefundUpdated from '/snippets/webhooks/refund.updated/full.mdx';
-import SubscriptionCreated from '/snippets/webhooks/subscription.created/full.mdx';
-import SubscriptionActive from '/snippets/webhooks/subscription.active/full.mdx';
-import SubscriptionUpdated from '/snippets/webhooks/subscription.updated/full.mdx';
-import SubscriptionRevoked from '/snippets/webhooks/subscription.revoked/full.mdx';
-import SubscriptionCanceled from '/snippets/webhooks/subscription.canceled/full.mdx';
-import SubscriptionUncanceled from '/snippets/webhooks/subscription.uncanceled/full.mdx';
-
-import BenefitCreated from '/snippets/webhooks/benefit.created/full.mdx';
-import BenefitUpdated from '/snippets/webhooks/benefit.updated/full.mdx';
-import ProductCreated from '/snippets/webhooks/product.created/full.mdx';
-import ProductUpdated from '/snippets/webhooks/product.updated/full.mdx';
-import OrganizationUpdated from '/snippets/webhooks/organization.updated/full.mdx';
 
 ## Billing Events
 
 ### Checkout
 
-<CheckoutCreated />
-<CheckoutUpdated />
+<Card title="checkout.created" icon="link" href="/api-reference/webhooks/checkout.created" horizontal>
+</Card>
+
+<Card title="checkout.updated" icon="link" href="/api-reference/webhooks/checkout.updated" horizontal>
+</Card>
+
 
 ### Subscriptions
 
 In order to properly implement logic for handling subscriptions, you should look into the following events.
 
-**[`subscription.created`](#subscription-created)**
+<Card title="subscription.created" icon="link" href="/api-reference/webhooks/subscription.created" horizontal>
+  Fired when a new subscription has been created.
+</Card>
 
-Fired when a new subscription has been created.
+<Card title="subscription.updated" icon="link" href="/api-reference/webhooks/subscription.updated" horizontal>
+  Use this event if you want to handle cancellations, un-cancellations, etc. The updated event is a catch-all event for `subscription.active` , `subscription.canceled`, `subscription.uncanceled` and `subscription.revoked`.
+</Card>
 
-**[`subscription.updated`](#subscription-updated)**
+<Card title="order.created" icon="link" href="/api-reference/webhooks/order.created" horizontal>
+  In case you want to do logic when a subscription is renewed, you should listen to `order.created` and the `billing_reason` field. It can be `purchase`, `subscription_create`, `subscription_cycle` and `subscription_update`. `subscription_cycle` is used when subscriptions renew.
+</Card>
 
-Use this event if you want to handle cancellations, un-cancellations, etc. The updated event is a catch-all event for `subscription.active` , `subscription.canceled` , `subscription.uncanceled` & `subscription.revoked`
+<Card title="subscription.active" icon="link" href="/api-reference/webhooks/subscription.active" horizontal>
+</Card>
 
-**[`order.created`](#order-created)**
+<Card title="subscription.canceled" icon="link" href="/api-reference/webhooks/subscription.canceled" horizontal>
+</Card>
 
-In case you want to do logic when a subscription is renewed, you should listen to `order.created` and the `billing_reason` field. It can be `purchase` , `subscription_create` , `subscription_cycle` & `subscription_update` . `subscription_cycle` is used when subscriptions renew.
+<Card title="subscription.uncanceled" icon="link" href="/api-reference/webhooks/subscription.uncanceled" horizontal>
+</Card>
 
-<SubscriptionCreated />
-<SubscriptionActive />
-<SubscriptionUpdated />
-<SubscriptionCanceled />
-<SubscriptionUncanceled />
-<SubscriptionRevoked />
+<Card title="subscription.revoked" icon="link" href="/api-reference/webhooks/subscription.revoked" horizontal>
+</Card>
 
 ### Order
 
-<OrderCreated />
-<OrderRefunded />
+<Card title="order.created" icon="link" href="/api-reference/webhooks/order.created" horizontal>
+</Card>
+<Card title="order.refunded" icon="link" href="/api-reference/webhooks/order.refunded" horizontal>
+</Card>
 
 ### Refunds
 
-<RefundCreated />
-<RefundUpdated />
+<Card title="refund.created" icon="link" href="/api-reference/webhooks/refund.created" horizontal>
+</Card>
+<Card title="refund.updated" icon="link" href="/api-reference/webhooks/refund.updated" horizontal>
+</Card>
 
 ### Benefit Grants
 
-<BenefitGrantCreated />
-<BenefitGrantUpdated />
-<BenefitGrantRevoked />
+<Card title="benefit_grant.created" icon="link" href="/api-reference/webhooks/benefit_grant.created" horizontal>
+</Card>
+<Card title="benefit_grant.updated" icon="link" href="/api-reference/webhooks/benefit_grant.updated" horizontal>
+</Card>
+<Card title="benefit_grant.revoked" icon="link" href="/api-reference/webhooks/benefit_grant.revoked" horizontal>
+</Card>
 
 ## Organization Events
 
 ### Benefits
 
-<BenefitCreated />
-<BenefitUpdated />
+<Card title="benefit.created" icon="link" href="/api-reference/webhooks/benefit.created" horizontal>
+</Card>
+<Card title="benefit.updated" icon="link" href="/api-reference/webhooks/benefit.updated" horizontal>
+</Card>
 
 ### Products
 
-<ProductCreated />
-<ProductUpdated />
+<Card title="product.created" icon="link" href="/api-reference/webhooks/product.created" horizontal>
+</Card>
+<Card title="product.updated" icon="link" href="/api-reference/webhooks/product.updated" horizontal>
+</Card>
 
 ### Organization
 
-<OrganizationUpdated />
+<Card title="organization.updated" icon="link" href="/api-reference/webhooks/organization.updated" horizontal>
+</Card>

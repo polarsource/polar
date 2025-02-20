@@ -2,7 +2,6 @@ import { PolarHog, usePostHog } from '@/hooks/posthog'
 import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
-  DiamondOutlined,
   DonutLargeOutlined,
   HiveOutlined,
   HowToVote,
@@ -296,14 +295,6 @@ const dashboardRoutesList = (
 ]
 
 const backerRoutesList = (): Route[] => [
-  {
-    id: 'purchases',
-    title: 'Purchases',
-    link: `/purchases`,
-    icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
-    if: true,
-    subs: undefined,
-  },
   {
     id: 'funding',
     title: 'Funded Issues',

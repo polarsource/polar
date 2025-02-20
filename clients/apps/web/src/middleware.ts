@@ -11,7 +11,6 @@ const AUTHENTICATED_ROUTES = [
   new RegExp('/dashboard(/.*)?'),
   new RegExp('/funding(/.*)?'),
   new RegExp('/finance(/.*)?'),
-  new RegExp('/purchases(/.*)?'),
   new RegExp('/settings(/.*)?'),
   new RegExp('/backoffice(/.*)?'),
 ]

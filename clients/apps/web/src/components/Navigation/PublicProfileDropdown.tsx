@@ -7,7 +7,6 @@ import {
   AttachMoneyOutlined,
   Face,
   LogoutOutlined,
-  ShoppingBagOutlined,
   SpaceDashboardOutlined,
 } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
@@ -69,10 +68,7 @@ const PublicProfileDropdown = ({
               anchor === 'bottombar' ? 'bottom-12 left-0' : 'right-0 top-12',
             )}
           >
-            <Link
-              href={`${CONFIG.FRONTEND_BASE_URL}/purchases`}
-              className="w-full"
-            >
+            <Link href={`${CONFIG.FRONTEND_BASE_URL}/start`} className="w-full">
               <ListItem current={true}>
                 <Profile
                   name={loggedUser.email}
@@ -90,12 +86,6 @@ const PublicProfileDropdown = ({
                   <span className="mx-2 text-sm">Dashboard</span>
                 </LinkItem>
               )}
-              <LinkItem
-                href={`${CONFIG.FRONTEND_BASE_URL}/purchases`}
-                icon={<ShoppingBagOutlined fontSize="inherit" />}
-              >
-                <span className="mx-2 text-sm">Purchases</span>
-              </LinkItem>
               <LinkItem
                 href={`${CONFIG.FRONTEND_BASE_URL}/finance`}
                 icon={<AttachMoneyOutlined fontSize="inherit" />}

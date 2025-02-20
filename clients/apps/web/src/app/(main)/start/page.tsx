@@ -10,7 +10,7 @@ import { redirect } from 'next/navigation'
  *
  * This page aims at determining where to redirect an authenticated user.
  *
- * - If the user has no organizations, redirect them to their purchases page.
+ * - If the user has no organizations, redirect to the organization creation page.
  * - If the user has organizations and a last visited organization, redirect them to that organization's dashboard.
  * - Otherwise, redirect them to the first organization's dashboard.
  */
@@ -20,7 +20,7 @@ export default async function Page() {
   const userOrganizations = await getUserOrganizations(api)
 
   if (userOrganizations.length === 0) {
-    redirect('/purchases')
+    redirect('/dashboard/create')
   }
 
   const org = userOrganizations.find(

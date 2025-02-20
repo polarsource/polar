@@ -12,7 +12,7 @@ export const useLoginLink = () => {
   const returnToPrefix = host !== CONFIG.FRONTEND_BASE_URL ? host : ''
   const loginReturnTo = pathname
     ? `${returnToPrefix}${pathname}`
-    : `${returnToPrefix}/purchases`
+    : `${returnToPrefix}/start`
 
   return `${CONFIG.FRONTEND_BASE_URL}/login?return_to=${loginReturnTo}`
 }

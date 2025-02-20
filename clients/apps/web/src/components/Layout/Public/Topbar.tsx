@@ -33,7 +33,7 @@ const Topbar = ({
   const shouldShowGitHubAuthUpsell = !githubAccount
 
   const pathname = usePathname()
-  const returnTo = pathname ?? '/purchases'
+  const returnTo = pathname ?? '/start'
 
   const upsellOrDashboard = () => {
     if (!currentUser) {

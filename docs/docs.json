@@ -325,6 +325,79 @@
             ]
           },
           {
+            "group": "Webhook Events",
+            "pages": [
+              {
+                "group": "Billing Events",
+                "pages": [
+                  {
+                    "group": "Checkout",
+                    "pages": [
+                      "api-reference/webhooks/checkout.created",
+                      "api-reference/webhooks/checkout.updated"
+                    ]
+                  },
+                  {
+                    "group": "Subscriptions",
+                    "pages": [
+                      "api-reference/webhooks/subscription.created",
+                      "api-reference/webhooks/subscription.active",
+                      "api-reference/webhooks/subscription.updated",
+                      "api-reference/webhooks/subscription.canceled",
+                      "api-reference/webhooks/subscription.uncanceled",
+                      "api-reference/webhooks/subscription.revoked"
+                    ]
+                  },
+                  {
+                    "group": "Orders",
+                    "pages": [
+                      "api-reference/webhooks/order.created",
+                      "api-reference/webhooks/order.refunded"
+                    ]
+                  },
+                  {
+                    "group": "Refunds",
+                    "pages": [
+                      "api-reference/webhooks/refund.created",
+                      "api-reference/webhooks/refund.updated"
+                    ]
+                  },
+                  {
+                    "group": "Benefit Grants",
+                    "pages": [
+                      "api-reference/webhooks/benefit_grant.created",
+                      "api-reference/webhooks/benefit_grant.updated",
+                      "api-reference/webhooks/benefit_grant.revoked"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Organization Events",
+                "pages": [
+                  {
+                    "group": "Benefits",
+                    "pages": [
+                      "api-reference/webhooks/benefit.created",
+                      "api-reference/webhooks/benefit.updated"
+                    ]
+                  },
+                  {
+                    "group": "Products",
+                    "pages": [
+                      "api-reference/webhooks/product.created",
+                      "api-reference/webhooks/product.updated"
+                    ]
+                  },
+                  {
+                    "group": "Organization",
+                    "pages": ["api-reference/webhooks/organization.updated"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
             "group": "OAuth 2.0 API",
             "pages": [
               {
@@ -403,11 +476,26 @@
     }
   },
   "redirects": [
-    { "source": "/api", "destination": "/api-reference" },
-    { "source": "/api/:path*", "destination": "/api-reference" },
-    { "source": "/docs/api", "destination": "/api-reference" },
-    { "source": "/docs/api/:path*", "destination": "/api-reference" },
-    { "source": "/developers/sandbox", "destination": "/integrate/sandbox" },
+    {
+      "source": "/api",
+      "destination": "/api-reference"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api-reference"
+    },
+    {
+      "source": "/docs/api",
+      "destination": "/api-reference"
+    },
+    {
+      "source": "/docs/api/:path*",
+      "destination": "/api-reference"
+    },
+    {
+      "source": "/developers/sandbox",
+      "destination": "/integrate/sandbox"
+    },
     {
       "source": "/developers/:path*",
       "destination": "/integrate/authentication"
@@ -420,8 +508,10 @@
       "source": "/docs/developers/:path*",
       "destination": "/integrate/authentication"
     },
-    { "source": "/docs/support", "destination": "/suppport" },
-
+    {
+      "source": "/docs/support",
+      "destination": "/suppport"
+    },
     {
       "source": "/documentation/welcome-to-polar",
       "destination": "/introduction"
@@ -454,8 +544,10 @@
       "source": "/documentation/features/products",
       "destination": "/features/products"
     },
-    { "source": "/documentation/support", "destination": "/support" },
-
+    {
+      "source": "/documentation/support",
+      "destination": "/support"
+    },
     {
       "source": "/documentation/features/benefits",
       "destination": "/features/benefits/introduction"
@@ -480,7 +572,6 @@
       "source": "/documentation/features/benefits/custom-benefit",
       "destination": "/features/benefits/custom"
     },
-
     {
       "source": "/documentation/features/checkouts/checkout-links",
       "destination": "/features/checkout/links"
@@ -497,7 +588,6 @@
       "source": "/documentation/features/checkouts/checkout-sessions",
       "destination": "/features/checkout/session"
     },
-
     {
       "source": "/documentation/features/products/discounts",
       "destination": "/features/discounts"
@@ -514,7 +604,6 @@
       "source": "/documentation/features/analytics",
       "destination": "/features/analytics"
     },
-
     {
       "source": "/documentation/features/customer-management",
       "destination": "/features/customer-management"
@@ -523,7 +612,6 @@
       "source": "/documentation/features/customer-portal",
       "destination": "/features/customer-portal"
     },
-
     {
       "source": "/documentation/features/finance/accounts",
       "destination": "/features/finance/accounts"
@@ -536,7 +624,6 @@
       "source": "/documentation/features/finance/payouts",
       "destination": "/features/finance/payouts"
     },
-
     {
       "source": "/documentation/integrations/polar-for-raycast",
       "destination": "/features/integrations/raycast"
@@ -553,7 +640,6 @@
       "source": "/documentation/features/products/purchasing-power-parity",
       "destination": "/features/integrations/paritydeals"
     },
-
     {
       "source": "/documentation/integration-guides/webhooks",
       "destination": "/integrate/webhooks/intro"
@@ -626,7 +712,6 @@
       "source": "/documentation/adapters/polar-shhono",
       "destination": "/integrate/sdk/adapters/hono"
     },
-
     {
       "source": "/documentation/polar-as-merchant-of-record/tax",
       "destination": "/merchant-of-record/introduction"
@@ -647,7 +732,6 @@
       "source": "/documentation/polar-as-merchant-of-record/account-reviews",
       "destination": "/merchant-of-record/account-reviews"
     },
-
     {
       "source": "/developers/webhooks",
       "destination": "/integrate/webhooks/endpoints"
@@ -680,20 +764,50 @@
       "source": "/docs/merchant-of-record/tax",
       "destination": "/merchant-of-record/introduction"
     },
-    { "source": "/fees", "destination": "/merchant-of-record/fees" },
-    { "source": "/docs/fees", "destination": "/merchant-of-record/fees" },
-    { "source": "/developers/sdk", "destination": "/integrate/sdk/typescript" },
+    {
+      "source": "/fees",
+      "destination": "/merchant-of-record/fees"
+    },
+    {
+      "source": "/docs/fees",
+      "destination": "/merchant-of-record/fees"
+    },
+    {
+      "source": "/developers/sdk",
+      "destination": "/integrate/sdk/typescript"
+    },
     {
       "source": "/docs/developers/sdk",
       "destination": "/integrate/sdk/typescript"
     },
-    { "source": "/products", "destination": "/features/products" },
-    { "source": "/docs/products", "destination": "/features/products" },
-    { "source": "/subscriptions", "destination": "/features/orders" },
-    { "source": "/docs/subscriptions", "destination": "/features/orders" },
-    { "source": "/onboarding", "destination": "/introduction#quickstart" },
-    { "source": "/docs/onboarding", "destination": "/introduction#quickstart" },
-    { "source": "/benefits", "destination": "/features/benefits/introduction" },
+    {
+      "source": "/products",
+      "destination": "/features/products"
+    },
+    {
+      "source": "/docs/products",
+      "destination": "/features/products"
+    },
+    {
+      "source": "/subscriptions",
+      "destination": "/features/orders"
+    },
+    {
+      "source": "/docs/subscriptions",
+      "destination": "/features/orders"
+    },
+    {
+      "source": "/onboarding",
+      "destination": "/introduction#quickstart"
+    },
+    {
+      "source": "/docs/onboarding",
+      "destination": "/introduction#quickstart"
+    },
+    {
+      "source": "/benefits",
+      "destination": "/features/benefits/introduction"
+    },
     {
       "source": "/benefits/discord",
       "destination": "/features/benefits/discord-access"

@@ -124,7 +124,11 @@ export const EditCustomerModal = ({
               render={() => <CustomerMetadataForm />}
             />
           </div>
-          <Button type="submit" className="self-start">
+          <Button
+            type="submit"
+            className="self-start"
+            loading={updateCustomer.isPending}
+          >
             Save Customer
           </Button>
         </form>

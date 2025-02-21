@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 
 export const useDebouncedCallback = <T extends (...args: any[]) => any>(
   callback: T,
@@ -22,4 +22,27 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
   )
 }
 
-export default useDebouncedCallback
+export const useInViewport = <T extends HTMLElement = any>() => {
+  const observer = useRef<IntersectionObserver | null>(null)
+  const [inViewport, setInViewport] = useState(false)
+
+  const ref = useCallback((node: T | null) => {
+    if (typeof IntersectionObserver !== 'undefined') {
+      if (node && !observer.current) {
+        observer.current = new IntersectionObserver((entries) =>
+          setInViewport(entries.some((entry) => entry.isIntersecting)),
+        )
+      } else {
+        observer.current?.disconnect()
+      }
+
+      if (node) {
+        observer.current?.observe(node)
+      } else {
+        setInViewport(false)
+      }
+    }
+  }, [])
+
+  return { ref, inViewport }
+}

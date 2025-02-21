@@ -9,7 +9,7 @@ import ProductPrices from '@/components/Products/ProductPrices'
 import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
 import { toast } from '@/components/Toast/use-toast'
 import { useProducts, useUpdateProduct } from '@/hooks/queries/products'
-import useDebouncedCallback from '@/hooks/utils'
+import { useDebouncedCallback } from '@/hooks/utils'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import {
   DataTablePaginationState,

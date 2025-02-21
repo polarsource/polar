@@ -1,4 +1,4 @@
-import useDebouncedCallback from '@/hooks/utils'
+import { useDebouncedCallback } from '@/hooks/utils'
 import {
   Popover,
   PopoverContent,

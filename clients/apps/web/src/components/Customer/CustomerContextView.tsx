@@ -72,7 +72,7 @@ export const CustomerContextView = ({ customer }: CustomerContextViewProps) => {
     <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
       <h2 className="text-xl">Customer Details</h2>
       <Link
-        href={`/dashboard/${organization.slug}/customers/${customer.id}`}
+        href={`/dashboard/${organization.slug}/customers?customerId=${customer.id}`}
         className="flex flex-row items-center gap-4"
       >
         <Avatar

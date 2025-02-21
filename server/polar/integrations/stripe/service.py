@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator
 from typing import Literal, Unpack, cast
 
 import stripe as stripe_lib
@@ -841,6 +841,26 @@ class StripeService:
 
     async def delete_coupon(self, id: str) -> stripe_lib.Coupon:
         return await stripe_lib.Coupon.delete_async(id)
+
+    async def list_payment_methods(
+        self, customer: str
+    ) -> AsyncGenerator[stripe_lib.PaymentMethod]:
+        payment_methods = await stripe_lib.Customer.list_payment_methods_async(customer)
+        async for payment_method in payment_methods.auto_paging_iter():
+            yield payment_method
+
+    async def get_payment_method(
+        self, payment_method_id: str
+    ) -> stripe_lib.PaymentMethod | None:
+        try:
+            return await stripe_lib.PaymentMethod.retrieve_async(payment_method_id)
+        except stripe_lib.InvalidRequestError:
+            return None
+
+    async def delete_payment_method(
+        self, payment_method_id: str
+    ) -> stripe_lib.PaymentMethod:
+        return await stripe_lib.PaymentMethod.detach_async(payment_method_id)
 
 
 stripe = StripeService()

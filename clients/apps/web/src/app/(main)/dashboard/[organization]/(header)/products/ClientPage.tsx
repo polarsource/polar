@@ -7,6 +7,7 @@ import Pagination from '@/components/Pagination/Pagination'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import ProductPrices from '@/components/Products/ProductPrices'
 import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
+import { toast } from '@/components/Toast/use-toast'
 import { useProducts, useUpdateProduct } from '@/hooks/queries/products'
 import useDebouncedCallback from '@/hooks/utils'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
@@ -214,13 +215,25 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
 
   const updateProduct = useUpdateProduct(organization)
 
-  const onArchiveProduct = useCallback(() => {
-    updateProduct.mutate({
-      id: product.id,
-      body: {
-        is_archived: true,
-      },
-    })
+  const onArchiveProduct = useCallback(async () => {
+    try {
+      await updateProduct.mutate({
+        id: product.id,
+        body: {
+          is_archived: true,
+        },
+      })
+
+      toast({
+        title: 'Product archived',
+        description: 'The product has been archived',
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An error occurred while archiving the product',
+      })
+    }
   }, [updateProduct, product])
 
   return (

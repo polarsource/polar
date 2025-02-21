@@ -4,7 +4,6 @@ import { useAuth } from '@/hooks/auth'
 import { usePostHog } from '@/hooks/posthog'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js'
 import {
   PaymentIntent,
@@ -24,9 +23,6 @@ const PaymentForm = ({
   onSuccess,
   redirectTo,
   hasDetails,
-  paymentMethod,
-  canSavePaymentMethod,
-  onSavePaymentMethodChanged,
 }: {
   paymentIntent?: schemas['PledgeStripePaymentIntentMutationResponse']
   issue: schemas['Issue']
@@ -38,9 +34,6 @@ const PaymentForm = ({
   onSuccess: (paymentIntent: PaymentIntent) => void
   hasDetails: boolean
   redirectTo: string
-  paymentMethod?: schemas['PaymentMethod']
-  canSavePaymentMethod: boolean
-  onSavePaymentMethodChanged: (save: boolean) => void
 }) => {
   const posthog = usePostHog()
   const stripe = useStripe()
@@ -49,7 +42,7 @@ const PaymentForm = ({
 
   const [isStripeCompleted, setStripeCompleted] = useState(false)
 
-  const havePaymentMethod = paymentMethod || isStripeCompleted
+  const havePaymentMethod = isStripeCompleted
 
   const canSubmit =
     !isSyncing && paymentIntent && havePaymentMethod && hasDetails
@@ -66,6 +59,7 @@ const PaymentForm = ({
       })
     }
   }, [
+    posthog,
     havePaymentMethod,
     issue.id,
     issue.number,
@@ -119,17 +113,6 @@ const PaymentForm = ({
     }
   }
 
-  const submitWithExistingPaymentMethod = async () => {
-    if (!stripe || !paymentIntent?.client_secret) {
-      throw new Error('unable to submitWithExistingPaymentMethod')
-    }
-
-    return await stripe.confirmCardPayment(paymentIntent.client_secret, {
-      payment_method: paymentMethod?.stripe_payment_method_id,
-      return_url: redirectTo,
-    })
-  }
-
   const submitWithStripeElement = async () => {
     if (!stripe || !elements) {
       throw new Error('unable to submitWithStripeElement')
@@ -166,9 +149,7 @@ const PaymentForm = ({
     setSyncing(true)
     setErrorMessage('')
 
-    const res = paymentMethod
-      ? submitWithExistingPaymentMethod()
-      : submitWithStripeElement()
+    const res = submitWithStripeElement()
 
     return await res
       .then(({ paymentIntent, error }) => {
@@ -197,56 +178,24 @@ const PaymentForm = ({
       })
   }
 
-  const [
-    stripeElementsCurrentPaymentType,
-    setStripeElementsCurrentPaymentType,
-  ] = useState('')
-
   const onStripeFormChange = (event: StripePaymentElementChangeEvent) => {
     setStripeCompleted(event.complete)
-    setStripeElementsCurrentPaymentType(event.value.type)
-
-    // Don't offer saving payment methods if the type is not card
-    if (event.value.type !== 'card') {
-      onSavePaymentMethodChanged(false)
-    }
   }
 
   return (
     <div className="dark:border-polar-500 flex flex-col gap-4 border-t pt-5">
-      {!paymentMethod && (
-        <PaymentElement
-          onChange={onStripeFormChange}
-          options={{
-            defaultValues: {
-              billingDetails: {
-                email: currentUser?.email,
-              },
+      <PaymentElement
+        onChange={onStripeFormChange}
+        options={{
+          defaultValues: {
+            billingDetails: {
+              email: currentUser?.email,
             },
-          }}
-        />
-      )}
+          },
+        }}
+      />
 
       <Subtotal paymentIntent={paymentIntent} />
-
-      {!paymentMethod &&
-        canSavePaymentMethod &&
-        stripeElementsCurrentPaymentType === 'card' && (
-          <div className="items-top flex items-center space-x-2">
-            <Checkbox
-              id="save_payment_method"
-              onCheckedChange={(e) => onSavePaymentMethodChanged(Boolean(e))}
-            />
-            <div className="grid leading-none">
-              <label
-                htmlFor="save_payment_method"
-                className="dark:text-polar-400 text-sm font-medium text-gray-500"
-              >
-                Save payment method on file
-              </label>
-            </div>
-          </div>
-        )}
 
       <div>
         <Button

@@ -21,20 +21,40 @@ export const CustomerUsageView = ({
   return (
     <TabsContent value="usage" className="flex flex-col gap-y-12">
       <div className="flex flex-col gap-y-8">
-        {meters?.items.map((meter) => {
-          const { data } = useMeterQuantities(
-            meter.id,
-            startDate,
-            endDate,
-            'day',
-            customer.id,
-          )
-
-          if (!data) return null
-
-          return <CustomerMeter key={meter.id} meter={meter} data={data} />
-        })}
+        {meters?.items.map((meter) => (
+          <CustomerMeterItem
+            key={meter.id}
+            meter={meter}
+            startDate={startDate}
+            endDate={endDate}
+            customer={customer}
+          />
+        ))}
       </div>
     </TabsContent>
   )
+}
+
+const CustomerMeterItem = ({
+  meter,
+  startDate,
+  endDate,
+  customer,
+}: {
+  meter: schemas['Meter']
+  startDate: Date
+  endDate: Date
+  customer: schemas['Customer']
+}) => {
+  const { data } = useMeterQuantities(
+    meter.id,
+    startDate,
+    endDate,
+    'day',
+    customer.id,
+  )
+
+  if (!data) return null
+
+  return <CustomerMeter key={meter.id} meter={meter} data={data} />
 }

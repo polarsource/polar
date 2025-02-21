@@ -3,17 +3,20 @@ import React from 'react'
 import { ProductCustomFieldSection } from './ProductCustomFieldSection'
 import { ProductInfoSection } from './ProductInfoSection'
 import { ProductMediaSection } from './ProductMediaSection'
+import { ProductMetadataSection } from './ProductMetadataSection'
 import { ProductPricingSection } from './ProductPricingSection'
 
 export interface ProductFullMediasMixin {
   full_medias: schemas['ProductMediaFileRead'][]
 }
 
-export type ProductFormType = (
-  | schemas['ProductCreate']
-  | schemas['ProductUpdate']
-) &
-  ProductFullMediasMixin
+export type ProductFormType = Omit<
+  schemas['ProductCreate'] | schemas['ProductUpdate'],
+  'metadata'
+> &
+  ProductFullMediasMixin & {
+    metadata: { key: string; value: string | number | boolean }[]
+  }
 
 interface ProductFormProps {
   organization: schemas['Organization']
@@ -35,6 +38,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         organization={organization}
         compact={compact}
       />
+      <ProductMetadataSection compact={compact} />
     </div>
   )
 }

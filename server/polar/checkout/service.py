@@ -1780,9 +1780,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     email=checkout.customer_email,
                     email_verified=False,
                     stripe_customer_id=None,
-                    name=checkout.customer_name,
-                    billing_address=checkout.customer_billing_address,
-                    tax_id=checkout.customer_tax_id,
                     organization=checkout.organization,
                     user_metadata={},
                 )
@@ -1815,6 +1812,14 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 ),
                 **update_params,
             )
+
+        if checkout.customer_name is not None:
+            customer.name = checkout.customer_name
+        if checkout.customer_billing_address is not None:
+            customer.billing_address = checkout.customer_billing_address
+        if checkout.customer_tax_id is not None:
+            customer.tax_id = checkout.customer_tax_id
+
         customer.stripe_customer_id = stripe_customer_id
         customer.user_metadata = {
             **customer.user_metadata,

@@ -51,20 +51,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     parseAsString,
   )
 
-  const onQueryChange = useCallback(
-    (query: string) => {
-      setQuery(query)
-    },
-    [setQuery],
-  )
-
-  const customersHook = useCustomers(organization.id, {
+  const { data, fetchNextPage, hasNextPage } = useCustomers(organization.id, {
     query: query ?? undefined,
     sorting: [sorting] ?? undefined,
   })
 
-  const customers =
-    customersHook.data?.pages.flatMap((page) => page.items) || []
+  const customers = data?.pages.flatMap((page) => page.items) || []
 
   const selectedCustomer = useMemo(() => {
     if (selectedCustomerId) {
@@ -122,10 +114,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const { ref: loadingRef, inViewport } = useInViewport<HTMLDivElement>()
 
   useEffect(() => {
-    if (inViewport && customersHook.hasNextPage && !customersHook.isFetching) {
-      customersHook.fetchNextPage()
+    if (inViewport && hasNextPage) {
+      fetchNextPage()
     }
-  }, [inViewport, customersHook])
+  }, [inViewport, hasNextPage, fetchNextPage])
 
   return (
     <DashboardBody
@@ -231,7 +223,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               className="w-full rounded-none border-none bg-transparent p-0 ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
               placeholder="Search Customers"
               value={query ?? undefined}
-              onChange={(e) => onQueryChange(e.target.value)}
+              onChange={(e) => setQuery(e.target.value)}
             />
           </div>
           <div className="dark:divide-polar-800 flex h-full flex-grow flex-col divide-y divide-gray-200 overflow-y-auto">
@@ -262,7 +254,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 </div>
               </div>
             ))}
-            {customersHook.hasNextPage && (
+            {hasNextPage && (
               <div
                 ref={loadingRef}
                 className="flex w-full items-center justify-center py-8"

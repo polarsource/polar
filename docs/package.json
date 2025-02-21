@@ -6,7 +6,6 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "mintlify dev",
-    "generate-webhooks": "tsx .polar/generate-webhooks.mts openapi.yaml snippets/webhooks",
     "broken-links": "mintlify broken-links"
   },
   "keywords": [],
@@ -14,10 +13,10 @@
   "license": "ISC",
   "packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0",
   "dependencies": {
-    "mintlify": "^4.0.395"
+    "mintlify": "^4.0.400"
   },
   "devDependencies": {
-    "@scalar/openapi-parser": "^0.10.7",
+    "@scalar/openapi-parser": "^0.10.8",
     "@types/node": "^22.13.4",
     "js-yaml": "^4.1.0",
     "openapi-sampler": "^1.6.1",

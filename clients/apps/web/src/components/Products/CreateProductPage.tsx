@@ -19,6 +19,11 @@ import ProductBenefitsForm from './ProductBenefitsForm'
 import ProductForm, { ProductFullMediasMixin } from './ProductForm/ProductForm'
 import { productCreateToProduct } from './utils'
 
+type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
+  ProductFullMediasMixin & {
+    metadata: { key: string; value: string | number | boolean }[]
+  }
+
 export interface CreateProductPageProps {
   organization: schemas['Organization']
   productPriceType?: schemas['ProductPriceType']
@@ -42,7 +47,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     schemas['Benefit']['id'][]
   >([])
 
-  const form = useForm<schemas['ProductCreate'] & ProductFullMediasMixin>({
+  const form = useForm<ProductCreateForm>({
     defaultValues: {
       recurring_interval: null,
       ...{
@@ -59,6 +64,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
       },
       ...(savedFormValues ? savedFormValues : {}),
       organization_id: organization.id,
+      metadata: [],
     },
   })
   const { handleSubmit, watch, setError } = form
@@ -70,20 +76,29 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   const createdProduct = watch()
   const reconciledProduct = productCreateToProduct(
     organization.id,
-    createdProduct,
+    {
+      ...createdProduct,
+      metadata: createdProduct.metadata.reduce(
+        (acc, { key, value }) => ({ ...acc, [key]: value }),
+        {},
+      ),
+    },
     enabledBenefitIds
       .map((id) => organizationBenefits.find((b) => b.id === id))
       .filter(Boolean) as schemas['Benefit'][],
   )
 
   const onSubmit = useCallback(
-    async (
-      productCreate: schemas['ProductCreate'] & ProductFullMediasMixin,
-    ) => {
-      const { full_medias, ...productCreateRest } = productCreate
+    async (productCreate: ProductCreateForm) => {
+      const { full_medias, metadata, ...productCreateRest } = productCreate
+
       const { data: product, error } = await createProduct.mutateAsync({
         ...productCreateRest,
         medias: full_medias.map((media) => media.id),
+        metadata: metadata.reduce(
+          (acc, { key, value }) => ({ ...acc, [key]: value }),
+          {},
+        ),
       })
       if (error) {
         if (error.detail) {
@@ -145,7 +160,13 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
 
   useEffect(() => {
     const pagehideListener = () => {
-      saveDraft('ProductCreate', newProduct)
+      saveDraft('ProductCreate', {
+        ...newProduct,
+        metadata: newProduct.metadata.reduce(
+          (acc, { key, value }) => ({ ...acc, [key]: value }),
+          {},
+        ),
+      })
     }
     window.addEventListener('pagehide', pagehideListener)
     return () => window.removeEventListener('pagehide', pagehideListener)
@@ -171,7 +192,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
       }
       wide
     >
-      <div className="rounded-4xl dark:border-polar-700 dark:divide-polar-700 flex flex-col gap-y-8 divide-y divide-gray-200 border border-gray-200">
+      <div className="rounded-4xl dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border border-gray-200">
         <Form {...form}>
           <form
             onSubmit={handleSubmit(onSubmit)}

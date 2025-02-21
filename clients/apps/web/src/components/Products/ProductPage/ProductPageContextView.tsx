@@ -16,6 +16,11 @@ import { getStatusRedirect } from '../../Toast/utils'
 import ProductBenefitsForm from '../ProductBenefitsForm'
 import ProductForm, { ProductFullMediasMixin } from '../ProductForm/ProductForm'
 
+type ProductUpdateForm = Omit<schemas['ProductUpdate'], 'metadata'> &
+  ProductFullMediasMixin & {
+    metadata: { key: string; value: string | number | boolean }[]
+  }
+
 export interface ProductPageContextViewProps {
   organization: schemas['Organization']
   product: schemas['Product']
@@ -36,11 +41,15 @@ export const ProductPageContextView = ({
     schemas['Benefit']['id'][]
   >(product.benefits.map((benefit) => benefit.id) ?? [])
 
-  const form = useForm<schemas['ProductUpdate'] & ProductFullMediasMixin>({
+  const form = useForm<ProductUpdateForm>({
     defaultValues: {
       ...product,
       medias: product.medias.map((media) => media.id),
       full_medias: product.medias,
+      metadata: Object.entries(product.metadata).map(([key, value]) => ({
+        key,
+        value,
+      })),
     },
   })
 
@@ -50,15 +59,17 @@ export const ProductPageContextView = ({
   const updateBenefits = useUpdateProductBenefits(organization)
 
   const onSubmit = useCallback(
-    async (
-      productUpdate: schemas['ProductUpdate'] & ProductFullMediasMixin,
-    ) => {
+    async (productUpdate: ProductUpdateForm) => {
       const { full_medias, ...productUpdateRest } = productUpdate
       const { error } = await updateProduct.mutateAsync({
         id: product.id,
         body: {
           ...productUpdateRest,
           medias: full_medias.map((media) => media.id),
+          metadata: productUpdateRest.metadata?.reduce(
+            (acc, { key, value }) => ({ ...acc, [key]: value }),
+            {},
+          ),
         },
       })
 

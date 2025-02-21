@@ -5,7 +5,6 @@ Using Mintlify.
 **Core concepts**
 - `docs.json` contains [navigation](https://mintlify.com/docs/navigation/overview), [redirects](https://mintlify.com/docs/settings/broken-links) and core settings
 
-
 ## Development
 
 **Installation**
@@ -18,35 +17,17 @@ pnpm install
 pnpm dev
 ```
 
-## Generate API & Webhook Code Samples
+### Update schema and webhooks
 
-```
-Manual at the moment, but to be automated with GitHub Actions.
-```
+We have a script that takes care of:
 
-Mintlify & Speakeasy work great together.
-
-Mintlify requires the `.speakeasy/workflow.yaml` to specify our code sample path
-at Speakeasy and any overlays.
-
-From there we [create manual `.mdx` pages](https://mintlify.com/docs/api-playground/openapi/setup#autogenerate-files) for each one for complete control of
-how they are displayed, navigation order etc.
+* Downloading latest schema with Speakeasy overlays
+* Generate missing webhooks schema pages
+    * By default, new pages are added at the bottom of the `Webhooks Events` navigation section, but you can move them to a specific group if needed.
+    * Existing pages are not updated, so you can safely edit them without losing your changes.
 
 ```bash
-npx @mintlify/scraping@latest openapi-file openapi.yaml -o api-reference
+./update-schema.sh https://spec.speakeasy.com/polar/polar/polar-oas-with-code-samples
 ```
 
-**Generate Webhook Sample Payloads (Snippets)**
-
-Currently, Mintlify does not support webhooks and only generates endpoints in
-`paths` in the OpenAPI schema.
-
-So we have a custom script `.polar/generate-webhooks.mts` which can be executed
-like so:
-
-```bash
-pnpm generate-webhooks
-```
-
-It generates a bunch of snippets under `snippets/webhooks/<event.name>/<snippets>.mdx`
-which we then use as snippets in our docs.
+The script is run automatically by the CI pipeline every day and opens a PR if there are changes.

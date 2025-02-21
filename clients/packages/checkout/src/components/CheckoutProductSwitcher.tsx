@@ -61,7 +61,7 @@ const CheckoutProductSwitcher = ({
             {product.prices.map((price) => (
               <label
                 key={price.id}
-                className={`flex cursor-pointer flex-row items-center gap-2 rounded-full border p-6 hover:border-blue-500 ${price.id === selectedProduct.id ? 'border-blue-500' : ''}`}
+                className={`flex cursor-pointer flex-row items-center gap-4 rounded-2xl border p-6 hover:border-blue-500 ${price.id === selectedProduct.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ''}`}
                 htmlFor={`product-${price.id}`}
               >
                 <RadioGroupItem
@@ -78,7 +78,7 @@ const CheckoutProductSwitcher = ({
         ) : (
           <label
             key={product.id}
-            className={`flex cursor-pointer flex-row items-center gap-2 rounded-full border p-6 hover:border-blue-500 ${product.id === selectedProduct.id ? 'border-blue-500' : ''}`}
+            className={`flex cursor-pointer flex-row items-center gap-4 rounded-2xl border p-6 hover:border-blue-500 ${product.id === selectedProduct.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ''}`}
             htmlFor={`product-${product.id}`}
           >
             <RadioGroupItem

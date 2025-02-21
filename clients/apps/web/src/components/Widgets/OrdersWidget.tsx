@@ -48,7 +48,7 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
         </span>
       </CardContent>
       <Link
-        href={`/dashboard/${org.slug}/customers?customerId=${order.customer.id}`}
+        href={`/dashboard/${org.slug}/customers?customerId=${order.customer.id}&query=${order.customer.email}`}
       >
         <CardFooter className="dark:bg-polar-900 m-2 flex flex-row items-center gap-x-4 rounded-3xl bg-white p-4">
           <Avatar

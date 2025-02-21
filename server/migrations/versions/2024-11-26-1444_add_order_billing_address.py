@@ -16,7 +16,6 @@ import stripe as stripe_lib
 from alembic import op
 from pydantic import ValidationError
 
-from polar import payment_method
 from polar.config import settings
 
 # Polar Custom Imports

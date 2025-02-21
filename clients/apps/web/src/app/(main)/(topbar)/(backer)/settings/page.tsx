@@ -4,7 +4,6 @@ import AccessTokensSettings from '@/components/Settings/AccessTokensSettings'
 import AuthenticationSettings from '@/components/Settings/AuthenticationSettings'
 import GeneralSettings from '@/components/Settings/GeneralSettings'
 import OAuthSettings from '@/components/Settings/OAuth/OAuthSettings'
-import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { useListOrganizations } from '@/hooks/queries'
 
@@ -19,11 +18,6 @@ export default function Page() {
             <Section>
               <SectionDescription title="General" description="" />
               <GeneralSettings />
-            </Section>
-
-            <Section>
-              <SectionDescription title="Payment methods" />
-              <PaymentMethodSettings />
             </Section>
 
             <Section>

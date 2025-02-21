@@ -1,7 +1,6 @@
-import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, unwrap } from '@polar-sh/client'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useGetPledge = (pledgeId: string | null) =>
@@ -32,25 +31,3 @@ export const useListPledesForIssue = (issueId: string) =>
 
 export const useListPledgesForOrganization = (organizationId: string) =>
   useSearchPledges({ organization_id: organizationId })
-
-export const useListPaymentMethods = () =>
-  useQuery({
-    queryKey: ['paymentMethods'],
-    queryFn: () => unwrap(api.GET('/v1/payment_methods')),
-    retry: defaultRetry,
-  })
-
-export const useDetachPaymentMethodMutation = () =>
-  useMutation({
-    mutationFn: (variables: { id: string }) => {
-      return api.POST('/v1/payment_methods/{id}/detach', {
-        params: { path: { id: variables.id } },
-      })
-    },
-    onSuccess: (result, _variables, _ctx) => {
-      if (result.error) {
-        return
-      }
-      queryClient.invalidateQueries({ queryKey: ['paymentMethods'] })
-    },
-  })

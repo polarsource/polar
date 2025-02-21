@@ -1,19 +1,11 @@
 import { useAuth } from '@/hooks/auth'
 import { usePostHog } from '@/hooks/posthog'
-import { useListPaymentMethods } from '@/hooks/queries'
 import { api } from '@/utils/client'
 import { EnvelopeIcon } from '@heroicons/react/24/outline'
 import { schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import { Elements } from '@stripe/react-stripe-js'
 import { PaymentIntent } from '@stripe/stripe-js'
@@ -23,7 +15,7 @@ import { useRouter } from 'next/navigation'
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import OrganizationSelect from './OrganizationSelect'
-import { generateRedirectURL, prettyCardName, validateEmail } from './payment'
+import { generateRedirectURL, validateEmail } from './payment'
 import PaymentForm from './PaymentForm'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
@@ -64,8 +56,6 @@ const PledgeCheckoutFundToday = ({
   const [isSyncing, setSyncing] = useState(false)
 
   const { currentUser } = useAuth()
-
-  const savedPaymentMethods = useListPaymentMethods()
 
   const hasValidDetails = () => {
     let isValidEmail = validateEmail(formState.email)
@@ -273,49 +263,8 @@ const PledgeCheckoutFundToday = ({
     router.push(location)
   }
 
-  const [paymentMethod, setPaymentMethod] = useState<
-    schemas['PaymentMethod'] | undefined
-  >()
   const showStripeForm = polarPaymentIntent ? true : false
   const repository = issue.repository
-
-  const onSavePaymentMethodChanged = (save: boolean) => {
-    const n = {
-      ...formState,
-      setup_future_usage: save ? 'on_session' : undefined,
-    }
-
-    // @ts-ignore
-    setFormState(n)
-    // @ts-ignore
-    debouncedSync(n)
-  }
-
-  const onPaymentMethodChange = (id: string) => {
-    const pm = savedPaymentMethods.data?.items.find(
-      (p) => p.stripe_payment_method_id === id,
-    )
-    setPaymentMethod(pm)
-  }
-
-  const didSetPaymentMethodOnLoad = useRef(false)
-  useEffect(() => {
-    if (didSetPaymentMethodOnLoad.current) {
-      return
-    }
-    if (!savedPaymentMethods.isFetched) {
-      return
-    }
-
-    if (
-      savedPaymentMethods.data?.items &&
-      savedPaymentMethods.data?.items.length >= 1
-    ) {
-      setPaymentMethod(savedPaymentMethods.data?.items[0])
-    }
-
-    didSetPaymentMethodOnLoad.current = true
-  }, [savedPaymentMethods.isFetched, savedPaymentMethods.data])
 
   const onChangeOnBehalfOf = (org: schemas['Organization'] | undefined) => {
     const n = {
@@ -392,48 +341,6 @@ const PledgeCheckoutFundToday = ({
         </div>
       </div>
 
-      {savedPaymentMethods.data?.items &&
-        savedPaymentMethods.data?.items.length > 0 && (
-          <div>
-            <label
-              htmlFor="payment_method"
-              className="dark:text-polar-400 text-sm font-medium text-gray-500"
-            >
-              Payment method
-            </label>
-
-            <Select onValueChange={onPaymentMethodChange} name="payment_method">
-              <SelectTrigger className="mt-2 w-full">
-                {paymentMethod ? (
-                  <SelectValue
-                    placeholder={`${prettyCardName(paymentMethod.brand)} (****${
-                      paymentMethod.last4
-                    })
-                    ${paymentMethod.exp_month.toString().padStart(2, '0')}/${
-                      paymentMethod.exp_year
-                    }`}
-                  />
-                ) : (
-                  <SelectValue placeholder="new" />
-                )}
-              </SelectTrigger>
-
-              <SelectContent>
-                {savedPaymentMethods.data.items.map((pm) => (
-                  <SelectItem
-                    value={pm.stripe_payment_method_id}
-                    key={pm.stripe_payment_method_id}
-                  >
-                    {prettyCardName(pm.brand)} (****{pm.last4}){' '}
-                    {pm.exp_month.toString().padStart(2, '0')}/{pm.exp_year}
-                  </SelectItem>
-                ))}
-                <SelectItem value="new">+ New payment method</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
       {showStripeForm && polarPaymentIntent && (
         <Elements
           stripe={stripePromise}
@@ -484,9 +391,6 @@ const PledgeCheckoutFundToday = ({
             setSyncing={setSyncing}
             setErrorMessage={setErrorMessage}
             onSuccess={onStripePaymentSuccess}
-            canSavePaymentMethod={currentUser !== undefined}
-            paymentMethod={paymentMethod}
-            onSavePaymentMethodChanged={onSavePaymentMethodChanged}
             hasDetails={hasValidDetails()}
             redirectTo={generateRedirectURL(gotoURL)}
           />

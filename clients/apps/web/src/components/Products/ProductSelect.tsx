@@ -18,7 +18,6 @@ import {
 } from '@polar-sh/ui/components/ui/popover'
 import React, { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import ProductPriceTypeIcon from './ProductPriceTypeIcon'
 import ProductPriceTypeLabel from './ProductPriceTypeLabel'
 
 const ProductsCommandGroup = ({
@@ -39,32 +38,40 @@ const ProductsCommandGroup = ({
   return (
     <CommandGroup className={className}>
       <CommandItem
+        className={twMerge(
+          'flex flex-row items-center justify-between text-black dark:text-white',
+        )}
         key={productPriceType}
         value={productPriceType}
         onSelect={() => onSelectProductType(productPriceType)}
       >
         <div className="flew-row flex items-center gap-2 font-medium">
-          <ProductPriceTypeIcon productPriceType={productPriceType} />
           <ProductPriceTypeLabel productPriceType={productPriceType} />
         </div>
       </CommandItem>
-      {groupedProducts[productPriceType].map((product) => (
-        <CommandItem
-          key={product.id}
-          value={product.id}
-          onSelect={() => onSelectProduct(product)}
-        >
-          <CheckOutlined
+      {groupedProducts[productPriceType].map((product) => {
+        const isSelected = selectedProducts.some(({ id }) => id === product.id)
+
+        return (
+          <CommandItem
             className={twMerge(
-              'mr-2 h-4 w-4',
-              selectedProducts.findIndex(({ id }) => id === product.id) > -1
-                ? 'opacity-100'
-                : 'opacity-0',
+              'flex flex-row items-center justify-between',
+              isSelected ? 'text-black dark:text-white' : '',
             )}
-          />
-          {product.name}
-        </CommandItem>
-      ))}
+            key={product.id}
+            value={product.id}
+            onSelect={() => onSelectProduct(product)}
+          >
+            {product.name}
+            <CheckOutlined
+              className={twMerge(
+                'mr-2 h-4 w-4',
+                isSelected ? 'visible' : 'invisible',
+              )}
+            />
+          </CommandItem>
+        )
+      })}
     </CommandGroup>
   )
 }
@@ -208,6 +215,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
       <PopoverContent className="w-[300px] p-0">
         <Command shouldFilter={false}>
           <CommandInput
+            className="border-none focus:ring-transparent"
             placeholder="Search product"
             value={query}
             onValueChange={setQuery}
@@ -229,11 +237,10 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
                   onSelectProduct={onSelectProduct}
                   onSelectProductType={onSelectProductType}
                   selectedProducts={selectedProducts || []}
-                  className="!mt-0"
                 />
               </>
             ) : (
-              <CommandEmpty>No product found.</CommandEmpty>
+              <CommandEmpty>No product found</CommandEmpty>
             )}
           </CommandList>
         </Command>

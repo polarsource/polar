@@ -14,7 +14,8 @@ from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from .. import auth
-from ..schemas.customer import CustomerPortalCustomer
+from ..schemas.customer import CustomerPortalCustomer, CustomerPortalCustomerUpdate
+from ..service.customer import customer as customer_service
 
 router = APIRouter(prefix="/customers", tags=["customers", APITag.documented])
 
@@ -41,3 +42,20 @@ async def stream(
 async def get(auth_subject: auth.CustomerPortalRead) -> Customer:
     """Get authenticated customer."""
     return auth_subject.subject
+
+
+@router.patch(
+    "/me",
+    summary="Update Customer",
+    responses={
+        200: {"description": "Customer updated."},
+    },
+    response_model=CustomerPortalCustomer,
+)
+async def update(
+    customer_update: CustomerPortalCustomerUpdate,
+    auth_subject: auth.CustomerPortalWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Customer:
+    """Update authenticated customer."""
+    return await customer_service.update(session, auth_subject.subject, customer_update)

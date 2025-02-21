@@ -1,5 +1,12 @@
+from typing import Annotated
+
 from polar.kit.address import Address
-from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import (
+    EmptyStrToNoneValidator,
+    IDSchema,
+    Schema,
+    TimestampedSchema,
+)
 from polar.kit.tax import TaxID
 
 
@@ -15,3 +22,9 @@ class CustomerPortalCustomer(IDSchema, TimestampedSchema):
     billing_address: Address | None
     tax_id: TaxID | None
     oauth_accounts: dict[str, CustomerPortalOAuthAccount]
+
+
+class CustomerPortalCustomerUpdate(Schema):
+    name: Annotated[str | None, EmptyStrToNoneValidator] = None
+    billing_address: Address | None = None
+    tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None

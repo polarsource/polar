@@ -15,6 +15,8 @@ from polar.enums import (
     Platforms,
     SubscriptionRecurringInterval,
 )
+from polar.kit.address import Address
+from polar.kit.tax import TaxID
 from polar.kit.utils import utc_now
 from polar.models import (
     Account,
@@ -921,6 +923,8 @@ async def create_customer(
     email_verified: bool = False,
     name: str = "Customer",
     stripe_customer_id: str = "STRIPE_CUSTOMER_ID",
+    billing_address: Address | None = None,
+    tax_id: TaxID | None = None,
     user_metadata: dict[str, Any] = {},
 ) -> Customer:
     customer = Customer(
@@ -929,6 +933,8 @@ async def create_customer(
         name=name,
         stripe_customer_id=stripe_customer_id,
         organization=organization,
+        billing_address=billing_address,
+        tax_id=tax_id,
         user_metadata=user_metadata,
     )
     await save_fixture(customer)

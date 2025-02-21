@@ -20,7 +20,7 @@ export const CheckoutCard = ({
   const { product } = checkout
 
   return (
-    <ShadowBox className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-6 rounded-3xl bg-gray-50">
+    <ShadowBox className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-6 rounded-3xl bg-white shadow-sm">
       <CheckoutPricing
         checkout={checkout}
         update={update}

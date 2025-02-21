@@ -152,8 +152,8 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           organization={checkout.organization}
           product={checkout.product}
         />
-        <CheckoutCard checkout={checkout} update={update} />
         <CheckoutProductSwitcher checkout={checkout} update={update} />
+        <CheckoutCard checkout={checkout} update={update} />
       </div>
       <div className="flex flex-col gap-y-8 md:p-12 lg:p-20">
         <CheckoutForm

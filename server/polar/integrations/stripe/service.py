@@ -294,25 +294,6 @@ class StripeService:
 
         return customer
 
-    async def list_user_payment_methods(
-        self,
-        session: AsyncSession,
-        user: User,
-    ) -> list[stripe_lib.PaymentMethod]:
-        customer = await self.get_or_create_user_customer(session, user)
-        if not customer:
-            return []
-
-        payment_methods = await stripe_lib.PaymentMethod.list_async(
-            customer=customer.id,
-            type="card",
-        )
-
-        return payment_methods.data
-
-    async def detach_payment_method(self, id: str) -> stripe_lib.PaymentMethod:
-        return await stripe_lib.PaymentMethod.detach_async(id)
-
     async def create_user_portal_session(
         self,
         session: AsyncSession,

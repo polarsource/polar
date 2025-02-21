@@ -12,7 +12,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
-import useDebouncedCallback from '../hooks/debounce'
+import { useDebouncedCallback } from '../hooks/debounce'
 import { getDiscountDisplay } from '../utils/discount'
 import { formatCurrencyNumber } from '../utils/money'
 import { hasRecurringIntervals, isLegacyRecurringPrice } from '../utils/product'

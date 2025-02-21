@@ -35,7 +35,7 @@ import {
   useState,
 } from 'react'
 import { UseFormReturn, WatchObserver } from 'react-hook-form'
-import useDebouncedCallback from '../hooks/debounce'
+import { useDebouncedCallback } from '../hooks/debounce'
 import { getDiscountDisplay } from '../utils/discount'
 import { formatCurrencyNumber } from '../utils/money'
 import AmountLabel from './AmountLabel'

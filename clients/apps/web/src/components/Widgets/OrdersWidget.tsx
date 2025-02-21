@@ -47,7 +47,9 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
           ${getCentsInDollarString(order.amount, false)}
         </span>
       </CardContent>
-      <Link href={`/dashboard/${org.slug}/customers/${order.customer.id}`}>
+      <Link
+        href={`/dashboard/${org.slug}/customers?customerId=${order.customer.id}`}
+      >
         <CardFooter className="dark:bg-polar-900 m-2 flex flex-row items-center gap-x-4 rounded-3xl bg-white p-4">
           <Avatar
             className="h-10 w-10"

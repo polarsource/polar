@@ -220,6 +220,19 @@ const SubNav = (props: { items: SubRouteWithActive[] }) => {
   )
 }
 
+export interface DashboardBodyProps {
+  children?: React.ReactNode
+  className?: string
+  wrapperClassName?: string
+  title?: JSX.Element | string
+  contextView?: React.ReactElement
+  contextViewClassName?: string
+  contextViewPlacement?: 'left' | 'right'
+  header?: JSX.Element | boolean
+  wide?: boolean
+  transparent?: boolean
+}
+
 export const DashboardBody = ({
   children,
   className,
@@ -227,20 +240,11 @@ export const DashboardBody = ({
   title,
   contextView,
   contextViewClassName,
+  contextViewPlacement = 'right',
   header = true,
   wide = false,
   transparent = false,
-}: {
-  children?: React.ReactNode
-  wrapperClassName?: string
-  className?: string
-  title?: JSX.Element | string
-  contextView?: React.ReactElement
-  contextViewClassName?: string
-  header?: JSX.Element | boolean
-  wide?: boolean
-  transparent?: boolean
-}) => {
+}: DashboardBodyProps) => {
   const currentRoute = useRoute()
   const [scrolled, setScrolled] = useState(false)
 
@@ -257,7 +261,12 @@ export const DashboardBody = ({
   )
 
   return (
-    <div className={twMerge('flex h-full w-full flex-row gap-x-3')}>
+    <div
+      className={twMerge(
+        'flex h-full w-full flex-row gap-x-3',
+        contextViewPlacement === 'left' ? 'flex-row-reverse' : '',
+      )}
+    >
       <div
         onScroll={handleScroll}
         className={twMerge(

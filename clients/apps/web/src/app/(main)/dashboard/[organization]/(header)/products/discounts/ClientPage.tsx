@@ -7,7 +7,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useDeleteDiscount, useDiscounts } from '@/hooks/queries'
-import useDebouncedCallback from '@/hooks/utils'
+import { useDebouncedCallback } from '@/hooks/utils'
 import {
   DataTablePaginationState,
   DataTableSortingState,

@@ -1,11 +1,13 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { ConfirmModal } from '@/components/Modal/ConfirmModal'
+import { useModal } from '@/components/Modal/useModal'
 import Pagination from '@/components/Pagination/Pagination'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import ProductPrices from '@/components/Products/ProductPrices'
 import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
-import { useProducts } from '@/hooks/queries/products'
+import { useProducts, useUpdateProduct } from '@/hooks/queries/products'
 import useDebouncedCallback from '@/hooks/utils'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import {
@@ -166,6 +168,11 @@ interface ProductListItemProps {
 
 const ProductListItem = ({ product, organization }: ProductListItemProps) => {
   const router = useRouter()
+  const {
+    show: showModal,
+    hide: hideModal,
+    isShown: isConfirmModalShown,
+  } = useModal()
 
   const handleContextMenuCallback = (
     callback: (e: React.MouseEvent) => void,
@@ -204,6 +211,17 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
       navigator.clipboard.writeText(price.id)
     }
   }
+
+  const updateProduct = useUpdateProduct(organization)
+
+  const onArchiveProduct = useCallback(() => {
+    updateProduct.mutate({
+      id: product.id,
+      body: {
+        is_archived: true,
+      },
+    })
+  }, [updateProduct, product])
 
   return (
     <ListItem
@@ -268,18 +286,8 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
             align="end"
             className="dark:bg-polar-800 bg-gray-50 shadow-lg"
           >
-            <DropdownMenuItem
-              onClick={handleContextMenuCallback(() => {
-                router.push(
-                  `/dashboard/${organization.slug}/products/${product.id}/checkout-links`,
-                )
-              })}
-            >
-              Generate Checkout Link
-            </DropdownMenuItem>
             {product.prices.length > 0 && (
               <>
-                <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
                 {product.prices.map((price) => (
                   <DropdownMenuItem
                     key={price.id}
@@ -320,9 +328,22 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
                 View Product Page
               </DropdownMenuItem>
             )}
+            <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
+            <DropdownMenuItem onClick={handleContextMenuCallback(showModal)}>
+              Archive Product
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <ConfirmModal
+        isShown={isConfirmModalShown}
+        hide={hideModal}
+        title="Archive Product"
+        description="Are you sure you want to archive this product? This action cannot be undone."
+        onConfirm={onArchiveProduct}
+        destructive
+        destructiveText="Archive"
+      />
     </ListItem>
   )
 }

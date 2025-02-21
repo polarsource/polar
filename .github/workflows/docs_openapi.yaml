@@ -1,9 +1,9 @@
-name: Update docs OpenAPI schema
+name: Update docs OpenAPI schema and webhooks
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 8 * * *"
 
 concurrency:
   group: docs-update-openapi-schema
@@ -25,11 +25,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download OpenAPI schema
-        run: curl -o openapi.yaml https://spec.speakeasy.com/polar/polar/polar-oas-with-code-samples
-
-      - name: Update webhooks
-        run: ./.polar/webhooks.sh
+      - name: Run update script
+        run: ./update-schema.sh https://spec.speakeasy.com/polar/polar/polar-oas-with-code-samples
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7

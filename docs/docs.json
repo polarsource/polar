@@ -86,22 +86,21 @@
                   "integrate/sdk/typescript",
                   "integrate/sdk/python",
                   "integrate/sdk/php",
-                  "integrate/sdk/golang",
-                  {
-                    "group": "Framework Adapters",
-                    "icon": "js",
-                    "pages": [
-                      "integrate/sdk/adapters/nextjs",
-                      "integrate/sdk/adapters/astro",
-                      "integrate/sdk/adapters/remix",
-                      "integrate/sdk/adapters/sveltekit",
-                      "integrate/sdk/adapters/deno",
-                      "integrate/sdk/adapters/elysia",
-                      "integrate/sdk/adapters/express",
-                      "integrate/sdk/adapters/fastify",
-                      "integrate/sdk/adapters/hono"
-                    ]
-                  }
+                  "integrate/sdk/golang"
+                ]
+              },
+              {
+                "group": "Framework Adapters",
+                "pages": [
+                  "integrate/sdk/adapters/nextjs",
+                  "integrate/sdk/adapters/astro",
+                  "integrate/sdk/adapters/remix",
+                  "integrate/sdk/adapters/sveltekit",
+                  "integrate/sdk/adapters/deno",
+                  "integrate/sdk/adapters/elysia",
+                  "integrate/sdk/adapters/express",
+                  "integrate/sdk/adapters/fastify",
+                  "integrate/sdk/adapters/hono"
                 ]
               },
               {

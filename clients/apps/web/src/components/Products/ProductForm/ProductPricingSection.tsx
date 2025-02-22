@@ -245,7 +245,7 @@ export const ProductPricingSection = ({
       compact={compact}
     >
       {isLegacyRecurringProduct && !legacyMigration ? (
-        <div className="prose rounded-2xl bg-yellow-50 px-4 py-3 text-justify text-sm text-yellow-500 dark:bg-yellow-950">
+        <div className="prose dark:bg-polar-700 dark:text-polar-500 rounded-2xl bg-gray-100 p-6 text-sm text-gray-500">
           <p>
             This product uses a deprecated pricing model with both a monthly and
             yearly pricing.
@@ -255,7 +255,7 @@ export const ProductPricingSection = ({
             at the product level, meaning you need to create a separate product
             for each billing cycle.
           </p>
-          <Button type="button" onClick={switchToNewPricingModel}>
+          <Button type="button" size="sm" onClick={switchToNewPricingModel}>
             Switch to new pricing model
           </Button>
         </div>

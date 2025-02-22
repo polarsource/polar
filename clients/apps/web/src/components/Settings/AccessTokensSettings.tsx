@@ -111,10 +111,12 @@ const AccessTokensSettings = () => {
   const tokens = usePersonalAccessTokens()
   const { data: organizations } = useListOrganizations({})
   return (
-    <div className="flex w-full flex-col gap-2">
-      <div className="flex flex-col gap-2 rounded-2xl bg-green-50 px-4 py-3 text-sm text-green-500 dark:bg-green-950">
-        <h3 className="text-lg">Access tokens have moved</h3>
-        <p className="text-justify">
+    <div className="flex w-full flex-col gap-4">
+      <div className="dark:bg-polar-800 dark:text-polar-500 flex flex-col gap-2 rounded-2xl bg-gray-100 p-6 text-sm text-gray-500">
+        <h3 className="text-lg text-black dark:text-white">
+          Access tokens have moved
+        </h3>
+        <p>
           We no longer recommend to use Personal Access Tokens, but rather{' '}
           <strong>Organization Access Tokens</strong>. They work the same, but
           only have access to one organization, which allows you to omit{' '}

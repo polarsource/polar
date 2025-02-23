@@ -42,7 +42,7 @@ const MaintainerNavigation = () => {
     <SidebarMenu>
       {dashboardRoutes.map((route) => (
         <SidebarMenuItem key={route.link}>
-          <SidebarMenuButton asChild>
+          <SidebarMenuButton tooltip={route.title} asChild>
             <Link
               key={route.link}
               className={twMerge(

@@ -64,7 +64,9 @@ export const DashboardSidebar = () => {
                       avatar_url={organization?.avatar_url}
                       className="h-6 w-6"
                     />
-                    {organization?.name}
+                    <span className="min-w-0 truncate">
+                      {organization?.name}
+                    </span>
                     <ChevronDown className="ml-auto" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
@@ -83,7 +85,7 @@ export const DashboardSidebar = () => {
                         avatar_url={org.avatar_url}
                         className="h-6 w-6"
                       />
-                      {org.name}
+                      <span className="min-w-0 truncate">{org.name}</span>
                     </DropdownMenuItem>
                   ))}
                   <DropdownMenuSeparator />

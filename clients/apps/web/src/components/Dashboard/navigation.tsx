@@ -1,7 +1,7 @@
 import { PolarHog, usePostHog } from '@/hooks/posthog'
 import {
-  AllInclusiveOutlined,
   AttachMoneyOutlined,
+  AutoAwesome,
   DonutLargeOutlined,
   HiveOutlined,
   HowToVote,
@@ -184,7 +184,7 @@ const generalRoutesList = (
   {
     id: 'benefits',
     title: 'Benefits',
-    icon: <AllInclusiveOutlined fontSize="inherit" />,
+    icon: <AutoAwesome fontSize="inherit" />,
     link: `/dashboard/${org.slug}/benefits`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org.slug}/benefits`)
@@ -365,7 +365,7 @@ const organizationRoutesList = (org: schemas['Organization']): Route[] => [
     id: 'finance',
     title: 'Finance',
     link: `/dashboard/${org.slug}/finance`,
-    icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
+    icon: <AttachMoneyOutlined fontSize="inherit" />,
     if: true,
     subs: orgFinanceSubRoutesList(org),
   },
@@ -373,7 +373,7 @@ const organizationRoutesList = (org: schemas['Organization']): Route[] => [
     id: 'settings',
     title: 'Settings',
     link: `/dashboard/${org.slug}/settings`,
-    icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
+    icon: <TuneOutlined fontSize="inherit" />,
     if: true,
     subs: [
       {

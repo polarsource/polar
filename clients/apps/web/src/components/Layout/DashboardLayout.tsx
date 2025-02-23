@@ -5,104 +5,18 @@ import { useAuth } from '@/hooks/auth'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { setLastVisitedOrg } from '@/utils/cookies'
 import { organizationPageLink } from '@/utils/nav'
-import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { SidebarTrigger } from '@polar-sh/ui/components/atoms/Sidebar'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
-import { Menu, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  PropsWithChildren,
-  UIEventHandler,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { PropsWithChildren, useContext, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import MaintainerNavigation from '../Dashboard/DashboardNavigation'
 import { DashboardProvider } from '../Dashboard/DashboardProvider'
 import { SubRouteWithActive } from '../Dashboard/navigation'
-import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
-import PublicProfileDropdown from '../Navigation/PublicProfileDropdown'
 import { useRoute } from '../Navigation/useRoute'
-import { NotificationsPopover } from '../Notifications/NotificationsPopover'
-import { BrandingMenu } from './Public/BrandingMenu'
+import { DashboardSidebar } from './Dashboard/DashboardSidebar'
 import TopbarRight from './Public/TopbarRight'
-
-const DashboardSidebar = () => {
-  const [scrollTop, setScrollTop] = useState(0)
-  const { currentUser } = useAuth()
-
-  const handleScroll: UIEventHandler<HTMLDivElement> = useCallback((e) => {
-    setScrollTop(e.currentTarget.scrollTop)
-  }, [])
-
-  const shouldRenderUpperBorder = useMemo(() => scrollTop > 0, [scrollTop])
-
-  const upperScrollClassName = shouldRenderUpperBorder
-    ? 'border-b dark:border-b-polar-700 border-b-gray-200'
-    : ''
-
-  if (!currentUser) {
-    return <></>
-  }
-
-  return (
-    <aside
-      className={twMerge(
-        'flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto md:w-[220px] md:overflow-y-visible',
-      )}
-    >
-      <div className="flex h-full flex-col gap-y-6">
-        <div className="hidden md:flex">
-          <BrandingMenu />
-        </div>
-
-        <div className={upperScrollClassName}>
-          <DashboardProfileDropdown />
-        </div>
-
-        <div
-          className="flex w-full flex-grow flex-col gap-y-12 md:h-full md:justify-between md:overflow-y-auto"
-          onScroll={handleScroll}
-        >
-          <div className="flex flex-col gap-y-12">
-            <MaintainerNavigation />
-          </div>
-        </div>
-      </div>
-      <DashboardBottom authenticatedUser={currentUser} />
-    </aside>
-  )
-}
-
-const DashboardBottom = ({
-  authenticatedUser,
-}: {
-  authenticatedUser: schemas['UserRead']
-}) => {
-  return (
-    <div className="flex flex-row items-center justify-between gap-x-5">
-      <div className="flex w-full min-w-0 flex-grow-0 flex-row items-center gap-x-2">
-        <PublicProfileDropdown
-          authenticatedUser={authenticatedUser}
-          anchor="bottombar"
-        />
-        <div className="flex w-full min-w-0 flex-col">
-          <span className="w-full truncate text-xs">
-            {authenticatedUser.email}
-          </span>
-          <span className="dark:text-polar-500 text-xs text-gray-500">
-            User Account
-          </span>
-        </div>
-      </div>
-      <NotificationsPopover />
-    </div>
-  )
-}
 
 const DashboardLayout = (
   props: PropsWithChildren<{
@@ -117,7 +31,7 @@ const DashboardLayout = (
 
   return (
     <DashboardProvider organization={organization}>
-      <div className="relative flex h-full w-full flex-col gap-x-8 bg-gray-100 md:flex-row md:p-4 dark:bg-transparent">
+      <div className="relative flex h-full w-full flex-col bg-gray-100 md:flex-row md:p-4 dark:bg-transparent">
         <MobileNav />
         <div className="hidden md:flex">
           <DashboardSidebar />
@@ -170,12 +84,7 @@ const MobileNav = () => {
           </Link>
         ) : null}
         <TopbarRight authenticatedUser={currentUser} />
-        <div
-          className="dark:text-polar-200 flex flex-row items-center justify-center text-gray-700"
-          onClick={() => setMobileNavOpen((toggle) => !toggle)}
-        >
-          {mobileNavOpen ? <X /> : <Menu />}
-        </div>
+        <SidebarTrigger />
       </div>
     </div>
   )

@@ -49,14 +49,14 @@ export const DashboardSidebar = () => {
         className={twMerge(
           'flex md:pt-3.5',
           isCollapsed
-            ? 'flex-col gap-y-4'
+            ? 'flex-row items-center justify-between gap-y-4 md:flex-col md:items-start md:justify-start'
             : 'flex-row items-center justify-between',
         )}
       >
         <BrandingMenu size={32} />
         <motion.div
           key={isCollapsed ? 'header-collapsed' : 'header-expanded'}
-          className={`flex ${isCollapsed ? 'flex-col-reverse' : 'flex-row'} items-center gap-2`}
+          className={`flex ${isCollapsed ? 'flex-row md:flex-col-reverse' : 'flex-row'} items-center gap-2`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}

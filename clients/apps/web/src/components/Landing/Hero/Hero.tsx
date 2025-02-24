@@ -66,7 +66,7 @@ export const Hero = () => {
         variants={itemVariants}
       >
         <form
-          className="dark:bg-polar-900 shadow-3xl dark:border-polar-700 hidden flex-row items-center gap-x-2 rounded-full border border-transparent bg-gray-50 py-2 pl-6 pr-2 md:flex"
+          className="dark:bg-polar-900 shadow-3xl dark:border-polar-700 hidden flex-row items-center gap-x-2 rounded-3xl border border-transparent bg-gray-50 py-2 pl-6 pr-2 md:flex"
           role="form"
           onSubmit={(e) => {
             e.preventDefault()
@@ -93,7 +93,7 @@ export const Hero = () => {
 
         <div className="flex flex-col gap-y-2 md:hidden">
           <div
-            className="dark:bg-polar-800 dark:border-polar-700 shadow-3xl flex flex-row items-center rounded-full border bg-gray-50 px-4 py-2"
+            className="dark:bg-polar-800 dark:border-polar-700 shadow-3xl flex flex-row items-center rounded-xl border bg-gray-50 px-4 py-2"
             role="form"
           >
             <span className="md:text-xl">polar.sh/</span>
@@ -110,6 +110,7 @@ export const Hero = () => {
             orgSlug={slug}
             size="lg"
             text="Get Started"
+            className="bg-black font-medium text-white hover:bg-gray-900 dark:bg-white dark:text-black"
           />
         </div>
       </motion.div>

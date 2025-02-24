@@ -1,3 +1,20 @@
+FROM node:22-slim AS build-emails-bin
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+WORKDIR /app
+
+COPY ./emails/pnpm-lock.yaml .
+COPY ./emails/package.json .
+RUN pnpm install --frozen-lockfile
+
+COPY ./emails/src src/
+COPY ./emails/tsconfig.json .
+COPY ./emails/tsup.config.js .
+
+RUN pnpm run build
+
 FROM --platform=$BUILDPLATFORM python:3.12-slim
 LABEL org.opencontainers.image.source=https://github.com/polarsource/polar
 LABEL org.opencontainers.image.description="Polar"
@@ -18,6 +35,9 @@ RUN --mount=type=bind,source=uv.lock,target=uv.lock \
     && apt-get autoremove -y build-essential
 
 ADD . /app/server/
+
+COPY --from=build-emails-bin /app/bin/react-email-pkg /app/server/
+ENV POLAR_EMAIL_RENDERER_BINARY_PATH=/app/server/react-email-pkg
 
 RUN --mount=type=secret,id=IPINFO_ACCESS_TOKEN mkdir /data && curl -fsSL https://ipinfo.io/data/free/country_asn.mmdb?token=$(cat /run/secrets/IPINFO_ACCESS_TOKEN) -o /data/country_asn.mmdb
 ENV POLAR_IP_GEOLOCATION_DATABASE_DIRECTORY_PATH=/data

@@ -100,7 +100,8 @@
                   "integrate/sdk/adapters/elysia",
                   "integrate/sdk/adapters/express",
                   "integrate/sdk/adapters/fastify",
-                  "integrate/sdk/adapters/hono"
+                  "integrate/sdk/adapters/hono",
+                  "integrate/sdk/adapters/laravel"
                 ]
               },
               {
@@ -110,10 +111,6 @@
                   "integrate/webhooks/delivery",
                   "integrate/webhooks/events"
                 ]
-              },
-              {
-                "group": "Framework Guides",
-                "pages": ["guides/nextjs", "guides/laravel"]
               },
               {
                 "group": "OAuth 2.0",

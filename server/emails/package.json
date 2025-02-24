@@ -1,7 +1,8 @@
 {
   "name": "react-email-pkg",
   "version": "1.0.0",
-  "description": "",
+  "private": true,
+  "readme": "README.md",
   "main": "dist/index.global.js",
   "bin": "dist/index.global.js",
   "scripts": {
@@ -9,9 +10,6 @@
     "clean": "rm -rf dist bin",
     "build": "pnpm run clean && tsup && pkg package.json"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "packageManager": "pnpm@9.15.0",
   "dependencies": {
     "@react-email/components": "^0.0.33",

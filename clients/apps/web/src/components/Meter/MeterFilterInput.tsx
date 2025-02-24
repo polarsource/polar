@@ -53,16 +53,16 @@ const MeterFilterInput: React.FC<{
     name: `${prefix}.clauses`,
   })
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2">
       {/* To make the UI more digest, we don't allow to add single clause at the root level */}
       {prefix !== 'filter' && (
-        <div className="flex justify-between gap-4">
-          <h3>Filter</h3>
-          <div className="flex flex-row items-center gap-x-4">
+        <div className="flex justify-end gap-2">
+          <div className="flex flex-row items-center gap-x-2">
             <Button
               type="button"
               variant="secondary"
-              className="p-2"
+              size="sm"
+              className="h-8 w-8"
               onClick={() =>
                 append({ property: '', operator: 'eq', value: '' })
               }
@@ -73,7 +73,8 @@ const MeterFilterInput: React.FC<{
               <Button
                 type="button"
                 variant="secondary"
-                className="p-2"
+                size="sm"
+                className="h-8 w-8"
                 onClick={() => removeParent()}
               >
                 <X className="h-2 w-2" />
@@ -88,16 +89,15 @@ const MeterFilterInput: React.FC<{
             {isFilterClause(
               clause as unknown as schemas['Filter'] | schemas['FilterClause'],
             ) ? (
-              <div className="flex w-full flex-row items-center gap-x-4">
+              <div className="flex w-full flex-row items-center gap-x-2">
                 <div
                   className={twMerge(
-                    'text-muted-foreground',
-                    index === 0 ? 'invisible' : 'visible',
+                    'text-muted-foreground flex w-8 items-center justify-center',
                   )}
                 >
-                  {conjunction}
+                  {index === 0 ? '•' : conjunction}
                 </div>
-                <div className="grid grow grid-cols-3 gap-x-4">
+                <div className="grid grow grid-cols-3 gap-x-2">
                   <FormField
                     control={control}
                     name={`${prefix}.clauses.${index}.property`}
@@ -174,7 +174,8 @@ const MeterFilterInput: React.FC<{
                 <Button
                   type="button"
                   variant="secondary"
-                  className={twMerge('p-2', index === 0 ? 'invisible' : '')}
+                  size="sm"
+                  className={twMerge('h-8 w-8', index === 0 ? 'invisible' : '')}
                   onClick={() => remove(index)}
                 >
                   <X className="h-2 w-2" />
@@ -187,7 +188,7 @@ const MeterFilterInput: React.FC<{
                     {conjunction}
                   </div>
                 )}
-                <ShadowBox className="flex flex-col gap-4 p-6">
+                <ShadowBox className="flex flex-col gap-4 !rounded-2xl p-4">
                   <MeterFilterInput
                     prefix={`${prefix}.clauses.${index}`}
                     removeParent={

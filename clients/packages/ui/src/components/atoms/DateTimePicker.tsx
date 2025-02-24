@@ -40,7 +40,7 @@ const DatePicker: React.FC<DatePickerProps> = (props) => {
           <Button
             variant={'outline'}
             className={twMerge(
-              'h-10 w-full justify-start rounded-md text-left font-normal',
+              'h-10 w-full justify-start rounded-xl text-left font-normal',
               !value && 'text-muted-foreground',
             )}
           >

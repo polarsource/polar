@@ -209,12 +209,6 @@ export const defaultMetricMarks: MetricMarksResolver = ({
       strokeOpacity: 0.5,
     }),
   ),
-  Plot.circle(data, {
-    x: 'timestamp',
-    y: metric.slug,
-    fill: primaryColor,
-    r: 2,
-  }),
   ...(onDataIndexHover
     ? [
         new Callback(

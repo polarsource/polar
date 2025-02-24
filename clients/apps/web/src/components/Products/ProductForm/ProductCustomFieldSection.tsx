@@ -185,13 +185,8 @@ export const ProductCustomFieldSection = ({
                   ))}
               </SelectContent>
             </Select>
-            <Button
-              type="button"
-              variant="secondary"
-              size="lg"
-              onClick={onAddField}
-            >
-              Add field
+            <Button type="button" variant="secondary" onClick={onAddField}>
+              Add Field
             </Button>
           </div>
         )}

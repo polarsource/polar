@@ -17,11 +17,7 @@ import {
   useBenefits,
   useDeleteBenefit,
 } from '@/hooks/queries'
-import {
-  AddOutlined,
-  AllInclusive,
-  MoreVertOutlined,
-} from '@mui/icons-material'
+import { AddOutlined, AutoAwesome, MoreVertOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
@@ -139,7 +135,7 @@ const ClientPage = ({
             </List>
           ) : (
             <ShadowBoxOnMd className="items-center justify-center gap-y-6 md:flex md:flex-col md:py-48">
-              <AllInclusive
+              <AutoAwesome
                 className="dark:text-polar-600 text-5xl text-gray-300"
                 fontSize="inherit"
               />

@@ -78,7 +78,7 @@ const MeterForm = () => {
       </FormItem>
       <FormItem>
         <FormLabel>Aggregation</FormLabel>
-        <div className="grid grid-cols-2 gap-x-4">
+        <div className="flex flex-row items-center gap-x-4">
           <FormField
             control={control}
             name="aggregation.func"
@@ -87,7 +87,7 @@ const MeterForm = () => {
             }}
             render={({ field }) => {
               return (
-                <FormItem className="grow">
+                <FormItem className="flex-1">
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value || undefined}
@@ -118,7 +118,7 @@ const MeterForm = () => {
               }}
               render={({ field }) => {
                 return (
-                  <FormItem className="grow">
+                  <FormItem className="flex-1">
                     <FormControl>
                       <Input
                         {...field}

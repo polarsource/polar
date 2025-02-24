@@ -149,6 +149,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               className="w-full"
               loading={customerSessionLoading}
               onClick={createCustomerSession}
+              size="sm"
             >
               Copy Portal Link
             </Button>
@@ -226,7 +227,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <div className="dark:divide-polar-800 flex h-full flex-grow flex-col divide-y divide-gray-200 overflow-y-auto">
+          <div className="dark:divide-polar-800 flex h-full flex-grow flex-col divide-y divide-gray-50 overflow-y-auto">
             {customers.map((customer) => (
               <div
                 key={customer.id}
@@ -247,7 +248,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                     <div className="w-full truncate text-sm">
                       {customer.name ?? '—'}
                     </div>
-                    <div className="w-full truncate font-mono text-xs text-gray-500 dark:text-gray-500">
+                    <div className="w-full truncate text-xs text-gray-500 dark:text-gray-500">
                       {customer.email}
                     </div>
                   </div>

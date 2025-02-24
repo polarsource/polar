@@ -375,10 +375,14 @@ const AccessTokenItem = ({
           </div>
         </div>{' '}
         <div className="dark:text-polar-400 flex flex-row items-center gap-2 text-gray-500">
-          <Button onClick={showUpdateModal}>Update</Button>
+          <Button onClick={showUpdateModal} size="sm">
+            Update
+          </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive">Revoke</Button>
+              <Button variant="destructive" size="sm">
+                Revoke
+              </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -484,7 +488,7 @@ const OrganizationAccessTokensSettings = ({
         )}
         <ShadowListGroup.Item>
           <div className="flex flex-row items-center gap-x-4">
-            <Button asChild onClick={showCreateModal}>
+            <Button asChild onClick={showCreateModal} size="sm">
               New Token
             </Button>
           </div>

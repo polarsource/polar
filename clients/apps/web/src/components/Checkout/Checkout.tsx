@@ -146,7 +146,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   }
 
   return (
-    <ShadowBoxOnMd className="md:dark:border-polar-700 dark:divide-polar-700 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-24 divide-transparent overflow-hidden md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-0 md:divide-x md:border md:border-gray-100 md:p-0">
+    <ShadowBoxOnMd className="md:dark:border-polar-700 dark:divide-polar-700 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-transparent overflow-hidden md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-0 md:gap-y-24 md:divide-x md:border md:border-gray-100 md:p-0">
       <div className="flex flex-col gap-y-8 md:p-12">
         <CheckoutProductInfo
           organization={checkout.organization}

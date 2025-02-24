@@ -4,7 +4,7 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const buttonVariants = cva(
-  'relative font-normal inline-flex items-center select-none justify-center rounded-full text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap',
+  'relative font-normal inline-flex items-center font-medium select-none justify-center rounded-xl text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap',
   {
     variants: {
       variant: {
@@ -23,9 +23,9 @@ const buttonVariants = cva(
           'bg-transparent hover:bg-gray-200 dark:hover:bg-polar-700 dark:bg-transparent text-black dark:text-white',
       },
       size: {
-        default: 'h-8 px-4 py-1.5 rounded-full text-sm',
-        sm: 'h-7 rounded-full px-3 py-1.5 text-xs',
-        lg: 'h-10 rounded-full px-5 py-4 text-sm',
+        default: 'h-10 px-4 py-2 rounded-xl text-sm',
+        sm: 'h-8 rounded-lg px-3 py-1.5 text-xs',
+        lg: 'h-12 rounded-2xl px-5 py-4 text-sm',
         icon: 'flex items-center justify-center h-8 w-8 p-2 text-sm',
       },
     },

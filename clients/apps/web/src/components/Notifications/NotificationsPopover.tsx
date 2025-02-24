@@ -7,11 +7,7 @@ import {
   useNotificationsMarkRead,
 } from '@/hooks/queries'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import {
-  Announcement,
-  LightbulbOutlined,
-  VerifiedUser,
-} from '@mui/icons-material'
+import { Announcement, BoltOutlined, VerifiedUser } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
@@ -93,18 +89,21 @@ export const NotificationsPopover = () => {
 
   return (
     <Popover>
-      <PopoverTrigger className="dark:bg-polar-800 dark:hover:bg-polar-700 flex h-8 w-8 flex-shrink-0 flex-row items-center justify-center rounded-full bg-white hover:bg-gray-50">
-        <LightbulbOutlined
-          fontSize="inherit"
-          className="dark:text-polar-500 dark:hover:text-polar-300 cursor-pointer text-gray-400 transition-colors duration-100 hover:text-gray-900"
-          aria-hidden="true"
-          onMouseDown={clickBell}
-        />
-        {showBadge && (
-          <div className="dark:border-polar-700 -ml-3 h-3 w-3 rounded-full border-2 border-white bg-blue-500"></div>
-        )}
-      </PopoverTrigger>
+      <Button
+        className="h-8 w-8"
+        variant="ghost"
+        size="sm"
+        onMouseDown={clickBell}
+        asChild
+      >
+        <PopoverTrigger className="relative">
+          <BoltOutlined fontSize="inherit" aria-hidden="true" />
 
+          {showBadge && (
+            <div className="dark:border-polar-700 absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-blue-500" />
+          )}
+        </PopoverTrigger>{' '}
+      </Button>
       <PopoverContent sideOffset={12} align="start">
         <List
           notifications={notifs.data?.notifications ?? []}

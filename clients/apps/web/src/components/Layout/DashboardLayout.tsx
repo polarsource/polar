@@ -31,7 +31,7 @@ const DashboardLayout = (
 
   return (
     <DashboardProvider organization={organization}>
-      <div className="relative flex h-full w-full flex-col bg-gray-100 md:flex-row md:p-4 dark:bg-transparent">
+      <div className="relative flex h-full w-full flex-col bg-gray-100 md:flex-row md:p-2 dark:bg-transparent">
         <MobileNav />
         <div className="hidden md:flex">
           <DashboardSidebar />
@@ -172,7 +172,7 @@ export const DashboardBody = ({
   return (
     <div
       className={twMerge(
-        'flex h-full w-full flex-row gap-x-3',
+        'flex h-full w-full flex-row gap-x-2',
         contextViewPlacement === 'left' ? 'flex-row-reverse' : '',
       )}
     >

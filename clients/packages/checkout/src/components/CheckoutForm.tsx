@@ -641,10 +641,14 @@ const BaseCheckoutForm = ({
           Polar, who also handles order-related inquiries and returns.
         </p>
       </div>
-      <div className="dark:text-polar-600 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-400">
+      <a
+        href="https://polar.sh?utm_source=checkout"
+        className="dark:text-polar-600 flex w-full flex-row items-center justify-center gap-x-3 text-sm text-gray-400"
+        target="_blank"
+      >
         <span>Powered by</span>
         <PolarLogo className="h-5" />
-      </div>
+      </a>
     </div>
   )
 }
@@ -735,7 +739,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
               padding: '12px',
               backgroundColor: theme === 'dark' ? 'rgb(28 28 34)' : 'white',
               color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
-              borderRadius: '9999px',
+              borderRadius: '0.75rem',
               boxShadow: inputBoxShadow,
               borderColor: 'transparent',
             },
@@ -749,10 +753,9 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             },
             '.Input': {
               padding: '12px',
-              backgroundColor:
-                theme === 'dark' ? 'rgb(26.4, 26.8, 29.7)' : 'white',
+              backgroundColor: theme === 'dark' ? 'rgb(25, 25, 29)' : 'white',
               color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
-              borderRadius: '9999px',
+              borderRadius: '0.75rem',
               borderColor: theme === 'dark' ? 'rgb(36, 36.5, 40.5)' : '#EEE',
               boxShadow: inputBoxShadow,
             },
@@ -762,8 +765,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
               boxShadow: focusBoxShadow,
             },
             '.Tab': {
-              backgroundColor:
-                theme === 'dark' ? 'rgb(26.4, 26.8, 29.7)' : 'white',
+              backgroundColor: theme === 'dark' ? 'rgb(25, 25, 29)' : 'white',
               borderColor: theme === 'dark' ? 'rgb(36, 36.5, 40.5)' : '#EEE',
             },
             '.Tab--selected': {

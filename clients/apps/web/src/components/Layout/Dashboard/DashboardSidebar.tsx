@@ -1,3 +1,4 @@
+import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
@@ -20,9 +21,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
+import { motion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useContext } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { BrandingMenu } from '../Public/BrandingMenu'
 import MaintainerNavigation from './DashboardNavigation'
 
@@ -42,83 +45,107 @@ export const DashboardSidebar = () => {
 
   return (
     <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader className="flex flex-row items-center justify-between">
+      <SidebarHeader
+        className={twMerge(
+          'flex md:pt-3.5',
+          isCollapsed
+            ? 'flex-col gap-y-4'
+            : 'flex-row items-center justify-between',
+        )}
+      >
         <BrandingMenu size={32} />
-        {!isCollapsed && <SidebarTrigger />}
+        <motion.div
+          key={isCollapsed ? 'header-collapsed' : 'header-expanded'}
+          className={`flex ${isCollapsed ? 'flex-col' : 'flex-row'} items-center gap-2`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+        >
+          <NotificationsPopover />
+          <SidebarTrigger />
+        </motion.div>
       </SidebarHeader>
       <SidebarContent className="gap-4 px-2 py-4">
-        <MaintainerNavigation />
+        <motion.div
+          key={isCollapsed ? 'nav-collapsed' : 'nav-expanded'}
+          className={`flex ${isCollapsed ? 'flex-col' : 'flex-row'} items-center gap-2`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+        >
+          <MaintainerNavigation />
+        </motion.div>
       </SidebarContent>
-
       <SidebarFooter>
-        {isCollapsed ? (
-          <SidebarTrigger />
-        ) : (
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton>
+                  <Avatar
+                    name={organization?.name}
+                    avatar_url={organization?.avatar_url}
+                    className="h-6 w-6"
+                  />
+                  {!isCollapsed && (
+                    <>
+                      <span className="min-w-0 truncate">
+                        {organization?.name}
+                      </span>
+                      <ChevronDown className="ml-auto" />
+                    </>
+                  )}
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side="top"
+                align={isCollapsed ? 'start' : 'center'}
+                className="w-[--radix-popper-anchor-width] min-w-[200px]"
+              >
+                {organizations.map((org) => (
+                  <DropdownMenuItem
+                    key={org.id}
+                    className="flex flex-row items-center gap-x-2"
+                    onClick={() => navigateToOrganization(org)}
+                  >
                     <Avatar
-                      name={organization?.name}
-                      avatar_url={organization?.avatar_url}
+                      name={org.name}
+                      avatar_url={org.avatar_url}
                       className="h-6 w-6"
                     />
-                    <span className="min-w-0 truncate">
-                      {organization?.name}
-                    </span>
-                    <ChevronDown className="ml-auto" />
-                  </SidebarMenuButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  side="top"
-                  className="w-[--radix-popper-anchor-width]"
+                    <span className="min-w-0 truncate">{org.name}</span>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => router.push('/dashboard/create')}
                 >
-                  {organizations.map((org) => (
-                    <DropdownMenuItem
-                      key={org.id}
-                      className="flex flex-row items-center gap-x-2"
-                      onClick={() => navigateToOrganization(org)}
-                    >
-                      <Avatar
-                        name={org.name}
-                        avatar_url={org.avatar_url}
-                        className="h-6 w-6"
-                      />
-                      <span className="min-w-0 truncate">{org.name}</span>
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => router.push('/dashboard/create')}
-                  >
-                    New Organization
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/settings')}>
-                    Account Settings
-                  </DropdownMenuItem>
-                  {!CONFIG.IS_SANDBOX && (
-                    <DropdownMenuItem
-                      onClick={() =>
-                        router.push('https://sandbox.polar.sh/start')
-                      }
-                    >
-                      Go to Sandbox
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
+                  New Organization
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/settings')}>
+                  Account Settings
+                </DropdownMenuItem>
+                {!CONFIG.IS_SANDBOX && (
                   <DropdownMenuItem
                     onClick={() =>
-                      router.push(`${CONFIG.BASE_URL}/v1/auth/logout`)
+                      router.push('https://sandbox.polar.sh/start')
                     }
                   >
-                    Logout
+                    Go to Sandbox
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        )}
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() =>
+                    router.push(`${CONFIG.BASE_URL}/v1/auth/logout`)
+                  }
+                >
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   )

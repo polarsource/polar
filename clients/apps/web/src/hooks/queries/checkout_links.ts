@@ -34,38 +34,14 @@ export const useCreateCheckoutLink = () =>
     },
     onSuccess: (result, _variables, _ctx) => {
       const { data, error } = result
+
       if (error) {
         return
       }
-      queryClient.setQueriesData<schemas['ListResource_CheckoutLink_']>(
-        {
-          queryKey: [
-            'checkout_links',
-            {
-              organizatonId: data.organization_id,
-            },
-          ],
-        },
-        (old) => {
-          if (!old) {
-            return {
-              items: [data],
-              pagination: {
-                total_count: 1,
-                max_page: 1,
-              },
-            }
-          } else {
-            return {
-              items: [...old.items, data],
-              pagination: {
-                total_count: old.pagination.total_count + 1,
-                max_page: old.pagination.max_page,
-              },
-            }
-          }
-        },
-      )
+
+      queryClient.invalidateQueries({
+        queryKey: ['checkout_links', { organizationId: data.organization_id }],
+      })
     },
   })
 

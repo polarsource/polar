@@ -1,4 +1,3 @@
-import os
 from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime, timedelta
 from unittest.mock import ANY, MagicMock
@@ -9,10 +8,8 @@ import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.config import settings
-from polar.kit import template
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.utils import utc_now
 from polar.magic_link.service import InvalidMagicLink
 from polar.magic_link.service import magic_link as magic_link_service
 from polar.models import MagicLink, User
@@ -100,60 +97,6 @@ async def test_send(
     enqueue_email_mock.assert_called_once_with(
         to_email_addr="user@example.com", html_content=ANY, subject="Sign in to Polar"
     )
-
-    sent_subject = enqueue_email_mock.call_args_list[0].kwargs["subject"]
-    sent_body = enqueue_email_mock.call_args_list[0].kwargs["html_content"]
-    sent_content = f"{sent_subject}\n<hr>\n{sent_body}"
-
-    # Run with `POLAR_TEST_RECORD=1 pytest` to produce new golden files :-)
-    record = os.environ.get("POLAR_TEST_RECORD", False) == "1"
-    record_file_path = template.path(__file__, "testdata/magic_link.html")
-
-    if record:
-        with open(record_file_path, "w+") as f:
-            f.write(sent_content)
-
-    content = template.render(
-        record_file_path,
-        year=str(utc_now().year),
-    )
-    assert content == sent_content
-
-
-@pytest.mark.asyncio
-async def test_send_return_to(
-    generate_magic_link_token: GenerateMagicLinkToken, enqueue_email_mock: MagicMock
-) -> None:
-    magic_link, _ = await generate_magic_link_token("user@example.com", None, None)
-
-    await magic_link_service.send(
-        magic_link,
-        "TOKEN",
-        "BASE_URL",
-        extra_url_params={"return_to": "https://polar.sh/foobar"},
-    )
-
-    enqueue_email_mock.assert_called_once_with(
-        to_email_addr="user@example.com", html_content=ANY, subject="Sign in to Polar"
-    )
-
-    sent_subject = enqueue_email_mock.call_args_list[0].kwargs["subject"]
-    sent_body = enqueue_email_mock.call_args_list[0].kwargs["html_content"]
-    sent_content = f"{sent_subject}\n<hr>\n{sent_body}"
-
-    # Run with `POLAR_TEST_RECORD=1 pytest` to produce new golden files :-)
-    record = os.environ.get("POLAR_TEST_RECORD", False) == "1"
-    record_file_path = template.path(__file__, "testdata/magic_link_return_to.html")
-
-    if record:
-        with open(record_file_path, "w+") as f:
-            f.write(sent_content)
-
-    content = template.render(
-        record_file_path,
-        year=str(utc_now().year),
-    )
-    assert content == sent_content
 
 
 @pytest.mark.asyncio

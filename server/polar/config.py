@@ -2,9 +2,9 @@ import os
 from datetime import timedelta
 from enum import StrEnum
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import DirectoryPath, Field, PostgresDsn
+from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from polar.kit.jwk import JWKSFile
@@ -20,6 +20,21 @@ class Environment(StrEnum):
 class EmailSender(StrEnum):
     logger = "logger"
     resend = "resend"
+
+
+def _validate_email_renderer_binary_path(value: Path) -> Path:
+    if not value.exists() and not value.is_file():
+        raise ValueError(
+            f"""
+        The provided email renderer binary path {value} is not a valid file path
+        or does not exist.\n
+        If you're in local development, you should build the email renderer binary
+        by running the following command:\n
+        uv run task emails\n
+        """
+        )
+
+    return value
 
 
 env = Environment(os.getenv("POLAR_ENV", Environment.development))
@@ -95,6 +110,9 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
 
     # Emails
+    EMAIL_RENDERER_BINARY_PATH: Annotated[
+        Path, AfterValidator(_validate_email_renderer_binary_path)
+    ] = Path(__file__).parent.parent / "emails" / "bin" / "react-email-pkg"
     EMAIL_SENDER: EmailSender = EmailSender.logger
     RESEND_API_KEY: str = ""
     EMAIL_FROM_NAME: str = "Polar"

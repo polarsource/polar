@@ -6,7 +6,7 @@ from sqlalchemy import delete
 from sqlalchemy.orm import joinedload
 
 from polar.config import settings
-from polar.email.renderer import get_email_renderer
+from polar.email.react import render_email_template
 from polar.email.sender import enqueue_email
 from polar.exceptions import PolarError
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
@@ -68,15 +68,13 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
         *,
         extra_url_params: dict[str, str] = {},
     ) -> None:
-        email_renderer = get_email_renderer({"magic_link": "polar.magic_link"})
-
         delta = magic_link.expires_at - utc_now()
         token_lifetime_minutes = int(ceil(delta.seconds / 60))
 
         url_params = {"token": token, **extra_url_params}
-        subject, body = email_renderer.render_from_template(
-            "Sign in to Polar",
-            "magic_link/magic_link.html",
+        subject = "Sign in to Polar"
+        body = render_email_template(
+            "magic_link",
             {
                 "token_lifetime_minutes": token_lifetime_minutes,
                 "url": f"{base_url}?{urlencode(url_params)}",

@@ -1,0 +1,41 @@
+{
+  "name": "react-email-pkg",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.global.js",
+  "bin": "dist/index.global.js",
+  "scripts": {
+    "dev": "email dev --dir src/emails",
+    "clean": "rm -rf dist bin",
+    "build": "pnpm run clean && tsup && pkg package.json"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@9.15.0",
+  "dependencies": {
+    "@react-email/components": "^0.0.33",
+    "@react-email/render": "^1.0.5",
+    "commander": "^13.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.5",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@yao-pkg/pkg": "^6.3.1",
+    "prettier": "^3.5.2",
+    "prettier-plugin-organize-imports": "^4.1.0",
+    "prettier-plugin-tailwindcss": "^0.6.11",
+    "react-email": "^3.0.7",
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3"
+  },
+  "pkg": {
+    "targets": [
+      "host"
+    ],
+    "outputPath": "bin"
+  }
+}

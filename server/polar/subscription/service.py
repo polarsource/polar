@@ -496,11 +496,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_created
         )
+        # ⚠️ In some cases, the subscription is immediately active
+        # Make sure then to perform all the operations required!
         if subscription.active:
-            await self._send_webhook(
-                session, subscription, WebhookEventType.subscription_active
-            )
-            await self._send_new_subscription_notification(session, subscription)
+            await self._on_subscription_activated(session, subscription)
 
     async def update_subscription_from_stripe(
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription

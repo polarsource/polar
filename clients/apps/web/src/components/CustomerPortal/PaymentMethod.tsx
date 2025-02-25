@@ -47,11 +47,14 @@ const PaymentMethod = ({
   }
 
   return (
-    <div className="flex justify-between gap-2">
+    <div className="flex items-center justify-between gap-2">
       {isCardPaymentMethod(paymentMethod) ? (
         <PaymentMethodCard paymentMethod={paymentMethod} />
       ) : (
         <div>{paymentMethod.type}</div>
+      )}
+      {paymentMethod.default && (
+        <div className="bg-muted rounded-lg px-2 py-1 text-xs">Default</div>
       )}
       <Button
         variant="ghost"

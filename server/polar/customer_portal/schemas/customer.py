@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated, Literal
 
 from pydantic import AfterValidator, AliasPath, Field, TypeAdapter
@@ -38,6 +39,8 @@ class CustomerPortalCustomerUpdate(Schema):
 class PaymentMethodGeneric(Schema):
     id: str
     type: str
+    created_at: datetime = Field(validation_alias="created")
+    default: bool
 
 
 class PaymentMethodCardData(Schema):

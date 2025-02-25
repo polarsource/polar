@@ -49,6 +49,7 @@ dependencies = [
   "apscheduler>=3.10.4",
   "supervisor>=4.2.5",
   "plain-client>=0.0.1",
+  "asgi-admin",
 ]
 
 [dependency-groups]
@@ -146,3 +147,6 @@ init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
 warn_untyped_fields = true
+
+[tool.uv.sources]
+asgi-admin = { git = "https://github.com/polarsource/asgi-admin", rev = "b6d7b8be89a13cf6bbd876ca895cbab25ec5fda8" }

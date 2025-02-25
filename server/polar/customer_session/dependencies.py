@@ -6,7 +6,16 @@ from polar.postgres import AsyncSession, get_db_session
 
 from .service import customer_session as customer_session_service
 
-auth_header_scheme = HTTPBearer(scheme_name="customer_session", auto_error=False)
+auth_header_scheme = HTTPBearer(
+    scheme_name="customer_session",
+    auto_error=False,
+    description=(
+        "Customer session tokens are specific tokens "
+        "that are used to authenticate customers on your organization. "
+        "You can create those sessions programmatically using the "
+        "[Create Customer Session endpoint](/api-reference/customer-portal/sessions/create)."
+    ),
+)
 
 
 async def get_optional_customer_session_token(

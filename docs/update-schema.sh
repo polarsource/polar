@@ -18,7 +18,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 # Download latest OpenAPI schema
-curl -s -o openapi.yaml "$1"
+curl -s "$1" | jq -M '.' > openapi.yaml
 echo "Downloaded OpenAPI schema from $1"
 
 # Create a new MDX file for each webhook, if it doesn't exist

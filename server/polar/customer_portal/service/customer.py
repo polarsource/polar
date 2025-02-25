@@ -1,3 +1,5 @@
+from typing import cast
+
 import stripe as stripe_lib
 
 from polar.customer.repository import CustomerRepository
@@ -105,12 +107,29 @@ class CustomerService:
     ) -> ListResource[CustomerPaymentMethod]:
         items: list[CustomerPaymentMethod] = []
         if customer.stripe_customer_id is not None:
+            stripe_customer = await stripe_service.get_customer(
+                customer.stripe_customer_id
+            )
+            default_payment_method_id: str | None = None
+            if (
+                stripe_customer.invoice_settings
+                and stripe_customer.invoice_settings.default_payment_method
+            ):
+                default_payment_method_id = get_expandable_id(
+                    stripe_customer.invoice_settings.default_payment_method
+                )
             items = [
-                CustomerPaymentMethodTypeAdapter.validate_python(payment_method)
+                CustomerPaymentMethodTypeAdapter.validate_python(
+                    {
+                        **payment_method,
+                        "default": payment_method.id == default_payment_method_id,
+                    }
+                )
                 async for payment_method in stripe_service.list_payment_methods(
                     customer.stripe_customer_id
                 )
             ]
+        items.sort(key=lambda x: x.created_at, reverse=True)
 
         return ListResource(
             items=items, pagination=Pagination(total_count=len(items), max_page=1)
@@ -160,7 +179,10 @@ class CustomerService:
             )
 
         return CustomerPaymentMethodTypeAdapter.validate_python(
-            setup_intent.payment_method
+            {
+                **cast(stripe_lib.PaymentMethod, setup_intent.payment_method),
+                "default": payment_method_create.set_default,
+            }
         )
 
     async def delete_payment_method(

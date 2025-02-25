@@ -4,7 +4,7 @@ from sse_starlette import EventSourceResponse
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
-from polar.kit.pagination import ListResource
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Customer
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
@@ -65,6 +65,7 @@ async def update(
 )
 async def get_payment_methods(
     auth_subject: auth.CustomerPortalRead,
+    pagination: PaginationParamsQuery,
 ) -> ListResource[CustomerPaymentMethod]:
     """Get saved payment methods of the authenticated customer."""
     return await customer_service.list_payment_methods(auth_subject.subject)

@@ -137,5 +137,8 @@ export const useUpdateMeter = (id: string) =>
       queryClient.invalidateQueries({
         queryKey: ['meters', { organizationId: data.organization_id }],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['meters', 'quantities', { id }],
+      })
     },
   })

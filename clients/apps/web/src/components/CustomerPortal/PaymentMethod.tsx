@@ -20,14 +20,17 @@ const PaymentMethodCard = ({
   const {
     card: { brand },
   } = paymentMethod
+
   return (
-    <div className="flex grow flex-row items-center justify-between">
+    <div className="flex flex-row items-center justify-between">
       <div className="flex flex-row items-center gap-2">
         <CreditCardBrandIcon brand={brand} />
-        <div>•••• {paymentMethod.card.last4}</div>
-      </div>
-      <div>
-        Expires {paymentMethod.card.exp_month}/{paymentMethod.card.exp_year}
+        <div className="flex flex-col gap-2">
+          <div>•••• {paymentMethod.card.last4}</div>
+          <span>
+            Expires {paymentMethod.card.exp_month}/{paymentMethod.card.exp_year}
+          </span>
+        </div>
       </div>
     </div>
   )

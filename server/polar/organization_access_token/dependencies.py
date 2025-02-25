@@ -11,7 +11,7 @@ from .service import organization_access_token as organization_access_token_serv
 auth_header_scheme = HTTPBearer(
     scheme_name="oat",
     auto_error=False,
-    description="You can generate an **Organization Access Token** from your organization's dashboard.",
+    description="You can generate an **Organization Access Token** from your organization's settings.",
 )
 
 

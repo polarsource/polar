@@ -29,6 +29,7 @@ from .models import (
     Anonymous,
     AuthMethod,
     AuthSubject,
+    Organization,
     Subject,
     SubjectType,
     User,
@@ -127,28 +128,36 @@ def _get_auth_subject_factory(
     if allowed_subjects in _auth_subject_factory_cache:
         return _auth_subject_factory_cache[allowed_subjects]
 
-    parameters: list[Parameter] = [
-        Parameter(
-            name="user_session",
-            kind=Parameter.KEYWORD_ONLY,
-            default=Depends(get_user_session),
-        ),
-        Parameter(
-            name="oauth2_credentials",
-            kind=Parameter.KEYWORD_ONLY,
-            default=Depends(get_optional_token),
-        ),
-        Parameter(
-            name="personal_access_token_credentials",
-            kind=Parameter.KEYWORD_ONLY,
-            default=Depends(get_optional_personal_access_token),
-        ),
-        Parameter(
-            name="organization_access_token_credentials",
-            kind=Parameter.KEYWORD_ONLY,
-            default=Depends(get_optional_organization_access_token),
-        ),
-    ]
+    parameters: list[Parameter] = []
+    if User in allowed_subjects or Organization in allowed_subjects:
+        parameters += [
+            Parameter(
+                name="oauth2_credentials",
+                kind=Parameter.KEYWORD_ONLY,
+                default=Depends(get_optional_token),
+            )
+        ]
+    if User in allowed_subjects:
+        parameters += [
+            Parameter(
+                name="user_session",
+                kind=Parameter.KEYWORD_ONLY,
+                default=Depends(get_user_session),
+            ),
+            Parameter(
+                name="personal_access_token_credentials",
+                kind=Parameter.KEYWORD_ONLY,
+                default=Depends(get_optional_personal_access_token),
+            ),
+        ]
+    if Organization in allowed_subjects:
+        parameters += [
+            Parameter(
+                name="organization_access_token_credentials",
+                kind=Parameter.KEYWORD_ONLY,
+                default=Depends(get_optional_organization_access_token),
+            )
+        ]
     if Customer in allowed_subjects:
         parameters.append(
             Parameter(

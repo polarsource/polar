@@ -12916,6 +12916,13 @@ export interface components {
              * @constant
              */
             type: "card";
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Default */
+            default: boolean;
             card: components["schemas"]["PaymentMethodCardData"];
         };
         /** PaymentMethodCardData */
@@ -12937,6 +12944,13 @@ export interface components {
             id: string;
             /** Type */
             type: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Default */
+            default: boolean;
         };
         /**
          * PaymentProcessor

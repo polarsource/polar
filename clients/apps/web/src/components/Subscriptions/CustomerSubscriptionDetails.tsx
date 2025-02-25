@@ -10,6 +10,7 @@ import {
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import CustomerCancellationModal from './CustomerCancellationModal'
@@ -161,16 +162,13 @@ const CustomerSubscriptionDetails = ({
             {primaryAction.label}
           </Button>
         )}
-        {!isCanceled && (
-          <Button
-            size="lg"
-            variant="ghost"
-            fullWidth
-            onClick={() => setShowCancelModal(true)}
-          >
-            Unsubscribe
+        <Link
+          href={`/${organization.slug}/portal/subscriptions/${subscription.id}`}
+        >
+          <Button size="lg" variant="ghost" fullWidth>
+            View Subscription
           </Button>
-        )}
+        </Link>
         <CustomerCancellationModal
           isShown={showCancelModal}
           hide={() => setShowCancelModal(false)}

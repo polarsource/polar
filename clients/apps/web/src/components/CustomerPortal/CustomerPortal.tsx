@@ -2,15 +2,13 @@
 
 import { useCustomerOrderInvoice } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
-import { Client, schemas } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useCallback } from 'react'
-import CustomerPortalOrder from './CustomerPortalOrder'
 import { CustomerPortalOverview } from './CustomerPortalOverview'
-import CustomerPortalSubscription from './CustomerPortalSubscription'
 
 export interface CustomerPortalProps {
   organization: schemas['Organization']
@@ -107,26 +105,5 @@ export const CustomerPortal = ({
         </div>
       )}
     </div>
-  )
-}
-
-const SelectedItemDetails = ({
-  item,
-  products,
-  api,
-}: {
-  item: schemas['CustomerSubscription'] | schemas['CustomerOrder']
-  products: schemas['CustomerProduct'][]
-  api: Client
-}) => {
-  // Render order details
-  return 'recurring_interval' in item ? (
-    <CustomerPortalSubscription
-      api={api}
-      subscription={item}
-      products={products}
-    />
-  ) : (
-    <CustomerPortalOrder api={api} order={item} />
   )
 }

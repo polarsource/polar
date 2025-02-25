@@ -1,5 +1,6 @@
 'use client'
 
+import { usePostHog } from '@/hooks/posthog'
 import { schemas } from '@polar-sh/client'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
@@ -22,6 +23,7 @@ export const Navigation = ({
 }) => {
   const currentPath = usePathname()
   const searchParams = useSearchParams()
+  const { isFeatureEnabled } = usePostHog()
 
   const buildPath = (path: string) => {
     const url = new URL(window.location.origin + currentPath)
@@ -36,18 +38,22 @@ export const Navigation = ({
 
   return (
     <nav className="flex w-64 flex-col gap-y-2 py-12 pr-12">
-      {links(organization).map((link) => (
-        <Link
-          key={link.href}
-          href={buildPath(link.href)}
-          className={twMerge(
-            'dark:text-polar-500 text-gray-500',
-            currentPath === link.href && 'text-blue-500 dark:text-white',
-          )}
-        >
-          {link.label}
-        </Link>
-      ))}
+      {links(organization)
+        .filter(({ label }) =>
+          label === 'Usage' ? isFeatureEnabled('usage_based_billing') : true,
+        )
+        .map((link) => (
+          <Link
+            key={link.href}
+            href={buildPath(link.href)}
+            className={twMerge(
+              'dark:text-polar-500 text-gray-500',
+              currentPath === link.href && 'text-blue-500 dark:text-white',
+            )}
+          >
+            {link.label}
+          </Link>
+        ))}
     </nav>
   )
 }

@@ -36,10 +36,8 @@ import { useMemo } from 'react'
 
 export default function ClientPage({
   meter: _meter,
-  organization,
 }: {
   meter: schemas['Meter']
-  organization: schemas['Organization']
 }) {
   const { data: meter } = useMeter(_meter.id, _meter)
 

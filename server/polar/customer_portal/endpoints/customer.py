@@ -38,6 +38,6 @@ async def stream(
 
 
 @router.get("/me", summary="Get Customer", response_model=CustomerPortalCustomer)
-async def get(id: CustomerID, auth_subject: auth.CustomerPortalRead) -> Customer:
+async def get(auth_subject: auth.CustomerPortalRead) -> Customer:
     """Get authenticated customer."""
     return auth_subject.subject

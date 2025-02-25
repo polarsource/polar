@@ -23,11 +23,10 @@ export default async function Page({
   params: { organization: string; id: string }
 }) {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    params.organization,
-  )
+
+  await getOrganizationBySlugOrNotFound(api, params.organization)
+
   const meter = await getMeterById(api, params.id)
 
-  return <ClientPage organization={organization} meter={meter} />
+  return <ClientPage meter={meter} />
 }

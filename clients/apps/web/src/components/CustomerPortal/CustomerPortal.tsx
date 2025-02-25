@@ -1,15 +1,21 @@
 'use client'
 
+import { useCustomer, useCustomerPaymentMethods } from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
 import { Client, schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import { parseAsString, useQueryState } from 'nuqs'
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
+import AddPaymentMethod from './AddPaymentMethod'
+import BillingAddress from './BillingAddress'
 import CustomerPortalOrder from './CustomerPortalOrder'
 import CustomerPortalSubscription from './CustomerPortalSubscription'
+import EditBillingDetails from './EditBillingDetails'
+import PaymentMethod from './PaymentMethod'
 
 const PortalSectionLayout = ({
   className,
@@ -47,6 +53,10 @@ export const CustomerPortal = ({
   orders,
   customerSessionToken,
 }: CustomerPortalProps) => {
+  const api = createClientSideAPI(customerSessionToken)
+  const { data: customer } = useCustomer(api)
+  const { data: paymentMethods } = useCustomerPaymentMethods(api)
+
   const [selectedItemId, setSelectedItemId] = useQueryState(
     'id',
     parseAsString.withDefault(''),
@@ -59,8 +69,6 @@ export const CustomerPortal = ({
     )
   }, [selectedItemId, subscriptions, orders])
 
-  const api = createClientSideAPI(customerSessionToken)
-
   useEffect(() => {
     const firstItemId = subscriptions[0]?.id ?? orders[0]?.id
 
@@ -68,6 +76,16 @@ export const CustomerPortal = ({
       setSelectedItemId(firstItemId)
     }
   }, [selectedItemId, subscriptions, orders, setSelectedItemId])
+
+  const [showEditBillingDetails, setShowEditBillingDetails] = useState(false)
+
+  const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false)
+  const onAddPaymentMethod = useCallback(async () => {
+    setShowAddPaymentMethod(true)
+  }, [])
+  const onPaymentMethodAdded = useCallback(() => {
+    setShowAddPaymentMethod(false)
+  }, [])
 
   return (
     <div className="flex h-screen w-screen flex-row">
@@ -116,6 +134,89 @@ export const CustomerPortal = ({
                   />
                 ))}
               </div>
+            </div>
+          )}
+          {customer && (
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-row items-center justify-between">
+                <h3 className="text-lg">Billing details</h3>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowEditBillingDetails(true)}
+                >
+                  Edit
+                </Button>
+              </div>
+              {showEditBillingDetails ? (
+                <EditBillingDetails
+                  api={api}
+                  customer={customer}
+                  onSuccess={() => setShowEditBillingDetails(false)}
+                />
+              ) : (
+                <div className="flex flex-col gap-y-4">
+                  <div className="flex flex-row items-center justify-between">
+                    <span className="dark:text-polar-500 text-gray-500">
+                      Email
+                    </span>
+                    <span>{customer.email}</span>
+                  </div>
+                  <div className="flex flex-row items-center justify-between">
+                    <span className="dark:text-polar-500 text-gray-500">
+                      Name
+                    </span>
+                    <span>{customer.name}</span>
+                  </div>
+                  <div className="flex flex-row items-center justify-between">
+                    <span className="dark:text-polar-500 text-gray-500">
+                      Billing Address
+                    </span>
+                    <span>
+                      {customer.billing_address ? (
+                        <BillingAddress address={customer.billing_address} />
+                      ) : (
+                        '—'
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex flex-row items-center justify-between">
+                    <span className="dark:text-polar-500 text-gray-500">
+                      Tax ID
+                    </span>
+                    <span>{customer.tax_id ? customer.tax_id[0] : '—'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {paymentMethods && (
+            <div className="flex flex-col gap-y-4">
+              <div className="flex flex-row items-center justify-between">
+                <h3 className="text-lg">Payment methods</h3>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={onAddPaymentMethod}
+                >
+                  Add
+                </Button>
+              </div>
+              <div className="flex flex-col gap-y-4">
+                {paymentMethods.items.map((paymentMethod) => (
+                  <PaymentMethod
+                    key={paymentMethod.id}
+                    api={api}
+                    paymentMethod={paymentMethod}
+                  />
+                ))}
+              </div>
+              {customer && showAddPaymentMethod && (
+                <AddPaymentMethod
+                  api={api}
+                  onPaymentMethodAdded={onPaymentMethodAdded}
+                />
+              )}
             </div>
           )}
         </div>

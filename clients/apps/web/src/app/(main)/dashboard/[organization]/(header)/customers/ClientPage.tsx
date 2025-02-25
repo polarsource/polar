@@ -8,6 +8,7 @@ import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import Spinner from '@/components/Shared/Spinner'
 import { toast } from '@/components/Toast/use-toast'
+import { useSafeCopy } from '@/hooks/clipboard'
 import { useCustomers } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
 import { api } from '@/utils/client'
@@ -80,6 +81,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
 
   const [customerSessionLoading, setCustomerSessionLoading] = useState(false)
 
+  const safeCopy = useSafeCopy(toast)
   const createCustomerSession = useCallback(async () => {
     if (!selectedCustomer) {
       return
@@ -101,15 +103,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       return
     }
 
-    await navigator.clipboard.writeText(
-      `${CONFIG.FRONTEND_BASE_URL}/${organization.slug}/portal?customer_session_token=${session.token}`,
-    )
-
+    const link = `${CONFIG.FRONTEND_BASE_URL}/${organization.slug}/portal?customer_session_token=${session.token}`
+    await safeCopy(link)
     toast({
       title: 'Copied To Clipboard',
       description: `Customer Portal Link was copied to clipboard`,
     })
-  }, [selectedCustomer])
+  }, [safeCopy, selectedCustomer, organization])
 
   const { ref: loadingRef, inViewport } = useInViewport<HTMLDivElement>()
 

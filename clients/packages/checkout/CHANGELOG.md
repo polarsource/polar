@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.1.10
+
+### Patch Changes
+
+- 15e0267: Allow React 19 as a peer dependency
+
 ## 0.1.9
 
 ### Patch Changes

@@ -25,6 +25,69 @@ export const useCustomerPortalSessionAuthenticate = (api: Client) =>
       }),
   })
 
+export const useCustomer = (api: Client) =>
+  useQuery({
+    queryKey: ['customer'],
+    queryFn: () => unwrap(api.GET('/v1/customer-portal/customers/me')),
+    retry: defaultRetry,
+  })
+
+export const useUpdateCustomerPortal = (api: Client) =>
+  useMutation({
+    mutationFn: async (body: schemas['CustomerPortalCustomerUpdate']) =>
+      api.PATCH('/v1/customer-portal/customers/me', {
+        body,
+      }),
+    onSuccess: async (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
+      queryClient.invalidateQueries({
+        queryKey: ['customer'],
+      })
+    },
+  })
+
+export const useCustomerPaymentMethods = (api: Client) =>
+  useQuery({
+    queryKey: ['customer_payment_methods'],
+    queryFn: () =>
+      unwrap(api.GET('/v1/customer-portal/customers/me/payment-methods')),
+    retry: defaultRetry,
+  })
+
+export const useAddCustomerPaymentMethod = (api: Client) =>
+  useMutation({
+    mutationFn: async (body: schemas['CustomerPaymentMethodCreate']) =>
+      api.POST('/v1/customer-portal/customers/me/payment-methods', {
+        body,
+      }),
+    onSuccess: async (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
+      queryClient.invalidateQueries({
+        queryKey: ['customer_payment_methods'],
+      })
+    },
+  })
+
+export const useDeleteCustomerPaymentMethod = (api: Client) =>
+  useMutation({
+    mutationFn: async (id: string) =>
+      api.DELETE('/v1/customer-portal/customers/me/payment-methods/{id}', {
+        params: { path: { id } },
+      }),
+    onSuccess: async (result, _variables, _ctx) => {
+      if (result.error) {
+        return
+      }
+      queryClient.invalidateQueries({
+        queryKey: ['customer_payment_methods'],
+      })
+    },
+  })
+
 export const useCustomerBenefitGrants = (
   api: Client,
   parameters?: operations['customer_portal:benefit-grants:list']['parameters']['query'],

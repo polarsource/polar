@@ -22,7 +22,7 @@ from . import auth
 from .schemas import MetricsLimits, MetricsResponse
 from .service import metrics as metrics_service
 
-router = APIRouter(prefix="/metrics", tags=["metrics", APITag.documented])
+router = APIRouter(prefix="/metrics", tags=["metrics", APITag.documented, APITag.mcp])
 
 
 @router.get("/", summary="Get Metrics", response_model=MetricsResponse)
@@ -56,7 +56,11 @@ async def get(
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> MetricsResponse:
-    """Get metrics about your orders and subscriptions."""
+    """
+    Get metrics about your orders and subscriptions.
+
+    Currency values are output in cents.
+    """
 
     if not is_under_limits(start_date, end_date, interval):
         raise PolarRequestValidationError(

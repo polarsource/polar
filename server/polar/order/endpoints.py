@@ -18,7 +18,7 @@ from .schemas import Order as OrderSchema
 from .schemas import OrderID, OrderInvoice, OrderNotFound
 from .service import order as order_service
 
-router = APIRouter(prefix="/orders", tags=["orders", APITag.documented])
+router = APIRouter(prefix="/orders", tags=["orders", APITag.documented, APITag.mcp])
 
 
 @router.get("/", summary="List Orders", response_model=ListResource[OrderSchema])

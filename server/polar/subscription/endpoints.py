@@ -29,7 +29,9 @@ from .service import subscription as subscription_service
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="/subscriptions", tags=["subscriptions", APITag.documented])
+router = APIRouter(
+    prefix="/subscriptions", tags=["subscriptions", APITag.documented, APITag.mcp]
+)
 
 SubscriptionNotFound = {
     "description": "Subscription not found.",

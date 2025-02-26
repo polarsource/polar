@@ -10,9 +10,10 @@ import {
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import CustomerPortalSubscription from '../CustomerPortal/CustomerPortalSubscription'
 import { InlineModal } from '../Modal/InlineModal'
+import { useModal } from '../Modal/useModal'
 import CustomerCancellationModal from './CustomerCancellationModal'
 import CustomerChangePlanModal from './CustomerChangePlanModal'
 
@@ -31,6 +32,12 @@ const CustomerSubscriptionDetails = ({
 }) => {
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
+
+  const {
+    isShown: isBenefitGrantsModalOpen,
+    hide: hideBenefitGrantsModal,
+    show: showBenefitGrantsModal,
+  } = useModal()
 
   const cancelSubscription = useCustomerCancelSubscription(api)
 
@@ -151,24 +158,19 @@ const CustomerSubscriptionDetails = ({
         )}
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-row gap-4">
         {primaryAction && (
           <Button
             size="lg"
-            fullWidth
             onClick={primaryAction.onClick}
             loading={primaryAction.loading}
           >
             {primaryAction.label}
           </Button>
         )}
-        <Link
-          href={`/${organization.slug}/portal/subscriptions/${subscription.id}`}
-        >
-          <Button size="lg" variant="ghost" fullWidth>
-            View Subscription
-          </Button>
-        </Link>
+        <Button size="lg" variant="secondary" onClick={showBenefitGrantsModal}>
+          View Subscription
+        </Button>
         <CustomerCancellationModal
           isShown={showCancelModal}
           hide={() => setShowCancelModal(false)}
@@ -189,6 +191,14 @@ const CustomerSubscriptionDetails = ({
             hide={() => setShowChangePlanModal(false)}
             onUserSubscriptionUpdate={onUserSubscriptionUpdate}
           />
+        }
+      />
+
+      <InlineModal
+        isShown={isBenefitGrantsModalOpen}
+        hide={hideBenefitGrantsModal}
+        modalContent={
+          <CustomerPortalSubscription api={api} subscription={subscription} />
         }
       />
     </ShadowBox>

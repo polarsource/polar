@@ -22363,7 +22363,12 @@ export interface operations {
     };
     "customer_portal:customers:get_payment_methods": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Page number, defaults to 1. */
+                page?: number;
+                /** @description Size of a page, defaults to 10. Maximum is 100. */
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -22377,6 +22382,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListResource_Union_PaymentMethodCard__PaymentMethodGeneric__"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

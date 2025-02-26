@@ -163,16 +163,16 @@ class SpeakeasyMCPAPIRoute(APIRoute):
             safe_method = all(
                 method in {"GET", "HEAD", "OPTIONS"} for method in self.methods
             )
-            scope = [
+            scopes = [
                 "read" if safe_method else "write",
             ]
             non_generic_tags = [str(tag) for tag in self.tags if tag not in APITag]
             if len(non_generic_tags) > 0:
-                scope.append(".".join(non_generic_tags))
+                scopes.append(".".join(non_generic_tags))
 
             openapi_extra = {
                 **openapi_extra,
-                "x-speakeasy-mcp": {"disabled": False, "scope": scope},
+                "x-speakeasy-mcp": {"disabled": False, "scopes": scopes},
             }
         else:
             openapi_extra = {**openapi_extra, "x-speakeasy-mcp": {"disabled": True}}

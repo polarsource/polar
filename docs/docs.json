@@ -94,6 +94,7 @@
                 "group": "Framework Adapters",
                 "pages": [
                   "integrate/sdk/adapters/nextjs",
+                  "integrate/sdk/adapters/nuxt",
                   "integrate/sdk/adapters/astro",
                   "integrate/sdk/adapters/remix",
                   "integrate/sdk/adapters/sveltekit",

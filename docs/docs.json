@@ -80,6 +80,7 @@
             "pages": [
               "integrate/authentication",
               "integrate/sandbox",
+              "integrate/mcp",
               {
                 "group": "SDKs",
                 "pages": [

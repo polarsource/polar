@@ -1,0 +1,65 @@
+---
+title: Polar as Model Context Protocol (MCP)
+description: Extend the capabilities of your AI Agents with Polar as MCP Server
+sidebarTitle: Model Context Protocol (MCP)
+---
+
+<img src="/assets/integrate/mcp/mcp.png" />
+
+Supercharge your AI Agents with Polar as a Model Context Protocol (MCP) server.
+
+## What is MCP?
+
+MCP is a protocol for integrating tools with AI Agents. It can greatly enhance the capabilities of your AI Agents by providing them with real-time data and context.
+
+Polar has MCP support built into the Polar TypeScript SDK.
+
+## How does it work?
+
+You need a MCP-capable Agent environment to use Polar as an MCP server. A few of them are Claude and Cursor.
+
+## Using Polar as an MCP server
+
+### Claude
+
+Add the following server definition to your claude_desktop_config.json file:
+
+```json
+{
+  "mcpServers": {
+    "Polar": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "--package",
+        "@polar-sh/sdk",
+        "--",
+        "mcp",
+        "start",
+        "--access-token",
+        "..."
+      ]
+    }
+  }
+}
+```
+
+### Cursor
+
+Go to Cursor Settings > Features > MCP Servers > Add new MCP server and use the following settings:
+
+- Name: Polar
+- Type: command
+- Command:
+
+```bash
+npx -y --package @polar-sh/sdk -- mcp start --access-token ...
+```
+
+### Help
+
+For a full list of server arguments, run:
+
+```bash
+npx -y --package @polar-sh/sdk -- mcp start --help
+```

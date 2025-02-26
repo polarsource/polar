@@ -56,32 +56,35 @@ const nextConfig = {
   // See: https://github.com/vercel/next.js/issues/58019
   ...(CODESPACES
     ? {
-      experimental: {
-        serverActions: {
-          allowedForwardedHosts: [
-            `${process.env.CODESPACE_NAME}-8080.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`,
-            'localhost:8080',
-            '127.0.0.1:8080',
-          ],
-          allowedOrigins: [
-            `${process.env.CODESPACE_NAME}-8080.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`,
-            'localhost:8080',
-            '127.0.0.1:8080',
-          ],
+        experimental: {
+          serverActions: {
+            allowedForwardedHosts: [
+              `${process.env.CODESPACE_NAME}-8080.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`,
+              'localhost:8080',
+              '127.0.0.1:8080',
+            ],
+            allowedOrigins: [
+              `${process.env.CODESPACE_NAME}-8080.${process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}`,
+              'localhost:8080',
+              '127.0.0.1:8080',
+            ],
+          },
         },
-      },
-    }
+      }
     : {}),
 
   images: {
     remotePatterns: [
-      ...process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME ? [
-        {
-          protocol: process.env.S3_PUBLIC_IMAGES_BUCKET_PROTOCOL || 'https',
-          hostname: process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME,
-          port: process.env.S3_PUBLIC_IMAGES_BUCKET_PORT || '',
-          pathname: process.env.S3_PUBLIC_IMAGES_BUCKET_PATHNAME || '**',
-        }] : [],
+      ...(process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME
+        ? [
+            {
+              protocol: process.env.S3_PUBLIC_IMAGES_BUCKET_PROTOCOL || 'https',
+              hostname: process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME,
+              port: process.env.S3_PUBLIC_IMAGES_BUCKET_PORT || '',
+              pathname: process.env.S3_PUBLIC_IMAGES_BUCKET_PATHNAME || '**',
+            },
+          ]
+        : []),
       {
         protocol: 'https',
         hostname: 'avatars.githubusercontent.com',
@@ -154,30 +157,30 @@ const nextConfig = {
       },
       ...(ENVIRONMENT === 'production'
         ? [
-          {
-            source: '/:client_secret(polar_cl_.*)',
-            destination:
-              'https://api.polar.sh/v1/checkout-links/:client_secret/redirect',
-            has: [
-              {
-                type: 'host',
-                value: 'buy.polar.sh',
-              },
-            ],
-            permanent: false,
-          },
-          {
-            source: '/:id',
-            destination: 'https://polar.sh/api/checkout?price=:id*',
-            has: [
-              {
-                type: 'host',
-                value: 'buy.polar.sh',
-              },
-            ],
-            permanent: false,
-          },
-        ]
+            {
+              source: '/:client_secret(polar_cl_.*)',
+              destination:
+                'https://api.polar.sh/v1/checkout-links/:client_secret/redirect',
+              has: [
+                {
+                  type: 'host',
+                  value: 'buy.polar.sh',
+                },
+              ],
+              permanent: false,
+            },
+            {
+              source: '/:id',
+              destination: 'https://polar.sh/api/checkout?price=:id*',
+              has: [
+                {
+                  type: 'host',
+                  value: 'buy.polar.sh',
+                },
+              ],
+              permanent: false,
+            },
+          ]
         : []),
       {
         source: '/:path*',
@@ -215,6 +218,28 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: '/llms.txt',
+        destination: 'https://docs.polar.sh/llms.txt',
+        permanent: true,
+        has: [
+          {
+            type: 'host',
+            value: 'polar.sh',
+          },
+        ],
+      },
+      {
+        source: '/llms-full.txt',
+        destination: 'https://docs.polar.sh/llms-full.txt',
+        permanent: true,
+        has: [
+          {
+            type: 'host',
+            value: 'polar.sh',
+          },
+        ],
+      },
+      {
         source: '/donations',
         destination: 'https://docs.polar.sh/donations',
         has: [
@@ -246,29 +271,29 @@ const nextConfig = {
       // Redirect old FAQ to docs.polar.sh
       ...(ENVIRONMENT === 'production'
         ? [
-          {
-            source: '/faq',
-            destination: 'https://docs.polar.sh/faq/overview',
-            has: [
-              {
-                type: 'host',
-                value: 'polar.sh',
-              },
-            ],
-            permanent: true,
-          },
-          {
-            source: '/faq/:path*',
-            destination: 'https://docs.polar.sh/faq/:path*',
-            has: [
-              {
-                type: 'host',
-                value: 'polar.sh',
-              },
-            ],
-            permanent: true,
-          },
-        ]
+            {
+              source: '/faq',
+              destination: 'https://docs.polar.sh/faq/overview',
+              has: [
+                {
+                  type: 'host',
+                  value: 'polar.sh',
+                },
+              ],
+              permanent: true,
+            },
+            {
+              source: '/faq/:path*',
+              destination: 'https://docs.polar.sh/faq/:path*',
+              has: [
+                {
+                  type: 'host',
+                  value: 'polar.sh',
+                },
+              ],
+              permanent: true,
+            },
+          ]
         : []),
 
       // Logged-in user redirections
@@ -328,12 +353,12 @@ const nextConfig = {
       // Redirect /docs to docs.polar.sh
       ...(ENVIRONMENT === 'production'
         ? [
-          {
-            source: '/docs/:path*',
-            destination: 'https://docs.polar.sh/:path*',
-            permanent: false,
-          },
-        ]
+            {
+              source: '/docs/:path*',
+              destination: 'https://docs.polar.sh/:path*',
+              permanent: false,
+            },
+          ]
         : []),
 
       {

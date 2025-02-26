@@ -3,7 +3,7 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import FeatureSettings from '@/components/Settings/FeatureSettings'
 import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
-import OrganizationAppearanceSettings from '@/components/Settings/OrganizationAppearanceSettings'
+import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import OrganizationSubscriptionSettings from '@/components/Settings/OrganizationSubscriptionSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
@@ -20,7 +20,7 @@ export default function ClientPage() {
             title="Organization"
             description="Configure your organization settings"
           />
-          <OrganizationAppearanceSettings organization={org} />
+          <OrganizationProfileSettings organization={org} />
         </Section>
 
         <Section id="subscriptions">

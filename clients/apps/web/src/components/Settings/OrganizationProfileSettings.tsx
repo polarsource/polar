@@ -21,12 +21,12 @@ import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../FileUpload'
 import { toast } from '../Toast/use-toast'
 
-interface OrganizationAppearanceSettingsProps {
+interface OrganizationProfileSettingsProps {
   organization: schemas['Organization']
 }
 
-const OrganizationAppearanceSettings: React.FC<
-  OrganizationAppearanceSettingsProps
+const OrganizationProfileSettings: React.FC<
+  OrganizationProfileSettingsProps
 > = ({ organization }) => {
   const form = useForm<{ name: string; avatar_url: string | null }>({
     defaultValues: organization,
@@ -203,4 +203,4 @@ const OrganizationAppearanceSettings: React.FC<
   )
 }
 
-export default OrganizationAppearanceSettings
+export default OrganizationProfileSettings

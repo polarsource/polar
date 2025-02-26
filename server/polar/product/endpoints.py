@@ -21,7 +21,8 @@ from .service.product import product as product_service
 from .sorting import ProductSortProperty
 
 router = APIRouter(
-    prefix="/products", tags=["products", APITag.documented, APITag.featured]
+    prefix="/products",
+    tags=["products", APITag.documented, APITag.featured, APITag.mcp],
 )
 
 ProductNotFound = {

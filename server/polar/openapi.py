@@ -37,6 +37,7 @@ class APITag(StrEnum):
     private = "private"
     documented = "documented"
     featured = "featured"
+    mcp = "mcp"
     issue_funding = "issue_funding"
 
     @classmethod
@@ -61,6 +62,10 @@ class APITag(StrEnum):
                     "Endpoints featured in the Polar API documentation "
                     "for their interest in common use-cases."
                 ),
+            },
+            {
+                "name": cls.mcp,
+                "description": "Endpoints enabled in the MCP server.",
             },
             {
                 "name": cls.issue_funding,

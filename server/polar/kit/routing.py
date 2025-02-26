@@ -150,6 +150,35 @@ class SpeakeasyPaginationAPIRoute(APIRoute):
             }
 
 
+class SpeakeasyMCPAPIRoute(APIRoute):
+    """
+    A subclass of `APIRoute` that automatically adds `x-speakeasy-mcp` property
+    to the OpenAPI schema.
+    """
+
+    def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
+        super().__init__(path, endpoint, **kwargs)
+        openapi_extra = self.openapi_extra or {}
+        if APITag.mcp in self.tags:
+            safe_method = all(
+                method in {"GET", "HEAD", "OPTIONS"} for method in self.methods
+            )
+            scope = [
+                "read" if safe_method else "write",
+            ]
+            non_generic_tags = [str(tag) for tag in self.tags if tag not in APITag]
+            if len(non_generic_tags) > 0:
+                scope.append(".".join(non_generic_tags))
+
+            openapi_extra = {
+                **openapi_extra,
+                "x-speakeasy-mcp": {"disabled": False, "scope": scope},
+            }
+        else:
+            openapi_extra = {**openapi_extra, "x-speakeasy-mcp": {"disabled": True}}
+        self.openapi_extra = openapi_extra
+
+
 _P = ParamSpec("_P")
 _T = TypeVar("_T")
 
@@ -182,4 +211,5 @@ __all__ = [
     "SpeakeasyIgnoreAPIRoute",
     "SpeakeasyNameOverrideAPIRoute",
     "SpeakeasyPaginationAPIRoute",
+    "SpeakeasyMCPAPIRoute",
 ]

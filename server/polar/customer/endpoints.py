@@ -17,7 +17,8 @@ from .schemas import CustomerCreate, CustomerID, CustomerUpdate
 from .service import customer as customer_service
 
 router = APIRouter(
-    prefix="/customers", tags=["customers", APITag.documented, APITag.featured]
+    prefix="/customers",
+    tags=["customers", APITag.documented, APITag.featured, APITag.mcp],
 )
 
 

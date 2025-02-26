@@ -1,4 +1,3 @@
-import { getValidationErrorsMap } from '@/utils/api/errors'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
 import { isValidationError, schemas } from '@polar-sh/client'

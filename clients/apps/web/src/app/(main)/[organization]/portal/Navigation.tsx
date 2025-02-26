@@ -7,13 +7,13 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
 const links = (organization: schemas['Organization']) => [
-  { href: `/${organization.slug}/portal`, label: 'Overview' },
+  { href: `/${organization.slug}/portal/`, label: 'Overview' },
   {
-    href: `/${organization.slug}/portal/subscriptions`,
+    href: `/${organization.slug}/portal/subscriptions/`,
     label: 'Subscriptions',
   },
-  { href: `/${organization.slug}/portal/orders`, label: 'Orders' },
-  { href: `/${organization.slug}/portal/usage`, label: 'Usage' },
+  { href: `/${organization.slug}/portal/orders/`, label: 'Orders' },
+  { href: `/${organization.slug}/portal/usage/`, label: 'Usage' },
 ]
 
 export const Navigation = ({

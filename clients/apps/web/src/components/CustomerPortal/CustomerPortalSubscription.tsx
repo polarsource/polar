@@ -13,15 +13,16 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useCallback } from 'react'
+import AmountLabel from '../Shared/AmountLabel'
+import { DetailRow } from '../Shared/DetailRow'
+import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 
 const CustomerPortalSubscription = ({
   api,
   subscription,
-  products,
 }: {
   api: Client
   subscription: schemas['CustomerSubscription']
-  products: schemas['CustomerProduct'][]
 }) => {
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     subscription_id: subscription.id,
@@ -47,85 +48,157 @@ const CustomerPortalSubscription = ({
   const hasInvoices = orders?.items && orders.items.length > 0
 
   return (
-    <>
-      <div className="flex h-full flex-col gap-8">
-        <div className="flex w-full flex-col gap-8">
-          {(benefitGrants?.items.length ?? 0) > 0 && (
-            <div className="flex flex-col gap-4">
-              <List>
-                {benefitGrants?.items.map((benefitGrant) => (
-                  <ListItem
-                    key={benefitGrant.id}
-                    className="py-6 hover:bg-transparent dark:hover:bg-transparent"
-                  >
-                    <BenefitGrant api={api} benefitGrant={benefitGrant} />
-                  </ListItem>
-                ))}
-              </List>
-            </div>
-          )}
-        </div>
-
-        <div className="flex w-full flex-col gap-8">
-          {hasInvoices && (
-            <div className="flex flex-col gap-y-6">
-              <h3 className="text-xl">Invoices</h3>
-              <DataTable
-                data={orders.items ?? []}
-                isLoading={false}
-                columns={[
-                  {
-                    accessorKey: 'created_at',
-                    header: 'Date',
-                    cell: ({ row }) => (
-                      <FormattedDateTime
-                        datetime={row.original.created_at}
-                        dateStyle="medium"
-                        resolution="day"
-                      />
-                    ),
-                  },
-                  {
-                    accessorKey: 'product.name',
-                    header: 'Product',
-                    cell: ({ row }) => row.original.product.name,
-                  },
-                  {
-                    accessorKey: 'amount',
-                    header: 'Amount',
-                    cell: ({ row }) => (
-                      <span className="dark:text-polar-500 text-sm text-gray-500">
-                        {formatCurrencyAndAmount(
-                          row.original.amount,
-                          row.original.currency,
-                          0,
-                        )}
-                      </span>
-                    ),
-                  },
-                  {
-                    accessorKey: 'id',
-                    header: '',
-                    cell: ({ row }) => (
-                      <span className="flex justify-end">
-                        <Button
-                          variant="secondary"
-                          onClick={() => openInvoice(row.original)}
-                          loading={orderInvoiceMutation.isPending}
-                          disabled={orderInvoiceMutation.isPending}
-                        >
-                          <span className="">View Invoice</span>
-                        </Button>
-                      </span>
-                    ),
-                  },
-                ]}
-              />
-            </div>
-          )}
-        </div>
+    <div className="flex flex-col gap-8 overflow-y-auto p-8">
+      <div>
+        <h3 className="text-xl">{subscription.product.name}</h3>
       </div>
-    </>
+
+      <div className="flex flex-col text-sm">
+        <DetailRow
+          label="Amount"
+          value={
+            subscription.amount && subscription.currency ? (
+              <AmountLabel
+                amount={subscription.amount}
+                currency={subscription.currency}
+                interval={subscription.recurring_interval}
+              />
+            ) : (
+              'Free'
+            )
+          }
+        />
+        <DetailRow
+          label="Status"
+          value={<SubscriptionStatusLabel subscription={subscription} />}
+        />
+        {subscription.started_at && (
+          <DetailRow
+            label="Start Date"
+            value={
+              <span>
+                {new Date(subscription.started_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </span>
+            }
+          />
+        )}
+        {!subscription.ended_at && subscription.current_period_end && (
+          <DetailRow
+            label={
+              subscription.cancel_at_period_end ? 'Expiry Date' : 'Renewal Date'
+            }
+            value={
+              <span>
+                {new Date(subscription.current_period_end).toLocaleDateString(
+                  'en-US',
+                  {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  },
+                )}
+              </span>
+            }
+          />
+        )}
+        {subscription.ended_at && (
+          <DetailRow
+            label="Expired"
+            value={
+              <span>
+                {new Date(subscription.ended_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </span>
+            }
+          />
+        )}
+      </div>
+
+      <div className="flex w-full flex-col gap-4">
+        <h3 className="text-lg">Benefit Grants</h3>
+        {(benefitGrants?.items.length ?? 0) > 0 ? (
+          <div className="flex flex-col gap-4">
+            <List>
+              {benefitGrants?.items.map((benefitGrant) => (
+                <ListItem
+                  key={benefitGrant.id}
+                  className="py-6 hover:bg-transparent dark:hover:bg-transparent"
+                >
+                  <BenefitGrant api={api} benefitGrant={benefitGrant} />
+                </ListItem>
+              ))}
+            </List>
+          </div>
+        ) : (
+          <div className="dark:border-polar-700 flex flex-col items-center justify-center gap-4 rounded-2xl border border-gray-200 p-6">
+            <span className="dark:text-polar-500 text-gray-500">
+              This subscription has no benefit grants
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="flex w-full flex-col gap-4">
+        {hasInvoices && (
+          <div className="flex flex-col gap-y-4">
+            <h3 className="text-lg">Invoices</h3>
+            <DataTable
+              data={orders.items ?? []}
+              isLoading={false}
+              columns={[
+                {
+                  accessorKey: 'created_at',
+                  header: 'Date',
+                  cell: ({ row }) => (
+                    <FormattedDateTime
+                      datetime={row.original.created_at}
+                      dateStyle="medium"
+                      resolution="day"
+                    />
+                  ),
+                },
+                {
+                  accessorKey: 'amount',
+                  header: 'Amount',
+                  cell: ({ row }) => (
+                    <span className="dark:text-polar-500 text-sm text-gray-500">
+                      {formatCurrencyAndAmount(
+                        row.original.amount,
+                        row.original.currency,
+                        0,
+                      )}
+                    </span>
+                  ),
+                },
+                {
+                  accessorKey: 'id',
+                  header: '',
+                  cell: ({ row }) => (
+                    <span className="flex justify-end">
+                      <Button
+                        variant="secondary"
+                        onClick={() => openInvoice(row.original)}
+                        loading={orderInvoiceMutation.isPending}
+                        disabled={orderInvoiceMutation.isPending}
+                      >
+                        <span className="">View Invoice</span>
+                      </Button>
+                    </span>
+                  ),
+                },
+              ]}
+            />
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 

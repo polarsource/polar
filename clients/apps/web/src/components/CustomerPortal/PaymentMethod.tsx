@@ -1,6 +1,7 @@
 import { useDeleteCustomerPaymentMethod } from '@/hooks/queries'
 import type { Client, operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { X } from 'lucide-react'
 import CreditCardBrandIcon from '../CreditCardBrandIcon'
 
@@ -22,15 +23,15 @@ const PaymentMethodCard = ({
   } = paymentMethod
 
   return (
-    <div className="flex flex-row items-center justify-between">
-      <div className="flex flex-row items-center gap-2">
-        <CreditCardBrandIcon brand={brand} />
-        <div className="flex flex-col gap-2">
-          <div>•••• {paymentMethod.card.last4}</div>
-          <span>
-            Expires {paymentMethod.card.exp_month}/{paymentMethod.card.exp_year}
-          </span>
-        </div>
+    <div className="flex grow flex-row items-center gap-4">
+      <CreditCardBrandIcon width="4em" brand={brand} />
+      <div className="flex flex-col">
+        <span className="capitalize">
+          {`${paymentMethod.card.brand} •••• ${paymentMethod.card.last4}`}
+        </span>
+        <span className="dark:text-polar-500 text-sm text-gray-500">
+          Expires {paymentMethod.card.exp_month}/{paymentMethod.card.exp_year}
+        </span>
       </div>
     </div>
   )
@@ -56,18 +57,24 @@ const PaymentMethod = ({
       ) : (
         <div>{paymentMethod.type}</div>
       )}
-      {paymentMethod.default && (
-        <div className="bg-muted rounded-lg px-2 py-1 text-xs">Default</div>
-      )}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onDeletePaymentMethod}
-        loading={deletePaymentMethod.isPending}
-        disabled={deletePaymentMethod.isPending}
-      >
-        <X className="size-4" />
-      </Button>
+      <div className="flex flex-row items-center gap-x-4">
+        {paymentMethod.default && (
+          <Status
+            status="Default Method"
+            className="bg-emerald-50 text-emerald-500 dark:bg-emerald-950"
+          />
+        )}
+        <Button
+          variant="secondary"
+          size="sm"
+          className="h-8 w-8"
+          onClick={onDeletePaymentMethod}
+          loading={deletePaymentMethod.isPending}
+          disabled={deletePaymentMethod.isPending}
+        >
+          <X className="size-4" />
+        </Button>
+      </div>
     </div>
   )
 }

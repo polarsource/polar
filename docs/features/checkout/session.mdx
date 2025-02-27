@@ -16,13 +16,24 @@ The API will return you an object containing all the information about the sessi
 
 You can create a checkout session with multiple products. This is useful if you want to allow your customers to choose between different products before they checkout.
 
-<img className="block dark:hidden" src="/assets/features/checkout/session/checkout_multiple_products.light.png" />
-<img className="hidden dark:block" src="/assets/features/checkout/session/checkout_multiple_products.dark.png" />
+<img
+  className="block dark:hidden"
+  src="/assets/features/checkout/session/checkout_multiple_products.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/checkout/session/checkout_multiple_products.dark.png"
+/>
+
+## External Customer ID
+
+Quite often, you'll have our own users management system in your application, where your customer already have an ID. To ease reconciliation between Polar and your system, you can inform us about your customer ID when creating a checkout session through the [`customer_external_id`](/api-reference/checkouts/create-session/) field.
+
+After a successful checkout, we'll create a Customer on Polar with the external ID you provided. It'll be provided through the `customer.external_id` property in webhooks you may have configured.
 
 ## SDK examples
 
 Using our SDK, creating a checkout session is quite straightforward.
-
 
 <CodeGroup>
     ```ts TypeScript
@@ -57,4 +68,5 @@ Using our SDK, creating a checkout session is quite straightforward.
 
         print(checkout.url)
     ```
+
 </CodeGroup>

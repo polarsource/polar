@@ -178,11 +178,14 @@
               {
                 "group": "Customers",
                 "pages": [
-                  "api-reference/customers/get",
                   "api-reference/customers/list",
                   "api-reference/customers/create",
+                  "api-reference/customers/get",
                   "api-reference/customers/update",
-                  "api-reference/customers/delete"
+                  "api-reference/customers/delete",
+                  "api-reference/customers/get-external",
+                  "api-reference/customers/update-external",
+                  "api-reference/customers/delete-external"
                 ]
               },
               {

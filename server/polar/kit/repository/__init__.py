@@ -1,3 +1,13 @@
-from .base import RepositoryBase, RepositoryIDMixin, RepositorySoftDeletionMixin
+from .base import (
+    RepositoryBase,
+    RepositoryIDMixin,
+    RepositorySoftDeletionIDMixin,
+    RepositorySoftDeletionMixin,
+)
 
-__all__ = ["RepositoryBase", "RepositoryIDMixin", "RepositorySoftDeletionMixin"]
+__all__ = [
+    "RepositoryBase",
+    "RepositoryIDMixin",
+    "RepositorySoftDeletionMixin",
+    "RepositorySoftDeletionIDMixin",
+]

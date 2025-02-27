@@ -9,7 +9,7 @@ from sqlalchemy.dialects import postgresql
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.benefit.service.benefit_grant import benefit_grant as benefit_grant_service
-from polar.customer.service import customer as customer_service
+from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
@@ -322,8 +322,9 @@ class RefundService(ResourceServiceReader[Refund]):
     async def enqueue_benefits_revokation(
         self, session: AsyncSession, order: Order
     ) -> None:
-        customer = await customer_service.get(
-            session, order.customer_id, allow_deleted=True
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(
+            order.customer_id, include_deleted=True
         )
         if customer is None:
             return

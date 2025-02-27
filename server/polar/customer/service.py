@@ -9,7 +9,6 @@ from polar.auth.models import AuthSubject
 from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
-from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.models import Customer, Organization, User
 from polar.organization.resolver import get_payload_organization
@@ -20,7 +19,7 @@ from .schemas import CustomerCreate, CustomerUpdate
 from .sorting import CustomerSortProperty
 
 
-class CustomerService(ResourceServiceReader[Customer]):
+class CustomerService:
     async def list(
         self,
         session: AsyncSession,
@@ -70,7 +69,7 @@ class CustomerService(ResourceServiceReader[Customer]):
             statement, limit=pagination.limit, page=pagination.page
         )
 
-    async def user_get_by_id(
+    async def get(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
@@ -79,6 +78,18 @@ class CustomerService(ResourceServiceReader[Customer]):
         repository = CustomerRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).where(
             Customer.id == id
+        )
+        return await repository.get_one_or_none(statement)
+
+    async def get_external(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        external_id: str,
+    ) -> Customer | None:
+        repository = CustomerRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            Customer.external_id == external_id
         )
         return await repository.get_one_or_none(statement)
 
@@ -233,4 +244,4 @@ class CustomerService(ResourceServiceReader[Customer]):
         return customer
 
 
-customer = CustomerService(Customer)
+customer = CustomerService()

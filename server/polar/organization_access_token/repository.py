@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, User
 from polar.kit.repository import (
     RepositoryBase,
-    RepositoryIDMixin,
+    RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
 from polar.kit.utils import utc_now
@@ -15,7 +15,7 @@ from polar.models import OrganizationAccessToken, UserOrganization
 
 
 class OrganizationAccessTokenRepository(
-    RepositoryIDMixin[OrganizationAccessToken, UUID],
+    RepositorySoftDeletionIDMixin[OrganizationAccessToken, UUID],
     RepositorySoftDeletionMixin[OrganizationAccessToken],
     RepositoryBase[OrganizationAccessToken],
 ):

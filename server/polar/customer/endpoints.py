@@ -12,7 +12,7 @@ from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import Customer as CustomerSchema
-from .schemas import CustomerCreate, CustomerID, CustomerUpdate
+from .schemas import CustomerCreate, CustomerExternalID, CustomerID, CustomerUpdate
 from .service import customer as customer_service
 
 router = APIRouter(
@@ -76,7 +76,27 @@ async def get(
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
     """Get a customer by ID."""
-    customer = await customer_service.user_get_by_id(session, auth_subject, id)
+    customer = await customer_service.get(session, auth_subject, id)
+
+    if customer is None:
+        raise ResourceNotFound()
+
+    return customer
+
+
+@router.get(
+    "/external/{external_id}",
+    summary="Get Customer by External ID",
+    response_model=CustomerSchema,
+    responses={404: CustomerNotFound},
+)
+async def get_external(
+    external_id: CustomerExternalID,
+    auth_subject: auth.CustomerRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> Customer:
+    """Get a customer by external ID."""
+    customer = await customer_service.get_external(session, auth_subject, external_id)
 
     if customer is None:
         raise ResourceNotFound()
@@ -116,7 +136,31 @@ async def update(
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
     """Update a customer."""
-    customer = await customer_service.user_get_by_id(session, auth_subject, id)
+    customer = await customer_service.get(session, auth_subject, id)
+
+    if customer is None:
+        raise ResourceNotFound()
+
+    return await customer_service.update(session, customer, customer_update)
+
+
+@router.patch(
+    "/external/{external_id}",
+    response_model=CustomerSchema,
+    summary="Update Customer by External ID",
+    responses={
+        200: {"description": "Customer updated."},
+        404: CustomerNotFound,
+    },
+)
+async def update_external(
+    external_id: CustomerExternalID,
+    customer_update: CustomerUpdate,
+    auth_subject: auth.CustomerWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Customer:
+    """Update a customer by external ID."""
+    customer = await customer_service.get_external(session, auth_subject, external_id)
 
     if customer is None:
         raise ResourceNotFound()
@@ -143,7 +187,34 @@ async def delete(
 
     Immediately cancels any active subscriptions and revokes any active benefits.
     """
-    customer = await customer_service.user_get_by_id(session, auth_subject, id)
+    customer = await customer_service.get(session, auth_subject, id)
+
+    if customer is None:
+        raise ResourceNotFound()
+
+    await customer_service.delete(session, customer)
+
+
+@router.delete(
+    "/external/{external_id}",
+    status_code=204,
+    summary="Delete Customer by External ID",
+    responses={
+        204: {"description": "Customer deleted."},
+        404: CustomerNotFound,
+    },
+)
+async def delete_external(
+    external_id: CustomerExternalID,
+    auth_subject: auth.CustomerWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """
+    Delete a customer by external ID.
+
+    Immediately cancels any active subscriptions and revokes any active benefits.
+    """
+    customer = await customer_service.get_external(session, auth_subject, external_id)
 
     if customer is None:
         raise ResourceNotFound()

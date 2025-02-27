@@ -6,14 +6,14 @@ from sqlalchemy.sql.base import ExecutableOption
 
 from polar.kit.repository import (
     RepositoryBase,
-    RepositoryIDMixin,
+    RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
 from polar.models import CheckoutProduct, Product
 
 
 class ProductRepository(
-    RepositoryIDMixin[Product, UUID],
+    RepositorySoftDeletionIDMixin[Product, UUID],
     RepositorySoftDeletionMixin[Product],
     RepositoryBase[Product],
 ):

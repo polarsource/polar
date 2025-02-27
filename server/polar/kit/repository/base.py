@@ -10,6 +10,14 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 
 M = TypeVar("M")
+
+
+class ModelDeletedAtProtocol(Protocol):
+    deleted_at: Mapped[datetime | None]
+
+
+MODEL_DELETED_AT = TypeVar("MODEL_DELETED_AT", bound=ModelDeletedAtProtocol)
+
 ID_TYPE = TypeVar("ID_TYPE")
 
 
@@ -20,11 +28,12 @@ class ModelIDProtocol(Protocol[ID_TYPE]):
 MODEL_ID = TypeVar("MODEL_ID", bound=ModelIDProtocol)  # type: ignore[type-arg]
 
 
-class ModelDeletedAtProtocol(Protocol):
+class ModelDeletedAtIDProtocol(Protocol[ID_TYPE]):
+    id: Mapped[ID_TYPE]
     deleted_at: Mapped[datetime | None]
 
 
-MODEL_DELETED_AT = TypeVar("MODEL_DELETED_AT", bound=ModelDeletedAtProtocol)
+MODEL_DELETED_AT_ID = TypeVar("MODEL_DELETED_AT_ID", bound=ModelDeletedAtIDProtocol)  # type: ignore[type-arg]
 
 
 class RepositoryProtocol(Protocol[M]):
@@ -116,6 +125,41 @@ class RepositoryBase(Generic[M]):
         return cls(session)
 
 
+class RepositorySoftDeletionProtocol(
+    RepositoryProtocol[MODEL_DELETED_AT],
+    Protocol[MODEL_DELETED_AT],
+):
+    def get_base_statement(
+        self, *, include_deleted: bool = False
+    ) -> Select[tuple[MODEL_DELETED_AT]]: ...
+
+    async def soft_delete(
+        self, object: MODEL_DELETED_AT, *, flush: bool = False
+    ) -> MODEL_DELETED_AT: ...
+
+
+class RepositorySoftDeletionMixin(Generic[MODEL_DELETED_AT]):
+    def get_base_statement(
+        self: RepositoryProtocol[MODEL_DELETED_AT],
+        *,
+        include_deleted: bool = False,
+    ) -> Select[tuple[MODEL_DELETED_AT]]:
+        statement = super().get_base_statement()  # type: ignore[safe-super]
+        if not include_deleted:
+            statement = statement.where(self.model.deleted_at.is_(None))
+        return statement
+
+    async def soft_delete(
+        self: RepositoryProtocol[MODEL_DELETED_AT],
+        object: MODEL_DELETED_AT,
+        *,
+        flush: bool = False,
+    ) -> MODEL_DELETED_AT:
+        return await self.update(
+            object, update_dict={"deleted_at": utc_now()}, flush=flush
+        )
+
+
 class RepositoryIDMixin(Generic[MODEL_ID, ID_TYPE]):
     async def get_by_id(
         self: RepositoryProtocol[MODEL_ID],
@@ -129,18 +173,17 @@ class RepositoryIDMixin(Generic[MODEL_ID, ID_TYPE]):
         return await self.get_one_or_none(statement)
 
 
-class RepositorySoftDeletionMixin(Generic[MODEL_DELETED_AT]):
-    def get_base_statement(
-        self: RepositoryProtocol[MODEL_DELETED_AT],
-    ) -> Select[tuple[MODEL_DELETED_AT]]:
-        return super().get_base_statement().where(self.model.deleted_at.is_(None))  # type: ignore[safe-super]
-
-    async def soft_delete(
-        self: RepositoryProtocol[MODEL_DELETED_AT],
-        object: MODEL_DELETED_AT,
+class RepositorySoftDeletionIDMixin(Generic[MODEL_DELETED_AT_ID, ID_TYPE]):
+    async def get_by_id(
+        self: RepositorySoftDeletionProtocol[MODEL_DELETED_AT_ID],
+        id: ID_TYPE,
         *,
-        flush: bool = False,
-    ) -> MODEL_DELETED_AT:
-        return await self.update(
-            object, update_dict={"deleted_at": utc_now()}, flush=flush
+        options: Sequence[ExecutableOption] = (),
+        include_deleted: bool = False,
+    ) -> MODEL_DELETED_AT_ID | None:
+        statement = (
+            self.get_base_statement(include_deleted=include_deleted)
+            .where(self.model.id == id)
+            .options(*options)
         )
+        return await self.get_one_or_none(statement)

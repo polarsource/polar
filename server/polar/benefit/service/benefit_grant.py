@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload
 from polar.benefit.benefits import get_benefit_service
 from polar.benefit.benefits.base import BenefitActionRequiredError
 from polar.benefit.schemas import BenefitGrantWebhook
-from polar.customer.service import customer as customer_service
+from polar.customer.repository import CustomerRepository
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
@@ -318,7 +318,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         benefit = grant.benefit
 
-        customer = await customer_service.get(session, grant.customer_id)
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(grant.customer_id)
         assert customer is not None
 
         previous_properties = grant.properties
@@ -370,7 +371,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         await session.refresh(grant, {"benefit"})
         benefit = grant.benefit
 
-        customer = await customer_service.get(session, grant.customer_id)
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(grant.customer_id)
         assert customer is not None
 
         previous_properties = grant.properties

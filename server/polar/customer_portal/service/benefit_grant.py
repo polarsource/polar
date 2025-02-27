@@ -7,7 +7,7 @@ from sqlalchemy import Select, UnaryExpression, asc, desc, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject
-from polar.customer.service import customer as customer_service
+from polar.customer.repository import CustomerRepository
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
@@ -152,7 +152,8 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
             account_id = benefit_grant_update.properties["account_id"]
             platform = benefit_grant_update.get_oauth_platform()
 
-            customer = await customer_service.get(session, benefit_grant.customer_id)
+            customer_repository = CustomerRepository.from_session(session)
+            customer = await customer_repository.get_by_id(benefit_grant.customer_id)
             assert customer is not None
 
             oauth_account = customer.get_oauth_account(account_id, platform)

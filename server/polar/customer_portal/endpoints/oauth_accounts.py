@@ -12,7 +12,7 @@ from pydantic import UUID4
 
 from polar.auth.models import Customer, is_anonymous, is_customer
 from polar.config import settings
-from polar.customer.service import customer as customer_service
+from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.exceptions import PolarError
 from polar.integrations.github.client import Forbidden
@@ -100,7 +100,8 @@ async def callback(
         customer = auth_subject.subject
     elif is_anonymous(auth_subject):
         # Trust the customer ID in the state for anonymous users
-        customer = await customer_service.get(session, customer_id)
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(customer_id)
 
     if customer is None:
         raise Forbidden("Invalid customer")

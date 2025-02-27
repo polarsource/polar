@@ -1,3 +1,5 @@
+import uuid
+
 import structlog
 from sqlalchemy import delete, select
 from sqlalchemy.orm import joinedload
@@ -14,7 +16,7 @@ from polar.logging import Logger
 from polar.models import Customer, CustomerSession
 from polar.postgres import AsyncSession
 
-from .schemas import CustomerSessionCreate
+from .schemas import CustomerSessionCreate, CustomerSessionCustomerIDCreate
 
 log: Logger = structlog.get_logger()
 
@@ -29,23 +31,33 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         customer_create: CustomerSessionCreate,
     ) -> CustomerSession:
         repository = CustomerRepository.from_session(session)
-        statement = (
-            repository.get_readable_statement(auth_subject)
-            .where(Customer.id == id)
-            .options(
-                joinedload(Customer.organization),
-            )
+        statement = repository.get_readable_statement(auth_subject).options(
+            joinedload(Customer.organization),
         )
+
+        id_field: str
+        id_value: uuid.UUID | str
+        if isinstance(customer_create, CustomerSessionCustomerIDCreate):
+            statement = statement.where(Customer.id == customer_create.customer_id)
+            id_field = "customer_id"
+            id_value = customer_create.customer_id
+        else:
+            statement = statement.where(
+                Customer.external_id == customer_create.customer_external_id
+            )
+            id_field = "customer_external_id"
+            id_value = customer_create.customer_external_id
+
         customer = await repository.get_one_or_none(statement)
 
         if customer is None:
             raise PolarRequestValidationError(
                 [
                     {
-                        "loc": ("body", "customer_id"),
+                        "loc": ("body", id_field),
                         "msg": "Customer does not exist.",
                         "type": "value_error",
-                        "input": customer_create.customer_id,
+                        "input": id_value,
                     }
                 ]
             )

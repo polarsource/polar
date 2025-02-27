@@ -29,7 +29,7 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_valid(
+    async def test_valid_customer_id(
         self,
         client: AsyncClient,
         customer: Customer,
@@ -44,4 +44,26 @@ class TestCreate:
 
         assert json["token"].startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
         assert json["customer_id"] == str(customer.id)
+        assert json["customer_portal_url"].endswith(json["token"])
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_external_customer_id(
+        self,
+        client: AsyncClient,
+        customer_external_id: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/customer-sessions/",
+            json={"customer_external_id": customer_external_id.external_id},
+        )
+        assert response.status_code == 201
+
+        json = response.json()
+
+        assert json["token"].startswith(CUSTOMER_SESSION_TOKEN_PREFIX)
+        assert json["customer_id"] == str(customer_external_id.id)
         assert json["customer_portal_url"].endswith(json["token"])

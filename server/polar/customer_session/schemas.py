@@ -6,14 +6,29 @@ from polar.customer.schemas import Customer
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 
 
-class CustomerSessionCreate(Schema):
+class CustomerSessionCustomerIDCreate(Schema):
     """
-    Schema for creating a customer session.
+    Schema for creating a customer session using a customer ID.
     """
 
     customer_id: UUID4 = Field(
         description="ID of the customer to create a session for."
     )
+
+
+class CustomerSessionCustomerExternalIDCreate(Schema):
+    """
+    Schema for creating a customer session using an external customer ID.
+    """
+
+    customer_external_id: str = Field(
+        description="External ID of the customer to create a session for."
+    )
+
+
+CustomerSessionCreate = (
+    CustomerSessionCustomerIDCreate | CustomerSessionCustomerExternalIDCreate
+)
 
 
 class CustomerSession(IDSchema, TimestampedSchema):

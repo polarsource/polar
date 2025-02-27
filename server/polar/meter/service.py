@@ -149,10 +149,17 @@ class MeterService:
             interval.sql_date_trunc(Event.timestamp)
             == interval.sql_date_trunc(timestamp_column),
         ]
+        event_repository = EventRepository.from_session(session)
         if customer_id is not None:
-            event_clauses.append(Event.customer_id.in_(customer_id))
+            event_clauses.append(
+                event_repository.get_customer_id_filter_clause(customer_id)
+            )
         if external_customer_id is not None:
-            event_clauses.append(Event.external_customer_id.in_(external_customer_id))
+            event_clauses.append(
+                event_repository.get_external_customer_id_filter_clause(
+                    external_customer_id
+                )
+            )
         event_clauses += [
             meter.filter.get_sql_clause(Event),
             # Additional clauses to make sure we work on rows with the right type for aggregation

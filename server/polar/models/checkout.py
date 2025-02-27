@@ -144,6 +144,9 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def customer(cls) -> Mapped[Customer | None]:
         return relationship(Customer, lazy="raise")
 
+    customer_external_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
     customer_name: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )

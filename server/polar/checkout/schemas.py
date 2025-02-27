@@ -141,6 +141,15 @@ class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
             "The resulting order will be linked to this customer."
         ),
     )
+    customer_external_id: str | None = Field(
+        default=None,
+        description=(
+            "ID of the customer in your system. "
+            "If a matching customer exists on Polar, the resulting order "
+            "will be linked to this customer. "
+            "Otherwise, a new customer will be created with this external ID set."
+        ),
+    )
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None

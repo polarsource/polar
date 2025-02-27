@@ -1131,6 +1131,56 @@ class TestCreate:
 
         assert checkout.customer_metadata == {"key": "value"}
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_existing_customer_external_id(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+        customer_external_id: Customer,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[product_one_time.id],
+                customer_external_id=customer_external_id.external_id,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.customer == customer_external_id
+        assert checkout.customer_email == customer_external_id.email
+        assert checkout.customer_name == customer_external_id.name
+        assert checkout.customer_billing_address == customer_external_id.billing_address
+        assert checkout.customer_tax_id == customer_external_id.tax_id
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_new_customer_external_id(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[product_one_time.id],
+                customer_external_id="EXTERNAL_ID",
+            ),
+            auth_subject,
+        )
+
+        assert checkout.customer is None
+        assert checkout.customer_external_id == "EXTERNAL_ID"
+
 
 @pytest.mark.asyncio
 class TestClientCreate:
@@ -2471,6 +2521,44 @@ class TestConfirm:
         assert checkout.customer == customer
         assert checkout.customer.user_metadata == {"key": "updated", "key2": "value2"}
         stripe_service_mock.update_customer.assert_called_once()
+
+    async def test_valid_stripe_new_customer_external_id(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        checkout_one_time_fixed.customer_external_id = "EXTERNAL_ID"
+        await save_fixture(checkout_one_time_fixed)
+
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            locker,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_email": "customer@example.com",
+                    "customer_name": "Customer Name",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer is not None
+        assert checkout.customer.external_id == "EXTERNAL_ID"
 
 
 def build_stripe_payment_intent(

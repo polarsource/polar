@@ -346,12 +346,12 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         subscription: Subscription | None = None
         customer: Customer | None = None
+        customer_repository = CustomerRepository.from_session(session)
         if checkout_create.subscription_id is not None:
             subscription, customer = await self._get_validated_subscription(
                 session, checkout_create.subscription_id, product.organization_id
             )
         elif checkout_create.customer_id is not None:
-            customer_repository = CustomerRepository.from_session(session)
             customer = await customer_repository.get_by_id_and_organization(
                 checkout_create.customer_id, product.organization_id
             )
@@ -366,6 +366,12 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                         }
                     ]
                 )
+        elif checkout_create.customer_external_id is not None:
+            # Link customer by external ID, if it exists.
+            # It not, that's fine': we'll create a new customer on confirm.
+            customer = await customer_repository.get_by_external_id_and_organization(
+                checkout_create.customer_external_id, product.organization_id
+            )
 
         amount = checkout_create.amount
         currency = None
@@ -1779,6 +1785,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             )
             if customer is None:
                 customer = Customer(
+                    external_id=checkout.customer_external_id,
                     email=checkout.customer_email,
                     email_verified=False,
                     stripe_customer_id=None,

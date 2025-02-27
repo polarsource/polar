@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
+    UniqueConstraint,
     Uuid,
     func,
 )
@@ -72,8 +73,10 @@ class Customer(MetadataMixin, RecordModel):
             func.lower(Column("email")),
             unique=True,
         ),
+        UniqueConstraint("organization_id", "external_id"),
     )
 
+    external_id: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     stripe_customer_id: Mapped[str | None] = mapped_column(

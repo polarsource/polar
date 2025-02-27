@@ -21,9 +21,19 @@ from polar.organization.schemas import OrganizationID
 
 CustomerID = Annotated[UUID4, Path(description="The customer ID.")]
 
+_external_id_description = (
+    "The ID of the customer in your system. "
+    "This must be unique within the organization. "
+    "Once set, it can't be updated."
+)
+_email_description = (
+    "The email address of the customer. This must be unique within the organization."
+)
+
 
 class CustomerCreate(MetadataInputMixin, Schema):
-    email: EmailStrDNS
+    external_id: str | None = Field(default=None, description=_external_id_description)
+    email: EmailStrDNS = Field(description=_email_description)
     name: str | None = None
     billing_address: Address | None = None
     tax_id: TaxID | None = None
@@ -37,15 +47,23 @@ class CustomerCreate(MetadataInputMixin, Schema):
 
 
 class CustomerUpdate(OptionalMetadataInputMixin, Schema):
-    email: EmailStrDNS | None = None
+    external_id: str | None = Field(default=None, description=_external_id_description)
+    email: EmailStrDNS | None = Field(default=None, description=_email_description)
     name: str | None = None
     billing_address: Address | None = None
     tax_id: TaxID | None = None
 
 
 class CustomerBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
-    email: str
-    email_verified: bool
+    external_id: str | None = Field(description=_external_id_description)
+    email: str = Field(description=_email_description)
+    email_verified: bool = Field(
+        description=(
+            "Whether the customer email address is verified. "
+            "The address is automatically verified when the customer accesses "
+            "the customer portal using their email address."
+        )
+    )
     name: str | None
     billing_address: Address | None
     tax_id: TaxID | None

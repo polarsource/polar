@@ -4,7 +4,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.config import settings
-from polar.customer.service import customer as customer_service
+from polar.customer.repository import CustomerRepository
 from polar.enums import TokenType
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
@@ -28,12 +28,16 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
         auth_subject: AuthSubject[User | Organization],
         customer_create: CustomerSessionCreate,
     ) -> CustomerSession:
-        customer = await customer_service.user_get_by_id(
-            session,
-            auth_subject,
-            customer_create.customer_id,
-            options=(joinedload(Customer.organization),),
+        repository = CustomerRepository.from_session(session)
+        statement = (
+            repository.get_readable_statement(auth_subject)
+            .where(Customer.id == id)
+            .options(
+                joinedload(Customer.organization),
+            )
         )
+        customer = await repository.get_one_or_none(statement)
+
         if customer is None:
             raise PolarRequestValidationError(
                 [

@@ -2,20 +2,20 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
-from sqlalchemy.sql.base import ExecutableOption
+from sqlalchemy import UnaryExpression, asc, desc, func, or_
 from stripe import Customer as StripeCustomer
 
-from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.exceptions import PolarRequestValidationError
+from polar.auth.models import AuthSubject
+from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
-from polar.kit.pagination import PaginationParams, paginate
+from polar.kit.pagination import PaginationParams
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
-from polar.models import Customer, Organization, User, UserOrganization
+from polar.models import Customer, Organization, User
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 
+from .repository import CustomerRepository
 from .schemas import CustomerCreate, CustomerUpdate
 from .sorting import CustomerSortProperty
 
@@ -35,7 +35,8 @@ class CustomerService(ResourceServiceReader[Customer]):
             (CustomerSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Customer], int]:
-        statement = self._get_readable_customer_statement(auth_subject)
+        repository = CustomerRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject)
 
         if organization_id is not None:
             statement = statement.where(Customer.organization_id.in_(organization_id))
@@ -65,23 +66,21 @@ class CustomerService(ResourceServiceReader[Customer]):
                 order_by_clauses.append(clause_function(Customer.name))
         statement = statement.order_by(*order_by_clauses)
 
-        return await paginate(session, statement, pagination=pagination)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
     async def user_get_by_id(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
-        *,
-        options: Sequence[ExecutableOption] | None = None,
     ) -> Customer | None:
-        statement = self._get_readable_customer_statement(auth_subject).where(
+        repository = CustomerRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
             Customer.id == id
         )
-        if options is not None:
-            statement = statement.options(*options)
-        result = await session.execute(statement)
-        return result.unique().scalar_one_or_none()
+        return await repository.get_one_or_none(statement)
 
     async def create(
         self,
@@ -92,100 +91,109 @@ class CustomerService(ResourceServiceReader[Customer]):
         organization = await get_payload_organization(
             session, auth_subject, customer_create
         )
+        repository = CustomerRepository.from_session(session)
 
-        if await self.get_by_email_and_organization(
-            session, customer_create.email, organization
+        errors: list[ValidationError] = []
+
+        if await repository.get_by_email_and_organization(
+            customer_create.email, organization.id
         ):
-            raise PolarRequestValidationError(
-                [
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "email"),
+                    "msg": "A customer with this email address already exists.",
+                    "input": customer_create.email,
+                }
+            )
+
+        if customer_create.external_id is not None:
+            if await repository.get_by_external_id_and_organization(
+                customer_create.external_id, organization.id
+            ):
+                errors.append(
                     {
                         "type": "value_error",
-                        "loc": ("body", "email"),
-                        "msg": "A customer with this email address already exists.",
-                        "input": customer_create.email,
+                        "loc": ("body", "external_id"),
+                        "msg": "A customer with this external ID already exists.",
+                        "input": customer_create.external_id,
                     }
-                ]
-            )
+                )
+
+        if errors:
+            raise PolarRequestValidationError(errors)
 
         customer = Customer(
             organization=organization,
             **customer_create.model_dump(exclude={"organization_id"}, by_alias=True),
         )
-
-        session.add(customer)
-        return customer
+        return await repository.create(customer)
 
     async def update(
         self, session: AsyncSession, customer: Customer, customer_update: CustomerUpdate
     ) -> Customer:
+        repository = CustomerRepository.from_session(session)
+
+        errors: list[ValidationError] = []
         if (
             customer_update.email is not None
             and customer.email.lower() != customer_update.email.lower()
         ):
-            already_exists = await self.get_by_email_and_organization(
-                session, customer_update.email, customer.organization
+            already_exists = await repository.get_by_email_and_organization(
+                customer_update.email, customer.organization_id
             )
             if already_exists:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "email"),
-                            "msg": "A customer with this email address already exists.",
-                            "input": customer_update.email,
-                        }
-                    ]
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "email"),
+                        "msg": "A customer with this email address already exists.",
+                        "input": customer_update.email,
+                    }
                 )
 
             # Reset verification status
             customer.email_verified = False
 
-        for attr, value in customer_update.model_dump(
-            exclude_unset=True, by_alias=True
-        ).items():
-            setattr(customer, attr, value)
+        if (
+            "external_id" in customer_update.model_fields_set
+            and customer.external_id is not None
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "external_id"),
+                    "msg": "Customer external ID cannot be updated.",
+                    "input": customer_update.external_id,
+                }
+            )
 
-        session.add(customer)
-        return customer
+        if customer_update.external_id is not None:
+            if await repository.get_by_external_id_and_organization(
+                customer_update.external_id, customer.organization_id
+            ):
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "external_id"),
+                        "msg": "A customer with this external ID already exists.",
+                        "input": customer_update.external_id,
+                    }
+                )
+
+        if errors:
+            raise PolarRequestValidationError(errors)
+
+        return await repository.update(
+            customer,
+            update_dict=customer_update.model_dump(exclude_unset=True, by_alias=True),
+        )
 
     async def delete(self, session: AsyncSession, customer: Customer) -> Customer:
         # TODO: cancel subscriptions, revoke benefits, etc.
 
-        customer.set_deleted_at()
-        session.add(customer)
-        return customer
-
-    async def get_by_id_and_organization(
-        self, session: AsyncSession, id: uuid.UUID, organization: Organization
-    ) -> Customer | None:
-        statement = select(Customer).where(
-            Customer.deleted_at.is_(None),
-            Customer.id == id,
-            Customer.organization_id == organization.id,
-        )
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
-
-    async def get_by_email_and_organization(
-        self, session: AsyncSession, email: str, organization: Organization
-    ) -> Customer | None:
-        statement = select(Customer).where(
-            func.lower(Customer.email) == email.lower(),
-            Customer.organization_id == organization.id,
-        )
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
-
-    async def get_by_stripe_customer_id_and_organization(
-        self, session: AsyncSession, stripe_customer_id: str, organization: Organization
-    ) -> Customer | None:
-        statement = select(Customer).where(
-            Customer.deleted_at.is_(None),
-            Customer.stripe_customer_id == stripe_customer_id,
-            Customer.organization_id == organization.id,
-        )
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
+        repository = CustomerRepository.from_session(session)
+        return await repository.soft_delete(customer)
 
     async def get_or_create_from_stripe_customer(
         self,
@@ -200,13 +208,14 @@ class CustomerService(ResourceServiceReader[Customer]):
 
         If the customer does not exist, create a new one.
         """
-        customer = await self.get_by_stripe_customer_id_and_organization(
-            session, stripe_customer.id, organization
+        repository = CustomerRepository.from_session(session)
+        customer = await repository.get_by_stripe_customer_id_and_organization(
+            stripe_customer.id, organization.id
         )
         assert stripe_customer.email is not None
         if customer is None:
-            customer = await self.get_by_email_and_organization(
-                session, stripe_customer.email, organization
+            customer = await repository.get_by_email_and_organization(
+                stripe_customer.email, organization.id
             )
         if customer is None:
             customer = Customer(
@@ -222,28 +231,6 @@ class CustomerService(ResourceServiceReader[Customer]):
 
         session.add(customer)
         return customer
-
-    def _get_readable_customer_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[Customer]]:
-        statement = select(Customer).where(Customer.deleted_at.is_(None))
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Customer.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Customer.organization_id == auth_subject.subject.id,
-            )
-
-        return statement
 
 
 customer = CustomerService(Customer)

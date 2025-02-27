@@ -8,7 +8,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent
-from polar.customer.service import customer as customer_service
+from polar.customer.repository import CustomerRepository
 from polar.exceptions import BadRequest, ResourceUnavailable
 from polar.kit.pagination import PaginationParams
 from polar.models import (
@@ -137,8 +137,9 @@ class TestCreateSubscriptionFromStripe:
         assert subscription.stripe_subscription_id == stripe_subscription.id
         assert subscription.product_id == product.id
 
-        customer = await customer_service.get_by_stripe_customer_id_and_organization(
-            session, stripe_customer.id, product.organization
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_stripe_customer_id_and_organization(
+            stripe_customer.id, product.organization_id
         )
         assert customer is not None
         assert customer.email == stripe_customer.email

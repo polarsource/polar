@@ -91,6 +91,30 @@ class TestCreate:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
     )
+    async def test_existing_external_id(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+        customer_external_id: Customer,
+    ) -> None:
+        payload: dict[str, Any] = {
+            "email": "customer@example.com",
+            "external_id": customer_external_id.external_id,
+        }
+        if is_user(auth_subject):
+            payload["organization_id"] = str(organization.id)
+
+        with pytest.raises(PolarRequestValidationError):
+            await customer_service.create(
+                session, CustomerCreate.model_validate(payload), auth_subject
+            )
+            await session.flush()
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
     async def test_existing_email(
         self,
         session: AsyncSession,
@@ -121,7 +145,10 @@ class TestCreate:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        payload: dict[str, Any] = {"email": "customer.new@example.com"}
+        payload: dict[str, Any] = {
+            "email": "customer.new@example.com",
+            "external_id": "123",
+        }
         if is_user(auth_subject):
             payload["organization_id"] = str(organization.id)
 
@@ -130,11 +157,44 @@ class TestCreate:
         )
         await session.flush()
 
+        assert customer.external_id == "123"
         assert customer.email == "customer.new@example.com"
 
 
 @pytest.mark.asyncio
 class TestUpdate:
+    async def test_existing_external_id(
+        self, session: AsyncSession, customer: Customer, customer_external_id: Customer
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await customer_service.update(
+                session,
+                customer,
+                CustomerUpdate(external_id=customer_external_id.external_id),
+            )
+            await session.flush()
+
+    @pytest.mark.parametrize(
+        "external_id",
+        [
+            pytest.param("123", id="different external_id"),
+            pytest.param(None, id="remove external_id"),
+        ],
+    )
+    async def test_cant_update_external_id(
+        self,
+        external_id: str | None,
+        session: AsyncSession,
+        customer_external_id: Customer,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await customer_service.update(
+                session,
+                customer_external_id,
+                CustomerUpdate(external_id=external_id),
+            )
+            await session.flush()
+
     async def test_existing_email(
         self, session: AsyncSession, customer: Customer, customer_second: Customer
     ) -> None:
@@ -153,7 +213,7 @@ class TestUpdate:
             pytest.param("customer.updated@example.cm", id="different email"),
         ],
     )
-    async def test_valid(
+    async def test_valid_email(
         self, email: str, session: AsyncSession, customer: Customer
     ) -> None:
         customer = await customer_service.update(
@@ -164,4 +224,17 @@ class TestUpdate:
         await session.flush()
 
         assert customer.email == email
+        assert customer.name == "John"
+
+    async def test_valid_external_id(
+        self, session: AsyncSession, customer: Customer
+    ) -> None:
+        customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(external_id="123", name="John"),
+        )
+        await session.flush()
+
+        assert customer.external_id == "123"
         assert customer.name == "John"

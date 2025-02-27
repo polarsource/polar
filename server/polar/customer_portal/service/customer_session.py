@@ -7,7 +7,7 @@ from math import ceil
 from sqlalchemy import select
 
 from polar.config import settings
-from polar.customer.service import customer as customer_service
+from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import enqueue_email
@@ -52,8 +52,9 @@ class CustomerSessionService:
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
 
-        customer = await customer_service.get_by_email_and_organization(
-            session, email, organization
+        repository = CustomerRepository.from_session(session)
+        customer = await repository.get_by_email_and_organization(
+            email, organization.id
         )
         if customer is None:
             raise CustomerDoesNotExist(email, organization)

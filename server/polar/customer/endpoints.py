@@ -1,5 +1,4 @@
 from fastapi import Depends, Query
-from sqlalchemy.orm import joinedload
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
@@ -117,9 +116,7 @@ async def update(
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
     """Update a customer."""
-    customer = await customer_service.user_get_by_id(
-        session, auth_subject, id, options=(joinedload(Customer.organization),)
-    )
+    customer = await customer_service.user_get_by_id(session, auth_subject, id)
 
     if customer is None:
         raise ResourceNotFound()

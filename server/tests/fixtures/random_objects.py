@@ -919,6 +919,7 @@ async def create_customer(
     save_fixture: SaveFixture,
     *,
     organization: Organization,
+    external_id: str | None = None,
     email: str = "customer@example.com",
     email_verified: bool = False,
     name: str = "Customer",
@@ -928,6 +929,7 @@ async def create_customer(
     user_metadata: dict[str, Any] = {},
 ) -> Customer:
     customer = Customer(
+        external_id=external_id,
         email=email,
         email_verified=email_verified,
         name=name,
@@ -1459,6 +1461,20 @@ async def customer_second(
         organization=organization,
         email=lstr("customer.second@example.com"),
         stripe_customer_id=lstr("STRIPE_CUSTOMER_ID_2"),
+    )
+
+
+@pytest_asyncio.fixture
+async def customer_external_id(
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> Customer:
+    return await create_customer(
+        save_fixture,
+        organization=organization,
+        external_id=lstr("CUSTOMER_EXTERNAL_ID"),
+        email=lstr("customer.external_id@example.com"),
+        stripe_customer_id=lstr("STRIPE_CUSTOMER_ID_3"),
     )
 
 

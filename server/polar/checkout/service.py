@@ -26,7 +26,7 @@ from polar.checkout.schemas import (
 )
 from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
-from polar.customer.service import customer as customer_service
+from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
@@ -351,8 +351,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 session, checkout_create.subscription_id, product.organization_id
             )
         elif checkout_create.customer_id is not None:
-            customer = await customer_service.get_by_id_and_organization(
-                session, checkout_create.customer_id, product.organization
+            customer_repository = CustomerRepository.from_session(session)
+            customer = await customer_repository.get_by_id_and_organization(
+                checkout_create.customer_id, product.organization_id
             )
             if customer is None:
                 raise PolarRequestValidationError(
@@ -1769,11 +1770,12 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
     ) -> Customer:
+        repository = CustomerRepository.from_session(session)
         customer = checkout.customer
         if customer is None:
             assert checkout.customer_email is not None
-            customer = await customer_service.get_by_email_and_organization(
-                session, checkout.customer_email, checkout.organization
+            customer = await repository.get_by_email_and_organization(
+                checkout.customer_email, checkout.organization.id
             )
             if customer is None:
                 customer = Customer(

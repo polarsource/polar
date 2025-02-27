@@ -358,9 +358,13 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             <h2 className="text-xl">Customer Details</h2>
             <div className="flex flex-col">
               <DetailRow label="ID" value={customer.id} />
+              <DetailRow label="External ID" value={customer.external_id} />
               <DetailRow label="Email" value={customer.email} />
               <DetailRow label="Name" value={customer.name} />
-              <DetailRow label="Tax ID" value={customer.tax_id} />
+              <DetailRow
+                label="Tax ID"
+                value={customer.tax_id ? customer.tax_id[0] : null}
+              />
               <DetailRow
                 label="Created At"
                 value={<FormattedDateTime datetime={customer.created_at} />}

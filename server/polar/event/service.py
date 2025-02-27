@@ -59,11 +59,13 @@ class EventService:
             statement = statement.where(Event.organization_id.in_(organization_id))
 
         if customer_id is not None:
-            statement = statement.where(Event.customer_id.in_(customer_id))
+            statement = statement.where(
+                repository.get_customer_id_filter_clause(customer_id)
+            )
 
         if external_customer_id is not None:
             statement = statement.where(
-                Event.external_customer_id.in_(external_customer_id)
+                repository.get_external_customer_id_filter_clause(external_customer_id)
             )
 
         if source is not None:

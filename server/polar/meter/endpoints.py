@@ -131,7 +131,7 @@ async def quantities(
     customer_id: MultipleQueryFilter[CustomerID] | None = Query(
         None, title="CustomerID Filter", description="Filter by customer ID."
     ),
-    exernal_customer_id: MultipleQueryFilter[str] | None = Query(
+    external_customer_id: MultipleQueryFilter[str] | None = Query(
         None,
         title="ExternalCustomerID Filter",
         description="Filter by external customer ID.",
@@ -166,7 +166,7 @@ async def quantities(
         end_timestamp=end_timestamp,
         interval=interval,
         customer_id=customer_id,
-        external_customer_id=exernal_customer_id,
+        external_customer_id=external_customer_id,
     )
 
 

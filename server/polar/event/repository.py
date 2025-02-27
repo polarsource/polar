@@ -2,11 +2,11 @@ from collections.abc import Sequence
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, insert, select
+from sqlalchemy import ColumnElement, Select, insert, or_, select
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
-from polar.models import Event, UserOrganization
+from polar.models import Customer, Event, UserOrganization
 
 
 class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
@@ -43,3 +43,25 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             )
 
         return statement
+
+    def get_customer_id_filter_clause(
+        self, customer_id: Sequence[UUID]
+    ) -> ColumnElement[bool]:
+        return or_(
+            Event.customer_id.in_(customer_id),
+            Event.external_customer_id.in_(
+                select(Customer.external_id).where(Customer.id.in_(customer_id))
+            ),
+        )
+
+    def get_external_customer_id_filter_clause(
+        self, external_customer_id: Sequence[str]
+    ) -> ColumnElement[bool]:
+        return or_(
+            Event.external_customer_id.in_(external_customer_id),
+            Event.customer_id.in_(
+                select(Customer.id).where(
+                    Customer.external_id.in_(external_customer_id)
+                )
+            ),
+        )

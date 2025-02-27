@@ -13,11 +13,11 @@
   "license": "ISC",
   "packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0",
   "dependencies": {
-    "mintlify": "^4.0.400"
+    "mintlify": "^4.0.410"
   },
   "devDependencies": {
     "@scalar/openapi-parser": "^0.10.8",
-    "@types/node": "^22.13.4",
+    "@types/node": "^22.13.5",
     "js-yaml": "^4.1.0",
     "openapi-sampler": "^1.6.1",
     "tsx": "^4.19.3"

@@ -13,6 +13,7 @@ from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
+from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
@@ -396,7 +397,8 @@ class OrderService(ResourceServiceReader[Order]):
             )
             if subscription is None:
                 raise SubscriptionDoesNotExist(invoice.id, stripe_subscription_id)
-            customer = await customer_service.get(session, subscription.customer_id)
+            customer_repository = CustomerRepository.from_session(session)
+            customer = await customer_repository.get_by_id(subscription.customer_id)
             if invoice.billing_reason is not None:
                 try:
                     billing_reason = OrderBillingReason(invoice.billing_reason)

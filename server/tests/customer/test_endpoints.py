@@ -61,6 +61,57 @@ class TestListCustomers:
 
 
 @pytest.mark.asyncio
+class TestGetExternal:
+    async def test_anonymous(
+        self, client: AsyncClient, customer_external_id: Customer
+    ) -> None:
+        response = await client.get(
+            f"/v1/customers/external/{customer_external_id.external_id}"
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_missing_scope(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer_external_id: Customer,
+    ) -> None:
+        response = await client.get(
+            f"/v1/customers/external/{customer_external_id.external_id}"
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_not_existing(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get("/v1/customers/external/not-existing")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer_external_id: Customer,
+    ) -> None:
+        response = await client.get(
+            f"/v1/customers/external/{customer_external_id.external_id}"
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["id"] == str(customer_external_id.id)
+
+
+@pytest.mark.asyncio
 class TestCreateCustomer:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization

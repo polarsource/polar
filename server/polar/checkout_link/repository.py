@@ -9,7 +9,7 @@ from sqlalchemy.sql.base import ExecutableOption
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import (
     RepositoryBase,
-    RepositoryIDMixin,
+    RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
 from polar.models import CheckoutLink, CheckoutLinkProduct, Product, UserOrganization
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class CheckoutLinkRepository(
-    RepositoryIDMixin[CheckoutLink, UUID],
+    RepositorySoftDeletionIDMixin[CheckoutLink, UUID],
     RepositorySoftDeletionMixin[CheckoutLink],
     RepositoryBase[CheckoutLink],
 ):

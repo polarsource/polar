@@ -4,7 +4,7 @@ from typing import Literal, Unpack
 import structlog
 from arq import Retry
 
-from polar.customer.service import customer as customer_service
+from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.benefit_grant import BenefitGrantScopeArgs
@@ -73,7 +73,8 @@ async def enqueue_benefits_grants(
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        customer = await customer_service.get(session, customer_id)
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(customer_id)
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
 
@@ -97,7 +98,8 @@ async def benefit_grant(
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        customer = await customer_service.get(session, customer_id)
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(customer_id)
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
 
@@ -136,7 +138,8 @@ async def benefit_revoke(
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        customer = await customer_service.get(session, customer_id)
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(customer_id)
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
 

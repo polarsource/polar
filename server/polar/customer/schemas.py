@@ -20,6 +20,7 @@ from polar.kit.tax import TaxID
 from polar.organization.schemas import OrganizationID
 
 CustomerID = Annotated[UUID4, Path(description="The customer ID.")]
+CustomerExternalID = Annotated[str, Path(description="The customer external ID.")]
 
 _external_id_description = (
     "The ID of the customer in your system. "

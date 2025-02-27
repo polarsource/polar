@@ -5,16 +5,16 @@ from sqlalchemy import Select, func, select
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import (
     RepositoryBase,
-    RepositoryIDMixin,
+    RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
 from polar.models import Customer, UserOrganization
 
 
 class CustomerRepository(
-    RepositoryBase[Customer],
+    RepositorySoftDeletionIDMixin[Customer, UUID],
     RepositorySoftDeletionMixin[Customer],
-    RepositoryIDMixin[Customer, UUID],
+    RepositoryBase[Customer],
 ):
     model = Customer
 

@@ -1,7 +1,6 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { schemas } from '@polar-sh/client'
 import { Metadata } from 'next'
 import ClientPage from './ClientPage'
 
@@ -18,7 +17,6 @@ export default async function Page({
   params: { organization: string }
   searchParams: DataTableSearchParams & {
     product_id?: string[] | string
-    product_price_type?: schemas['ProductPriceType']
     metadata?: string[]
   }
 }) {

@@ -4,7 +4,6 @@ from typing import Annotated, Literal, TypedDict
 from pydantic import UUID4, Discriminator, TypeAdapter
 
 from polar.benefit.schemas import (
-    BenefitAdsSubscriber,
     BenefitCustomSubscriber,
     BenefitDiscordSubscriber,
     BenefitDownloadablesSubscriber,
@@ -21,7 +20,6 @@ from polar.kit.schemas import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import (
-    BenefitGrantAdsProperties,
     BenefitGrantCustomProperties,
     BenefitGrantDiscordProperties,
     BenefitGrantDownloadablesProperties,
@@ -68,12 +66,6 @@ class CustomerBenefitGrantLicenseKeys(CustomerBenefitGrantBase):
     properties: BenefitGrantLicenseKeysProperties
 
 
-class CustomerBenefitGrantAds(CustomerBenefitGrantBase):
-    customer: CustomerPortalCustomer
-    benefit: BenefitAdsSubscriber
-    properties: BenefitGrantAdsProperties
-
-
 class CustomerBenefitGrantCustom(CustomerBenefitGrantBase):
     customer: CustomerPortalCustomer
     benefit: BenefitCustomSubscriber
@@ -85,7 +77,6 @@ CustomerBenefitGrant = Annotated[
     | CustomerBenefitGrantGitHubRepository
     | CustomerBenefitGrantDownloadables
     | CustomerBenefitGrantLicenseKeys
-    | CustomerBenefitGrantAds
     | CustomerBenefitGrantCustom,
     SetSchemaReference("CustomerBenefitGrant"),
     MergeJSONSchema({"title": "CustomerBenefitGrant"}),
@@ -132,10 +123,6 @@ class CustomerBenefitGrantLicenseKeysUpdate(CustomerBenefitGrantUpdateBase):
     benefit_type: Literal[BenefitType.license_keys]
 
 
-class CustomerBenefitGrantAdsUpdate(CustomerBenefitGrantUpdateBase):
-    benefit_type: Literal[BenefitType.ads]
-
-
 class CustomerBenefitGrantCustomUpdate(CustomerBenefitGrantUpdateBase):
     benefit_type: Literal[BenefitType.custom]
 
@@ -145,7 +132,6 @@ CustomerBenefitGrantUpdate = Annotated[
     | CustomerBenefitGrantGitHubRepositoryUpdate
     | CustomerBenefitGrantDownloadablesUpdate
     | CustomerBenefitGrantLicenseKeysUpdate
-    | CustomerBenefitGrantAdsUpdate
     | CustomerBenefitGrantCustomUpdate,
     SetSchemaReference("CustomerBenefitGrantUpdate"),
     MergeJSONSchema({"title": "CustomerBenefitGrantUpdate"}),

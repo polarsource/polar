@@ -1,7 +1,6 @@
 from polar.kit.db.models import Model, TimestampedModel
 
 from .account import Account
-from .advertisement_campaign import AdvertisementCampaign
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .checkout import Checkout
@@ -67,7 +66,6 @@ __all__ = [
     "Model",
     "TimestampedModel",
     "Account",
-    "AdvertisementCampaign",
     "Benefit",
     "BenefitGrant",
     "Checkout",

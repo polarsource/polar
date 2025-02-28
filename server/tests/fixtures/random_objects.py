@@ -20,7 +20,6 @@ from polar.kit.tax import TaxID
 from polar.kit.utils import utc_now
 from polar.models import (
     Account,
-    AdvertisementCampaign,
     Benefit,
     Checkout,
     CheckoutLink,
@@ -1534,19 +1533,6 @@ async def create_refund(
     )
     await save_fixture(refund)
     return refund
-
-
-async def create_advertisement_campaign(
-    save_fixture: SaveFixture, *, user: User
-) -> AdvertisementCampaign:
-    advertisement_campaign = AdvertisementCampaign(
-        user=user,
-        image_url="https://example.com/img.jpg",
-        text="",
-        link_url="https://example.com",
-    )
-    await save_fixture(advertisement_campaign)
-    return advertisement_campaign
 
 
 async def create_payment_transaction(

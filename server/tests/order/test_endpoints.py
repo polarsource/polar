@@ -64,6 +64,27 @@ class TestListOrders:
         json = response.json()
         assert json["pagination"]["total_count"] == len(orders)
 
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        "product_price_type,expected", [("one_time", 0), ("recurring", 1)]
+    )
+    async def test_deprecated_product_price_type_filter(
+        self,
+        product_price_type: str,
+        expected: int,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        orders: list[Order],
+    ) -> None:
+        response = await client.get(
+            "/v1/orders/", params={"product_price_type": product_price_type}
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == expected
+
 
 @pytest.mark.asyncio
 class TestGetOrder:

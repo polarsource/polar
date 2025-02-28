@@ -45,7 +45,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.order import OrderBillingReason
-from polar.models.product_price import ProductPriceType
+from polar.models.product import ProductBillingType
 from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -177,7 +177,7 @@ class OrderService(ResourceServiceReader[Order]):
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
-        product_price_type: Sequence[ProductPriceType] | None = None,
+        product_billing_type: Sequence[ProductBillingType] | None = None,
         discount_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         checkout_id: Sequence[uuid.UUID] | None = None,
@@ -209,8 +209,8 @@ class OrderService(ResourceServiceReader[Order]):
         if product_id is not None:
             statement = statement.where(Order.product_id.in_(product_id))
 
-        if product_price_type is not None:
-            statement = statement.where(OrderProductPrice.type.in_(product_price_type))
+        if product_billing_type is not None:
+            statement = statement.where(Product.billing_type.in_(product_billing_type))
 
         if discount_id is not None:
             statement = statement.where(Order.discount_id.in_(discount_id))

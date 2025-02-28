@@ -38,6 +38,7 @@ class StringEnum(EnumType):
 
 class StrEnumType(TypeDecorator):
     impl = sa.String
+    cache_ok = True
 
     def __init__(self, enum_klass: type[StrEnum], **kwargs: Any) -> None:
         super().__init__(**kwargs)

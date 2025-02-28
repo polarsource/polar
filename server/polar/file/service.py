@@ -32,7 +32,7 @@ class FileService(ResourceServiceReader[File]):
         *,
         organization_id: UUID,
         pagination: PaginationParams,
-        ids: list[UUID] | None = None,
+        ids: Sequence[UUID] | None = None,
     ) -> tuple[Sequence[File], int]:
         statement = (
             sql.select(File)

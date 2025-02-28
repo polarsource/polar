@@ -3,7 +3,7 @@ import webbrowser
 from babel.dates import format_datetime
 from babel.numbers import format_currency
 from rich.text import Text
-from sqlalchemy import case, desc, func, select, text
+from sqlalchemy import desc, func, select, text
 from sqlalchemy.orm import selectinload
 from textual import work
 from textual.app import ComposeResult
@@ -111,14 +111,11 @@ class AccountsListScreen(Screen[None]):
                     onclause=Transaction.account_id == Account.id,
                     isouter=True,
                 )
-                .where(Account.deleted_at.is_(None))
+                .where(
+                    Account.deleted_at.is_(None),
+                    Account.status == Account.Status.UNDER_REVIEW,
+                )
                 .order_by(
-                    case(
-                        (Account.status == Account.Status.UNDER_REVIEW, 1),
-                        (Account.status == Account.Status.ACTIVE, 2),
-                        (Account.status == Account.Status.ONBOARDING_STARTED, 3),
-                        (Account.status == Account.Status.CREATED, 4),
-                    ),
                     desc(text("balance")),
                     Account.created_at.desc(),
                 )

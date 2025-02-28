@@ -81,18 +81,6 @@ class BenefitCustomSubscriberProperties(Schema):
     note: Note | None
 
 
-## Ads
-
-
-class BenefitAdsProperties(Schema):
-    """
-    Properties for a benefit of type `ads`.
-    """
-
-    image_height: int = Field(400, description="The height of the displayed ad.")
-    image_width: int = Field(400, description="The width of the displayed ad.")
-
-
 ## Discord
 
 
@@ -304,11 +292,6 @@ class BenefitCustomCreate(BenefitCreateBase):
     properties: BenefitCustomCreateProperties
 
 
-class BenefitAdsCreate(BenefitCreateBase):
-    type: Literal[BenefitType.ads]
-    properties: BenefitAdsProperties
-
-
 class BenefitDiscordCreate(BenefitCreateBase):
     type: Literal[BenefitType.discord]
     properties: BenefitDiscordCreateProperties
@@ -331,7 +314,6 @@ class BenefitLicenseKeysCreate(BenefitCreateBase):
 
 BenefitCreate = Annotated[
     BenefitCustomCreate
-    | BenefitAdsCreate
     | BenefitDiscordCreate
     | BenefitGitHubRepositoryCreate
     | BenefitDownloadablesCreate
@@ -354,11 +336,6 @@ class BenefitUpdateBase(Schema):
             "Will be displayed on products having this benefit."
         ),
     )
-
-
-class BenefitAdsUpdate(BenefitUpdateBase):
-    type: Literal[BenefitType.ads]
-    properties: BenefitAdsProperties | None = None
 
 
 class BenefitCustomUpdate(BenefitUpdateBase):
@@ -387,8 +364,7 @@ class BenefitLicenseKeysUpdate(BenefitUpdateBase):
 
 
 BenefitUpdate = (
-    BenefitAdsUpdate
-    | BenefitCustomUpdate
+    BenefitCustomUpdate
     | BenefitDiscordUpdate
     | BenefitGitHubRepositoryUpdate
     | BenefitDownloadablesUpdate
@@ -424,17 +400,6 @@ class BenefitCustom(BenefitBase):
     is_tax_applicable: bool = Field(deprecated=True)
 
 
-class BenefitAds(BenefitBase):
-    """
-    A benefit of type `ads`.
-
-    Use it so your backers can display ads on your README, website, etc.
-    """
-
-    type: Literal[BenefitType.ads]
-    properties: BenefitAdsProperties
-
-
 class BenefitDiscord(BenefitBase):
     """
     A benefit of type `discord`.
@@ -468,8 +433,7 @@ class BenefitLicenseKeys(BenefitBase):
 
 
 Benefit = Annotated[
-    BenefitAds
-    | BenefitCustom
+    BenefitCustom
     | BenefitDiscord
     | BenefitGitHubRepository
     | BenefitDownloadables
@@ -481,7 +445,6 @@ Benefit = Annotated[
 
 benefit_schema_map: dict[BenefitType, type[Benefit]] = {
     BenefitType.discord: BenefitDiscord,
-    BenefitType.ads: BenefitAds,
     BenefitType.custom: BenefitCustom,
     BenefitType.github_repository: BenefitGitHubRepository,
     BenefitType.downloadables: BenefitDownloadables,
@@ -550,18 +513,6 @@ class BenefitCustomSubscriber(BenefitSubscriberBase):
     properties: BenefitCustomSubscriberProperties
 
 
-class BenefitGrantAdsSubscriberProperties(Schema):
-    advertisement_campaign_id: UUID4 | None = Field(
-        None,
-        description="The ID of the enabled advertisement campaign for this benefit grant.",
-    )
-
-
-class BenefitAdsSubscriber(BenefitSubscriberBase):
-    type: Literal[BenefitType.ads]
-    properties: BenefitAdsProperties
-
-
 class BenefitDiscordSubscriber(BenefitSubscriberBase):
     type: Literal[BenefitType.discord]
     properties: BenefitDiscordSubscriberProperties
@@ -584,8 +535,7 @@ class BenefitLicenseKeysSubscriber(BenefitSubscriberBase):
 
 # Properties that are available to subscribers only
 BenefitSubscriber = Annotated[
-    BenefitAdsSubscriber
-    | BenefitDiscordSubscriber
+    BenefitDiscordSubscriber
     | BenefitCustomSubscriber
     | BenefitGitHubRepositorySubscriber
     | BenefitDownloadablesSubscriber

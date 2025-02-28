@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 
 from polar.account.endpoints import router as accounts_router
-from polar.advertisement.endpoints import router as advertisements_router
 from polar.auth.endpoints import router as auth_router
 from polar.backoffice.endpoints import router as backoffice_router
 from polar.benefit.endpoints import router as benefits_router
@@ -97,8 +96,6 @@ router.include_router(organization_router)
 router.include_router(subscription_router)
 # /transactions
 router.include_router(transaction_router)
-# /advertisements
-router.include_router(advertisements_router)
 # /auth
 router.include_router(auth_router)
 # /oauth2

@@ -22,7 +22,6 @@ class TaxApplicationMustBeSpecified(PolarError):
 
 class BenefitType(StrEnum):
     custom = "custom"
-    ads = "ads"
     discord = "discord"
     github_repository = "github_repository"
     downloadables = "downloadables"
@@ -32,7 +31,6 @@ class BenefitType(StrEnum):
         try:
             _is_tax_applicable_map: dict[BenefitType, bool] = {
                 BenefitType.custom: True,
-                BenefitType.ads: True,
                 BenefitType.discord: True,
                 BenefitType.github_repository: True,
                 BenefitType.downloadables: True,
@@ -54,11 +52,6 @@ class BenefitCustomProperties(BenefitProperties):
 class BenefitDiscordProperties(BenefitProperties):
     guild_id: str
     role_id: str
-
-
-class BenefitAdsProperties(BenefitProperties):
-    image_height: int
-    image_width: int
 
 
 class BenefitGitHubRepositoryProperties(BenefitProperties):
@@ -129,15 +122,6 @@ class BenefitCustom(Benefit):
 
     __mapper_args__ = {
         "polymorphic_identity": BenefitType.custom,
-        "polymorphic_load": "inline",
-    }
-
-
-class BenefitAds(Benefit):
-    properties: Mapped[BenefitAdsProperties] = mapped_column(use_existing_column=True)
-
-    __mapper_args__ = {
-        "polymorphic_identity": BenefitType.ads,
         "polymorphic_load": "inline",
     }
 

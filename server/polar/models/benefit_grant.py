@@ -75,10 +75,6 @@ class BenefitGrantPropertiesBase(TypedDict):
 class BenefitGrantCustomProperties(BenefitGrantPropertiesBase): ...
 
 
-class BenefitGrantAdsProperties(BenefitGrantPropertiesBase):
-    advertisement_campaign_id: str
-
-
 class BenefitGrantDiscordProperties(BenefitGrantPropertiesBase, total=False):
     account_id: str
     guild_id: str
@@ -106,7 +102,6 @@ BenefitGrantProperties = (
     | BenefitGrantGitHubRepositoryProperties
     | BenefitGrantDownloadablesProperties
     | BenefitGrantLicenseKeysProperties
-    | BenefitGrantAdsProperties
     | BenefitGrantCustomProperties
 )
 

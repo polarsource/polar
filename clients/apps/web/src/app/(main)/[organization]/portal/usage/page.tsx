@@ -3,13 +3,6 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import type { Metadata } from 'next'
 
-const cacheConfig = {
-  cache: 'no-store' as RequestCache,
-  next: {
-    tags: ['customer_portal'],
-  },
-}
-
 export async function generateMetadata({
   params,
 }: {

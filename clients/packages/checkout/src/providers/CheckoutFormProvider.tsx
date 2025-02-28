@@ -78,6 +78,7 @@ export const CheckoutFormProvider = ({
   const form = useForm<CheckoutUpdatePublic>({
     defaultValues: {
       ...checkout,
+      discountCode: checkout.discount ? checkout.discount.code : undefined,
       ...(prefilledParameters ? unflatten(prefilledParameters) : {}),
     },
     shouldUnregister: true,

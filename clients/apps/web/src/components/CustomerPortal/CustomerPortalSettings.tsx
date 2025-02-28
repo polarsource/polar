@@ -19,7 +19,6 @@ interface CustomerPortalSettingsProps {
 }
 
 export const CustomerPortalSettings = ({
-  organization,
   customerSessionToken,
 }: CustomerPortalSettingsProps) => {
   const api = createClientSideAPI(customerSessionToken)

@@ -43,3 +43,11 @@ async def subscription_update_product_benefits_grants(
         await subscription_service.update_product_benefits_grants(
             session, subscription_tier
         )
+
+
+@task("subscription.cancel_customer")
+async def subscription_cancel_customer(
+    ctx: JobContext, customer_id: uuid.UUID, polar_context: PolarWorkerContext
+) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        await subscription_service.cancel_customer(session, customer_id)

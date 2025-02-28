@@ -74,6 +74,7 @@ from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
 
 from ..product.service.product import product as product_service
+from .repository import SubscriptionRepository
 from .schemas import (
     SubscriptionUpdate,
     SubscriptionUpdateProduct,
@@ -823,6 +824,16 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             customer_reason=customer_reason,
             customer_comment=customer_comment,
         )
+
+    async def cancel_customer(
+        self, session: AsyncSession, customer_id: uuid.UUID
+    ) -> None:
+        subscription_repository = SubscriptionRepository.from_session(session)
+        subscriptions = await subscription_repository.list_active_by_customer(
+            customer_id
+        )
+        for subscription in subscriptions:
+            await self._perform_cancellation(session, subscription, immediately=True)
 
     async def _perform_cancellation(
         self,

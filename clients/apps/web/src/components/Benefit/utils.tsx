@@ -1,5 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import { Check, Download, Globe, Key } from 'lucide-react'
+import { Check, Download, Key } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 import GitHubIcon from '../Icons/GitHubIcon'
 
@@ -11,8 +11,6 @@ export const resolveBenefitCategoryIcon = (
 ) => {
   const cn = twMerge('h-4 w-4', className)
   switch (type) {
-    case 'ads':
-      return <Globe className={cn} />
     case 'discord':
       return <DiscordIcon className={cn} />
     case 'github_repository':
@@ -39,8 +37,6 @@ export const resolveBenefitTypeDisplayName = (
   switch (type) {
     case 'usage':
       return 'Usage'
-    case 'ads':
-      return 'Advertisement Spot'
     case 'discord':
       return 'Discord Server Invite'
     case 'github_repository':
@@ -87,6 +83,5 @@ export const benefitsDisplayNames: {
   github_repository: 'GitHub Repository Access',
   discord: 'Discord Invite',
   downloadables: 'File Downloads',
-  ads: 'Ad',
   custom: 'Custom',
 }

@@ -33,6 +33,7 @@ export const CheckoutCard = ({
             <h1 className="font-medium dark:text-white">Included</h1>
           </div>
           <div className="flex flex-col gap-y-2">
+            {/* @ts-ignore */}
             <BenefitList benefits={product.benefits} toggle={true} />
           </div>
         </div>

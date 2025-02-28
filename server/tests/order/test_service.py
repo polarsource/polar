@@ -28,6 +28,7 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 from polar.models.order import OrderBillingReason
 from polar.models.organization import Organization
+from polar.models.product import ProductBillingType
 from polar.models.transaction import TransactionType
 from polar.order.service import (
     CantDetermineInvoicePrice,
@@ -210,6 +211,53 @@ class TestList:
         assert count == 1
         assert len(orders) == 1
         assert orders[0].id == order.id
+
+    @pytest.mark.auth
+    async def test_product_billing_type_filter(
+        self,
+        auth_subject: AuthSubject[User],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user_organization: UserOrganization,
+        product: Product,
+        product_one_time_custom_price: Product,
+        product_one_time_free_price: Product,
+        customer: Customer,
+    ) -> None:
+        order1 = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_invoice_id="INVOICE_1",
+        )
+        order2 = await create_order(
+            save_fixture,
+            product=product_one_time_custom_price,
+            customer=customer,
+            stripe_invoice_id="INVOICE_2",
+        )
+
+        orders, count = await order_service.list(
+            session,
+            auth_subject,
+            product_billing_type=(ProductBillingType.recurring,),
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert count == 1
+        assert len(orders) == 1
+        assert orders[0].id == order1.id
+
+        orders, count = await order_service.list(
+            session,
+            auth_subject,
+            product_billing_type=(ProductBillingType.one_time,),
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert count == 1
+        assert len(orders) == 1
+        assert orders[0].id == order2.id
 
 
 @pytest.mark.asyncio

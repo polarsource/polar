@@ -1,3 +1,5 @@
+from typing import cast
+
 from fastapi import Depends, Query
 from pydantic import UUID4
 
@@ -6,6 +8,7 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Order
+from polar.models.product import ProductBillingType
 from polar.models.product_price import ProductPriceType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -32,15 +35,18 @@ async def list(
     product_id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="ProductID Filter", description="Filter by product ID."
     ),
-    product_price_type: MultipleQueryFilter[ProductPriceType] | None = Query(
+    product_billing_type: MultipleQueryFilter[ProductBillingType] | None = Query(
         None,
-        title="ProductPriceType Filter",
+        title="ProductBillingType Filter",
         description=(
-            "Filter by product price type. "
-            "`recurring` will return orders corresponding "
+            "Filter by product billing type. "
+            "`recurring` will filter data corresponding "
             "to subscriptions creations or renewals. "
-            "`one_time` will return orders corresponding to one-time purchases."
+            "`one_time` will filter data corresponding to one-time purchases."
         ),
+    ),
+    product_price_type: MultipleQueryFilter[ProductPriceType] | None = Query(
+        None, title="ProductPriceType Filter", deprecated="Use `product_billing_type"
     ),
     discount_id: MultipleQueryFilter[UUID4] | None = Query(
         None, title="DiscountID Filter", description="Filter by discount ID."
@@ -59,7 +65,8 @@ async def list(
         auth_subject,
         organization_id=organization_id,
         product_id=product_id,
-        product_price_type=product_price_type,
+        product_billing_type=product_billing_type
+        or cast(MultipleQueryFilter[ProductBillingType] | None, product_price_type),
         discount_id=discount_id,
         customer_id=customer_id,
         checkout_id=checkout_id,

@@ -14,7 +14,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.models import Customer, Order, Organization, Product, ProductPrice
-from polar.models.product_price import ProductPriceType
+from polar.models.product import ProductBillingType
 
 
 class CustomerOrderError(PolarError): ...
@@ -43,7 +43,7 @@ class CustomerOrderService(ResourceServiceReader[Order]):
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
-        product_price_type: Sequence[ProductPriceType] | None = None,
+        product_billing_type: Sequence[ProductBillingType] | None = None,
         subscription_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
         pagination: PaginationParams,
@@ -75,8 +75,8 @@ class CustomerOrderService(ResourceServiceReader[Order]):
         if product_id is not None:
             statement = statement.where(Order.product_id.in_(product_id))
 
-        if product_price_type is not None:
-            statement = statement.where(OrderProductPrice.type.in_(product_price_type))
+        if product_billing_type is not None:
+            statement = statement.where(Product.billing_type.in_(product_billing_type))
 
         if subscription_id is not None:
             statement = statement.where(Order.subscription_id.in_(subscription_id))

@@ -1,7 +1,7 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import React, { PropsWithChildren, useEffect } from 'react'
 
-export type CustomizationContextMode = 'storefront' | 'checkout' | 'portal'
+export type CustomizationContextMode = 'storefront' | 'checkout'
 
 export type CustomizationContextValue = {
   readonly customizationMode: CustomizationContextMode

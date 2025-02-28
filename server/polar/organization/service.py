@@ -163,6 +163,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
         if update_schema.subscription_settings is not None:
             organization.subscription_settings = update_schema.subscription_settings
 
+        previous_details = organization.details
         update_dict = update_schema.model_dump(
             by_alias=True,
             exclude_unset=True,
@@ -170,6 +171,9 @@ class OrganizationService(ResourceServiceReader[Organization]):
         )
         for key, value in update_dict.items():
             setattr(organization, key, value)
+
+        if not previous_details and organization.details:
+            organization.details_submitted_at = datetime.now(UTC)
 
         session.add(organization)
 

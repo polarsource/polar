@@ -26,14 +26,14 @@ jobs:
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-      VERCEL_ENV: 'testing'
+      VERCEL_ENV: "testing"
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9.15.0
+          version: 10.5.2
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v4

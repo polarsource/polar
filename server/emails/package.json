@@ -10,7 +10,7 @@
     "clean": "rm -rf dist bin",
     "build": "pnpm run clean && tsup && pkg package.json"
   },
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@10.5.2",
   "dependencies": {
     "@react-email/components": "^0.0.33",
     "@react-email/render": "^1.0.5",

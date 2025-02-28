@@ -54,7 +54,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
 
   const { data, fetchNextPage, hasNextPage } = useCustomers(organization.id, {
     query: query ?? undefined,
-    sorting: [sorting] ?? undefined,
+    sorting: [sorting],
   })
 
   const customers = data?.pages.flatMap((page) => page.items) || []

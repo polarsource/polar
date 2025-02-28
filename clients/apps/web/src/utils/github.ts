@@ -24,14 +24,30 @@ export const githubPullReqeustUrl = (
 ) => `${githubRepoUrl(owner, repo)}/pull/${number}`
 
 export const parseGitHubIssueLink = (url: string): GitHubIssue | undefined => {
+  // Regex without named groups - using numbered capture groups instead
+  // Group 1: owner (first pattern)
+  // Group 2: repo (first pattern)
+  // Group 3: issue number (first pattern)
+  // Group 5: owner2 (second pattern)
+  // Group 6: repo2 (second pattern)
+  // Group 7: number2 (second pattern)
   const re =
-    /^(?<owner>[a-z0-9][a-z0-9-]*)?(?:\/(?<repo>[a-z0-9_\.-]+))?#(?<number>\d+)|(?:https?:\/\/(?:www\.)?github\.com\/)(?<owner2>[a-z0-9][a-z0-9-]*)?(?:\/(?<repo2>[a-z0-9_\.-]+))?(?:#|\/issues\/)(?<number2>\d+)(#.*)?$/i
+    /^([a-z0-9][a-z0-9-]*)?(?:\/([a-z0-9_\.-]+))?#(\d+)|(?:https?:\/\/(?:www\.)?github\.com\/)([a-z0-9][a-z0-9-]*)?(?:\/([a-z0-9_\.-]+))?(?:#|\/issues\/)(\d+)(#.*)?$/i
+
   const match = url.match(re)
-  if (!match || !match.groups) return undefined
+  if (!match) return undefined
+
+  // Extract values from the appropriate capture groups
+  const owner = match[1] || match[4]
+  const repo = match[2] || match[5]
+  const issueNumber = match[3] || match[6]
+
+  if (!owner || !repo || !issueNumber) return undefined
+
   return {
     raw: match[0],
-    owner: match.groups.owner || match.groups.owner2,
-    repo: match.groups.repo || match.groups.repo2,
-    number: Number.parseInt(match.groups.number || match.groups.number2),
+    owner,
+    repo,
+    number: Number.parseInt(issueNumber),
   }
 }

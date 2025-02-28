@@ -54,7 +54,7 @@ export default async function Page({
   searchParams: { customer_session_token?: string }
 }) {
   const api = getServerSideAPI(searchParams.customer_session_token)
-  const { organization, products } = await getOrganizationOrNotFound(
+  const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,
   )
@@ -85,8 +85,6 @@ export default async function Page({
 
   return (
     <ClientPage
-      organization={organization}
-      products={products}
       subscription={subscription}
       customerSessionToken={searchParams.customer_session_token}
     />

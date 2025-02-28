@@ -62,7 +62,7 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
             animate={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
             exit={{ backgroundColor: 'rgba(0, 0, 0, 0)' }}
             className="relative flex h-screen flex-col items-center md:w-full md:flex-row"
-            onClick={(e) => {
+            onMouseDown={(e) => {
               e.preventDefault()
               e.stopPropagation()
               hide()
@@ -77,7 +77,7 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
                 'dark:bg-polar-900 rounded-4xl relative z-10 flex h-full max-h-full w-full flex-col overflow-hidden bg-white shadow md:fixed md:bottom-4 md:right-4 md:top-4 md:h-auto md:w-[540px] dark:text-white',
                 className,
               )}
-              onClick={onInnerClick}
+              onMouseDown={onInnerClick}
             >
               {modalContent}
             </motion.div>

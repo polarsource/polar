@@ -38,20 +38,29 @@ const CustomerPortalOrder = ({
     <>
       <div className="flex h-full flex-col gap-12">
         <div className="flex w-full flex-col gap-8">
-          {(benefitGrants?.items.length ?? 0) > 0 && (
-            <div className="flex flex-col gap-4">
-              <List>
-                {benefitGrants?.items.map((benefitGrant) => (
-                  <ListItem
-                    key={benefitGrant.id}
-                    className="py-6 hover:bg-transparent dark:hover:bg-transparent"
-                  >
-                    <BenefitGrant api={api} benefitGrant={benefitGrant} />
-                  </ListItem>
-                ))}
-              </List>
-            </div>
-          )}
+          <div className="flex w-full flex-col gap-4">
+            <h3 className="text-lg">Benefit Grants</h3>
+            {(benefitGrants?.items.length ?? 0) > 0 ? (
+              <div className="flex flex-col gap-4">
+                <List>
+                  {benefitGrants?.items.map((benefitGrant) => (
+                    <ListItem
+                      key={benefitGrant.id}
+                      className="py-6 hover:bg-transparent dark:hover:bg-transparent"
+                    >
+                      <BenefitGrant api={api} benefitGrant={benefitGrant} />
+                    </ListItem>
+                  ))}
+                </List>
+              </div>
+            ) : (
+              <div className="dark:border-polar-700 flex flex-col items-center justify-center gap-4 rounded-2xl border border-gray-200 p-6">
+                <span className="dark:text-polar-500 text-gray-500">
+                  This product has no benefit grants
+                </span>
+              </div>
+            )}
+          </div>
 
           <ShadowBox className="flex flex-col gap-8 dark:border-transparent">
             <h3 className="text-lg font-medium">{order.product.name}</h3>

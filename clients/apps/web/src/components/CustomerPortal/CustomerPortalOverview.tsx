@@ -8,6 +8,7 @@ interface CustomerPortalOverviewProps {
   subscriptions: schemas['CustomerSubscription'][]
   products: schemas['CustomerProduct'][]
   api: Client
+  customerSessionToken?: string
 }
 
 export const CustomerPortalOverview = ({
@@ -15,10 +16,12 @@ export const CustomerPortalOverview = ({
   subscriptions,
   products,
   api,
+  customerSessionToken,
 }: CustomerPortalOverviewProps) => {
   return (
     <div className="flex flex-col gap-y-8">
       <SubscriptionsOverview
+        customerSessionToken={customerSessionToken}
         api={api}
         organization={organization}
         subscriptions={subscriptions}
@@ -33,12 +36,14 @@ interface SubscriptionsOverviewProps {
   subscriptions: schemas['CustomerSubscription'][]
   products: schemas['CustomerProduct'][]
   api: Client
+  customerSessionToken?: string
 }
 
 const SubscriptionsOverview = ({
   subscriptions,
   products,
   api,
+  customerSessionToken,
 }: SubscriptionsOverviewProps) => {
   const onSubscriptionUpdate = useCallback(async () => {
     await revalidate(`customer_portal`)
@@ -55,6 +60,7 @@ const SubscriptionsOverview = ({
             subscription={s}
             products={products}
             onUserSubscriptionUpdate={onSubscriptionUpdate}
+            customerSessionToken={customerSessionToken}
           />
         ))}
       </div>

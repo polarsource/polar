@@ -20047,7 +20047,9 @@ export interface operations {
                 organization_id?: string | string[] | null;
                 /** @description Filter by product ID. */
                 product_id?: string | string[] | null;
-                /** @description Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases. */
+                /** @description Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
+                product_billing_type?: components["schemas"]["ProductBillingType"] | components["schemas"]["ProductBillingType"][] | null;
+                /** @deprecated */
                 product_price_type?: components["schemas"]["ProductPriceType"] | components["schemas"]["ProductPriceType"][] | null;
                 /** @description Filter by discount ID. */
                 discount_id?: string | string[] | null;
@@ -22960,7 +22962,9 @@ export interface operations {
                 organization_id?: string | string[] | null;
                 /** @description Filter by product ID. */
                 product_id?: string | string[] | null;
-                /** @description Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases. */
+                /** @description Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
+                product_billing_type?: components["schemas"]["ProductBillingType"] | components["schemas"]["ProductBillingType"][] | null;
+                /** @deprecated */
                 product_price_type?: components["schemas"]["ProductPriceType"] | components["schemas"]["ProductPriceType"][] | null;
                 /** @description Filter by subscription ID. */
                 subscription_id?: string | string[] | null;

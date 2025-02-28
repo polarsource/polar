@@ -88,6 +88,7 @@ export default async function Page({
     params: {
       query: {
         organization_id: organization.id,
+        product_billing_type: 'one_time',
         limit: 100,
       },
     },

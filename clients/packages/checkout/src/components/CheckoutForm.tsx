@@ -475,6 +475,7 @@ const BaseCheckoutForm = ({
                                 <Button
                                   type="button"
                                   variant="secondary"
+                                  size="sm"
                                   onClick={() => clearTaxId()}
                                 >
                                   <XIcon className="h-4 w-4" />
@@ -524,6 +525,7 @@ const BaseCheckoutForm = ({
                               <Button
                                 type="button"
                                 variant="secondary"
+                                size="sm"
                                 onClick={addDiscountCode}
                               >
                                 Apply
@@ -533,6 +535,7 @@ const BaseCheckoutForm = ({
                               <Button
                                 type="button"
                                 variant="secondary"
+                                size="sm"
                                 onClick={removeDiscountCode}
                               >
                                 <XIcon className="h-4 w-4" />

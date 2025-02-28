@@ -2285,7 +2285,7 @@ export interface paths {
          * List Files
          * @description List files.
          *
-         *     **Scopes**: `files:write`
+         *     **Scopes**: `files:read` `files:write`
          */
         get: operations["files:list"];
         put?: never;

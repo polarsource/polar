@@ -1583,66 +1583,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/advertisements/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Campaigns
-         * @description List active advertisement campaigns for a benefit.
-         */
-        get: operations["advertisements:list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/advertisements/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Campaign
-         * @description Get an advertisement campaign by ID.
-         */
-        get: operations["advertisements:get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/advertisements/{id}/view": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Track View
-         * @description Track a view on an advertisement campaign.
-         */
-        post: operations["advertisements:track_view"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/auth/logout": {
         parameters: {
             query?: never;
@@ -4192,58 +4132,6 @@ export interface components {
             /** Country */
             country: string;
         };
-        /** AdvertisementCampaign */
-        AdvertisementCampaign: {
-            /**
-             * Created At
-             * Format: date-time
-             * @description Creation timestamp of the object.
-             */
-            created_at: string;
-            /**
-             * Modified At
-             * @description Last modification timestamp of the object.
-             */
-            modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             */
-            id: string;
-            /**
-             * Image Url
-             * Format: uri
-             */
-            image_url: string;
-            /** Image Url Dark */
-            image_url_dark: string | null;
-            /** Text */
-            text: string;
-            /**
-             * Link Url
-             * Format: uri
-             */
-            link_url: string;
-        };
-        /** AdvertisementCampaignListResource */
-        AdvertisementCampaignListResource: {
-            /** Items */
-            items: components["schemas"]["AdvertisementCampaign"][];
-            pagination: components["schemas"]["Pagination"];
-            /**
-             * Dimensions
-             * @description The dimensions (width, height) in pixels of the advertisement images.
-             */
-            dimensions: [
-                number,
-                number
-            ];
-        };
-        /**
-         * AdvertisementSortProperty
-         * @enum {string}
-         */
-        AdvertisementSortProperty: "created_at" | "-created_at" | "granted_at" | "-granted_at" | "views" | "-views" | "clicks" | "-clicks";
         /** AlreadyActiveSubscriptionError */
         AlreadyActiveSubscriptionError: {
             /**
@@ -4785,158 +4673,7 @@ export interface components {
             /** Pledger Email */
             pledger_email: string | null;
         };
-        Benefit: components["schemas"]["BenefitAds"] | components["schemas"]["BenefitCustom"] | components["schemas"]["BenefitDiscord"] | components["schemas"]["BenefitGitHubRepository"] | components["schemas"]["BenefitDownloadables"] | components["schemas"]["BenefitLicenseKeys"];
-        /**
-         * BenefitAds
-         * @description A benefit of type `ads`.
-         *
-         *     Use it so your backers can display ads on your README, website, etc.
-         */
-        BenefitAds: {
-            /**
-             * Created At
-             * Format: date-time
-             * @description Creation timestamp of the object.
-             */
-            created_at: string;
-            /**
-             * Modified At
-             * @description Last modification timestamp of the object.
-             */
-            modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
-            /**
-             * Type
-             * @constant
-             */
-            type: "ads";
-            /**
-             * Description
-             * @description The description of the benefit.
-             */
-            description: string;
-            /**
-             * Selectable
-             * @description Whether the benefit is selectable when creating a product.
-             */
-            selectable: boolean;
-            /**
-             * Deletable
-             * @description Whether the benefit is deletable.
-             */
-            deletable: boolean;
-            /**
-             * Organization Id
-             * Format: uuid4
-             * @description The ID of the organization owning the benefit.
-             */
-            organization_id: string;
-            properties: components["schemas"]["BenefitAdsProperties"];
-        };
-        /** BenefitAdsCreate */
-        BenefitAdsCreate: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "ads";
-            /**
-             * Description
-             * @description The description of the benefit. Will be displayed on products having this benefit.
-             */
-            description: string;
-            /**
-             * Organization Id
-             * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
-             */
-            organization_id?: string | null;
-            properties: components["schemas"]["BenefitAdsProperties"];
-        };
-        /**
-         * BenefitAdsProperties
-         * @description Properties for a benefit of type `ads`.
-         */
-        BenefitAdsProperties: {
-            /**
-             * Image Height
-             * @description The height of the displayed ad.
-             * @default 400
-             */
-            image_height: number;
-            /**
-             * Image Width
-             * @description The width of the displayed ad.
-             * @default 400
-             */
-            image_width: number;
-        };
-        /** BenefitAdsSubscriber */
-        BenefitAdsSubscriber: {
-            /**
-             * Created At
-             * Format: date-time
-             * @description Creation timestamp of the object.
-             */
-            created_at: string;
-            /**
-             * Modified At
-             * @description Last modification timestamp of the object.
-             */
-            modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
-            /**
-             * Type
-             * @constant
-             */
-            type: "ads";
-            /**
-             * Description
-             * @description The description of the benefit.
-             */
-            description: string;
-            /**
-             * Selectable
-             * @description Whether the benefit is selectable when creating a product.
-             */
-            selectable: boolean;
-            /**
-             * Deletable
-             * @description Whether the benefit is deletable.
-             */
-            deletable: boolean;
-            /**
-             * Organization Id
-             * Format: uuid4
-             * @description The ID of the organization owning the benefit.
-             */
-            organization_id: string;
-            organization: components["schemas"]["Organization"];
-            properties: components["schemas"]["BenefitAdsProperties"];
-        };
-        /** BenefitAdsUpdate */
-        BenefitAdsUpdate: {
-            /**
-             * Description
-             * @description The description of the benefit. Will be displayed on products having this benefit.
-             */
-            description?: string | null;
-            /**
-             * Type
-             * @constant
-             */
-            type: "ads";
-            properties?: components["schemas"]["BenefitAdsProperties"] | null;
-        };
+        Benefit: components["schemas"]["BenefitCustom"] | components["schemas"]["BenefitDiscord"] | components["schemas"]["BenefitGitHubRepository"] | components["schemas"]["BenefitDownloadables"] | components["schemas"]["BenefitLicenseKeys"];
         /** BenefitBase */
         BenefitBase: {
             /**
@@ -4980,7 +4717,7 @@ export interface components {
              */
             organization_id: string;
         };
-        BenefitCreate: components["schemas"]["BenefitCustomCreate"] | components["schemas"]["BenefitAdsCreate"] | components["schemas"]["BenefitDiscordCreate"] | components["schemas"]["BenefitGitHubRepositoryCreate"] | components["schemas"]["BenefitDownloadablesCreate"] | components["schemas"]["BenefitLicenseKeysCreate"];
+        BenefitCreate: components["schemas"]["BenefitCustomCreate"] | components["schemas"]["BenefitDiscordCreate"] | components["schemas"]["BenefitGitHubRepositoryCreate"] | components["schemas"]["BenefitDownloadablesCreate"] | components["schemas"]["BenefitLicenseKeysCreate"];
         /**
          * BenefitCustom
          * @description A benefit of type `custom`.
@@ -5742,12 +5479,7 @@ export interface components {
             benefit_id: string;
             customer: components["schemas"]["Customer"];
             /** Properties */
-            properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantAdsProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
-        };
-        /** BenefitGrantAdsProperties */
-        BenefitGrantAdsProperties: {
-            /** Advertisement Campaign Id */
-            advertisement_campaign_id: string;
+            properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
         };
         /** BenefitGrantCustomProperties */
         BenefitGrantCustomProperties: Record<string, never>;
@@ -5855,11 +5587,11 @@ export interface components {
             benefit_id: string;
             customer: components["schemas"]["Customer"];
             /** Properties */
-            properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantAdsProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
+            properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
             /** Benefit */
             benefit: components["schemas"]["Benefit"];
             /** Previous Properties */
-            previous_properties?: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantAdsProperties"] | components["schemas"]["BenefitGrantCustomProperties"] | null;
+            previous_properties?: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"] | null;
         };
         /** BenefitLicenseKeyActivationProperties */
         BenefitLicenseKeyActivationProperties: {
@@ -6037,7 +5769,7 @@ export interface components {
          * BenefitType
          * @enum {string}
          */
-        BenefitType: "custom" | "ads" | "discord" | "github_repository" | "downloadables" | "license_keys";
+        BenefitType: "custom" | "discord" | "github_repository" | "downloadables" | "license_keys";
         /** Body_email-update:verify_email_update */
         "Body_email-update_verify_email_update": {
             /** Token */
@@ -8337,60 +8069,7 @@ export interface components {
             /** Avatar Url */
             readonly avatar_url: string;
         };
-        CustomerBenefitGrant: components["schemas"]["CustomerBenefitGrantDiscord"] | components["schemas"]["CustomerBenefitGrantGitHubRepository"] | components["schemas"]["CustomerBenefitGrantDownloadables"] | components["schemas"]["CustomerBenefitGrantLicenseKeys"] | components["schemas"]["CustomerBenefitGrantAds"] | components["schemas"]["CustomerBenefitGrantCustom"];
-        /** CustomerBenefitGrantAds */
-        CustomerBenefitGrantAds: {
-            /**
-             * Created At
-             * Format: date-time
-             * @description Creation timestamp of the object.
-             */
-            created_at: string;
-            /**
-             * Modified At
-             * @description Last modification timestamp of the object.
-             */
-            modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the object.
-             */
-            id: string;
-            /** Granted At */
-            granted_at: string | null;
-            /** Revoked At */
-            revoked_at: string | null;
-            /**
-             * Customer Id
-             * Format: uuid4
-             */
-            customer_id: string;
-            /**
-             * Benefit Id
-             * Format: uuid4
-             */
-            benefit_id: string;
-            /** Subscription Id */
-            subscription_id: string | null;
-            /** Order Id */
-            order_id: string | null;
-            /** Is Granted */
-            is_granted: boolean;
-            /** Is Revoked */
-            is_revoked: boolean;
-            customer: components["schemas"]["CustomerPortalCustomer"];
-            benefit: components["schemas"]["BenefitAdsSubscriber"];
-            properties: components["schemas"]["BenefitGrantAdsProperties"];
-        };
-        /** CustomerBenefitGrantAdsUpdate */
-        CustomerBenefitGrantAdsUpdate: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            benefit_type: "ads";
-        };
+        CustomerBenefitGrant: components["schemas"]["CustomerBenefitGrantDiscord"] | components["schemas"]["CustomerBenefitGrantGitHubRepository"] | components["schemas"]["CustomerBenefitGrantDownloadables"] | components["schemas"]["CustomerBenefitGrantLicenseKeys"] | components["schemas"]["CustomerBenefitGrantCustom"];
         /** CustomerBenefitGrantCustom */
         CustomerBenefitGrantCustom: {
             /**
@@ -8673,7 +8352,7 @@ export interface components {
          * @enum {string}
          */
         CustomerBenefitGrantSortProperty: "granted_at" | "-granted_at" | "type" | "-type" | "organization" | "-organization";
-        CustomerBenefitGrantUpdate: components["schemas"]["CustomerBenefitGrantDiscordUpdate"] | components["schemas"]["CustomerBenefitGrantGitHubRepositoryUpdate"] | components["schemas"]["CustomerBenefitGrantDownloadablesUpdate"] | components["schemas"]["CustomerBenefitGrantLicenseKeysUpdate"] | components["schemas"]["CustomerBenefitGrantAdsUpdate"] | components["schemas"]["CustomerBenefitGrantCustomUpdate"];
+        CustomerBenefitGrantUpdate: components["schemas"]["CustomerBenefitGrantDiscordUpdate"] | components["schemas"]["CustomerBenefitGrantGitHubRepositoryUpdate"] | components["schemas"]["CustomerBenefitGrantDownloadablesUpdate"] | components["schemas"]["CustomerBenefitGrantLicenseKeysUpdate"] | components["schemas"]["CustomerBenefitGrantCustomUpdate"];
         /**
          * CustomerCancellationReason
          * @enum {string}
@@ -19256,123 +18935,6 @@ export interface operations {
             };
         };
     };
-    "advertisements:list": {
-        parameters: {
-            query: {
-                benefit_id: string;
-                /** @description Page number, defaults to 1. */
-                page?: number;
-                /** @description Size of a page, defaults to 10. Maximum is 100. */
-                limit?: number;
-                /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
-                sorting?: components["schemas"]["AdvertisementSortProperty"][] | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdvertisementCampaignListResource"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "advertisements:get": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The advertisement campaign ID. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdvertisementCampaign"];
-                };
-            };
-            /** @description Advertisement campaign not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceNotFound"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "advertisements:track_view": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The advertisement campaign ID. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The view was successfully tracked. */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Advertisement campaign not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceNotFound"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     "auth:logout": {
         parameters: {
             query?: never;
@@ -19871,7 +19433,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["BenefitAdsUpdate"] | components["schemas"]["BenefitCustomUpdate"] | components["schemas"]["BenefitDiscordUpdate"] | components["schemas"]["BenefitGitHubRepositoryUpdate"] | components["schemas"]["BenefitDownloadablesUpdate"] | components["schemas"]["BenefitLicenseKeysUpdate"];
+                "application/json": components["schemas"]["BenefitCustomUpdate"] | components["schemas"]["BenefitDiscordUpdate"] | components["schemas"]["BenefitGitHubRepositoryUpdate"] | components["schemas"]["BenefitDownloadablesUpdate"] | components["schemas"]["BenefitLicenseKeysUpdate"];
             };
         };
         responses: {
@@ -25101,7 +24663,6 @@ type ReadonlyArray<T> = [
     any[]
 ] ? Readonly<Exclude<T, undefined>> : Readonly<Exclude<T, undefined>[]>;
 export const accountTypeValues: ReadonlyArray<components["schemas"]["AccountType"]> = ["stripe", "open_collective"];
-export const advertisementSortPropertyValues: ReadonlyArray<components["schemas"]["AdvertisementSortProperty"]> = ["created_at", "-created_at", "granted_at", "-granted_at", "views", "-views", "clicks", "-clicks"];
 export const appPermissionsTypeActionsValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["actions"]> = ["read", "write"];
 export const appPermissionsTypeAdministrationValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["administration"]> = ["read", "write"];
 export const appPermissionsTypeChecksValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["checks"]> = ["read", "write"];
@@ -25150,7 +24711,6 @@ export const authorizeResponseUserSub_typeValues: ReadonlyArray<components["sche
 export const availableScopeValues: ReadonlyArray<components["schemas"]["AvailableScope"]> = ["openid", "profile", "email", "user:read", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write"];
 export const backofficeBadgeActionValues: ReadonlyArray<components["schemas"]["BackofficeBadge"]["action"]> = ["embed", "remove"];
 export const backofficeBadgeResponseActionValues: ReadonlyArray<components["schemas"]["BackofficeBadgeResponse"]["action"]> = ["embed", "remove"];
-export const benefitAdsCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitAdsCreate"]["type"]> = ["ads"];
 export const benefitCustomCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitCustomCreate"]["type"]> = ["custom"];
 export const benefitDiscordCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitDiscordCreate"]["type"]> = ["discord"];
 export const benefitDownloadablesCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitDownloadablesCreate"]["type"]> = ["downloadables"];
@@ -25160,7 +24720,7 @@ export const benefitGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<co
 export const benefitGrantGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGrantGitHubRepositoryProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
 export const benefitLicenseKeyExpirationPropertiesTimeframeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeyExpirationProperties"]["timeframe"]> = ["year", "month", "day"];
 export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeysCreate"]["type"]> = ["license_keys"];
-export const benefitTypeValues: ReadonlyArray<components["schemas"]["BenefitType"]> = ["custom", "ads", "discord", "github_repository", "downloadables", "license_keys"];
+export const benefitTypeValues: ReadonlyArray<components["schemas"]["BenefitType"]> = ["custom", "discord", "github_repository", "downloadables", "license_keys"];
 export const body_oauth2_consentActionValues: ReadonlyArray<components["schemas"]["Body_oauth2_consent"]["action"]> = ["allow", "deny"];
 export const checkoutLinkSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutLinkSortProperty"]> = ["created_at", "-created_at", "label", "-label", "success_url", "-success_url", "allow_discount_codes", "-allow_discount_codes"];
 export const checkoutSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutSortProperty"]> = ["created_at", "-created_at", "expires_at", "-expires_at"];
@@ -25183,7 +24743,6 @@ export const customFieldUpdateDateTypeValues: ReadonlyArray<components["schemas"
 export const customFieldUpdateNumberTypeValues: ReadonlyArray<components["schemas"]["CustomFieldUpdateNumber"]["type"]> = ["number"];
 export const customFieldUpdateSelectTypeValues: ReadonlyArray<components["schemas"]["CustomFieldUpdateSelect"]["type"]> = ["select"];
 export const customFieldUpdateTextTypeValues: ReadonlyArray<components["schemas"]["CustomFieldUpdateText"]["type"]> = ["text"];
-export const customerBenefitGrantAdsUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantAdsUpdate"]["benefit_type"]> = ["ads"];
 export const customerBenefitGrantCustomUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantCustomUpdate"]["benefit_type"]> = ["custom"];
 export const customerBenefitGrantDiscordUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantDiscordUpdate"]["benefit_type"]> = ["discord"];
 export const customerBenefitGrantDownloadablesUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantDownloadablesUpdate"]["benefit_type"]> = ["downloadables"];

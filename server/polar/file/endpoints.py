@@ -1,4 +1,5 @@
-from typing import Annotated, TypeAlias
+from collections.abc import Sequence
+from typing import Annotated
 
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
@@ -31,19 +32,12 @@ FileID = Annotated[UUID4, Path(description="The file ID.")]
 FileNotFound = {"description": "File not found.", "model": ResourceNotFound.schema()}
 
 
-# We want to name our endpoint `list` to offer a nice SDK
-# via our OpenAPI generator. However, mypy then asssumes we
-# refer to our endpoint if we use `list[UUID4]` for `ids`.
-# So we define a TypeAlias to circumvent that.
-ListOfFileIDs: TypeAlias = list[UUID4]
-
-
 @router.get("/", summary="List Files", response_model=ListResource[FileRead])
 async def list(
-    auth_subject: auth.CreatorFilesWrite,
+    auth_subject: auth.FileRead,
     pagination: PaginationParamsQuery,
     organization_id: OrganizationID | None = None,
-    ids: ListOfFileIDs | None = Query(
+    ids: Sequence[UUID4] | None = Query(
         None,
         description=("List of file IDs to get. "),
     ),
@@ -84,7 +78,7 @@ async def list(
 )
 async def create(
     file_create: FileCreate,
-    auth_subject: auth.CreatorFilesWrite,
+    auth_subject: auth.FileWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> FileUpload:
     """Create a file."""
@@ -114,7 +108,7 @@ async def create(
 async def uploaded(
     id: FileID,
     completed_schema: FileUploadCompleted,
-    auth_subject: auth.CreatorFilesWrite,
+    auth_subject: auth.FileWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> File:
@@ -152,7 +146,7 @@ async def uploaded(
     },
 )
 async def update(
-    auth_subject: auth.CreatorFilesWrite,
+    auth_subject: auth.FileWrite,
     id: FileID,
     patches: FilePatch,
     authz: Authz = Depends(Authz.authz),
@@ -189,7 +183,7 @@ async def update(
     },
 )
 async def delete(
-    auth_subject: auth.CreatorFilesWrite,
+    auth_subject: auth.FileWrite,
     id: UUID4,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),

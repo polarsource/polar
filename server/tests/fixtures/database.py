@@ -1,6 +1,3 @@
-import functools
-import inspect
-import warnings
 from collections.abc import AsyncIterator, Callable, Coroutine
 from pathlib import Path
 from uuid import UUID
@@ -73,38 +70,6 @@ polar_directory = Path(__file__).parent.parent.parent / "polar"
 tests_directory = Path(__file__).parent.parent.parent / "tests"
 
 
-def session_commit_spy(
-    func: Callable[[], Coroutine[None, None, None]],
-) -> Callable[[], Coroutine[None, None, None]]:
-    @functools.wraps(func)
-    async def _spy_commit() -> None:
-        frame = inspect.currentframe()
-        outerframes = inspect.getouterframes(frame)
-
-        polar_call: tuple[str, int] | None = None
-        tests_call: tuple[str, int] | None = None
-        for outerframe in outerframes[::-1]:
-            file = outerframe.filename
-            if polar_directory in Path(file).parents:
-                polar_call = (file, outerframe.lineno)
-            elif tests_directory in Path(file).parents:
-                tests_call = (file, outerframe.lineno)
-
-        if polar_call is not None:
-            warnings.warn(
-                f"session.commit() was called from {polar_call[0]}:{polar_call[1]}"
-            )
-        elif tests_call is not None:
-            warnings.warn(
-                f"session.commit() was called from {tests_call[0]}:{tests_call[1]}"
-            )
-        else:
-            warnings.warn("session.commit() was called")
-        return await func()
-
-    return _spy_commit
-
-
 @pytest_asyncio.fixture
 async def session(worker_id: str, mocker: MockerFixture) -> AsyncIterator[AsyncSession]:
     engine = create_async_engine(
@@ -117,10 +82,6 @@ async def session(worker_id: str, mocker: MockerFixture) -> AsyncIterator[AsyncS
     transaction = await connection.begin()
 
     session = AsyncSession(bind=connection, expire_on_commit=False)
-
-    mocker.patch.object(
-        session, "commit", side_effect=session_commit_spy(session.commit)
-    )
 
     yield session
 

@@ -105,7 +105,6 @@ export const BenefitForm = ({
       {!update ? <BenefitTypeSelect /> : null}
       {type === 'usage' && <UsageBenefitForm update={update} />}
       {type === 'custom' && <CustomBenefitForm update={update} />}
-      {type === 'ads' && <AdsBenefitForm />}
       {type === 'discord' && <DiscordBenefitForm />}
       {type === 'github_repository' && (
         <GitHubRepositoryBenefitForm update={update} />
@@ -143,53 +142,6 @@ export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
                   placeholder="Write a secret note here. Like your private email address for premium support, Cal.com link to book consultation, etc."
                 />
               </FormControl>
-              <FormMessage />
-            </FormItem>
-          )
-        }}
-      />
-    </>
-  )
-}
-
-export const AdsBenefitForm = () => {
-  const { control } = useFormContext<schemas['BenefitAdsCreate']>()
-
-  return (
-    <>
-      <FormField
-        control={control}
-        name="properties.image_width"
-        render={({ field }) => {
-          return (
-            <FormItem>
-              <div className="flex flex-row items-center justify-between">
-                <FormLabel>Image width</FormLabel>
-              </div>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )
-        }}
-      />
-      <FormField
-        control={control}
-        name="properties.image_height"
-        render={({ field }) => {
-          return (
-            <FormItem>
-              <div className="flex flex-row items-center justify-between">
-                <FormLabel>Image height</FormLabel>
-              </div>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormDescription>
-                Expected size of the image in the ad. We recommend 240x100 for
-                ads in READMEs.
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )

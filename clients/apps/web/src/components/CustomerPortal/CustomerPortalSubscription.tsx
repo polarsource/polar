@@ -48,7 +48,7 @@ const CustomerPortalSubscription = ({
   const hasInvoices = orders?.items && orders.items.length > 0
 
   return (
-    <div className="flex flex-col gap-8 overflow-y-auto p-8">
+    <div className="flex flex-col gap-8">
       <div>
         <h3 className="text-xl">{subscription.product.name}</h3>
       </div>

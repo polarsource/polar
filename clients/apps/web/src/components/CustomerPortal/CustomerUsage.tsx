@@ -200,7 +200,7 @@ export const CustomerUsage = ({ organizationId }: CustomerUsageProps) => {
                 {
                   header: 'Value',
                   accessorKey: 'value',
-                  cell: ({ row }) => {
+                  cell: () => {
                     return (
                       <span>
                         {computeCumulativeValue(
@@ -220,7 +220,7 @@ export const CustomerUsage = ({ organizationId }: CustomerUsageProps) => {
                 {
                   header: 'Included',
                   accessorKey: 'included',
-                  cell: ({ row }) => {
+                  cell: () => {
                     return (
                       <span>
                         {' '}
@@ -242,7 +242,7 @@ export const CustomerUsage = ({ organizationId }: CustomerUsageProps) => {
                 {
                   header: 'Overage',
                   accessorKey: 'overage',
-                  cell: ({ row }) => {
+                  cell: () => {
                     return <span>$0.00</span>
                   },
                 },
@@ -307,7 +307,7 @@ export const CustomerUsage = ({ organizationId }: CustomerUsageProps) => {
               {
                 header: 'Status',
                 accessorKey: 'status',
-                cell: ({ row }) => {
+                cell: () => {
                   return (
                     <Status
                       status="Notified"

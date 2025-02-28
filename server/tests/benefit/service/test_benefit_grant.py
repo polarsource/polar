@@ -5,6 +5,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.benefit.benefits import BenefitActionRequiredError, BenefitServiceProtocol
+from polar.benefit.repository.benefit_grant import BenefitGrantRepository
 from polar.benefit.service.benefit_grant import benefit_grant as benefit_grant_service
 from polar.models import Benefit, BenefitGrant, Customer, Product, Subscription
 from polar.postgres import AsyncSession
@@ -618,7 +619,47 @@ class TestEnqueueBenefitGrantDeletions:
         )
 
         enqueue_job_mock.assert_called_once_with(
-            "benefit.delete", benefit_grant_id=granted_grant.id
+            "benefit.delete_grant", benefit_grant_id=granted_grant.id
+        )
+
+
+@pytest.mark.asyncio
+class TestEnqueueCustomerGrantDeletions:
+    async def test_valid(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        benefit_organization_second: Benefit,
+    ) -> None:
+        grant1 = BenefitGrant(
+            subscription=subscription, customer=customer, benefit=benefit_organization
+        )
+        grant1.set_granted()
+        await save_fixture(grant1)
+
+        grant2 = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization_second,
+        )
+        grant2.set_granted()
+        await save_fixture(grant2)
+
+        enqueue_job_mock = mocker.patch(
+            "polar.benefit.service.benefit_grant.enqueue_job"
+        )
+
+        await benefit_grant_service.enqueue_customer_grant_deletions(session, customer)
+
+        enqueue_job_mock.assert_has_calls(
+            [
+                call("benefit.delete_grant", benefit_grant_id=grant1.id),
+                call("benefit.delete_grant", benefit_grant_id=grant2.id),
+            ]
         )
 
 
@@ -697,12 +738,9 @@ class TestGetByBenefitAndScope:
         )
         order = await create_order(save_fixture, product=product, customer=customer)
 
-        retrieved_grant = await benefit_grant_service.get_by_benefit_and_scope(
-            session,
-            customer=customer,
-            benefit=benefit_organization,
-            subscription=other_subscription,
-            order=order,
+        repository = BenefitGrantRepository.from_session(session)
+        retrieved_grant = await repository.get_by_benefit_and_scope(
+            customer, benefit_organization, subscription=other_subscription, order=order
         )
         assert retrieved_grant is None
 
@@ -719,11 +757,9 @@ class TestGetByBenefitAndScope:
         )
         await save_fixture(grant)
 
-        retrieved_grant = await benefit_grant_service.get_by_benefit_and_scope(
-            session,
-            customer=customer,
-            benefit=benefit_organization,
-            subscription=subscription,
+        repository = BenefitGrantRepository.from_session(session)
+        retrieved_grant = await repository.get_by_benefit_and_scope(
+            customer, benefit_organization, subscription=subscription
         )
         assert retrieved_grant is not None
         assert retrieved_grant.id == grant.id

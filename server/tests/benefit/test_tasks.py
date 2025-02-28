@@ -12,7 +12,7 @@ from polar.benefit.tasks import (  # type: ignore[attr-defined]
     BenefitDoesNotExist,
     BenefitGrantDoesNotExist,
     CustomerDoesNotExist,
-    benefit_delete,
+    benefit_delete_grant,
     benefit_grant,
     benefit_grant_service,
     benefit_revoke,
@@ -315,7 +315,7 @@ class TestBenefitDelete:
         session.expunge_all()
 
         with pytest.raises(BenefitGrantDoesNotExist):
-            await benefit_delete(job_context, uuid.uuid4(), polar_worker_context)
+            await benefit_delete_grant(job_context, uuid.uuid4(), polar_worker_context)
 
     async def test_existing_grant(
         self,
@@ -343,7 +343,7 @@ class TestBenefitDelete:
         # then
         session.expunge_all()
 
-        await benefit_delete(job_context, grant.id, polar_worker_context)
+        await benefit_delete_grant(job_context, grant.id, polar_worker_context)
 
         delete_benefit_grant_mock.assert_called_once()
 
@@ -375,4 +375,4 @@ class TestBenefitDelete:
         session.expunge_all()
 
         with pytest.raises(Retry):
-            await benefit_delete(job_context, grant.id, polar_worker_context)
+            await benefit_delete_grant(job_context, grant.id, polar_worker_context)

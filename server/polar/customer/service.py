@@ -13,6 +13,7 @@ from polar.kit.sorting import Sorting
 from polar.models import Customer, Organization, User
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
+from polar.worker import enqueue_job
 
 from .repository import CustomerRepository
 from .schemas import CustomerCreate, CustomerUpdate
@@ -201,7 +202,8 @@ class CustomerService:
         )
 
     async def delete(self, session: AsyncSession, customer: Customer) -> Customer:
-        # TODO: cancel subscriptions, revoke benefits, etc.
+        enqueue_job("subscription.cancel_customer", customer_id=customer.id)
+        enqueue_job("benefit.revoke_customer", customer_id=customer.id)
 
         repository = CustomerRepository.from_session(session)
         return await repository.soft_delete(customer)

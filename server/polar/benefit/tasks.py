@@ -74,7 +74,11 @@ async def enqueue_benefits_grants(
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
         customer_repository = CustomerRepository.from_session(session)
-        customer = await customer_repository.get_by_id(customer_id)
+        customer = await customer_repository.get_by_id(
+            customer_id,
+            # Allow deleted customers to be processed for revocation tasks
+            include_deleted=task == "revoke",
+        )
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
 
@@ -139,7 +143,11 @@ async def benefit_revoke(
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
         customer_repository = CustomerRepository.from_session(session)
-        customer = await customer_repository.get_by_id(customer_id)
+        customer = await customer_repository.get_by_id(
+            customer_id,
+            # Allow deleted customers to be processed for revocation tasks
+            include_deleted=True,
+        )
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
 
@@ -196,8 +204,25 @@ async def benefit_update(
             raise Retry(e.defer_seconds) from e
 
 
-@task("benefit.delete")
-async def benefit_delete(
+@task("benefit.revoke_customer")
+async def benefit_revoke_customer(
+    ctx: JobContext,
+    customer_id: uuid.UUID,
+    polar_context: PolarWorkerContext,
+) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(
+            customer_id, include_deleted=True
+        )
+        if customer is None:
+            raise CustomerDoesNotExist(customer_id)
+
+        await benefit_grant_service.enqueue_customer_grant_deletions(session, customer)
+
+
+@task("benefit.delete_grant")
+async def benefit_delete_grant(
     ctx: JobContext,
     benefit_grant_id: uuid.UUID,
     polar_context: PolarWorkerContext,
@@ -213,7 +238,7 @@ async def benefit_delete(
             )
         except BenefitRetriableError as e:
             log.warning(
-                "Retriable error encountered while deleting benefit",
+                "Retriable error encountered while deleting benefit grant",
                 error=str(e),
                 defer_seconds=e.defer_seconds,
                 benefit_grant_id=str(benefit_grant_id),

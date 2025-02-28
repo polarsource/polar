@@ -15,8 +15,8 @@ from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
-from polar.models import Benefit, BenefitGrant, Customer, Product, ProductBenefit
-from polar.models.benefit import BenefitProperties, BenefitType
+from polar.models import Benefit, BenefitGrant, Customer, Product
+from polar.models.benefit import BenefitProperties
 from polar.models.benefit_grant import BenefitGrantPropertiesBase, BenefitGrantScope
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
@@ -25,6 +25,7 @@ from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookPayloadTypeAdapter
 from polar.worker import enqueue_job
 
+from ..repository.benefit_grant import BenefitGrantRepository
 from .benefit_grant_scope import scope_to_args
 
 log: Logger = structlog.get_logger()
@@ -138,7 +139,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             "Granting benefit", benefit_id=str(benefit.id), customer_id=str(customer.id)
         )
 
-        grant = await self.get_by_benefit_and_scope(session, customer, benefit, **scope)
+        repository = BenefitGrantRepository.from_session(session)
+        grant = await repository.get_by_benefit_and_scope(customer, benefit, **scope)
 
         if grant is None:
             grant = BenefitGrant(
@@ -202,7 +204,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             "Revoking benefit", benefit_id=str(benefit.id), customer_id=str(customer.id)
         )
 
-        grant = await self.get_by_benefit_and_scope(session, customer, benefit, **scope)
+        repository = BenefitGrantRepository.from_session(session)
+        grant = await repository.get_by_benefit_and_scope(customer, benefit, **scope)
 
         if grant is None:
             grant = BenefitGrant(
@@ -219,8 +222,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         # * If the service requires grants to be revoked individually
         # * If there is only one grant remaining for this benefit,
         #   so the benefit remains if other grants exist via other purchases
-        other_grants = await self._get_granted_by_benefit_and_customer(
-            session, benefit, customer
+        other_grants = await repository.list_granted_by_benefit_and_customer(
+            benefit, customer
         )
         if benefit_service.should_revoke_individually or len(other_grants) < 2:
             try:
@@ -271,7 +274,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
     ) -> None:
         # Get granted benefits that are not part of this product.
         # It happens if the subscription has been upgraded/downgraded.
-        outdated_grants = await self._get_outdated_grants(session, product, **scope)
+        repository = BenefitGrantRepository.from_session(session)
+        outdated_grants = await repository.list_outdated_grants(product, **scope)
 
         for benefit in product.benefits:
             enqueue_job(
@@ -300,7 +304,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         if not await benefit_service.requires_update(benefit, previous_properties):
             return
 
-        grants = await self._get_granted_by_benefit(session, benefit)
+        repository = BenefitGrantRepository.from_session(session)
+        grants = await repository.list_granted_by_benefit(benefit)
         for grant in grants:
             enqueue_job("benefit.update", benefit_grant_id=grant.id)
 
@@ -352,9 +357,18 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
     async def enqueue_benefit_grant_deletions(
         self, session: AsyncSession, benefit: Benefit
     ) -> None:
-        grants = await self._get_granted_by_benefit(session, benefit)
+        repository = BenefitGrantRepository.from_session(session)
+        grants = await repository.list_granted_by_benefit(benefit)
         for grant in grants:
-            enqueue_job("benefit.delete", benefit_grant_id=grant.id)
+            enqueue_job("benefit.delete_grant", benefit_grant_id=grant.id)
+
+    async def enqueue_customer_grant_deletions(
+        self, session: AsyncSession, customer: Customer
+    ) -> None:
+        repository = BenefitGrantRepository.from_session(session)
+        grants = await repository.list_granted_by_customer(customer)
+        for grant in grants:
+            enqueue_job("benefit.delete_grant", benefit_grant_id=grant.id)
 
     async def delete_benefit_grant(
         self,
@@ -372,7 +386,9 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         benefit = grant.benefit
 
         customer_repository = CustomerRepository.from_session(session)
-        customer = await customer_repository.get_by_id(grant.customer_id)
+        customer = await customer_repository.get_by_id(
+            grant.customer_id, include_deleted=True
+        )
         assert customer is not None
 
         previous_properties = grant.properties
@@ -396,91 +412,6 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             previous_grant_properties=previous_properties,
         )
         return grant
-
-    async def get_by_benefit_and_scope(
-        self,
-        session: AsyncSession,
-        customer: Customer,
-        benefit: Benefit,
-        **scope: Unpack[BenefitGrantScope],
-    ) -> BenefitGrant | None:
-        statement = select(BenefitGrant).where(
-            BenefitGrant.customer_id == customer.id,
-            BenefitGrant.benefit_id == benefit.id,
-            BenefitGrant.deleted_at.is_(None),
-            BenefitGrant.scope == scope,
-        )
-
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
-
-    async def _get_granted_by_benefit(
-        self, session: AsyncSession, benefit: Benefit
-    ) -> Sequence[BenefitGrant]:
-        statement = select(BenefitGrant).where(
-            BenefitGrant.benefit_id == benefit.id,
-            BenefitGrant.is_granted.is_(True),
-            BenefitGrant.deleted_at.is_(None),
-        )
-
-        result = await session.execute(statement)
-        return result.scalars().all()
-
-    async def _get_granted_by_benefit_and_customer(
-        self,
-        session: AsyncSession,
-        benefit: Benefit,
-        customer: Customer,
-    ) -> Sequence[BenefitGrant]:
-        statement = select(BenefitGrant).where(
-            BenefitGrant.benefit_id == benefit.id,
-            BenefitGrant.customer_id == customer.id,
-            BenefitGrant.is_granted.is_(True),
-            BenefitGrant.deleted_at.is_(None),
-        )
-
-        result = await session.execute(statement)
-        return result.scalars().all()
-
-    async def _get_by_customer_and_benefit_type(
-        self,
-        session: AsyncSession,
-        customer: Customer,
-        benefit_type: BenefitType,
-    ) -> Sequence[BenefitGrant]:
-        statement = (
-            select(BenefitGrant)
-            .join(Benefit)
-            .where(
-                BenefitGrant.customer_id == customer.id,
-                Benefit.type == benefit_type,
-            )
-        )
-
-        result = await session.execute(statement)
-        return result.scalars().all()
-
-    async def _get_outdated_grants(
-        self,
-        session: AsyncSession,
-        product: Product,
-        **scope: Unpack[BenefitGrantScope],
-    ) -> Sequence[BenefitGrant]:
-        product_benefits_statement = (
-            select(Benefit.id)
-            .join(ProductBenefit)
-            .where(ProductBenefit.product_id == product.id)
-        )
-
-        statement = select(BenefitGrant).where(
-            BenefitGrant.scope == scope,
-            BenefitGrant.benefit_id.not_in(product_benefits_statement),
-            BenefitGrant.is_granted.is_(True),
-            BenefitGrant.deleted_at.is_(None),
-        )
-
-        result = await session.execute(statement)
-        return result.scalars().all()
 
     async def _send_webhook(
         self,

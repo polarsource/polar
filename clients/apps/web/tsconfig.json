@@ -1,17 +1,11 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "strict": true,
     "baseUrl": "src/",
     "paths": {
-      "@/*": [
-        "./*"
-      ],
+      "@/*": ["./*"]
     },
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -41,8 +35,7 @@
       {
         "name": "next"
       }
-    ],
-
+    ]
   },
   "include": [
     "next-env.d.ts",
@@ -52,7 +45,5 @@
     "sentry.*.config.ts",
     ".next/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

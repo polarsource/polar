@@ -116,7 +116,7 @@ export default async function Page({
       organization={organization}
       products={products}
       subscriptions={subscriptions}
-      orders={oneTimePurchases}
+      oneTimePurchases={oneTimePurchases}
       customerSessionToken={searchParams.customer_session_token}
     />
   )

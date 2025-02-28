@@ -37,7 +37,8 @@ const EditBillingDetails = ({
     watch,
     setError,
     setValue,
-    formState: { errors },
+    reset,
+    formState: { errors, isDirty },
   } = form
 
   const country = watch('billing_address.country')
@@ -51,13 +52,20 @@ const EditBillingDetails = ({
   const updateCustomer = useUpdateCustomerPortal(api)
   const onSubmit = useCallback(
     async (data: schemas['CustomerPortalCustomerUpdate']) => {
-      const { error } = await updateCustomer.mutateAsync(data)
+      const { error, data: updatedCustomer } =
+        await updateCustomer.mutateAsync(data)
       if (error) {
         if (error.detail) {
           setValidationErrors(error.detail, setError)
         }
         return
       }
+
+      reset({
+        ...updatedCustomer,
+        tax_id: updatedCustomer.tax_id ? updatedCustomer.tax_id[0] : null,
+      })
+
       onSuccess()
     },
     [updateCustomer, onSuccess, setError],
@@ -108,7 +116,7 @@ const EditBillingDetails = ({
             </FormItem>
           )}
         />
-        <FormItem>
+        <FormItem className="flex flex-col gap-y-3">
           <FormLabel>Billing address</FormLabel>
           <FormControl>
             <FormField
@@ -118,7 +126,7 @@ const EditBillingDetails = ({
                 required: 'This field is required',
               }}
               render={({ field }) => (
-                <>
+                <div className="flex flex-col gap-y-2">
                   <Input
                     type="text"
                     autoComplete="billing address-line1"
@@ -128,7 +136,7 @@ const EditBillingDetails = ({
                     value={field.value || ''}
                   />
                   <FormMessage />
-                </>
+                </div>
               )}
             />
           </FormControl>
@@ -137,7 +145,7 @@ const EditBillingDetails = ({
               control={control}
               name="billing_address.line2"
               render={({ field }) => (
-                <>
+                <div className="flex flex-col gap-y-2">
                   <Input
                     type="text"
                     autoComplete="billing address-line2"
@@ -147,12 +155,12 @@ const EditBillingDetails = ({
                     value={field.value || ''}
                   />
                   <FormMessage />
-                </>
+                </div>
               )}
             />
           </FormControl>
 
-          <div className="grid grid-cols-2 gap-x-2">
+          <div className="grid grid-cols-2 gap-x-3">
             <FormControl>
               <FormField
                 control={control}
@@ -161,7 +169,7 @@ const EditBillingDetails = ({
                   required: 'This field is required',
                 }}
                 render={({ field }) => (
-                  <>
+                  <div className="flex flex-col gap-y-2">
                     <Input
                       type="text"
                       autoComplete="billing postal-code"
@@ -171,7 +179,7 @@ const EditBillingDetails = ({
                       value={field.value || ''}
                     />
                     <FormMessage />
-                  </>
+                  </div>
                 )}
               />
             </FormControl>
@@ -183,7 +191,7 @@ const EditBillingDetails = ({
                   required: 'This field is required',
                 }}
                 render={({ field }) => (
-                  <>
+                  <div className="flex flex-col gap-y-2">
                     <Input
                       type="text"
                       autoComplete="billing address-level2"
@@ -193,7 +201,7 @@ const EditBillingDetails = ({
                       value={field.value || ''}
                     />
                     <FormMessage />
-                  </>
+                  </div>
                 )}
               />
             </FormControl>
@@ -206,14 +214,14 @@ const EditBillingDetails = ({
                 required: 'This field is required',
               }}
               render={({ field }) => (
-                <>
+                <div className="flex flex-col gap-y-2">
                   <CountryPicker
                     autoComplete="billing country"
                     value={field.value || undefined}
                     onChange={field.onChange}
                   />
                   <FormMessage />
-                </>
+                </div>
               )}
             />
           </FormControl>
@@ -226,7 +234,7 @@ const EditBillingDetails = ({
                   required: 'This field is required',
                 }}
                 render={({ field }) => (
-                  <>
+                  <div className="flex flex-col gap-y-2">
                     <CountryStatePicker
                       autoComplete="billing address-level1"
                       country={country}
@@ -234,7 +242,7 @@ const EditBillingDetails = ({
                       onChange={field.onChange}
                     />
                     <FormMessage />
-                  </>
+                  </div>
                 )}
               />
             </FormControl>
@@ -266,10 +274,11 @@ const EditBillingDetails = ({
         />
         <Button
           type="submit"
+          className="self-start"
           loading={updateCustomer.isPending}
-          disabled={updateCustomer.isPending}
+          disabled={updateCustomer.isPending || !isDirty}
         >
-          Update billing details
+          Update Billing Details
         </Button>
       </form>
     </Form>

@@ -14,7 +14,7 @@ export interface CustomerPortalProps {
   organization: schemas['Organization']
   products: schemas['CustomerProduct'][]
   subscriptions: schemas['CustomerSubscription'][]
-  orders: schemas['CustomerOrder'][]
+  oneTimePurchases: schemas['CustomerOrder'][]
   customerSessionToken?: string
 }
 
@@ -22,7 +22,7 @@ export const CustomerPortal = ({
   organization,
   products,
   subscriptions,
-  orders,
+  oneTimePurchases,
   customerSessionToken,
 }: CustomerPortalProps) => {
   const api = createClientSideAPI(customerSessionToken)
@@ -45,65 +45,62 @@ export const CustomerPortal = ({
         products={products}
         subscriptions={subscriptions}
       />
-
-      {orders.length > 0 && (
-        <div className="flex flex-col gap-y-4">
-          <div className="flex flex-row items-center justify-between">
-            <h3 className="text-xl">Orders</h3>
-          </div>
-          <DataTable
-            data={orders ?? []}
-            isLoading={false}
-            columns={[
-              {
-                accessorKey: 'created_at',
-                header: 'Date',
-                cell: ({ row }) => (
-                  <FormattedDateTime
-                    datetime={row.original.created_at}
-                    dateStyle="medium"
-                    resolution="day"
-                  />
-                ),
-              },
-              {
-                accessorKey: 'product.name',
-                header: 'Product',
-                cell: ({ row }) => row.original.product.name,
-              },
-              {
-                accessorKey: 'amount',
-                header: 'Amount',
-                cell: ({ row }) => (
-                  <span className="dark:text-polar-500 text-sm text-gray-500">
-                    {formatCurrencyAndAmount(
-                      row.original.amount,
-                      row.original.currency,
-                      0,
-                    )}
-                  </span>
-                ),
-              },
-              {
-                accessorKey: 'id',
-                header: '',
-                cell: ({ row }) => (
-                  <span className="flex justify-end">
-                    <Button
-                      variant="secondary"
-                      onClick={() => openInvoice(row.original)}
-                      loading={orderInvoiceMutation.isPending}
-                      disabled={orderInvoiceMutation.isPending}
-                    >
-                      <span className="">View Invoice</span>
-                    </Button>
-                  </span>
-                ),
-              },
-            ]}
-          />
+      <div className="flex flex-col gap-y-4">
+        <div className="flex flex-row items-center justify-between">
+          <h3 className="text-2xl">Product Purchases</h3>
         </div>
-      )}
+        <DataTable
+          data={oneTimePurchases ?? []}
+          isLoading={false}
+          columns={[
+            {
+              accessorKey: 'created_at',
+              header: 'Date',
+              cell: ({ row }) => (
+                <FormattedDateTime
+                  datetime={row.original.created_at}
+                  dateStyle="medium"
+                  resolution="day"
+                />
+              ),
+            },
+            {
+              accessorKey: 'product.name',
+              header: 'Product',
+              cell: ({ row }) => row.original.product.name,
+            },
+            {
+              accessorKey: 'amount',
+              header: 'Amount',
+              cell: ({ row }) => (
+                <span className="dark:text-polar-500 text-sm text-gray-500">
+                  {formatCurrencyAndAmount(
+                    row.original.amount,
+                    row.original.currency,
+                    0,
+                  )}
+                </span>
+              ),
+            },
+            {
+              accessorKey: 'id',
+              header: '',
+              cell: ({ row }) => (
+                <span className="flex justify-end">
+                  <Button
+                    variant="secondary"
+                    onClick={() => openInvoice(row.original)}
+                    loading={orderInvoiceMutation.isPending}
+                    disabled={orderInvoiceMutation.isPending}
+                  >
+                    <span className="">View Invoice</span>
+                  </Button>
+                </span>
+              ),
+            },
+          ]}
+        />
+      </div>
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { BenefitGrant } from '@/components/Benefit/BenefitGrant'
 import {
   useCustomerBenefitGrants,
+  useCustomerCancelSubscription,
   useCustomerOrderInvoice,
   useCustomerOrders,
 } from '@/hooks/queries'
@@ -13,8 +14,10 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useCallback } from 'react'
+import { useModal } from '../Modal/useModal'
 import AmountLabel from '../Shared/AmountLabel'
 import { DetailRow } from '../Shared/DetailRow'
+import CustomerCancellationModal from '../Subscriptions/CustomerCancellationModal'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 
 const CustomerPortalSubscription = ({
@@ -24,6 +27,12 @@ const CustomerPortalSubscription = ({
   api: Client
   subscription: schemas['CustomerSubscription']
 }) => {
+  const {
+    show: showCancelModal,
+    hide: hideCancelModal,
+    isShown: cancelModalIsShown,
+  } = useModal()
+
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     subscription_id: subscription.id,
     limit: 100,
@@ -44,6 +53,8 @@ const CustomerPortalSubscription = ({
     },
     [orderInvoiceMutation],
   )
+
+  const cancelSubscription = useCustomerCancelSubscription(api)
 
   const hasInvoices = orders?.items && orders.items.length > 0
 
@@ -120,6 +131,15 @@ const CustomerPortalSubscription = ({
           />
         )}
       </div>
+
+      <Button
+        variant="secondary"
+        fullWidth
+        onClick={showCancelModal}
+        aria-label="Cancel subscription"
+      >
+        Cancel Subscription
+      </Button>
 
       <div className="flex w-full flex-col gap-4">
         <h3 className="text-lg">Benefit Grants</h3>
@@ -198,6 +218,13 @@ const CustomerPortalSubscription = ({
           </div>
         )}
       </div>
+
+      <CustomerCancellationModal
+        subscription={subscription}
+        isShown={cancelModalIsShown}
+        hide={hideCancelModal}
+        cancelSubscription={cancelSubscription}
+      />
     </div>
   )
 }

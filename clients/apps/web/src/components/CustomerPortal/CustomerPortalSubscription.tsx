@@ -58,6 +58,10 @@ const CustomerPortalSubscription = ({
 
   const hasInvoices = orders?.items && orders.items.length > 0
 
+  const isCancelled = !!(
+    subscription.cancel_at_period_end || subscription.ended_at
+  )
+
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -132,14 +136,16 @@ const CustomerPortalSubscription = ({
         )}
       </div>
 
-      <Button
-        variant="secondary"
-        fullWidth
-        onClick={showCancelModal}
-        aria-label="Cancel subscription"
-      >
-        Cancel Subscription
-      </Button>
+      {!isCancelled && (
+        <Button
+          variant="secondary"
+          fullWidth
+          onClick={showCancelModal}
+          aria-label="Cancel subscription"
+        >
+          Cancel Subscription
+        </Button>
+      )}
 
       <div className="flex w-full flex-col gap-4">
         <h3 className="text-lg">Benefit Grants</h3>

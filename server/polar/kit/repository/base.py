@@ -1,12 +1,14 @@
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, Generic, Protocol, Self, TypeVar
+from typing import Any, Generic, Protocol, Self, TypeAlias, TypeVar
 
-from sqlalchemy import Select, func, over, select
+from sqlalchemy import Select, UnaryExpression, asc, desc, func, over, select
 from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.base import ExecutableOption
+from sqlalchemy.sql.expression import ColumnExpressionArgument
 
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.sorting import PE, Sorting
 from polar.kit.utils import utc_now
 
 M = TypeVar("M")
@@ -187,3 +189,24 @@ class RepositorySoftDeletionIDMixin(Generic[MODEL_DELETED_AT_ID, ID_TYPE]):
             .options(*options)
         )
         return await self.get_one_or_none(statement)
+
+
+SortingClause: TypeAlias = ColumnExpressionArgument[Any] | UnaryExpression[Any]
+
+
+class RepositorySortingMixin(Generic[M, PE]):
+    sorting_enum: type[PE]
+
+    def apply_sorting(
+        self,
+        statement: Select[tuple[M]],
+        sorting: list[Sorting[PE]],
+    ) -> Select[tuple[M]]:
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            order_by_clauses.append(clause_function(self.get_sorting_clause(criterion)))
+        return statement.order_by(*order_by_clauses)
+
+    def get_sorting_clause(self, property: PE) -> SortingClause:
+        raise NotImplementedError()

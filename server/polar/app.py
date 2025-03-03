@@ -42,6 +42,7 @@ from polar.postgres import create_async_engine, create_sync_engine
 from polar.posthog import configure_posthog
 from polar.redis import Redis, create_redis
 from polar.sentry import configure_sentry
+from polar.web_backoffice import app as backoffice_app
 from polar.webhook.webhooks import document_webhooks
 from polar.worker import ArqRedis
 from polar.worker import lifespan as worker_lifespan
@@ -160,6 +161,8 @@ def create_app() -> FastAPI:
 
     # /healthz
     app.include_router(health_router)
+
+    app.mount("/admin", backoffice_app)
 
     app.include_router(router)
     document_webhooks(app)

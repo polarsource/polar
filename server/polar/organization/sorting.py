@@ -8,7 +8,10 @@ from polar.kit.sorting import Sorting, SortingGetter
 
 class OrganizationSortProperty(StrEnum):
     created_at = "created_at"
-    name = "name"
+    slug = "slug"
+    organization_name = (
+        "name"  # `name` is a reserved word, so we use `organization_name`
+    )
 
 
 ListSorting = Annotated[

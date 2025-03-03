@@ -319,7 +319,7 @@ export const GitHubRepositoryBenefitForm = ({
 
       {selectedRepository ? (
         <>
-          {selectedRepository?.org?.plan_name ? (
+          {selectedRepository?.org?.plan_name && !selectedRepository?.org?.is_free ? (
             <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
               This organization is currently on the{' '}
               <span className="capitalize">

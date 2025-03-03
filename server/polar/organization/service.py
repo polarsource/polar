@@ -64,8 +64,8 @@ class OrganizationService(ResourceServiceReader[Organization]):
             clause_function = desc if is_desc else asc
             if criterion == OrganizationSortProperty.created_at:
                 order_by_clauses.append(clause_function(Organization.created_at))
-            elif criterion == OrganizationSortProperty.name:
-                order_by_clauses.append(clause_function(Organization.slug))
+            elif criterion == OrganizationSortProperty.organization_name:
+                order_by_clauses.append(clause_function(Organization.name))
         statement = statement.order_by(*order_by_clauses)
 
         return await paginate(session, statement, pagination=pagination)

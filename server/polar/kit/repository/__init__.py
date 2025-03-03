@@ -3,6 +3,8 @@ from .base import (
     RepositoryIDMixin,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
+    RepositorySortingMixin,
+    SortingClause,
 )
 
 __all__ = [
@@ -10,4 +12,6 @@ __all__ = [
     "RepositoryIDMixin",
     "RepositorySoftDeletionMixin",
     "RepositorySoftDeletionIDMixin",
+    "RepositorySortingMixin",
+    "SortingClause",
 ]

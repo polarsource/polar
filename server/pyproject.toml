@@ -49,6 +49,7 @@ dependencies = [
   "apscheduler>=3.10.4",
   "supervisor>=4.2.5",
   "plain-client>=0.0.1",
+  "tagflow>=0.7.0",
 ]
 
 [dependency-groups]

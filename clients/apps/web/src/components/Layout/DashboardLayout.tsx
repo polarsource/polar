@@ -165,7 +165,7 @@ export const DashboardBody = ({
         contextViewPlacement === 'left' ? 'flex-row-reverse' : '',
       )}
     >
-      <div className="dark:md:bg-polar-900 dark:border-polar-800 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-12 md:shadow-sm">
+      <div className="dark:md:bg-polar-900 dark:border-polar-800 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-8 md:shadow-sm">
         <div
           className={twMerge(
             'flex h-full w-full flex-col',
@@ -174,7 +174,7 @@ export const DashboardBody = ({
           )}
         >
           {header && (
-            <div className="flex w-full flex-col gap-y-4 py-8 md:flex-row md:items-center md:justify-between md:py-12">
+            <div className="flex w-full flex-col gap-y-4 py-8 md:flex-row md:items-center md:justify-between md:py-8">
               <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
                 {title ?? currentRoute?.title}
               </h4>

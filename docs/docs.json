@@ -107,6 +107,13 @@
                 ]
               },
               {
+                "group": "Framework Guides",
+                "pages": [
+                  "guides/nextjs",
+                  "guides/laravel"
+                ]
+              },
+              {
                 "group": "Webhooks",
                 "pages": [
                   "integrate/webhooks/endpoints",

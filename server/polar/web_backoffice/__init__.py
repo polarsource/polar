@@ -6,11 +6,19 @@ from tagflow import TagResponse, tag, text
 
 from .dependencies import get_admin
 from .layout import layout
-from .middlewares import TagflowMiddleware
+from .middlewares import SecurityHeadersMiddleware, TagflowMiddleware
 from .organizations.endpoints import router as organizations_router
 
-app = FastAPI(default_response_class=TagResponse, dependencies=[Depends(get_admin)])
+app = FastAPI(
+    default_response_class=TagResponse,
+    dependencies=[Depends(get_admin)],
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(TagflowMiddleware)
+
 
 app.mount(
     "/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static"

@@ -15,7 +15,7 @@ def layout(
     navigation: list[NavigationItem],
     active_route_name: str,
 ) -> Generator[None]:
-    with base([title for title, href in breadcrumbs]):
+    with base(request, [title for title, href in breadcrumbs]):
         with tag.div(classes="drawer lg:drawer-open"):
             with tag.input(id="menu-toggle", type="checkbox", classes="drawer-toggle"):
                 pass

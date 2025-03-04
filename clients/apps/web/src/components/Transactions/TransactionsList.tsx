@@ -99,7 +99,7 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
                 <div>
                   <Link
                     className="text-blue-500 dark:text-blue-400"
-                    href={`/${transactionMeta.organization?.slug}/products/${transactionMeta.meta.product.id}`}
+                    href={`/dashboard/${transactionMeta.organization?.slug}/products/${transactionMeta.meta.product.id}`}
                   >
                     <ProductPill
                       product={transactionMeta.meta.product}

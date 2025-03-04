@@ -61,8 +61,4 @@ class SecurityHeadersMiddleware:
             "camera=(), microphone=(), geolocation=(), interest-cohort=()"
         )
 
-        # Add Cache-Control
-        # Prevents caching of potentially sensitive information
-        headers["Cache-Control"] = "no-store, max-age=0"
-
         await send(message)

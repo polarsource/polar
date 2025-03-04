@@ -23,12 +23,12 @@ class DatatableColumn(Generic[M]):
     def __init__(self, label: str) -> None:
         self.label = label
 
-    def render(self, item: M) -> Generator[None] | None:
+    def render(self, request: Request, item: M) -> Generator[None] | None:
         raise NotImplementedError()
 
     @contextlib.contextmanager
-    def _do_render(self, item: M) -> Generator[None]:
-        value = self.render(item)
+    def _do_render(self, request: Request, item: M) -> Generator[None]:
+        value = self.render(request, item)
         if isgenerator(value):
             yield from value
         else:
@@ -38,6 +38,7 @@ class DatatableColumn(Generic[M]):
 class DatatableAttrColumn(Generic[M, PE], DatatableColumn[M]):
     attr: str
     sorting: PE | None
+    href_route_name: str | None
     clipboard: bool
 
     def __init__(
@@ -46,30 +47,42 @@ class DatatableAttrColumn(Generic[M, PE], DatatableColumn[M]):
         label: str | None = None,
         *,
         sorting: PE | None = None,
+        href_route_name: str | None = None,
         clipboard: bool = False,
     ) -> None:
         self.attr = attr
         self.sorting = sorting
+        self.href_route_name = href_route_name
         self.clipboard = clipboard
         super().__init__(label or attr)
 
-    def render(self, item: M) -> Generator[None] | None:
-        value = str(getattr(item, self.attr))
-        if not self.clipboard:
-            return text(value)
-
+    def render(self, request: Request, item: M) -> Generator[None] | None:
+        value = self.get_value(item)
+        href = (
+            request.url_for(self.href_route_name, id=getattr(item, "id"))
+            if self.href_route_name
+            else None
+        )
         with tag.div(classes="flex items-center gap-1"):
-            with tag.div():
+            value_tag = tag.a if href else tag.div
+            with value_tag():
+                if href:
+                    classes("link")
+                    attr("href", str(href))
                 text(value)
-            with clipboard_button(value):
-                pass
+            if self.clipboard:
+                with clipboard_button(value):
+                    pass
         return None
+
+    def get_value(self, item: M) -> str:
+        return str(getattr(item, self.attr))
 
 
 class DatatableDateTimeColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
-    def render(self, item: M) -> Generator[None] | None:
+    def get_value(self, item: M) -> str:
         value = getattr(item, self.attr)
-        return text(value.strftime("%Y-%m-%d %H:%M:%S"))
+        return value.strftime("%Y-%m-%d %H:%M:%S")
 
 
 class DatatableActionsColumn(Generic[M], DatatableColumn[M]):
@@ -77,7 +90,7 @@ class DatatableActionsColumn(Generic[M], DatatableColumn[M]):
         self.actions = actions
         super().__init__(label)
 
-    def render(self, item: M) -> Generator[None] | None:
+    def render(self, request: Request, item: M) -> Generator[None] | None:
         item_id = getattr(item, "id")
         with button(
             size="sm",
@@ -154,7 +167,7 @@ class Datatable(Generic[M, PE]):
                         with tag.tr():
                             for column in self.columns:
                                 with tag.td():
-                                    with column._do_render(item):
+                                    with column._do_render(request, item):
                                         pass
 
         yield

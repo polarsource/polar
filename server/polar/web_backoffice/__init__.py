@@ -4,8 +4,8 @@ from fastapi import Depends, FastAPI, Request
 from starlette.staticfiles import StaticFiles
 from tagflow import TagResponse, tag, text
 
-from .decorators import layout
 from .dependencies import get_admin
+from .layout import layout
 from .middlewares import TagflowMiddleware
 from .organizations.endpoints import router as organizations_router
 
@@ -19,10 +19,10 @@ app.include_router(organizations_router, prefix="/organizations")
 
 
 @app.get("/", name="index")
-@layout(["Dashboard"], "index")
 async def index(request: Request) -> None:
-    with tag.h1():
-        text("Dashboard")
+    with layout(request, [], "index"):
+        with tag.h1():
+            text("Dashboard")
 
 
 __all__ = ["app"]

@@ -20,6 +20,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useForm } from 'react-hook-form'
+import { Well, WellContent, WellFooter, WellHeader } from '../Shared/Well'
 import { toast } from '../Toast/use-toast'
 import { RefundReasonDisplay } from './utils'
 
@@ -173,21 +174,29 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
               />
             )}
           </div>
-          <div className="space-y-2 rounded-2xl border border-gray-300 p-8 px-4 py-3 text-sm">
-            <strong>Original payment fees are not returned</strong>
-            <p>
-              Underlying payment processors still charge us for the original
-              payment - even in case of a full refund. However, no additional
-              fees are applied of course.{' '}
+          <Well className="p-6">
+            <WellHeader>
+              <h3 className="font-medium">
+                Original payment fees are not returned
+              </h3>
+            </WellHeader>
+            <WellContent>
+              <p className="dark:text-polar-500 text-gray-500">
+                Underlying payment processors still charge us for the original
+                payment - even in case of a full refund. However, no additional
+                fees are applied of course.
+              </p>
+            </WellContent>
+            <WellFooter>
               <a
                 href="https://docs.polar.sh/documentation/features/refunds"
-                className="text-blue-500"
+                className="text-blue-500 dark:text-blue-400"
                 target="_blank"
               >
-                Learn more &rarr;
+                Learn more
               </a>
-            </p>
-          </div>
+            </WellFooter>
+          </Well>
           <Button type="submit" className="self-start" disabled={!canRefund}>
             Refund Order
           </Button>

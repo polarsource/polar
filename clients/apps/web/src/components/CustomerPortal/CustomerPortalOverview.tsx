@@ -53,16 +53,22 @@ const SubscriptionsOverview = ({
     <div className="flex flex-col gap-y-4">
       <h3 className="text-2xl">Subscriptions</h3>
       <div className="flex flex-col gap-y-4">
-        {subscriptions.map((s) => (
-          <CustomerSubscriptionDetails
-            key={s.id}
-            api={api}
-            subscription={s}
-            products={products}
-            onUserSubscriptionUpdate={onSubscriptionUpdate}
-            customerSessionToken={customerSessionToken}
-          />
-        ))}
+        {subscriptions.length > 0 ? (
+          subscriptions.map((s) => (
+            <CustomerSubscriptionDetails
+              key={s.id}
+              api={api}
+              subscription={s}
+              products={products}
+              onUserSubscriptionUpdate={onSubscriptionUpdate}
+              customerSessionToken={customerSessionToken}
+            />
+          ))
+        ) : (
+          <div className="dark:border-polar-700 flex flex-col items-center justify-center rounded-2xl border border-gray-200 p-12 text-gray-500">
+            <p>No Subscriptions Found</p>
+          </div>
+        )}
       </div>
     </div>
   )

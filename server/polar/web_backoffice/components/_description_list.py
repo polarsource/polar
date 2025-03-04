@@ -6,6 +6,7 @@ from typing import Generic, TypeVar
 from fastapi import Request
 from tagflow import tag, text
 
+from .. import formatters
 from ._clipboard_button import clipboard_button
 
 M = TypeVar("M")
@@ -56,7 +57,15 @@ class DescriptionListAttrItem(Generic[M], DescriptionListItem[M]):
 class DescriptionListDateTimeItem(DescriptionListAttrItem[M]):
     def get_value(self, item: M) -> str:
         value = getattr(item, self.attr)
-        return value.strftime("%Y-%m-%d %H:%M:%S")
+        return formatters.datetime(value)
+
+
+class DescriptionListCurrencyItem(DescriptionListAttrItem[M]):
+    def get_value(self, item: M) -> str:
+        return formatters.currency(getattr(item, self.attr), self.get_currency(item))
+
+    def get_currency(self, item: M) -> str:
+        return "usd"
 
 
 class DescriptionList(Generic[M]):

@@ -136,7 +136,7 @@ class AccountsListScreen(Screen[None]):
                     format_datetime(
                         account.created_at, locale="en_US", tzinfo=system_timezone()
                     ),
-                    AccountType.get_display_name(account.account_type),
+                    account.account_type.get_display_name(),
                     account.admin.email,
                     ", ".join(account.get_associations_names()),
                     format_currency(balance / 100, "USD", locale="en_US"),

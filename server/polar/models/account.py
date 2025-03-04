@@ -39,7 +39,9 @@ class Account(RecordModel):
 
     __tablename__ = "accounts"
 
-    account_type: Mapped[AccountType] = mapped_column(String(255), nullable=False)
+    account_type: Mapped[AccountType] = mapped_column(
+        StringEnum(AccountType), nullable=False
+    )
 
     admin_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id", use_alter=True))
 

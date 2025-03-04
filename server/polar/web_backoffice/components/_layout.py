@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator, Sequence
 
 from fastapi import Request
-from tagflow import tag
+from tagflow import tag, text
 
 from ._base import base
 from ._navigation import NavigationItem
@@ -11,11 +11,11 @@ from ._navigation import NavigationItem
 @contextlib.contextmanager
 def layout(
     request: Request,
-    title_parts: Sequence[str],
+    breadcrumbs: Sequence[tuple[str, str]],
     navigation: list[NavigationItem],
     active_route_name: str,
 ) -> Generator[None]:
-    with base(title_parts):
+    with base([title for title, href in breadcrumbs]):
         with tag.div(classes="drawer lg:drawer-open"):
             with tag.input(id="menu-toggle", type="checkbox", classes="drawer-toggle"):
                 pass
@@ -29,6 +29,20 @@ def layout(
                             pass
                 with tag.div(classes="flex flex-col gap-4 p-4"):
                     with tag.div(classes="h-full w-full"):
+                        with tag.div(classes="breadcrumbs text-sm"):
+                            with tag.ul():
+                                for title, href in reversed(
+                                    [
+                                        *breadcrumbs,
+                                        (
+                                            "Polar Backoffice",
+                                            str(request.url_for("index")),
+                                        ),
+                                    ]
+                                ):
+                                    with tag.li():
+                                        with tag.a(href=href):
+                                            text(title)
                         yield
             with tag.aside(classes="drawer-side"):
                 with tag.label(

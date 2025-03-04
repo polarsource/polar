@@ -1,14 +1,16 @@
 import contextlib
 import uuid
 from collections.abc import Generator
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import UUID4, BeforeValidator
+from fastapi.responses import RedirectResponse
+from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import classes, tag, text
 
+from polar.account.service import account as account_service
 from polar.enums import AccountType
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
@@ -17,8 +19,9 @@ from polar.organization import sorting
 from polar.organization.repository import OrganizationRepository
 from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
+from polar.web_backoffice.organizations.forms import AccountReviewForm
 
-from ..components import datatable, description_list, input
+from ..components import button, datatable, description_list, input
 from ..layout import layout
 
 router = APIRouter()
@@ -167,12 +170,12 @@ async def list(
                 pass
 
 
-@router.get("/{id}", name="organizations:get")
+@router.api_route("/{id}", name="organizations:get", methods=["GET", "POST"])
 async def get(
     request: Request,
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> None:
+) -> Any:
     repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(
         id, options=(joinedload(Organization.account),)
@@ -180,6 +183,19 @@ async def get(
 
     if organization is None:
         raise HTTPException(status_code=404)
+
+    account = organization.account
+    validation_error: ValidationError | None = None
+    if account and request.method == "POST":
+        data = await request.form()
+        try:
+            account_review = AccountReviewForm.model_validate(data)
+            await account_service.confirm_account_reviewed(
+                session, account, account_review.next_review_threshold
+            )
+            return RedirectResponse(request.url, 303)
+        except ValidationError as e:
+            validation_error = e
 
     with layout(
         request,
@@ -209,7 +225,7 @@ async def get(
                             text("Account")
                             with account_badge(organization.account):
                                 pass
-                        if organization.account:
+                        if account:
                             with description_list.DescriptionList[Account](
                                 description_list.DescriptionListAttrItem(
                                     "id", "ID", clipboard=True
@@ -226,5 +242,15 @@ async def get(
                                 description_list.DescriptionListCurrencyItem(
                                     "next_review_threshold", "Next Review Threshold"
                                 ),
-                            ).render(request, organization.account):
+                            ).render(request, account):
                                 pass
+                            if account.status == Account.Status.UNDER_REVIEW:
+                                with tag.div(classes="card-actions"):
+                                    with AccountReviewForm.render(
+                                        account,
+                                        method="POST",
+                                        classes="flex flex-col gap-4",
+                                        validation_error=validation_error,
+                                    ):
+                                        with button(type="submit", variant="primary"):
+                                            text("Approve")

@@ -10,14 +10,11 @@ from textual.app import ComposeResult
 from textual.screen import Screen
 from textual.widgets import DataTable, Footer
 
-from polar.account.service import account as account_service
 from polar.enums import AccountType
 from polar.models import Account, Transaction
-from polar.worker import flush_enqueued_jobs
 from polar_backoffice.utils import system_timezone
 
 from ...db import sessionmaker
-from ...widgets.confirm_modal import ConfirmModal
 from ...widgets.header import PolarHeader
 from ...widgets.search_bar import SearchBar
 
@@ -26,7 +23,6 @@ class AccountsListScreen(Screen[None]):
     BINDINGS = [
         ("ctrl+r", "refresh", "Refresh"),
         ("ctrl+s", "open_in_stripe", "Open in Stripe"),
-        ("$", "confirm_account_reviewed", "Confirm reviewed"),
     ]
 
     accounts: dict[str, Account] = {}
@@ -62,27 +58,6 @@ class AccountsListScreen(Screen[None]):
 
         webbrowser.open_new_tab(
             f"https://dashboard.stripe.com/connect/accounts/{account.stripe_id}"
-        )
-
-    def action_confirm_account_reviewed(self) -> None:
-        table = self.query_one(DataTable)
-        cell_key = table.coordinate_to_cell_key(table.cursor_coordinate)
-        row_key = cell_key.row_key.value
-        if row_key is None:
-            return
-
-        account = self.accounts[row_key]
-
-        def check_confirm(confirm: bool) -> None:
-            if confirm:
-                self.confirm_account_reviewed(account)
-
-        self.app.push_screen(
-            ConfirmModal(
-                "The account will be marked as reviewed "
-                "and the transfers will be resumed. Do you confirm?"
-            ),
-            check_confirm,
         )
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
@@ -149,17 +124,3 @@ class AccountsListScreen(Screen[None]):
                 self.accounts[str(account.id)] = account
             table.loading = False
             table.focus()
-
-    @work(exclusive=True)
-    async def confirm_account_reviewed(self, account: Account) -> None:
-        async with sessionmaker() as session:
-            await account_service.confirm_account_reviewed(session, account)
-            await session.commit()
-
-        await flush_enqueued_jobs(self.app.arq_pool)  # type: ignore
-        self.app.notify(
-            "The account has been marked as reviewed. Held transfers will resume.",
-            title="Account reviewed",
-            timeout=5,
-        )
-        self.get_accounts()

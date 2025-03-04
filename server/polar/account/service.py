@@ -7,7 +7,6 @@ import stripe as stripe_lib
 from sqlalchemy import Select, and_, select
 from sqlalchemy.orm import joinedload
 
-from polar.config import settings
 from polar.enums import AccountType
 from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
@@ -139,25 +138,12 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         return account
 
     async def confirm_account_reviewed(
-        self, session: AsyncSession, account: Account
+        self, session: AsyncSession, account: Account, next_review_threshold: int
     ) -> Account:
         account.status = Account.Status.ACTIVE
-
-        # Increase the next review threshold
-        if account.next_review_threshold is not None:
-            try:
-                account.next_review_threshold = next(
-                    threshold
-                    for threshold in settings.ACCOUNT_PAYOUT_REVIEW_THRESHOLDS
-                    if threshold > account.next_review_threshold
-                )
-            except StopIteration:
-                account.next_review_threshold = None
-
+        account.next_review_threshold = next_review_threshold
         session.add(account)
-
         enqueue_job("account.reviewed", account_id=account.id)
-
         return account
 
     async def _build_stripe_account_name(

@@ -15,6 +15,7 @@ from plain_client import (
     ComponentDividerInput,
     ComponentDividerSpacingSize,
     ComponentInput,
+    ComponentLinkButtonInput,
     ComponentRowContentInput,
     ComponentRowInput,
     ComponentSpacerInput,
@@ -140,6 +141,14 @@ class PlainService:
                         ComponentInput(
                             component_spacer=ComponentSpacerInput(
                                 spacer_size=ComponentSpacerSize.M
+                            )
+                        ),
+                        ComponentInput(
+                            component_link_button=ComponentLinkButtonInput(
+                                link_button_url=settings.generate_external_url(
+                                    f"/backoffice/organizations/{account.organizations[0].id}"
+                                ),
+                                link_button_label="Review account",
                             )
                         ),
                         *(

@@ -119,41 +119,11 @@ class TestConfirmAccountReviewed:
         session.expunge_all()
 
         updated_account = await account_service.confirm_account_reviewed(
-            session, account
+            session, account, 10000
         )
 
         assert updated_account.status == Account.Status.ACTIVE
         assert updated_account.next_review_threshold == 10000
-
-        enqueue_job_mock.assert_called_once_with(
-            "account.reviewed", account_id=account.id
-        )
-
-    async def test_valid_last_threshold(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        user: User,
-    ) -> None:
-        account = await create_account(
-            save_fixture,
-            admin=user,
-            status=Account.Status.UNDER_REVIEW,
-            next_review_threshold=10000,
-        )
-
-        enqueue_job_mock = mocker.patch("polar.account.service.enqueue_job")
-
-        # then
-        session.expunge_all()
-
-        updated_account = await account_service.confirm_account_reviewed(
-            session, account
-        )
-
-        assert updated_account.status == Account.Status.ACTIVE
-        assert updated_account.next_review_threshold is None
 
         enqueue_job_mock.assert_called_once_with(
             "account.reviewed", account_id=account.id

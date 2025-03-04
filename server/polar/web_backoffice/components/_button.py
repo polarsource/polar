@@ -22,11 +22,28 @@ def button(
     outline: bool = False,
     **kwargs: AttrValue,
 ) -> Generator[None]:
+    variants = {
+        "neutral": "btn-neutral",
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "accent": "btn-accent",
+        "info": "btn-info",
+        "success": "btn-success",
+        "warning": "btn-warning",
+        "error": "btn-error",
+    }
+    sizes = {
+        "xs": "btn-xs",
+        "sm": "btn-sm",
+        "md": "btn-md",
+        "lg": "btn-lg",
+        "xl": "btn-xl",
+    }
     with tag.button(classes="btn", **kwargs):
         if variant:
-            classes(f"btn-{variant}")
+            classes(variants[variant])
         if size:
-            classes(f"btn-{size}")
+            classes(sizes[size])
         if ghost:
             classes("btn-ghost")
         if link:

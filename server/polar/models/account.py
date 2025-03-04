@@ -79,7 +79,7 @@ class Account(RecordModel):
         StringEnum(Status), nullable=False, default=Status.CREATED
     )
     next_review_threshold: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, default=settings.ACCOUNT_PAYOUT_REVIEW_THRESHOLDS[0]
+        Integer, nullable=True, default=0
     )
 
     data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)

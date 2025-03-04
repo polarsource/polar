@@ -1,0 +1,150 @@
+---
+title: "BetterAuth"
+description: "Payments and Checkouts made dead simple with BetterAuth"
+---
+
+A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrating [Polar](https://polar.sh) payments and subscriptions into your authentication flow.
+
+## Features
+
+- Checkout Integration
+- Customer Portal
+- Webhook handling
+- Automatic Customer creation on signup
+
+## Installation
+
+```bash
+pnpm add better-auth @polar-sh/better-auth
+```
+
+### Preparation
+
+Go to your Polar Organization Settings, and create an Organization Access Token. Add it to your environment.
+
+```bash
+# .env
+POLAR_ACCESS_TOKEN=...
+```
+
+```typescript
+import { betterAuth } from "better-auth";
+import { polar } from "@polar-sh/better-auth";
+import { Polar } from "@polar-sh/sdk";
+
+const client = new Polar({
+    accessToken: process.env.POLAR_ACCESS_TOKEN,
+    // Use 'sandbox' if you're using the Polar Sandbox environment
+    // Remember that access tokens, products, etc. are completely separated between environments.
+    // Access tokens obtained in Production are for instance not usable in the Sandbox environment.
+    server: 'production'
+});
+
+const auth = betterAuth({
+    // ... Better Auth config
+    plugins: [
+        polar({
+            client,
+            // Enable automatic Polar Customer creation on signup
+            createCustomerOnSignUp: true,
+            // Enable customer portal
+            enableCustomerPortal: true, // Deployed under /portal for authenticated users
+            // Configure checkout
+            checkout: {
+                enabled: true,
+                products: [
+                    {
+                        productId: "123-456-789", // ID of Product from Polar Dashboard
+                        slug: "pro" // Custom slug for easy reference in Checkout URL, e.g. /checkout/pro
+                    }
+                ],
+                successUrl: "/success?checkout_id={CHECKOUT_ID}"
+            },
+            // Incoming Webhooks handler will be installed at /polar/webhooks
+            webhooks: {
+                secret: process.env.POLAR_WEBHOOK_SECRET,
+                onPayload: ...,
+            }
+        })
+    ]
+});
+```
+
+## Configuration Options
+
+### Required Options
+
+- `client`: Polar SDK client instance
+
+### Optional Options
+
+- `createCustomerOnSignUp`: Automatically create a Polar customer when a user signs up
+- `getCustomerCreateParams`: Custom function to provide additional customer creation parameters
+- `enableCustomerPortal`: Enable the customer portal functionality. Deployed as GET endpoint at /portal
+- `checkout.enabled`: Enable checkout functionality. Deployed as GET endpoint at /checkout
+- `checkout.products`: Array of products or function returning products. Slug passed will then be passable as route param.
+- `checkout.successUrl`: URL to redirect to after successful checkout
+
+### Webhook Handlers
+
+Configure a Webhook endpoint in your Polar Organization Settings page. Webhook endpoint is configured at /polar/webhooks.
+
+Add the secret to your environment.
+
+```bash
+# .env
+POLAR_WEBHOOK_SECRET=...
+```
+
+The plugin supports handlers for all Polar webhook events:
+
+- `onPayload` - Catch-all handler for any incoming Webhook event
+- `onCheckoutCreated` - Triggered when a checkout is created
+- `onCheckoutUpdated` - Triggered when a checkout is updated
+- `onOrderCreated` - Triggered when an order is created
+- `onOrderRefunded` - Triggered when an order is refunded
+- `onRefundCreated` - Triggered when a refund is created
+- `onRefundUpdated` - Triggered when a refund is updated
+- `onSubscriptionCreated` - Triggered when a subscription is created
+- `onSubscriptionUpdated` - Triggered when a subscription is updated
+- `onSubscriptionActive` - Triggered when a subscription becomes active
+- `onSubscriptionCanceled` - Triggered when a subscription is canceled
+- `onSubscriptionRevoked` - Triggered when a subscription is revoked
+- `onSubscriptionUncanceled` - Triggered when a subscription cancellation is reversed
+- `onProductCreated` - Triggered when a product is created
+- `onProductUpdated` - Triggered when a product is updated
+- `onOrganizationUpdated` - Triggered when an organization is updated
+- `onBenefitCreated` - Triggered when a benefit is created
+- `onBenefitUpdated` - Triggered when a benefit is updated
+- `onBenefitGrantCreated` - Triggered when a benefit grant is created
+- `onBenefitGrantUpdated` - Triggered when a benefit grant is updated
+- `onBenefitGrantRevoked` - Triggered when a benefit grant is revoked
+
+## API Routes
+
+The plugin adds the following API routes:
+
+- `GET /checkout/:slug` - Redirect to Polar checkout
+- `GET /subscriptions/list` - List active subscriptions for the authenticated user
+- `GET /customer-portal` - Redirects to Polar Customer Portal for authenticated user
+- `POST /polar/webhooks` - Incoming webhooks are automatically parsed & validated
+
+## Customers
+
+When `createCustomerOnSignUp` is enabled, a new Polar Customer is automatically created when a new User is added in the Better-Auth Database.
+
+All new customers are created with an associated `externalId`, which is the ID of your User in the Database. This allows us to skip any Polar Customer to User mapping in your Database.
+
+## Checkouts
+
+When checkouts are enabled, you're able to initialize Checkout Sessions on the `/checkout/:slug` route.
+
+### Checkouts with slug
+
+If you pass an array of products to the configuration, you're able to use the slug as a reference instead of using the product id.
+
+### Checkouts with product id
+
+All your organization products are eligible for checkouts, even if they're not passed to the products-configuration.
+
+You can initialize a checkout session like following - `/checkout?productId=123-456-789`

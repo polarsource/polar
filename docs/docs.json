@@ -94,6 +94,7 @@
                 "group": "Framework Adapters",
                 "pages": [
                   "integrate/sdk/adapters/nextjs",
+                  "integrate/sdk/adapters/better-auth",
                   "integrate/sdk/adapters/nuxt",
                   "integrate/sdk/adapters/astro",
                   "integrate/sdk/adapters/remix",
@@ -108,10 +109,7 @@
               },
               {
                 "group": "Framework Guides",
-                "pages": [
-                  "guides/nextjs",
-                  "guides/laravel"
-                ]
+                "pages": ["guides/nextjs", "guides/laravel"]
               },
               {
                 "group": "Webhooks",

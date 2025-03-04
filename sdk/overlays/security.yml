@@ -3,6 +3,10 @@ info:
   title: Overlay to fix security definition for Speakeasy
   version: 0.0.1
 actions:
+  - target: "$.paths.*.*[?(!@.security)]"
+    description: "Declare optional security on paths that don't have a security definition"
+    update:
+      security: [{}]
   - target: "$"
     description: Add a global security scheme named `access_token`
     update:

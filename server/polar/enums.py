@@ -14,12 +14,11 @@ class AccountType(StrEnum):
     stripe = "stripe"
     open_collective = "open_collective"
 
-    @classmethod
-    def get_display_name(cls, v: "AccountType") -> str:
+    def get_display_name(self) -> str:
         return {
             AccountType.stripe: "Stripe Connect Express",
             AccountType.open_collective: "Open Collective",
-        }[v]
+        }[self]
 
 
 class SubscriptionRecurringInterval(StrEnum):

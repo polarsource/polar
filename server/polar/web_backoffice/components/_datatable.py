@@ -11,6 +11,7 @@ from tagflow import attr, classes, tag, text
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import PE, Sorting
 
+from .. import formatters
 from ._button import button
 from ._clipboard_button import clipboard_button
 
@@ -82,7 +83,7 @@ class DatatableAttrColumn(Generic[M, PE], DatatableColumn[M]):
 class DatatableDateTimeColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
     def get_value(self, item: M) -> str:
         value = getattr(item, self.attr)
-        return value.strftime("%Y-%m-%d %H:%M:%S")
+        return formatters.datetime(value)
 
 
 class DatatableActionsColumn(Generic[M], DatatableColumn[M]):

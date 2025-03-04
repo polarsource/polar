@@ -1,3 +1,4 @@
+import contextlib
 import uuid
 from collections.abc import Generator
 from typing import Annotated
@@ -5,9 +6,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from sqlalchemy import or_
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import classes, tag, text
 
+from polar.enums import AccountType
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import Account, Organization
@@ -22,23 +24,50 @@ from ..layout import layout
 router = APIRouter()
 
 
+@contextlib.contextmanager
+def account_badge(account: Account | None) -> Generator[None]:
+    with tag.div(classes="badge"):
+        if account is None:
+            classes("badge-neutral")
+            text("No account")
+        else:
+            if account.status == Account.Status.ACTIVE:
+                classes("badge-success")
+            elif account.status == Account.Status.UNDER_REVIEW:
+                classes("badge-warning")
+            else:
+                classes("badge-neutral")
+            text(account.status.get_display_name())
+    yield
+
+
 class AccountColumn(
     datatable.DatatableAttrColumn[Organization, OrganizationSortProperty]
 ):
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
         account = item.account
-        with tag.div(classes="badge"):
-            if account is None:
-                classes("badge-neutral")
-                text("No account")
-            else:
-                if account.status == Account.Status.ACTIVE:
-                    classes("badge-success")
-                elif account.status == Account.Status.UNDER_REVIEW:
-                    classes("badge-warning")
-                else:
-                    classes("badge-neutral")
-                text(account.status.get_display_name())
+        with account_badge(account):
+            pass
+        return None
+
+
+class AccountTypeDescriptionListAttrItem(
+    description_list.DescriptionListAttrItem[Account]
+):
+    def render(self, request: Request, item: Account) -> Generator[None] | None:
+        account_type = item.account_type
+        if account_type == AccountType.stripe:
+            with tag.a(
+                href=f"https://dashboard.stripe.com/connect/accounts/{item.stripe_id}",
+                classes="link flex flex-row gap-1",
+                target="_blank",
+                rel="noopener noreferrer",
+            ):
+                text(account_type.get_display_name())
+                with tag.div(classes="icon-external-link"):
+                    pass
+        else:
+            text(account_type.get_display_name())
         return None
 
 
@@ -145,7 +174,9 @@ async def get(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     repository = OrganizationRepository.from_session(session)
-    organization = await repository.get_by_id(id)
+    organization = await repository.get_by_id(
+        id, options=(joinedload(Organization.account),)
+    )
 
     if organization is None:
         raise HTTPException(status_code=404)
@@ -171,3 +202,29 @@ async def get(
                 ),
             ).render(request, organization):
                 pass
+            with tag.div(classes="flex flex-row gap-4"):
+                with tag.div(classes="card card-border w-full lg:w-1/2 shadow-sm"):
+                    with tag.div(classes="card-body"):
+                        with tag.h2(classes="card-title"):
+                            text("Account")
+                            with account_badge(organization.account):
+                                pass
+                        if organization.account:
+                            with description_list.DescriptionList[Account](
+                                description_list.DescriptionListAttrItem(
+                                    "id", "ID", clipboard=True
+                                ),
+                                AccountTypeDescriptionListAttrItem(
+                                    "account_type", "Account Type"
+                                ),
+                                description_list.DescriptionListAttrItem(
+                                    "country", "Country"
+                                ),
+                                description_list.DescriptionListAttrItem(
+                                    "currency", "Currency"
+                                ),
+                                description_list.DescriptionListCurrencyItem(
+                                    "next_review_threshold", "Next Review Threshold"
+                                ),
+                            ).render(request, organization.account):
+                                pass

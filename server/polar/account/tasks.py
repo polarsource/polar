@@ -1,6 +1,5 @@
 import uuid
 
-from polar.enums import AccountType
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.discord.internal_webhook import (
@@ -40,7 +39,7 @@ async def send_account_under_review_discord_notification(account: Account) -> No
                     {
                         "title": "Payout account should be reviewed",
                         "description": (
-                            f"The {AccountType.get_display_name(account.account_type)} "
+                            f"The {account.account_type.get_display_name()} "
                             f"payout account used by {', '.join(account.get_associations_names())} should be reviewed."
                         ),
                     }
@@ -65,7 +64,7 @@ async def account_under_review(
             notif=PartialNotification(
                 type=NotificationType.maintainer_account_under_review,
                 payload=MaintainerAccountUnderReviewNotificationPayload(
-                    account_type=AccountType.get_display_name(account.account_type)
+                    account_type=account.account_type.get_display_name()
                 ),
             ),
         )
@@ -90,7 +89,7 @@ async def account_reviewed(
             notif=PartialNotification(
                 type=NotificationType.maintainer_account_reviewed,
                 payload=MaintainerAccountReviewedNotificationPayload(
-                    account_type=AccountType.get_display_name(account.account_type)
+                    account_type=account.account_type.get_display_name()
                 ),
             ),
         )

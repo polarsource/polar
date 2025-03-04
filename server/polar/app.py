@@ -162,7 +162,7 @@ def create_app() -> FastAPI:
     # /healthz
     app.include_router(health_router)
 
-    app.mount("/admin", backoffice_app)
+    app.mount("/backoffice", backoffice_app)
 
     app.include_router(router)
     document_webhooks(app)

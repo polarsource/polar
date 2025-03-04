@@ -43,7 +43,7 @@ class TimestampedSchema(Schema):
     )
 
 
-def _empty_str_to_none(value: str | None) -> str | None:
+def empty_str_to_none(value: str | None) -> str | None:
     if isinstance(value, str):
         stripped_value = value.strip()
         if stripped_value == "":
@@ -52,7 +52,7 @@ def _empty_str_to_none(value: str | None) -> str | None:
     return value
 
 
-EmptyStrToNoneValidator = AfterValidator(_empty_str_to_none)
+EmptyStrToNoneValidator = AfterValidator(empty_str_to_none)
 EmptyStrToNone = Annotated[str | None, EmptyStrToNoneValidator]
 
 

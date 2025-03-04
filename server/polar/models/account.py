@@ -1,5 +1,5 @@
 import math
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any, TypeAlias
 from uuid import UUID
 
@@ -23,11 +23,19 @@ Fees: TypeAlias = tuple[FeeBasisPoints, FeeFixedCents]
 
 
 class Account(RecordModel):
-    class Status(str, Enum):
+    class Status(StrEnum):
         CREATED = "created"
         ONBOARDING_STARTED = "onboarding_started"
         UNDER_REVIEW = "under_review"
         ACTIVE = "active"
+
+        def get_display_name(self) -> str:
+            return {
+                Account.Status.CREATED: "Created",
+                Account.Status.ONBOARDING_STARTED: "Onboarding Started",
+                Account.Status.UNDER_REVIEW: "Under Review",
+                Account.Status.ACTIVE: "Active",
+            }[self]
 
     __tablename__ = "accounts"
 

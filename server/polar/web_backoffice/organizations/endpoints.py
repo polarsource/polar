@@ -15,7 +15,7 @@ from polar.postgres import AsyncSession, get_db_session
 from ..components import datatable, description_list, input
 from ..layout import layout
 
-router = APIRouter(include_in_schema=False)
+router = APIRouter()
 
 
 @router.get("/", name="organizations:list")

@@ -1,0 +1,7 @@
+@import "tailwindcss";
+@import "lucide-static/font/lucide.css";
+@plugin "daisyui" {
+  themes:
+    light --default,
+    dark --prefersdark;
+}

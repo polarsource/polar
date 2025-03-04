@@ -1,0 +1,5 @@
+node_modules/
+static/styles.css
+static/scripts.js
+static/lucide.*
+static/main.js

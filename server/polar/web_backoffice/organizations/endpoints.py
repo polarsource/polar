@@ -12,7 +12,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
 
-from ..components import datatable, input
+from ..components import datatable, description_list, input
 from ..layout import layout
 
 router = APIRouter(include_in_schema=False)
@@ -105,3 +105,13 @@ async def get(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.h1(classes="text-4xl"):
                 text(organization.name)
+            with description_list.DescriptionList[Organization](
+                description_list.DescriptionListAttrItem("id", "ID", clipboard=True),
+                description_list.DescriptionListAttrItem(
+                    "slug", "Slug", clipboard=True
+                ),
+                description_list.DescriptionListDateTimeItem(
+                    "created_at", "Created At"
+                ),
+            ).render(request, organization):
+                pass

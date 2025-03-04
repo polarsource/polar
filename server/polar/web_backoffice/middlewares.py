@@ -38,9 +38,10 @@ class SecurityHeadersMiddleware:
         headers = MutableHeaders(scope=message)
 
         # Add Content-Security-Policy
-        # Restricts sources of content to only the same origin
+        # Restricts sources of content to only the same origin, but allows inline CSS and data:image
         headers["Content-Security-Policy"] = (
-            "default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self';"
+            "default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; "
+            "style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
         )
 
         # Add X-Content-Type-Options

@@ -20,6 +20,9 @@ importers:
       esbuild:
         specifier: ^0.25.0
         version: 0.25.0
+      htmx.org:
+        specifier: ^1.9.12
+        version: 1.9.12
       hyperscript.org:
         specifier: ^0.9.14
         version: 0.9.14
@@ -407,6 +410,9 @@ packages:
 
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
+
+  htmx.org@1.9.12:
+    resolution: {integrity: sha512-VZAohXyF7xPGS52IM8d1T1283y+X4D+Owf3qY1NZ9RuBypyu9l8cGsxUMAG5fEAb/DhT7rDoJ9Hpu5/HxFD3cw==}
 
   hyperscript.org@0.9.14:
     resolution: {integrity: sha512-ugmojsQQUMmXcnwaXYiYf8L3GbeANy/m59EmE/0Z6C5eQ52fOuSrvFkuEIejG9BdpbYB4iTtoYGqV99eYqDVMA==}
@@ -838,6 +844,8 @@ snapshots:
       to-regex-range: 5.0.1
 
   graceful-fs@4.2.11: {}
+
+  htmx.org@1.9.12: {}
 
   hyperscript.org@0.9.14:
     dependencies:

@@ -12826,7 +12826,7 @@ export interface components {
          * OrganizationSortProperty
          * @enum {string}
          */
-        OrganizationSortProperty: "created_at" | "-created_at" | "name" | "-name";
+        OrganizationSortProperty: "created_at" | "-created_at" | "slug" | "-slug" | "name" | "-name";
         /** OrganizationStripePortalSession */
         OrganizationStripePortalSession: {
             /** Url */
@@ -24802,7 +24802,7 @@ export const orderSortPropertyValues: ReadonlyArray<components["schemas"]["Order
 export const organizationAccessTokenSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationAccessTokenSortProperty"]> = ["created_at", "-created_at", "comment", "-comment", "last_used_at", "-last_used_at", "organization_id", "-organization_id"];
 export const organizationAvatarFileCreateServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileCreate"]["service"]> = ["organization_avatar"];
 export const organizationAvatarFileReadServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileRead"]["service"]> = ["organization_avatar"];
-export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationSortProperty"]> = ["created_at", "-created_at", "name", "-name"];
+export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationSortProperty"]> = ["created_at", "-created_at", "slug", "-slug", "name", "-name"];
 export const paymentProcessorValues: ReadonlyArray<components["schemas"]["PaymentProcessor"]> = ["stripe"];
 export const platformFeeTypeValues: ReadonlyArray<components["schemas"]["PlatformFeeType"]> = ["payment", "international_payment", "subscription", "invoice", "cross_border_transfer", "payout", "account", "dispute", "platform"];
 export const platformsValues: ReadonlyArray<components["schemas"]["Platforms"]> = ["github"];

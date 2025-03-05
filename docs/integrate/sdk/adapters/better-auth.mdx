@@ -119,13 +119,17 @@ The plugin supports handlers for all Polar webhook events:
 - `onBenefitGrantCreated` - Triggered when a benefit grant is created
 - `onBenefitGrantUpdated` - Triggered when a benefit grant is updated
 - `onBenefitGrantRevoked` - Triggered when a benefit grant is revoked
+- `onCustomerCreated` - Triggered when a customer is created
+- `onCustomerUpdated` - Triggered when a customer is updated
+- `onCustomerDeleted` - Triggered when a customer is deleted
+- `onCustomerStateChanged` - Triggered when a customer is created
 
 ## API Routes
 
 The plugin adds the following API routes:
 
 - `GET /checkout/:slug` - Redirect to Polar checkout
-- `GET /subscriptions/list` - List active subscriptions for the authenticated user
+- `GET /state` - Customer state (Customer Data, Active Subscriptions, Entitlements, etc.) for the authenticated user
 - `GET /customer-portal` - Redirects to Polar Customer Portal for authenticated user
 - `POST /polar/webhooks` - Incoming webhooks are automatically parsed & validated
 

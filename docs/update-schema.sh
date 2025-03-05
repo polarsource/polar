@@ -37,7 +37,7 @@ openapi-schema: $schema
 EOL
   # Add the $schema_file path to the docs navigation
   jq --arg schema_page "$schema_page" \
-  '(.navigation.anchors[] | select(.anchor == "API Reference") | .groups[] | select(.group == "Webhooks") | .pages) += [$schema_page]' \
+  '(.navigation.anchors[] | select(.anchor == "API Reference") | .groups[] | select(.group == "Webhook Events") | .pages) += [$schema_page]' \
   "$config_file" > tmp.$$.json && mv tmp.$$.json "$config_file"
   else
     echo "$schema_file already exists, skipping"

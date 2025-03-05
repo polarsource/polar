@@ -336,6 +336,15 @@
             "group": "Webhook Events",
             "pages": [
               {
+                "group": "Customer Events",
+                "pages": [
+                  "api-reference/webhooks/customer.state_changed",
+                  "api-reference/webhooks/customer.created",
+                  "api-reference/webhooks/customer.updated",
+                  "api-reference/webhooks/customer.deleted"
+                ]
+              },
+              {
                 "group": "Billing Events",
                 "pages": [
                   {

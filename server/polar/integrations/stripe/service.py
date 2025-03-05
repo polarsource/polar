@@ -185,7 +185,7 @@ class StripeService:
         self, stripe_id: str, return_path: str
     ) -> stripe_lib.AccountLink:
         refresh_url = settings.generate_external_url(
-            f"/integrations/stripe/refresh?return_path={return_path}"
+            f"/v1/integrations/stripe/refresh?return_path={return_path}"
         )
         return_url = settings.generate_frontend_url(return_path)
         return await stripe_lib.AccountLink.create_async(

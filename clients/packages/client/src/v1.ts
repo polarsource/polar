@@ -2830,6 +2830,62 @@ export interface paths {
         patch: operations["customers:update_external"];
         trace?: never;
     };
+    "/v1/customers/{id}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Customer State
+         * @description Get a customer state by ID.
+         *
+         *     The customer state includes information about
+         *     the customer's active subscriptions and benefits.
+         *
+         *     It's the ideal endpoint to use when you need to get a full overview
+         *     of a customer's status.
+         *
+         *     **Scopes**: `customers:read` `customers:write`
+         */
+        get: operations["customers:get_state"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/customers/external/{external_id}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Customer State by External ID
+         * @description Get a customer state by external ID.
+         *
+         *     The customer state includes information about
+         *     the customer's active subscriptions and benefits.
+         *
+         *     It's the ideal endpoint to use when you need to get a full overview
+         *     of a customer's status.
+         *
+         *     **Scopes**: `customers:read` `customers:write`
+         */
+        get: operations["customers:get_state_external"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/customer-portal/benefit-grants/": {
         parameters: {
             query?: never;
@@ -3620,6 +3676,109 @@ export interface webhooks {
         patch?: never;
         trace?: never;
     };
+    "customer.created": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * customer.created
+         * @description Sent when a new customer is created.
+         *
+         *     A customer can be created:
+         *
+         *     * After a successful checkout.
+         *     * Programmatically via the API.
+         *
+         *     **Discord & Slack support:** Basic
+         */
+        post: operations["_endpointcustomer_created_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "customer.updated": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * customer.updated
+         * @description Sent when a customer is updated.
+         *
+         *     This event is fired when the customer details are updated.
+         *
+         *     If you want to be notified when a customer subscription or benefit state changes, you should listen to the `customer_state_changed` event.
+         *
+         *     **Discord & Slack support:** Basic
+         */
+        post: operations["_endpointcustomer_updated_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "customer.deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * customer.deleted
+         * @description Sent when a customer is deleted.
+         *
+         *     **Discord & Slack support:** Basic
+         */
+        post: operations["_endpointcustomer_deleted_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "customer.state_changed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * customer.state_changed
+         * @description Sent when a customer state has changed.
+         *
+         *     It's triggered when:
+         *
+         *     * Customer is created, updated or deleted.
+         *     * A subscription is created or updated.
+         *     * A benefit is granted or revoked.
+         *
+         *     **Discord & Slack support:** Basic
+         */
+        post: operations["_endpointcustomer_state_changed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "order.created": {
         parameters: {
             query?: never;
@@ -3632,6 +3791,13 @@ export interface webhooks {
         /**
          * order.created
          * @description Sent when a new order is created.
+         *
+         *     A new order is created when:
+         *
+         *     * A customer purchases a one-time product. In this case, `billing_reason` is set to `purchase`.
+         *     * A customer starts a subscription. In this case, `billing_reason` is set to `subscription_create`.
+         *     * A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.
+         *     * A subscription is upgraded, downgraded or revoked with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.
          *
          *     **Discord & Slack support:** Full
          */
@@ -3676,6 +3842,8 @@ export interface webhooks {
         /**
          * subscription.created
          * @description Sent when a new subscription is created.
+         *
+         *     When this event occurs, the subscription `status` might not be `active` yet, as we can still have to wait for the first payment to be processed.
          *
          *     **Discord & Slack support:** Full
          */
@@ -8018,6 +8186,12 @@ export interface components {
          */
         Customer: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the customer.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -8028,12 +8202,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the object.
-             */
-            id: string;
             /** Metadata */
             metadata: {
                 [key: string]: string | number | boolean;
@@ -8053,7 +8221,10 @@ export interface components {
              * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
              */
             email_verified: boolean;
-            /** Name */
+            /**
+             * Name
+             * @description The name of the customer.
+             */
             name: string | null;
             billing_address: components["schemas"]["Address"] | null;
             /** Tax Id */
@@ -8064,6 +8235,7 @@ export interface components {
             /**
              * Organization Id
              * Format: uuid4
+             * @description The ID of the organization owning the customer.
              */
             organization_id: string;
             /** Avatar Url */
@@ -8387,7 +8559,10 @@ export interface components {
              * @description The email address of the customer. This must be unique within the organization.
              */
             email: string;
-            /** Name */
+            /**
+             * Name
+             * @description The name of the customer.
+             */
             name?: string | null;
             billing_address?: components["schemas"]["Address"] | null;
             /** Tax Id */
@@ -8557,45 +8732,78 @@ export interface components {
              * @description The ID of the object.
              */
             id: string;
-            /** Amount */
+            /**
+             * Amount
+             * @description The amount of the subscription.
+             */
             amount: number | null;
-            /** Currency */
+            /**
+             * Currency
+             * @description The currency of the subscription.
+             */
             currency: string | null;
+            /** @description The interval at which the subscription recurs. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
+            /** @description The status of the subscription. */
             status: components["schemas"]["SubscriptionStatus"];
             /**
              * Current Period Start
              * Format: date-time
+             * @description The start timestamp of the current billing period.
              */
             current_period_start: string;
-            /** Current Period End */
+            /**
+             * Current Period End
+             * @description The end timestamp of the current billing period.
+             */
             current_period_end: string | null;
-            /** Cancel At Period End */
+            /**
+             * Cancel At Period End
+             * @description Whether the subscription will be canceled at the end of the current period.
+             */
             cancel_at_period_end: boolean;
-            /** Canceled At */
+            /**
+             * Canceled At
+             * @description The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`.
+             */
             canceled_at: string | null;
-            /** Started At */
+            /**
+             * Started At
+             * @description The timestamp when the subscription started.
+             */
             started_at: string | null;
-            /** Ends At */
+            /**
+             * Ends At
+             * @description The timestamp when the subscription will end.
+             */
             ends_at: string | null;
-            /** Ended At */
+            /**
+             * Ended At
+             * @description The timestamp when the subscription ended.
+             */
             ended_at: string | null;
             /**
              * Customer Id
              * Format: uuid4
+             * @description The ID of the subscribed customer.
              */
             customer_id: string;
             /**
              * Product Id
              * Format: uuid4
+             * @description The ID of the subscribed product.
              */
             product_id: string;
             /**
              * Price Id
              * Format: uuid4
+             * @description The ID of the subscribed price.
              */
             price_id: string;
-            /** Discount Id */
+            /**
+             * Discount Id
+             * @description The ID of the applied discount, if any.
+             */
             discount_id: string | null;
             /** Checkout Id */
             checkout_id: string | null;
@@ -8829,6 +9037,218 @@ export interface components {
          * @enum {string}
          */
         CustomerSortProperty: "created_at" | "-created_at" | "email" | "-email" | "name" | "-name";
+        /**
+         * CustomerState
+         * @description A customer along with additional state information:
+         *
+         *     * Active subscriptions
+         *     * Active benefits
+         */
+        CustomerState: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the customer.
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * External Id
+             * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+             */
+            external_id: string | null;
+            /**
+             * Email
+             * @description The email address of the customer. This must be unique within the organization.
+             */
+            email: string;
+            /**
+             * Email Verified
+             * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
+             */
+            email_verified: boolean;
+            /**
+             * Name
+             * @description The name of the customer.
+             */
+            name: string | null;
+            billing_address: components["schemas"]["Address"] | null;
+            /** Tax Id */
+            tax_id: [
+                string,
+                components["schemas"]["TaxIDFormat"]
+            ] | null;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the customer.
+             */
+            organization_id: string;
+            /**
+             * Active Subscriptions
+             * @description The customer's active subscriptions.
+             */
+            active_subscriptions: components["schemas"]["CustomerStateSubscription"][];
+            /**
+             * Granted Benefits
+             * @description The customer's active benefit grants.
+             */
+            granted_benefits: components["schemas"]["CustomerStateBenefitGrant"][];
+            /** Avatar Url */
+            readonly avatar_url: string;
+        };
+        /**
+         * CustomerStateBenefitGrant
+         * @description An active benefit grant for a customer.
+         */
+        CustomerStateBenefitGrant: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the grant.
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Granted At
+             * Format: date-time
+             * @description The timestamp when the benefit was granted.
+             */
+            granted_at: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             * @description The ID of the benefit concerned by this grant.
+             */
+            benefit_id: string;
+            /** @description The type of the benefit concerned by this grant. */
+            benefit_type: components["schemas"]["BenefitType"];
+            /** Properties */
+            properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
+        };
+        /**
+         * CustomerStateSubscription
+         * @description An active customer subscription.
+         */
+        CustomerStateSubscription: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the subscription.
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Custom Field Data
+             * @description Key-value object storing custom field values.
+             */
+            custom_field_data?: {
+                [key: string]: string | number | boolean | null;
+            };
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Status
+             * @constant
+             */
+            status: "active";
+            /**
+             * Amount
+             * @description The amount of the subscription.
+             */
+            amount: number | null;
+            /**
+             * Currency
+             * @description The currency of the subscription.
+             */
+            currency: string | null;
+            /** @description The interval at which the subscription recurs. */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
+            /**
+             * Current Period Start
+             * Format: date-time
+             * @description The start timestamp of the current billing period.
+             */
+            current_period_start: string;
+            /**
+             * Current Period End
+             * @description The end timestamp of the current billing period.
+             */
+            current_period_end: string | null;
+            /**
+             * Cancel At Period End
+             * @description Whether the subscription will be canceled at the end of the current period.
+             */
+            cancel_at_period_end: boolean;
+            /**
+             * Canceled At
+             * @description The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`.
+             */
+            canceled_at: string | null;
+            /**
+             * Started At
+             * @description The timestamp when the subscription started.
+             */
+            started_at: string | null;
+            /**
+             * Ends At
+             * @description The timestamp when the subscription will end.
+             */
+            ends_at: string | null;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @description The ID of the subscribed product.
+             */
+            product_id: string;
+            /**
+             * Price Id
+             * Format: uuid4
+             * @description The ID of the subscribed price.
+             */
+            price_id: string;
+            /**
+             * Discount Id
+             * @description The ID of the applied discount, if any.
+             */
+            discount_id: string | null;
+        };
         /** CustomerSubscription */
         CustomerSubscription: {
             /**
@@ -8848,10 +9268,17 @@ export interface components {
              * @description The ID of the object.
              */
             id: string;
-            /** Amount */
+            /**
+             * Amount
+             * @description The amount of the subscription.
+             */
             amount: number | null;
-            /** Currency */
+            /**
+             * Currency
+             * @description The currency of the subscription.
+             */
             currency: string | null;
+            /** @description The interval at which the subscription recurs. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
             status: components["schemas"]["SubscriptionStatus"];
             /**
@@ -8886,7 +9313,10 @@ export interface components {
              * Format: uuid4
              */
             price_id: string;
-            /** Discount Id */
+            /**
+             * Discount Id
+             * @description The ID of the applied discount, if any.
+             */
             discount_id: string | null;
             /** Checkout Id */
             checkout_id: string | null;
@@ -9024,7 +9454,10 @@ export interface components {
              * @description The email address of the customer. This must be unique within the organization.
              */
             email?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description The name of the customer.
+             */
             name?: string | null;
             billing_address?: components["schemas"]["Address"] | null;
             /** Tax Id */
@@ -10894,6 +11327,12 @@ export interface components {
         /** LicenseKeyCustomer */
         LicenseKeyCustomer: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the customer.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -10904,12 +11343,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the object.
-             */
-            id: string;
             /** Metadata */
             metadata: {
                 [key: string]: string | number | boolean;
@@ -10929,7 +11362,10 @@ export interface components {
              * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
              */
             email_verified: boolean;
-            /** Name */
+            /**
+             * Name
+             * @description The name of the customer.
+             */
             name: string | null;
             billing_address: components["schemas"]["Address"] | null;
             /** Tax Id */
@@ -10940,6 +11376,7 @@ export interface components {
             /**
              * Organization Id
              * Format: uuid4
+             * @description The ID of the organization owning the customer.
              */
             organization_id: string;
             /** Avatar Url */
@@ -12303,6 +12740,12 @@ export interface components {
         /** OrderCustomer */
         OrderCustomer: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the customer.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -12313,12 +12756,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the object.
-             */
-            id: string;
             /** Metadata */
             metadata: {
                 [key: string]: string | number | boolean;
@@ -12338,7 +12775,10 @@ export interface components {
              * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
              */
             email_verified: boolean;
-            /** Name */
+            /**
+             * Name
+             * @description The name of the customer.
+             */
             name: string | null;
             billing_address: components["schemas"]["Address"] | null;
             /** Tax Id */
@@ -12349,6 +12789,7 @@ export interface components {
             /**
              * Organization Id
              * Format: uuid4
+             * @description The ID of the organization owning the customer.
              */
             organization_id: string;
             /** Avatar Url */
@@ -12441,45 +12882,78 @@ export interface components {
              * @description The ID of the object.
              */
             id: string;
-            /** Amount */
+            /**
+             * Amount
+             * @description The amount of the subscription.
+             */
             amount: number | null;
-            /** Currency */
+            /**
+             * Currency
+             * @description The currency of the subscription.
+             */
             currency: string | null;
+            /** @description The interval at which the subscription recurs. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
+            /** @description The status of the subscription. */
             status: components["schemas"]["SubscriptionStatus"];
             /**
              * Current Period Start
              * Format: date-time
+             * @description The start timestamp of the current billing period.
              */
             current_period_start: string;
-            /** Current Period End */
+            /**
+             * Current Period End
+             * @description The end timestamp of the current billing period.
+             */
             current_period_end: string | null;
-            /** Cancel At Period End */
+            /**
+             * Cancel At Period End
+             * @description Whether the subscription will be canceled at the end of the current period.
+             */
             cancel_at_period_end: boolean;
-            /** Canceled At */
+            /**
+             * Canceled At
+             * @description The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`.
+             */
             canceled_at: string | null;
-            /** Started At */
+            /**
+             * Started At
+             * @description The timestamp when the subscription started.
+             */
             started_at: string | null;
-            /** Ends At */
+            /**
+             * Ends At
+             * @description The timestamp when the subscription will end.
+             */
             ends_at: string | null;
-            /** Ended At */
+            /**
+             * Ended At
+             * @description The timestamp when the subscription ended.
+             */
             ended_at: string | null;
             /**
              * Customer Id
              * Format: uuid4
+             * @description The ID of the subscribed customer.
              */
             customer_id: string;
             /**
              * Product Id
              * Format: uuid4
+             * @description The ID of the subscribed product.
              */
             product_id: string;
             /**
              * Price Id
              * Format: uuid4
+             * @description The ID of the subscribed price.
              */
             price_id: string;
-            /** Discount Id */
+            /**
+             * Discount Id
+             * @description The ID of the applied discount, if any.
+             */
             discount_id: string | null;
             /** Checkout Id */
             checkout_id: string | null;
@@ -14370,45 +14844,78 @@ export interface components {
              * @description The ID of the object.
              */
             id: string;
-            /** Amount */
+            /**
+             * Amount
+             * @description The amount of the subscription.
+             */
             amount: number | null;
-            /** Currency */
+            /**
+             * Currency
+             * @description The currency of the subscription.
+             */
             currency: string | null;
+            /** @description The interval at which the subscription recurs. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
+            /** @description The status of the subscription. */
             status: components["schemas"]["SubscriptionStatus"];
             /**
              * Current Period Start
              * Format: date-time
+             * @description The start timestamp of the current billing period.
              */
             current_period_start: string;
-            /** Current Period End */
+            /**
+             * Current Period End
+             * @description The end timestamp of the current billing period.
+             */
             current_period_end: string | null;
-            /** Cancel At Period End */
+            /**
+             * Cancel At Period End
+             * @description Whether the subscription will be canceled at the end of the current period.
+             */
             cancel_at_period_end: boolean;
-            /** Canceled At */
+            /**
+             * Canceled At
+             * @description The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`.
+             */
             canceled_at: string | null;
-            /** Started At */
+            /**
+             * Started At
+             * @description The timestamp when the subscription started.
+             */
             started_at: string | null;
-            /** Ends At */
+            /**
+             * Ends At
+             * @description The timestamp when the subscription will end.
+             */
             ends_at: string | null;
-            /** Ended At */
+            /**
+             * Ended At
+             * @description The timestamp when the subscription ended.
+             */
             ended_at: string | null;
             /**
              * Customer Id
              * Format: uuid4
+             * @description The ID of the subscribed customer.
              */
             customer_id: string;
             /**
              * Product Id
              * Format: uuid4
+             * @description The ID of the subscribed product.
              */
             product_id: string;
             /**
              * Price Id
              * Format: uuid4
+             * @description The ID of the subscribed price.
              */
             price_id: string;
-            /** Discount Id */
+            /**
+             * Discount Id
+             * @description The ID of the applied discount, if any.
+             */
             discount_id: string | null;
             /** Checkout Id */
             checkout_id: string | null;
@@ -14490,6 +14997,12 @@ export interface components {
         /** SubscriptionCustomer */
         SubscriptionCustomer: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the customer.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -14500,12 +15013,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the object.
-             */
-            id: string;
             /** Metadata */
             metadata: {
                 [key: string]: string | number | boolean;
@@ -14525,7 +15032,10 @@ export interface components {
              * @description Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address.
              */
             email_verified: boolean;
-            /** Name */
+            /**
+             * Name
+             * @description The name of the customer.
+             */
             name: string | null;
             billing_address: components["schemas"]["Address"] | null;
             /** Tax Id */
@@ -14536,6 +15046,7 @@ export interface components {
             /**
              * Organization Id
              * Format: uuid4
+             * @description The ID of the organization owning the customer.
              */
             organization_id: string;
             /** Avatar Url */
@@ -15350,6 +15861,77 @@ export interface components {
             data: components["schemas"]["Checkout"];
         };
         /**
+         * WebhookCustomerCreatedPayload
+         * @description Sent when a new customer is created.
+         *
+         *     A customer can be created:
+         *
+         *     * After a successful checkout.
+         *     * Programmatically via the API.
+         *
+         *     **Discord & Slack support:** Basic
+         */
+        WebhookCustomerCreatedPayload: {
+            /**
+             * Type
+             * @constant
+             */
+            type: "customer.created";
+            data: components["schemas"]["Customer"];
+        };
+        /**
+         * WebhookCustomerDeletedPayload
+         * @description Sent when a customer is deleted.
+         *
+         *     **Discord & Slack support:** Basic
+         */
+        WebhookCustomerDeletedPayload: {
+            /**
+             * Type
+             * @constant
+             */
+            type: "customer.deleted";
+            data: components["schemas"]["Customer"];
+        };
+        /**
+         * WebhookCustomerStateChangedPayload
+         * @description Sent when a customer state has changed.
+         *
+         *     It's triggered when:
+         *
+         *     * Customer is created, updated or deleted.
+         *     * A subscription is created or updated.
+         *     * A benefit is granted or revoked.
+         *
+         *     **Discord & Slack support:** Basic
+         */
+        WebhookCustomerStateChangedPayload: {
+            /**
+             * Type
+             * @constant
+             */
+            type: "customer.state_changed";
+            data: components["schemas"]["CustomerState"];
+        };
+        /**
+         * WebhookCustomerUpdatedPayload
+         * @description Sent when a customer is updated.
+         *
+         *     This event is fired when the customer details are updated.
+         *
+         *     If you want to be notified when a customer subscription or benefit state changes, you should listen to the `customer_state_changed` event.
+         *
+         *     **Discord & Slack support:** Basic
+         */
+        WebhookCustomerUpdatedPayload: {
+            /**
+             * Type
+             * @constant
+             */
+            type: "customer.updated";
+            data: components["schemas"]["Customer"];
+        };
+        /**
          * WebhookDelivery
          * @description A webhook delivery for a webhook event.
          */
@@ -15516,7 +16098,7 @@ export interface components {
          * WebhookEventType
          * @enum {string}
          */
-        WebhookEventType: "checkout.created" | "checkout.updated" | "order.created" | "order.refunded" | "subscription.created" | "subscription.updated" | "subscription.active" | "subscription.canceled" | "subscription.uncanceled" | "subscription.revoked" | "refund.created" | "refund.updated" | "product.created" | "product.updated" | "benefit.created" | "benefit.updated" | "benefit_grant.created" | "benefit_grant.updated" | "benefit_grant.revoked" | "organization.updated" | "pledge.created" | "pledge.updated";
+        WebhookEventType: "checkout.created" | "checkout.updated" | "customer.created" | "customer.updated" | "customer.deleted" | "customer.state_changed" | "order.created" | "order.refunded" | "subscription.created" | "subscription.updated" | "subscription.active" | "subscription.canceled" | "subscription.uncanceled" | "subscription.revoked" | "refund.created" | "refund.updated" | "product.created" | "product.updated" | "benefit.created" | "benefit.updated" | "benefit_grant.created" | "benefit_grant.updated" | "benefit_grant.revoked" | "organization.updated" | "pledge.created" | "pledge.updated";
         /**
          * WebhookFormat
          * @enum {string}
@@ -15525,6 +16107,13 @@ export interface components {
         /**
          * WebhookOrderCreatedPayload
          * @description Sent when a new order is created.
+         *
+         *     A new order is created when:
+         *
+         *     * A customer purchases a one-time product. In this case, `billing_reason` is set to `purchase`.
+         *     * A customer starts a subscription. In this case, `billing_reason` is set to `subscription_create`.
+         *     * A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.
+         *     * A subscription is upgraded, downgraded or revoked with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.
          *
          *     **Discord & Slack support:** Full
          */
@@ -15690,6 +16279,8 @@ export interface components {
         /**
          * WebhookSubscriptionCreatedPayload
          * @description Sent when a new subscription is created.
+         *
+         *     When this event occurs, the subscription `status` might not be `active` yet, as we can still have to wait for the first payment to be processed.
          *
          *     **Discord & Slack support:** Full
          */
@@ -22196,6 +22787,88 @@ export interface operations {
             };
         };
     };
+    "customers:get_state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The customer ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerState"];
+                };
+            };
+            /** @description Customer not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "customers:get_state_external": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The customer external ID. */
+                external_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerState"];
+                };
+            };
+            /** @description Customer not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "customer_portal:benefit-grants:list": {
         parameters: {
             query?: {
@@ -24000,6 +24673,138 @@ export interface operations {
             };
         };
     };
+    _endpointcustomer_created_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookCustomerCreatedPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    _endpointcustomer_updated_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookCustomerUpdatedPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    _endpointcustomer_deleted_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookCustomerDeletedPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    _endpointcustomer_state_changed_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookCustomerStateChangedPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     _endpointorder_created_post: {
         parameters: {
             query?: never;
@@ -24839,7 +25644,7 @@ export const timeIntervalValues: ReadonlyArray<components["schemas"]["TimeInterv
 export const transactionSortPropertyValues: ReadonlyArray<components["schemas"]["TransactionSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
 export const transactionTypeValues: ReadonlyArray<components["schemas"]["TransactionType"]> = ["payment", "processor_fee", "refund", "dispute", "dispute_reversal", "balance", "payout"];
 export const userSignupAttributionIntentValues: ReadonlyArray<components["schemas"]["UserSignupAttribution"]["intent"]> = ["creator", "pledge", "purchase", "subscription", "newsletter_subscription"];
-export const webhookEventTypeValues: ReadonlyArray<components["schemas"]["WebhookEventType"]> = ["checkout.created", "checkout.updated", "order.created", "order.refunded", "subscription.created", "subscription.updated", "subscription.active", "subscription.canceled", "subscription.uncanceled", "subscription.revoked", "refund.created", "refund.updated", "product.created", "product.updated", "benefit.created", "benefit.updated", "benefit_grant.created", "benefit_grant.updated", "benefit_grant.revoked", "organization.updated", "pledge.created", "pledge.updated"];
+export const webhookEventTypeValues: ReadonlyArray<components["schemas"]["WebhookEventType"]> = ["checkout.created", "checkout.updated", "customer.created", "customer.updated", "customer.deleted", "customer.state_changed", "order.created", "order.refunded", "subscription.created", "subscription.updated", "subscription.active", "subscription.canceled", "subscription.uncanceled", "subscription.revoked", "refund.created", "refund.updated", "product.created", "product.updated", "benefit.created", "benefit.updated", "benefit_grant.created", "benefit_grant.updated", "benefit_grant.revoked", "organization.updated", "pledge.created", "pledge.updated"];
 export const webhookFormatValues: ReadonlyArray<components["schemas"]["WebhookFormat"]> = ["raw", "discord", "slack"];
 export const revokeTokenRequestToken_type_hintValues: ReadonlyArray<components["schemas"]["RevokeTokenRequest"]["token_type_hint"]> = ["access_token", "refresh_token"];
 export const introspectTokenRequestToken_type_hintValues: ReadonlyArray<components["schemas"]["IntrospectTokenRequest"]["token_type_hint"]> = ["access_token", "refresh_token"];

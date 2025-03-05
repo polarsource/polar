@@ -51,22 +51,46 @@ class SubscriptionUser(Schema):
 
 
 class SubscriptionBase(IDSchema, TimestampedSchema):
-    amount: int | None
-    currency: str | None
-    recurring_interval: SubscriptionRecurringInterval
-    status: SubscriptionStatus
-    current_period_start: datetime
-    current_period_end: datetime | None
-    cancel_at_period_end: bool
-    canceled_at: datetime | None
-    started_at: datetime | None
-    ends_at: datetime | None
-    ended_at: datetime | None
+    amount: int | None = Field(description="The amount of the subscription.")
+    currency: str | None = Field(description="The currency of the subscription.")
+    recurring_interval: SubscriptionRecurringInterval = Field(
+        description="The interval at which the subscription recurs."
+    )
+    status: SubscriptionStatus = Field(description="The status of the subscription.")
+    current_period_start: datetime = Field(
+        description="The start timestamp of the current billing period."
+    )
+    current_period_end: datetime | None = Field(
+        description="The end timestamp of the current billing period."
+    )
+    cancel_at_period_end: bool = Field(
+        description=(
+            "Whether the subscription will be canceled "
+            "at the end of the current period."
+        )
+    )
+    canceled_at: datetime | None = Field(
+        description=(
+            "The timestamp when the subscription was canceled. "
+            "The subscription might still be active if `cancel_at_period_end` is `true`."
+        )
+    )
+    started_at: datetime | None = Field(
+        description="The timestamp when the subscription started."
+    )
+    ends_at: datetime | None = Field(
+        description="The timestamp when the subscription will end."
+    )
+    ended_at: datetime | None = Field(
+        description="The timestamp when the subscription ended."
+    )
 
-    customer_id: UUID4
-    product_id: UUID4
-    price_id: UUID4
-    discount_id: UUID4 | None
+    customer_id: UUID4 = Field(description="The ID of the subscribed customer.")
+    product_id: UUID4 = Field(description="The ID of the subscribed product.")
+    price_id: UUID4 = Field(description="The ID of the subscribed price.")
+    discount_id: UUID4 | None = Field(
+        description="The ID of the applied discount, if any."
+    )
     checkout_id: UUID4 | None
 
     customer_cancellation_reason: CustomerCancellationReason | None

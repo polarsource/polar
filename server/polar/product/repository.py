@@ -1,10 +1,9 @@
-from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy.orm import joinedload, selectinload
-from sqlalchemy.sql.base import ExecutableOption
 
 from polar.kit.repository import (
+    Options,
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
@@ -24,7 +23,7 @@ class ProductRepository(
         id: UUID,
         organization_id: UUID,
         *,
-        options: Sequence[ExecutableOption] = (),
+        options: Options = (),
     ) -> Product | None:
         statement = (
             self.get_base_statement()
@@ -38,7 +37,7 @@ class ProductRepository(
         id: UUID,
         checkout_id: UUID,
         *,
-        options: Sequence[ExecutableOption] = (),
+        options: Options = (),
     ) -> Product | None:
         statement = (
             self.get_base_statement()
@@ -51,7 +50,7 @@ class ProductRepository(
         )
         return await self.get_one_or_none(statement)
 
-    def get_eager_options(self) -> Sequence[ExecutableOption]:
+    def get_eager_options(self) -> Options:
         return (
             joinedload(Product.organization),
             selectinload(Product.product_medias),

@@ -1,6 +1,6 @@
 from typing import Any, NotRequired, TypedDict, cast
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_extra_types.country import CountryAlpha2
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.interfaces import Dialect
@@ -24,7 +24,7 @@ class Address(BaseModel):
     postal_code: EmptyStrToNone | None = None
     city: EmptyStrToNone | None = None
     state: EmptyStrToNone | None = None
-    country: CountryAlpha2
+    country: CountryAlpha2 = Field(examples=["US", "SE", "FR"])
 
     def to_dict(self) -> AddressDict:
         return cast(AddressDict, self.model_dump(exclude_none=True))

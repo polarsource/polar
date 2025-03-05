@@ -366,7 +366,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         self, session: AsyncSession, customer: Customer
     ) -> None:
         repository = BenefitGrantRepository.from_session(session)
-        grants = await repository.list_granted_by_customer(customer)
+        grants = await repository.list_granted_by_customer(customer.id)
         for grant in grants:
             enqueue_job("benefit.delete_grant", benefit_grant_id=grant.id)
 

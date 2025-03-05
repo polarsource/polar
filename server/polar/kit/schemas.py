@@ -214,3 +214,12 @@ class MultipleQueryFilter(Sequence[Q]):
         if isinstance(v, Sequence) and not isinstance(v, str):
             return v
         return [cast(Q, v)]
+
+
+ORGANIZATION_ID_EXAMPLE = "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+PRODUCT_ID_EXAMPLE = "d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23"
+PRICE_ID_EXAMPLE = "196ca717-4d84-4d28-a1b8-777255797dbc"
+BENEFIT_ID_EXAMPLE = "397a17aa-15cf-4cb4-9333-18040203cf98"
+CUSTOMER_ID_EXAMPLE = "992fae2a-2a17-4b7a-8d9e-e287cf90131b"
+SUBSCRIPTION_ID_EXAMPLE = "e5149aae-e521-42b9-b24c-abb3d71eea2e"
+BENEFIT_GRANT_ID_EXAMPLE = "d322132c-a9d0-4e0d-b8d3-d81ad021a3a9"

@@ -1,6 +1,6 @@
 from typing import Any, Literal, LiteralString, NotRequired, TypedDict
 
-from pydantic import BaseModel, create_model
+from pydantic import BaseModel, Field, create_model
 from pydantic_core import ErrorDetails, InitErrorDetails, PydanticCustomError
 from pydantic_core import ValidationError as PydanticValidationError
 
@@ -35,7 +35,11 @@ class PolarError(Exception):
     def schema(cls) -> type[BaseModel]:
         error_literal = Literal[cls.__name__]  # type: ignore
 
-        return create_model(cls.__name__, error=(error_literal, ...), detail=(str, ...))
+        return create_model(
+            cls.__name__,
+            error=(error_literal, Field(examples=[cls.__name__])),
+            detail=(str, ...),
+        )
 
 
 class PolarTaskError(PolarError):

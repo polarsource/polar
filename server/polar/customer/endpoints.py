@@ -12,7 +12,13 @@ from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import Customer as CustomerSchema
-from .schemas import CustomerCreate, CustomerExternalID, CustomerID, CustomerUpdate
+from .schemas import (
+    CustomerCreate,
+    CustomerExternalID,
+    CustomerID,
+    CustomerState,
+    CustomerUpdate,
+)
 from .service import customer as customer_service
 
 router = APIRouter(
@@ -102,6 +108,62 @@ async def get_external(
         raise ResourceNotFound()
 
     return customer
+
+
+@router.get(
+    "/{id}/state",
+    summary="Get Customer State",
+    response_model=CustomerState,
+    responses={404: CustomerNotFound},
+)
+async def get_state(
+    id: CustomerID,
+    auth_subject: auth.CustomerRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> CustomerState:
+    """
+    Get a customer state by ID.
+
+    The customer state includes information about
+    the customer's active subscriptions and benefits.
+
+    It's the ideal endpoint to use when you need to get a full overview
+    of a customer's status.
+    """
+    customer = await customer_service.get(session, auth_subject, id)
+
+    if customer is None:
+        raise ResourceNotFound()
+
+    return await customer_service.get_state(session, customer)
+
+
+@router.get(
+    "/external/{external_id}/state",
+    summary="Get Customer State by External ID",
+    response_model=CustomerState,
+    responses={404: CustomerNotFound},
+)
+async def get_state_external(
+    external_id: CustomerExternalID,
+    auth_subject: auth.CustomerRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> CustomerState:
+    """
+    Get a customer state by external ID.
+
+    The customer state includes information about
+    the customer's active subscriptions and benefits.
+
+    It's the ideal endpoint to use when you need to get a full overview
+    of a customer's status.
+    """
+    customer = await customer_service.get_external(session, auth_subject, external_id)
+
+    if customer is None:
+        raise ResourceNotFound()
+
+    return await customer_service.get_state(session, customer)
 
 
 @router.post(

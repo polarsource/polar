@@ -37,6 +37,8 @@ class ModelDeletedAtIDProtocol(Protocol[ID_TYPE]):
 
 MODEL_DELETED_AT_ID = TypeVar("MODEL_DELETED_AT_ID", bound=ModelDeletedAtIDProtocol)  # type: ignore[type-arg]
 
+Options: TypeAlias = Sequence[ExecutableOption]
+
 
 class RepositoryProtocol(Protocol[M]):
     model: type[M]
@@ -167,7 +169,7 @@ class RepositoryIDMixin(Generic[MODEL_ID, ID_TYPE]):
         self: RepositoryProtocol[MODEL_ID],
         id: ID_TYPE,
         *,
-        options: Sequence[ExecutableOption] = (),
+        options: Options = (),
     ) -> MODEL_ID | None:
         statement = (
             self.get_base_statement().where(self.model.id == id).options(*options)
@@ -180,7 +182,7 @@ class RepositorySoftDeletionIDMixin(Generic[MODEL_DELETED_AT_ID, ID_TYPE]):
         self: RepositorySoftDeletionProtocol[MODEL_DELETED_AT_ID],
         id: ID_TYPE,
         *,
-        options: Sequence[ExecutableOption] = (),
+        options: Options = (),
         include_deleted: bool = False,
     ) -> MODEL_DELETED_AT_ID | None:
         statement = (

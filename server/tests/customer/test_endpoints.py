@@ -1,10 +1,22 @@
+import uuid
+
 import pytest
 from httpx import AsyncClient
 
-from polar.models import Customer, Organization, UserOrganization
+from polar.models import (
+    Benefit,
+    Customer,
+    Organization,
+    Product,
+    UserOrganization,
+)
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer
+from tests.fixtures.random_objects import (
+    create_active_subscription,
+    create_benefit_grant,
+    create_customer,
+)
 
 
 @pytest.mark.asyncio
@@ -109,6 +121,73 @@ class TestGetExternal:
 
         json = response.json()
         assert json["id"] == str(customer_external_id.id)
+
+
+@pytest.mark.asyncio
+class TestGetState:
+    async def test_anonymous(self, client: AsyncClient, customer: Customer) -> None:
+        response = await client.get(f"/v1/customers/{customer.id}/state")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
+    async def test_missing_scope(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        response = await client.get(f"/v1/customers/{customer.id}/state")
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_not_existing(
+        self, client: AsyncClient, user_organization: UserOrganization
+    ) -> None:
+        response = await client.get(f"/v1/customers/{uuid.uuid4()}/state")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+        product: Product,
+        benefit_organization: Benefit,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+        revoked_grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=False,
+        )
+
+        response = await client.get(f"/v1/customers/{customer.id}/state")
+
+        assert response.status_code == 200
+
+        json = response.json()
+
+        assert len(json["active_subscriptions"]) == 1
+        assert json["active_subscriptions"][0]["id"] == str(subscription.id)
+
+        assert len(json["granted_benefits"]) == 1
+        assert json["granted_benefits"][0]["id"] == str(grant.id)
+        assert json["granted_benefits"][0]["benefit_type"] == benefit_organization.type
 
 
 @pytest.mark.asyncio

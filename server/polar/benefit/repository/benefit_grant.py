@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 
 from polar.kit.repository import (
+    Options,
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
@@ -32,37 +33,65 @@ class BenefitGrantRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def list_granted_by_benefit(self, benefit: Benefit) -> Sequence[BenefitGrant]:
-        statement = self.get_base_statement().where(
-            BenefitGrant.benefit_id == benefit.id,
-            BenefitGrant.is_granted.is_(True),
-            BenefitGrant.deleted_at.is_(None),
+    async def list_granted_by_benefit(
+        self,
+        benefit: Benefit,
+        *,
+        options: Options = (),
+    ) -> Sequence[BenefitGrant]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                BenefitGrant.benefit_id == benefit.id,
+                BenefitGrant.is_granted.is_(True),
+                BenefitGrant.deleted_at.is_(None),
+            )
+            .options(*options)
         )
         return await self.get_all(statement)
 
     async def list_granted_by_customer(
-        self, customer: Customer
+        self,
+        customer_id: UUID,
+        *,
+        options: Options = (),
     ) -> Sequence[BenefitGrant]:
-        statement = self.get_base_statement().where(
-            BenefitGrant.customer_id == customer.id,
-            BenefitGrant.is_granted.is_(True),
-            BenefitGrant.deleted_at.is_(None),
+        statement = (
+            self.get_base_statement()
+            .where(
+                BenefitGrant.customer_id == customer_id,
+                BenefitGrant.is_granted.is_(True),
+                BenefitGrant.deleted_at.is_(None),
+            )
+            .options(*options)
         )
         return await self.get_all(statement)
 
     async def list_granted_by_benefit_and_customer(
-        self, benefit: Benefit, customer: Customer
+        self,
+        benefit: Benefit,
+        customer: Customer,
+        *,
+        options: Options = (),
     ) -> Sequence[BenefitGrant]:
-        statement = self.get_base_statement().where(
-            BenefitGrant.benefit_id == benefit.id,
-            BenefitGrant.customer_id == customer.id,
-            BenefitGrant.is_granted.is_(True),
-            BenefitGrant.deleted_at.is_(None),
+        statement = (
+            self.get_base_statement()
+            .where(
+                BenefitGrant.benefit_id == benefit.id,
+                BenefitGrant.customer_id == customer.id,
+                BenefitGrant.is_granted.is_(True),
+                BenefitGrant.deleted_at.is_(None),
+            )
+            .options(*options)
         )
         return await self.get_all(statement)
 
     async def list_by_customer_and_benefit_type(
-        self, customer: Customer, benefit_type: BenefitType
+        self,
+        customer: Customer,
+        benefit_type: BenefitType,
+        *,
+        options: Options = (),
     ) -> Sequence[BenefitGrant]:
         statement = (
             self.get_base_statement()
@@ -71,7 +100,7 @@ class BenefitGrantRepository(
                 BenefitGrant.customer_id == customer.id,
                 Benefit.type == benefit_type,
             )
-        )
+        ).options(*options)
         return await self.get_all(statement)
 
     async def list_outdated_grants(

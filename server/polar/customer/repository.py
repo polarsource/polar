@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import Select, func, select
@@ -9,6 +10,8 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models import Customer, UserOrganization
+from polar.models.webhook_endpoint import WebhookEventType
+from polar.worker import enqueue_job
 
 
 class CustomerRepository(
@@ -17,6 +20,35 @@ class CustomerRepository(
     RepositoryBase[Customer],
 ):
     model = Customer
+
+    async def create(self, object: Customer, *, flush: bool = False) -> Customer:
+        customer = await super().create(object, flush=flush)
+
+        # We need the id to enqueue the job
+        if customer.id is None:
+            customer_id = Customer.__table__.c.id.default.arg(None)
+            customer.id = customer_id
+
+        assert customer.id is not None, "Customer.id is None"
+        enqueue_job("customer.webhook", WebhookEventType.customer_created, customer.id)
+
+        return customer
+
+    async def update(
+        self,
+        object: Customer,
+        *,
+        update_dict: dict[str, Any] | None = None,
+        flush: bool = False,
+    ) -> Customer:
+        customer = await super().update(object, update_dict=update_dict, flush=flush)
+        enqueue_job("customer.webhook", WebhookEventType.customer_updated, customer.id)
+        return customer
+
+    async def soft_delete(self, object: Customer, *, flush: bool = False) -> Customer:
+        customer = await super().soft_delete(object, flush=flush)
+        enqueue_job("customer.webhook", WebhookEventType.customer_deleted, customer.id)
+        return customer
 
     async def get_by_id_and_organization(
         self, id: UUID, organization_id: UUID

@@ -2,6 +2,7 @@ from polar.account import tasks as account
 from polar.auth import tasks as auth
 from polar.benefit import tasks as benefit
 from polar.checkout import tasks as checkout
+from polar.customer import tasks as customer
 from polar.customer_session import tasks as customer_session
 from polar.email import tasks as email
 from polar.email_update import tasks as email_update
@@ -25,6 +26,7 @@ __all__ = [
     "auth",
     "benefit",
     "checkout",
+    "customer",
     "customer_session",
     "email",
     "email_update",

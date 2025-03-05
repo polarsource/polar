@@ -502,6 +502,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if subscription.active:
             await self._on_subscription_activated(session, subscription)
 
+        enqueue_job(
+            "customer.webhook",
+            WebhookEventType.customer_state_changed,
+            subscription.customer_id,
+        )
+
     async def update_subscription_from_stripe(
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
     ) -> Subscription:
@@ -968,6 +974,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         if became_revoked:
             await self._on_subscription_revoked(session, subscription)
+
+        enqueue_job(
+            "customer.webhook",
+            WebhookEventType.customer_state_changed,
+            subscription.customer_id,
+        )
 
     async def _on_subscription_updated(
         self,

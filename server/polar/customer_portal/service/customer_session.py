@@ -117,8 +117,8 @@ class CustomerSessionService:
             raise CustomerSessionCodeInvalidOrExpired()
 
         customer = customer_session_code.customer
-        customer.email_verified = True
-        session.add(customer)
+        customer_repository = CustomerRepository.from_session(session)
+        await customer_repository.update(customer, update_dict={"email_verified": True})
 
         await session.delete(customer_session_code)
 

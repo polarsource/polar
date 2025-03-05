@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, String, Uuid
@@ -15,6 +15,10 @@ if TYPE_CHECKING:
 class WebhookEventType(StrEnum):
     checkout_created = "checkout.created"
     checkout_updated = "checkout.updated"
+    customer_created = "customer.created"
+    customer_updated = "customer.updated"
+    customer_deleted = "customer.deleted"
+    customer_state_changed = "customer.state_changed"
     order_created = "order.created"
     order_refunded = "order.refunded"
     subscription_created = "subscription.created"
@@ -35,6 +39,14 @@ class WebhookEventType(StrEnum):
     organization_updated = "organization.updated"
     pledge_created = "pledge.created"
     pledge_updated = "pledge.updated"
+
+
+CustomerWebhookEventType = Literal[
+    WebhookEventType.customer_created,
+    WebhookEventType.customer_updated,
+    WebhookEventType.customer_deleted,
+    WebhookEventType.customer_state_changed,
+]
 
 
 class WebhookFormat(StrEnum):

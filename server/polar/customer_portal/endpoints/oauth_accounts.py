@@ -94,13 +94,13 @@ async def callback(
     except jwt.DecodeError as e:
         raise Forbidden("Invalid state") from e
 
+    customer_repository = CustomerRepository.from_session(session)
     customer_id = uuid.UUID(state_data.get("customer_id"))
     customer: Customer | None = None
     if is_customer(auth_subject):
         customer = auth_subject.subject
     elif is_anonymous(auth_subject):
         # Trust the customer ID in the state for anonymous users
-        customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id(customer_id)
 
     if customer is None:
@@ -154,6 +154,6 @@ async def callback(
     )
 
     customer.set_oauth_account(oauth_account, platform)
-    session.add(customer)
+    await customer_repository.update(customer)
 
     return RedirectResponse(redirect_url)

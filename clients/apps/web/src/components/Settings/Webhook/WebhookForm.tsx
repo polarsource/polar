@@ -191,7 +191,7 @@ export const FieldEvents = () => {
           control={form.control}
           name="events"
           render={({ field }) => {
-            const href = `https://docs.polar.sh/api-reference#webhooks`
+            const href = `https://docs.polar.sh/api-reference/webhooks/${event}`
 
             return (
               <FormItem className="flex flex-row items-center space-x-3 space-y-0">

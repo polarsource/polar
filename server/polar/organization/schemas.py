@@ -13,6 +13,7 @@ from pydantic import (
 from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
 from polar.kit.schemas import (
+    ORGANIZATION_ID_EXAMPLE,
     EmptyStrToNoneValidator,
     HttpUrlToStr,
     IDSchema,
@@ -28,6 +29,7 @@ OrganizationID = Annotated[
     UUID4,
     MergeJSONSchema({"description": "The organization ID."}),
     SelectorWidget("/v1/organizations", "Organization", "name"),
+    Field(examples=[ORGANIZATION_ID_EXAMPLE]),
 ]
 
 

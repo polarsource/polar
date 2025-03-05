@@ -1,4 +1,5 @@
 from .base import (
+    Options,
     RepositoryBase,
     RepositoryIDMixin,
     RepositorySoftDeletionIDMixin,
@@ -8,6 +9,7 @@ from .base import (
 )
 
 __all__ = [
+    "Options",
     "RepositoryBase",
     "RepositoryIDMixin",
     "RepositorySoftDeletionMixin",

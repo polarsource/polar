@@ -1,5 +1,6 @@
 import dataclasses
 import time
+from collections.abc import Sequence
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -23,7 +24,9 @@ from polar.kit.metadata import MetadataMixin
 from polar.kit.tax import TaxID, TaxIDType
 
 if TYPE_CHECKING:
+    from .benefit_grant import BenefitGrant
     from .organization import Organization
+    from .subscription import Subscription
 
 
 class CustomerOAuthPlatform(StrEnum):
@@ -160,3 +163,19 @@ class Customer(MetadataMixin, RecordModel):
         if self.name:
             return self.name[0]
         return self.email[0]
+
+    @property
+    def active_subscriptions(self) -> Sequence["Subscription"] | None:
+        return getattr(self, "_active_subscriptions", None)
+
+    @active_subscriptions.setter
+    def active_subscriptions(self, value: Sequence["Subscription"]) -> None:
+        self._active_subscriptions = value
+
+    @property
+    def granted_benefits(self) -> Sequence["BenefitGrant"] | None:
+        return getattr(self, "_granted_benefits", None)
+
+    @granted_benefits.setter
+    def granted_benefits(self, value: Sequence["BenefitGrant"]) -> None:
+        self._granted_benefits = value

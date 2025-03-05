@@ -2,10 +2,11 @@ import hashlib
 import json
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import Any, LiteralString
+from typing import Annotated, Any, LiteralString
 
 import stdnum.exceptions
 import stripe as stripe_lib
+from pydantic import Field
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.types import TypeDecorator
@@ -186,7 +187,10 @@ COUNTRY_TAX_ID_MAP: dict[str, Sequence[TaxIDFormat]] = {
     "ZA": (TaxIDFormat.za_vat,),
 }
 
-TaxID = tuple[str, TaxIDFormat]
+TaxID = Annotated[
+    tuple[str, TaxIDFormat],
+    Field(examples=[("911144442", "us_ein"), ("FR61954506077", "eu_vat")]),
+]
 
 
 def validate_tax_id(number: str, country: str) -> TaxID:

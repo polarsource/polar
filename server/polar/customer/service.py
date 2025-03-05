@@ -3,20 +3,23 @@ from collections.abc import Sequence
 from typing import Any
 
 from sqlalchemy import UnaryExpression, asc, desc, func, or_
+from sqlalchemy.orm import joinedload
 from stripe import Customer as StripeCustomer
 
 from polar.auth.models import AuthSubject
+from polar.benefit.repository.benefit_grant import BenefitGrantRepository
 from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import Customer, Organization, User
+from polar.models import BenefitGrant, Customer, Organization, User
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
+from polar.subscription.repository import SubscriptionRepository
 from polar.worker import enqueue_job
 
 from .repository import CustomerRepository
-from .schemas import CustomerCreate, CustomerUpdate
+from .schemas import CustomerCreate, CustomerState, CustomerUpdate
 from .sorting import CustomerSortProperty
 
 
@@ -207,6 +210,23 @@ class CustomerService:
 
         repository = CustomerRepository.from_session(session)
         return await repository.soft_delete(customer)
+
+    async def get_state(
+        self, session: AsyncSession, customer: Customer
+    ) -> CustomerState:
+        subscription_repository = SubscriptionRepository.from_session(session)
+        customer.active_subscriptions = (
+            await subscription_repository.list_active_by_customer(customer.id)
+        )
+
+        benefit_grant_repository = BenefitGrantRepository.from_session(session)
+        customer.granted_benefits = (
+            await benefit_grant_repository.list_granted_by_customer(
+                customer.id, options=(joinedload(BenefitGrant.benefit),)
+            )
+        )
+
+        return CustomerState.model_validate(customer)
 
     async def get_or_create_from_stripe_customer(
         self,

@@ -1,13 +1,12 @@
-from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Select, select
 from sqlalchemy.orm import joinedload, selectinload
-from sqlalchemy.sql.base import ExecutableOption
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import (
+    Options,
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
@@ -26,7 +25,7 @@ class CheckoutLinkRepository(
     model = CheckoutLink
 
     async def get_by_client_secret(
-        self, client_secret: str, *, options: Sequence[ExecutableOption] = ()
+        self, client_secret: str, *, options: Options = ()
     ) -> CheckoutLink | None:
         statement = (
             self.get_base_statement()
@@ -44,7 +43,7 @@ class CheckoutLinkRepository(
 
     def get_eager_options(
         self, *, checkout_link_product_load: "_AbstractLoad | None" = None
-    ) -> Sequence[ExecutableOption]:
+    ) -> Options:
         checkout_link_product_load = (
             checkout_link_product_load
             if checkout_link_product_load

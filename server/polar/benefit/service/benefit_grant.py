@@ -438,6 +438,11 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 )
             ),
         )
+        enqueue_job(
+            "customer.webhook",
+            WebhookEventType.customer_state_changed,
+            grant.customer_id,
+        )
 
 
 benefit_grant = BenefitGrantService(BenefitGrant)

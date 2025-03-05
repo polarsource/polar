@@ -1777,7 +1777,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         checkout: Checkout,
     ) -> Customer:
         repository = CustomerRepository.from_session(session)
+
+        created = False
         customer = checkout.customer
+
         if customer is None:
             assert checkout.customer_email is not None
             customer = await repository.get_by_email_and_organization(
@@ -1792,6 +1795,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     organization=checkout.organization,
                     user_metadata={},
                 )
+                created = True
 
         stripe_customer_id = customer.stripe_customer_id
         if stripe_customer_id is None:
@@ -1835,8 +1839,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             **checkout.customer_metadata,
         }
 
-        session.add(customer)
-        await session.flush()
+        if created:
+            customer = await repository.create(customer, flush=True)
+        else:
+            customer = await repository.update(customer, flush=True)
 
         return customer
 

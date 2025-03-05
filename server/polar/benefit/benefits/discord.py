@@ -7,6 +7,7 @@ from httpx_oauth.oauth2 import RefreshTokenError
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
+from polar.customer.repository import CustomerRepository
 from polar.integrations.discord.service import discord_bot as discord_bot_service
 from polar.logging import Logger
 from polar.models import Customer, Organization, User
@@ -213,6 +214,8 @@ class BenefitDiscordService(
             oauth_account.expires_at = refreshed_token_data["expires_at"]
             oauth_account.refresh_token = refreshed_token_data["refresh_token"]
             customer.set_oauth_account(oauth_account, CustomerOAuthPlatform.discord)
-            self.session.add(customer)
+
+            customer_repository = CustomerRepository.from_session(self.session)
+            await customer_repository.update(customer)
 
         return oauth_account

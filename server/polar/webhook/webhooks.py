@@ -13,6 +13,8 @@ from pydantic import Discriminator, TypeAdapter
 from polar.benefit.schemas import Benefit as BenefitSchema
 from polar.benefit.schemas import BenefitGrantWebhook
 from polar.checkout.schemas import Checkout as CheckoutSchema
+from polar.customer.schemas import Customer as CustomerSchema
+from polar.customer.schemas import CustomerState as CustomerStateSchema
 from polar.exceptions import PolarError
 from polar.integrations.discord.webhook import (
     DiscordEmbedField,
@@ -24,6 +26,7 @@ from polar.models import (
     Benefit,
     BenefitGrant,
     Checkout,
+    Customer,
     Order,
     Organization,
     Pledge,
@@ -47,6 +50,10 @@ from .slack import SlackPayload, SlackText, get_branded_slack_payload
 WebhookTypeObject = (
     tuple[Literal[WebhookEventType.checkout_created], Checkout]
     | tuple[Literal[WebhookEventType.checkout_updated], Checkout]
+    | tuple[Literal[WebhookEventType.customer_created], Customer]
+    | tuple[Literal[WebhookEventType.customer_updated], Customer]
+    | tuple[Literal[WebhookEventType.customer_deleted], Customer]
+    | tuple[Literal[WebhookEventType.customer_state_changed], Customer]
     | tuple[Literal[WebhookEventType.order_created], Order]
     | tuple[Literal[WebhookEventType.order_refunded], Order]
     | tuple[Literal[WebhookEventType.subscription_created], Subscription]
@@ -184,9 +191,75 @@ class WebhookCheckoutUpdatedPayload(BaseWebhookPayload):
     data: CheckoutSchema
 
 
+class WebhookCustomerCreatedPayload(BaseWebhookPayload):
+    """
+    Sent when a new customer is created.
+
+    A customer can be created:
+
+    * After a successful checkout.
+    * Programmatically via the API.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.customer_created]
+    data: CustomerSchema
+
+
+class WebhookCustomerUpdatedPayload(BaseWebhookPayload):
+    """
+    Sent when a customer is updated.
+
+    This event is fired when the customer details are updated.
+
+    If you want to be notified when a customer subscription or benefit state changes, you should listen to the `customer_state_changed` event.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.customer_updated]
+    data: CustomerSchema
+
+
+class WebhookCustomerDeletedPayload(BaseWebhookPayload):
+    """
+    Sent when a customer is deleted.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.customer_deleted]
+    data: CustomerSchema
+
+
+class WebhookCustomerStateChangedPayload(BaseWebhookPayload):
+    """
+    Sent when a customer state has changed.
+
+    It's triggered when:
+
+    * Customer is created, updated or deleted.
+    * A subscription is created or updated.
+    * A benefit is granted or revoked.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.customer_state_changed]
+    data: CustomerStateSchema
+
+
 class WebhookOrderCreatedPayload(BaseWebhookPayload):
     """
     Sent when a new order is created.
+
+    A new order is created when:
+
+    * A customer purchases a one-time product. In this case, `billing_reason` is set to `purchase`.
+    * A customer starts a subscription. In this case, `billing_reason` is set to `subscription_create`.
+    * A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.
+    * A subscription is upgraded, downgraded or revoked with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.
 
     **Discord & Slack support:** Full
     """
@@ -337,6 +410,8 @@ class WebhookOrderRefundedPayload(BaseWebhookPayload):
 class WebhookSubscriptionCreatedPayload(BaseWebhookPayload):
     """
     Sent when a new subscription is created.
+
+    When this event occurs, the subscription `status` might not be `active` yet, as we can still have to wait for the first payment to be processed.
 
     **Discord & Slack support:** Full
     """
@@ -1027,6 +1102,10 @@ class WebhookBenefitGrantRevokedPayload(BaseWebhookPayload):
 WebhookPayload = Annotated[
     WebhookCheckoutCreatedPayload
     | WebhookCheckoutUpdatedPayload
+    | WebhookCustomerCreatedPayload
+    | WebhookCustomerUpdatedPayload
+    | WebhookCustomerDeletedPayload
+    | WebhookCustomerStateChangedPayload
     | WebhookOrderCreatedPayload
     | WebhookOrderRefundedPayload
     | WebhookSubscriptionCreatedPayload

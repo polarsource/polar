@@ -1,6 +1,7 @@
 from typing import Any
 
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject, is_user
 from polar.customer.schemas import CustomerCreate, CustomerUpdate
@@ -8,6 +9,7 @@ from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.models import Customer, Organization, User, UserOrganization
+from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -238,3 +240,41 @@ class TestUpdate:
 
         assert customer.external_id == "123"
         assert customer.name == "John"
+
+
+@pytest.mark.asyncio
+class TestWebhook:
+    @pytest.mark.parametrize(
+        "event_type",
+        [
+            WebhookEventType.customer_created,
+            WebhookEventType.customer_updated,
+            WebhookEventType.customer_deleted,
+        ],
+    )
+    async def test_scalar_events(
+        self,
+        event_type: CustomerWebhookEventType,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        send_payload_mock = mocker.patch("polar.webhook.service.webhook.send_payload")
+
+        await customer_service.webhook(session, event_type, customer)
+
+        assert send_payload_mock.call_count == 2
+
+    async def test_state_changed_event(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        send_payload_mock = mocker.patch("polar.webhook.service.webhook.send_payload")
+
+        await customer_service.webhook(
+            session, WebhookEventType.customer_state_changed, customer
+        )
+
+        assert send_payload_mock.call_count == 1

@@ -13,9 +13,12 @@ from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import BenefitGrant, Customer, Organization, User
+from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
+from polar.webhook.service import webhook as webhook_service
+from polar.webhook.webhooks import WebhookPayloadTypeAdapter
 from polar.worker import enqueue_job
 
 from .repository import CustomerRepository
@@ -242,14 +245,18 @@ class CustomerService:
         If the customer does not exist, create a new one.
         """
         repository = CustomerRepository.from_session(session)
+
+        created = False
         customer = await repository.get_by_stripe_customer_id_and_organization(
             stripe_customer.id, organization.id
         )
         assert stripe_customer.email is not None
+
         if customer is None:
             customer = await repository.get_by_email_and_organization(
                 stripe_customer.email, organization.id
             )
+
         if customer is None:
             customer = Customer(
                 email=stripe_customer.email,
@@ -260,10 +267,46 @@ class CustomerService:
                 # TODO: tax_id,
                 organization=organization,
             )
+            created = True
+
         customer.stripe_customer_id = stripe_customer.id
 
-        session.add(customer)
+        if created:
+            customer = await repository.create(customer)
+        else:
+            customer = await repository.update(customer)
+
         return customer
+
+    async def webhook(
+        self,
+        session: AsyncSession,
+        event_type: CustomerWebhookEventType,
+        customer: Customer,
+    ) -> None:
+        data: CustomerState | Customer
+        if event_type == WebhookEventType.customer_state_changed:
+            data = await self.get_state(session, customer)
+        else:
+            data = customer
+
+        await webhook_service.send_payload(
+            session,
+            target=customer.organization,
+            payload=WebhookPayloadTypeAdapter.validate_python(
+                {"type": event_type, "data": data}
+            ),
+        )
+
+        # For created, updated and deleted events, also trigger a state changed event
+        if event_type in (
+            WebhookEventType.customer_created,
+            WebhookEventType.customer_updated,
+            WebhookEventType.customer_deleted,
+        ):
+            await self.webhook(
+                session, WebhookEventType.customer_state_changed, customer
+            )
 
 
 customer = CustomerService()

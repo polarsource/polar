@@ -152,8 +152,11 @@ class CustomerService:
             if customer.tax_id is not None:
                 params["tax_id_data"] = [to_stripe_tax_id(customer.tax_id)]
             stripe_customer = await stripe_service.create_customer(**params)
-            customer.stripe_customer_id = stripe_customer.id
-            session.add(customer)
+            repository = CustomerRepository.from_session(session)
+            customer = await repository.update(
+                customer, update_dict={"stripe_customer_id": stripe_customer.id}
+            )
+            assert customer.stripe_customer_id is not None
 
         setup_intent = await stripe_service.create_setup_intent(
             automatic_payment_methods={"enabled": True},

@@ -1,0 +1,58 @@
+---
+title: "Customer State"
+description: "The quickest way to integrate billing in your application"
+---
+
+Customer State is a concept allowing you to query for the current state of a customer, including their active subscriptions and granted [benefits](/features/benefits/introduction), in a single [API call](/api-reference/customers/state-external) or single [webhook event](/api-reference/webhooks/customer.state_changed).
+
+Combined with the [External ID](/features/customer-management#external-id) feature, you can get up-and-running in minutes.
+
+## The customer state object
+
+The customer state object contains:
+
+- All the data about the customer.
+- The list of their **active** subscriptions.
+- The list of their **granted** benefits.
+
+Thus, with that single object, you have all the required information to check if you should provision access to your service or not.
+
+<Card
+  title="Get Customer State by External ID"
+  icon="ring"
+  iconType="duotone"
+  href="/api-reference/customers/state-external"
+  horizontal
+>
+  One endpoint to rule them all, using your own customer ID.
+</Card>
+
+<Card
+  title="Get Customer State "
+  icon="ring"
+  iconType="duotone"
+  href="/api-reference/customers/state"
+  horizontal
+>
+  The same one, but with internal Polar customer ID.
+</Card>
+
+## The `customer.state_changed` webhook
+
+To be notified of the customer state changes, you can listen to the `customer.state_changed` webhook event. It's triggered when:
+
+- Customer is created, updated or deleted.
+- A subscription is created or updated.
+- A benefit is granted or revoked.
+
+By subscribing to this webhook event, you keep your system up-to-date and update your customer's access accordingly.
+
+<Card
+  title="customer.state_changed"
+  icon="ring"
+  iconType="duotone"
+  href="/api-reference/webhooks/customer.state_changed"
+  horizontal
+>
+  One webhook to rule them all.
+</Card>

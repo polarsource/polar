@@ -183,6 +183,8 @@
               {
                 "group": "Customers",
                 "pages": [
+                  "api-reference/customers/state",
+                  "api-reference/customers/state-external",
                   "api-reference/customers/list",
                   "api-reference/customers/create",
                   "api-reference/customers/get",

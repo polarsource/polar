@@ -1854,237 +1854,6 @@
         ]
       }
     },
-    "/v1/advertisements/": {
-      "get": {
-        "tags": [
-          "advertisements",
-          "documented"
-        ],
-        "summary": "List Campaigns",
-        "description": "List active advertisement campaigns for a benefit.",
-        "operationId": "advertisements:list",
-        "parameters": [
-          {
-            "name": "benefit_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid4",
-              "description": "The benefit ID.",
-              "x-polar-selector-widget": {
-                "resourceRoot": "/v1/benefits",
-                "resourceName": "Benefit",
-                "displayProperty": "description"
-              },
-              "title": "Benefit Id"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "exclusiveMinimum": 0,
-              "description": "Page number, defaults to 1.",
-              "default": 1,
-              "title": "Page"
-            },
-            "description": "Page number, defaults to 1."
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "exclusiveMinimum": 0,
-              "description": "Size of a page, defaults to 10. Maximum is 100.",
-              "default": 10,
-              "title": "Limit"
-            },
-            "description": "Size of a page, defaults to 10. Maximum is 100."
-          },
-          {
-            "name": "sorting",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AdvertisementSortProperty"
-                  }
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-              "default": [
-                "granted_at"
-              ],
-              "title": "Sorting"
-            },
-            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdvertisementCampaignListResource"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "x-speakeasy-pagination": {
-          "type": "offsetLimit",
-          "inputs": [
-            {
-              "name": "page",
-              "in": "parameters",
-              "type": "page"
-            },
-            {
-              "name": "limit",
-              "in": "parameters",
-              "type": "limit"
-            }
-          ],
-          "outputs": {
-            "results": "$.items",
-            "numPages": "$.pagination.max_page"
-          }
-        },
-        "x-speakeasy-mcp": {
-          "disabled": true
-        },
-        "x-speakeasy-group": "advertisements",
-        "x-speakeasy-name-override": "list",
-        "x-codeSamples": [
-          {
-            "lang": "go",
-            "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Advertisements.List(ctx, \"<value>\", nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.AdvertisementCampaignListResource != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
-          },
-          {
-            "lang": "python",
-            "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.advertisements.list(benefit_id=\"<value>\")\n\n    while res is not None:\n        # Handle items\n\n        res = res.next()"
-          },
-          {
-            "lang": "typescript",
-            "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.advertisements.list({\n    benefitId: \"<value>\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
-          },
-          {
-            "lang": "php",
-            "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$responses = $sdk->advertisements->list(\n    benefitId: '<value>',\n    page: 1,\n    limit: 10,\n    sorting: [\n        Components\\AdvertisementSortProperty::Clicks,\n    ]\n\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
-          }
-        ]
-      }
-    },
-    "/v1/advertisements/{id}": {
-      "get": {
-        "tags": [
-          "advertisements",
-          "documented"
-        ],
-        "summary": "Get Campaign",
-        "description": "Get an advertisement campaign by ID.",
-        "operationId": "advertisements:get",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid4",
-              "description": "The advertisement campaign ID.",
-              "title": "Id"
-            },
-            "description": "The advertisement campaign ID."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdvertisementCampaign"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Advertisement campaign not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResourceNotFound"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "x-speakeasy-mcp": {
-          "disabled": true
-        },
-        "x-speakeasy-group": "advertisements",
-        "x-speakeasy-name-override": "get",
-        "x-codeSamples": [
-          {
-            "lang": "go",
-            "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Advertisements.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.AdvertisementCampaign != nil {\n        // handle response\n    }\n}"
-          },
-          {
-            "lang": "python",
-            "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.advertisements.get(id=\"<value>\")\n\n    # Handle response\n    print(res)"
-          },
-          {
-            "lang": "typescript",
-            "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.advertisements.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
-          },
-          {
-            "lang": "php",
-            "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->advertisements->get(\n    id: '<value>'\n);\n\nif ($response->advertisementCampaign !== null) {\n    // handle response\n}"
-          }
-        ]
-      }
-    },
     "/v1/oauth2/": {
       "get": {
         "tags": [
@@ -2608,21 +2377,24 @@
         },
         "x-speakeasy-group": "oauth2",
         "x-speakeasy-name-override": "token",
+        "security": [
+          {}
+        ],
         "x-codeSamples": [
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Token(ctx, operations.CreateOauth2RequestTokenRequestBodyAuthorizationCodeTokenRequest(\n        components.AuthorizationCodeTokenRequest{\n            ClientID: \"<id>\",\n            ClientSecret: \"<value>\",\n            Code: \"<value>\",\n            RedirectURI: \"https://talkative-barracks.com\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.TokenResponse != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.Oauth2.Token(ctx, operations.CreateOauth2RequestTokenRequestBodyAuthorizationCodeTokenRequest(\n        components.AuthorizationCodeTokenRequest{\n            ClientID: \"<id>\",\n            ClientSecret: \"<value>\",\n            Code: \"<value>\",\n            RedirectURI: \"https://talkative-barracks.com\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.TokenResponse != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.oauth2.token(request={\n        \"grant_type\": \"authorization_code\",\n        \"client_id\": \"<id>\",\n        \"client_secret\": \"<value>\",\n        \"code\": \"<value>\",\n        \"redirect_uri\": \"https://old-fort.name\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.oauth2.token(request={\n        \"grant_type\": \"authorization_code\",\n        \"client_id\": \"<id>\",\n        \"client_secret\": \"<value>\",\n        \"code\": \"<value>\",\n        \"redirect_uri\": \"https://old-fort.name\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.token({\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n    code: \"<value>\",\n    redirectUri: \"https://old-fort.name\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.oauth2.token({\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n    code: \"<value>\",\n    redirectUri: \"https://old-fort.name\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -2669,21 +2441,24 @@
         },
         "x-speakeasy-group": "oauth2",
         "x-speakeasy-name-override": "revoke",
+        "security": [
+          {}
+        ],
         "x-codeSamples": [
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Revoke(ctx, components.RevokeTokenRequest{\n        Token: \"<value>\",\n        ClientID: \"<id>\",\n        ClientSecret: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.RevokeTokenResponse != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.Oauth2.Revoke(ctx, components.RevokeTokenRequest{\n        Token: \"<value>\",\n        ClientID: \"<id>\",\n        ClientSecret: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.RevokeTokenResponse != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.oauth2.revoke(request={\n        \"token\": \"<value>\",\n        \"client_id\": \"<id>\",\n        \"client_secret\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.oauth2.revoke(request={\n        \"token\": \"<value>\",\n        \"client_id\": \"<id>\",\n        \"client_secret\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.revoke({\n    token: \"<value>\",\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.oauth2.revoke({\n    token: \"<value>\",\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -2730,21 +2505,24 @@
         },
         "x-speakeasy-group": "oauth2",
         "x-speakeasy-name-override": "introspect",
+        "security": [
+          {}
+        ],
         "x-codeSamples": [
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Introspect(ctx, components.IntrospectTokenRequest{\n        Token: \"<value>\",\n        ClientID: \"<id>\",\n        ClientSecret: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.IntrospectTokenResponse != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.Oauth2.Introspect(ctx, components.IntrospectTokenRequest{\n        Token: \"<value>\",\n        ClientID: \"<id>\",\n        ClientSecret: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.IntrospectTokenResponse != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.oauth2.introspect(request={\n        \"token\": \"<value>\",\n        \"client_id\": \"<id>\",\n        \"client_secret\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.oauth2.introspect(request={\n        \"token\": \"<value>\",\n        \"client_id\": \"<id>\",\n        \"client_secret\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.introspect({\n    token: \"<value>\",\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.oauth2.introspect({\n    token: \"<value>\",\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -3045,12 +2823,12 @@
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.benefits.create(request={\n        \"type\": \"discord\",\n        \"description\": \"delightfully fumigate convection though zowie up bulky electronics\",\n        \"properties\": {\n            \"guild_token\": \"<value>\",\n            \"role_id\": \"<id>\",\n        },\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.benefits.create(request={\n        \"type\": \"downloadables\",\n        \"description\": \"delightfully fumigate convection though zowie up bulky electronics\",\n        \"properties\": {\n            \"files\": [\n                \"<value>\",\n            ],\n        },\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.create({\n    description: \"delightfully fumigate convection though zowie up bulky electronics\",\n    properties: {\n      guildToken: \"<value>\",\n      roleId: \"<id>\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.create({\n    description: \"delightfully fumigate convection though zowie up bulky electronics\",\n    properties: {\n      files: [\n        \"<value>\",\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -3185,9 +2963,6 @@
               "schema": {
                 "anyOf": [
                   {
-                    "$ref": "#/components/schemas/BenefitAdsUpdate"
-                  },
-                  {
                     "$ref": "#/components/schemas/BenefitCustomUpdate"
                   },
                   {
@@ -3264,7 +3039,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Update(ctx, \"<value>\", operations.CreateBenefitsUpdateBenefitUpdateBenefitGitHubRepositoryUpdate(\n        components.BenefitGitHubRepositoryUpdate{\n            Properties: &components.BenefitGitHubRepositoryCreateProperties{\n                RepositoryOwner: \"polarsource\",\n                RepositoryName: \"private_repo\",\n                Permission: components.BenefitGitHubRepositoryCreatePropertiesPermissionTriage,\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Update(ctx, \"<value>\", operations.CreateBenefitsUpdateBenefitUpdateBenefitGitHubRepositoryUpdate(\n        components.BenefitGitHubRepositoryUpdate{\n            Properties: &components.BenefitGitHubRepositoryCreateProperties{\n                RepositoryOwner: \"polarsource\",\n                RepositoryName: \"private_repo\",\n                Permission: components.PermissionTriage,\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -3927,7 +3702,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.Create(ctx, components.ProductCreate{\n        Name: \"<value>\",\n        RecurringInterval: components.SubscriptionRecurringIntervalMonth.ToPointer(),\n        Prices: []components.ProductCreatePrices{\n            components.CreateProductCreatePricesProductPriceCustomCreate(\n                components.ProductPriceCustomCreate{},\n            ),\n            components.CreateProductCreatePricesProductPriceFixedCreate(\n                components.ProductPriceFixedCreate{\n                    PriceAmount: 69025,\n                },\n            ),\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Product != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.Create(ctx, components.ProductCreate{\n        Name: \"<value>\",\n        RecurringInterval: components.SubscriptionRecurringIntervalMonth.ToPointer(),\n        Prices: []components.Prices{\n            components.CreatePricesProductPriceCustomCreate(\n                components.ProductPriceCustomCreate{},\n            ),\n            components.CreatePricesProductPriceFixedCreate(\n                components.ProductPriceFixedCreate{\n                    PriceAmount: 69025,\n                },\n            ),\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Product != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -4367,6 +4142,30 @@
             "description": "Filter by product ID."
           },
           {
+            "name": "product_billing_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProductBillingType"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductBillingType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ProductBillingType Filter",
+              "description": "Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases."
+            },
+            "description": "Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases."
+          },
+          {
             "name": "product_price_type",
             "in": "query",
             "required": false,
@@ -4386,9 +4185,9 @@
                 }
               ],
               "title": "ProductPriceType Filter",
-              "description": "Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases."
+              "deprecated": true
             },
-            "description": "Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases."
+            "deprecated": true
           },
           {
             "name": "discount_id",
@@ -5719,21 +5518,24 @@
         },
         "x-speakeasy-group": "checkouts",
         "x-speakeasy-name-override": "client_get",
+        "security": [
+          {}
+        ],
         "x-codeSamples": [
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.ClientGet(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublic != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.Checkouts.ClientGet(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublic != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkouts.client_get(client_secret=\"<value>\")\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.checkouts.client_get(client_secret=\"<value>\")\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.clientGet({\n    clientSecret: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.checkouts.clientGet({\n    clientSecret: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -5821,21 +5623,24 @@
         },
         "x-speakeasy-group": "checkouts",
         "x-speakeasy-name-override": "client_update",
+        "security": [
+          {}
+        ],
         "x-codeSamples": [
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.ClientUpdate(ctx, \"<value>\", components.CheckoutUpdatePublic{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublic != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.Checkouts.ClientUpdate(ctx, \"<value>\", components.CheckoutUpdatePublic{})\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublic != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkouts.client_update(client_secret=\"<value>\", checkout_update_public={})\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.checkouts.client_update(client_secret=\"<value>\", checkout_update_public={})\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.clientUpdate({\n    clientSecret: \"<value>\",\n    checkoutUpdatePublic: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.checkouts.clientUpdate({\n    clientSecret: \"<value>\",\n    checkoutUpdatePublic: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           }
         ]
       }
@@ -5960,7 +5765,7 @@
           "documented"
         ],
         "summary": "List Files",
-        "description": "List files.\n\n**Scopes**: `files:write`",
+        "description": "List files.\n\n**Scopes**: `files:read` `files:write`",
         "operationId": "files:list",
         "parameters": [
           {
@@ -10985,21 +10790,24 @@
         },
         "x-speakeasy-group": "customer_portal.downloadables",
         "x-speakeasy-name-override": "get",
+        "security": [
+          {}
+        ],
         "x-codeSamples": [
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.Downloadables.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Downloadables.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customer_portal.downloadables.get(token=\"<value>\")\n\n    assert res is not None\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.downloadables.get(token=\"<value>\")\n\n    assert res is not None\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.downloadables.get({\n    token: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.downloadables.get({\n    token: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -11359,21 +11167,24 @@
         },
         "x-speakeasy-group": "customer_portal.license_keys",
         "x-speakeasy-name-override": "validate",
+        "security": [
+          {}
+        ],
         "x-codeSamples": [
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.LicenseKeys.Validate(ctx, components.LicenseKeyValidate{\n        Key: \"<key>\",\n        OrganizationID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ValidatedLicenseKey != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.LicenseKeys.Validate(ctx, components.LicenseKeyValidate{\n        Key: \"<key>\",\n        OrganizationID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ValidatedLicenseKey != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customer_portal.license_keys.validate(request={\n        \"key\": \"<key>\",\n        \"organization_id\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.license_keys.validate(request={\n        \"key\": \"<key>\",\n        \"organization_id\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.licenseKeys.validate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.licenseKeys.validate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -11451,21 +11262,24 @@
         },
         "x-speakeasy-group": "customer_portal.license_keys",
         "x-speakeasy-name-override": "activate",
+        "security": [
+          {}
+        ],
         "x-codeSamples": [
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.LicenseKeys.Activate(ctx, components.LicenseKeyActivate{\n        Key: \"<key>\",\n        OrganizationID: \"<value>\",\n        Label: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.LicenseKeyActivationRead != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.LicenseKeys.Activate(ctx, components.LicenseKeyActivate{\n        Key: \"<key>\",\n        OrganizationID: \"<value>\",\n        Label: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.LicenseKeyActivationRead != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customer_portal.license_keys.activate(request={\n        \"key\": \"<key>\",\n        \"organization_id\": \"<value>\",\n        \"label\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.license_keys.activate(request={\n        \"key\": \"<key>\",\n        \"organization_id\": \"<value>\",\n        \"label\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerPortal.licenseKeys.activate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    label: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.licenseKeys.activate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    label: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -11526,21 +11340,24 @@
         },
         "x-speakeasy-group": "customer_portal.license_keys",
         "x-speakeasy-name-override": "deactivate",
+        "security": [
+          {}
+        ],
         "x-codeSamples": [
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerPortal.LicenseKeys.Deactivate(ctx, components.LicenseKeyDeactivate{\n        Key: \"<key>\",\n        OrganizationID: \"<value>\",\n        ActivationID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.LicenseKeys.Deactivate(ctx, components.LicenseKeyDeactivate{\n        Key: \"<key>\",\n        OrganizationID: \"<value>\",\n        ActivationID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    polar.customer_portal.license_keys.deactivate(request={\n        \"key\": \"<key>\",\n        \"organization_id\": \"<value>\",\n        \"activation_id\": \"<value>\",\n    })\n\n    # Use the SDK ..."
+            "source": "from polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    polar.customer_portal.license_keys.deactivate(request={\n        \"key\": \"<key>\",\n        \"organization_id\": \"<value>\",\n        \"activation_id\": \"<value>\",\n    })\n\n    # Use the SDK ..."
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.customerPortal.licenseKeys.deactivate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    activationId: \"<value>\",\n  });\n\n\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  await polar.customerPortal.licenseKeys.deactivate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    activationId: \"<value>\",\n  });\n\n\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -11643,6 +11460,30 @@
             "description": "Filter by product ID."
           },
           {
+            "name": "product_billing_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProductBillingType"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductBillingType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ProductBillingType Filter",
+              "description": "Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases."
+            },
+            "description": "Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases."
+          },
+          {
             "name": "product_price_type",
             "in": "query",
             "required": false,
@@ -11662,9 +11503,9 @@
                 }
               ],
               "title": "ProductPriceType Filter",
-              "description": "Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases."
+              "deprecated": true
             },
-            "description": "Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases."
+            "deprecated": true
           },
           {
             "name": "subscription_id",
@@ -14870,130 +14711,6 @@
         ],
         "title": "Address"
       },
-      "AdvertisementCampaign": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id"
-          },
-          "image_url": {
-            "type": "string",
-            "maxLength": 2083,
-            "minLength": 1,
-            "format": "uri",
-            "title": "Image Url"
-          },
-          "image_url_dark": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Image Url Dark"
-          },
-          "text": {
-            "type": "string",
-            "title": "Text"
-          },
-          "link_url": {
-            "type": "string",
-            "maxLength": 2083,
-            "minLength": 1,
-            "format": "uri",
-            "title": "Link Url"
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "image_url",
-          "image_url_dark",
-          "text",
-          "link_url"
-        ],
-        "title": "AdvertisementCampaign"
-      },
-      "AdvertisementCampaignListResource": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/AdvertisementCampaign"
-            },
-            "type": "array",
-            "title": "Items"
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/Pagination"
-          },
-          "dimensions": {
-            "prefixItems": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "integer"
-              }
-            ],
-            "items": {
-              "type": "integer"
-            },
-            "type": "array",
-            "maxItems": 2,
-            "minItems": 2,
-            "title": "Dimensions",
-            "description": "The dimensions (width, height) in pixels of the advertisement images."
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "pagination",
-          "dimensions"
-        ],
-        "title": "AdvertisementCampaignListResource"
-      },
-      "AdvertisementSortProperty": {
-        "type": "string",
-        "enum": [
-          "created_at",
-          "-created_at",
-          "granted_at",
-          "-granted_at",
-          "views",
-          "-views",
-          "clicks",
-          "-clicks"
-        ],
-        "title": "AdvertisementSortProperty"
-      },
       "AlreadyActiveSubscriptionError": {
         "properties": {
           "error": {
@@ -15303,9 +15020,6 @@
       "Benefit": {
         "anyOf": [
           {
-            "$ref": "#/components/schemas/BenefitAds"
-          },
-          {
             "$ref": "#/components/schemas/BenefitCustom"
           },
           {
@@ -15321,255 +15035,6 @@
             "$ref": "#/components/schemas/BenefitLicenseKeys"
           }
         ]
-      },
-      "BenefitAds": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the benefit."
-          },
-          "type": {
-            "type": "string",
-            "const": "ads",
-            "title": "Type"
-          },
-          "description": {
-            "type": "string",
-            "title": "Description",
-            "description": "The description of the benefit."
-          },
-          "selectable": {
-            "type": "boolean",
-            "title": "Selectable",
-            "description": "Whether the benefit is selectable when creating a product."
-          },
-          "deletable": {
-            "type": "boolean",
-            "title": "Deletable",
-            "description": "Whether the benefit is deletable."
-          },
-          "organization_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Organization Id",
-            "description": "The ID of the organization owning the benefit."
-          },
-          "properties": {
-            "$ref": "#/components/schemas/BenefitAdsProperties"
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "type",
-          "description",
-          "selectable",
-          "deletable",
-          "organization_id",
-          "properties"
-        ],
-        "title": "BenefitAds",
-        "description": "A benefit of type `ads`.\n\nUse it so your backers can display ads on your README, website, etc."
-      },
-      "BenefitAdsCreate": {
-        "properties": {
-          "type": {
-            "type": "string",
-            "const": "ads",
-            "title": "Type"
-          },
-          "description": {
-            "type": "string",
-            "maxLength": 42,
-            "minLength": 3,
-            "title": "Description",
-            "description": "The description of the benefit. Will be displayed on products having this benefit."
-          },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4",
-                "description": "The organization ID.",
-                "x-polar-selector-widget": {
-                  "displayProperty": "name",
-                  "resourceName": "Organization",
-                  "resourceRoot": "/v1/organizations"
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The ID of the organization owning the benefit. **Required unless you use an organization token.**"
-          },
-          "properties": {
-            "$ref": "#/components/schemas/BenefitAdsProperties"
-          }
-        },
-        "type": "object",
-        "required": [
-          "type",
-          "description",
-          "properties"
-        ],
-        "title": "BenefitAdsCreate"
-      },
-      "BenefitAdsProperties": {
-        "properties": {
-          "image_height": {
-            "type": "integer",
-            "title": "Image Height",
-            "description": "The height of the displayed ad.",
-            "default": 400
-          },
-          "image_width": {
-            "type": "integer",
-            "title": "Image Width",
-            "description": "The width of the displayed ad.",
-            "default": 400
-          }
-        },
-        "type": "object",
-        "title": "BenefitAdsProperties",
-        "description": "Properties for a benefit of type `ads`."
-      },
-      "BenefitAdsSubscriber": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the benefit."
-          },
-          "type": {
-            "type": "string",
-            "const": "ads",
-            "title": "Type"
-          },
-          "description": {
-            "type": "string",
-            "title": "Description",
-            "description": "The description of the benefit."
-          },
-          "selectable": {
-            "type": "boolean",
-            "title": "Selectable",
-            "description": "Whether the benefit is selectable when creating a product."
-          },
-          "deletable": {
-            "type": "boolean",
-            "title": "Deletable",
-            "description": "Whether the benefit is deletable."
-          },
-          "organization_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Organization Id",
-            "description": "The ID of the organization owning the benefit."
-          },
-          "organization": {
-            "$ref": "#/components/schemas/Organization"
-          },
-          "properties": {
-            "$ref": "#/components/schemas/BenefitAdsProperties"
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "type",
-          "description",
-          "selectable",
-          "deletable",
-          "organization_id",
-          "organization",
-          "properties"
-        ],
-        "title": "BenefitAdsSubscriber"
-      },
-      "BenefitAdsUpdate": {
-        "properties": {
-          "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 42,
-                "minLength": 3
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "The description of the benefit. Will be displayed on products having this benefit."
-          },
-          "type": {
-            "type": "string",
-            "const": "ads",
-            "title": "Type"
-          },
-          "properties": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BenefitAdsProperties"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "type": "object",
-        "required": [
-          "type"
-        ],
-        "title": "BenefitAdsUpdate"
       },
       "BenefitBase": {
         "properties": {
@@ -15643,9 +15108,6 @@
             "$ref": "#/components/schemas/BenefitCustomCreate"
           },
           {
-            "$ref": "#/components/schemas/BenefitAdsCreate"
-          },
-          {
             "$ref": "#/components/schemas/BenefitDiscordCreate"
           },
           {
@@ -15661,7 +15123,6 @@
         "discriminator": {
           "propertyName": "type",
           "mapping": {
-            "ads": "#/components/schemas/BenefitAdsCreate",
             "custom": "#/components/schemas/BenefitCustomCreate",
             "discord": "#/components/schemas/BenefitDiscordCreate",
             "downloadables": "#/components/schemas/BenefitDownloadablesCreate",
@@ -17060,9 +16521,6 @@
                 "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
               },
               {
-                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
-              },
-              {
                 "$ref": "#/components/schemas/BenefitGrantCustomProperties"
               }
             ],
@@ -17085,19 +16543,6 @@
           "properties"
         ],
         "title": "BenefitGrant"
-      },
-      "BenefitGrantAdsProperties": {
-        "properties": {
-          "advertisement_campaign_id": {
-            "type": "string",
-            "title": "Advertisement Campaign Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "advertisement_campaign_id"
-        ],
-        "title": "BenefitGrantAdsProperties"
       },
       "BenefitGrantCustomProperties": {
         "properties": {},
@@ -17303,9 +16748,6 @@
                 "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
               },
               {
-                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
-              },
-              {
                 "$ref": "#/components/schemas/BenefitGrantCustomProperties"
               }
             ],
@@ -17328,9 +16770,6 @@
               },
               {
                 "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
-              },
-              {
-                "$ref": "#/components/schemas/BenefitGrantAdsProperties"
               },
               {
                 "$ref": "#/components/schemas/BenefitGrantCustomProperties"
@@ -17794,7 +17233,6 @@
         "type": "string",
         "enum": [
           "custom",
-          "ads",
           "discord",
           "github_repository",
           "downloadables",
@@ -23112,148 +22550,9 @@
             "$ref": "#/components/schemas/CustomerBenefitGrantLicenseKeys"
           },
           {
-            "$ref": "#/components/schemas/CustomerBenefitGrantAds"
-          },
-          {
             "$ref": "#/components/schemas/CustomerBenefitGrantCustom"
           }
         ]
-      },
-      "CustomerBenefitGrantAds": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the object."
-          },
-          "granted_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Granted At"
-          },
-          "revoked_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Revoked At"
-          },
-          "customer_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Customer Id"
-          },
-          "benefit_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Benefit Id"
-          },
-          "subscription_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subscription Id"
-          },
-          "order_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Order Id"
-          },
-          "is_granted": {
-            "type": "boolean",
-            "title": "Is Granted"
-          },
-          "is_revoked": {
-            "type": "boolean",
-            "title": "Is Revoked"
-          },
-          "customer": {
-            "$ref": "#/components/schemas/CustomerPortalCustomer"
-          },
-          "benefit": {
-            "$ref": "#/components/schemas/BenefitAdsSubscriber"
-          },
-          "properties": {
-            "$ref": "#/components/schemas/BenefitGrantAdsProperties"
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "granted_at",
-          "revoked_at",
-          "customer_id",
-          "benefit_id",
-          "subscription_id",
-          "order_id",
-          "is_granted",
-          "is_revoked",
-          "customer",
-          "benefit",
-          "properties"
-        ],
-        "title": "CustomerBenefitGrantAds"
-      },
-      "CustomerBenefitGrantAdsUpdate": {
-        "properties": {
-          "benefit_type": {
-            "type": "string",
-            "const": "ads",
-            "title": "Benefit Type"
-          }
-        },
-        "type": "object",
-        "required": [
-          "benefit_type"
-        ],
-        "title": "CustomerBenefitGrantAdsUpdate"
       },
       "CustomerBenefitGrantCustom": {
         "properties": {
@@ -23996,16 +23295,12 @@
             "$ref": "#/components/schemas/CustomerBenefitGrantLicenseKeysUpdate"
           },
           {
-            "$ref": "#/components/schemas/CustomerBenefitGrantAdsUpdate"
-          },
-          {
             "$ref": "#/components/schemas/CustomerBenefitGrantCustomUpdate"
           }
         ],
         "discriminator": {
           "propertyName": "benefit_type",
           "mapping": {
-            "ads": "#/components/schemas/CustomerBenefitGrantAdsUpdate",
             "custom": "#/components/schemas/CustomerBenefitGrantCustomUpdate",
             "discord": "#/components/schemas/CustomerBenefitGrantDiscordUpdate",
             "downloadables": "#/components/schemas/CustomerBenefitGrantDownloadablesUpdate",
@@ -33297,6 +32592,8 @@
         "enum": [
           "created_at",
           "-created_at",
+          "slug",
+          "-slug",
           "name",
           "-name"
         ],

@@ -7,50 +7,55 @@ description: "Payments and Checkouts made dead simple with Fastify"
 pnpm install @polar-sh/fastify zod
 ```
 
-Checkout
----------------
+## Checkout
 
 Create a Checkout handler which takes care of redirections.
 
 ```typescript
-import fastify from 'fastify'
+import fastify from "fastify";
 import { Checkout } from "@polar-sh/fastify";
 
-fastify().get('/checkout', Checkout({
-  accessToken: 'xxx', // Or set an environment variable to POLAR_ACCESS_TOKEN
-  successUrl: process.env.SUCCESS_URL,
-  server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
-}));
+fastify().get(
+  "/checkout",
+  Checkout({
+    accessToken: "xxx", // Or set an environment variable to POLAR_ACCESS_TOKEN
+    successUrl: process.env.SUCCESS_URL,
+    server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+  })
+);
 ```
+
 ### Query Params
 
 Pass query params to this route.
 
-* productId (or productPriceId) `?productId=xxx`
-* productPriceId (or productId) `?productPriceId=xxx`
-* customerId (optional) `?productId=xxx&customerId=xxx`
-* customerEmail (optional) `?productId=xxx&[[email protected]](/cdn-cgi/l/email-protection)`
-* customerName (optional) `?productId=xxx&customerName=Jane`
-* metadata (optional) `URL-Encoded JSON string`
+- productId (or productPriceId) `?productId=xxx`
+- productPriceId (or productId) `?productPriceId=xxx`
+- customerId (optional) `?productId=xxx&customerId=xxx`
+- customerExternalId (optional) `?productId=xxx&customerExternalId=xxx`
+- customerEmail (optional) `?productId=xxx&customerEmail=xxx`
+- customerName (optional) `?productId=xxx&customerName=Jane`
+- metadata (optional) `URL-Encoded JSON string`
 
-Customer Portal
-----------------------
+## Customer Portal
 
 Create a customer portal where your customer can view orders and subscriptions.
 
 ```typescript
-import fastify from 'fastify'
+import fastify from "fastify";
 import { CustomerPortal } from "@polar-sh/fastify";
 
-fastify().get('/portal', CustomerPortal({
-  accessToken: 'xxx', // Or set an environment variable to POLAR_ACCESS_TOKEN
-  getCustomerId: (event) => "", // Fuction to resolve a Polar Customer ID
-  server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
-}))
+fastify().get(
+  "/portal",
+  CustomerPortal({
+    accessToken: "xxx", // Or set an environment variable to POLAR_ACCESS_TOKEN
+    getCustomerId: (event) => "", // Fuction to resolve a Polar Customer ID
+    server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+  })
+);
 ```
 
-Webhooks
----------------
+## Webhooks
 
 A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
 
@@ -63,23 +68,28 @@ fastify.post('/polar/webhooks', Webhooks({
   onPayload: async (payload) => /** Handle payload */,
 }))
 ```
+
 ### Payload Handlers
 
 The Webhook handler also supports granular handlers for easy integration.
 
-* onCheckoutCreated: (payload) =>
-* onCheckoutUpdated: (payload) =>
-* onOrderCreated: (payload) =>
-* onSubscriptionCreated: (payload) =>
-* onSubscriptionUpdated: (payload) =>
-* onSubscriptionActive: (payload) =>
-* onSubscriptionCanceled: (payload) =>
-* onSubscriptionRevoked: (payload) =>
-* onProductCreated: (payload) =>
-* onProductUpdated: (payload) =>
-* onOrganizationUpdated: (payload) =>
-* onBenefitCreated: (payload) =>
-* onBenefitUpdated: (payload) =>
-* onBenefitGrantCreated: (payload) =>
-* onBenefitGrantUpdated: (payload) =>
-* onBenefitGrantRevoked: (payload) =>
+- onCheckoutCreated: (payload) =>
+- onCheckoutUpdated: (payload) =>
+- onOrderCreated: (payload) =>
+- onSubscriptionCreated: (payload) =>
+- onSubscriptionUpdated: (payload) =>
+- onSubscriptionActive: (payload) =>
+- onSubscriptionCanceled: (payload) =>
+- onSubscriptionRevoked: (payload) =>
+- onProductCreated: (payload) =>
+- onProductUpdated: (payload) =>
+- onOrganizationUpdated: (payload) =>
+- onBenefitCreated: (payload) =>
+- onBenefitUpdated: (payload) =>
+- onBenefitGrantCreated: (payload) =>
+- onBenefitGrantUpdated: (payload) =>
+- onBenefitGrantRevoked: (payload) =>
+- onCustomerCreated: (payload) =>
+- onCustomerUpdated: (payload) =>
+- onCustomerDeleted: (payload) =>
+- onCustomerStateChanged: (payload) =>

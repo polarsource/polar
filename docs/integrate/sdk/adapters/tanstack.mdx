@@ -7,8 +7,7 @@ description: "Payments and Checkouts made dead simple with TanStack"
 pnpm install @polar-sh/sveltekit zod
 ```
 
-Checkout
----------------
+## Checkout
 
 Create a Checkout handler which takes care of redirections.
 
@@ -22,19 +21,20 @@ export const GET = Checkout({
   server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
 });
 ```
+
 ### Query Params
 
 Pass query params to this route.
 
-* productId (or productPriceId) `?productId=xxx`
-* productPriceId (or productId) `?productPriceId=xxx`
-* customerId (optional) `?productId=xxx&customerId=xxx`
-* customerEmail (optional) `?productId=xxx&[[email protected]](/cdn-cgi/l/email-protection)`
-* customerName (optional) `?productId=xxx&customerName=Jane`
-* metadata (optional) `URL-Encoded JSON string`
+- productId (or productPriceId) `?productId=xxx`
+- productPriceId (or productId) `?productPriceId=xxx`
+- customerId (optional) `?productId=xxx&customerId=xxx`
+- customerExternalId (optional) `?productId=xxx&customerExternalId=xxx`
+- customerEmail (optional) `?productId=xxx&customerEmail=xxx`
+- customerName (optional) `?productId=xxx&customerName=Jane`
+- metadata (optional) `URL-Encoded JSON string`
 
-Customer Portal
-----------------------
+## Customer Portal
 
 Create a customer portal where your customer can view orders and subscriptions.
 
@@ -49,8 +49,7 @@ export const GET = CustomerPortal({
 });
 ```
 
-Webhooks
----------------
+## Webhooks
 
 A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
 
@@ -65,23 +64,28 @@ export const POST = Webhooks({
   },
 });
 ```
+
 ### Payload Handlers
 
 The Webhook handler also supports granular handlers for easy integration.
 
-* onCheckoutCreated: (payload) =>
-* onCheckoutUpdated: (payload) =>
-* onOrderCreated: (payload) =>
-* onSubscriptionCreated: (payload) =>
-* onSubscriptionUpdated: (payload) =>
-* onSubscriptionActive: (payload) =>
-* onSubscriptionCanceled: (payload) =>
-* onSubscriptionRevoked: (payload) =>
-* onProductCreated: (payload) =>
-* onProductUpdated: (payload) =>
-* onOrganizationUpdated: (payload) =>
-* onBenefitCreated: (payload) =>
-* onBenefitUpdated: (payload) =>
-* onBenefitGrantCreated: (payload) =>
-* onBenefitGrantUpdated: (payload) =>
-* onBenefitGrantRevoked: (payload) =>
+- onCheckoutCreated: (payload) =>
+- onCheckoutUpdated: (payload) =>
+- onOrderCreated: (payload) =>
+- onSubscriptionCreated: (payload) =>
+- onSubscriptionUpdated: (payload) =>
+- onSubscriptionActive: (payload) =>
+- onSubscriptionCanceled: (payload) =>
+- onSubscriptionRevoked: (payload) =>
+- onProductCreated: (payload) =>
+- onProductUpdated: (payload) =>
+- onOrganizationUpdated: (payload) =>
+- onBenefitCreated: (payload) =>
+- onBenefitUpdated: (payload) =>
+- onBenefitGrantCreated: (payload) =>
+- onBenefitGrantUpdated: (payload) =>
+- onBenefitGrantRevoked: (payload) =>
+- onCustomerCreated: (payload) =>
+- onCustomerUpdated: (payload) =>
+- onCustomerDeleted: (payload) =>
+- onCustomerStateChanged: (payload) =>

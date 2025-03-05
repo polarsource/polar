@@ -1,5 +1,6 @@
 import contextlib
 from collections.abc import Generator
+from datetime import datetime
 from inspect import isgenerator
 from typing import Generic, TypeVar
 
@@ -44,25 +45,33 @@ class DescriptionListAttrItem(Generic[M], DescriptionListItem[M]):
     def render(self, request: Request, item: M) -> Generator[None] | None:
         value = self.get_value(item)
         with tag.div(classes="flex items-center gap-1"):
-            text(value)
-            if self.clipboard:
+            text(value if value is not None else "—")
+            if value is not None and self.clipboard:
                 with clipboard_button(value):
                     pass
         return None
 
-    def get_value(self, item: M) -> str:
-        return str(getattr(item, self.attr))
+    def get_value(self, item: M) -> str | None:
+        value = getattr(item, self.attr)
+        if value is None:
+            return None
+        return str(value)
 
 
 class DescriptionListDateTimeItem(DescriptionListAttrItem[M]):
-    def get_value(self, item: M) -> str:
-        value = getattr(item, self.attr)
+    def get_value(self, item: M) -> str | None:
+        value: datetime | None = getattr(item, self.attr)
+        if value is None:
+            return None
         return formatters.datetime(value)
 
 
 class DescriptionListCurrencyItem(DescriptionListAttrItem[M]):
-    def get_value(self, item: M) -> str:
-        return formatters.currency(getattr(item, self.attr), self.get_currency(item))
+    def get_value(self, item: M) -> str | None:
+        value: int | None = getattr(item, self.attr)
+        if value is None:
+            return None
+        return formatters.currency(value, self.get_currency(item))
 
     def get_currency(self, item: M) -> str:
         return "usd"

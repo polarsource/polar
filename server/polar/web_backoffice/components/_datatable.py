@@ -1,5 +1,6 @@
 import contextlib
 from collections.abc import Generator, Sequence
+from datetime import datetime
 from enum import Enum, auto
 from inspect import isgenerator
 from typing import Generic, TypeVar
@@ -70,19 +71,24 @@ class DatatableAttrColumn(Generic[M, PE], DatatableColumn[M]):
                 if href:
                     classes("link")
                     attr("href", str(href))
-                text(value)
-            if self.clipboard:
+                text(value if value is not None else "—")
+            if value is not None and self.clipboard:
                 with clipboard_button(value):
                     pass
         return None
 
-    def get_value(self, item: M) -> str:
-        return str(getattr(item, self.attr))
+    def get_value(self, item: M) -> str | None:
+        value = getattr(item, self.attr)
+        if value is None:
+            return None
+        return str(value)
 
 
 class DatatableDateTimeColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
-    def get_value(self, item: M) -> str:
-        value = getattr(item, self.attr)
+    def get_value(self, item: M) -> str | None:
+        value: datetime | None = getattr(item, self.attr)
+        if value is None:
+            return None
         return formatters.datetime(value)
 
 

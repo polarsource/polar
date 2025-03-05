@@ -4,7 +4,6 @@ from collections.abc import Generator
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import RedirectResponse
 from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
@@ -19,10 +18,11 @@ from polar.organization import sorting
 from polar.organization.repository import OrganizationRepository
 from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
-from polar.web_backoffice.organizations.forms import AccountReviewForm
 
 from ..components import button, datatable, description_list, input
 from ..layout import layout
+from ..responses import HXRedirectResponse
+from .forms import AccountReviewForm
 
 router = APIRouter()
 
@@ -193,7 +193,7 @@ async def get(
             await account_service.confirm_account_reviewed(
                 session, account, account_review.next_review_threshold
             )
-            return RedirectResponse(request.url, 303)
+            return HXRedirectResponse(request, request.url, 303)
         except ValidationError as e:
             validation_error = e
 

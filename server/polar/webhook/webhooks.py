@@ -2,13 +2,19 @@ import inspect
 import json
 import typing
 from inspect import Parameter, Signature
-from typing import Annotated, Any, Literal, assert_never, get_args
+from typing import Annotated, Any, Literal, assert_never, get_args, get_origin
 
 from babel.dates import format_date
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from makefun import with_signature
-from pydantic import Discriminator, TypeAdapter
+from pydantic import (
+    Discriminator,
+    GetJsonSchemaHandler,
+    TypeAdapter,
+)
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import core_schema as cs
 
 from polar.benefit.schemas import Benefit as BenefitSchema
 from polar.benefit.schemas import BenefitGrantWebhook
@@ -167,6 +173,21 @@ class BaseWebhookPayload(Schema):
         )
 
         return json.dumps(payload)
+
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema: cs.CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        json_schema = handler(core_schema)
+        json_schema = handler.resolve_ref_schema(json_schema)
+
+        # Force the example of the `type` field to be the event type literal value
+        type_field_annotation = cls.model_fields["type"].annotation
+        if get_origin(type_field_annotation) is Literal:
+            literal_value = get_args(type_field_annotation)[0]
+            json_schema["properties"]["type"]["examples"] = [literal_value]
+
+        return json_schema
 
 
 class WebhookCheckoutCreatedPayload(BaseWebhookPayload):

@@ -5,6 +5,11 @@
   "license": "Apache-2.0",
   "type": "module",
   "version": "0.1.10",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/polarsource/polar.git",
+    "directory": "clients/packages/checkout"
+  },
   "scripts": {
     "build": "rm -rf dist/ && tsup"
   },

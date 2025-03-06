@@ -142,7 +142,7 @@ class LicenseKeyActivationRead(LicenseKeyActivationBase):
 class LicenseKeyUpdate(Schema):
     status: LicenseKeyStatus | None = None
     usage: int = 0
-    limit_activations: int | None = Field(gt=0, le=50, default=None)
+    limit_activations: int | None = Field(gt=0, le=1000, default=None)
     limit_usage: int | None = Field(gt=0, default=None)
     expires_at: datetime | None = None
 

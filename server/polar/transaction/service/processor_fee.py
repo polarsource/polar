@@ -48,6 +48,8 @@ def _get_stripe_processor_fee_type(description: str) -> ProcessorFeeType:
         return ProcessorFeeType.payment
     if "tax reporting for connect" in description:
         return ProcessorFeeType.tax
+    if "identity document check" in description:
+        return ProcessorFeeType.security
     raise UnsupportedStripeFeeType(description)
 
 

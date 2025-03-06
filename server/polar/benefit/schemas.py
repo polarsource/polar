@@ -235,7 +235,7 @@ class BenefitLicenseKeyExpirationProperties(Schema):
 
 
 class BenefitLicenseKeyActivationProperties(Schema):
-    limit: int = Field(gt=0, le=50)
+    limit: int = Field(gt=0, le=1000)
     enable_customer_admin: bool
 
 

@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import CHAR, TIMESTAMP, ForeignKey, Uuid
+from sqlalchemy import CHAR, TIMESTAMP, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
@@ -21,6 +21,7 @@ class CustomerSessionCode(RecordModel):
     expires_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, index=True, default=get_expires_at
     )
+    email: Mapped[str] = mapped_column(String(320), nullable=False)
 
     customer_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("customers.id", ondelete="cascade"), nullable=False

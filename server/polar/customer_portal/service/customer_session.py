@@ -61,7 +61,9 @@ class CustomerSessionService:
 
         code, code_hash = self._generate_code_hash()
 
-        customer_session_code = CustomerSessionCode(code=code_hash, customer=customer)
+        customer_session_code = CustomerSessionCode(
+            code=code_hash, email=customer.email, customer=customer
+        )
         session.add(customer_session_code)
 
         return customer_session_code, code
@@ -117,8 +119,11 @@ class CustomerSessionService:
             raise CustomerSessionCodeInvalidOrExpired()
 
         customer = customer_session_code.customer
-        customer_repository = CustomerRepository.from_session(session)
-        await customer_repository.update(customer, update_dict={"email_verified": True})
+        if customer_session_code.email.lower() == customer.email.lower():
+            customer_repository = CustomerRepository.from_session(session)
+            await customer_repository.update(
+                customer, update_dict={"email_verified": True}
+            )
 
         await session.delete(customer_session_code)
 

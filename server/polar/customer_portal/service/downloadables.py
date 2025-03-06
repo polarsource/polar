@@ -186,7 +186,7 @@ class DownloadableService(
                 last_downloaded_at=last_downloaded_at,
             )
         )
-        redirect_to = f"{settings.BASE_URL}/customer-portal/downloadables/{token}"
+        redirect_to = f"{settings.BASE_URL}/v1/customer-portal/downloadables/{token}"
         return DownloadableURL(url=redirect_to, expires_at=expires_at)
 
     async def get_from_token_or_raise(

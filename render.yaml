@@ -25,7 +25,7 @@ services:
       - key: WEB_CONCURRENCY
         value: 2
       - key: FORWARDED_ALLOW_IPS
-        value: '*'
+        value: "*"
       - key: POLAR_ALLOWED_HOSTS
         value: '["polar.sh","docs.polar.sh"]'
       - key: POLAR_CORS_ORIGINS
@@ -207,7 +207,7 @@ services:
       - key: WEB_CONCURRENCY
         value: 2
       - key: FORWARDED_ALLOW_IPS
-        value: '*'
+        value: "*"
       - key: POLAR_ALLOWED_HOSTS
         value: '["sandbox.polar.sh"]'
       - key: POLAR_CORS_ORIGINS
@@ -358,7 +358,7 @@ databases:
     region: ohio
     postgresMajorVersion: "15"
     readReplicas:
-    - name: polar-replica
+      - name: polar-replica
 
 envVarGroups:
   - name: google-production
@@ -373,7 +373,7 @@ envVarGroups:
       - key: POLAR_USER_SESSION_COOKIE_DOMAIN
         value: polar.sh
       - key: POLAR_BASE_URL
-        value: https://api.polar.sh/v1
+        value: https://api.polar.sh
       - key: POLAR_CURRENT_JWK_KID
         sync: false
       - key: POLAR_DEBUG
@@ -492,7 +492,7 @@ envVarGroups:
       - key: POLAR_USER_SESSION_COOKIE_DOMAIN
         value: polar.sh
       - key: POLAR_BASE_URL
-        value: https://sandbox-api.polar.sh/v1
+        value: https://sandbox-api.polar.sh
       - key: POLAR_CURRENT_JWK_KID
         sync: false
       - key: POLAR_DEBUG

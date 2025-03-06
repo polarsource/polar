@@ -105,6 +105,12 @@ EmbedOrigin = Annotated[
     ),
 ]
 
+_external_customer_id_description = (
+    "ID of the customer in your system. "
+    "If a matching customer exists on Polar, the resulting order "
+    "will be linked to this customer. "
+    "Otherwise, a new customer will be created with this external ID set."
+)
 _allow_discount_codes_description = (
     "Whether to allow the customer to apply discount codes. "
     "If you apply a discount through `discount_id`, it'll still be applied, "
@@ -142,13 +148,7 @@ class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
         ),
     )
     customer_external_id: str | None = Field(
-        default=None,
-        description=(
-            "ID of the customer in your system. "
-            "If a matching customer exists on Polar, the resulting order "
-            "will be linked to this customer. "
-            "Otherwise, a new customer will be created with this external ID set."
-        ),
+        default=None, description=_external_customer_id_description
     )
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
@@ -462,6 +462,9 @@ CheckoutDiscount = Annotated[
 class Checkout(MetadataOutputMixin, CheckoutBase):
     """Checkout session data retrieved using an access token."""
 
+    customer_external_id: str | None = Field(
+        description=_external_customer_id_description
+    )
     products: list[CheckoutProduct] = Field(
         description="List of products available to select."
     )

@@ -18036,6 +18036,18 @@
             "type": "object",
             "title": "Metadata"
           },
+          "customer_external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer External Id",
+            "description": "ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set."
+          },
           "products": {
             "items": {
               "$ref": "#/components/schemas/CheckoutProduct"
@@ -18155,6 +18167,7 @@
           "customer_tax_id",
           "payment_processor_metadata",
           "metadata",
+          "customer_external_id",
           "products",
           "product",
           "product_price",

@@ -1,13 +1,13 @@
 'use client'
 
 import { Footer } from '@/components/Vision/Footer'
-import { DNASection } from '@/components/Vision/sections/DNASection'
+import { BillingSection } from '@/components/Vision/sections/BillingSection'
+import { CustomerSection } from '@/components/Vision/sections/CustomerSection'
+import { DXSection } from '@/components/Vision/sections/DXSection'
 import { EntitlementsSection } from '@/components/Vision/sections/EntitlementsSection'
 import { IndexSection } from '@/components/Vision/sections/IndexSection'
 import { InvestorsSection } from '@/components/Vision/sections/InvestorsSection'
-import { OpenSourceSection } from '@/components/Vision/sections/OpenSourceSection'
 import { TeamSection } from '@/components/Vision/sections/TeamSection'
-import { UsageBasedSection } from '@/components/Vision/sections/UsageBasedSection'
 import { useArrowFocus } from '@/components/Vision/useArrowFocus'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
@@ -55,10 +55,10 @@ export default function PitchPage() {
             transition={{ duration: 0.06, repeat: 2 }}
           >
             <IndexSection active={index == 0} />
-            <UsageBasedSection active={index == 1} />
-            <EntitlementsSection active={index == 2} />
-            <DNASection active={index == 3} />
-            <OpenSourceSection active={index == 4} />
+            <CustomerSection active={index == 1} />
+            <BillingSection active={index == 2} />
+            <EntitlementsSection active={index == 3} />
+            <DXSection active={index == 4} />
             <TeamSection active={index == 5} />
             <InvestorsSection active={index == 6} />
           </motion.div>

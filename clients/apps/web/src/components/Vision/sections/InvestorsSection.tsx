@@ -83,8 +83,8 @@ export const InvestorsSection = ({ active }: { active: boolean }) => {
       }
     >
       <p>
-        The incredible people and early stage firms who have had our back through
-        thick and thin - supporting us from Day 1.
+        The incredible people and early stage firms who have had our back
+        through thick and thin - supporting us from Day 1.
       </p>
     </Section>
   )

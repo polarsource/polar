@@ -6,12 +6,12 @@ import { Console } from '../Console'
 import { Grid } from '../Grid'
 import { Section } from '../Section'
 
-export const DNASection = ({ active }: { active: boolean }) => {
+export const DXSection = ({ active }: { active: boolean }) => {
   return (
     <Section
       active={active}
-      header={{ index: '03', name: 'Less code and accounting' }}
-      title="Painless to integrate. Zero headaches to run."
+      header={{ index: '03', name: '<= 7 LOC' }}
+      title="Integrate in minutes"
       context={
         <div className="flex flex-col gap-y-8">
           <Grid

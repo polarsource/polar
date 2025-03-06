@@ -7,16 +7,16 @@ export const sections = [
     title: '00. Index',
   },
   {
-    title: '01. Usage Based Future',
+    title: '01. Customers > Users',
   },
   {
-    title: '02. Automated Entitlements',
+    title: '02. Seamless Billing',
   },
   {
-    title: '03. DX & MoR',
+    title: '03. Automated Entitlements',
   },
   {
-    title: '04. Open Source',
+    title: '04. <= 7 LOC',
   },
   {
     title: '05. Team',

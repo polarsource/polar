@@ -1,12 +1,12 @@
 import { Console } from '../Console'
 import { Section } from '../Section'
 
-export const UsageBasedSection = ({ active }: { active: boolean }) => {
+export const BillingSection = ({ active }: { active: boolean }) => {
   return (
     <Section
       active={active}
-      header={{ index: '01', name: 'The Future is Usage & Success Based' }}
-      title="Next-Gen AI without Last-Gen Pricing"
+      header={{ index: '01', name: 'Seamless Billing' }}
+      title="Complex billing made easy"
       context={
         <Console
           title="NextJS Adapter"
@@ -34,16 +34,16 @@ export const POST = Usage()
       }
     >
       <p>
-        Understandable fear and complexity around overages, credits and spend limits
-        is holding the ecosystem back from experimenting &amp; innovating on pricing.
+        Understandable fear and complexity around overages, credits and spend
+        limits is holding the ecosystem back from experimenting &amp; innovating
+        on pricing.
       </p>
       <p>
-        We&apos;re hell-bent at removing all those headaches and concerns for developers and their customers.
-        Both from a technical and business perspective.
+        We&apos;re hell-bent at removing all those headaches and concerns for
+        developers and their customers. Both from a technical and business
+        perspective.
       </p>
-      <p>
-        New times deserve new pricing.
-      </p>
+      <p>New times deserve new pricing.</p>
       <strong>Focus ahead:</strong>
       <ul>
         <li>

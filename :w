@@ -1,0 +1,54 @@
+import { Chart } from "../Chart";
+import { Console } from "../Console";
+import { Section } from "../Section";
+
+export const IndexSection = ({ active }: { active: boolean }) => {
+	const data = Array.from({ length: 12 }).map((_, index) => {
+		const date = new Date();
+		date.setMonth(date.getMonth() - (11 - index));
+		return {
+			timestamp: date,
+			value: Math.exp(index / 2) / Math.exp(11 / 2),
+		};
+	});
+
+	return (
+		<Section
+			active={active}
+			header={{ index: "00", name: "Index" }}
+			title="Reimagining the future of digital products"
+			context={
+				<div className="flex flex-col gap-y-6 md:max-w-xl">
+					<Chart
+						interval="month"
+						metric={{
+							display_name: "Value",
+							type: "currency",
+							slug: "value",
+						}}
+						data={data}
+					/>
+					<Console
+						className="flex aspect-video flex-grow self-start"
+						title="Terminal"
+						input="$ polar init"
+						output={``}
+					/>
+				</div>
+			}
+		>
+			<p>We believe the future belongs to developers building businesses.</p>
+			<p>
+				It&apos;s never been easier to build, ship and scale software thanks to
+				modern frameworks, IaaS-, PaaS- and BaaS services to LLMs.
+			</p>
+			<p>
+				Yet, payments &amp; billing has never been more complex. We&apos;re
+				obsessed about changing this.
+			</p>
+			<p>
+				<strong>We call it Polar.</strong>
+			</p>
+		</Section>
+	);
+};

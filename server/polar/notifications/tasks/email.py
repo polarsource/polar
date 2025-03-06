@@ -48,6 +48,6 @@ async def notifications_send(
 
             enqueue_email(
                 to_email_addr=user.email,
-                subject=f"[Polar] {subject}",
+                subject=subject,
                 html_content=body,
             )

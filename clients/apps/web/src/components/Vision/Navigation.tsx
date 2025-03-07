@@ -7,7 +7,7 @@ export const sections = [
 		title: "00. Index",
 	},
 	{
-		title: "01. Customers > Users",
+		title: "01. Event Ingestion",
 	},
 	{
 		title: "02. Seamless Billing",

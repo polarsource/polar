@@ -70,7 +70,8 @@
                   "features/integrations/raycast",
                   "features/integrations/framer",
                   "features/integrations/zapier",
-                  "features/integrations/paritydeals"
+                  "features/integrations/paritydeals",
+                  "features/integrations/affonso"
                 ]
               }
             ]

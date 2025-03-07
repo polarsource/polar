@@ -1,0 +1,148 @@
+---
+title: "Affonso Affiliates with Polar"
+sidebarTitle: "Affonso Affiliates"
+---
+
+This guide explains how to integrate
+[Affonso](https://affonso.io)'s affiliate marketing software with your Polar
+account to track and manage affiliate-driven sales for your SaaS business.
+
+## What is Affonso?
+
+[Affonso](https://affonso.io) is an affiliate marketing software that enables SaaS businesses to launch, manage, and scale their own affiliate programs. With Affonso, you can:
+
+- Set up flexible commission structures
+- Manage multiple affiliate programs from one dashboard
+- Provide your affiliates with real-time tracking and marketing resources
+- Automate affiliate payments and commission calculations
+
+## Integration Steps
+
+### 1. Create a Polar Access Token for Affonso
+
+First, you'll need to create an API token in Polar that Affonso can use to communicate with your account:
+
+1. Login to your **Polar Dashboard**
+2. Navigate to **Settings** in the main menu
+3. Scroll down to the **Developers** section on the Settings page
+4. Click the **New token** button
+5. Give your token a name (e.g., "Affonso Integration")
+6. Set token expiration to **No expiration**
+   Important: If you set an expiration date, you'll need to manually update the token in Affonso when it expires. Tracking will stop working if the token expires.
+7. Enable all the following scopes:
+   - discounts:read
+   - discounts:write
+   - events:read
+   - subscriptions:read
+   - customers:read
+   - customers:write
+   - orders:read
+   - refunds:read
+   - webhooks:read
+   - webhooks:write
+8. Click **Create token** and copy the generated token
+9. Provide this token to Affonso by entering it [in their integration settings](https://affonso.io/app/affiliate-program/connect)
+
+<video controls width="600">
+  <source
+  src="https://affonso-videos.s3.eu-central-1.amazonaws.com/Connect_Polar_Affonso_1.mp4"
+  type="video/mp4" />
+</video>
+
+
+### 2. Set Up Webhooks in Polar
+
+After connecting your Polar account with Affonso, you'll [receive a webhook URL and secret from Affonso](https://affonso.io/app/affiliate-program/connect). Add these to your Polar account:
+
+1. Go to **Settings** → **Developers** → **Webhooks** in your Polar Dashboard
+2. Click the **"Add Endpoint"** button
+3. In the URL field, paste the webhook URL provided by Affonso
+4. For Format, select **RAW** from the dropdown
+5. In the Secret field, paste the webhook secret provided by Affonso
+6. Under Events, enable all of the following:
+   - `order.created`
+   - `order.refunded`
+   - `subscription.canceled`
+7. Click **Save** to complete the webhook setup
+
+
+<video controls width="600">
+  <source
+  src="https://affonso-videos.s3.eu-central-1.amazonaws.com/Connect_Polar_Affonso_2.mp4"
+  type="video/mp4" />
+</video>
+
+### 3. Add the Affonso Tracking Script to Your Website
+
+Add Affonso's tracking script to the `<head>` tag of your website:
+
+```html
+<!-- Place in <head> tag -->
+<script
+  async
+  defer
+  src="https://affonso.io/js/pixel.min.js"
+  data-affonso="YOUR_AFFONSO_PROGRAM_ID"
+  data-cookie_duration="YOUR_COOKIE_DURATION">
+</script>
+```
+
+Replace `YOUR_AFFONSO_PROGRAM_ID` with the unique program ID provided by Affonso.
+
+This script should be placed on all pages of your website, including:
+- Your main marketing website
+- Your application domain
+- Any subdomains where users might land or make purchases
+
+### 4. Track User Signups (Optional)
+
+For better conversion insights, you can track when users sign up through an affiliate link:
+
+```javascript
+// After successful registration
+window.Affonso.signup(userEmail);
+```
+
+### 5. Pass Referral Data to Polar Checkout
+
+To ensure proper commission attribution, pass the referral data when creating checkout sessions:
+
+```javascript
+// Get the referral ID from the Affonso global variable
+const referralId = window.affonso_referral;
+
+// Create checkout session with Polar
+const checkout = await polar.checkouts.create({
+  products: ["your_product_id"],
+  success_url: "https://your-site.com/success",
+  metadata: {
+    affonso_referral: referralId, // Include referral ID from Affonso
+  }
+});
+
+// Redirect to checkout
+window.location.href = checkout.url;
+```
+
+## How It Works
+
+1. When a user visits your site through an affiliate link, Affonso's script stores a unique identifier in a cookie
+2. If you've implemented signup tracking, Affonso records when the user creates an account
+3. When the user makes a purchase, the referral ID is passed to Polar as metadata
+4. Polar's webhook notifies Affonso about the purchase
+5. Affonso attributes the sale to the correct affiliate and calculates the commission
+
+## Benefits of the Integration
+
+- **Automated Tracking**: No manual work required to track affiliate-driven sales
+- **Real-Time Analytics**: Both you and your affiliates get immediate insights into performance
+- **Seamless User Experience**: The integration works behind the scenes without affecting your checkout flow
+- **Flexible Commission Structures**: Set up complex commission rules based on product, subscription duration, etc.
+
+## Getting Help
+
+More details about the integration: [Polar Affiliate Program](https://affonso.io/polar-affiliate-program)
+
+If you need assistance with your Affonso integration, contact Affonso's support team:
+- Email: hello@affonso.io
+- Live chat: Available directly in the Affonso dashboard

@@ -7,31 +7,7 @@ export const BillingSection = ({ active }: { active: boolean }) => {
 			active={active}
 			header={{ index: "02", name: "Seamless Billing" }}
 			title="Complex billing made easy"
-			context={
-				<Console
-					title="NextJS Adapter"
-					code={`import { Usage } from '@polar-sh/nextjs'
-import { openai } from '@ai-sdk/openai'
-import { streamText } from 'ai';
-
-export const POST = Usage()
-  .customer(req => req.headers.get('X-Polar-Customer-Id'))
-  .model(openai('gpt-4o'))
-  .increment('gpt-4o-inputs', ctx => ctx.usage.inputTokens)
-  .increment('gpt-4o-outputs', ctx => ctx.usage.completionTokens)
-  .handler((req, res, model) => {
-    const { prompt }: { prompt: string } = await req.json();
-
-    const result = streamText({
-      model,
-      system: 'You are a helpful assistant.',
-      prompt,
-    });
-
-    return result.toDataStreamResponse();
-})`}
-				/>
-			}
+			context={<Console title="NextJS Adapter" code={""} />}
 		>
 			<p>
 				Understandable fear and complexity around overages, credits and spend

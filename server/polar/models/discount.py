@@ -129,6 +129,11 @@ class Discount(MetadataMixin, RecordModel):
             params["duration_in_months"] = self.duration_in_months
         return params
 
+    def is_applicable(self, product: "Product") -> bool:
+        if len(self.products) == 0:
+            return True
+        return product in self.products
+
     __mapper_args__ = {
         "polymorphic_on": "type",
     }

@@ -1522,9 +1522,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 checkout.currency = None
 
             # When changing product, remove the discount if it's not applicable
-            if checkout.discount is not None:
-                if checkout.product not in checkout.discount.products:
-                    checkout.discount = None
+            if checkout.discount is not None and not checkout.discount.is_applicable(
+                checkout.product
+            ):
+                checkout.discount = None
 
         price = checkout.product_price
         if checkout_update.amount is not None and isinstance(price, ProductPriceCustom):

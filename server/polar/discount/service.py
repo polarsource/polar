@@ -312,9 +312,9 @@ class DiscountService(ResourceServiceReader[Discount]):
         if discount is None:
             return None
 
-        if len(discount.products) > 0 and products is not None:
+        if products is not None:
             for product in products:
-                if product not in discount.products:
+                if not discount.is_applicable(product):
                     return None
 
         if redeemable and not await self.is_redeemable_discount(session, discount):

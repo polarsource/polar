@@ -34,8 +34,10 @@ import {
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 import React, { useContext, useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface HeroChartProps {
   organization: schemas['Organization']
@@ -209,16 +211,44 @@ interface OverviewPageProps {
 export default function OverviewPage({ organization }: OverviewPageProps) {
   const { data: products } = useProducts(organization.id)
 
+  const motionVariants = {
+    variants: {
+      initial: { opacity: 0 },
+      animate: { opacity: 1, transition: { duration: 0.3 } },
+      exit: { opacity: 0, transition: { duration: 0.3 } },
+    },
+  }
+  const cardClassName = 'flex w-full flex-col'
+
   return (
     <DashboardBody className="gap-y-16 pb-16">
       <HeroChart organization={organization} />
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-10">
-        <ActivityWidget className="col-span-2" />
-        <OrdersWidget />
-        <RevenueWidget />
-        <SubscribersWidget />
-        <AccountWidget />
-      </div>
+      <motion.div
+        className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-10"
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        transition={{ staggerChildren: 0.1 }}
+      >
+        <motion.div
+          className={twMerge(cardClassName, 'col-span-2')}
+          {...motionVariants}
+        >
+          <ActivityWidget />
+        </motion.div>
+        <motion.div className={cardClassName} {...motionVariants}>
+          <OrdersWidget />
+        </motion.div>
+        <motion.div className={cardClassName} {...motionVariants}>
+          <RevenueWidget />
+        </motion.div>
+        <motion.div className={cardClassName} {...motionVariants}>
+          <SubscribersWidget />
+        </motion.div>
+        <motion.div className={cardClassName} {...motionVariants}>
+          <AccountWidget />
+        </motion.div>
+      </motion.div>
 
       {!organization.profile_settings?.enabled &&
         (products?.items.length ?? 0) > 0 && <IntegrationView />}

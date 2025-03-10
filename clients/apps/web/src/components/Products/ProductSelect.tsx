@@ -62,7 +62,7 @@ const ProductsCommandGroup = ({
             value={product.id}
             onSelect={() => onSelectProduct(product)}
           >
-            {product.name}
+            {`${product.name} ${product.is_archived ? '(Archived)' : ''}`}
             <CheckOutlined
               className={twMerge(
                 'mr-2 h-4 w-4',
@@ -81,6 +81,7 @@ interface ProductSelectProps {
   onChange: (value: string[]) => void
   emptyLabel?: string
   className?: string
+  includeArchived?: boolean
 }
 
 const ProductSelect: React.FC<ProductSelectProps> = ({
@@ -89,12 +90,13 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   onChange,
   emptyLabel,
   className,
+  includeArchived = false,
 }) => {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
 
   // Selected products, with a dedicated hook to exhaust pagination
-  const { data: selectedProducts } = useSelectedProducts(value)
+  const { data: selectedProducts } = useSelectedProducts(value, includeArchived)
 
   // Queried products, show a selection of products based on the query
   const queriedProductsParameters = useMemo<
@@ -104,12 +106,12 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
     >
   >(
     () => ({
-      is_archived: false,
+      is_archived: includeArchived ? null : false,
       ...(query ? { query } : {}),
       sorting: ['name'],
       limit: 20,
     }),
-    [query],
+    [query, includeArchived],
   )
   const { data: queriedProducts } = useProducts(
     organization.id,

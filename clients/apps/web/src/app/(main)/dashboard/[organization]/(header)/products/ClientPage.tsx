@@ -29,6 +29,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
+import { Status } from '@polar-sh/ui/components/atoms/Status'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +37,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -98,6 +104,7 @@ export default function ClientPage({
     page: pagination.pageIndex + 1,
     limit: pagination.pageSize,
     sorting: sortingStateToQueryParam(sorting),
+    is_archived: null,
   })
 
   return (
@@ -127,13 +134,18 @@ export default function ClientPage({
             onPageChange={onPageChange}
           >
             <List size="small">
-              {products.data.items.map((product) => (
-                <ProductListItem
-                  key={product.id}
-                  organization={org}
-                  product={product}
-                />
-              ))}
+              {products.data.items
+                .sort((a, b) => {
+                  if (a.is_archived === b.is_archived) return 0
+                  return a.is_archived ? 1 : -1
+                })
+                .map((product) => (
+                  <ProductListItem
+                    key={product.id}
+                    organization={org}
+                    product={product}
+                  />
+                ))}
             </List>
           </Pagination>
         ) : (
@@ -262,91 +274,112 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
         </div>
       </div>
       <div className="flex flex-row items-center gap-x-6">
-        <span className="text-sm leading-snug">
-          {product.prices.length < 2 ? (
-            <ProductPriceLabel product={product} price={product.prices[0]} />
-          ) : (
-            <ProductPrices product={product} />
-          )}
-        </span>
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={(e) => {
-            e.stopPropagation()
-            e.preventDefault()
-
-            router.push(
-              `/dashboard/${organization.slug}/products/checkout-links?product_id=${product.id}`,
-            )
-          }}
-        >
-          Share
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger className="focus:outline-none" asChild>
+        {product.is_archived ? (
+          <Tooltip>
+            <TooltipTrigger>
+              <Status
+                className="bg-red-200 text-red-400 dark:bg-red-950"
+                status="Archived"
+              />
+            </TooltipTrigger>
+            <TooltipContent align="center" side="left">
+              Archived products only prevents new subscribers & purchases
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <>
+            <span className="text-sm leading-snug">
+              {product.prices.length < 2 ? (
+                <ProductPriceLabel
+                  product={product}
+                  price={product.prices[0]}
+                />
+              ) : (
+                <ProductPrices product={product} />
+              )}
+            </span>
             <Button
-              className={
-                'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
-              }
-              size="icon"
+              size="sm"
               variant="secondary"
+              onClick={(e) => {
+                e.stopPropagation()
+                e.preventDefault()
+
+                router.push(
+                  `/dashboard/${organization.slug}/products/checkout-links?product_id=${product.id}`,
+                )
+              }}
             >
-              <MoreVertOutlined fontSize="inherit" />
+              Share
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="dark:bg-polar-800 bg-gray-50 shadow-lg"
-          >
-            {product.prices.length > 0 && (
-              <>
-                {product.prices.map((price) => (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="focus:outline-none" asChild>
+                <Button
+                  className={
+                    'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+                  }
+                  size="icon"
+                  variant="secondary"
+                >
+                  <MoreVertOutlined fontSize="inherit" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="dark:bg-polar-800 bg-gray-50 shadow-lg"
+              >
+                {product.prices.length > 0 && (
+                  <>
+                    {product.prices.map((price) => (
+                      <DropdownMenuItem
+                        key={price.id}
+                        onClick={handleContextMenuCallback(() => {
+                          onCopyPriceID(price)
+                        })}
+                      >
+                        {generateCopyPriceLabel(
+                          price,
+                          product.prices.length,
+                          'Copy Price ID',
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
+                <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
+                <DropdownMenuItem
+                  onClick={handleContextMenuCallback(() => {
+                    if (typeof navigator !== 'undefined') {
+                      navigator.clipboard.writeText(product.id)
+                    }
+                  })}
+                >
+                  Copy Product ID
+                </DropdownMenuItem>
+                {organization.profile_settings?.enabled && (
                   <DropdownMenuItem
-                    key={price.id}
                     onClick={handleContextMenuCallback(() => {
-                      onCopyPriceID(price)
+                      if (typeof window !== 'undefined') {
+                        window.open(
+                          `/${organization.slug}/products/${product.id}`,
+                          '_blank',
+                        )
+                      }
                     })}
                   >
-                    {generateCopyPriceLabel(
-                      price,
-                      product.prices.length,
-                      'Copy Price ID',
-                    )}
+                    View Product Page
                   </DropdownMenuItem>
-                ))}
-              </>
-            )}
-            <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
-            <DropdownMenuItem
-              onClick={handleContextMenuCallback(() => {
-                if (typeof navigator !== 'undefined') {
-                  navigator.clipboard.writeText(product.id)
-                }
-              })}
-            >
-              Copy Product ID
-            </DropdownMenuItem>
-            {organization.profile_settings?.enabled && (
-              <DropdownMenuItem
-                onClick={handleContextMenuCallback(() => {
-                  if (typeof window !== 'undefined') {
-                    window.open(
-                      `/${organization.slug}/products/${product.id}`,
-                      '_blank',
-                    )
-                  }
-                })}
-              >
-                View Product Page
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
-            <DropdownMenuItem onClick={handleContextMenuCallback(showModal)}>
-              Archive Product
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+                )}
+                <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
+                <DropdownMenuItem
+                  onClick={handleContextMenuCallback(showModal)}
+                >
+                  Archive Product
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        )}
       </div>
       <ConfirmModal
         isShown={isConfirmModalShown}

@@ -54,24 +54,34 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
               <ProductThumbnail product={product} />
               <h1 className="text-2xl">{product.name}</h1>
             </div>
-            <Status
-              status={
-                product.is_recurring ? 'Subscription' : 'One-time Product'
-              }
-              className={
-                ProductTypeDisplayColor[
-                  product.is_recurring ? 'subscription' : 'one_time'
-                ]
-              }
-            />
+            <div className="flex flex-row items-center gap-4">
+              <Status
+                status={
+                  product.is_recurring ? 'Subscription' : 'One-time Product'
+                }
+                className={
+                  ProductTypeDisplayColor[
+                    product.is_recurring ? 'subscription' : 'one_time'
+                  ]
+                }
+              />
+              {product.is_archived && (
+                <Status
+                  status="Archived"
+                  className="bg-red-200 text-red-400 dark:bg-red-950"
+                />
+              )}
+            </div>
           </div>
         }
         contextViewClassName="hidden md:block"
         contextView={
-          <ProductPageContextView
-            organization={organization}
-            product={product}
-          />
+          product.is_archived ? undefined : (
+            <ProductPageContextView
+              organization={organization}
+              product={product}
+            />
+          )
         }
         wide
       >

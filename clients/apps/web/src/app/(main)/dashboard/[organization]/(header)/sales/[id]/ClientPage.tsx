@@ -20,7 +20,6 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import Pill from '@polar-sh/ui/components/atoms/Pill'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
@@ -41,7 +40,12 @@ const OrderProductItem = ({ product }: OrderProductItemProps) => {
       <div className="flex flex-col gap-2">
         <div className="flex flex-row items-center gap-x-4">
           <h3 className="text-xl">{product.name}</h3>
-          {product.is_archived && <Pill color="gray">Archived</Pill>}
+          {product.is_archived && (
+            <Status
+              status="Archived"
+              className="bg-red-200 text-xs text-red-400 dark:bg-red-950"
+            />
+          )}
         </div>
         {product.description && (
           <div

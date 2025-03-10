@@ -235,7 +235,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             {tier.is_archived && (
               <Status
                 status="Archived"
-                className="bg-red-200 text-xs text-red-400 dark:bg-red-950"
+                className="bg-red-100 text-xs text-red-500 dark:bg-red-950"
               />
             )}
           </div>

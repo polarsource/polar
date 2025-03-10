@@ -302,7 +302,7 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
           <Tooltip>
             <TooltipTrigger>
               <Status
-                className="bg-red-200 text-red-400 dark:bg-red-950"
+                className="bg-red-100 text-red-500 dark:bg-red-950"
                 status="Archived"
               />
             </TooltipTrigger>

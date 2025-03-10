@@ -120,7 +120,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
                   'w-fit',
                   grant.is_granted
                     ? 'bg-emerald-200 text-emerald-500 dark:bg-emerald-950'
-                    : 'bg-red-200 text-red-500 dark:bg-red-950',
+                    : 'bg-red-100 text-red-500 dark:bg-red-950',
                 )}
                 status={grant.is_granted ? 'Granted' : 'Revoked'}
               />

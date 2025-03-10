@@ -146,62 +146,64 @@ export const ProductOverview = ({
           isLoading={productOrdersIsLoading}
         />
       </div>
-      <div className="flex flex-col gap-y-6">
-        <div className="flex flex-row items-center justify-between gap-x-6">
-          <div className="flex flex-col gap-y-1">
-            <h2 className="text-lg">Applicable Discounts</h2>
-            <p className="dark:text-polar-500 text-sm text-gray-500">
-              All Discounts valid for {product.name}
-            </p>
+      {!product.is_archived && (
+        <div className="flex flex-col gap-y-6">
+          <div className="flex flex-row items-center justify-between gap-x-6">
+            <div className="flex flex-col gap-y-1">
+              <h2 className="text-lg">Applicable Discounts</h2>
+              <p className="dark:text-polar-500 text-sm text-gray-500">
+                All Discounts valid for {product.name}
+              </p>
+            </div>
           </div>
-        </div>
-        <DataTable
-          data={applicableDiscounts ?? []}
-          columns={[
-            {
-              accessorKey: 'name',
-              enableSorting: true,
-              header: ({ column }) => (
-                <DataTableColumnHeader column={column} title="Name" />
-              ),
-              cell: (props) => {
-                return props.getValue() as string
+          <DataTable
+            data={applicableDiscounts ?? []}
+            columns={[
+              {
+                accessorKey: 'name',
+                enableSorting: true,
+                header: ({ column }) => (
+                  <DataTableColumnHeader column={column} title="Name" />
+                ),
+                cell: (props) => {
+                  return props.getValue() as string
+                },
               },
-            },
-            {
-              accessorKey: 'code',
-              enableSorting: true,
-              header: ({ column }) => (
-                <DataTableColumnHeader column={column} title="Code" />
-              ),
-              cell: ({ row: { original: discount } }) => (
-                <span>{discount.code}</span>
-              ),
-            },
-            {
-              accessorKey: 'amount',
-              enableSorting: true,
-              header: ({ column }) => (
-                <DataTableColumnHeader column={column} title="Amount" />
-              ),
-              cell: ({ row: { original: discount } }) => (
-                <span>{getDiscountDisplay(discount)}</span>
-              ),
-            },
-            {
-              accessorKey: 'created_at',
-              enableSorting: true,
-              header: ({ column }) => (
-                <DataTableColumnHeader column={column} title="Date" />
-              ),
-              cell: (props) => (
-                <FormattedDateTime datetime={props.getValue() as string} />
-              ),
-            },
-          ]}
-          isLoading={discountsLoading}
-        />
-      </div>
+              {
+                accessorKey: 'code',
+                enableSorting: true,
+                header: ({ column }) => (
+                  <DataTableColumnHeader column={column} title="Code" />
+                ),
+                cell: ({ row: { original: discount } }) => (
+                  <span>{discount.code}</span>
+                ),
+              },
+              {
+                accessorKey: 'amount',
+                enableSorting: true,
+                header: ({ column }) => (
+                  <DataTableColumnHeader column={column} title="Amount" />
+                ),
+                cell: ({ row: { original: discount } }) => (
+                  <span>{getDiscountDisplay(discount)}</span>
+                ),
+              },
+              {
+                accessorKey: 'created_at',
+                enableSorting: true,
+                header: ({ column }) => (
+                  <DataTableColumnHeader column={column} title="Date" />
+                ),
+                cell: (props) => (
+                  <FormattedDateTime datetime={props.getValue() as string} />
+                ),
+              },
+            ]}
+            isLoading={discountsLoading}
+          />
+        </div>
+      )}
     </div>
   )
 }

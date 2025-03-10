@@ -20,7 +20,10 @@ export const useProducts = (
           params: {
             query: {
               organization_id: organizationId,
-              is_archived: false,
+              is_archived:
+                parameters?.is_archived === undefined
+                  ? false
+                  : parameters?.is_archived,
               ...(parameters || {}),
             },
           },
@@ -29,7 +32,7 @@ export const useProducts = (
     retry: defaultRetry,
   })
 
-export const useSelectedProducts = (id: string[]) =>
+export const useSelectedProducts = (id: string[], includeArchived = false) =>
   useQuery({
     queryKey: ['products', { id }],
     queryFn: async () => {
@@ -41,7 +44,7 @@ export const useSelectedProducts = (id: string[]) =>
             params: {
               query: {
                 id,
-                is_archived: false,
+                is_archived: includeArchived ? null : false,
                 page,
                 limit: 1,
               },

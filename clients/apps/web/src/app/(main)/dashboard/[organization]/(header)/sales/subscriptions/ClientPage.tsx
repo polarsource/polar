@@ -22,6 +22,7 @@ import {
   DataTableColumnHeader,
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
@@ -229,14 +230,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
       cell: (props) => {
         const tier = props.getValue() as schemas['Product']
         return (
-          <>
+          <div className="flex flex-row items-center gap-2">
             {tier.name}
             {tier.is_archived && (
-              <span className="ml-2 shrink-0 rounded-lg border border-yellow-200 bg-yellow-100 px-1.5 text-xs text-yellow-600 dark:border-yellow-600 dark:bg-yellow-700 dark:text-yellow-300">
-                Archived
-              </span>
+              <Status
+                status="Archived"
+                className="bg-red-200 text-xs text-red-400 dark:bg-red-950"
+              />
             )}
-          </>
+          </div>
         )
       },
     },

@@ -414,12 +414,6 @@ class OrderService(ResourceServiceReader[Order]):
             user_metadata = subscription.user_metadata
             custom_field_data = subscription.custom_field_data
 
-            # Set the subscription amount to the latest order amount
-            # Helps to reflect discount that may have ended
-            if subscription.amount != amount:
-                subscription.amount = amount
-                session.add(subscription)
-
         if checkout is not None:
             user_metadata = checkout.user_metadata
             custom_field_data = checkout.custom_field_data

@@ -47,6 +47,7 @@ from polar.models import (
     Refund,
     Repository,
     Subscription,
+    SubscriptionProductPrice,
     Transaction,
     User,
     UserOrganization,
@@ -80,7 +81,6 @@ from polar.models.issue import Issue
 from polar.models.order import OrderBillingReason
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import (
-    HasPriceCurrency,
     ProductPriceAmountType,
     ProductPriceType,
 )
@@ -922,7 +922,7 @@ async def create_customer(
     email: str = "customer@example.com",
     email_verified: bool = False,
     name: str = "Customer",
-    stripe_customer_id: str = "STRIPE_CUSTOMER_ID",
+    stripe_customer_id: str | None = "STRIPE_CUSTOMER_ID",
     billing_address: Address | None = None,
     tax_id: TaxID | None = None,
     user_metadata: dict[str, Any] = {},
@@ -1039,7 +1039,7 @@ async def create_subscription(
     save_fixture: SaveFixture,
     *,
     product: Product,
-    price: ProductPrice | None = None,
+    prices: Sequence[ProductPrice] | None = None,
     customer: Customer,
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
     started_at: datetime | None = None,
@@ -1051,10 +1051,14 @@ async def create_subscription(
     cancel_at_period_end: bool = False,
     revoke: bool = False,
 ) -> Subscription:
-    price = price or product.prices[0] if product.prices else None
+    prices = prices or product.prices
     now = datetime.now(UTC)
     if not current_period_end:
         current_period_end = now + timedelta(days=30)
+
+    recurring_interval = product.recurring_interval
+    if product.is_legacy_recurring_price:
+        recurring_interval = product.prices[0].recurring_interval
 
     ends_at = None
     canceled_at = None
@@ -1069,20 +1073,7 @@ async def create_subscription(
 
     subscription = Subscription(
         stripe_subscription_id=stripe_subscription_id,
-        amount=price.price_amount if isinstance(price, ProductPriceFixed) else None,
-        currency=(
-            price.price_currency
-            if price is not None and isinstance(price, HasPriceCurrency)
-            else None
-        ),
-        recurring_interval=price.recurring_interval
-        if isinstance(
-            price,
-            LegacyRecurringProductPriceFixed
-            | LegacyRecurringProductPriceCustom
-            | LegacyRecurringProductPriceFree,
-        )
-        else product.recurring_interval,
+        recurring_interval=recurring_interval,
         status=status,
         current_period_start=(
             now if current_period_start is None else current_period_start
@@ -1095,7 +1086,9 @@ async def create_subscription(
         ends_at=ends_at,
         customer=customer,
         product=product,
-        price=price,
+        subscription_product_prices=[
+            SubscriptionProductPrice.from_price(price) for price in prices
+        ],
         discount=discount,
     )
     await save_fixture(subscription)
@@ -1106,7 +1099,7 @@ async def create_active_subscription(
     save_fixture: SaveFixture,
     *,
     product: Product,
-    price: ProductPrice | None = None,
+    prices: Sequence[ProductPrice] | None = None,
     customer: Customer,
     organization: Organization | None = None,
     started_at: datetime | None = None,
@@ -1116,7 +1109,7 @@ async def create_active_subscription(
     return await create_subscription(
         save_fixture,
         product=product,
-        price=price,
+        prices=prices,
         customer=customer,
         status=SubscriptionStatus.active,
         started_at=started_at or utc_now(),
@@ -1129,7 +1122,7 @@ async def create_canceled_subscription(
     save_fixture: SaveFixture,
     *,
     product: Product,
-    price: ProductPrice | None = None,
+    prices: Sequence[ProductPrice] | None = None,
     customer: Customer,
     stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
     cancel_at_period_end: bool = True,
@@ -1138,7 +1131,7 @@ async def create_canceled_subscription(
     return await create_subscription(
         save_fixture,
         product=product,
-        price=price,
+        prices=prices,
         customer=customer,
         status=SubscriptionStatus.active,
         started_at=utc_now(),

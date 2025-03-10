@@ -280,21 +280,6 @@ async def charge_dispute_closed(
             await dispute_transaction_service.create_dispute(session, dispute=dispute)
 
 
-@task("stripe.webhook.customer.subscription.created")
-@stripe_api_connection_error_retry
-async def customer_subscription_created(
-    ctx: JobContext, event: stripe.Event, polar_context: PolarWorkerContext
-) -> None:
-    with polar_context.to_execution_context():
-        async with AsyncSessionMaker(ctx) as session:
-            subscription = stripe.Subscription.construct_from(
-                event["data"]["object"], None
-            )
-            await subscription_service.create_subscription_from_stripe(
-                session, stripe_subscription=subscription
-            )
-
-
 @task("stripe.webhook.customer.subscription.updated", max_tries=MAX_RETRIES)
 @stripe_api_connection_error_retry
 async def customer_subscription_updated(

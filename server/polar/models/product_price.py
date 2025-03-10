@@ -27,7 +27,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
-    from polar.models import Product, Subscription
+    from polar.models import Product
 
 
 class ProductPriceType(StrEnum):
@@ -79,10 +79,6 @@ class ProductPrice(RecordModel):
     def product(cls) -> Mapped["Product"]:
         return relationship("Product", lazy="raise_on_sql", back_populates="all_prices")
 
-    @declared_attr
-    def subscriptions(cls) -> Mapped[list["Subscription"]]:
-        return relationship("Subscription", lazy="raise", back_populates="price")
-
     @hybrid_property
     def is_recurring(self) -> bool:
         return self.type == ProductPriceType.recurring
@@ -91,6 +87,25 @@ class ProductPrice(RecordModel):
     @classmethod
     def _is_recurring_expression(cls) -> ColumnElement[bool]:
         return type_coerce(cls.type == ProductPriceType.recurring, Boolean)
+
+    @hybrid_property
+    def is_static(self) -> bool:
+        return self.amount_type in {
+            ProductPriceAmountType.fixed,
+            ProductPriceAmountType.free,
+            ProductPriceAmountType.custom,
+        }
+
+    @is_static.inplace.expression
+    @classmethod
+    def _is_static_price_expression(cls) -> ColumnElement[bool]:
+        return cls.amount_type.in_(
+            (
+                ProductPriceAmountType.fixed,
+                ProductPriceAmountType.free,
+                ProductPriceAmountType.custom,
+            )
+        )
 
     @property
     def legacy_type(self) -> ProductPriceType | None:

@@ -11,7 +11,6 @@ from polar.models import (
     Customer,
     Organization,
     Product,
-    ProductPriceFree,
     Subscription,
     UserOrganization,
 )
@@ -221,9 +220,6 @@ class TestSubscriptionProductUpdate:
             product=product,
             customer=customer,
         )
-        previous_price = subscription.price
-        new_price = product_second.prices[0]
-        new_price_id = new_price.id
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
             json=dict(product_id=str(product_second.id)),
@@ -231,23 +227,18 @@ class TestSubscriptionProductUpdate:
         assert response.status_code == 200
         assert stripe_service_mock.cancel_subscription.called is False
         assert stripe_service_mock.revoke_subscription.called is False
-        previous_free = isinstance(previous_price, ProductPriceFree)
         stripe_service_mock.update_subscription_price.assert_called_once_with(
             subscription.stripe_subscription_id,
-            old_price=previous_price.stripe_price_id,
-            new_price=new_price.stripe_price_id,
+            new_prices=[price.stripe_price_id for price in product_second.prices],
             proration_behavior=organization.proration_behavior.to_stripe(),
-            error_if_incomplete=previous_free,
             metadata={
                 "type": "product",
                 "product_id": str(product_second.id),
-                "product_price_id": str(new_price_id),
             },
         )
 
         updated_subscription = response.json()
         assert updated_subscription["product"]["id"] == str(product_second.id)
-        assert updated_subscription["price"]["id"] == str(new_price_id)
 
 
 @pytest.mark.asyncio

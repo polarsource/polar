@@ -87,7 +87,6 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
 
     customer_id: UUID4 = Field(description="The ID of the subscribed customer.")
     product_id: UUID4 = Field(description="The ID of the subscribed product.")
-    price_id: UUID4 = Field(description="The ID of the subscribed price.")
     discount_id: UUID4 | None = Field(
         description="The ID of the applied discount, if any."
     )
@@ -95,6 +94,16 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
 
     customer_cancellation_reason: CustomerCancellationReason | None
     customer_cancellation_comment: str | None
+
+    price_id: UUID4 = Field(
+        deprecated="Use `prices` instead.",
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "price_id",
+            # Validate from ORM model
+            AliasPath("prices", 0, "id"),
+        ),
+    )
 
     def get_amount_display(self) -> str:
         if self.amount is None or self.currency is None:
@@ -134,8 +143,17 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
         deprecated="Use `customer`.",
     )
     product: Product
-    price: ProductPrice
     discount: SubscriptionDiscount | None
+
+    price: ProductPrice = Field(
+        deprecated="Use `prices` instead.",
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "price",
+            # Validate from ORM model
+            AliasPath("prices", 0),
+        ),
+    )
 
 
 class SubscriptionCreateEmail(Schema):

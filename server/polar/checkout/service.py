@@ -79,6 +79,8 @@ from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
+from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.service import subscription as subscription_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
@@ -907,74 +909,31 @@ class CheckoutService(ResourceServiceReader[Checkout]):
 
         product = checkout.product
 
-        stripe_customer_id = get_expandable_id(payment_intent.customer)
-        stripe_payment_method_id = get_expandable_id(payment_intent.payment_method)
-        metadata = {
-            "type": ProductType.product,
-            "product_id": str(checkout.product_id),
-            "product_price_id": str(checkout.product_price_id),
-            "checkout_id": str(checkout.id),
-        }
-
-        stripe_price_id = product_price.stripe_price_id
-        # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
-        if isinstance(
-            product_price, ProductPriceCustom | LegacyRecurringProductPriceCustom
-        ):
-            ad_hoc_price = await self._create_ad_hoc_custom_price(checkout)
-            stripe_price_id = ad_hoc_price.id
-
         if product.is_recurring:
-            subscription = checkout.subscription
-            # New subscription
-            if subscription is None:
-                (
-                    stripe_subscription,
-                    stripe_invoice,
-                ) = await stripe_service.create_out_of_band_subscription(
-                    customer=stripe_customer_id,
-                    currency=checkout.currency or "usd",
-                    price=stripe_price_id,
-                    coupon=(
-                        checkout.discount.stripe_coupon_id
-                        if checkout.discount
-                        else None
-                    ),
-                    automatic_tax=product.is_tax_applicable,
-                    metadata=metadata,
-                    invoice_metadata={
-                        "payment_intent_id": payment_intent.id,
-                        "checkout_id": str(checkout.id),
-                    },
-                )
-            # Subscription upgrade
-            else:
-                assert subscription.stripe_subscription_id is not None
-                await session.refresh(subscription, {"price"})
-                (
-                    stripe_subscription,
-                    stripe_invoice,
-                ) = await stripe_service.update_out_of_band_subscription(
-                    subscription_id=subscription.stripe_subscription_id,
-                    old_price=subscription.price.stripe_price_id,
-                    new_price=stripe_price_id,
-                    coupon=(
-                        checkout.discount.stripe_coupon_id
-                        if checkout.discount
-                        else None
-                    ),
-                    automatic_tax=product.is_tax_applicable,
-                    metadata=metadata,
-                    invoice_metadata={
-                        "payment_intent_id": payment_intent.id,
-                        "checkout_id": str(checkout.id),
-                    },
-                )
-            await stripe_service.set_automatically_charged_subscription(
-                stripe_subscription.id,
-                stripe_payment_method_id,
+            await subscription_service.create_or_update_from_checkout(
+                session, checkout, payment_intent
             )
         else:
+            stripe_customer_id = get_expandable_id(payment_intent.customer)
+            stripe_payment_method_id = get_expandable_id(payment_intent.payment_method)
+            metadata = {
+                "type": ProductType.product,
+                "product_id": str(checkout.product_id),
+                "checkout_id": str(checkout.id),
+            }
+
+            stripe_price_id = product_price.stripe_price_id
+            # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
+            if isinstance(
+                product_price, ProductPriceCustom | LegacyRecurringProductPriceCustom
+            ):
+                assert checkout.amount is not None
+                assert checkout.currency is not None
+                ad_hoc_price = await stripe_service.create_ad_hoc_custom_price(
+                    product, product_price, checkout.amount, checkout.currency
+                )
+                stripe_price_id = ad_hoc_price.id
+
             stripe_invoice = await stripe_service.create_out_of_band_invoice(
                 customer=stripe_customer_id,
                 currency=checkout.currency or "usd",
@@ -989,15 +948,15 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 },
             )
 
-        # Sanity check to make sure we didn't mess up the amount.
-        # Don't raise an error so the order can be successfully completed nonetheless.
-        if stripe_invoice.total != payment_intent.amount:
-            log.error(
-                "Mismatch between payment intent and invoice amount",
-                checkout=checkout.id,
-                payment_intent=payment_intent.id,
-                invoice=stripe_invoice.id,
-            )
+            # Sanity check to make sure we didn't mess up the amount.
+            # Don't raise an error so the order can be successfully completed nonetheless.
+            if stripe_invoice.total != payment_intent.amount:
+                log.error(
+                    "Mismatch between payment intent and invoice amount",
+                    checkout=checkout.id,
+                    payment_intent=payment_intent.id,
+                    invoice=stripe_invoice.id,
+                )
 
         checkout.status = CheckoutStatus.succeeded
         session.add(checkout)
@@ -1060,44 +1019,24 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         metadata = {
             "type": ProductType.product,
             "product_id": str(checkout.product_id),
-            "product_price_id": str(checkout.product_price_id),
             "checkout_id": str(checkout.id),
         }
-        idempotency_key = f"checkout_{checkout.id}"
-
-        # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
-        if isinstance(
-            product_price, ProductPriceCustom | LegacyRecurringProductPriceCustom
-        ):
-            ad_hoc_price = await self._create_ad_hoc_custom_price(
-                checkout, idempotency_key=f"{idempotency_key}_price"
-            )
-            stripe_price_id = ad_hoc_price.id
 
         if product.is_recurring:
-            (
-                stripe_subscription,
-                _,
-            ) = await stripe_service.create_out_of_band_subscription(
-                customer=stripe_customer_id,
-                currency=checkout.currency or "usd",
-                price=stripe_price_id,
-                coupon=(
-                    checkout.discount.stripe_coupon_id if checkout.discount else None
-                ),
-                automatic_tax=False,
-                metadata=metadata,
-                invoice_metadata={
-                    "checkout_id": str(checkout.id),
-                },
-                idempotency_key=idempotency_key,
-            )
-            await stripe_service.set_automatically_charged_subscription(
-                stripe_subscription.id,
-                None,
-                idempotency_key=f"{idempotency_key}_subscription_auto_charge",
+            await subscription_service.create_or_update_from_checkout(
+                session, checkout, None
             )
         else:
+            # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
+            if isinstance(
+                product_price, ProductPriceCustom | LegacyRecurringProductPriceCustom
+            ):
+                assert checkout.amount is not None
+                assert checkout.currency is not None
+                ad_hoc_price = await stripe_service.create_ad_hoc_custom_price(
+                    product, product_price, checkout.amount, checkout.currency
+                )
+                stripe_price_id = ad_hoc_price.id
             await stripe_service.create_out_of_band_invoice(
                 customer=stripe_customer_id,
                 currency=checkout.currency or "usd",
@@ -1107,7 +1046,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 ),
                 automatic_tax=False,
                 metadata=metadata,
-                idempotency_key=idempotency_key,
             )
 
         checkout.status = CheckoutStatus.succeeded
@@ -1387,22 +1325,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         subscription_id: uuid.UUID,
         organization_id: uuid.UUID,
     ) -> tuple[Subscription, Customer]:
-        statement = (
-            select(Subscription)
-            .join(Product)
-            .where(
-                Subscription.id == subscription_id,
-                Product.organization_id == organization_id,
-            )
-            .options(
-                contains_eager(Subscription.product),
-                joinedload(Subscription.price),
-                joinedload(Subscription.customer),
-            )
+        subscription_repository = SubscriptionRepository.from_session(session)
+        subscription = await subscription_repository.get_by_id_and_organization(
+            subscription_id, organization_id
         )
-
-        result = await session.execute(statement)
-        subscription = result.scalars().unique().one_or_none()
 
         if subscription is None:
             raise PolarRequestValidationError(
@@ -1415,17 +1341,19 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                     }
                 ]
             )
-        if subscription.price.amount_type != ProductPriceAmountType.free:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "subscription_id"),
-                        "msg": "Only free subscriptions can be upgraded.",
-                        "input": subscription_id,
-                    }
-                ]
-            )
+
+        for price in subscription.prices:
+            if price.amount_type != ProductPriceAmountType.free:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "subscription_id"),
+                            "msg": "Only free subscriptions can be upgraded.",
+                            "input": subscription_id,
+                        }
+                    ]
+                )
 
         return subscription, subscription.customer
 
@@ -1890,6 +1818,7 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             session,
             checkout_id,
             options=(
+                joinedload(Checkout.customer),
                 joinedload(Checkout.product).options(
                     selectinload(Product.product_medias),
                     selectinload(Product.attached_custom_fields),

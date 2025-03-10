@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Literal, cast, overload
 
@@ -15,11 +15,8 @@ from polar.auth.models import (
     is_user,
 )
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
-from polar.checkout.service import checkout as checkout_service
 from polar.config import settings
-from polar.customer.service import customer as customer_service
 from polar.customer_session.service import customer_session as customer_session_service
-from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import enqueue_email, get_email_sender
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
@@ -46,15 +43,12 @@ from polar.models import (
     Customer,
     Discount,
     LegacyRecurringProductPriceCustom,
-    LegacyRecurringProductPriceFixed,
-    LegacyRecurringProductPriceFree,
     Organization,
     Product,
     ProductBenefit,
     ProductPriceCustom,
-    ProductPriceFixed,
-    ProductPriceFree,
     Subscription,
+    SubscriptionProductPrice,
     User,
     UserOrganization,
 )
@@ -86,46 +80,31 @@ log: Logger = structlog.get_logger()
 class SubscriptionError(PolarError): ...
 
 
-class InvalidSubscriptionMetadata(SubscriptionError):
-    def __init__(self, stripe_subscription_id: str) -> None:
-        self.stripe_subscription_id = stripe_subscription_id
-        message = (
-            f"Received the subscription {stripe_subscription_id} from Stripe, "
-            "but the metadata doesn't contain the product ID and product price ID."
-        )
-        super().__init__(message)
-
-
-class AssociatedProductDoesNotExist(SubscriptionError):
-    def __init__(self, stripe_subscription_id: str, product_id: str) -> None:
-        self.subscription_id = stripe_subscription_id
-        self.product_id = product_id
-        message = (
-            f"Received the subscription {stripe_subscription_id} from Stripe "
-            f"with product {product_id}, but no associated Product exists."
-        )
-        super().__init__(message)
-
-
-class AssociatedPriceDoesNotExist(SubscriptionError):
-    def __init__(self, stripe_subscription_id: str, stripe_price_id: str) -> None:
-        self.subscription_id = stripe_subscription_id
-        self.price_id = stripe_price_id
-        message = (
-            f"Received the subscription {stripe_subscription_id} from Stripe "
-            f"with price {stripe_price_id}, but no associated ProductPrice exists."
-        )
-        super().__init__(message)
-
-
 class NotARecurringProduct(SubscriptionError):
-    def __init__(self, stripe_subscription_id: str, stripe_price_id: str) -> None:
-        self.subscription_id = stripe_subscription_id
-        self.price_id = stripe_price_id
+    def __init__(self, checkout: Checkout, product: Product) -> None:
+        self.checkout = checkout
+        self.product = product
         message = (
-            f"Received the subscription {stripe_subscription_id} from Stripe "
-            f"with price {stripe_price_id}, "
-            "but the associated product is not recurring."
+            f"Checkout {checkout.id} is for product {product.id}, "
+            "which is not a recurring product."
+        )
+        super().__init__(message)
+
+
+class MissingCheckoutCustomer(SubscriptionError):
+    def __init__(self, checkout: Checkout) -> None:
+        self.checkout = checkout
+        message = f"Checkout {checkout.id} is missing a customer."
+        super().__init__(message)
+
+
+class MissingStripeCustomerID(SubscriptionError):
+    def __init__(self, checkout: Checkout, customer: Customer) -> None:
+        self.checkout = checkout
+        self.customer = customer
+        message = (
+            f"Checkout {checkout.id}'s customer {customer.id} "
+            "is missing a Stripe customer ID."
         )
         super().__init__(message)
 
@@ -137,35 +116,6 @@ class SubscriptionDoesNotExist(SubscriptionError):
             f"Received a subscription update from Stripe for {stripe_subscription_id}, "
             f"but no associated Subscription exists."
         )
-        super().__init__(message)
-
-
-class DiscountDoesNotExist(SubscriptionError):
-    def __init__(self, stripe_subscription_id: str, coupon_id: str) -> None:
-        self.stripe_subscription_id = stripe_subscription_id
-        self.coupon_id = coupon_id
-        message = (
-            f"Received subscription {stripe_subscription_id} from Stripe "
-            f"with coupon {coupon_id}, but no associated Discount exists."
-        )
-        super().__init__(message)
-
-
-class CheckoutDoesNotExist(SubscriptionError):
-    def __init__(self, stripe_subscription_id: str, checkout_id: str) -> None:
-        self.stripe_subscription_id = stripe_subscription_id
-        self.checkout_id = checkout_id
-        message = (
-            f"Received subscription {stripe_subscription_id} from Stripe "
-            f"with checkout {checkout_id}, but no associated Checkout exists."
-        )
-        super().__init__(message)
-
-
-class EndDateInTheFuture(SubscriptionError):
-    def __init__(self, end_date: date) -> None:
-        self.end_date = end_date
-        message = "Can't generate statistics for a period that ends in the future."
         super().__init__(message)
 
 
@@ -254,10 +204,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             Subscription.started_at.is_not(None)
         )
 
-        statement = (
-            statement.join(Subscription.customer)
-            .join(Subscription.price, isouter=True)
-            .join(Subscription.discount, isouter=True)
+        statement = statement.join(Subscription.customer).join(
+            Subscription.discount, isouter=True
         )
 
         if organization_id is not None:
@@ -341,7 +289,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 selectinload(Product.product_medias),
                 selectinload(Product.attached_custom_fields),
             ),
-            contains_eager(Subscription.price),
             contains_eager(Subscription.discount),
             contains_eager(Subscription.customer),
         )
@@ -361,68 +308,104 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
 
-    async def create_subscription_from_stripe(
-        self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
+    async def create_or_update_from_checkout(
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        payment_intent: stripe_lib.PaymentIntent | None,
     ) -> Subscription:
-        product_id = stripe_subscription.metadata.get("product_id")
-        price_id = stripe_subscription.metadata.get("product_price_id")
-        if product_id is None or price_id is None:
-            raise InvalidSubscriptionMetadata(stripe_subscription.id)
-
-        product_repository = ProductRepository.from_session(session)
-        product = await product_repository.get_by_id(
-            uuid.UUID(product_id),
-            options=(
-                *product_repository.get_eager_options(),
-                selectinload(Product.all_prices),
-            ),
-        )
-        if product is None:
-            raise AssociatedProductDoesNotExist(stripe_subscription.id, product_id)
+        product = checkout.product
         if not product.is_recurring:
-            raise NotARecurringProduct(stripe_subscription.id, price_id)
+            raise NotARecurringProduct(checkout, product)
 
-        price = product.get_price(uuid.UUID(price_id), include_archived=True)
-        if price is None:
-            raise AssociatedPriceDoesNotExist(stripe_subscription.id, price_id)
+        customer = checkout.customer
+        if customer is None:
+            raise MissingCheckoutCustomer(checkout)
 
-        organization = product.organization
+        stripe_customer_id = customer.stripe_customer_id
+        if stripe_customer_id is None:
+            raise MissingStripeCustomerID(checkout, customer)
 
-        # Get Discount if available
-        discount: Discount | None = None
-        if stripe_subscription.discount is not None:
-            coupon = stripe_subscription.discount.coupon
-            if (metadata := coupon.metadata) is None:
-                raise DiscountDoesNotExist(stripe_subscription.id, coupon.id)
-            discount_id = metadata["discount_id"]
-            discount = await discount_service.get(
-                session, uuid.UUID(discount_id), allow_deleted=True
-            )
-            if discount is None:
-                raise DiscountDoesNotExist(stripe_subscription.id, coupon.id)
+        stripe_payment_method_id = (
+            get_expandable_id(payment_intent.payment_method)
+            if payment_intent and payment_intent.payment_method
+            else None
+        )
+        metadata = {
+            "type": ProductType.product,
+            "product_id": str(checkout.product_id),
+            "checkout_id": str(checkout.id),
+        }
+        invoice_metadata = {
+            "checkout_id": str(checkout.id),
+        }
+        if payment_intent is not None:
+            invoice_metadata["payment_intent_id"] = payment_intent.id
 
-        # Get Checkout if available
-        checkout: Checkout | None = None
-        if (checkout_id := stripe_subscription.metadata.get("checkout_id")) is not None:
-            checkout = await checkout_service.get(session, uuid.UUID(checkout_id))
-            if checkout is None:
-                raise CheckoutDoesNotExist(stripe_subscription.id, checkout_id)
-        subscription: Subscription | None = None
+        stripe_price_ids: list[str] = []
+        subscription_product_prices: list[SubscriptionProductPrice] = []
+        for price in product.prices:
+            # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
+            if isinstance(
+                price, ProductPriceCustom | LegacyRecurringProductPriceCustom
+            ):
+                assert checkout.amount is not None
+                assert checkout.currency is not None
+                ad_hoc_price = await stripe_service.create_ad_hoc_custom_price(
+                    product, price, amount=checkout.amount, currency=checkout.currency
+                )
+                stripe_price_ids.append(ad_hoc_price.id)
+                subscription_product_prices.append(
+                    SubscriptionProductPrice.from_price(price, checkout.amount)
+                )
+            else:
+                stripe_price_ids.append(price.stripe_price_id)
+                subscription_product_prices.append(
+                    SubscriptionProductPrice.from_price(price)
+                )
 
-        # Upgrade from a subscription set in metadata
-        existing_subscription_id = stripe_subscription.metadata.get("subscription_id")
-        if existing_subscription_id is not None:
-            statement = (
-                select(Subscription)
-                .where(Subscription.id == uuid.UUID(existing_subscription_id))
-                .options(joinedload(Subscription.customer))
-            )
-            result = await session.execute(statement)
-            subscription = result.unique().scalar_one_or_none()
-
+        subscription = checkout.subscription
+        new_subscription = False
+        previous_ends_at = subscription.ends_at if subscription else None
+        previous_status = subscription.status if subscription else None
         # New subscription
         if subscription is None:
+            (
+                stripe_subscription,
+                stripe_invoice,
+            ) = await stripe_service.create_out_of_band_subscription(
+                customer=stripe_customer_id,
+                currency=checkout.currency or "usd",
+                prices=stripe_price_ids,
+                coupon=(
+                    checkout.discount.stripe_coupon_id if checkout.discount else None
+                ),
+                automatic_tax=product.is_tax_applicable,
+                metadata=metadata,
+                invoice_metadata=invoice_metadata,
+            )
             subscription = Subscription()
+            new_subscription = True
+        # Subscription upgrade
+        else:
+            assert subscription.stripe_subscription_id is not None
+            (
+                stripe_subscription,
+                stripe_invoice,
+            ) = await stripe_service.update_out_of_band_subscription(
+                subscription_id=subscription.stripe_subscription_id,
+                new_prices=stripe_price_ids,
+                coupon=(
+                    checkout.discount.stripe_coupon_id if checkout.discount else None
+                ),
+                automatic_tax=product.is_tax_applicable,
+                metadata=metadata,
+                invoice_metadata=invoice_metadata,
+            )
+        await stripe_service.set_automatically_charged_subscription(
+            stripe_subscription.id,
+            stripe_payment_method_id,
+        )
 
         subscription.stripe_subscription_id = stripe_subscription.id
         subscription.status = SubscriptionStatus(stripe_subscription.status)
@@ -432,62 +415,51 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.current_period_end = _from_timestamp(
             stripe_subscription.current_period_end
         )
+        subscription.discount = checkout.discount
+        subscription.customer = customer
+        subscription.product = product
+        subscription.subscription_product_prices = subscription_product_prices
+        subscription.checkout = checkout
+        subscription.user_metadata = checkout.user_metadata
+        subscription.custom_field_data = checkout.custom_field_data
+        subscription.set_started_at()
         self.update_cancellation_from_stripe(subscription, stripe_subscription)
 
-        subscription.discount = discount
-        subscription.price = price
-
-        if isinstance(
-            price,
-            LegacyRecurringProductPriceFixed
-            | LegacyRecurringProductPriceCustom
-            | LegacyRecurringProductPriceFree,
-        ):
-            subscription.recurring_interval = price.recurring_interval
+        if product.is_legacy_recurring_price:
+            subscription.recurring_interval = product.prices[0].recurring_interval
         else:
             assert product.recurring_interval is not None
             subscription.recurring_interval = product.recurring_interval
 
-        if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
-            subscription.amount = price.price_amount
-            subscription.currency = price.price_currency
+        repository = SubscriptionRepository.from_session(session)
+        if new_subscription:
+            subscription = await repository.create(subscription, flush=True)
+            await self._after_subscription_created(session, subscription)
         else:
-            subscription.amount = None
-            subscription.currency = None
-        subscription.product = product
-
-        subscription.checkout = checkout
-        subscription.user_metadata = {
-            **(subscription.user_metadata or {}),
-            **(checkout.user_metadata if checkout is not None else {}),
-        }
-        subscription.custom_field_data = {
-            **(subscription.custom_field_data or {}),
-            **(checkout.custom_field_data if checkout is not None else {}),
-        }
-
-        subscription.set_started_at()
-
-        # Take customer from existing subscription, or retrieve it from Stripe Customer ID
-        if subscription.customer is None:
-            stripe_customer = await stripe_service.get_customer(
-                get_expandable_id(stripe_subscription.customer)
+            subscription = await repository.update(subscription, flush=True)
+            assert previous_status is not None
+            await self._after_subscription_updated(
+                session,
+                subscription,
+                previous_status=previous_status,
+                previous_ends_at=previous_ends_at,
             )
-            customer = await customer_service.get_or_create_from_stripe_customer(
-                session, stripe_customer, organization
-            )
-            subscription.customer = customer
-
-        session.add(subscription)
-        await session.flush()
 
         # Notify checkout channel that a subscription has been created from it
-        if checkout is not None:
-            await publish_checkout_event(
-                checkout.client_secret, CheckoutEvent.subscription_created
-            )
+        await publish_checkout_event(
+            checkout.client_secret, CheckoutEvent.subscription_created
+        )
 
-        await self._after_subscription_created(session, subscription)
+        # Sanity check to make sure we didn't mess up the amount.
+        # Don't raise an error so the order can be successfully completed nonetheless.
+        if payment_intent and stripe_invoice.total != payment_intent.amount:
+            log.error(
+                "Mismatch between payment intent and invoice amount",
+                subscription=subscription.id,
+                checkout=checkout.id,
+                payment_intent=payment_intent.id,
+                invoice=stripe_invoice.id,
+            )
 
         return subscription
 
@@ -507,94 +479,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             WebhookEventType.customer_state_changed,
             subscription.customer_id,
         )
-
-    async def update_subscription_from_stripe(
-        self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
-    ) -> Subscription:
-        subscription = await self.get_by_stripe_subscription_id(
-            session, stripe_subscription.id
-        )
-
-        if subscription is None:
-            raise SubscriptionDoesNotExist(stripe_subscription.id)
-
-        previous_status = subscription.status
-        previous_ends_at = subscription.ends_at
-
-        subscription.status = SubscriptionStatus(stripe_subscription.status)
-        subscription.current_period_start = _from_timestamp(
-            stripe_subscription.current_period_start
-        )
-        subscription.current_period_end = _from_timestamp(
-            stripe_subscription.current_period_end
-        )
-        subscription.set_started_at()
-        self.update_cancellation_from_stripe(subscription, stripe_subscription)
-
-        product_id = stripe_subscription.metadata.get("product_id")
-        price_id = stripe_subscription.metadata.get("product_price_id")
-        if product_id is None or price_id is None:
-            raise InvalidSubscriptionMetadata(stripe_subscription.id)
-
-        product_repository = ProductRepository.from_session(session)
-        product = await product_repository.get_by_id(
-            uuid.UUID(product_id),
-            options=(
-                *product_repository.get_eager_options(),
-                selectinload(Product.all_prices),
-            ),
-        )
-        if product is None:
-            raise AssociatedProductDoesNotExist(stripe_subscription.id, product_id)
-        if not product.is_recurring:
-            raise NotARecurringProduct(stripe_subscription.id, price_id)
-
-        price = product.get_price(uuid.UUID(price_id), include_archived=True)
-        if price is None:
-            raise AssociatedPriceDoesNotExist(stripe_subscription.id, price_id)
-
-        subscription.price = price
-        subscription.product = price.product
-
-        # Get Discount if available
-        discount: Discount | None = None
-        if stripe_subscription.discount is not None:
-            coupon = stripe_subscription.discount.coupon
-            if (metadata := coupon.metadata) is None:
-                raise DiscountDoesNotExist(stripe_subscription.id, coupon.id)
-            discount_id = metadata["discount_id"]
-            discount = await discount_service.get(
-                session, uuid.UUID(discount_id), allow_deleted=True
-            )
-            if discount is None:
-                raise DiscountDoesNotExist(stripe_subscription.id, coupon.id)
-            subscription.discount = discount
-
-        # Get Checkout if available
-        checkout: Checkout | None = None
-        if (checkout_id := stripe_subscription.metadata.get("checkout_id")) is not None:
-            checkout = await checkout_service.get(session, uuid.UUID(checkout_id))
-            if checkout is None:
-                raise CheckoutDoesNotExist(stripe_subscription.id, checkout_id)
-        subscription.user_metadata = {
-            **(subscription.user_metadata or {}),
-            **(checkout.user_metadata if checkout is not None else {}),
-        }
-        subscription.custom_field_data = {
-            **(subscription.custom_field_data or {}),
-            **(checkout.custom_field_data if checkout is not None else {}),
-        }
-
-        session.add(subscription)
-
-        await self.enqueue_benefits_grants(session, subscription)
-        await self._after_subscription_updated(
-            session,
-            subscription,
-            previous_status=previous_status,
-            previous_ends_at=previous_ends_at,
-        )
-        return subscription
 
     async def update(
         self,
@@ -708,25 +592,42 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 ]
             )
 
-        price = product.prices[0]
-
-        if isinstance(price, ProductPriceCustom):
+        if product.is_legacy_recurring_price:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
                         "loc": ("body", "product_id"),
-                        "msg": (
-                            "Pay what you want price are not supported "
-                            "for subscriptions."
-                        ),
+                        "msg": "Product has legacy recurring prices.",
                         "input": product_id,
                     }
                 ]
             )
+        assert product.recurring_interval is not None
+
+        prices = product.prices
+
+        for price in prices:
+            if isinstance(price, ProductPriceCustom):
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "product_id"),
+                            "msg": "Can't update to a product with custom prices.",
+                            "input": product_id,
+                        }
+                    ]
+                )
 
         if subscription.stripe_subscription_id is None:
             raise SubscriptionNotActiveOnStripe()
+
+        subscription.product = product
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(price) for price in prices
+        ]
+        subscription.recurring_interval = product.recurring_interval
 
         if proration_behavior is None:
             organization = await organization_service.get(
@@ -735,37 +636,15 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             assert organization is not None
             proration_behavior = organization.proration_behavior
 
-        assert subscription.price is not None
         await stripe_service.update_subscription_price(
             subscription.stripe_subscription_id,
-            old_price=subscription.price.stripe_price_id,
-            new_price=price.stripe_price_id,
+            new_prices=[price.stripe_price_id for price in prices],
             proration_behavior=proration_behavior.to_stripe(),
-            error_if_incomplete=isinstance(subscription.price, ProductPriceFree),
             metadata={
                 "type": ProductType.product,
                 "product_id": str(product.id),
-                "product_price_id": str(price.id),
             },
         )
-        subscription.product = product
-        subscription.price = price
-        if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
-            subscription.amount = price.price_amount
-            subscription.currency = price.price_currency
-            if isinstance(price, LegacyRecurringProductPriceFixed):
-                subscription.recurring_interval = price.recurring_interval
-            else:
-                assert product.recurring_interval is not None
-                subscription.recurring_interval = product.recurring_interval
-        if isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
-            subscription.amount = None
-            subscription.currency = None
-            if isinstance(price, LegacyRecurringProductPriceFree):
-                subscription.recurring_interval = price.recurring_interval
-            else:
-                assert product.recurring_interval is not None
-                subscription.recurring_interval = product.recurring_interval
 
         session.add(subscription)
         return subscription
@@ -840,6 +719,45 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         for subscription in subscriptions:
             await self._perform_cancellation(session, subscription, immediately=True)
+
+    async def update_subscription_from_stripe(
+        self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
+    ) -> Subscription:
+        """
+        Since Stripe manages the billing cycle, listen for their webhooks and update the
+        status and dates accordingly.
+        """
+        subscription = await self.get_by_stripe_subscription_id(
+            session, stripe_subscription.id
+        )
+
+        if subscription is None:
+            raise SubscriptionDoesNotExist(stripe_subscription.id)
+
+        previous_status = subscription.status
+        previous_ends_at = subscription.ends_at
+
+        subscription.status = SubscriptionStatus(stripe_subscription.status)
+        subscription.current_period_start = _from_timestamp(
+            stripe_subscription.current_period_start
+        )
+        subscription.current_period_end = _from_timestamp(
+            stripe_subscription.current_period_end
+        )
+        subscription.set_started_at()
+        self.update_cancellation_from_stripe(subscription, stripe_subscription)
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.update(subscription)
+
+        await self.enqueue_benefits_grants(session, subscription)
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=previous_status,
+            previous_ends_at=previous_ends_at,
+        )
+        return subscription
 
     async def _perform_cancellation(
         self,
@@ -1212,7 +1130,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         else:
             query = query.options(
                 joinedload(Subscription.customer),
-                joinedload(Subscription.price),
                 joinedload(Subscription.product).options(
                     selectinload(Product.product_medias),
                     selectinload(Product.attached_custom_fields),

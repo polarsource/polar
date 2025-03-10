@@ -53,6 +53,7 @@ from .product_price import (
 from .refund import Refund
 from .repository import Repository
 from .subscription import Subscription
+from .subscription_product_price import SubscriptionProductPrice
 from .transaction import Transaction
 from .user import OAuthAccount, User
 from .user_notification import UserNotification
@@ -117,6 +118,7 @@ __all__ = [
     "Repository",
     "Refund",
     "Subscription",
+    "SubscriptionProductPrice",
     "Transaction",
     "User",
     "UserNotification",

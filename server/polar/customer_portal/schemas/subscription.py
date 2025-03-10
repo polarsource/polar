@@ -1,5 +1,4 @@
 import inspect
-from datetime import datetime
 from typing import Annotated
 
 from pydantic import UUID4, AliasChoices, AliasPath, Field
@@ -8,7 +7,7 @@ from polar.kit.schemas import (
     Schema,
     SetSchemaReference,
 )
-from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
+from polar.models.subscription import CustomerCancellationReason
 from polar.organization.schemas import Organization
 from polar.product.schemas import (
     BenefitPublicList,
@@ -20,21 +19,6 @@ from polar.product.schemas import (
 from polar.subscription.schemas import SubscriptionBase
 
 
-class CustomerSubscriptionBase(SubscriptionBase):
-    status: SubscriptionStatus
-    current_period_start: datetime
-    current_period_end: datetime | None
-    canceled_at: datetime | None
-    cancel_at_period_end: bool
-    started_at: datetime | None
-    ends_at: datetime | None
-    ended_at: datetime | None
-
-    customer_id: UUID4
-    product_id: UUID4
-    price_id: UUID4
-
-
 class CustomerSubscriptionProduct(ProductBase):
     prices: ProductPriceList
     benefits: BenefitPublicList
@@ -42,7 +26,7 @@ class CustomerSubscriptionProduct(ProductBase):
     organization: Organization
 
 
-class CustomerSubscription(CustomerSubscriptionBase):
+class CustomerSubscription(SubscriptionBase):
     user_id: UUID4 = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -53,7 +37,16 @@ class CustomerSubscription(CustomerSubscriptionBase):
         deprecated="Use `customer_id`.",
     )
     product: CustomerSubscriptionProduct
-    price: ProductPrice
+
+    price: ProductPrice = Field(
+        deprecated="Use `prices` instead.",
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "price",
+            # Validate from ORM model
+            AliasPath("prices", 0),
+        ),
+    )
 
 
 class CustomerSubscriptionUpdateProduct(Schema):

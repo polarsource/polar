@@ -182,7 +182,7 @@ class TestUpdate:
 
         assert isinstance(new_price, ProductPriceFixed)
         assert updated_subscription.product == product_second
-        assert updated_subscription.price == new_price
+        assert updated_subscription.prices == product_second.prices
         assert updated_subscription.amount == new_price.price_amount
         assert (
             updated_subscription.recurring_interval == product_second.recurring_interval
@@ -190,14 +190,11 @@ class TestUpdate:
 
         stripe_service_mock.update_subscription_price.assert_called_once_with(
             subscription.stripe_subscription_id,
-            old_price=product.prices[0].stripe_price_id,
-            new_price=product_second.prices[0].stripe_price_id,
+            new_prices=[price.stripe_price_id for price in product_second.prices],
             proration_behavior="create_prorations",
-            error_if_incomplete=False,
             metadata={
                 "type": "product",
                 "product_id": str(product_second.id),
-                "product_price_id": str(new_price.id),
             },
         )
 

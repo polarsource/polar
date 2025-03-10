@@ -8,10 +8,11 @@ from sqlalchemy import (
     Boolean,
     ColumnElement,
     ForeignKey,
-    Integer,
     String,
     Text,
     Uuid,
+    func,
+    select,
     type_coerce,
 )
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
@@ -22,6 +23,9 @@ from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
+from polar.models.product_price import HasPriceCurrency
+
+from .subscription_product_price import SubscriptionProductPrice
 
 if TYPE_CHECKING:
     from polar.models import (
@@ -83,8 +87,6 @@ class CustomerCancellationReason(StrEnum):
 class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "subscriptions"
 
-    amount: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     recurring_interval: Mapped[SubscriptionRecurringInterval] = mapped_column(
         String, nullable=False, index=True
     )
@@ -135,15 +137,19 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def product(cls) -> Mapped["Product"]:
         return relationship("Product", lazy="raise")
 
-    price_id: Mapped[UUID] = mapped_column(
-        ForeignKey("product_prices.id", ondelete="cascade"), nullable=False
+    subscription_product_prices: Mapped[list["SubscriptionProductPrice"]] = (
+        relationship(
+            "SubscriptionProductPrice",
+            back_populates="subscription",
+            cascade="all, delete-orphan",
+            # Prices are almost always needed, so eager loading makes sense
+            lazy="selectin",
+        )
     )
 
-    @declared_attr
-    def price(cls) -> Mapped["ProductPrice"]:
-        return relationship(
-            "ProductPrice", lazy="raise", back_populates="subscriptions"
-        )
+    prices: AssociationProxy[list["ProductPrice"]] = association_proxy(
+        "subscription_product_prices", "product_price"
+    )
 
     discount_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
@@ -167,6 +173,32 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     customer_cancellation_comment: Mapped[str | None] = mapped_column(
         Text, nullable=True
     )
+
+    @hybrid_property
+    def amount(self) -> int | None:
+        price_amounts = [
+            subscription_price.amount
+            for subscription_price in self.subscription_product_prices
+        ]
+        if not any(price_amounts):
+            return None
+        return sum(amount for amount in price_amounts if amount is not None)
+
+    @amount.inplace.expression
+    @classmethod
+    def _amount_expression(cls) -> ColumnElement[int | None]:
+        return (
+            select(func.sum(SubscriptionProductPrice.amount))
+            .where(SubscriptionProductPrice.subscription_id == cls.id)
+            .label("amount")
+        )
+
+    @property
+    def currency(self) -> str | None:
+        for price in self.prices:
+            if isinstance(price, HasPriceCurrency):
+                return price.price_currency
+        return None
 
     @declared_attr
     def checkout(cls) -> Mapped["Checkout | None"]:

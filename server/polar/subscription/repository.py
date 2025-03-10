@@ -1,12 +1,14 @@
 from collections.abc import Sequence
 from uuid import UUID
 
+from sqlalchemy.orm import contains_eager
+
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Subscription
+from polar.models import Product, Subscription
 
 
 class SubscriptionRepository(
@@ -24,3 +26,17 @@ class SubscriptionRepository(
             Subscription.active.is_(True),
         )
         return await self.get_all(statement)
+
+    async def get_by_id_and_organization(
+        self, id: UUID, organization_id: UUID
+    ) -> Subscription | None:
+        statement = (
+            self.get_base_statement()
+            .join(Product)
+            .where(
+                Subscription.id == id,
+                Product.organization_id == organization_id,
+            )
+            .options(contains_eager(Subscription.product))
+        )
+        return await self.get_one_or_none(statement)

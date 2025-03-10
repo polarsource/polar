@@ -23,7 +23,6 @@ from polar.models import (
     Order,
     Organization,
     Product,
-    ProductPrice,
     Subscription,
     User,
     UserOrganization,
@@ -285,10 +284,6 @@ def get_active_subscriptions_cte(
                     ),
                     Subscription.id.in_(readable_subscriptions_statement),
                 ),
-            ).join(
-                ProductPrice,
-                isouter=True,
-                onclause=Subscription.price_id == ProductPrice.id,
             )
         )
         .group_by(timestamp_column)

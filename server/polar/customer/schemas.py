@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Annotated, Literal
 
 from fastapi import Path
-from pydantic import UUID4, Field, computed_field
+from pydantic import UUID4, AliasChoices, Field, computed_field
 from pydantic.aliases import AliasPath
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
@@ -175,11 +175,19 @@ class CustomerStateSubscription(
     product_id: UUID4 = Field(
         description="The ID of the subscribed product.", examples=[PRODUCT_ID_EXAMPLE]
     )
-    price_id: UUID4 = Field(
-        description="The ID of the subscribed price.", examples=[PRICE_ID_EXAMPLE]
-    )
     discount_id: UUID4 | None = Field(
         description="The ID of the applied discount, if any.", examples=[None]
+    )
+
+    price_id: UUID4 = Field(
+        deprecated="Use `prices` instead.",
+        examples=[PRICE_ID_EXAMPLE],
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "price_id",
+            # Validate from ORM model
+            AliasPath("prices", 0, "id"),
+        ),
     )
 
 
@@ -199,7 +207,12 @@ class CustomerStateBenefitGrant(TimestampedSchema, IDSchema):
     )
     benefit_type: BenefitType = Field(
         description="The type of the benefit concerned by this grant.",
-        validation_alias=AliasPath("benefit", "type"),
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "benefit_type",
+            # Validate from ORM model
+            AliasPath("benefit", "type"),
+        ),
         examples=[BenefitType.custom],
     )
     properties: BenefitGrantProperties

@@ -24,7 +24,6 @@ DIRECT_IMPLEMENTED_WEBHOOKS = {
     "refund.created",
     "refund.updated",
     "refund.failed",
-    "customer.subscription.created",
     "customer.subscription.updated",
     "customer.subscription.deleted",
     "invoice.paid",

@@ -4,7 +4,7 @@ from enum import StrEnum
 from typing import Any
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, nulls_first, or_, select
-from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload
+from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError
@@ -16,7 +16,6 @@ from polar.models import (
     Customer,
     Organization,
     Product,
-    ProductPrice,
     Subscription,
 )
 from polar.models.subscription import CustomerCancellationReason
@@ -75,13 +74,6 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             )
         )
 
-        SubscriptionProductPrice = aliased(ProductPrice)
-        statement = statement.join(
-            SubscriptionProductPrice,
-            onclause=Subscription.price_id == SubscriptionProductPrice.id,
-            isouter=True,
-        ).options(contains_eager(Subscription.price.of_type(SubscriptionProductPrice)))
-
         if organization_id is not None:
             statement = statement.where(Product.organization_id.in_(organization_id))
 
@@ -136,7 +128,6 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                     selectinload(Product.product_medias),
                     joinedload(Product.organization),
                 ),
-                joinedload(Subscription.price),
             )
         )
 

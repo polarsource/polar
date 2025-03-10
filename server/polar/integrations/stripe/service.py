@@ -1,11 +1,12 @@
 import uuid
-from collections.abc import AsyncGenerator, AsyncIterator
-from typing import Literal, Unpack, cast
+from collections.abc import AsyncGenerator, AsyncIterator, Sequence
+from typing import TYPE_CHECKING, Literal, Unpack, cast
 
 import stripe as stripe_lib
 
 from polar.account.schemas import AccountCreate
 from polar.config import settings
+from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import InternalServerError, PolarError
 from polar.integrations.stripe.schemas import PledgePaymentIntentMetadata
 from polar.integrations.stripe.utils import get_expandable_id
@@ -14,6 +15,9 @@ from polar.logfire import instrument_httpx
 from polar.models.organization import Organization
 from polar.models.user import User
 from polar.postgres import AsyncSession, sql
+
+if TYPE_CHECKING:
+    from polar.models import Product, ProductPrice
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 
@@ -375,33 +379,69 @@ class StripeService:
     async def archive_price(self, id: str) -> stripe_lib.Price:
         return await stripe_lib.Price.modify_async(id, active=False)
 
+    async def create_ad_hoc_custom_price(
+        self,
+        product: "Product",
+        product_price: "ProductPrice",
+        amount: int,
+        currency: str,
+        *,
+        idempotency_key: str | None = None,
+    ) -> stripe_lib.Price:
+        assert product.stripe_product_id is not None
+        price_params: stripe_lib.Price.CreateParams = {
+            "unit_amount": amount,
+            "currency": currency,
+            "metadata": {
+                "product_price_id": str(product_price.id),
+            },
+        }
+
+        if product.is_recurring:
+            recurring_interval: SubscriptionRecurringInterval
+            if product_price.legacy_recurring_interval:
+                recurring_interval = product_price.legacy_recurring_interval
+            else:
+                assert product.recurring_interval is not None
+                recurring_interval = product.recurring_interval
+            price_params["recurring"] = {
+                "interval": recurring_interval.as_literal(),
+            }
+
+        return await self.create_price_for_product(
+            product.stripe_product_id,
+            price_params,
+            idempotency_key=idempotency_key,
+        )
+
     async def update_subscription_price(
         self,
         id: str,
         *,
-        old_price: str,
-        new_price: str,
+        new_prices: list[str],
         proration_behavior: Literal["always_invoice", "create_prorations", "none"],
-        error_if_incomplete: bool,
         metadata: dict[str, str],
     ) -> stripe_lib.Subscription:
         subscription = await stripe_lib.Subscription.retrieve_async(id)
 
         old_items = subscription["items"]
         new_items: list[stripe_lib.Subscription.ModifyParamsItem] = []
+        found_new_prices: set[str] = set()
         for item in old_items:
-            if item.price.id == old_price:
+            if item.price.id not in new_prices:
                 new_items.append({"id": item.id, "deleted": True})
-        new_items.append({"price": new_price, "quantity": 1})
+            else:
+                new_items.append({"id": item.id, "deleted": False})
+                found_new_prices.add(item.price.id)
+        for new_price in new_prices:
+            if new_price not in found_new_prices:
+                new_items.append({"price": new_price, "quantity": 1})
 
         try:
             return await stripe_lib.Subscription.modify_async(
                 id,
                 items=new_items,
                 proration_behavior=proration_behavior,
-                payment_behavior=(
-                    "error_if_incomplete" if error_if_incomplete else "allow_incomplete"
-                ),
                 metadata=metadata,
             )
         except stripe_lib.InvalidRequestError as e:
@@ -641,7 +681,7 @@ class StripeService:
         *,
         customer: str,
         currency: str,
-        price: str,
+        prices: Sequence[str],
         coupon: str | None = None,
         automatic_tax: bool = True,
         metadata: dict[str, str] | None = None,
@@ -653,7 +693,7 @@ class StripeService:
             "currency": currency,
             "collection_method": "send_invoice",
             "days_until_due": 0,
-            "items": [{"price": price, "quantity": 1}],
+            "items": [{"price": price, "quantity": 1} for price in prices],
             "metadata": metadata or {},
             "automatic_tax": {"enabled": automatic_tax},
             "expand": ["latest_invoice"],
@@ -678,8 +718,7 @@ class StripeService:
         self,
         *,
         subscription_id: str,
-        old_price: str,
-        new_price: str,
+        new_prices: list[str],
         coupon: str | None = None,
         automatic_tax: bool = True,
         metadata: dict[str, str] | None = None,
@@ -702,10 +741,16 @@ class StripeService:
 
         old_items = subscription["items"]
         new_items: list[stripe_lib.Subscription.ModifyParamsItem] = []
+        found_new_prices: set[str] = set()
         for item in old_items:
-            if item.price.id == old_price:
+            if item.price.id not in new_prices:
                 new_items.append({"id": item.id, "deleted": True})
-        new_items.append({"price": new_price, "quantity": 1})
+            else:
+                new_items.append({"id": item.id, "deleted": False})
+                found_new_prices.add(item.price.id)
+        for new_price in new_prices:
+            if new_price not in found_new_prices:
+                new_items.append({"price": new_price, "quantity": 1})
         modify_params["items"] = new_items
 
         subscription = await stripe_lib.Subscription.modify_async(

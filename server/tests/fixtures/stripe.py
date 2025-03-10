@@ -1,4 +1,5 @@
 import time
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -33,7 +34,7 @@ def cloned_stripe_subscription(
     *,
     customer: Customer | None = None,
     product: Product | None = None,
-    price: ProductPrice | None = None,
+    prices: Sequence[ProductPrice] | None = None,
     status: SubscriptionStatus | None = None,
     cancel_at_period_end: bool | None = None,
     revoke: bool = False,
@@ -44,7 +45,7 @@ def cloned_stripe_subscription(
     return construct_stripe_subscription(
         customer=customer if customer else subscription.customer,
         product=product if product else subscription.product,
-        price=price if price else subscription.price,
+        prices=prices if prices else subscription.prices,
         status=status if status else subscription.status,
         cancel_at_period_end=cancel_at_period_end,
         revoke=revoke,
@@ -53,8 +54,8 @@ def cloned_stripe_subscription(
 
 def construct_stripe_subscription(
     *,
-    product: Product | None,
-    price: ProductPrice | None = None,
+    product: Product,
+    prices: Sequence[ProductPrice] | None = None,
     customer: Customer | None = None,
     organization: Organization | None = None,
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
@@ -65,11 +66,9 @@ def construct_stripe_subscription(
     revoke: bool = False,
 ) -> stripe_lib.Subscription:
     now_timestamp = datetime.now(UTC).timestamp()
-    price = price or product.prices[0] if product else None
-    stripe_price_id = price.stripe_price_id if price else "PRICE_ID"
+    prices = prices or product.prices
     base_metadata: dict[str, str] = {
         **({"product_id": str(product.id)} if product is not None else {}),
-        **({"product_price_id": str(price.id)} if price is not None else {}),
     }
 
     canceled_at = None
@@ -93,11 +92,12 @@ def construct_stripe_subscription(
                 "data": [
                     {
                         "price": {
-                            "id": stripe_price_id,
+                            "id": price.stripe_price_id,
                             "currency": "USD",
                             "unit_amount": 1000,
                         }
                     }
+                    for price in prices
                 ]
             },
             "current_period_start": now_timestamp,

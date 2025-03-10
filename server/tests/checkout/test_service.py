@@ -64,6 +64,7 @@ from polar.models.product_price import (
     ProductPriceFree,
 )
 from polar.postgres import AsyncSession
+from polar.subscription.service import SubscriptionService
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -83,6 +84,13 @@ from tests.fixtures.random_objects import (
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.checkout.service.stripe_service", new=mock)
+    return mock
+
+
+@pytest.fixture(autouse=True)
+def subscription_service_mock(mocker: MockerFixture) -> MagicMock:
+    mock = MagicMock(spec=SubscriptionService)
+    mocker.patch("polar.checkout.service.subscription_service", new=mock)
     return mock
 
 
@@ -451,27 +459,25 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_invalid_paid_subscription(
+    async def test_invalid_upgrade_paid_subscription(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         product: Product,
+        product_second: Product,
         customer: Customer,
     ) -> None:
         subscription = await create_subscription(
             save_fixture, product=product, customer=customer
         )
 
-        price = product.prices[0]
-        assert isinstance(price, ProductPriceFixed)
-
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
                 session,
-                CheckoutPriceCreate(
-                    product_price_id=price.id,
+                CheckoutProductsCreate(
+                    products=[product_second.id],
                     subscription_id=subscription.id,
                     metadata={"key": "value"},
                 ),
@@ -2758,17 +2764,10 @@ class TestHandleStripeSuccess:
 
     async def test_valid_recurring(
         self,
-        stripe_service_mock: MagicMock,
+        subscription_service_mock: MagicMock,
         session: AsyncSession,
         checkout_confirmed_recurring: Checkout,
     ) -> None:
-        stripe_service_mock.create_out_of_band_subscription.return_value = (
-            SimpleNamespace(id="STRIPE_SUBSCRIPTION_ID"),
-            SimpleNamespace(
-                id="STRIPE_INVOICE_ID", total=checkout_confirmed_recurring.total_amount
-            ),
-        )
-
         checkout = await checkout_service.handle_stripe_success(
             session,
             checkout_confirmed_recurring.id,
@@ -2778,9 +2777,7 @@ class TestHandleStripeSuccess:
         )
 
         assert checkout.status == CheckoutStatus.succeeded
-        stripe_service_mock.create_out_of_band_subscription.assert_called_once()
-        stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
-        stripe_service_mock.create_out_of_band_invoice.assert_not_called()
+        subscription_service_mock.create_or_update_from_checkout.assert_called_once()
 
     async def test_valid_one_time_custom(
         self,
@@ -2793,7 +2790,7 @@ class TestHandleStripeSuccess:
         checkout_one_time_custom.amount = 4242
         await save_fixture(checkout_one_time_custom)
 
-        stripe_service_mock.create_price_for_product.return_value = SimpleNamespace(
+        stripe_service_mock.create_ad_hoc_custom_price.return_value = SimpleNamespace(
             id="STRIPE_CUSTOM_PRICE_ID"
         )
         stripe_service_mock.create_out_of_band_invoice.return_value = SimpleNamespace(
@@ -2806,7 +2803,7 @@ class TestHandleStripeSuccess:
         )
 
         assert checkout.status == CheckoutStatus.succeeded
-        stripe_service_mock.create_price_for_product.assert_called_once()
+        stripe_service_mock.create_ad_hoc_custom_price.assert_called_once()
         stripe_service_mock.create_out_of_band_subscription.assert_not_called()
 
         stripe_service_mock.create_out_of_band_invoice.assert_called_once()
@@ -2814,33 +2811,6 @@ class TestHandleStripeSuccess:
             stripe_service_mock.create_out_of_band_invoice.call_args[1]["price"]
             == "STRIPE_CUSTOM_PRICE_ID"
         )
-
-    async def test_valid_recurring_upgrade(
-        self,
-        stripe_service_mock: MagicMock,
-        session: AsyncSession,
-        checkout_confirmed_recurring_upgrade: Checkout,
-    ) -> None:
-        stripe_service_mock.update_out_of_band_subscription.return_value = (
-            SimpleNamespace(id="STRIPE_SUBSCRIPTION_ID"),
-            SimpleNamespace(
-                id="STRIPE_INVOICE_ID",
-                total=checkout_confirmed_recurring_upgrade.total_amount,
-            ),
-        )
-
-        checkout = await checkout_service.handle_stripe_success(
-            session,
-            checkout_confirmed_recurring_upgrade.id,
-            build_stripe_payment_intent(
-                amount=checkout_confirmed_recurring_upgrade.total_amount or 0
-            ),
-        )
-
-        assert checkout.status == CheckoutStatus.succeeded
-        stripe_service_mock.update_out_of_band_subscription.assert_called_once()
-        stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
-        stripe_service_mock.create_out_of_band_invoice.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -2972,7 +2942,7 @@ class TestHandleFreeSuccess:
 
     async def test_valid_recurring(
         self,
-        stripe_service_mock: MagicMock,
+        subscription_service_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         checkout_recurring_free: Checkout,
@@ -2983,74 +2953,12 @@ class TestHandleFreeSuccess:
         }
         await save_fixture(checkout_recurring_free)
 
-        stripe_service_mock.create_out_of_band_subscription.return_value = (
-            SimpleNamespace(id="STRIPE_SUBSCRIPTION_ID"),
-            SimpleNamespace(id="STRIPE_INVOICE_ID"),
-        )
-
         checkout = await checkout_service.handle_free_success(
             session, checkout_recurring_free.id
         )
 
         assert checkout.status == CheckoutStatus.succeeded
-        stripe_service_mock.create_out_of_band_subscription.assert_called_once()
-        stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
-        stripe_service_mock.create_out_of_band_invoice.assert_not_called()
-
-    async def test_valid_discount_percentage_100(
-        self,
-        stripe_service_mock: MagicMock,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        checkout_discount_percentage_100: Checkout,
-    ) -> None:
-        checkout_discount_percentage_100.status = CheckoutStatus.confirmed
-        checkout_discount_percentage_100.payment_processor_metadata = {
-            "customer_id": "STRIPE_CUSTOMER_ID"
-        }
-        await save_fixture(checkout_discount_percentage_100)
-
-        stripe_service_mock.create_out_of_band_subscription.return_value = (
-            SimpleNamespace(id="STRIPE_SUBSCRIPTION_ID"),
-            SimpleNamespace(id="STRIPE_INVOICE_ID"),
-        )
-
-        checkout = await checkout_service.handle_free_success(
-            session, checkout_discount_percentage_100.id
-        )
-
-        assert checkout.status == CheckoutStatus.succeeded
-        stripe_service_mock.create_out_of_band_subscription.assert_called_once()
-        stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
-        stripe_service_mock.create_out_of_band_invoice.assert_not_called()
-
-    async def test_valid_custom_pricing_discount_percentage_100(
-        self,
-        save_fixture: SaveFixture,
-        stripe_service_mock: MagicMock,
-        session: AsyncSession,
-        product_one_time_custom_price: Product,
-        discount_percentage_100: Discount,
-    ) -> None:
-        checkout = await create_checkout(
-            save_fixture,
-            products=[product_one_time_custom_price],
-            amount=1000,
-            status=CheckoutStatus.confirmed,
-            discount=discount_percentage_100,
-            payment_processor_metadata={"customer_id": "STRIPE_CUSTOMER_ID"},
-        )
-
-        stripe_service_mock.create_out_of_band_invoice.return_value = SimpleNamespace(
-            id="STRIPE_INVOICE_ID"
-        )
-
-        checkout = await checkout_service.handle_free_success(session, checkout.id)
-
-        assert checkout.status == CheckoutStatus.succeeded
-        stripe_service_mock.create_price_for_product.assert_called_once()
-        stripe_service_mock.create_out_of_band_invoice.assert_called_once()
-        stripe_service_mock.create_out_of_band_subscription.assert_not_called()
+        subscription_service_mock.create_or_update_from_checkout.assert_called_once()
 
 
 @pytest.mark.asyncio

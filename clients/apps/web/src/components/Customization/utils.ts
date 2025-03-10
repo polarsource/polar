@@ -266,6 +266,7 @@ export const SUBSCRIPTION_ORDER_PREVIEW: schemas['CustomerSubscription'] = {
   customer_id: '123',
   product_id: SUBSCRIPTION_PRODUCT_PREVIEW.id,
   price_id: SUBSCRIPTION_PRODUCT_PREVIEW.prices[0].id,
+  prices: SUBSCRIPTION_PRODUCT_PREVIEW.prices,
   checkout_id: null,
   product: {
     ...SUBSCRIPTION_PRODUCT_PREVIEW,

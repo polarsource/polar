@@ -6,7 +6,6 @@ import { hasLegacyRecurringPrices } from '@/utils/product'
 import { Client, schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
@@ -16,12 +15,10 @@ import { getErrorRedirect } from '../Toast/utils'
 
 const ProductPriceListItem = ({
   product,
-  price,
   selected,
   onSelect,
 }: {
   product: schemas['ProductStorefront']
-  price: schemas['ProductPrice']
   selected: boolean
   onSelect?: () => void
 }) => {
@@ -33,7 +30,7 @@ const ProductPriceListItem = ({
       size="small"
     >
       <h3 className="font-medium">{product.name}</h3>
-      <ProductPriceLabel product={product} price={price} />
+      <ProductPriceLabel product={product} />
     </ListItem>
   )
 }
@@ -62,16 +59,9 @@ const CustomerChangePlanModal = ({
     [_products],
   )
 
-  const currentPrice = subscription.price
-  const currentInterval = subscription.recurring_interval
-
   const [selectedProduct, setSelectedProduct] = useState<
     schemas['ProductStorefront'] | null
   >(null)
-  const selectedPrice: schemas['ProductPrice'] | null = useMemo(
-    () => (selectedProduct ? selectedProduct.prices[0] : null),
-    [selectedProduct],
-  )
 
   const addedBenefits = useMemo(() => {
     if (!selectedProduct) return []
@@ -87,63 +77,19 @@ const CustomerChangePlanModal = ({
     )
   }, [selectedProduct, subscription])
 
-  const isDowngrade = useMemo(() => {
-    if (!selectedPrice) return false
-    if (
-      selectedPrice.amount_type === 'free' &&
-      currentPrice.amount_type !== 'free'
-    ) {
-      return true
-    }
-    if (selectedPrice.amount_type === 'fixed') {
-      if (currentPrice.amount_type === 'free') {
-        return false
-      } else if (currentPrice.amount_type === 'fixed') {
-        return (
-          currentPrice.price_amount / (currentInterval === 'year' ? 12 : 1) >
-          selectedPrice.price_amount / (currentInterval === 'year' ? 12 : 1)
-        )
-      }
-    }
-  }, [selectedPrice, currentPrice, currentInterval])
-
   const prorationBehavior = useMemo(
     () => organization.subscription_settings.proration_behavior,
     [organization],
   )
   const invoicingMessage = useMemo(() => {
-    if (!selectedPrice) return null
+    if (!selectedProduct) return null
 
     if (prorationBehavior === 'invoice') {
-      if (isDowngrade) {
-        return 'An invoice will be issued with a credit for the unused time this month.'
-      } else {
-        return 'An invoice will be issued with a proration for the current month.'
-      }
+      return 'An invoice will be issued with a proration for the current month.'
     } else {
-      if (isDowngrade) {
-        if (selectedPrice.amount_type === 'free') {
-          return 'A credit invoice will be issued for the unused time this month.'
-        } else if (selectedPrice.amount_type === 'fixed') {
-          return `On your next invoice, you'll be billed ${formatCurrencyAndAmount(
-            selectedPrice.price_amount,
-            selectedPrice.price_currency,
-            0,
-          )}, minus a credit of what we already billed for the current month.`
-        }
-      } else {
-        if (selectedPrice.amount_type === 'free') {
-          return 'An invoice will be issued with a proration for the current month.'
-        } else if (selectedPrice.amount_type === 'fixed') {
-          return `On your next invoice, you'll be billed ${formatCurrencyAndAmount(
-            selectedPrice.price_amount,
-            selectedPrice.price_currency,
-            0,
-          )}, plus a proration for the current month.`
-        }
-      }
+      return 'On your next invoice, you will be charged for the new plan, plus a proration for the current month.'
     }
-  }, [selectedPrice, prorationBehavior, isDowngrade])
+  }, [selectedProduct, prorationBehavior])
 
   const updateSubscription = useCustomerUpdateSubscription(api)
   const onConfirm = useCallback(async () => {
@@ -204,11 +150,7 @@ const CustomerChangePlanModal = ({
       <div className="flex flex-col gap-y-8 p-8">
         <h3 className="font-medium">Current Plan</h3>
         <List size="small">
-          <ProductPriceListItem
-            product={subscription.product}
-            price={currentPrice}
-            selected
-          />
+          <ProductPriceListItem product={subscription.product} selected />
         </List>
         <h3 className="font-medium">Available Plans</h3>
         <List size="small">
@@ -218,7 +160,6 @@ const CustomerChangePlanModal = ({
               <ProductPriceListItem
                 key={product.id}
                 product={product}
-                price={product.prices[0]}
                 selected={selectedProduct?.id === product.id}
                 onSelect={() => setSelectedProduct(product)}
               />
@@ -266,7 +207,7 @@ const CustomerChangePlanModal = ({
           )}
         </div>
         <Button
-          disabled={!selectedPrice}
+          disabled={!selectedProduct}
           loading={updateSubscription.isPending}
           onClick={onConfirm}
           size="lg"

@@ -16,17 +16,24 @@ export const useMeters = (
     'organization_id'
   >,
 ) =>
-  useQuery({
-    queryKey: ['meters', { organizationId, parameters }],
-    queryFn: () =>
+  useInfiniteQuery({
+    queryKey: ['infinite', 'meters', { organizationId, parameters }],
+    queryFn: async ({ pageParam }) =>
       unwrap(
         api.GET('/v1/meters/', {
           params: {
-            query: { organization_id: organizationId, ...(parameters || {}) },
+            query: {
+              organization_id: organizationId,
+              ...(parameters || {}),
+              page: pageParam,
+            },
           },
         }),
       ),
     retry: defaultRetry,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPageParam === lastPage.pagination.max_page ? null : lastPageParam + 1,
+    initialPageParam: 1,
   })
 
 export const useMeter = (id: string, initialData?: schemas['Meter']) =>

@@ -9,7 +9,9 @@ export const CustomerUsageView = ({
 }: {
   customer: schemas['Customer']
 }) => {
-  const { data: meters } = useMeters(customer.organization_id)
+  const { data } = useMeters(customer.organization_id)
+
+  const meters = data?.pages.flatMap((page) => page.items) ?? []
 
   const startDate = useMemo(
     () => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
@@ -21,7 +23,7 @@ export const CustomerUsageView = ({
   return (
     <TabsContent value="usage" className="flex flex-col gap-y-12">
       <div className="flex flex-col gap-y-8">
-        {meters?.items.map((meter) => (
+        {meters.map((meter) => (
           <CustomerMeterItem
             key={meter.id}
             meter={meter}

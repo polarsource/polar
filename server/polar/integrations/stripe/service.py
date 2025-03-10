@@ -595,14 +595,24 @@ class StripeService:
     ) -> stripe_lib.Customer:
         params = {**params, "expand": ["tax_ids"]}
         customer = await stripe_lib.Customer.modify_async(id, **params)
+        if tax_id is None:
+            return customer
 
-        if tax_id is not None:
-            if not any(
-                existing_tax_id.value == tax_id["value"]
-                and existing_tax_id.type == tax_id["type"]
-                for existing_tax_id in customer.tax_ids or []
-            ):
-                await stripe_lib.Customer.create_tax_id_async(id, **tax_id)
+        if any(
+            existing_tax_id.value == tax_id["value"]
+            and existing_tax_id.type == tax_id["type"]
+            for existing_tax_id in customer.tax_ids or []
+        ):
+            return customer
+
+        try:
+            await stripe_lib.Customer.create_tax_id_async(id, **tax_id)
+        except stripe_lib.InvalidRequestError as e:
+            # Potential race condition with Stripe not returning the new Tax ID
+            # during our customer modification, but exists upon attempted
+            # creation. Since the matching resource exists we can return vs. raise.
+            if e.code != "resource_already_exists":
+                raise e
 
         return customer
 

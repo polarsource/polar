@@ -186,7 +186,13 @@ export const useBenefitGrants = ({
   page?: number
 }) =>
   useQuery({
-    queryKey: ['benefits', 'grants', benefitId, organizationId],
+    queryKey: [
+      'benefits',
+      'grants',
+      benefitId,
+      organizationId,
+      { page, limit },
+    ],
     queryFn: () => {
       return unwrap(
         api.GET('/v1/benefits/{id}/grants', {

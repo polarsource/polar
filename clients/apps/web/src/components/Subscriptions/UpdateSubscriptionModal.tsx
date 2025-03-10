@@ -146,10 +146,7 @@ const UpdateSubscriptionModal = ({
                                 }
                               >
                                 <div>{product.name}</div>
-                                <ProductPriceLabel
-                                  product={product}
-                                  price={product.prices[0]}
-                                />
+                                <ProductPriceLabel product={product} />
                               </SelectItem>
                             ))}
                         </SelectContent>

@@ -4,19 +4,23 @@ import { isLegacyRecurringPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import ProductPriceLabel from './ProductPriceLabel'
 
-interface ProductPrices {
-  product:
+interface LegacyRecurringProductPricesProps {
+  product: (
     | schemas['Product']
     | schemas['ProductStorefront']
     | schemas['CheckoutProduct']
+  ) & {
+    prices: schemas['LegacyRecurringProductPrice'][]
+  }
 }
 
-const ProductPrices: React.FC<ProductPrices> = ({ product }) => {
+const LegacyRecurringProductPrices: React.FC<
+  LegacyRecurringProductPricesProps
+> = ({ product }) => {
   const { prices } = product
 
   if (prices.length === 1) {
-    const price = prices[0]
-    return <ProductPriceLabel product={product} price={price} />
+    return <ProductPriceLabel product={product} />
   }
 
   if (prices.length > 1) {
@@ -29,11 +33,11 @@ const ProductPrices: React.FC<ProductPrices> = ({ product }) => {
     return (
       <div className="flex gap-1">
         {monthlyPrice && (
-          <ProductPriceLabel product={product} price={monthlyPrice} />
+          <ProductPriceLabel product={{ ...product, prices: [monthlyPrice] }} />
         )}
         <div>-</div>
         {yearlyPrice && (
-          <ProductPriceLabel product={product} price={yearlyPrice} />
+          <ProductPriceLabel product={{ ...product, prices: [yearlyPrice] }} />
         )}
       </div>
     )
@@ -42,4 +46,4 @@ const ProductPrices: React.FC<ProductPrices> = ({ product }) => {
   return <></>
 }
 
-export default ProductPrices
+export default LegacyRecurringProductPrices

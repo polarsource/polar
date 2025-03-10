@@ -5,29 +5,32 @@ import AmountLabel from '../Shared/AmountLabel'
 interface ProductPriceLabelProps {
   product:
     | schemas['Product']
-    | schemas['TransactionProduct']
     | schemas['ProductStorefront']
     | schemas['CheckoutProduct']
-  price: schemas['ProductPrice']
 }
 
-const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
-  product,
-  price,
-}) => {
-  if (price.amount_type === 'fixed') {
+const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ product }) => {
+  const staticPrice = product.prices.find(({ amount_type }) =>
+    ['fixed', 'custom', 'free'].includes(amount_type),
+  )
+
+  if (!staticPrice) {
+    return null
+  }
+
+  if (staticPrice.amount_type === 'fixed') {
     return (
       <AmountLabel
-        amount={price.price_amount}
-        currency={price.price_currency}
+        amount={staticPrice.price_amount}
+        currency={staticPrice.price_currency}
         interval={
-          isLegacyRecurringPrice(price)
-            ? price.recurring_interval
+          isLegacyRecurringPrice(staticPrice)
+            ? staticPrice.recurring_interval
             : product.recurring_interval || undefined
         }
       />
     )
-  } else if (price.amount_type === 'custom') {
+  } else if (staticPrice.amount_type === 'custom') {
     return <div className="text-[min(1em,24px)]">Pay what you want</div>
   } else {
     return <div className="text-[min(1em,24px)]">Free</div>

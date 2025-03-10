@@ -28,7 +28,6 @@ const getTransactionMeta = (transaction: schemas['Transaction']) => {
       organization: transaction.order.product.organization,
       meta: {
         product: transaction.order.product,
-        price: transaction.order.product_price,
       },
     }
   } else if (transaction.issue_reward) {
@@ -101,10 +100,7 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
                     className="text-blue-500 dark:text-blue-400"
                     href={`/dashboard/${transactionMeta.organization?.slug}/products/${transactionMeta.meta.product.id}`}
                   >
-                    <ProductPill
-                      product={transactionMeta.meta.product}
-                      price={transactionMeta.meta.price}
-                    />
+                    <ProductPill product={transactionMeta.meta.product} />
                   </Link>
                 </div>
               </>

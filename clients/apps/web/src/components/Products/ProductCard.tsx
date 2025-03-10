@@ -1,16 +1,16 @@
 'use client'
 
+import { hasLegacyRecurringPrices } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import LogoIcon from '../Brand/LogoIcon'
+import LegacyRecurringProductPrices from './LegacyRecurringProductPrices'
 import ProductPriceLabel from './ProductPriceLabel'
-import ProductPrices from './ProductPrices'
 
 interface ProductCardProps {
   product: schemas['ProductStorefront']
-  price?: schemas['ProductPrice']
 }
 
-export const ProductCard = ({ product, price }: ProductCardProps) => {
+export const ProductCard = ({ product }: ProductCardProps) => {
   return (
     <div className="flex h-full w-full flex-col gap-4 transition-opacity hover:opacity-50">
       {product.medias.length > 0 ? (
@@ -36,10 +36,10 @@ export const ProductCard = ({ product, price }: ProductCardProps) => {
         <div className="flex flex-row items-center justify-between">
           <span className="dark:text-polar-500 flex flex-row items-center gap-x-2 text-base text-gray-500">
             <h3 className="leading-snug">
-              {price ? (
-                <ProductPriceLabel product={product} price={price} />
+              {hasLegacyRecurringPrices(product) ? (
+                <LegacyRecurringProductPrices product={product} />
               ) : (
-                <ProductPrices product={product} />
+                <ProductPriceLabel product={product} />
               )}
             </h3>
             {product.benefits.length > 0 && (

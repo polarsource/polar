@@ -4,8 +4,8 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import Pagination from '@/components/Pagination/Pagination'
+import LegacyRecurringProductPrices from '@/components/Products/LegacyRecurringProductPrices'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
-import ProductPrices from '@/components/Products/ProductPrices'
 import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
 import { toast } from '@/components/Toast/use-toast'
 import { useProducts, useUpdateProduct } from '@/hooks/queries/products'
@@ -18,6 +18,7 @@ import {
   sortingStateToQueryParam,
 } from '@/utils/datatable'
 import { markdownOptionsJustText } from '@/utils/markdown'
+import { hasLegacyRecurringPrices } from '@/utils/product'
 import {
   AddOutlined,
   HiveOutlined,
@@ -313,13 +314,10 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
         ) : (
           <>
             <span className="text-sm leading-snug">
-              {product.prices.length < 2 ? (
-                <ProductPriceLabel
-                  product={product}
-                  price={product.prices[0]}
-                />
+              {hasLegacyRecurringPrices(product) ? (
+                <LegacyRecurringProductPrices product={product} />
               ) : (
-                <ProductPrices product={product} />
+                <ProductPriceLabel product={product} />
               )}
             </span>
             <Button

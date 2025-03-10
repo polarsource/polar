@@ -74,7 +74,6 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({
                     />
                     <Button
                       type="submit"
-                      size="lg"
                       variant="secondary"
                       loading={loading}
                       disabled={loading}

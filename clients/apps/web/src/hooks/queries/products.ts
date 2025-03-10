@@ -105,9 +105,11 @@ export const useCreateProduct = (organization: schemas['Organization']) =>
       if (result.error) {
         return
       }
+
       queryClient.invalidateQueries({
         queryKey: ['products', { organizationId: organization.id }],
       })
+
       await revalidate(`storefront:${organization.slug}`)
     },
   })

@@ -190,16 +190,6 @@ const generalRoutesList = (
       return currentRoute.startsWith(`/dashboard/${org.slug}/benefits`)
     },
     if: true,
-    subs: [
-      {
-        title: 'Overview',
-        link: `/dashboard/${org.slug}/benefits`,
-      },
-      {
-        title: 'License Keys',
-        link: `/dashboard/${org.slug}/benefits/license-keys`,
-      },
-    ],
   },
   {
     id: 'meters',

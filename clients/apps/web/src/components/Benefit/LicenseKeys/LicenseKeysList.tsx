@@ -6,12 +6,14 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from '@polar-sh/ui/components/atoms/DataTable'
+import { Status } from '@polar-sh/ui/components/atoms/Status'
 import {
   OnChangeFn,
   PaginationState,
   RowSelectionState,
   SortingState,
 } from '@tanstack/react-table'
+import { twMerge } from 'tailwind-merge'
 
 export interface LicenseKeysListProps {
   licenseKeys: schemas['LicenseKeyRead'][]
@@ -38,48 +40,6 @@ export const LicenseKeysList = ({
 }: LicenseKeysListProps) => {
   const columns: DataTableColumnDef<schemas['LicenseKeyRead']>[] = [
     {
-      id: 'license_key',
-      enableSorting: false,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="License Key" />
-      ),
-      cell: ({ row: { original: licenseKey } }) => {
-        return (
-          <span className="font-mono text-xs">{licenseKey.display_key}</span>
-        )
-      },
-    },
-    {
-      id: 'status',
-      accessorKey: 'status',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Status" />
-      ),
-      cell: ({ row: { original: licenseKey } }) => {
-        return <span className="capitalize">{licenseKey.status}</span>
-      },
-    },
-    {
-      id: 'usage',
-      accessorKey: 'usage',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Usage" />
-      ),
-      cell: ({ row: { original: licenseKey } }) => {
-        return (
-          <div className="flex flex-row gap-x-2">
-            {typeof licenseKey.limit_usage === 'number' ? (
-              <span>
-                {licenseKey.usage}/{licenseKey.limit_usage}
-              </span>
-            ) : (
-              <span>{licenseKey.usage}</span>
-            )}
-          </div>
-        )
-      },
-    },
-    {
       id: 'customer',
       accessorKey: 'customer',
       enableSorting: false,
@@ -100,6 +60,58 @@ export const LicenseKeysList = ({
                 {licenseKey.customer.email}
               </span>
             </div>
+          </div>
+        )
+      },
+    },
+    {
+      id: 'license_key',
+      enableSorting: false,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="License Key" />
+      ),
+      cell: ({ row: { original: licenseKey } }) => {
+        return (
+          <span className="font-mono text-xs">{licenseKey.display_key}</span>
+        )
+      },
+    },
+    {
+      id: 'status',
+      accessorKey: 'status',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Status" />
+      ),
+      cell: ({ row: { original: licenseKey } }) => {
+        return (
+          <Status
+            className={twMerge(
+              'w-fit',
+              licenseKey.status === 'granted'
+                ? 'bg-emerald-200 text-emerald-500 dark:bg-emerald-950'
+                : 'bg-red-200 text-red-500 dark:bg-red-950',
+            )}
+            status={licenseKey.status === 'granted' ? 'Granted' : 'Revoked'}
+          />
+        )
+      },
+    },
+    {
+      id: 'usage',
+      accessorKey: 'usage',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Usage" />
+      ),
+      cell: ({ row: { original: licenseKey } }) => {
+        return (
+          <div className="flex flex-row gap-x-2">
+            {typeof licenseKey.limit_usage === 'number' ? (
+              <span>
+                {licenseKey.usage}/{licenseKey.limit_usage}
+              </span>
+            ) : (
+              <span>{licenseKey.usage}</span>
+            )}
           </div>
         )
       },

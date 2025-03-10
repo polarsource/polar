@@ -128,6 +128,9 @@ export const useCreateMeter = (organizationId: string) =>
       queryClient.invalidateQueries({
         queryKey: ['meters', { organizationId }],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['infinite', 'meters', { organizationId }],
+      })
     },
   })
 
@@ -154,6 +157,13 @@ export const useUpdateMeter = (id: string) =>
       })
       queryClient.invalidateQueries({
         queryKey: ['meters', 'quantities', { id }],
+      })
+      queryClient.invalidateQueries({
+        queryKey: [
+          'infinite',
+          'meters',
+          { organizationId: data.organization_id },
+        ],
       })
     },
   })

@@ -5,7 +5,7 @@ from fastapi import Path
 from pydantic import UUID4, AliasChoices, AliasPath, Field
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
-from polar.customer.schemas import CustomerBase
+from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.exceptions import ResourceNotFound
 from polar.kit.address import Address

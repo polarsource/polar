@@ -4,7 +4,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject, is_user
-from polar.customer.schemas import CustomerCreate, CustomerUpdate
+from polar.customer.schemas.customer import CustomerCreate, CustomerUpdate
 from polar.customer.service import customer as customer_service
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams

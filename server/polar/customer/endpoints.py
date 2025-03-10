@@ -11,14 +11,14 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from . import auth, sorting
-from .schemas import Customer as CustomerSchema
-from .schemas import (
+from .schemas.customer import Customer as CustomerSchema
+from .schemas.customer import (
     CustomerCreate,
     CustomerExternalID,
     CustomerID,
-    CustomerState,
     CustomerUpdate,
 )
+from .schemas.state import CustomerState
 from .service import customer as customer_service
 
 router = APIRouter(

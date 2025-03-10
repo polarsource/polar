@@ -13,7 +13,7 @@ from pydantic import (
 )
 
 from polar.config import settings
-from polar.customer.schemas import Customer
+from polar.customer.schemas.customer import Customer
 from polar.kit import jwt
 from polar.kit.schemas import (
     ClassName,

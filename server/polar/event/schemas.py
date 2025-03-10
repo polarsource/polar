@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import UUID4, AfterValidator, AwareDatetime, Field
 
-from polar.customer.schemas import Customer
+from polar.customer.schemas.customer import Customer
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import IDSchema, Schema
 from polar.models.event import EventSource

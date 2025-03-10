@@ -5,7 +5,7 @@ import structlog
 from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
 
-from polar.customer.schemas import CustomerID
+from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import (
     IterableCSVWriter,

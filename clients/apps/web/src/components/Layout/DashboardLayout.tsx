@@ -8,6 +8,7 @@ import { organizationPageLink } from '@/utils/nav'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { SidebarTrigger } from '@polar-sh/ui/components/atoms/Sidebar'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { PropsWithChildren, useContext, useEffect, useState } from 'react'
@@ -159,11 +160,15 @@ export const DashboardBody = ({
   )
 
   return (
-    <div
+    <motion.div
       className={twMerge(
         'flex h-full w-full flex-row gap-x-2',
         contextViewPlacement === 'left' ? 'flex-row-reverse' : '',
       )}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={{ staggerChildren: 0.1 }}
     >
       <div className="dark:md:bg-polar-900 dark:border-polar-800 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-8 md:shadow-sm">
         <div
@@ -192,21 +197,33 @@ export const DashboardBody = ({
               )}
             </div>
           )}
-          <div className={twMerge('flex w-full flex-col pb-8', className)}>
+          <motion.div
+            className={twMerge('flex w-full flex-col pb-8', className)}
+            variants={{
+              initial: { opacity: 0 },
+              animate: { opacity: 1, transition: { duration: 0.3 } },
+              exit: { opacity: 0, transition: { duration: 0.3 } },
+            }}
+          >
             {children}
-          </div>
+          </motion.div>
         </div>
       </div>
       {contextView ? (
-        <div
+        <motion.div
+          variants={{
+            initial: { opacity: 0 },
+            animate: { opacity: 1, transition: { duration: 0.3 } },
+            exit: { opacity: 0, transition: { duration: 0.3 } },
+          }}
           className={twMerge(
             'dark:bg-polar-900 dark:border-polar-800 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white md:max-w-[320px] md:shadow-sm xl:max-w-[440px]',
             contextViewClassName,
           )}
         >
           {contextView}
-        </div>
+        </motion.div>
       ) : null}
-    </div>
+    </motion.div>
   )
 }

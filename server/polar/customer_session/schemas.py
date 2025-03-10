@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import UUID4, Field
 
-from polar.customer.schemas import Customer
+from polar.customer.schemas.customer import Customer
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 
 

@@ -22,7 +22,8 @@ from polar.webhook.webhooks import WebhookPayloadTypeAdapter
 from polar.worker import enqueue_job
 
 from .repository import CustomerRepository
-from .schemas import CustomerCreate, CustomerState, CustomerUpdate
+from .schemas.customer import CustomerCreate, CustomerUpdate
+from .schemas.state import CustomerState
 from .sorting import CustomerSortProperty
 
 

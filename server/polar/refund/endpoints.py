@@ -1,7 +1,7 @@
 import structlog
 from fastapi import Depends, Query
 
-from polar.customer.schemas import CustomerID
+from polar.customer.schemas.customer import CustomerID
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Refund

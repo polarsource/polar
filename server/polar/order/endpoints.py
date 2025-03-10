@@ -3,7 +3,7 @@ from typing import cast
 from fastapi import Depends, Query
 from pydantic import UUID4
 
-from polar.customer.schemas import CustomerID
+from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter

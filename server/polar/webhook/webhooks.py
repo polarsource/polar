@@ -19,8 +19,8 @@ from pydantic_core import core_schema as cs
 from polar.benefit.schemas import Benefit as BenefitSchema
 from polar.benefit.schemas import BenefitGrantWebhook
 from polar.checkout.schemas import Checkout as CheckoutSchema
-from polar.customer.schemas import Customer as CustomerSchema
-from polar.customer.schemas import CustomerState as CustomerStateSchema
+from polar.customer.schemas.customer import Customer as CustomerSchema
+from polar.customer.schemas.state import CustomerState as CustomerStateSchema
 from polar.exceptions import PolarError
 from polar.integrations.discord.webhook import (
     DiscordEmbedField,

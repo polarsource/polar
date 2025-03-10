@@ -48,6 +48,10 @@ class CustomerSubscription(SubscriptionBase):
         ),
     )
 
+    prices: list[ProductPrice] = Field(
+        description="List of enabled prices for the subscription."
+    )
+
 
 class CustomerSubscriptionUpdateProduct(Schema):
     product_id: UUID4 = Field(description="Update subscription to another product.")

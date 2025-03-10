@@ -1,7 +1,7 @@
 from fastapi import Depends, Query
 from pydantic import AwareDatetime
 
-from polar.customer.schemas import CustomerID
+from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery

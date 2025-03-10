@@ -1,7 +1,7 @@
 from fastapi import Depends, Query
 
 from polar.authz.service import Authz
-from polar.customer.schemas import CustomerID
+from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter

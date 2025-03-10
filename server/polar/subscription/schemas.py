@@ -7,7 +7,7 @@ from fastapi import Path
 from pydantic import UUID4, AliasChoices, AliasPath, Field
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
-from polar.customer.schemas import CustomerBase
+from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.kit.metadata import MetadataOutputMixin
@@ -153,6 +153,10 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
             # Validate from ORM model
             AliasPath("prices", 0),
         ),
+    )
+
+    prices: list[ProductPrice] = Field(
+        description="List of enabled prices for the subscription."
     )
 
 

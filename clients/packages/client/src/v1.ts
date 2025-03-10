@@ -6105,6 +6105,11 @@ export interface components {
                 [key: string]: string | number | boolean;
             };
             /**
+             * Customer External Id
+             * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
+             */
+            customer_external_id: string | null;
+            /**
              * Products
              * @description List of products available to select.
              */
@@ -8795,12 +8800,6 @@ export interface components {
              */
             product_id: string;
             /**
-             * Price Id
-             * Format: uuid4
-             * @description The ID of the subscribed price.
-             */
-            price_id: string;
-            /**
              * Discount Id
              * @description The ID of the applied discount, if any.
              */
@@ -8810,6 +8809,12 @@ export interface components {
             customer_cancellation_reason: components["schemas"]["CustomerCancellationReason"] | null;
             /** Customer Cancellation Comment */
             customer_cancellation_comment: string | null;
+            /**
+             * Price Id
+             * Format: uuid4
+             * @deprecated
+             */
+            price_id: string;
         };
         /**
          * CustomerOrganization
@@ -9238,16 +9243,21 @@ export interface components {
              */
             product_id: string;
             /**
-             * Price Id
-             * Format: uuid4
-             * @description The ID of the subscribed price.
-             */
-            price_id: string;
-            /**
              * Discount Id
              * @description The ID of the applied discount, if any.
              */
             discount_id: string | null;
+            /**
+             * Price Id
+             * Format: uuid4
+             * @deprecated
+             */
+            price_id: string;
+            /**
+             * Prices
+             * @description List of enabled prices for the subscription.
+             */
+            prices: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"])[];
         };
         /** CustomerSubscription */
         CustomerSubscription: {
@@ -9280,39 +9290,56 @@ export interface components {
             currency: string | null;
             /** @description The interval at which the subscription recurs. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
+            /** @description The status of the subscription. */
             status: components["schemas"]["SubscriptionStatus"];
             /**
              * Current Period Start
              * Format: date-time
+             * @description The start timestamp of the current billing period.
              */
             current_period_start: string;
-            /** Current Period End */
+            /**
+             * Current Period End
+             * @description The end timestamp of the current billing period.
+             */
             current_period_end: string | null;
-            /** Cancel At Period End */
+            /**
+             * Cancel At Period End
+             * @description Whether the subscription will be canceled at the end of the current period.
+             */
             cancel_at_period_end: boolean;
-            /** Canceled At */
+            /**
+             * Canceled At
+             * @description The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`.
+             */
             canceled_at: string | null;
-            /** Started At */
+            /**
+             * Started At
+             * @description The timestamp when the subscription started.
+             */
             started_at: string | null;
-            /** Ends At */
+            /**
+             * Ends At
+             * @description The timestamp when the subscription will end.
+             */
             ends_at: string | null;
-            /** Ended At */
+            /**
+             * Ended At
+             * @description The timestamp when the subscription ended.
+             */
             ended_at: string | null;
             /**
              * Customer Id
              * Format: uuid4
+             * @description The ID of the subscribed customer.
              */
             customer_id: string;
             /**
              * Product Id
              * Format: uuid4
+             * @description The ID of the subscribed product.
              */
             product_id: string;
-            /**
-             * Price Id
-             * Format: uuid4
-             */
-            price_id: string;
             /**
              * Discount Id
              * @description The ID of the applied discount, if any.
@@ -9324,14 +9351,28 @@ export interface components {
             /** Customer Cancellation Comment */
             customer_cancellation_comment: string | null;
             /**
+             * Price Id
+             * Format: uuid4
+             * @deprecated
+             */
+            price_id: string;
+            /**
              * User Id
              * Format: uuid4
              * @deprecated
              */
             user_id: string;
             product: components["schemas"]["CustomerSubscriptionProduct"];
-            /** Price */
+            /**
+             * Price
+             * @deprecated
+             */
             price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
+            /**
+             * Prices
+             * @description List of enabled prices for the subscription.
+             */
+            prices: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"])[];
         };
         /** CustomerSubscriptionCancel */
         CustomerSubscriptionCancel: {
@@ -12945,12 +12986,6 @@ export interface components {
              */
             product_id: string;
             /**
-             * Price Id
-             * Format: uuid4
-             * @description The ID of the subscribed price.
-             */
-            price_id: string;
-            /**
              * Discount Id
              * @description The ID of the applied discount, if any.
              */
@@ -12960,6 +12995,12 @@ export interface components {
             customer_cancellation_reason: components["schemas"]["CustomerCancellationReason"] | null;
             /** Customer Cancellation Comment */
             customer_cancellation_comment: string | null;
+            /**
+             * Price Id
+             * Format: uuid4
+             * @deprecated
+             */
+            price_id: string;
             /**
              * User Id
              * Format: uuid4
@@ -14907,12 +14948,6 @@ export interface components {
              */
             product_id: string;
             /**
-             * Price Id
-             * Format: uuid4
-             * @description The ID of the subscribed price.
-             */
-            price_id: string;
-            /**
              * Discount Id
              * @description The ID of the applied discount, if any.
              */
@@ -14922,6 +14957,12 @@ export interface components {
             customer_cancellation_reason: components["schemas"]["CustomerCancellationReason"] | null;
             /** Customer Cancellation Comment */
             customer_cancellation_comment: string | null;
+            /**
+             * Price Id
+             * Format: uuid4
+             * @deprecated
+             */
+            price_id: string;
             /** Metadata */
             metadata: {
                 [key: string]: string | number | boolean;
@@ -14943,10 +14984,18 @@ export interface components {
             /** @deprecated */
             user: components["schemas"]["SubscriptionUser"];
             product: components["schemas"]["Product"];
-            /** Price */
-            price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /** Discount */
             discount: (components["schemas"]["DiscountFixedOnceForeverDurationBase"] | components["schemas"]["DiscountFixedRepeatDurationBase"] | components["schemas"]["DiscountPercentageOnceForeverDurationBase"] | components["schemas"]["DiscountPercentageRepeatDurationBase"]) | null;
+            /**
+             * Price
+             * @deprecated
+             */
+            price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
+            /**
+             * Prices
+             * @description List of enabled prices for the subscription.
+             */
+            prices: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"])[];
         };
         /** SubscriptionCancel */
         SubscriptionCancel: {

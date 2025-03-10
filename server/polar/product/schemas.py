@@ -130,13 +130,16 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
     amount_type: Literal[ProductPriceAmountType.custom]
     price_currency: PriceCurrency
     minimum_amount: PriceAmount | None = Field(
-        default=None, description="The minimum amount the customer can pay."
+        default=None, ge=50, description="The minimum amount the customer can pay."
     )
     maximum_amount: PriceAmount | None = Field(
-        default=None, description="The maximum amount the customer can pay."
+        default=None,
+        le=1_000_000,  # $10K
+        description="The maximum amount the customer can pay.",
     )
     preset_amount: PriceAmount | None = Field(
         default=None,
+        le=1_000_000,  # $10K
         description="The initial amount shown to the customer.",
     )
 

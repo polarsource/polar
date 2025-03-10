@@ -28,6 +28,13 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@polar-sh/ui/components/atoms/Select'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import {
@@ -45,6 +52,7 @@ import {
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useQueryState } from 'nuqs'
 import { useCallback, useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -59,6 +67,10 @@ export default function ClientPage({
 }) {
   const { organization: org } = useContext(MaintainerOrganizationContext)
   const [query, setQuery] = useState(_query)
+
+  const [show, setShow] = useQueryState('show', {
+    defaultValue: 'active',
+  })
 
   const router = useRouter()
   const pathname = usePathname()
@@ -104,20 +116,32 @@ export default function ClientPage({
     page: pagination.pageIndex + 1,
     limit: pagination.pageSize,
     sorting: sortingStateToQueryParam(sorting),
-    is_archived: null,
+    is_archived: show === 'all' ? null : show === 'active' ? false : true,
   })
 
   return (
     <DashboardBody wide>
       <div className="flex flex-col gap-y-8">
         <div className="flex flex-row items-center justify-between gap-6">
-          <Input
-            className="w-full max-w-64"
-            preSlot={<Search fontSize="small" />}
-            placeholder="Search Products"
-            value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
-          />
+          <div className="flex flex-row items-center gap-x-4">
+            <Input
+              className="w-full max-w-64"
+              preSlot={<Search fontSize="small" />}
+              placeholder="Search Products"
+              value={query}
+              onChange={(e) => onQueryChange(e.target.value)}
+            />
+            <Select value={show} onValueChange={setShow}>
+              <SelectTrigger className="w-full max-w-fit">
+                <SelectValue placeholder="Show archived products" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Link href={`/dashboard/${org.slug}/products/new`}>
             <Button role="link" wrapperClassNames="gap-x-2">
               <AddOutlined className="h-4 w-4" />

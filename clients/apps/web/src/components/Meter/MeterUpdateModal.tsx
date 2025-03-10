@@ -62,7 +62,7 @@ export const MeterUpdateModal = ({
             className="flex flex-col gap-y-6"
           >
             <MeterForm />
-            <div className="flex flex-row items-center gap-2">
+            <div className="flex flex-row items-center gap-4">
               <Button type="submit">Update Meter</Button>
               <Button variant="secondary" onClick={hide}>
                 Cancel

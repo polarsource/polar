@@ -2,128 +2,193 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { MeterCreationModal } from '@/components/Meter/MeterCreationModal'
-import { MetersList } from '@/components/Meter/MetersList'
+import { MeterPage } from '@/components/Meter/MeterPage'
+import { MeterUpdateModal } from '@/components/Meter/MeterUpdateModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
+import Spinner from '@/components/Shared/Spinner'
 import { useMeters } from '@/hooks/queries/meters'
+import { useInViewport } from '@/hooks/utils'
 import {
-  DataTablePaginationState,
-  DataTableSortingState,
-  serializeSearchParams,
-} from '@/utils/datatable'
-import { AddOutlined } from '@mui/icons-material'
+  AddOutlined,
+  ArrowDownward,
+  ArrowUpward,
+  Search,
+} from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import {
-  PaginationState,
-  RowSelectionState,
-  SortingState,
-} from '@tanstack/react-table'
-import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import Input from '@polar-sh/ui/components/atoms/Input'
+import { parseAsStringLiteral, useQueryState } from 'nuqs'
+import { useEffect, useMemo } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({
-  sorting,
-  pagination,
   organization,
 }: {
-  sorting: SortingState
-  pagination: PaginationState
   organization: schemas['Organization']
 }) => {
-  const router = useRouter()
-  const { data: meters, isLoading } = useMeters(organization?.id)
-  const [selectedMeterState, setSelectedMeterState] =
-    useState<RowSelectionState>({})
+  const [selectedMeterId, setSelectedMeterId] = useQueryState('selectedMeter', {
+    defaultValue: '',
+  })
+  const [sorting, setSorting] = useQueryState(
+    'sorting',
+    parseAsStringLiteral([
+      'created_at',
+      '-created_at',
+      'name',
+      '-name',
+    ] as const).withDefault('-created_at'),
+  )
+  const [query, setQuery] = useQueryState('query', {
+    defaultValue: '',
+  })
+
+  const { data, hasNextPage, fetchNextPage } = useMeters(organization?.id, {
+    sorting: [sorting],
+    query,
+  })
 
   const {
-    isShown: isMeterModalShown,
-    hide: hideMeterModal,
-    show: showMeterModal,
+    isShown: isCreateMeterModalShown,
+    hide: hideCreateMeterModal,
+    show: showCreateMeterModal,
   } = useModal()
 
+  const {
+    isShown: isEditMeterModalShown,
+    show: showEditMeterModal,
+    hide: hideEditMeterModal,
+  } = useModal()
+
+  const meters = data?.pages.flatMap((page) => page.items) ?? []
+
   const selectedMeter = useMemo(() => {
-    return meters?.items.find((meter) => selectedMeterState[meter.id])
-  }, [meters, selectedMeterState])
+    return meters?.find((meter) => meter.id === selectedMeterId)
+  }, [meters, selectedMeterId])
+
+  const { ref: loadingRef, inViewport } = useInViewport()
 
   useEffect(() => {
-    if (selectedMeter) {
-      router.push(`/dashboard/${organization.slug}/meters/${selectedMeter.id}`)
+    if (inViewport && hasNextPage) {
+      fetchNextPage()
     }
-  }, [selectedMeter, router, organization])
+  }, [inViewport, hasNextPage, fetchNextPage])
 
-  const getSearchParams = (
-    pagination: DataTablePaginationState,
-    sorting: DataTableSortingState,
-  ) => {
-    const params = serializeSearchParams(pagination, sorting)
-    return params
-  }
-
-  const setPagination = (
-    updaterOrValue:
-      | DataTablePaginationState
-      | ((old: DataTablePaginationState) => DataTablePaginationState),
-  ) => {
-    const updatedPagination =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(pagination)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/meters?${getSearchParams(
-        updatedPagination,
-        sorting,
-      )}`,
-    )
-  }
-
-  const setSorting = (
-    updaterOrValue:
-      | DataTableSortingState
-      | ((old: DataTableSortingState) => DataTableSortingState),
-  ) => {
-    const updatedSorting =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(sorting)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/meters?${getSearchParams(
-        pagination,
-        updatedSorting,
-      )}`,
-    )
-  }
+  useEffect(() => {
+    if (!selectedMeterId) {
+      setSelectedMeterId(meters[0]?.id ?? null)
+    }
+  }, [meters, selectedMeterId, setSelectedMeterId])
 
   return (
     <DashboardBody
+      title={selectedMeter?.name ?? 'Meters'}
       header={
-        <Button
-          wrapperClassNames="flex items-center flex-row gap-x-2"
-          onClick={showMeterModal}
-        >
-          <AddOutlined fontSize="inherit" />
-          <span>New Meter</span>
-        </Button>
+        selectedMeter && (
+          <Button
+            wrapperClassNames="flex items-center flex-row gap-x-2"
+            onClick={showEditMeterModal}
+          >
+            <span>Edit Meter</span>
+          </Button>
+        )
+      }
+      contextViewPlacement="left"
+      contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
+      contextView={
+        <div className="dark:divide-polar-800 flex h-full flex-col divide-y divide-gray-200">
+          <div className="flex flex-row items-center justify-between gap-6 px-4 py-4">
+            <div>Meters</div>
+            <div className="flex flex-row items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() =>
+                  setSorting(
+                    sorting === '-created_at' ? 'created_at' : '-created_at',
+                  )
+                }
+              >
+                {sorting === 'created_at' ? (
+                  <ArrowUpward fontSize="small" />
+                ) : (
+                  <ArrowDownward fontSize="small" />
+                )}
+              </Button>
+              <Button
+                size="icon"
+                className="h-6 w-6"
+                onClick={showCreateMeterModal}
+              >
+                <AddOutlined fontSize="small" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex flex-row items-center gap-3 px-4 py-2">
+            <div className="dark:bg-polar-800 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+              <Search
+                fontSize="inherit"
+                className="dark:text-polar-500 text-gray-500"
+              />
+            </div>
+            <Input
+              className="w-full rounded-none border-none bg-transparent p-0 !shadow-none ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
+              placeholder="Search Meters"
+              value={query ?? undefined}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <div className="dark:divide-polar-800 flex h-full flex-grow flex-col divide-y divide-gray-50 overflow-y-auto">
+            {meters.map((meter) => (
+              <div
+                key={meter.id}
+                onClick={() => setSelectedMeterId(meter.id)}
+                className={twMerge(
+                  'dark:hover:bg-polar-800 cursor-pointer hover:bg-gray-100',
+                  selectedMeter?.id === meter.id &&
+                    'dark:bg-polar-800 bg-gray-100',
+                )}
+              >
+                <div className="flex min-w-0 flex-col gap-y-1 px-6 py-2">
+                  <div className="w-full truncate text-sm">{meter.name}</div>
+                  <div className="w-full truncate text-xs capitalize text-gray-500 dark:text-gray-500">
+                    {meter.aggregation.func}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {hasNextPage && (
+              <div
+                ref={loadingRef}
+                className="flex w-full items-center justify-center py-8"
+              >
+                <Spinner />
+              </div>
+            )}
+          </div>
+        </div>
       }
       wide
     >
-      <MetersList
-        meters={meters?.items ?? []}
-        pageCount={meters?.pagination.max_page ?? 1}
-        pagination={pagination}
-        setPagination={setPagination}
-        setSorting={setSorting}
-        sorting={sorting}
-        isLoading={isLoading}
-        selectedMeterState={selectedMeterState}
-        setSelectedMeterState={setSelectedMeterState}
-      />
+      {selectedMeter && <MeterPage meter={selectedMeter} />}
+
       <InlineModal
-        isShown={isMeterModalShown}
-        hide={hideMeterModal}
-        modalContent={<MeterCreationModal hide={hideMeterModal} />}
+        isShown={isCreateMeterModalShown}
+        hide={hideCreateMeterModal}
+        modalContent={<MeterCreationModal hide={hideCreateMeterModal} />}
+      />
+
+      <InlineModal
+        isShown={isEditMeterModalShown}
+        hide={hideEditMeterModal}
+        modalContent={
+          selectedMeter ? (
+            <MeterUpdateModal meter={selectedMeter} hide={hideEditMeterModal} />
+          ) : (
+            <></>
+          )
+        }
       />
     </DashboardBody>
   )

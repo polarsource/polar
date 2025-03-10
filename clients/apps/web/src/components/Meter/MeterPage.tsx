@@ -1,14 +1,9 @@
 'use client'
 
 import { Events } from '@/components/Events/Events'
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { MeterChart } from '@/components/Meter/MeterChart'
-import { MeterContextView } from '@/components/Meter/MeterContextView'
 import MeterEventsTab from '@/components/Meter/MeterEventsTab'
 import { MeterGetStarted } from '@/components/Meter/MeterGetStarted'
-import { MeterUpdateModal } from '@/components/Meter/MeterUpdateModal'
-import { InlineModal } from '@/components/Modal/InlineModal'
-import { useModal } from '@/components/Modal/useModal'
 import Spinner from '@/components/Shared/Spinner'
 import {
   useMeter,
@@ -16,9 +11,7 @@ import {
   useMeterQuantities,
 } from '@/hooks/queries/meters'
 import { UTCDate } from '@date-fns/utc'
-import { MoreVert } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Card,
   CardContent,
@@ -34,18 +27,8 @@ import {
 import { endOfMonth, startOfMonth, subDays, subMonths } from 'date-fns'
 import { useMemo } from 'react'
 
-export default function ClientPage({
-  meter: _meter,
-}: {
-  meter: schemas['Meter']
-}) {
+export const MeterPage = ({ meter: _meter }: { meter: schemas['Meter'] }) => {
   const { data: meter } = useMeter(_meter.id, _meter)
-
-  const {
-    isShown: isMeterUpdateModalShown,
-    show: showMeterUpdateModal,
-    hide: hideMeterUpdateModal,
-  } = useModal()
 
   const startChart = useMemo(() => subDays(new UTCDate(), 7), [])
   const endChart = useMemo(() => new UTCDate(), [])
@@ -83,29 +66,7 @@ export default function ClientPage({
   if (!meter) return null
 
   return (
-    <DashboardBody
-      title={
-        <div className="flex flex-row items-center gap-x-4">
-          <h1 className="text-2xl">{meter.name}</h1>
-        </div>
-      }
-      header={
-        <div className="flex flex-row gap-x-2">
-          <Button variant="secondary" onClick={showMeterUpdateModal}>
-            Edit Meter
-          </Button>
-          <Button className="h-10 w-10 text-lg" size="icon" variant="secondary">
-            <MoreVert
-              className="dark:text-polar-500 text-gray-500"
-              fontSize="inherit"
-            />
-          </Button>
-        </div>
-      }
-      contextView={<MeterContextView meter={meter} />}
-      contextViewClassName="xl:max-w-[400px]"
-      wide
-    >
+    <>
       <Tabs defaultValue="overview" className="flex flex-col">
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -208,14 +169,6 @@ export default function ClientPage({
           <MeterEventsTab meter={meter} />
         </TabsContent>
       </Tabs>
-
-      <InlineModal
-        isShown={isMeterUpdateModalShown}
-        hide={hideMeterUpdateModal}
-        modalContent={
-          <MeterUpdateModal meter={meter} hide={hideMeterUpdateModal} />
-        }
-      />
-    </DashboardBody>
+    </>
   )
 }

@@ -84,7 +84,7 @@ export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
   const { control, register, setValue } = useFormContext<ProductFormType>()
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex w-40 flex-col gap-4">
       <input type="hidden" {...register(`prices.${index}.id`)} />
       <input type="hidden" {...register(`prices.${index}.amount_type`)} />
       <FormField

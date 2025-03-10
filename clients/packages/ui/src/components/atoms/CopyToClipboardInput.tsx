@@ -36,7 +36,7 @@ const CopyToClipboardInput = ({
   return (
     <div
       className={twMerge(
-        'dark:border-polar-700 dark:bg-polar-800 flex w-full flex-row items-center overflow-hidden rounded-full border bg-white shadow-sm',
+        'dark:border-polar-700 dark:bg-polar-800 flex w-full flex-row items-center overflow-hidden rounded-xl border bg-white shadow-sm',
         className,
       )}
     >
@@ -49,6 +49,7 @@ const CopyToClipboardInput = ({
         <Button
           className="mr-1 text-xs"
           type="button"
+          size="sm"
           variant="ghost"
           onClick={copyToClipboard}
         >

@@ -2,10 +2,8 @@
 
 import { LicenseKeyDetails } from '@/components/Benefit/LicenseKeys/LicenseKeyDetails'
 import { LicenseKeysList } from '@/components/Benefit/LicenseKeys/LicenseKeysList'
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { toast } from '@/components/Toast/use-toast'
 import {
-  useBenefits,
   useLicenseKey,
   useLicenseKeyUpdate,
   useOrganizationLicenseKeys,
@@ -14,6 +12,7 @@ import {
   DataTablePaginationState,
   DataTableSortingState,
   getAPIParams,
+  parseSearchParams,
   serializeSearchParams,
 } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
@@ -21,47 +20,38 @@ import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
-import {
-  PaginationState,
-  RowSelectionState,
-  SortingState,
-} from '@tanstack/react-table'
-import { useRouter } from 'next/navigation'
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@polar-sh/ui/components/atoms/Tabs'
+import { RowSelectionState } from '@tanstack/react-table'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useState } from 'react'
+import { InlineModal } from '../Modal/InlineModal'
+import { useModal } from '../Modal/useModal'
+import { BenefitPage } from './BenefitPage'
 
-export const ClientPage = ({
+export const LicenseKeysPage = ({
   organization,
-  sorting,
-  pagination,
+  benefit,
 }: {
   organization: schemas['Organization']
-  sorting: SortingState
-  pagination: PaginationState
+  benefit: schemas['Benefit']
 }) => {
-  const [selectedBenefitId, setSelectedBenefitId] = useState<
-    string | undefined
-  >()
+  const searchParamsMap = useSearchParams()
+  const searchParams = Object.fromEntries(searchParamsMap.entries())
+  const { pagination, sorting } = parseSearchParams(searchParams)
+
   const [statusLoading, setStatusLoading] = useState(false)
   const [selectedLicenseKeys, setSelectedLicenseKeys] =
     useState<RowSelectionState>({})
 
   const { data: licenseKeys, isLoading } = useOrganizationLicenseKeys({
     organization_id: organization.id,
-    benefit_id: selectedBenefitId,
+    benefit_id: benefit.id,
     ...getAPIParams(pagination, sorting),
   })
-
-  const { data: licenseKeyBenefits } = useBenefits(
-    organization.id,
-    100,
-    'license_keys',
-  )
 
   const { data: selectedLicenseKey } = useLicenseKey(
     Object.keys(selectedLicenseKeys)[0],
@@ -74,6 +64,12 @@ export const ClientPage = ({
     const params = serializeSearchParams(pagination, sorting)
     return params
   }
+
+  const {
+    isShown: isLicenseKeyModalShown,
+    show: showLicenseKeyModal,
+    hide: hideLicenseKeyModal,
+  } = useModal()
 
   const router = useRouter()
 
@@ -88,7 +84,7 @@ export const ClientPage = ({
         : updaterOrValue
 
     router.push(
-      `/dashboard/${organization.slug}/benefits/license-keys?${getSearchParams(
+      `/dashboard/${organization.slug}/benefits?benefitId=${benefit.id}&${getSearchParams(
         updatedPagination,
         sorting,
       )}`,
@@ -106,7 +102,7 @@ export const ClientPage = ({
         : updaterOrValue
 
     router.push(
-      `/dashboard/${organization.slug}/benefits/license-keys?${getSearchParams(
+      `/dashboard/${organization.slug}/benefits?benefitId=${benefit.id}&${getSearchParams(
         pagination,
         updatedSorting,
       )}`,
@@ -213,42 +209,42 @@ export const ClientPage = ({
   ) : undefined
 
   return (
-    <DashboardBody
-      className="flex flex-col gap-y-6"
-      contextView={LicenseKeyContextView}
-      wide
-    >
-      <Select
-        defaultValue="all"
-        onValueChange={(value) => {
-          setSelectedBenefitId(value != 'all' ? value : undefined)
-        }}
-      >
-        <SelectTrigger className="w-fit min-w-64">
-          <SelectValue placeholder="Filter by Benefit" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem key="all" value="all">
-            All License Keys
-          </SelectItem>
-          {licenseKeyBenefits?.items.map((benefit) => (
-            <SelectItem key={benefit.id} value={benefit.id}>
-              {benefit.description}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <LicenseKeysList
-        isLoading={isLoading}
-        pageCount={licenseKeys?.pagination.max_page ?? 1}
-        licenseKeys={licenseKeys?.items ?? []}
-        pagination={pagination}
-        sorting={sorting}
-        setPagination={setPagination}
-        setSorting={setSorting}
-        onSelectLicenseKeyChange={setSelectedLicenseKeys}
-        selectedLicenseKey={selectedLicenseKeys}
-      />
-    </DashboardBody>
+    <Tabs defaultValue="license-keys">
+      <TabsList className="mb-8">
+        <TabsTrigger value="license-keys">License Keys</TabsTrigger>
+        <TabsTrigger value="grants">Grants</TabsTrigger>
+      </TabsList>
+      <TabsContent value="license-keys">
+        <div className="flex flex-col gap-y-6">
+          <h2 className="text-xl">License Keys</h2>
+          <LicenseKeysList
+            isLoading={isLoading}
+            pageCount={licenseKeys?.pagination.max_page ?? 1}
+            licenseKeys={licenseKeys?.items ?? []}
+            pagination={pagination}
+            sorting={sorting}
+            setPagination={setPagination}
+            setSorting={setSorting}
+            onSelectLicenseKeyChange={(selectedLicenseKeys) => {
+              setSelectedLicenseKeys(selectedLicenseKeys)
+
+              showLicenseKeyModal()
+            }}
+            selectedLicenseKey={selectedLicenseKeys}
+          />
+          <InlineModal
+            modalContent={LicenseKeyContextView ?? <></>}
+            isShown={isLicenseKeyModalShown}
+            hide={() => {
+              hideLicenseKeyModal()
+              setSelectedLicenseKeys({})
+            }}
+          />
+        </div>
+      </TabsContent>
+      <TabsContent value="grants">
+        <BenefitPage benefit={benefit} organization={organization} />
+      </TabsContent>
+    </Tabs>
   )
 }

@@ -98,7 +98,7 @@ export const LicenseKeysBenefitForm = () => {
             name="properties.expires.ttl"
             render={({ field }) => {
               return (
-                <FormItem>
+                <FormItem className="w-full max-w-full">
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -110,7 +110,6 @@ export const LicenseKeysBenefitForm = () => {
           <FormField
             control={control}
             name="properties.expires.timeframe"
-            shouldUnregister={true}
             render={({ field }) => {
               return (
                 <FormItem>

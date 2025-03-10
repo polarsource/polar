@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 
 import { queryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
@@ -22,12 +22,56 @@ const _invalidateBenefitsQueries = ({
     queryClient.invalidateQueries({
       queryKey: ['benefits', 'organization', orgId],
     })
+
+    queryClient.invalidateQueries({
+      queryKey: ['infinite', 'benefits', 'organization', orgId],
+    })
+
+    queryClient.invalidateQueries({
+      queryKey: ['benefits', 'grants', id, orgId],
+    })
   }
 
   queryClient.invalidateQueries({
     queryKey: ['subscriptionTiers'],
   })
 }
+
+export const useInfiniteBenefits = (
+  orgId: string,
+  limit = 30,
+  type?: schemas['BenefitType'],
+) =>
+  useInfiniteQuery({
+    queryKey: ['infinite', 'benefits', 'organization', orgId, { type }],
+    queryFn: ({ pageParam }) =>
+      unwrap(
+        api.GET('/v1/benefits/', {
+          params: {
+            query: {
+              organization_id: orgId,
+              limit,
+              type,
+              page: pageParam,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!orgId,
+    initialPageParam: 1,
+
+    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+      if (
+        lastPageParam === lastPage.pagination.max_page ||
+        lastPage.items.length === 0
+      ) {
+        return null
+      }
+
+      return lastPageParam + 1
+    },
+  })
 
 export const useBenefits = (
   orgId?: string,
@@ -128,4 +172,34 @@ export const useDeleteBenefit = (orgId?: string) =>
       }
       _invalidateBenefitsQueries({ id: variables.id, orgId })
     },
+  })
+
+export const useBenefitGrants = ({
+  benefitId,
+  organizationId,
+  limit = 30,
+  page = 1,
+}: {
+  benefitId: string
+  organizationId: string
+  limit?: number
+  page?: number
+}) =>
+  useQuery({
+    queryKey: ['benefits', 'grants', benefitId, organizationId],
+    queryFn: () => {
+      return unwrap(
+        api.GET('/v1/benefits/{id}/grants', {
+          params: {
+            path: { id: benefitId },
+            query: {
+              organization_id: organizationId,
+              page,
+              limit,
+            },
+          },
+        }),
+      )
+    },
+    retry: defaultRetry,
   })

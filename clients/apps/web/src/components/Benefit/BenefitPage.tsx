@@ -1,4 +1,11 @@
 import { useBenefitGrants } from '@/hooks/queries/benefits'
+import {
+  DataTablePaginationState,
+  DataTableSortingState,
+  getAPIParams,
+  parseSearchParams,
+  serializeSearchParams,
+} from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -6,6 +13,7 @@ import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
 export interface BenefitPageProps {
@@ -14,18 +22,73 @@ export interface BenefitPageProps {
 }
 
 export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
-  const benefitGrants = useBenefitGrants({
+  const searchParamsMap = useSearchParams()
+  const searchParams = Object.fromEntries(searchParamsMap.entries())
+  const { pagination, sorting } = parseSearchParams(searchParams)
+
+  const getSearchParams = (
+    pagination: DataTablePaginationState,
+    sorting: DataTableSortingState,
+  ) => {
+    const params = serializeSearchParams(pagination, sorting)
+    return params
+  }
+
+  const router = useRouter()
+
+  const { data: benefitGrants, isLoading } = useBenefitGrants({
     benefitId: benefit.id,
     organizationId: organization.id,
-    limit: 30,
+    ...getAPIParams(pagination, sorting),
   })
+
+  const setPagination = (
+    updaterOrValue:
+      | DataTablePaginationState
+      | ((old: DataTablePaginationState) => DataTablePaginationState),
+  ) => {
+    const updatedPagination =
+      typeof updaterOrValue === 'function'
+        ? updaterOrValue(pagination)
+        : updaterOrValue
+
+    router.push(
+      `/dashboard/${organization.slug}/benefits?benefitId=${benefit.id}&${getSearchParams(
+        updatedPagination,
+        sorting,
+      )}`,
+    )
+  }
+
+  const setSorting = (
+    updaterOrValue:
+      | DataTableSortingState
+      | ((old: DataTableSortingState) => DataTableSortingState),
+  ) => {
+    const updatedSorting =
+      typeof updaterOrValue === 'function'
+        ? updaterOrValue(sorting)
+        : updaterOrValue
+
+    router.push(
+      `/dashboard/${organization.slug}/benefits?benefitId=${benefit.id}&${getSearchParams(
+        pagination,
+        updatedSorting,
+      )}`,
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <h2 className="text-xl">Benefit Grants</h2>
       <DataTable
-        data={benefitGrants.data?.items || []}
-        isLoading={benefitGrants.isLoading}
+        data={benefitGrants?.items || []}
+        isLoading={isLoading}
+        sorting={sorting}
+        onSortingChange={setSorting}
+        pagination={pagination}
+        pageCount={benefitGrants?.pagination.max_page ?? 1}
+        onPaginationChange={setPagination}
         columns={[
           {
             accessorKey: 'customer',

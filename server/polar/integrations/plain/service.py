@@ -148,7 +148,7 @@ class PlainService:
                                 link_button_url=settings.generate_external_url(
                                     f"/backoffice/organizations/{account.organizations[0].id}"
                                 ),
-                                link_button_label="Review account",
+                                link_button_label="Review account ↗",
                             )
                         ),
                         *(
@@ -227,11 +227,30 @@ class PlainService:
         return ComponentContainerInput(
             container_content=[
                 ComponentContainerContentInput(
-                    component_text=ComponentTextInput(text=organization.name)
-                ),
-                ComponentContainerContentInput(
-                    component_text=ComponentTextInput(
-                        text=organization.slug, text_color=ComponentTextColor.MUTED
+                    component_row=ComponentRowInput(
+                        row_main_content=[
+                            ComponentRowContentInput(
+                                component_text=ComponentTextInput(
+                                    text=organization.name
+                                )
+                            ),
+                            ComponentRowContentInput(
+                                component_text=ComponentTextInput(
+                                    text=organization.slug,
+                                    text_color=ComponentTextColor.MUTED,
+                                )
+                            ),
+                        ],
+                        row_aside_content=[
+                            ComponentRowContentInput(
+                                component_link_button=ComponentLinkButtonInput(
+                                    link_button_label="Backoffice ↗",
+                                    link_button_url=settings.generate_external_url(
+                                        f"/backoffice/organizations/{organization.id}"
+                                    ),
+                                )
+                            )
+                        ],
                     )
                 ),
                 ComponentContainerContentInput(

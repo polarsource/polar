@@ -89,7 +89,7 @@ export const LicenseKeysList = ({
               'w-fit',
               licenseKey.status === 'granted'
                 ? 'bg-emerald-200 text-emerald-500 dark:bg-emerald-950'
-                : 'bg-red-200 text-red-500 dark:bg-red-950',
+                : 'bg-red-100 text-red-500 dark:bg-red-950',
             )}
             status={licenseKey.status === 'granted' ? 'Granted' : 'Revoked'}
           />

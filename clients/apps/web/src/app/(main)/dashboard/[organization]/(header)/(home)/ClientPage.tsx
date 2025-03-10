@@ -110,7 +110,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
   }, [hoveredMetricPeriod, metricsData, selectedMetric])
 
   return (
-    <ShadowBox className="dark:bg-polar-800 flex flex-col bg-gray-50 p-2 shadow-sm">
+    <ShadowBox className="dark:bg-polar-800 flex flex-col bg-gray-100 p-2 shadow-sm">
       <div className="flex flex-row justify-between p-6">
         <div className="flex flex-col gap-3">
           <Select
@@ -158,7 +158,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
             setSelectedInterval(value as schemas['TimeInterval'])
           }
         >
-          <TabsList className="dark:bg-polar-900 flex flex-row gap-x-0 rounded-md bg-white">
+          <TabsList className="dark:bg-polar-900 flex flex-row gap-x-0 rounded-md bg-gray-200">
             {Object.entries(intervalDisplayNames)
               .filter(([key]) => key !== 'year')
               .map(([key, value]) => (
@@ -166,7 +166,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
                   size="small"
                   key={key}
                   value={key}
-                  className="!rounded-sm p-1 px-2 text-xs font-normal"
+                  className="!rounded-sm p-1 px-2 text-xs font-normal data-[state=active]:bg-white"
                 >
                   {value}
                 </TabsTrigger>
@@ -355,7 +355,7 @@ redirect(checkout.url)
         <Link href={`https://docs.polar.sh/api-reference`} target="_blank">
           <Button
             wrapperClassNames="flex flex-row items-center gap-x-2"
-            variant="ghost"
+            variant="secondary"
           >
             API Documentation
           </Button>

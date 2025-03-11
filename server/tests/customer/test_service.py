@@ -2,6 +2,7 @@ from typing import Any
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject, is_user
 from polar.customer.schemas.customer import CustomerCreate, CustomerUpdate
@@ -240,6 +241,73 @@ class TestUpdate:
 
         assert customer.external_id == "123"
         assert customer.name == "John"
+
+
+@pytest.mark.asyncio
+class TestDelete:
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="delete-me@example.com",
+            external_id="external-id",
+            user_metadata={"user_id": "ABC"},
+        )
+        assert customer.deleted_at is None
+        soft_deleted = await customer_service.delete(session, customer)
+        assert soft_deleted.deleted_at is not None
+        assert soft_deleted.external_id is None
+        assert soft_deleted.user_metadata["__external_id"] == "external-id"
+        assert soft_deleted.user_metadata["user_id"] == "ABC"
+        await session.flush()
+
+    async def test_valid_recycled_email(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="delete-me@example.com",
+            external_id="will-be-recycled",
+            user_metadata={"user_id": "ABC"},
+        )
+        soft_deleted = await customer_service.delete(session, customer)
+        assert soft_deleted.deleted_at
+        assert soft_deleted.external_id is None
+        await session.flush()
+
+        try:
+            recycled = await create_customer(
+                save_fixture,
+                organization=organization,
+                email=customer.email,
+                external_id="will-be-recycled",
+                user_metadata={"user_id": "ABC"},
+            )
+        except IntegrityError:
+            pytest.fail("Should not raise IntegrityError")
+
+        assert recycled.id is not None
+        assert recycled.id != customer.id
+        assert recycled.deleted_at is None
+        assert recycled.external_id == "will-be-recycled"
+
+        with pytest.raises(IntegrityError):
+            await create_customer(
+                save_fixture,
+                organization=organization,
+                email=recycled.email,
+                external_id=recycled.external_id,
+                user_metadata=recycled.user_metadata,
+            )
 
 
 @pytest.mark.asyncio

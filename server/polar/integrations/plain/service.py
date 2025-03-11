@@ -309,6 +309,7 @@ class PlainService:
     ) -> CustomerCard | None:
         email = request.customer.email
 
+        # No need to filter out soft deleted. We want to see them in support.
         statement = select(Customer).where(func.lower(Customer.email) == email.lower())
         result = await session.execute(statement)
         customers = result.unique().scalars().all()

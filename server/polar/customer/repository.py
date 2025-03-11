@@ -47,6 +47,14 @@ class CustomerRepository(
 
     async def soft_delete(self, object: Customer, *, flush: bool = False) -> Customer:
         customer = await super().soft_delete(object, flush=flush)
+        # Clear external_id for future recycling
+        if customer.external_id:
+            user_metadata = customer.user_metadata
+            user_metadata["__external_id"] = customer.external_id
+            # Store external_id in `user_metadata` for support debugging
+            customer.user_metadata = user_metadata
+            customer.external_id = None
+
         enqueue_job("customer.webhook", WebhookEventType.customer_deleted, customer.id)
         return customer
 

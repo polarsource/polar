@@ -88,14 +88,14 @@ const CustomerHeader = ({
     deleteCustomer.mutateAsync().then((response) => {
       if (response.error) {
         toast({
-          title: 'Archiving Customer Failed',
-          description: `Error archiving customer ${customer.email}: ${response.error.detail}`,
+          title: 'Delete Customer Failed',
+          description: `Error deleting customer ${customer.email}: ${response.error.detail}`,
         })
         return
       }
       toast({
-        title: 'Customer Archived',
-        description: `Customer ${customer.email} archived successfully`,
+        title: 'Customer Deleted',
+        description: `Customer ${customer.email} deleted successfully`,
       })
     })
   }, [deleteCustomer, customer])
@@ -141,9 +141,11 @@ const CustomerHeader = ({
       <ConfirmModal
         isShown={isDeleteCustomerModalShown}
         hide={hideDeleteCustomerModal}
-        title="Archive Customer"
-        description="Archiving a customer will immediately cancel their existing subscriptions and revoke all their benefits. Are you sure?"
+        title={`Delete Customer "${customer.email}"?`}
+        description="You will immediately cancel their existing subscriptions and revoke all their benefits. Are you sure?"
         onConfirm={onDeleteCustomer}
+        confirmPrompt={`delete ${customer.email}`}
+        destructiveText="Delete"
         destructive
       />
     </div>

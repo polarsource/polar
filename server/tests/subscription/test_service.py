@@ -417,6 +417,39 @@ class TestUpdateSubscriptionFromStripe:
 
         enqueue_benefits_grants_mock.assert_called_once()
 
+    async def test_discount_reset(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        discount_percentage_50: Discount,
+    ) -> None:
+        enqueue_benefits_grants_mock = mocker.patch.object(
+            subscription_service, "enqueue_benefits_grants"
+        )
+
+        stripe_subscription = construct_stripe_subscription(
+            product=product, status=SubscriptionStatus.active, discounts=[]
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=stripe_subscription.id,
+            discount=discount_percentage_50,
+        )
+        assert subscription.discount is not None
+
+        updated_subscription = (
+            await subscription_service.update_subscription_from_stripe(
+                session, stripe_subscription=stripe_subscription
+            )
+        )
+
+        assert updated_subscription.discount is None
+
     async def test_valid_cancel_at_period_end(
         self,
         mocker: MockerFixture,

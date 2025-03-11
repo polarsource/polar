@@ -62,7 +62,7 @@ def construct_stripe_subscription(
     latest_invoice: stripe_lib.Invoice | None = None,
     cancel_at_period_end: bool = False,
     metadata: dict[str, str] = {},
-    discount: Discount | None = None,
+    discounts: list[str] | None = None,
     revoke: bool = False,
 ) -> stripe_lib.Subscription:
     now_timestamp = datetime.now(UTC).timestamp()
@@ -107,16 +107,7 @@ def construct_stripe_subscription(
             "ended_at": ended_at,
             "latest_invoice": latest_invoice,
             "metadata": {**base_metadata, **metadata},
-            "discount": (
-                {
-                    "coupon": {
-                        "id": discount.stripe_coupon_id,
-                        "metadata": {"discount_id": str(discount.id)},
-                    }
-                }
-                if discount is not None
-                else None
-            ),
+            "discounts": discounts or [],
         },
         None,
     )

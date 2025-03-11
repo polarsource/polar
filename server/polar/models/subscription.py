@@ -89,8 +89,8 @@ class CustomerCancellationReason(StrEnum):
 class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "subscriptions"
 
-    amount: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False)
     recurring_interval: Mapped[SubscriptionRecurringInterval] = mapped_column(
         String, nullable=False, index=True
     )
@@ -247,22 +247,22 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def update_amount_and_currency(
         self, prices: Sequence["SubscriptionProductPrice"], discount: "Discount | None"
     ) -> None:
-        if all(price.amount is None for price in prices):
-            self.amount = None
-            self.currency = None
-            return
-
-        amount = sum(price.amount for price in prices if price.amount is not None)
+        amount = sum(price.amount for price in prices)
         if discount is not None:
             amount -= discount.get_discount_amount(amount)
         self.amount = amount
 
-        for price in prices:
-            if isinstance(price.product_price, HasPriceCurrency):
-                self.currency = price.product_price.price_currency
-                break
+        currencies = set(
+            price.product_price.price_currency
+            for price in prices
+            if isinstance(price.product_price, HasPriceCurrency)
+        )
+        if len(currencies) == 0:
+            self.currency = "usd"  # FIXME: Main Polar currency
+        elif len(currencies) == 1:
+            self.currency = currencies.pop()
         else:
-            self.currency = None
+            raise ValueError("Multiple currencies in subscription prices")
 
 
 @event.listens_for(Subscription.subscription_product_prices, "append")

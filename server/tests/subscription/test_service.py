@@ -274,8 +274,8 @@ class TestCreateOrUpdateFromCheckout:
 
         assert subscription.status == stripe_subscription.status
         assert subscription.prices == product_recurring_free_price.prices
-        assert subscription.amount is None
-        assert subscription.currency is None
+        assert subscription.amount == 0
+        assert subscription.currency == "usd"
 
         stripe_service_mock.create_out_of_band_subscription.assert_called_once()
         stripe_service_mock.set_automatically_charged_subscription.assert_called_once()

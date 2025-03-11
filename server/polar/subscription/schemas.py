@@ -51,8 +51,8 @@ class SubscriptionUser(Schema):
 
 
 class SubscriptionBase(IDSchema, TimestampedSchema):
-    amount: int | None = Field(description="The amount of the subscription.")
-    currency: str | None = Field(description="The currency of the subscription.")
+    amount: int = Field(description="The amount of the subscription.")
+    currency: str = Field(description="The currency of the subscription.")
     recurring_interval: SubscriptionRecurringInterval = Field(
         description="The interval at which the subscription recurs."
     )

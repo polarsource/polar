@@ -34,10 +34,8 @@ class CustomerStateSubscription(
         description="The ID of the subscription.", examples=[SUBSCRIPTION_ID_EXAMPLE]
     )
     status: Literal[SubscriptionStatus.active] = Field(examples=["active"])
-    amount: int | None = Field(
-        description="The amount of the subscription.", examples=[1000]
-    )
-    currency: str | None = Field(
+    amount: int = Field(description="The amount of the subscription.", examples=[1000])
+    currency: str = Field(
         description="The currency of the subscription.", examples=["usd"]
     )
     recurring_interval: SubscriptionRecurringInterval = Field(

@@ -7,9 +7,12 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 from polar.models.product_price import (
     LegacyRecurringProductPriceCustom,
+    LegacyRecurringProductPriceFixed,
+    LegacyRecurringProductPriceFree,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
+    ProductPriceFree,
 )
 
 if TYPE_CHECKING:
@@ -29,7 +32,7 @@ class SubscriptionProductPrice(RecordModel):
         ForeignKey("product_prices.id", ondelete="cascade"),
         primary_key=True,
     )
-    amount: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    amount: Mapped[int] = mapped_column(Integer, nullable=False)
 
     @declared_attr
     def product_price(cls) -> Mapped["ProductPrice"]:
@@ -46,8 +49,10 @@ class SubscriptionProductPrice(RecordModel):
         price: "ProductPrice",
         amount: int | None = None,
     ) -> Self:
-        if isinstance(price, ProductPriceFixed):
+        if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
             amount = price.price_amount
         elif isinstance(price, ProductPriceCustom | LegacyRecurringProductPriceCustom):
-            assert amount is not None
+            assert amount is not None, "amount must be provided for custom prices"
+        elif isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
+            amount = 0
         return cls(product_price=price, amount=amount)

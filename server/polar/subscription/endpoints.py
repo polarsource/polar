@@ -128,8 +128,8 @@ async def export(
                     sub.created_at.isoformat(),
                     "true" if sub.active else "false",
                     sub.product.name,
-                    sub.amount / 100 if sub.amount is not None else "",
-                    sub.currency if sub.currency is not None else "",
+                    sub.amount / 100,
+                    sub.currency,
                     sub.recurring_interval,
                 )
             )

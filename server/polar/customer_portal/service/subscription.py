@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, nulls_first, or_, select
+from sqlalchemy import Select, UnaryExpression, asc, desc, or_, select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject
@@ -100,9 +100,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             if criterion == CustomerSubscriptionSortProperty.started_at:
                 order_by_clauses.append(clause_function(Subscription.started_at))
             elif criterion == CustomerSubscriptionSortProperty.amount:
-                order_by_clauses.append(
-                    nulls_first(clause_function(Subscription.amount))
-                )
+                order_by_clauses.append(clause_function(Subscription.amount))
             elif criterion == CustomerSubscriptionSortProperty.status:
                 order_by_clauses.append(clause_function(Subscription.status))
             elif criterion == CustomerSubscriptionSortProperty.organization:

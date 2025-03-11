@@ -7,14 +7,12 @@ import { setLastVisitedOrg } from '@/utils/cookies'
 import { organizationPageLink } from '@/utils/nav'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { SidebarTrigger } from '@polar-sh/ui/components/atoms/Sidebar'
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { PropsWithChildren, useContext, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DashboardProvider } from '../Dashboard/DashboardProvider'
-import { SubRouteWithActive } from '../Dashboard/navigation'
 import { useRoute } from '../Navigation/useRoute'
 import { DashboardSidebar } from './Dashboard/DashboardSidebar'
 import TopbarRight from './Public/TopbarRight'
@@ -103,30 +101,6 @@ const MobileNav = () => {
         header
       )}
     </div>
-  )
-}
-
-const SubNav = (props: { items: SubRouteWithActive[] }) => {
-  const current = props.items.find((i) => i.isActive)
-
-  return (
-    <Tabs className="md:-mx-4" value={current?.title}>
-      <TabsList className="flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0">
-        {props.items.map((item) => {
-          return (
-            <Link key={item.title} href={item.link}>
-              <TabsTrigger
-                className="flex flex-row items-center gap-x-2 px-4"
-                value={item.title}
-              >
-                {item.icon && <div className="text-[17px]">{item.icon}</div>}
-                <div>{item.title}</div>
-              </TabsTrigger>
-            </Link>
-          )
-        })}
-      </TabsList>
-    </Tabs>
   )
 }
 

@@ -344,7 +344,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         stripe_price_ids: list[str] = []
         subscription_product_prices: list[SubscriptionProductPrice] = []
-        for price in product.prices:
+
+        prices = product.prices
+        if product.is_legacy_recurring_price:
+            prices = [checkout.product_price]
+
+        for price in prices:
             # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
             if isinstance(
                 price, ProductPriceCustom | LegacyRecurringProductPriceCustom
@@ -426,7 +431,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self.update_cancellation_from_stripe(subscription, stripe_subscription)
 
         if product.is_legacy_recurring_price:
-            subscription.recurring_interval = product.prices[0].recurring_interval
+            subscription.recurring_interval = prices[0].recurring_interval
         else:
             assert product.recurring_interval is not None
             subscription.recurring_interval = product.recurring_interval

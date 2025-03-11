@@ -5,12 +5,15 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
 import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
+  SubRouteWithActive,
   useFundingRoutes,
   useGeneralRoutes,
   useOrganizationRoutes,
@@ -69,6 +72,25 @@ const MaintainerNavigation = () => {
               <span className="ml-2 text-sm font-medium">{route.title}</span>
             </Link>
           </SidebarMenuButton>
+          {route.isActive && route.subs && (
+            <SidebarMenuSub className="my-2 gap-y-2">
+              {route.subs.map((subRoute: SubRouteWithActive) => {
+                return (
+                  <SidebarMenuSubItem key={subRoute.link}>
+                    <Link
+                      href={subRoute.link}
+                      className={twMerge(
+                        'dark:text-polar-500 ml-4 text-sm font-medium text-gray-500',
+                        subRoute.isActive && 'text-blue-500 dark:text-white',
+                      )}
+                    >
+                      {subRoute.title}
+                    </Link>
+                  </SidebarMenuSubItem>
+                )
+              })}
+            </SidebarMenuSub>
+          )}
         </SidebarMenuItem>
       ))}
     </SidebarMenu>

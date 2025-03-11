@@ -168,7 +168,7 @@ const generalRoutesList = (
     if: true,
     subs: [
       {
-        title: 'Products',
+        title: 'Catalogue',
         link: `/dashboard/${org.slug}/products`,
       },
       {

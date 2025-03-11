@@ -155,10 +155,6 @@ export const DashboardBody = ({
 }: DashboardBodyProps) => {
   const currentRoute = useRoute()
 
-  const hasCurrent = (currentRoute?.subs as SubRouteWithActive[])?.some(
-    (i) => i.isActive,
-  )
-
   return (
     <motion.div
       className={twMerge(
@@ -168,7 +164,6 @@ export const DashboardBody = ({
       initial="initial"
       animate="animate"
       exit="exit"
-      transition={{ staggerChildren: 0.1 }}
     >
       <div className="dark:md:bg-polar-900 dark:border-polar-800 relative flex w-full flex-col items-center rounded-2xl border-gray-200 px-4 md:overflow-y-auto md:border md:bg-white md:px-8 md:shadow-sm">
         <div
@@ -183,18 +178,6 @@ export const DashboardBody = ({
               <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
                 {title ?? currentRoute?.title}
               </h4>
-
-              {typeof header === 'boolean' &&
-              currentRoute &&
-              'subs' in currentRoute &&
-              hasCurrent &&
-              (currentRoute.subs?.length ?? 0) > 0 ? (
-                <div className="flex flex-row items-center gap-4 gap-y-24">
-                  <SubNav items={currentRoute.subs ?? []} />
-                </div>
-              ) : (
-                header
-              )}
             </div>
           )}
           <motion.div

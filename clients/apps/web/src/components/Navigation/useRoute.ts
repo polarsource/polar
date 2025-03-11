@@ -10,5 +10,9 @@ export const useRoute = () => {
 
   const currentRoute = dashboardRoutes.find((r) => r.isActive)
 
-  return currentRoute
+  const currentSubRoute = currentRoute?.subs?.find(
+    (r) => 'isActive' in r && r.isActive,
+  )
+
+  return currentSubRoute ?? currentRoute
 }

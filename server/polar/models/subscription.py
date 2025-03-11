@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Self
@@ -8,24 +9,24 @@ from sqlalchemy import (
     Boolean,
     ColumnElement,
     ForeignKey,
+    Integer,
     String,
     Text,
     Uuid,
-    func,
-    select,
+    event,
     type_coerce,
 )
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm.attributes import Event
 
 from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
-from polar.models.product_price import HasPriceCurrency
 
-from .subscription_product_price import SubscriptionProductPrice
+from .product_price import HasPriceCurrency
 
 if TYPE_CHECKING:
     from polar.models import (
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
         Organization,
         Product,
         ProductPrice,
+        SubscriptionProductPrice,
     )
 
 
@@ -87,6 +89,8 @@ class CustomerCancellationReason(StrEnum):
 class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "subscriptions"
 
+    amount: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     recurring_interval: Mapped[SubscriptionRecurringInterval] = mapped_column(
         String, nullable=False, index=True
     )
@@ -157,7 +161,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @declared_attr
     def discount(cls) -> Mapped["Discount | None"]:
-        return relationship("Discount", lazy="raise")
+        return relationship("Discount", lazy="joined")
 
     organization: AssociationProxy["Organization"] = association_proxy(
         "product", "organization"
@@ -173,32 +177,6 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     customer_cancellation_comment: Mapped[str | None] = mapped_column(
         Text, nullable=True
     )
-
-    @hybrid_property
-    def amount(self) -> int | None:
-        price_amounts = [
-            subscription_price.amount
-            for subscription_price in self.subscription_product_prices
-        ]
-        if not any(price_amounts):
-            return None
-        return sum(amount for amount in price_amounts if amount is not None)
-
-    @amount.inplace.expression
-    @classmethod
-    def _amount_expression(cls) -> ColumnElement[int | None]:
-        return (
-            select(func.sum(SubscriptionProductPrice.amount))
-            .where(SubscriptionProductPrice.subscription_id == cls.id)
-            .label("amount")
-        )
-
-    @property
-    def currency(self) -> str | None:
-        for price in self.prices:
-            if isinstance(price, HasPriceCurrency):
-                return price.price_currency
-        return None
 
     @declared_attr
     def checkout(cls) -> Mapped["Checkout | None"]:
@@ -265,3 +243,42 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         """
         if self.active and self.started_at is None:
             self.started_at = datetime.now(UTC)
+
+    def update_amount_and_currency(
+        self, prices: Sequence["SubscriptionProductPrice"], discount: "Discount | None"
+    ) -> None:
+        if all(price.amount is None for price in prices):
+            self.amount = None
+            self.currency = None
+            return
+
+        amount = sum(price.amount for price in prices if price.amount is not None)
+        if discount is not None:
+            amount -= discount.get_discount_amount(amount)
+        self.amount = amount
+
+        for price in prices:
+            if isinstance(price.product_price, HasPriceCurrency):
+                self.currency = price.product_price.price_currency
+                break
+        else:
+            self.currency = None
+
+
+@event.listens_for(Subscription.subscription_product_prices, "append")
+def _price_appended(
+    target: Subscription, value: "SubscriptionProductPrice", initiator: Event
+) -> None:
+    target.update_amount_and_currency(
+        [*target.subscription_product_prices, value], target.discount
+    )
+
+
+@event.listens_for(Subscription.discount, "set")
+def _discount_set(
+    target: Subscription,
+    value: "Discount | None",
+    oldvalue: "Discount | None",
+    initiator: Event,
+) -> None:
+    target.update_amount_and_currency(target.subscription_product_prices, value)

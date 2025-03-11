@@ -10,6 +10,7 @@ from polar.kit.time_queries import TimeInterval
 from polar.metrics.service import metrics as metrics_service
 from polar.models import (
     Customer,
+    Discount,
     Order,
     Organization,
     Product,
@@ -17,12 +18,14 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_discount,
     create_order,
     create_product,
     create_subscription,
@@ -34,10 +37,17 @@ class ProductFixture(TypedDict):
     prices: list[tuple[int] | tuple[None]]
 
 
+class DiscountFixture(TypedDict):
+    basis_points: int
+    duration: DiscountDuration
+    duration_in_months: NotRequired[int]
+
+
 class SubscriptionFixture(TypedDict):
     started_at: date
     ended_at: NotRequired[date]
     product: str
+    discount: NotRequired[str]
 
 
 class OrderFixture(TypedDict):
@@ -69,6 +79,7 @@ PRODUCTS: dict[str, ProductFixture] = {
         "prices": [(None,)],
     },
 }
+
 
 SUBSCRIPTIONS: dict[str, SubscriptionFixture] = {
     "subscription_1": {
@@ -125,6 +136,7 @@ async def _create_fixtures(
     product_fixtures: dict[str, ProductFixture],
     subscription_fixtures: dict[str, SubscriptionFixture],
     order_fixtures: dict[str, OrderFixture],
+    discount_fixtures: dict[str, DiscountFixture] | None = None,
 ) -> tuple[dict[str, Product], dict[str, Subscription], dict[str, Order]]:
     products: dict[str, Product] = {}
     for key, product_fixture in product_fixtures.items():
@@ -135,6 +147,19 @@ async def _create_fixtures(
             prices=product_fixture["prices"],
         )
         products[key] = product
+
+    discounts: dict[str, Discount] = {}
+    if discount_fixtures is not None:
+        for key, discount_fixture in discount_fixtures.items():
+            discount = await create_discount(
+                save_fixture,
+                type=DiscountType.percentage,
+                basis_points=discount_fixture["basis_points"],
+                duration=discount_fixture["duration"],
+                duration_in_months=discount_fixture.get("duration_in_months"),
+                organization=organization,
+            )
+            discounts[key] = discount
 
     subscriptions: dict[str, Subscription] = {}
     for key, subscription_fixture in subscription_fixtures.items():
@@ -149,6 +174,9 @@ async def _create_fixtures(
                 if "ended_at" in subscription_fixture
                 else None
             ),
+            discount=discounts[subscription_fixture["discount"]]
+            if "discount" in subscription_fixture
+            else None,
         )
         subscriptions[key] = subscription
 
@@ -656,3 +684,51 @@ class TestGetMetrics:
         assert feb.renewed_subscriptions_revenue == 0
         assert feb.active_subscriptions == 0
         assert feb.monthly_recurring_revenue == 0
+
+    @pytest.mark.auth
+    async def test_mrr_subscription_forever_discount(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        user: User,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """
+        The MRR of a subscription with a forever discount should be the discounted price.
+        """
+        discounts: dict[str, DiscountFixture] = {
+            "discount": {
+                "basis_points": 5_000,
+                "duration": DiscountDuration.forever,
+                "duration_in_months": 3,
+            }
+        }
+        subscriptions: dict[str, SubscriptionFixture] = {
+            "subscription_1": {
+                "started_at": date(2024, 1, 1),
+                "product": "monthly_subscription",
+                "discount": "discount",
+            }
+        }
+        await _create_fixtures(
+            save_fixture, customer, organization, PRODUCTS, subscriptions, {}, discounts
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 2, 1),
+            interval=TimeInterval.month,
+        )
+
+        assert len(metrics.periods) == 2
+
+        jan = metrics.periods[0]
+        assert jan.monthly_recurring_revenue == 50_00
+
+        feb = metrics.periods[1]
+        assert feb.monthly_recurring_revenue == 50_00

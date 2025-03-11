@@ -222,7 +222,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
             if (row.isSubRow) {
               return undefined
             }
-            return [{ ...row, isSubRow: true }]
+            return [{ ...row, isSubRow: true, id: `${row.id}_subrow` }]
           }}
           isLoading={deliveriesHook}
         />

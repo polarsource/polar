@@ -751,6 +751,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         subscription.set_started_at()
         self.update_cancellation_from_stripe(subscription, stripe_subscription)
+        # Reset discount if it has expired
+        if (
+            len(stripe_subscription.discounts) == 0
+            and subscription.discount is not None
+        ):
+            subscription.discount = None
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)
@@ -1139,7 +1145,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     selectinload(Product.product_medias),
                     selectinload(Product.attached_custom_fields),
                 ),
-                joinedload(Subscription.discount),
             )
 
         res = await session.execute(query)

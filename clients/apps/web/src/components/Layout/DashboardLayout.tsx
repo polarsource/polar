@@ -152,6 +152,8 @@ export const DashboardBody = ({
               <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
                 {title ?? currentRoute?.title}
               </h4>
+
+              {header}
             </div>
           )}
           <motion.div

@@ -194,6 +194,7 @@ class TestCreateOrUpdateFromCheckout:
 
         assert subscription.status == stripe_subscription.status
         assert subscription.prices == product.prices
+        assert subscription.amount == checkout.total_amount
 
         stripe_service_mock.create_out_of_band_subscription.assert_called_once()
         stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
@@ -234,6 +235,8 @@ class TestCreateOrUpdateFromCheckout:
 
         assert subscription.status == stripe_subscription.status
         assert subscription.prices == product_recurring_custom_price.prices
+        assert subscription.amount == checkout.total_amount
+        assert subscription.currency == checkout.currency
 
         stripe_service_mock.create_ad_hoc_custom_price.assert_called_once()
         stripe_service_mock.create_out_of_band_subscription.assert_called_once()
@@ -271,6 +274,8 @@ class TestCreateOrUpdateFromCheckout:
 
         assert subscription.status == stripe_subscription.status
         assert subscription.prices == product_recurring_free_price.prices
+        assert subscription.amount is None
+        assert subscription.currency is None
 
         stripe_service_mock.create_out_of_band_subscription.assert_called_once()
         stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
@@ -311,6 +316,8 @@ class TestCreateOrUpdateFromCheckout:
 
         assert subscription.status == stripe_subscription.status
         assert subscription.prices == product_recurring_custom_price.prices
+        assert subscription.amount == 0
+        assert subscription.currency == checkout.currency
 
         stripe_service_mock.create_ad_hoc_custom_price.assert_called_once()
         stripe_service_mock.create_out_of_band_subscription.assert_called_once()
@@ -356,6 +363,8 @@ class TestCreateOrUpdateFromCheckout:
 
         assert subscription.status == stripe_subscription.status
         assert subscription.prices == product.prices
+        assert subscription.amount == checkout.total_amount
+        assert subscription.currency == checkout.currency
 
         stripe_service_mock.update_out_of_band_subscription.assert_called_once()
         stripe_service_mock.set_automatically_charged_subscription.assert_called_once()

@@ -139,7 +139,7 @@ export const CheckoutFormProvider = ({
       setLoading(true)
 
       if (!checkout.isPaymentFormRequired) {
-        setLoadingLabel('Processing order')
+        setLoadingLabel('Processing order...')
         try {
           const checkoutConfirmed = await _confirm(data)
           return checkoutConfirmed
@@ -221,7 +221,7 @@ export const CheckoutFormProvider = ({
         throw e
       }
 
-      setLoadingLabel('Payment successful! Getting your products ready')
+      setLoadingLabel('Payment successful! Getting your products ready...')
 
       const { intent_status, intent_client_secret } =
         updatedCheckout.paymentProcessorMetadata as Record<string, string>

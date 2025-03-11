@@ -38,6 +38,7 @@ import { UseFormReturn, WatchObserver } from 'react-hook-form'
 import { useDebouncedCallback } from '../hooks/debounce'
 import { getDiscountDisplay } from '../utils/discount'
 import { formatCurrencyNumber } from '../utils/money'
+import { hasLegacyRecurringPrices } from '../utils/product'
 import AmountLabel from './AmountLabel'
 import CustomFieldInput from './CustomFieldInput'
 import PolarLogo from './PolarLogo'
@@ -97,7 +98,9 @@ const BaseCheckoutForm = ({
   disabled,
   children,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
-  const interval = checkout.product.recurringInterval
+  const interval = hasLegacyRecurringPrices(checkout.product)
+    ? checkout.productPrice.recurringInterval
+    : checkout.product.recurringInterval
   const {
     control,
     handleSubmit,

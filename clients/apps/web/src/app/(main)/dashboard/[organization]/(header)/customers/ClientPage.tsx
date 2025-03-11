@@ -142,7 +142,23 @@ const CustomerHeader = ({
         isShown={isDeleteCustomerModalShown}
         hide={hideDeleteCustomerModal}
         title={`Delete Customer "${customer.email}"?`}
-        description="You will immediately cancel their existing subscriptions and revoke all their benefits. Are you sure?"
+        body={
+          <div className="dark:text-polar-400 flex flex-col gap-y-2 text-sm leading-relaxed text-gray-500">
+            <p>This action cannot be undone and will:</p>
+            <ol className="list-inside list-disc pl-4">
+              <li>
+                Immediately cancel any active subscriptions for the customer
+              </li>
+              <li>Revoke all their benefits</li>
+              <li>Clear any external_id</li>
+            </ol>
+
+            <p>
+              However, their information will still be retained for historic
+              orders and subscriptions.
+            </p>
+          </div>
+        }
         onConfirm={onDeleteCustomer}
         confirmPrompt={`delete ${customer.email}`}
         destructiveText="Delete"

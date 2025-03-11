@@ -14,6 +14,7 @@ import { Modal, ModalProps } from '.'
 export interface ConfirmModalProps extends Omit<ModalProps, 'modalContent'> {
   title: string
   description?: string
+  body?: React.ReactNode
   destructive?: boolean
   destructiveText?: string
   confirmPrompt?: string
@@ -24,6 +25,7 @@ export interface ConfirmModalProps extends Omit<ModalProps, 'modalContent'> {
 export const ConfirmModal = ({
   title,
   description,
+  body,
   destructive,
   destructiveText = 'Delete',
   confirmPrompt = undefined,
@@ -73,6 +75,7 @@ export const ConfirmModal = ({
                   {description}
                 </p>
               )}
+              {body && body}
               <Form {...form}>
                 <form
                   className="flex w-full flex-col"

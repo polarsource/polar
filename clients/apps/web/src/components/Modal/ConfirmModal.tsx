@@ -7,7 +7,7 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { React, useCallback } from 'react'
+import { MouseEvent, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { Modal, ModalProps } from '.'
 
@@ -46,7 +46,7 @@ export const ConfirmModal = ({
   }, [onConfirm, props, reset])
 
   const handleCancel = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
+    (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault()
       reset()
       onCancel?.()

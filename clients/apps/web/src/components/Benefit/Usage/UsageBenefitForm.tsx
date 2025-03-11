@@ -42,10 +42,13 @@ export const UsageBenefitForm = ({ update: _ }: { update: boolean }) => {
   const { control, watch } = useFormContext<UsageBenefitCreate>()
 
   const { organization } = useContext(MaintainerOrganizationContext)
-  const { data: meters } = useMeters(organization.id)
+  const { data: metersData } = useMeters(organization.id)
 
   const meterId = watch('properties.meterId', undefined)
-  const meter = meters?.items.find((meter) => meter.id === meterId)
+
+  const meters = metersData?.pages.flatMap((page) => page.items) ?? []
+
+  const meter = meters?.find((meter) => meter.id === meterId)
 
   const aggregationType = watch('properties.aggregation', 'sum')
 
@@ -72,7 +75,7 @@ export const UsageBenefitForm = ({ update: _ }: { update: boolean }) => {
                     {meter?.name ?? <span>Select Meter</span>}
                   </SelectTrigger>
                   <SelectContent>
-                    {meters?.items.map((meter) => (
+                    {meters.map((meter) => (
                       <SelectItem key={meter.id} value={meter.id}>
                         {meter.name}
                       </SelectItem>

@@ -3,8 +3,17 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer, String, Uuid
+from sqlalchemy import (
+    ColumnElement,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Uuid,
+    text,
+)
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.custom_field.data import CustomFieldDataMixin
@@ -12,6 +21,7 @@ from polar.exceptions import PolarError
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
+from polar.models.order_item import OrderItem
 
 if TYPE_CHECKING:
     from polar.models import (
@@ -20,7 +30,6 @@ if TYPE_CHECKING:
         Discount,
         Organization,
         Product,
-        ProductPrice,
         Subscription,
     )
 
@@ -56,11 +65,16 @@ class OrderRefundExceedsBalance(PolarError):
 
 class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "orders"
+    __table_args__ = (
+        Index("ix_subtotal_amount", text("(amount - discount_amount)")),
+        Index("ix_total_amount", text("(amount - discount_amount + tax_amount)")),
+    )
 
     status: Mapped[OrderStatus] = mapped_column(
         String, nullable=False, default=OrderStatus.paid
     )
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    discount_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     billing_reason: Mapped[OrderBillingReason] = mapped_column(
@@ -95,16 +109,6 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def product(cls) -> Mapped["Product"]:
         return relationship("Product", lazy="raise")
 
-    product_price_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("product_prices.id"),
-        nullable=False,
-    )
-
-    @declared_attr
-    def product_price(cls) -> Mapped["ProductPrice"]:
-        return relationship("ProductPrice", lazy="raise")
-
     discount_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
     )
@@ -131,9 +135,31 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         Uuid, ForeignKey("checkouts.id", ondelete="set null"), nullable=True, index=True
     )
 
-    @property
-    def total(self) -> int:
-        return self.amount + self.tax_amount
+    items: Mapped[list["OrderItem"]] = relationship(
+        "OrderItem",
+        back_populates="order",
+        cascade="all, delete-orphan",
+        # Items are almost always needed, so eager loading makes sense
+        lazy="selectin",
+    )
+
+    @hybrid_property
+    def subtotal_amount(self) -> int:
+        return self.amount - self.discount_amount
+
+    @subtotal_amount.inplace.expression
+    @classmethod
+    def _subtotal_amount_expression(cls) -> ColumnElement[int]:
+        return cls.amount - cls.discount_amount
+
+    @hybrid_property
+    def total_amount(self) -> int:
+        return self.subtotal_amount + self.tax_amount
+
+    @total_amount.inplace.expression
+    @classmethod
+    def _total_amount_expression(cls) -> ColumnElement[int]:
+        return cls.subtotal_amount + cls.tax_amount
 
     @property
     def taxed(self) -> int:
@@ -149,7 +175,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @property
     def refundable_amount(self) -> int:
-        return self.amount - self.refunded_amount
+        return self.subtotal_amount - self.refunded_amount
 
     @property
     def refundable_tax_amount(self) -> int:
@@ -162,13 +188,13 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         new_amount = self.refunded_amount + refunded_amount
         new_tax_amount = self.refunded_tax_amount + refunded_tax_amount
         exceeds_original_amount = (
-            new_amount > self.amount or new_tax_amount > self.tax_amount
+            new_amount > self.subtotal_amount or new_tax_amount > self.tax_amount
         )
         if exceeds_original_amount:
             raise OrderRefundExceedsBalance(self, refunded_amount, refunded_tax_amount)
 
         new_status = OrderStatus.partially_refunded
-        if new_amount == self.amount:
+        if new_amount == self.subtotal_amount:
             new_status = OrderStatus.refunded
 
         self.status = new_status
@@ -177,5 +203,5 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     def set_refunded(self) -> None:
         self.status = OrderStatus.refunded
-        self.refunded_amount = self.amount
+        self.refunded_amount = self.subtotal_amount
         self.refunded_tax_amount = self.tax_amount

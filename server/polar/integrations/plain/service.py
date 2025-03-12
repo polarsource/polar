@@ -523,7 +523,7 @@ class PlainService:
                         {
                             "componentText": {
                                 "text": format_currency(
-                                    order.amount / 100,
+                                    order.subtotal_amount / 100,
                                     order.currency.upper(),
                                     locale="en_US",
                                 )

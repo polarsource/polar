@@ -30,6 +30,7 @@ class InvoiceNotAvailable(CustomerOrderError):
 class CustomerOrderSortProperty(StrEnum):
     created_at = "created_at"
     amount = "amount"
+    subtotal_amount = "subtotal_amount"
     organization = "organization"
     product = "product"
     subscription = "subscription"
@@ -94,8 +95,11 @@ class CustomerOrderService(ResourceServiceReader[Order]):
             clause_function = desc if is_desc else asc
             if criterion == CustomerOrderSortProperty.created_at:
                 order_by_clauses.append(clause_function(Order.created_at))
-            elif criterion == CustomerOrderSortProperty.amount:
-                order_by_clauses.append(clause_function(Order.amount))
+            elif criterion in [
+                CustomerOrderSortProperty.amount,
+                CustomerOrderSortProperty.subtotal_amount,
+            ]:
+                order_by_clauses.append(clause_function(Order.subtotal_amount))
             elif criterion == CustomerOrderSortProperty.organization:
                 order_by_clauses.append(clause_function(Organization.slug))
             elif criterion == CustomerOrderSortProperty.product:

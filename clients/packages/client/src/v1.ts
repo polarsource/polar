@@ -2778,7 +2778,17 @@ export interface paths {
          * Delete Customer
          * @description Delete a customer.
          *
-         *     Immediately cancels any active subscriptions and revokes any active benefits.
+         *     This action cannot be undone and will immediately:
+         *     - Cancel any active subscriptions for the customer
+         *     - Revoke all their benefits
+         *     - Clear any `external_id`
+         *
+         *     Use it only in the context of deleting a user within your
+         *     own service. Otherwise, use more granular API endpoints to cancel
+         *     a specific subscription or revoke certain benefits.
+         *
+         *     Note: The customers information will nonetheless be retained for historic
+         *     orders and subscriptions.
          *
          *     **Scopes**: `customers:write`
          */
@@ -8243,6 +8253,11 @@ export interface components {
              * @description The ID of the organization owning the customer.
              */
             organization_id: string;
+            /**
+             * Deleted At
+             * @description Timestamp for when the customer was soft deleted.
+             */
+            deleted_at: string | null;
             /** Avatar Url */
             readonly avatar_url: string;
         };
@@ -8741,12 +8756,12 @@ export interface components {
              * Amount
              * @description The amount of the subscription.
              */
-            amount: number | null;
+            amount: number;
             /**
              * Currency
              * @description The currency of the subscription.
              */
-            currency: string | null;
+            currency: string;
             /** @description The interval at which the subscription recurs. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
             /** @description The status of the subscription. */
@@ -9104,6 +9119,11 @@ export interface components {
              */
             organization_id: string;
             /**
+             * Deleted At
+             * @description Timestamp for when the customer was soft deleted.
+             */
+            deleted_at: string | null;
+            /**
              * Active Subscriptions
              * @description The customer's active subscriptions.
              */
@@ -9197,12 +9217,12 @@ export interface components {
              * Amount
              * @description The amount of the subscription.
              */
-            amount: number | null;
+            amount: number;
             /**
              * Currency
              * @description The currency of the subscription.
              */
-            currency: string | null;
+            currency: string;
             /** @description The interval at which the subscription recurs. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
             /**
@@ -9253,11 +9273,6 @@ export interface components {
              * @deprecated
              */
             price_id: string;
-            /**
-             * Prices
-             * @description List of enabled prices for the subscription.
-             */
-            prices: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"])[];
         };
         /** CustomerSubscription */
         CustomerSubscription: {
@@ -9282,12 +9297,12 @@ export interface components {
              * Amount
              * @description The amount of the subscription.
              */
-            amount: number | null;
+            amount: number;
             /**
              * Currency
              * @description The currency of the subscription.
              */
-            currency: string | null;
+            currency: string;
             /** @description The interval at which the subscription recurs. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
             /** @description The status of the subscription. */
@@ -11420,6 +11435,11 @@ export interface components {
              * @description The ID of the organization owning the customer.
              */
             organization_id: string;
+            /**
+             * Deleted At
+             * @description Timestamp for when the customer was soft deleted.
+             */
+            deleted_at: string | null;
             /** Avatar Url */
             readonly avatar_url: string;
         };
@@ -12833,6 +12853,11 @@ export interface components {
              * @description The ID of the organization owning the customer.
              */
             organization_id: string;
+            /**
+             * Deleted At
+             * @description Timestamp for when the customer was soft deleted.
+             */
+            deleted_at: string | null;
             /** Avatar Url */
             readonly avatar_url: string;
         };
@@ -12927,12 +12952,12 @@ export interface components {
              * Amount
              * @description The amount of the subscription.
              */
-            amount: number | null;
+            amount: number;
             /**
              * Currency
              * @description The currency of the subscription.
              */
-            currency: string | null;
+            currency: string;
             /** @description The interval at which the subscription recurs. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
             /** @description The status of the subscription. */
@@ -14889,12 +14914,12 @@ export interface components {
              * Amount
              * @description The amount of the subscription.
              */
-            amount: number | null;
+            amount: number;
             /**
              * Currency
              * @description The currency of the subscription.
              */
-            currency: string | null;
+            currency: string;
             /** @description The interval at which the subscription recurs. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"];
             /** @description The status of the subscription. */
@@ -15098,6 +15123,11 @@ export interface components {
              * @description The ID of the organization owning the customer.
              */
             organization_id: string;
+            /**
+             * Deleted At
+             * @description Timestamp for when the customer was soft deleted.
+             */
+            deleted_at: string | null;
             /** Avatar Url */
             readonly avatar_url: string;
         };

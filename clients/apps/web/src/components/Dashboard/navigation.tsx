@@ -1,10 +1,15 @@
 import { PolarHog, usePostHog } from '@/hooks/posthog'
 import {
+  AllInclusiveOutlined,
   AttachMoneyOutlined,
   AutoAwesome,
+  BadgeOutlined,
+  CodeOutlined,
+  DiscountOutlined,
   DonutLargeOutlined,
   HiveOutlined,
   HowToVote,
+  LinkOutlined,
   ModeStandby,
   PeopleOutlined,
   ShoppingBagOutlined,
@@ -170,14 +175,17 @@ const generalRoutesList = (
       {
         title: 'Catalogue',
         link: `/dashboard/${org.slug}/products`,
+        icon: <HiveOutlined fontSize="inherit" />,
       },
       {
         title: 'Checkout Links',
         link: `/dashboard/${org.slug}/products/checkout-links`,
+        icon: <LinkOutlined fontSize="inherit" />,
       },
       {
         title: 'Discounts',
         link: `/dashboard/${org.slug}/products/discounts`,
+        icon: <DiscountOutlined fontSize="inherit" />,
       },
     ],
   },
@@ -221,10 +229,12 @@ const generalRoutesList = (
       {
         title: 'Orders',
         link: `/dashboard/${org.slug}/sales`,
+        icon: <ShoppingBagOutlined fontSize="inherit" />,
       },
       {
         title: 'Subscriptions',
         link: `/dashboard/${org.slug}/sales/subscriptions`,
+        icon: <AllInclusiveOutlined fontSize="inherit" />,
       },
     ],
   },
@@ -258,18 +268,22 @@ const fundingRoutesList = (org: schemas['Organization']): Route[] => [
       {
         title: 'Overview',
         link: `/dashboard/${org.slug}/issues/overview`,
+        icon: <ModeStandby fontSize="inherit" />,
       },
       {
         title: 'Badge',
         link: `/dashboard/${org.slug}/issues/badge`,
+        icon: <BadgeOutlined fontSize="inherit" />,
       },
       {
         title: 'Embeds',
         link: `/dashboard/${org.slug}/issues/embed`,
+        icon: <CodeOutlined fontSize="inherit" />,
       },
       {
         title: 'Organizations',
         link: `/dashboard/${org.slug}/issues/organizations`,
+        icon: <PeopleOutlined fontSize="inherit" />,
       },
     ],
   },

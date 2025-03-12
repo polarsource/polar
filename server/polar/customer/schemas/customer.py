@@ -1,4 +1,5 @@
 import hashlib
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import Path
@@ -99,6 +100,10 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
     organization_id: UUID4 = Field(
         description="The ID of the organization owning the customer.",
         examples=[ORGANIZATION_ID_EXAMPLE],
+    )
+
+    deleted_at: datetime | None = Field(
+        description="Timestamp for when the customer was soft deleted."
     )
 
     @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=blank"])

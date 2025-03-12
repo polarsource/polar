@@ -4,12 +4,13 @@ import { CreateCustomerModal } from '@/components/Customer/CreateCustomerModal'
 import { CustomerPage } from '@/components/Customer/CustomerPage'
 import { EditCustomerModal } from '@/components/Customer/EditCustomerModal'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import Spinner from '@/components/Shared/Spinner'
 import { toast } from '@/components/Toast/use-toast'
 import { useSafeCopy } from '@/hooks/clipboard'
-import { useCustomers } from '@/hooks/queries'
+import { useCustomers, useDeleteCustomer } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
@@ -18,6 +19,7 @@ import {
   AddOutlined,
   ArrowDownward,
   ArrowUpward,
+  DeleteOutlined,
   EditOutlined,
   EmailOutlined,
   Search,
@@ -29,6 +31,140 @@ import Input from '@polar-sh/ui/components/atoms/Input'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+
+const CustomerHeader = ({
+  customer,
+  organization,
+}: {
+  customer: schemas['Customer']
+  organization: schemas['Organization']
+}) => {
+  const {
+    show: showEditCustomerModal,
+    hide: hideEditCustomerModal,
+    isShown: isEditCustomerModalOpen,
+  } = useModal()
+
+  const {
+    show: showDeleteCustomerModal,
+    hide: hideDeleteCustomerModal,
+    isShown: isDeleteCustomerModalShown,
+  } = useModal()
+
+  const [customerSessionLoading, setCustomerSessionLoading] = useState(false)
+
+  const safeCopy = useSafeCopy(toast)
+  const createCustomerSession = useCallback(async () => {
+    setCustomerSessionLoading(true)
+    const { data: session, error } = await api.POST('/v1/customer-sessions/', {
+      body: { customer_id: customer.id },
+    })
+
+    setCustomerSessionLoading(false)
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: `An error occurred while creating the customer portal link. Please try again later.`,
+      })
+
+      return
+    }
+
+    const link = `${CONFIG.FRONTEND_BASE_URL}/${organization.slug}/portal?customer_session_token=${session.token}`
+    await safeCopy(link)
+    toast({
+      title: 'Copied To Clipboard',
+      description: `Customer Portal Link was copied to clipboard`,
+    })
+  }, [safeCopy, customer, organization])
+
+  const deleteCustomer = useDeleteCustomer(
+    customer.id,
+    customer.organization_id,
+  )
+
+  const onDeleteCustomer = useCallback(async () => {
+    deleteCustomer.mutateAsync().then((response) => {
+      if (response.error) {
+        toast({
+          title: 'Delete Customer Failed',
+          description: `Error deleting customer ${customer.email}: ${response.error.detail}`,
+        })
+        return
+      }
+      toast({
+        title: 'Customer Deleted',
+        description: `Customer ${customer.email} deleted successfully`,
+      })
+    })
+  }, [deleteCustomer, customer])
+
+  return (
+    <div className="flex flex-row gap-4">
+      <Button
+        className="w-full"
+        loading={customerSessionLoading}
+        onClick={createCustomerSession}
+        size="sm"
+      >
+        Copy Portal Link
+      </Button>
+      <a
+        href={`mailto:${customer.email}`}
+        className="text-blue-500 dark:text-blue-400"
+      >
+        <Button size="icon" variant="secondary">
+          <EmailOutlined fontSize="small" />
+        </Button>
+      </a>
+      <Button size="icon" variant="secondary" onClick={showEditCustomerModal}>
+        <EditOutlined fontSize="small" />
+      </Button>
+      <InlineModal
+        isShown={isEditCustomerModalOpen}
+        hide={hideEditCustomerModal}
+        modalContent={
+          <EditCustomerModal
+            customer={customer}
+            onClose={hideEditCustomerModal}
+          />
+        }
+      />
+      <Button
+        size="icon"
+        variant="destructive"
+        onClick={showDeleteCustomerModal}
+      >
+        <DeleteOutlined fontSize="small" />
+      </Button>
+      <ConfirmModal
+        isShown={isDeleteCustomerModalShown}
+        hide={hideDeleteCustomerModal}
+        title={`Delete Customer "${customer.email}"?`}
+        body={
+          <div className="dark:text-polar-400 flex flex-col gap-y-2 text-sm leading-relaxed text-gray-500">
+            <p>This action cannot be undone and will immediately:</p>
+            <ol className="list-inside list-disc pl-4">
+              <li>Cancel any active subscriptions for the customer</li>
+              <li>Revoke all their benefits</li>
+              <li>Clear any external_id</li>
+            </ol>
+
+            <p>
+              However, their information will still be retained for historic
+              orders and subscriptions.
+            </p>
+          </div>
+        }
+        onConfirm={onDeleteCustomer}
+        confirmPrompt={`delete ${customer.email}`}
+        destructiveText="Delete"
+        destructive
+      />
+    </div>
+  )
+}
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -73,44 +209,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     isShown: isCreateCustomerModalOpen,
   } = useModal()
 
-  const {
-    show: showEditCustomerModal,
-    hide: hideEditCustomerModal,
-    isShown: isEditCustomerModalOpen,
-  } = useModal()
-
-  const [customerSessionLoading, setCustomerSessionLoading] = useState(false)
-
-  const safeCopy = useSafeCopy(toast)
-  const createCustomerSession = useCallback(async () => {
-    if (!selectedCustomer) {
-      return
-    }
-
-    setCustomerSessionLoading(true)
-    const { data: session, error } = await api.POST('/v1/customer-sessions/', {
-      body: { customer_id: selectedCustomer.id },
-    })
-
-    setCustomerSessionLoading(false)
-
-    if (error) {
-      toast({
-        title: 'Error',
-        description: `An error occurred while creating the customer portal link. Please try again later.`,
-      })
-
-      return
-    }
-
-    const link = `${CONFIG.FRONTEND_BASE_URL}/${organization.slug}/portal?customer_session_token=${session.token}`
-    await safeCopy(link)
-    toast({
-      title: 'Copied To Clipboard',
-      description: `Customer Portal Link was copied to clipboard`,
-    })
-  }, [safeCopy, selectedCustomer, organization])
-
   const { ref: loadingRef, inViewport } = useInViewport<HTMLDivElement>()
 
   useEffect(() => {
@@ -144,41 +242,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       }
       header={
         selectedCustomer ? (
-          <div className="flex flex-row gap-4">
-            <Button
-              className="w-full"
-              loading={customerSessionLoading}
-              onClick={createCustomerSession}
-              size="sm"
-            >
-              Copy Portal Link
-            </Button>
-            <a
-              href={`mailto:${selectedCustomer.email}`}
-              className="text-blue-500 dark:text-blue-400"
-            >
-              <Button size="icon" variant="secondary">
-                <EmailOutlined fontSize="small" />
-              </Button>
-            </a>
-            <Button
-              size="icon"
-              variant="secondary"
-              onClick={showEditCustomerModal}
-            >
-              <EditOutlined fontSize="small" />
-            </Button>
-            <InlineModal
-              isShown={isEditCustomerModalOpen}
-              hide={hideEditCustomerModal}
-              modalContent={
-                <EditCustomerModal
-                  customer={selectedCustomer}
-                  onClose={hideEditCustomerModal}
-                />
-              }
-            />
-          </div>
+          <CustomerHeader
+            organization={organization}
+            customer={selectedCustomer}
+          />
         ) : undefined
       }
       contextViewPlacement="left"

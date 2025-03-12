@@ -63,3 +63,16 @@ export const useUpdateCustomer = (customerId: string, organizationId: string) =>
       })
     },
   })
+
+export const useDeleteCustomer = (customerId: string, organizationId: string) =>
+  useMutation({
+    mutationFn: () =>
+      api.DELETE('/v1/customers/{id}', {
+        params: { path: { id: customerId } },
+      }),
+    onSuccess: async (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['customers', organizationId],
+      })
+    },
+  })

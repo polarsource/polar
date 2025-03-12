@@ -1,12 +1,23 @@
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { useCallback } from 'react'
+import Input from '@polar-sh/ui/components/atoms/Input'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from '@polar-sh/ui/components/ui/form'
+import { MouseEvent, useCallback } from 'react'
+import { useForm } from 'react-hook-form'
 import { Modal, ModalProps } from '.'
 
 export interface ConfirmModalProps extends Omit<ModalProps, 'modalContent'> {
   title: string
   description?: string
+  body?: React.ReactNode
   destructive?: boolean
   destructiveText?: string
+  confirmPrompt?: string
   onConfirm: () => void
   onCancel?: () => void
 }
@@ -14,47 +25,112 @@ export interface ConfirmModalProps extends Omit<ModalProps, 'modalContent'> {
 export const ConfirmModal = ({
   title,
   description,
+  body,
   destructive,
   destructiveText = 'Delete',
+  confirmPrompt = undefined,
   onConfirm,
   onCancel,
   ...props
 }: ConfirmModalProps) => {
+  const form = useForm<{ prompt?: string }>({
+    defaultValues: {
+      prompt: '',
+    },
+  })
+  const { control, handleSubmit, reset, watch } = form
+  const prompt = watch('prompt')
+
   const handleConfirm = useCallback(() => {
     onConfirm()
+    reset()
     props.hide()
-  }, [onConfirm, props])
+  }, [onConfirm, props, reset])
 
-  const handleCancel = useCallback(() => {
-    onCancel?.()
-    props.hide()
-  }, [onCancel, props])
+  const handleCancel = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault()
+      reset()
+      onCancel?.()
+      props.hide()
+    },
+    [onCancel, props, reset],
+  )
+
+  const onSubmit = async () => {
+    handleConfirm()
+  }
 
   return (
     <Modal
-      className="md:min-w-[600px]"
+      className="md:min-w-[300px] lg:max-w-[600px]"
       {...props}
       modalContent={
         <>
-          <div className="flex flex-col items-center gap-y-6 px-6 py-12 text-center">
+          <div className="flex flex-col gap-y-6 px-6 py-12">
             <>
               <h3 className="text-xl font-medium">{title}</h3>
               {description && (
-                <p className="dark:text-polar-400 max-w-full text-sm leading-relaxed text-gray-500 md:max-w-[480px]">
+                <p className="dark:text-polar-400 max-w-full text-sm leading-relaxed text-gray-500">
                   {description}
                 </p>
               )}
-              <div className="flex flex-row items-center justify-center gap-x-4 pt-6">
-                <Button
-                  variant={destructive ? 'destructive' : 'default'}
-                  onClick={handleConfirm}
+              {body && body}
+              <Form {...form}>
+                <form
+                  className="flex w-full flex-col"
+                  onSubmit={handleSubmit(onSubmit)}
                 >
-                  {destructive ? destructiveText : 'Confirm'}
-                </Button>
-                <Button variant="ghost" onClick={handleCancel}>
-                  Cancel
-                </Button>
-              </div>
+                  {confirmPrompt && (
+                    <>
+                      <p className="dark:text-polar-400 max-w-full text-sm leading-relaxed text-gray-500">
+                        Please enter &quot;{confirmPrompt}&quot; to confirm:
+                      </p>
+                      <FormField
+                        control={control}
+                        name="prompt"
+                        rules={{
+                          validate: (value) =>
+                            value === confirmPrompt ||
+                            'Please enter the exact text to confirm',
+                        }}
+                        render={({ field }) => {
+                          return (
+                            <FormItem>
+                              <FormControl className="w-full">
+                                <div className="flex w-full flex-row gap-2">
+                                  <Input
+                                    type="input"
+                                    required
+                                    placeholder={confirmPrompt}
+                                    autoComplete="off"
+                                    {...field}
+                                  />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )
+                        }}
+                      />
+                    </>
+                  )}
+                  <div className="flex flex-row gap-x-4 pt-6">
+                    <Button
+                      type="submit"
+                      variant={destructive ? 'destructive' : 'default'}
+                      disabled={
+                        confirmPrompt ? prompt !== confirmPrompt : false
+                      }
+                    >
+                      {destructive ? destructiveText : 'Confirm'}
+                    </Button>
+                    <Button variant="ghost" onClick={handleCancel}>
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </Form>
             </>
           </div>
         </>

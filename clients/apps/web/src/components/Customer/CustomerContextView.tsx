@@ -8,6 +8,7 @@ import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import Pill from '@polar-sh/ui/components/atoms/Pill'
 import Link from 'next/link'
 import { PropsWithChildren, useCallback, useContext, useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
@@ -83,6 +84,11 @@ export const CustomerContextView = ({ customer }: CustomerContextViewProps) => {
         <div className="flex flex-col gap-1">
           <p className="text-lg">
             {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
+            {customer.deleted_at && (
+              <Pill className="ml-2 text-xs" color="red">
+                Deleted
+              </Pill>
+            )}
           </p>
           <div className="dark:text-polar-500 flex flex-row items-center gap-1 font-mono text-sm text-gray-500">
             {customer.email}
@@ -103,57 +109,59 @@ export const CustomerContextView = ({ customer }: CustomerContextViewProps) => {
           <FormattedDateTime datetime={customer.created_at} />
         </CustomerStatBox>
       </div>
-      <div className="flex flex-col gap-4">
-        {customerSession ? (
-          <CopyToClipboardInput
-            value={`${CONFIG.FRONTEND_BASE_URL}/${organization.slug}/portal?customer_session_token=${customerSession.token}`}
-            buttonLabel="Copy"
-            className="bg-white"
-            onCopy={() => {
-              toast({
-                title: 'Copied To Clipboard',
-                description: `Customer Portal Link was copied to clipboard`,
-              })
-            }}
-          />
-        ) : (
-          <Button
-            className="w-full"
-            size="lg"
-            loading={customerSessionLoading}
-            onClick={createCustomerSession}
-          >
-            Generate Customer Portal
-          </Button>
-        )}
-        <div className="flex flex-row gap-4">
-          <a
-            href={`mailto:${customer.email}`}
-            className="w-1/2 text-blue-500 dark:text-blue-400"
-          >
-            <Button className="w-full" size="lg" variant="secondary">
-              Send Email
+      {!customer.deleted_at && (
+        <div className="flex flex-col gap-4">
+          {customerSession ? (
+            <CopyToClipboardInput
+              value={`${CONFIG.FRONTEND_BASE_URL}/${organization.slug}/portal?customer_session_token=${customerSession.token}`}
+              buttonLabel="Copy"
+              className="bg-white"
+              onCopy={() => {
+                toast({
+                  title: 'Copied To Clipboard',
+                  description: `Customer Portal Link was copied to clipboard`,
+                })
+              }}
+            />
+          ) : (
+            <Button
+              className="w-full"
+              size="lg"
+              loading={customerSessionLoading}
+              onClick={createCustomerSession}
+            >
+              Generate Customer Portal
             </Button>
-          </a>
-          <Button
-            className="w-1/2"
-            size="lg"
-            variant="secondary"
-            onClick={showModal}
-          >
-            Edit
-          </Button>
-        </div>
+          )}
+          <div className="flex flex-row gap-4">
+            <a
+              href={`mailto:${customer.email}`}
+              className="w-1/2 text-blue-500 dark:text-blue-400"
+            >
+              <Button className="w-full" size="lg" variant="secondary">
+                Send Email
+              </Button>
+            </a>
+            <Button
+              className="w-1/2"
+              size="lg"
+              variant="secondary"
+              onClick={showModal}
+            >
+              Edit
+            </Button>
+          </div>
 
-        {customerSessionError && (
-          <p className="text-destructive-foreground text-sm">
-            {customerSessionError}
-          </p>
-        )}
-      </div>
+          {customerSessionError && (
+            <p className="text-destructive-foreground text-sm">
+              {customerSessionError}
+            </p>
+          )}
+        </div>
+      )}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col">
-          <DetailRow label="ID" value={customer.id} />
+          {!customer.deleted_at && <DetailRow label="ID" value={customer.id} />}
           <DetailRow label="Email" value={customer.email} />
           <DetailRow label="Name" value={customer.name} />
           <DetailRow label="Tax ID" value={customer.tax_id} />
@@ -178,22 +186,24 @@ export const CustomerContextView = ({ customer }: CustomerContextViewProps) => {
           />
         </div>
       </div>
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-row items-center justify-between gap-2">
-          <h3 className="text-lg">Metadata</h3>
-          <Button className="h-8 w-8" variant="secondary" onClick={showModal}>
-            <AddOutlined />
-          </Button>
+      {!customer.deleted_at && (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-row items-center justify-between gap-2">
+            <h3 className="text-lg">Metadata</h3>
+            <Button className="h-8 w-8" variant="secondary" onClick={showModal}>
+              <AddOutlined />
+            </Button>
+          </div>
+          {Object.entries(customer.metadata).map(([key, value]) => (
+            <DetailRow
+              key={key}
+              label={key}
+              value={value}
+              valueClassName="dark:bg-polar-800 bg-gray-100"
+            />
+          ))}
         </div>
-        {Object.entries(customer.metadata).map(([key, value]) => (
-          <DetailRow
-            key={key}
-            label={key}
-            value={value}
-            valueClassName="dark:bg-polar-800 bg-gray-100"
-          />
-        ))}
-      </div>
+      )}
       <InlineModal
         isShown={isModalShown}
         hide={hideModal}

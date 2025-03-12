@@ -215,6 +215,9 @@ class OrderService(ResourceServiceReader[Order]):
         if discount_id is not None:
             statement = statement.where(Order.discount_id.in_(discount_id))
 
+        # TODO:
+        # Once we add `customer_external_id` be sure to filter for non-deleted.
+        # Since it could be shared across soft deleted records whereas the unique ID cannot.
         if customer_id is not None:
             statement = statement.where(Order.customer_id.in_(customer_id))
 

@@ -1692,7 +1692,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         elif checkout.customer_email is not None:
             statement = statement.join(
                 Customer, onclause=Customer.id == Subscription.customer_id
-            ).where(func.lower(Customer.email) == checkout.customer_email.lower())
+            ).where(
+                func.lower(Customer.email) == checkout.customer_email.lower(),
+                Customer.deleted_at.is_(None),
+            )
 
         result = await session.execute(statement)
         existing_subscriptions = result.scalars().all()

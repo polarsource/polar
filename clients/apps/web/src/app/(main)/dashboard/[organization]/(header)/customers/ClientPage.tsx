@@ -144,11 +144,9 @@ const CustomerHeader = ({
         title={`Delete Customer "${customer.email}"?`}
         body={
           <div className="dark:text-polar-400 flex flex-col gap-y-2 text-sm leading-relaxed text-gray-500">
-            <p>This action cannot be undone and will:</p>
+            <p>This action cannot be undone and will immediately:</p>
             <ol className="list-inside list-disc pl-4">
-              <li>
-                Immediately cancel any active subscriptions for the customer
-              </li>
+              <li>Cancel any active subscriptions for the customer</li>
               <li>Revoke all their benefits</li>
               <li>Clear any external_id</li>
             </ol>

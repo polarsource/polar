@@ -278,6 +278,12 @@ class TestCreateOrUpdateFromCheckout:
         assert subscription.currency == "usd"
 
         stripe_service_mock.create_out_of_band_subscription.assert_called_once()
+        assert (
+            stripe_service_mock.create_out_of_band_subscription.call_args[1][
+                "automatic_tax"
+            ]
+            is False
+        )
         stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
 
     async def test_new_custom_discount_percentage_100(

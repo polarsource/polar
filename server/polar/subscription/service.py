@@ -52,6 +52,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.product_price import LegacyRecurringProductPriceFree, ProductPriceFree
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -349,6 +350,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if product.is_legacy_recurring_price:
             prices = [checkout.product_price]
 
+        free_pricing = True
         for price in prices:
             # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
             if isinstance(
@@ -368,11 +370,19 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 subscription_product_prices.append(
                     SubscriptionProductPrice.from_price(price)
                 )
+            if not isinstance(
+                price, ProductPriceFree | LegacyRecurringProductPriceFree
+            ):
+                free_pricing = False
 
         subscription = checkout.subscription
         new_subscription = False
         previous_ends_at = subscription.ends_at if subscription else None
         previous_status = subscription.status if subscription else None
+
+        # Disable automatic tax for free pricing, since we don't collect customer address in that case
+        automatic_tax = product.is_tax_applicable and not free_pricing
+
         # New subscription
         if subscription is None:
             (
@@ -385,7 +395,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 coupon=(
                     checkout.discount.stripe_coupon_id if checkout.discount else None
                 ),
-                automatic_tax=product.is_tax_applicable,
+                automatic_tax=automatic_tax,
                 metadata=metadata,
                 invoice_metadata=invoice_metadata,
             )
@@ -403,7 +413,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 coupon=(
                     checkout.discount.stripe_coupon_id if checkout.discount else None
                 ),
-                automatic_tax=product.is_tax_applicable,
+                automatic_tax=automatic_tax,
                 metadata=metadata,
                 invoice_metadata=invoice_metadata,
             )

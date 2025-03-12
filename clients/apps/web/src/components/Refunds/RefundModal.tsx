@@ -197,7 +197,12 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
               </a>
             </WellFooter>
           </Well>
-          <Button type="submit" className="self-start" disabled={!canRefund}>
+          <Button
+            type="submit"
+            className="self-start"
+            disabled={!canRefund}
+            loading={createRefund.isPending}
+          >
             Refund Order
           </Button>
         </form>

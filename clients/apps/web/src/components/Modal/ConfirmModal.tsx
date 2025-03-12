@@ -67,7 +67,7 @@ export const ConfirmModal = ({
       {...props}
       modalContent={
         <>
-          <div className="flex flex-col gap-y-6 px-6 py-12">
+          <div className="flex flex-col gap-y-6 p-8">
             <>
               <h3 className="text-xl font-medium">{title}</h3>
               {description && (
@@ -75,10 +75,10 @@ export const ConfirmModal = ({
                   {description}
                 </p>
               )}
-              {body && body}
+              {body}
               <Form {...form}>
                 <form
-                  className="flex w-full flex-col"
+                  className="flex w-full flex-col gap-y-2"
                   onSubmit={handleSubmit(onSubmit)}
                 >
                   {confirmPrompt && (

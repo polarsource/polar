@@ -158,7 +158,7 @@ const CustomerHeader = ({
           </div>
         }
         onConfirm={onDeleteCustomer}
-        confirmPrompt={`delete ${customer.email}`}
+        confirmPrompt={customer.email}
         destructiveText="Delete"
         destructive
       />

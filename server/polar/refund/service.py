@@ -349,7 +349,7 @@ class RefundService(ResourceServiceReader[Refund]):
         if refund_amount == order.refundable_amount:
             return order.refundable_tax_amount
 
-        ratio = order.tax_amount / order.amount
+        ratio = order.tax_amount / order.subtotal_amount
         tax_amount = round(refund_amount * ratio)
         return tax_amount
 
@@ -367,7 +367,7 @@ class RefundService(ResourceServiceReader[Refund]):
 
         # Reverse engineer taxes from Stripe amount (always inclusive)
         refunded_tax_amount = abs(
-            round((order.tax_amount * stripe_amount) / order.total)
+            round((order.tax_amount * stripe_amount) / order.total_amount)
         )
         refunded_amount = stripe_amount - refunded_tax_amount
         return refunded_amount, refunded_tax_amount

@@ -229,8 +229,11 @@ class OrderService(ResourceServiceReader[Order]):
             clause_function = desc if is_desc else asc
             if criterion == OrderSortProperty.created_at:
                 order_by_clauses.append(clause_function(Order.created_at))
-            elif criterion == OrderSortProperty.amount:
-                order_by_clauses.append(clause_function(Order.amount))
+            elif criterion in [
+                OrderSortProperty.amount,
+                OrderSortProperty.subtotal_amount,
+            ]:
+                order_by_clauses.append(clause_function(Order.subtotal_amount))
             elif criterion == OrderSortProperty.customer:
                 order_by_clauses.append(clause_function(OrderCustomer.email))
             elif criterion == OrderSortProperty.product:
@@ -522,7 +525,7 @@ class OrderService(ResourceServiceReader[Order]):
                 payload=MaintainerNewProductSaleNotificationPayload(
                     customer_name=order.customer.email,
                     product_name=product.name,
-                    product_price_amount=order.amount,
+                    product_price_amount=order.subtotal_amount,
                     organization_name=organization.slug,
                 ),
             ),

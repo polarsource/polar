@@ -331,7 +331,7 @@ class TestCreateOrderFromStripe:
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
 
-        assert order.amount == invoice.total - (invoice.tax or 0)
+        assert order.subtotal_amount == invoice.total - (invoice.tax or 0)
         assert order.customer == subscription.customer
         assert order.product == product
         assert order.product_price == product.prices[0]
@@ -389,7 +389,7 @@ class TestCreateOrderFromStripe:
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
 
-        assert order.amount == invoice.total - (invoice.tax or 0)
+        assert order.subtotal_amount == invoice.total - (invoice.tax or 0)
         assert order.customer == subscription.customer
         assert order.product == product
         assert order.product_price == product.prices[0]
@@ -429,7 +429,7 @@ class TestCreateOrderFromStripe:
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
 
-        assert order.amount == invoice.total - (invoice.tax or 0)
+        assert order.subtotal_amount == invoice.total - (invoice.tax or 0)
         assert order.customer == subscription.customer
         assert order.product == product
         assert order.product_price == product.prices[0]
@@ -484,7 +484,7 @@ class TestCreateOrderFromStripe:
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
 
-        assert order.amount == invoice_total
+        assert order.subtotal_amount == invoice_total
         assert order.customer == subscription.customer
         assert order.product == product
         assert order.product_price == product.prices[0]
@@ -548,7 +548,7 @@ class TestCreateOrderFromStripe:
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
 
-        assert order.amount == invoice.total - (invoice.tax or 0)
+        assert order.subtotal_amount == invoice.total - (invoice.tax or 0)
         assert order.customer == subscription.customer
         assert order.product == product
         assert order.product_price == product.prices[0]
@@ -603,7 +603,7 @@ class TestCreateOrderFromStripe:
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
 
-        assert order.amount == invoice_total
+        assert order.subtotal_amount == invoice_total
         assert order.discount == discount_fixed_once
         assert order.created_at == created_datetime
 
@@ -657,7 +657,7 @@ class TestCreateOrderFromStripe:
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
 
-        assert order.amount == invoice_total
+        assert order.subtotal_amount == invoice_total
         assert order.customer == customer
         assert order.product == product_one_time
         assert order.product_price == product_one_time.prices[0]
@@ -735,7 +735,7 @@ class TestCreateOrderFromStripe:
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
 
-        assert order.amount == invoice_total
+        assert order.subtotal_amount == invoice_total
         assert order.discount == discount_fixed_once
         assert order.created_at == created_datetime
 
@@ -795,7 +795,7 @@ class TestCreateOrderFromStripe:
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
 
-        assert order.amount == invoice_total
+        assert order.subtotal_amount == invoice_total
         assert order.customer == customer
         assert order.product == product_one_time_custom_price
         assert order.product_price == product_one_time_custom_price.prices[0]
@@ -841,7 +841,7 @@ class TestCreateOrderFromStripe:
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
 
-        assert order.amount == invoice_total
+        assert order.subtotal_amount == invoice_total
         assert order.customer == customer
         assert order.product == product_one_time_free_price
         assert order.product_price == product_one_time_free_price.prices[0]
@@ -916,7 +916,7 @@ class TestCreateOrderFromStripe:
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
 
-        assert order.amount == invoice_total
+        assert order.subtotal_amount == invoice_total
         assert order.customer == customer
         assert order.product == product_one_time
         assert order.product_price == product_one_time.prices[0]

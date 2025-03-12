@@ -32,6 +32,7 @@ from .oauth2_client import OAuth2Client
 from .oauth2_grant import OAuth2Grant
 from .oauth2_token import OAuth2Token
 from .order import Order
+from .order_item import OrderItem
 from .organization import Organization
 from .organization_access_token import OrganizationAccessToken
 from .personal_access_token import PersonalAccessToken
@@ -99,6 +100,7 @@ __all__ = [
     "OAuth2Token",
     "OAuthAccount",
     "Order",
+    "OrderItem",
     "Organization",
     "OrganizationAccessToken",
     "PersonalAccessToken",

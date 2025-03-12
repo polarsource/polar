@@ -14,5 +14,8 @@ export const useRoute = () => {
     (r) => 'isActive' in r && r.isActive,
   )
 
-  return currentSubRoute ?? currentRoute
+  return {
+    currentRoute,
+    currentSubRoute,
+  }
 }

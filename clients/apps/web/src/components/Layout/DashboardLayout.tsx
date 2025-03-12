@@ -6,13 +6,18 @@ import { MaintainerOrganizationContext } from '@/providers/maintainerOrganizatio
 import { setLastVisitedOrg } from '@/utils/cookies'
 import { organizationPageLink } from '@/utils/nav'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { SidebarTrigger } from '@polar-sh/ui/components/atoms/Sidebar'
+import {
+  SidebarTrigger,
+  useSidebar,
+} from '@polar-sh/ui/components/atoms/Sidebar'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { PropsWithChildren, useContext, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DashboardProvider } from '../Dashboard/DashboardProvider'
+import { SubRouteWithActive } from '../Dashboard/navigation'
 import { useRoute } from '../Navigation/useRoute'
 import { DashboardSidebar } from './Dashboard/DashboardSidebar'
 import TopbarRight from './Public/TopbarRight'
@@ -104,6 +109,29 @@ const MobileNav = () => {
   )
 }
 
+const SubNav = (props: { items: SubRouteWithActive[] }) => {
+  const current = props.items.find((i) => i.isActive)
+
+  return (
+    <Tabs value={current?.title}>
+      <TabsList className="flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0">
+        {props.items.map((item) => {
+          return (
+            <Link key={item.title} href={item.link}>
+              <TabsTrigger
+                className="flex flex-row items-center gap-x-2 px-4"
+                value={item.title}
+              >
+                <h3>{item.title}</h3>
+              </TabsTrigger>
+            </Link>
+          )
+        })}
+      </TabsList>
+    </Tabs>
+  )
+}
+
 export interface DashboardBodyProps {
   children?: React.ReactNode
   className?: string
@@ -112,7 +140,7 @@ export interface DashboardBodyProps {
   contextView?: React.ReactElement
   contextViewClassName?: string
   contextViewPlacement?: 'left' | 'right'
-  header?: JSX.Element | boolean
+  header?: JSX.Element
   wide?: boolean
 }
 
@@ -124,10 +152,16 @@ export const DashboardBody = ({
   contextView,
   contextViewClassName,
   contextViewPlacement = 'right',
-  header = true,
+  header,
   wide = false,
 }: DashboardBodyProps) => {
-  const currentRoute = useRoute()
+  const { currentRoute, currentSubRoute } = useRoute()
+
+  const { state } = useSidebar()
+
+  const isCollapsed = state === 'collapsed'
+
+  const current = currentSubRoute ?? currentRoute
 
   return (
     <motion.div
@@ -147,15 +181,18 @@ export const DashboardBody = ({
             wide ? '' : 'max-w-screen-xl',
           )}
         >
-          {header && (
-            <div className="flex w-full flex-col gap-y-4 py-8 md:flex-row md:items-center md:justify-between md:py-8">
-              <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
-                {title ?? currentRoute?.title}
-              </h4>
+          <div className="flex w-full flex-col gap-y-4 py-8 md:flex-row md:items-center md:justify-between md:py-8">
+            <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
+              {title ?? current?.title}
+            </h4>
 
-              {header}
-            </div>
-          )}
+            {header ? (
+              header
+            ) : isCollapsed && currentRoute && 'subs' in currentRoute ? (
+              <SubNav items={currentRoute.subs ?? []} />
+            ) : null}
+          </div>
+
           <motion.div
             className={twMerge('flex w-full flex-col pb-8', className)}
             variants={{

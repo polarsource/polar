@@ -1,7 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import MetricChart from '@/components/Metrics/MetricChart'
+import { Chart } from '@/components/Metrics/Chart'
 import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
 import Spinner from '@/components/Shared/Spinner'
 import {
@@ -13,17 +13,12 @@ import { ActivityWidget } from '@/components/Widgets/ActivityWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import { RevenueWidget } from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
-import { ParsedMetricPeriod, useMetrics, useProducts } from '@/hooks/queries'
+import { useMetrics, useProducts } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import {
-  computeCumulativeValue,
-  defaultMetricMarks,
-  metricDisplayNames,
-} from '@/utils/metrics'
+import { computeCumulativeValue, metricDisplayNames } from '@/utils/metrics'
 import { ChevronRight } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
   Select,
   SelectContent,
@@ -77,8 +72,6 @@ const HeroChart = ({ organization }: HeroChartProps) => {
     React.useState<keyof schemas['Metrics']>('revenue')
   const [selectedInterval, setSelectedInterval] =
     React.useState<schemas['TimeInterval']>('day')
-  const [hoveredMetricPeriod, setHoveredMetricPeriod] =
-    React.useState<ParsedMetricPeriod | null>(null)
 
   const { data: metricsData, isLoading: metricsLoading } = useMetrics({
     organization_id: organization.id,
@@ -90,24 +83,18 @@ const HeroChart = ({ organization }: HeroChartProps) => {
   const metricValue = useMemo(() => {
     if (!metricsData) return 0
 
-    const currentMetricPeriod = hoveredMetricPeriod
-      ? hoveredMetricPeriod
-      : metricsData.periods[metricsData.periods.length - 1]
-
     const metric = metricsData.metrics[selectedMetric]
-    const value = hoveredMetricPeriod
-      ? currentMetricPeriod[selectedMetric]
-      : computeCumulativeValue(
-          metric,
-          metricsData.periods.map((period) => period[selectedMetric]),
-        )
+    const value = computeCumulativeValue(
+      metric,
+      metricsData.periods.map((period) => period[selectedMetric]),
+    )
 
     if (metric?.type === 'currency') {
       return `$${getCentsInDollarString(value ?? 0)}`
     } else {
       return value
     }
-  }, [hoveredMetricPeriod, metricsData, selectedMetric])
+  }, [metricsData, selectedMetric])
 
   return (
     <ShadowBox className="dark:bg-polar-800 flex flex-col bg-gray-100 p-2 shadow-sm">
@@ -138,18 +125,6 @@ const HeroChart = ({ organization }: HeroChartProps) => {
                 Current Period
               </span>
             </div>
-            {hoveredMetricPeriod && (
-              <div className="flex flex-row items-center gap-x-2">
-                <span className="h-3 w-3 rounded-full border-2 border-gray-500 dark:border-gray-700" />
-                <span className="dark:text-polar-500 text-sm text-gray-500">
-                  <FormattedDateTime
-                    datetime={hoveredMetricPeriod.timestamp}
-                    dateStyle="medium"
-                    resolution={selectedInterval === 'hour' ? 'time' : 'day'}
-                  />
-                </span>
-              </div>
-            )}
           </div>
         </div>
         <Tabs
@@ -180,17 +155,17 @@ const HeroChart = ({ organization }: HeroChartProps) => {
             <Spinner />
           </div>
         ) : metricsData ? (
-          <MetricChart
-            height={300}
-            data={metricsData.periods}
-            interval={selectedInterval}
-            marks={defaultMetricMarks}
-            metric={metricsData.metrics[selectedMetric]}
-            onDataIndexHover={(period) =>
-              setHoveredMetricPeriod(
-                metricsData.periods[period as number] ?? null,
-              )
-            }
+          <Chart
+            data={metricsData.periods.map((period) => ({
+              timestamp: period.timestamp,
+              [selectedMetric]: period[selectedMetric],
+            }))}
+            config={{
+              [selectedMetric]: {
+                label: metricDisplayNames[selectedMetric],
+                color: '#2563eb',
+              },
+            }}
           />
         ) : (
           <div className="flex h-[300px] flex-col items-center justify-center">

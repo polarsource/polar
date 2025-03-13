@@ -1,0 +1,32 @@
+export const ZapierEmbed = () => {
+  if (typeof document === "undefined") {
+    return null;
+  } else {
+    setTimeout(() => {
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src =
+        "https://cdn.zapier.com/packages/partner-sdk/v0/zapier-elements/zapier-elements.esm.js";
+      document.head.appendChild(script);
+
+      const stylesheet = document.createElement("link");
+      stylesheet.rel = "stylesheet";
+      stylesheet.href =
+        "https://cdn.zapier.com/packages/partner-sdk/v0/zapier-elements/zapier-elements.css";
+      document.head.appendChild(stylesheet);
+
+      const element = document.createElement("zapier-workflow");
+      element.clientId = "Zci4gpfx7Co47mBoFOYm0m8bmnzB5UPcw7eGhpSR";
+      element.theme = document.querySelector("html").classList.contains("dark") ? "dark" : "light";
+      element.introCopyDisplay = "hide";
+      element.manageZapsDisplay = "hide";
+      element.guessZapDisplay = "hide";
+      const container =
+        document.querySelector("#zapier-container") || document.body;
+      container.appendChild(element);
+    }, 1);
+
+    return <div id="zapier-container"></div>;
+
+}
+};

@@ -83,7 +83,7 @@ backoffice = ["textual", "halo"]
 emails = { cmd = "cd emails && pnpm i --frozen-lockfile && pnpm run build", help = "build emails" }
 backoffice = { cmd = "pnpm -C polar/web_backoffice install && pnpm -C polar/web_backoffice build", help = "build backoffice CSS and JS" }
 api = { cmd = "env AUTHLIB_INSECURE_TRANSPORT=true uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }
-worker = { cmd = "PORT=8888 watchfiles 'supervisord -c supervisord.worker.conf' polar", help = "run worker" }
+worker = { cmd = "PORT=8888 watchfiles 'supervisord -c supervisord.worker.conf' --sigint-timeout 10 --grace-period 10 --sigkill-timeout 10 polar", help = "run worker" }
 test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
 test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
 watch_email = { cmd = "POLAR_TEST_WATCH=1 pytest -s -m", help = "preview emails" }

@@ -96,6 +96,7 @@ const UpdateDiscountModalContent = ({
               <Button
                 variant="ghost"
                 className="self-start"
+                type="button"
                 onClick={hideModal}
               >
                 Cancel

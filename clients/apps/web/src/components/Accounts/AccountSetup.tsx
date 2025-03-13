@@ -11,6 +11,7 @@ interface AccoutSetupProps {
   organizationAccount: schemas['Account'] | undefined
   personalAccount?: schemas['Account']
   loading: boolean
+  disabled?: boolean
   onLinkAccount: (accountId: string) => void
   onAccountSetup: () => void
 }
@@ -20,9 +21,11 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
   organizationAccount,
   personalAccount,
   loading,
+  disabled,
   onLinkAccount,
   onAccountSetup,
 }) => {
+  disabled = disabled === true
   const currentAccount = organizationAccount || personalAccount
   const bothOrganizationAndPersonal =
     organizationAccount !== undefined &&
@@ -73,7 +76,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
                 variant="secondary"
                 onClick={() => onLinkAccount(personalAccount.id)}
                 loading={loading}
-                disabled={loading}
+                disabled={loading || disabled}
               >
                 Keep the backer account on{' '}
                 {ACCOUNT_TYPE_DISPLAY_NAMES[personalAccount.account_type]} (
@@ -87,7 +90,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
                 variant="secondary"
                 onClick={() => onLinkAccount(organizationAccount.id)}
                 loading={loading}
-                disabled={loading}
+                disabled={loading || disabled}
               >
                 Keep the maintainer account on{' '}
                 {ACCOUNT_TYPE_DISPLAY_NAMES[organizationAccount.account_type]} (
@@ -116,7 +119,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
             <Button
               className="w-full whitespace-nowrap md:w-fit md:grow-0 md:self-start"
               onClick={onAccountSetup}
-              disabled={loading}
+              disabled={loading || disabled}
             >
               Create new account
             </Button>
@@ -141,6 +144,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
               <Button
                 className="self-start whitespace-nowrap sm:w-auto sm:grow"
                 onClick={() => goToOnboarding(currentAccount)}
+                disabled={disabled}
               >
                 Continue setup
               </Button>

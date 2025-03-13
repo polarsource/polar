@@ -4,13 +4,37 @@ import AccountCreateModal from '@/components/Accounts/AccountCreateModal'
 import AccountSetup from '@/components/Accounts/AccountSetup'
 import AccountsList from '@/components/Accounts/AccountsList'
 import { Modal } from '@/components/Modal'
+import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
+import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import { useListAccounts, useOrganizationAccount } from '@/hooks/queries'
 import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { useCallback, useState } from 'react'
+
+const OrganizationDetailsModal = ({
+  organization,
+  hideModal,
+}: {
+  organization: schemas['Organization']
+  hideModal: () => void
+}) => {
+  return (
+    <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
+      <div className="flex flex-row items-center gap-x-4">
+        <h2 className="text-xl">Organization KYC</h2>
+      </div>
+      <OrganizationProfileSettings
+        organization={organization}
+        kyc={true}
+        onSubmitted={hideModal}
+      />
+    </div>
+  )
+}
 
 export default function ClientPage({
   organization,
@@ -23,6 +47,14 @@ export default function ClientPage({
     show: showSetupModal,
     hide: hideSetupModal,
   } = useModal()
+
+  const {
+    isShown: isOrganizationDetailsShown,
+    show: showOrganizationDetailsModal,
+    hide: hideOrganizationDetailsModal,
+  } = useModal()
+
+  const requireDetails = !organization.details_submitted_at
 
   const { data: organizationAccount } = useOrganizationAccount(organization.id)
 
@@ -44,7 +76,23 @@ export default function ClientPage({
 
   return (
     <div className="flex flex-col gap-y-6">
-      {accounts ? (
+      {requireDetails && (
+        <div className="">
+          <p className="dark:text-polar-500 text-sm text-gray-500">
+            Before proceeding we need more information about your business and
+            use case of Polar for our reviews.
+          </p>
+          <Button
+            type="button"
+            className="mt-2"
+            onClick={showOrganizationDetailsModal}
+          >
+            Add business details
+          </Button>
+        </div>
+      )}
+
+      {!requireDetails && accounts ? (
         <AccountSetup
           organization={organization}
           organizationAccount={organizationAccount}
@@ -84,6 +132,16 @@ export default function ClientPage({
             returnPath={`/dashboard/${organization.slug}/finance/account`}
           />
         }
+      />
+      <InlineModal
+        modalContent={
+          <OrganizationDetailsModal
+            organization={organization}
+            hideModal={hideOrganizationDetailsModal}
+          />
+        }
+        isShown={isOrganizationDetailsShown}
+        hide={hideOrganizationDetailsModal}
       />
     </div>
   )

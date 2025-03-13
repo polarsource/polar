@@ -129,24 +129,13 @@ const HeroChart = ({ organization }: HeroChartProps) => {
   const mergedData = useMemo(() => {
     if (!currentPeriodMetricsData || !previousPeriodMetricsData) return []
 
-    return currentPeriodMetricsData.periods.map((period, i) => {
-      const metric = currentPeriodMetricsData.metrics[selectedMetric]
-      const currentValue = period[selectedMetric]
-      const previousValue =
-        previousPeriodMetricsData.periods[i]?.[selectedMetric] ?? 0
+    const metric = selectedMetric
 
-      return {
-        timestamp: period.timestamp,
-        current:
-          metric.type === 'currency'
-            ? getCentsInDollarString(currentValue)
-            : currentValue,
-        previous:
-          metric.type === 'currency'
-            ? getCentsInDollarString(previousValue)
-            : previousValue,
-      }
-    })
+    return currentPeriodMetricsData.periods.map((period, i) => ({
+      timestamp: period.timestamp,
+      current: period[metric],
+      previous: previousPeriodMetricsData.periods[i]?.[metric] ?? 0,
+    }))
   }, [currentPeriodMetricsData, previousPeriodMetricsData, selectedMetric])
 
   const metricValue = useMemo(() => {
@@ -309,7 +298,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
                     currentPeriodMetricsData?.metrics[selectedMetric]
 
                   if (metric?.type === 'currency') {
-                    return `$${parseInt(value as string)}`
+                    return `$${getCentsInDollarString(parseInt(value as string))}`
                   } else {
                     return value
                   }
@@ -322,6 +311,34 @@ const HeroChart = ({ organization }: HeroChartProps) => {
                     className="text-black dark:text-white"
                     indicator="dot"
                     labelKey="metric"
+                    formatter={(value, name) => {
+                      const metric =
+                        currentPeriodMetricsData?.metrics[selectedMetric]
+
+                      const formattedValue =
+                        metric?.type === 'currency'
+                          ? `$${getCentsInDollarString(parseInt(value as string))}`
+                          : value
+
+                      return (
+                        <div className="flex w-full flex-row justify-between">
+                          <div className="flex flex-row items-center gap-x-2">
+                            <span
+                              className={twMerge(
+                                'h-2 w-2 rounded-full',
+                                name === 'current'
+                                  ? 'bg-primary dark:bg-primary'
+                                  : 'dark:bg-polar-500 bg-gray-500',
+                              )}
+                            />
+                            <span className="dark:text-polar-500 capitalize text-gray-500">
+                              {name}
+                            </span>
+                          </div>
+                          <span>{formattedValue}</span>
+                        </div>
+                      )
+                    }}
                   />
                 }
               />

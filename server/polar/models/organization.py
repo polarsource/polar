@@ -26,6 +26,22 @@ if TYPE_CHECKING:
     from .product import Product
 
 
+class OrganizationSocials(TypedDict):
+    platform: str
+    url: str
+
+
+class OrganizationDetails(TypedDict):
+    about: str
+    product_description: str
+    intended_use: str
+    customer_acquisition: list[str]
+    future_annual_revenue: int
+    switching: bool
+    switching_from: str | None
+    previous_annual_revenue: int
+
+
 class OrganizationSubscriptionSettings(TypedDict):
     allow_multiple_subscriptions: bool
     allow_customer_updates: bool
@@ -46,6 +62,18 @@ class Organization(RecordModel):
     name: Mapped[str] = mapped_column(String, nullable=False, index=True)
     slug: Mapped[str] = mapped_column(CITEXT, nullable=False, unique=True)
     avatar_url: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    email: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    website: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    socials: Mapped[list[OrganizationSocials]] = mapped_column(
+        JSONB, nullable=False, default=list
+    )
+    details: Mapped[OrganizationDetails] = mapped_column(
+        JSONB, nullable=False, default=dict
+    )
+    details_submitted_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True)
+    )
 
     account_id: Mapped[UUID | None] = mapped_column(
         Uuid,
@@ -145,7 +173,6 @@ class Organization(RecordModel):
     company: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     blog: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     location: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
-    email: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     twitter_username: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )

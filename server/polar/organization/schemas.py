@@ -1,9 +1,12 @@
 from collections.abc import Sequence
-from typing import Annotated, Self
+from datetime import datetime
+from enum import StrEnum
+from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
     UUID4,
     AfterValidator,
+    EmailStr,
     Field,
     HttpUrl,
     StringConstraints,
@@ -47,6 +50,81 @@ class OrganizationSubscribePromoteSettings(Schema):
     )
 
 
+class OrganizationDetails(Schema):
+    about: str = Field(
+        ..., description="Brief information about you and your business."
+    )
+    product_description: str = Field(
+        ..., description="Description of digital products being sold."
+    )
+    intended_use: str = Field(
+        ..., description="How the organization will integrate and use Polar."
+    )
+    customer_acquisition: list[str] = Field(
+        ..., description="Main customer acquisition channels."
+    )
+    future_annual_revenue: int = Field(
+        ..., description="Estimated revenue in the next 12 months"
+    )
+    switching: bool = Field(True, description="Switching from another platform?")
+    switching_from: (
+        Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
+    ) = Field(None, description="Which platform the organization is migrating from.")
+    previous_annual_revenue: int = Field(
+        0, description="Revenue from last year if applicable."
+    )
+
+
+class OrganizationSocialPlatforms(StrEnum):
+    x = "x"
+    github = "github"
+    facebook = "facebook"
+    instagram = "instagram"
+    youtube = "youtube"
+    tiktok = "tiktok"
+    linkedin = "linkedin"
+    other = "other"
+
+
+PLATFORM_DOMAINS = {
+    "x": ["twitter.com", "x.com"],
+    "github": ["github.com"],
+    "facebook": ["facebook.com", "fb.com"],
+    "instagram": ["instagram.com"],
+    "youtube": ["youtube.com", "youtu.be"],
+    "tiktok": ["tiktok.com"],
+    "linkedin": ["linkedin.com"],
+}
+
+
+class OrganizationSocialLink(Schema):
+    platform: OrganizationSocialPlatforms = Field(
+        ..., description="The social platform of the URL"
+    )
+    url: HttpUrlToStr = Field(..., description="The URL to the organization profile")
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_url(cls, data: dict[str, Any]) -> dict[str, Any]:
+        platform = data.get("platform")
+        url = data.get("url", "").lower()
+
+        if not (platform and url):
+            return data
+
+        if platform == "other":
+            return data
+
+        valid_domains = PLATFORM_DOMAINS[platform]
+        if not any(domain in url for domain in valid_domains):
+            raise ValueError(
+                f"Invalid URL for {platform}. Must be from: {', '.join(valid_domains)}"
+            )
+
+        return data
+
+
+# Deprecated
 class OrganizationProfileSettings(Schema):
     enabled: bool | None = Field(
         None, description="If this organization has a profile enabled"
@@ -81,32 +159,70 @@ class OrganizationProfileSettings(Schema):
 # Public API
 class Organization(IDSchema, TimestampedSchema):
     id: OrganizationID
-    name: str
-    slug: str
-    avatar_url: str | None
+    name: str = Field(
+        ...,
+        description="Organization name shown in checkout, customer portal, emails etc.",
+    )
+    slug: str = Field(
+        ...,
+        description="Unique organization slug in checkout, customer portal and credit card statements.",
+    )
+    avatar_url: str | None = Field(
+        None, description="Avatar URL shown in checkout, customer portal, emails etc."
+    )
 
-    bio: str | None
-    company: str | None
-    blog: str | None
-    location: str | None
-    email: str | None
-    twitter_username: str | None
-
-    pledge_minimum_amount: int
-    pledge_badge_show_amount: bool
-
-    default_upfront_split_to_contributors: int | None
-
-    profile_settings: OrganizationProfileSettings | None = Field(
-        description="Settings for the organization profile"
+    email: str | None = Field(None, description="Public support email.")
+    website: str | None = Field(
+        None, description="Official website of the organization."
+    )
+    socials: list[OrganizationSocialLink] = Field(
+        description="Links to social profiles.",
+    )
+    details_submitted_at: datetime | None = Field(
+        None,
+        description="When the business details were submitted.",
     )
 
     feature_settings: OrganizationFeatureSettings | None = Field(
-        description="Settings for the organization features"
+        description="Organization feature settings",
+    )
+    subscription_settings: OrganizationSubscriptionSettings = Field(
+        description="Settings related to subscriptions management",
     )
 
-    subscription_settings: OrganizationSubscriptionSettings = Field(
-        description="Settings related to subscriptions management"
+    # Deprecated attributes
+    bio: str | None = Field(..., deprecated="")
+    company: str | None = Field(
+        ...,
+        deprecated="Legacy attribute no longer in use.",
+    )
+    blog: str | None = Field(
+        ...,
+        deprecated="Legacy attribute no longer in use. See `socials` instead.",
+    )
+    location: str | None = Field(
+        ...,
+        deprecated="Legacy attribute no longer in use.",
+    )
+    twitter_username: str | None = Field(
+        ...,
+        deprecated="Legacy attribute no longer in use. See `socials` instead.",
+    )
+    pledge_minimum_amount: int = Field(
+        ...,
+        deprecated="Legacy attribute no longer in use.",
+    )
+    pledge_badge_show_amount: bool = Field(
+        ...,
+        deprecated="Legacy attribute no longer in use.",
+    )
+    default_upfront_split_to_contributors: int | None = Field(
+        ...,
+        deprecated="Legacy attribute no longer in use.",
+    )
+    profile_settings: OrganizationProfileSettings | None = Field(
+        description="Settings for the organization profile",
+        deprecated="Legacy attribute no longer in use.",
     )
 
 
@@ -125,6 +241,18 @@ class OrganizationCreate(Schema):
         AfterValidator(validate_reserved_keywords),
     ]
     avatar_url: HttpUrlToStr | None = None
+    email: EmailStr | None = Field(None, description="Public support email.")
+    website: HttpUrlToStr | None = Field(
+        None, description="Official website of the organization."
+    )
+    socials: list[OrganizationSocialLink] | None = Field(
+        None,
+        description="Link to social profiles.",
+    )
+    details: OrganizationDetails | None = Field(
+        None,
+        description="Additional, private, business details Polar needs about active organizations for compliance (KYC).",
+    )
     feature_settings: OrganizationFeatureSettings | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
 
@@ -135,24 +263,50 @@ class OrganizationUpdate(Schema):
     ] = None
     avatar_url: HttpUrlToStr | None = None
 
-    default_upfront_split_to_contributors: int | None = Field(
-        default=None, ge=0.0, le=100.0
+    email: str | None = Field(None, description="Public support email.")
+    website: str | None = Field(
+        None, description="Official website of the organization."
+    )
+    socials: list[OrganizationSocialLink] | None = Field(
+        None, description="Links to social profiles."
+    )
+    details: OrganizationDetails | None = Field(
+        None,
+        description="Additional, private, business details Polar needs about active organizations for compliance (KYC).",
     )
 
-    pledge_badge_show_amount: bool = False
-    billing_email: str | None = None
-
-    default_badge_custom_content: str | None = None
-
-    pledge_minimum_amount: int = settings.MINIMUM_ORG_PLEDGE_AMOUNT
-
-    total_monthly_spending_limit: int | None = None
-
-    per_user_monthly_spending_limit: int | None = None
-
-    profile_settings: OrganizationProfileSettings | None = None
     feature_settings: OrganizationFeatureSettings | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
+
+    # Deprecated fields
+    default_upfront_split_to_contributors: int | None = Field(
+        default=None,
+        ge=0.0,
+        le=100.0,
+        deprecated="Legacy attribute no longer in use.",
+    )
+    pledge_badge_show_amount: bool = Field(
+        False, deprecated="Legacy attribute no longer in use."
+    )
+    billing_email: str | None = Field(
+        None, deprecated="Legacy attribute no longer in use."
+    )
+    default_badge_custom_content: str | None = Field(
+        None, deprecated="Legacy attribute no longer in use."
+    )
+    pledge_minimum_amount: int = Field(
+        settings.MINIMUM_ORG_PLEDGE_AMOUNT,
+        deprecated="Legacy attribute no longer in use.",
+    )
+    total_monthly_spending_limit: int | None = Field(
+        None, deprecated="Legacy attribute no longer in use."
+    )
+    per_user_monthly_spending_limit: int | None = Field(
+        None, deprecated="Legacy attribute no longer in use."
+    )
+    profile_settings: OrganizationProfileSettings | None = Field(
+        None, deprecated="Legacy attribute no longer in use."
+    )
 
     @model_validator(mode="after")
     def check_spending_limits(self) -> Self:

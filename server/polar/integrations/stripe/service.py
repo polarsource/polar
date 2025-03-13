@@ -825,12 +825,12 @@ class StripeService:
         *,
         customer: str,
         currency: str,
-        price: str,
+        prices: Sequence[str],
         coupon: str | None = None,
         automatic_tax: bool = True,
         metadata: dict[str, str] | None = None,
         idempotency_key: str | None = None,
-    ) -> stripe_lib.Invoice:
+    ) -> tuple[stripe_lib.Invoice, dict[str, stripe_lib.InvoiceLineItem]]:
         params: stripe_lib.Invoice.CreateParams = {
             "auto_advance": True,
             "collection_method": "send_invoice",
@@ -849,16 +849,21 @@ class StripeService:
         invoice = await stripe_lib.Invoice.create_async(**params)
         invoice_id = cast(str, invoice.id)
 
-        await stripe_lib.InvoiceItem.create_async(
-            customer=customer,
-            currency=currency,
-            price=price,
-            invoice=invoice_id,
-            quantity=1,
-            idempotency_key=(
-                f"{idempotency_key}_invoice_item" if idempotency_key else None
-            ),
-        )
+        item_map: dict[str, tuple[str, stripe_lib.InvoiceItem]] = {}
+        for price in prices:
+            invoice_item = await stripe_lib.InvoiceItem.create_async(
+                customer=customer,
+                currency=currency,
+                price=price,
+                invoice=invoice_id,
+                quantity=1,
+                idempotency_key=(
+                    f"{idempotency_key}_{price}_invoice_item"
+                    if idempotency_key
+                    else None
+                ),
+            )
+            item_map[invoice_item.id] = (price, invoice_item)
 
         invoice = await stripe_lib.Invoice.finalize_invoice_async(
             invoice_id,
@@ -876,7 +881,13 @@ class StripeService:
                 ),
             )
 
-        return invoice
+        price_line_item_map = {}
+        for line_item in invoice.lines.data:
+            assert line_item.invoice_item is not None
+            price_id, invoice_item = item_map[get_expandable_id(line_item.invoice_item)]
+            price_line_item_map[price_id] = line_item
+
+        return invoice, price_line_item_map
 
     async def create_tax_calculation(
         self,

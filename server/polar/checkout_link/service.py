@@ -23,8 +23,8 @@ from polar.models import (
     User,
 )
 from polar.postgres import AsyncSession
+from polar.product.repository import ProductPriceRepository
 from polar.product.service.product import product as product_service
-from polar.product.service.product_price import product_price as product_price_service
 
 from .schemas import (
     CheckoutLinkCreate,
@@ -275,8 +275,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         price_id: uuid.UUID,
         auth_subject: AuthSubject[User | Organization],
     ) -> tuple[Product, ProductPrice]:
-        price = await product_price_service.get_writable_by_id(
-            session, price_id, auth_subject
+        product_price_repository = ProductPriceRepository.from_session(session)
+        price = await product_price_repository.get_readable_by_id(
+            price_id, auth_subject
         )
 
         if price is None:

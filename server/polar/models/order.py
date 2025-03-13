@@ -118,7 +118,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return relationship("Discount", lazy="raise")
 
     organization: AssociationProxy["Organization"] = association_proxy(
-        "product", "organization"
+        "customer", "organization"
     )
 
     subscription_id: Mapped[UUID | None] = mapped_column(
@@ -134,6 +134,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     checkout_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("checkouts.id", ondelete="set null"), nullable=True, index=True
     )
+
+    @declared_attr
+    def checkout(cls) -> Mapped["Checkout | None"]:
+        return relationship("Checkout", lazy="raise")
 
     items: Mapped[list["OrderItem"]] = relationship(
         "OrderItem",
@@ -164,10 +168,6 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @property
     def taxed(self) -> int:
         return self.tax_amount > 0
-
-    @declared_attr
-    def checkout(cls) -> Mapped["Checkout | None"]:
-        return relationship("Checkout", lazy="raise")
 
     @property
     def refunded(self) -> bool:

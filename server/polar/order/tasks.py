@@ -1,6 +1,8 @@
 import uuid
 
 import structlog
+from arq import Retry
+from sqlalchemy.orm import joinedload
 
 from polar.exceptions import PolarTaskError
 from polar.integrations.discord.internal_webhook import (
@@ -9,14 +11,24 @@ from polar.integrations.discord.internal_webhook import (
 )
 from polar.kit.money import get_cents_in_dollar_string
 from polar.logging import Logger
+from polar.models import Customer, Order
 from polar.organization.service import organization as organization_service
-from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
+from polar.product.service.product import product as product_service
+from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
+from polar.worker import (
+    AsyncSessionMaker,
+    JobContext,
+    PolarWorkerContext,
+    compute_backoff,
+    task,
+)
 
-from ..product.service.product import product as product_service
-from ..product.service.product_price import product_price as product_price_service
+from .repository import OrderRepository
 from .service import order as order_service
 
 log: Logger = structlog.get_logger()
+
+MAX_RETRIES = 10
 
 
 class OrderTaskError(PolarTaskError): ...
@@ -50,6 +62,35 @@ class PriceDoesNotExist(OrderTaskError):
         super().__init__(message)
 
 
+@task("order.balance")
+async def create_order_balance(
+    ctx: JobContext,
+    order_id: uuid.UUID,
+    charge_id: str,
+    polar_context: PolarWorkerContext,
+) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        repository = OrderRepository.from_session(session)
+        order = await repository.get_by_id(
+            order_id,
+            options=(joinedload(Order.customer).joinedload(Customer.organization),),
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        try:
+            await order_service.create_order_balance(session, order, charge_id)
+        except PaymentTransactionForChargeDoesNotExist as e:
+            # Retry because Stripe webhooks order is not guaranteed,
+            # so we might not have been able to handle subscription.created
+            # or charge.succeeded yet!
+            if ctx["job_try"] <= MAX_RETRIES:
+                raise Retry(compute_backoff(ctx["job_try"])) from e
+            # Raise the exception to be notified about it
+            else:
+                raise
+
+
 @task("order.update_product_benefits_grants")
 async def update_product_benefits_grants(
     ctx: JobContext, product_id: uuid.UUID, polar_context: PolarWorkerContext
@@ -67,7 +108,8 @@ async def order_discord_notification(
     ctx: JobContext, order_id: uuid.UUID, polar_context: PolarWorkerContext
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        order = await order_service.get(session, order_id)
+        order_repository = OrderRepository.from_session(session)
+        order = await order_repository.get_by_id(order_id)
         if order is None:
             raise OrderDoesNotExist(order_id)
 
@@ -78,11 +120,6 @@ async def order_discord_notification(
         product_org = await organization_service.get(session, product.organization_id)
         if not product_org:
             raise OrganizationDoesNotExist(product.organization_id)
-
-        price = await product_price_service.get_by_id(session, order.product_price_id)
-
-        if not price:
-            raise PriceDoesNotExist(order.product_price_id)
 
         if price.recurring_interval:
             description = f"${get_cents_in_dollar_string(order.subtotal_amount)}/{price.recurring_interval}"

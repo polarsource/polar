@@ -20,6 +20,7 @@ from polar.models import (
 from polar.models.order import OrderStatus
 from polar.models.refund import RefundReason, RefundStatus
 from polar.models.subscription import SubscriptionStatus
+from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
 from polar.refund.schemas import RefundCreate
@@ -297,9 +298,10 @@ class TestCreateRefunds(StripeRefund):
             refund_tax_amount=125,
         )
         assert response.status_code == 422
-        updated = await order_service.get(session, order.id)
-        if not updated:
-            raise RuntimeError()
+
+        order_repository = OrderRepository.from_session(session)
+        updated = await order_repository.get_by_id(order.id)
+        assert updated is not None
 
         assert updated.status == OrderStatus.paid
         assert updated.refunded_amount == 0

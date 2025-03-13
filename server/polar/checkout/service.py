@@ -6,14 +6,11 @@ from typing import Any
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import Select, UnaryExpression, asc, desc, func, select, update
-from sqlalchemy.orm import contains_eager, joinedload, selectinload
+from sqlalchemy import UnaryExpression, asc, desc, func, select
 
 from polar.auth.models import (
     Anonymous,
     AuthSubject,
-    is_organization,
-    is_user,
 )
 from polar.checkout.schemas import (
     CheckoutConfirm,
@@ -39,14 +36,11 @@ from polar.exceptions import (
 )
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.address import Address
 from polar.kit.crypto import generate_token
-from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceServiceReader
+from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.tax import TaxID, to_stripe_tax_id, validate_tax_id
-from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import (
@@ -64,7 +58,6 @@ from polar.models import (
     ProductPriceFixed,
     Subscription,
     User,
-    UserOrganization,
 )
 from polar.models.checkout import CheckoutStatus
 from polar.models.checkout_product import CheckoutProduct
@@ -74,11 +67,11 @@ from polar.models.product_price import (
     ProductPriceFree,
 )
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.order.service import order as order_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
-from polar.product.repository import ProductRepository
+from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.service.product import product as product_service
-from polar.product.service.product_price import product_price as product_price_service
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.webhook.service import webhook as webhook_service
@@ -87,6 +80,7 @@ from polar.worker import enqueue_job
 from ..kit.tax import TaxCalculationError, calculate_tax
 from . import ip_geolocation
 from .eventstream import CheckoutEvent, publish_checkout_event
+from .repository import CheckoutRepository
 from .sorting import CheckoutSortProperty
 
 log: Logger = structlog.get_logger()
@@ -158,17 +152,6 @@ class PaymentIntentNotSucceeded(CheckoutError):
         super().__init__(message)
 
 
-class NoCustomerOnPaymentIntent(CheckoutError):
-    def __init__(self, checkout: Checkout, payment_intent_id: str) -> None:
-        self.checkout = checkout
-        self.payment_intent_id = payment_intent_id
-        message = (
-            f"Payment intent {payment_intent_id} "
-            f"for {checkout.id} has no customer associated."
-        )
-        super().__init__(message)
-
-
 class NoPaymentMethodOnPaymentIntent(CheckoutError):
     def __init__(self, checkout: Checkout, payment_intent_id: str) -> None:
         self.checkout = checkout
@@ -177,13 +160,6 @@ class NoPaymentMethodOnPaymentIntent(CheckoutError):
             f"Payment intent {payment_intent_id} "
             f"for {checkout.id} has no payment method associated."
         )
-        super().__init__(message)
-
-
-class NoCustomerOnCheckout(CheckoutError):
-    def __init__(self, checkout: Checkout) -> None:
-        self.checkout = checkout
-        message = f"{checkout.id} has no customer associated."
         super().__init__(message)
 
 
@@ -197,7 +173,7 @@ class PaymentRequired(CheckoutError):
 CHECKOUT_CLIENT_SECRET_PREFIX = "polar_c_"
 
 
-class CheckoutService(ResourceServiceReader[Checkout]):
+class CheckoutService:
     async def list(
         self,
         session: AsyncSession,
@@ -210,7 +186,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             (CheckoutSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Checkout], int]:
-        statement = self._get_readable_checkout_statement(auth_subject)
+        repository = CheckoutRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).options(
+            *repository.get_eager_options()
+        )
 
         if organization_id is not None:
             statement = statement.where(Product.organization_id.in_(organization_id))
@@ -227,7 +206,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
                 order_by_clauses.append(clause_function(Checkout.expires_at))
         statement = statement.order_by(*order_by_clauses)
 
-        return await paginate(session, statement, pagination=pagination)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
     async def get_by_id(
         self,
@@ -235,20 +216,20 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Checkout | None:
+        repository = CheckoutRepository.from_session(session)
         statement = (
-            self._get_readable_checkout_statement(auth_subject)
+            repository.get_readable_statement(auth_subject)
             .where(Checkout.id == id)
-            .options(
-                joinedload(Checkout.customer),
-            )
+            .options(*repository.get_eager_options())
         )
-        result = await session.execute(statement)
-        checkout = result.unique().scalar_one_or_none()
+        checkout = await repository.get_one_or_none(statement)
+
         if checkout is None:
             return None
 
         if checkout.product.organization.is_blocked():
             raise NotPermitted()
+
         return checkout
 
     async def create(
@@ -886,7 +867,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         checkout_id: uuid.UUID,
         payment_intent: stripe_lib.PaymentIntent,
     ) -> Checkout:
-        checkout = await self._get_eager_loaded_checkout(session, checkout_id)
+        repository = CheckoutRepository.from_session(session)
+        checkout = await repository.get_by_id(
+            checkout_id, options=repository.get_eager_options()
+        )
 
         if checkout is None:
             raise CheckoutDoesNotExist(checkout_id)
@@ -901,62 +885,16 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         if payment_intent.status != "succeeded":
             raise PaymentIntentNotSucceeded(checkout, payment_intent.id)
 
-        if payment_intent.customer is None:
-            raise NoCustomerOnPaymentIntent(checkout, payment_intent.id)
-
         if payment_intent.payment_method is None:
             raise NoPaymentMethodOnPaymentIntent(checkout, payment_intent.id)
 
         product = checkout.product
-
         if product.is_recurring:
             await subscription_service.create_or_update_from_checkout(
                 session, checkout, payment_intent
             )
         else:
-            stripe_customer_id = get_expandable_id(payment_intent.customer)
-            stripe_payment_method_id = get_expandable_id(payment_intent.payment_method)
-            metadata = {
-                "type": ProductType.product,
-                "product_id": str(checkout.product_id),
-                "checkout_id": str(checkout.id),
-            }
-
-            stripe_price_id = product_price.stripe_price_id
-            # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
-            if isinstance(
-                product_price, ProductPriceCustom | LegacyRecurringProductPriceCustom
-            ):
-                assert checkout.amount is not None
-                assert checkout.currency is not None
-                ad_hoc_price = await stripe_service.create_ad_hoc_custom_price(
-                    product, product_price, checkout.amount, checkout.currency
-                )
-                stripe_price_id = ad_hoc_price.id
-
-            stripe_invoice = await stripe_service.create_out_of_band_invoice(
-                customer=stripe_customer_id,
-                currency=checkout.currency or "usd",
-                price=stripe_price_id,
-                coupon=(
-                    checkout.discount.stripe_coupon_id if checkout.discount else None
-                ),
-                automatic_tax=product.is_tax_applicable,
-                metadata={
-                    **metadata,
-                    "payment_intent_id": payment_intent.id,
-                },
-            )
-
-            # Sanity check to make sure we didn't mess up the amount.
-            # Don't raise an error so the order can be successfully completed nonetheless.
-            if stripe_invoice.total != payment_intent.amount:
-                log.error(
-                    "Mismatch between payment intent and invoice amount",
-                    checkout=checkout.id,
-                    payment_intent=payment_intent.id,
-                    invoice=stripe_invoice.id,
-                )
+            await order_service.create_from_checkout(session, checkout, payment_intent)
 
         checkout.status = CheckoutStatus.succeeded
         session.add(checkout)
@@ -971,7 +909,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         checkout_id: uuid.UUID,
         payment_intent: stripe_lib.PaymentIntent,
     ) -> Checkout:
-        checkout = await self._get_eager_loaded_checkout(session, checkout_id)
+        repository = CheckoutRepository.from_session(session)
+        checkout = await repository.get_by_id(
+            checkout_id, options=repository.get_eager_options()
+        )
 
         if checkout is None:
             raise CheckoutDoesNotExist(checkout_id)
@@ -998,7 +939,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
     async def handle_free_success(
         self, session: AsyncSession, checkout_id: uuid.UUID
     ) -> Checkout:
-        checkout = await self._get_eager_loaded_checkout(session, checkout_id)
+        repository = CheckoutRepository.from_session(session)
+        checkout = await repository.get_by_id(
+            checkout_id, options=repository.get_eager_options()
+        )
 
         if checkout is None:
             raise CheckoutDoesNotExist(checkout_id)
@@ -1006,47 +950,16 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         if checkout.status != CheckoutStatus.confirmed:
             raise NotConfirmedCheckout(checkout)
 
-        stripe_customer_id = checkout.payment_processor_metadata.get("customer_id")
-        if stripe_customer_id is None:
-            raise NoCustomerOnCheckout(checkout)
-
         if checkout.is_payment_required:
             raise PaymentRequired(checkout)
 
-        product_price = checkout.product_price
         product = checkout.product
-        stripe_price_id = product_price.stripe_price_id
-        metadata = {
-            "type": ProductType.product,
-            "product_id": str(checkout.product_id),
-            "checkout_id": str(checkout.id),
-        }
-
         if product.is_recurring:
             await subscription_service.create_or_update_from_checkout(
                 session, checkout, None
             )
         else:
-            # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
-            if isinstance(
-                product_price, ProductPriceCustom | LegacyRecurringProductPriceCustom
-            ):
-                assert checkout.amount is not None
-                assert checkout.currency is not None
-                ad_hoc_price = await stripe_service.create_ad_hoc_custom_price(
-                    product, product_price, checkout.amount, checkout.currency
-                )
-                stripe_price_id = ad_hoc_price.id
-            await stripe_service.create_out_of_band_invoice(
-                customer=stripe_customer_id,
-                currency=checkout.currency or "usd",
-                price=stripe_price_id,
-                coupon=(
-                    checkout.discount.stripe_coupon_id if checkout.discount else None
-                ),
-                automatic_tax=False,
-                metadata=metadata,
-            )
+            await order_service.create_from_checkout(session, checkout, None)
 
         checkout.status = CheckoutStatus.succeeded
         session.add(checkout)
@@ -1058,42 +971,10 @@ class CheckoutService(ResourceServiceReader[Checkout]):
     async def get_by_client_secret(
         self, session: AsyncSession, client_secret: str
     ) -> Checkout | None:
-        statement = (
-            select(Checkout)
-            .where(
-                Checkout.deleted_at.is_(None),
-                Checkout.expires_at > utc_now(),
-                Checkout.client_secret == client_secret,
-            )
-            .join(Checkout.product)
-            .options(
-                joinedload(Checkout.customer),
-                contains_eager(Checkout.product).options(
-                    joinedload(Product.organization),
-                    selectinload(Product.product_medias),
-                    selectinload(Product.attached_custom_fields),
-                ),
-                selectinload(Checkout.checkout_products).options(
-                    joinedload(CheckoutProduct.product).options(
-                        selectinload(Product.product_medias),
-                    )
-                ),
-            )
+        repository = CheckoutRepository.from_session(session)
+        return await repository.get_by_client_secret(
+            client_secret, options=repository.get_eager_options()
         )
-        result = await session.execute(statement)
-        return result.unique().scalar_one_or_none()
-
-    async def expire_open_checkouts(self, session: AsyncSession) -> None:
-        statement = (
-            update(Checkout)
-            .where(
-                Checkout.deleted_at.is_(None),
-                Checkout.expires_at <= utc_now(),
-                Checkout.status == CheckoutStatus.open,
-            )
-            .values(status=CheckoutStatus.expired)
-        )
-        await session.execute(statement)
 
     async def _get_validated_price(
         self,
@@ -1101,8 +982,9 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         auth_subject: AuthSubject[User | Organization],
         product_price_id: uuid.UUID,
     ) -> tuple[Sequence[Product], Product, ProductPrice]:
-        price = await product_price_service.get_writable_by_id(
-            session, product_price_id, auth_subject
+        product_price_repository = ProductPriceRepository.from_session(session)
+        price = await product_price_repository.get_readable_by_id(
+            product_price_id, auth_subject
         )
 
         if price is None:
@@ -1814,27 +1696,6 @@ class CheckoutService(ResourceServiceReader[Checkout]):
             idempotency_key=idempotency_key,
         )
 
-    async def _get_eager_loaded_checkout(
-        self, session: AsyncSession, checkout_id: uuid.UUID
-    ) -> Checkout | None:
-        return await self.get(
-            session,
-            checkout_id,
-            options=(
-                joinedload(Checkout.customer),
-                joinedload(Checkout.product).options(
-                    selectinload(Product.product_medias),
-                    selectinload(Product.attached_custom_fields),
-                ),
-                selectinload(Checkout.checkout_products).options(
-                    joinedload(CheckoutProduct.product).options(
-                        selectinload(Product.product_medias),
-                    )
-                ),
-                joinedload(Checkout.product_price),
-            ),
-        )
-
     async def _after_checkout_created(
         self, session: AsyncSession, checkout: Checkout
     ) -> None:
@@ -1876,43 +1737,5 @@ class CheckoutService(ResourceServiceReader[Checkout]):
         )
         return product
 
-    def _get_readable_checkout_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[Checkout]]:
-        statement = (
-            select(Checkout)
-            .where(Checkout.deleted_at.is_(None))
-            .join(Checkout.product)
-            .options(
-                contains_eager(Checkout.product).options(
-                    joinedload(Product.organization),
-                    selectinload(Product.product_medias),
-                    selectinload(Product.attached_custom_fields),
-                ),
-                selectinload(Checkout.checkout_products).options(
-                    joinedload(CheckoutProduct.product).options(
-                        selectinload(Product.product_medias),
-                    )
-                ),
-            )
-        )
 
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Product.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Product.organization_id == auth_subject.subject.id,
-            )
-
-        return statement
-
-
-checkout = CheckoutService(Checkout)
+checkout = CheckoutService()

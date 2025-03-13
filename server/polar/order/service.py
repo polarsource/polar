@@ -5,16 +5,15 @@ from typing import Any
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import Select, UnaryExpression, asc, desc, select
+from sqlalchemy import UnaryExpression, asc, desc, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.account.service import account as account_service
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
-from polar.checkout.service import checkout as checkout_service
+from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
-from polar.customer.service import customer as customer_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
@@ -27,7 +26,6 @@ from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.logging import Logger
 from polar.models import (
@@ -36,13 +34,14 @@ from polar.models import (
     Discount,
     HeldBalance,
     Order,
+    OrderItem,
     Organization,
     Product,
     ProductPrice,
+    ProductPriceCustom,
     Subscription,
     Transaction,
     User,
-    UserOrganization,
 )
 from polar.models.order import OrderBillingReason
 from polar.models.product import ProductBillingType
@@ -55,9 +54,10 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
+from polar.order.repository import OrderRepository
 from polar.order.sorting import OrderSortProperty
 from polar.organization.service import organization as organization_service
-from polar.product.service.product_price import product_price as product_price_service
+from polar.product.repository import ProductPriceRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
@@ -76,6 +76,35 @@ log: Logger = structlog.get_logger()
 class OrderError(PolarError): ...
 
 
+class RecurringProduct(OrderError):
+    def __init__(self, checkout: Checkout, product: Product) -> None:
+        self.checkout = checkout
+        self.product = product
+        message = (
+            f"Checkout {checkout.id} is for product {product.id}, "
+            "which is a recurring product."
+        )
+        super().__init__(message)
+
+
+class MissingCheckoutCustomer(OrderError):
+    def __init__(self, checkout: Checkout) -> None:
+        self.checkout = checkout
+        message = f"Checkout {checkout.id} is missing a customer."
+        super().__init__(message)
+
+
+class MissingStripeCustomerID(OrderError):
+    def __init__(self, checkout: Checkout, customer: Customer) -> None:
+        self.checkout = checkout
+        self.customer = customer
+        message = (
+            f"Checkout {checkout.id}'s customer {customer.id} "
+            "is missing a Stripe customer ID."
+        )
+        super().__init__(message)
+
+
 class NotAnOrderInvoice(OrderError):
     def __init__(self, invoice_id: str) -> None:
         self.invoice_id = invoice_id
@@ -86,11 +115,12 @@ class NotAnOrderInvoice(OrderError):
         super().__init__(message)
 
 
-class CantDetermineInvoicePrice(OrderError):
+class NotASubscriptionInvoice(OrderError):
     def __init__(self, invoice_id: str) -> None:
         self.invoice_id = invoice_id
         message = (
-            f"Received invoice {invoice_id} from Stripe, but can't determine the price."
+            f"Received invoice {invoice_id} from Stripe, but it it not linked to a subscription."
+            " One-time purchases invoices are handled directly upon creation."
         )
         super().__init__(message)
 
@@ -140,13 +170,6 @@ class SubscriptionDoesNotExist(OrderError):
         super().__init__(message)
 
 
-class InvoiceWithoutCharge(OrderError):
-    def __init__(self, invoice_id: str) -> None:
-        self.invoice_id = invoice_id
-        message = f"Received invoice {invoice_id} from Stripe, but it has no charge."
-        super().__init__(message)
-
-
 class InvoiceNotAvailable(OrderError):
     def __init__(self, order: Order) -> None:
         self.order = order
@@ -169,7 +192,7 @@ def _is_empty_customer_address(customer_address: dict[str, Any] | None) -> bool:
     return customer_address is None or customer_address["country"] is None
 
 
-class OrderService(ResourceServiceReader[Order]):
+class OrderService:
     async def list(
         self,
         session: AsyncSession,
@@ -186,7 +209,8 @@ class OrderService(ResourceServiceReader[Order]):
             (OrderSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Order], int]:
-        statement = self._get_readable_order_statement(auth_subject)
+        repository = OrderRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject)
 
         statement = statement.join(Order.discount, isouter=True).options(
             joinedload(Order.subscription).joinedload(Subscription.customer),
@@ -204,7 +228,9 @@ class OrderService(ResourceServiceReader[Order]):
         ).options(contains_eager(Order.customer.of_type(OrderCustomer)))
 
         if organization_id is not None:
-            statement = statement.where(Product.organization_id.in_(organization_id))
+            statement = statement.where(
+                OrderCustomer.organization_id.in_(organization_id)
+            )
 
         if product_id is not None:
             statement = statement.where(Order.product_id.in_(product_id))
@@ -246,44 +272,19 @@ class OrderService(ResourceServiceReader[Order]):
 
         return await paginate(session, statement, pagination=pagination)
 
-    async def get_by_id(
-        self,
-        session: AsyncSession,
-        id: uuid.UUID,
-    ) -> Order | None:
-        statement = (
-            self._get_base_order_statement()
-            .where(Order.id == id)
-            .options(
-                joinedload(Order.customer),
-                joinedload(Order.product_price),
-                joinedload(Order.subscription).joinedload(Subscription.customer),
-                joinedload(Order.discount),
-            )
-        )
-
-        result = await session.execute(statement)
-        return result.unique().scalar_one_or_none()
-
-    async def user_get_by_id(
+    async def get(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Order | None:
+        repository = OrderRepository.from_session(session)
         statement = (
-            self._get_readable_order_statement(auth_subject)
+            repository.get_readable_statement(auth_subject)
+            .options(*repository.get_eager_options())
             .where(Order.id == id)
-            .options(
-                joinedload(Order.customer),
-                joinedload(Order.product_price),
-                joinedload(Order.subscription).joinedload(Subscription.customer),
-                joinedload(Order.discount),
-            )
         )
-
-        result = await session.execute(statement)
-        return result.unique().scalar_one_or_none()
+        return await repository.get_one_or_none(statement)
 
     async def get_order_invoice_url(self, order: Order) -> str:
         if order.stripe_invoice_id is None:
@@ -296,62 +297,164 @@ class OrderService(ResourceServiceReader[Order]):
 
         return stripe_invoice.hosted_invoice_url
 
+    async def create_from_checkout(
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        payment_intent: stripe_lib.PaymentIntent | None,
+    ) -> Order:
+        product = checkout.product
+        if product.is_recurring:
+            raise RecurringProduct(checkout, product)
+
+        customer = checkout.customer
+        if customer is None:
+            raise MissingCheckoutCustomer(checkout)
+
+        stripe_customer_id = customer.stripe_customer_id
+        if stripe_customer_id is None:
+            raise MissingStripeCustomerID(checkout, customer)
+
+        metadata = {
+            "type": ProductType.product,
+            "product_id": str(checkout.product_id),
+            "checkout_id": str(checkout.id),
+        }
+        if payment_intent is not None:
+            metadata["payment_intent_id"] = payment_intent.id
+
+        stripe_price_ids: list[str] = []
+        prices = product.prices
+        for price in prices:
+            # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
+            if isinstance(price, ProductPriceCustom):
+                assert checkout.amount is not None
+                assert checkout.currency is not None
+                ad_hoc_price = await stripe_service.create_ad_hoc_custom_price(
+                    product, price, checkout.amount, checkout.currency
+                )
+                stripe_price_ids.append(ad_hoc_price.id)
+
+        (
+            stripe_invoice,
+            price_line_item_map,
+        ) = await stripe_service.create_out_of_band_invoice(
+            customer=stripe_customer_id,
+            currency=checkout.currency or "usd",
+            prices=stripe_price_ids,
+            coupon=(checkout.discount.stripe_coupon_id if checkout.discount else None),
+            automatic_tax=product.is_tax_applicable,
+            metadata=metadata,
+        )
+
+        items: list[OrderItem] = []
+        for price in prices:
+            line_item = price_line_item_map[price.stripe_price_id]
+            items.append(
+                OrderItem.from_price(
+                    price,
+                    sum(t.amount for t in line_item.tax_amounts),
+                    line_item.amount,
+                )
+            )
+
+        discount_amount = 0
+        if stripe_invoice.total_discount_amounts:
+            for stripe_discount_amount in stripe_invoice.total_discount_amounts:
+                discount_amount += stripe_discount_amount.amount
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.create(
+            Order(
+                amount=stripe_invoice.subtotal,
+                discount_amount=discount_amount,
+                tax_amount=stripe_invoice.tax or 0,
+                currency=stripe_invoice.currency,
+                billing_reason=OrderBillingReason.purchase,
+                billing_address=customer.billing_address,
+                stripe_invoice_id=stripe_invoice.id,
+                customer=customer,
+                product=product,
+                discount=checkout.discount,
+                subscription=None,
+                checkout=checkout,
+                user_metadata=checkout.user_metadata,
+                custom_field_data=checkout.custom_field_data,
+                items=items,
+            ),
+            flush=True,
+        )
+
+        # Sanity check to make sure we didn't mess up the amount.
+        # Don't raise an error so the order can be successfully completed nonetheless.
+        if payment_intent and order.total_amount != payment_intent.amount:
+            log.error(
+                "Mismatch between payment intent and invoice amount",
+                checkout=checkout.id,
+                payment_intent=payment_intent.id,
+                invoice=stripe_invoice.id,
+            )
+
+        # Enqueue the balance creation
+        if payment_intent is not None:
+            assert payment_intent.latest_charge is not None
+            enqueue_job(
+                "order.balance",
+                order_id=order.id,
+                charge_id=get_expandable_id(payment_intent.latest_charge),
+            )
+
+        # Enqueue benefits grants
+        enqueue_job(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            order_id=order.id,
+        )
+
+        # Notify checkout channel that an order has been created from it
+        await publish_checkout_event(
+            checkout.client_secret, CheckoutEvent.order_created
+        )
+
+        # Trigger notifications
+        organization = checkout.organization
+        await self.send_admin_notification(session, organization, order)
+        await self.send_confirmation_email(session, organization, order)
+        enqueue_job("order.discord_notification", order_id=order.id)
+        await self._send_webhook(session, order)
+
+        return order
+
     async def create_order_from_stripe(
-        self, session: AsyncSession, *, invoice: stripe_lib.Invoice
+        self, session: AsyncSession, invoice: stripe_lib.Invoice
     ) -> Order:
         assert invoice.id is not None
 
         if invoice.metadata and invoice.metadata.get("type") in {ProductType.pledge}:
             raise NotAnOrderInvoice(invoice.id)
 
-        # Get price and product
-        stripe_prices: list[stripe_lib.Price] = []
-        for line in invoice.lines.data:
-            if not line.proration and line.price is not None:
-                stripe_prices.append(line.price)
+        if invoice.subscription is None:
+            raise NotASubscriptionInvoice(invoice.id)
 
-        product_price: ProductPrice | None = None
-        # For invoices with only one line item, get the price from the line item
-        if len(stripe_prices) == 1:
-            stripe_price = stripe_prices.pop()
-            # For custom prices, we create ad-hoc prices on Stripe,
-            # but set the "father" price ID as metadata
-            if stripe_price.metadata and stripe_price.metadata.get("product_price_id"):
-                product_price = await product_price_service.get_by_id(
-                    session, uuid.UUID(stripe_price.metadata["product_price_id"])
-                )
-            else:
-                product_price = await product_price_service.get_by_stripe_price_id(
-                    session, stripe_price.id
-                )
-            if product_price is None:
-                raise ProductPriceDoesNotExist(invoice.id, stripe_price.id)
-        # For invoices with only prorations, try to get the price from the subscription metadata
-        elif len(stripe_prices) == 0:
-            if (
-                invoice.subscription_details is None
-                or invoice.subscription_details.metadata is None
-                or (
-                    (
-                        price_id := invoice.subscription_details.metadata.get(
-                            "product_price_id"
-                        )
-                    )
-                    is None
-                )
-            ):
-                raise CantDetermineInvoicePrice(invoice.id)
-            product_price = await product_price_service.get_by_id(
-                session, uuid.UUID(price_id)
-            )
-            if product_price is None:
-                raise CantDetermineInvoicePrice(invoice.id)
-        # For invoices with multiple line items, we can't determine the price
-        else:
-            raise CantDetermineInvoicePrice(invoice.id)
+        # Get subscription
+        stripe_subscription_id = get_expandable_id(invoice.subscription)
+        subscription = await subscription_service.get_by_stripe_subscription_id(
+            session, stripe_subscription_id
+        )
+        if subscription is None:
+            raise SubscriptionDoesNotExist(invoice.id, stripe_subscription_id)
 
-        product = product_price.product
+        # Get customer
+        print(
+            "TODO: eager load customer from subscription ;) Need subscription repo to do this properly"
+        )
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(subscription.customer_id)
+        assert customer is not None
 
+        # Retrieve billing address
         billing_address: Address | None = None
         if not _is_empty_customer_address(invoice.customer_address):
             billing_address = Address.model_validate(invoice.customer_address)
@@ -381,132 +484,107 @@ class OrderService(ResourceServiceReader[Order]):
             invoice.metadata
             and (checkout_id := invoice.metadata.get("checkout_id")) is not None
         ):
-            checkout = await checkout_service.get(session, uuid.UUID(checkout_id))
+            chekout_repository = CheckoutRepository.from_session(session)
+            checkout = await chekout_repository.get_by_id(uuid.UUID(checkout_id))
             if checkout is None:
                 raise CheckoutDoesNotExist(invoice.id, checkout_id)
 
-        customer: Customer | None = None
-
-        billing_reason: OrderBillingReason = OrderBillingReason.purchase
-        tax = invoice.tax or 0
-        amount = invoice.total - tax
-
-        user_metadata = {}
-        custom_field_data = {}
-
-        # Get subscription if applicable
-        subscription: Subscription | None = None
-        if invoice.subscription is not None:
-            stripe_subscription_id = get_expandable_id(invoice.subscription)
-            subscription = await subscription_service.get_by_stripe_subscription_id(
-                session, stripe_subscription_id
-            )
-            if subscription is None:
-                raise SubscriptionDoesNotExist(invoice.id, stripe_subscription_id)
-            customer_repository = CustomerRepository.from_session(session)
-            customer = await customer_repository.get_by_id(subscription.customer_id)
-            if invoice.billing_reason is not None:
-                try:
-                    billing_reason = OrderBillingReason(invoice.billing_reason)
-                except ValueError as e:
-                    log.error(
-                        "Unknown billing reason, fallback to 'subscription_cycle'",
-                        invoice_id=invoice.id,
-                        billing_reason=invoice.billing_reason,
+        # Handle items
+        product_price_repository = ProductPriceRepository.from_session(session)
+        items: list[OrderItem] = []
+        for line in invoice.lines:
+            tax_amount = sum([tax.amount for tax in line.tax_amounts])
+            product_price: ProductPrice | None = None
+            price = line.price
+            if price is not None:
+                if price.metadata and price.metadata.get("product_price_id"):
+                    product_price = await product_price_repository.get_by_id(
+                        uuid.UUID(price.metadata["product_price_id"]),
+                        options=product_price_repository.get_eager_options(),
                     )
-                    billing_reason = OrderBillingReason.subscription_cycle
+                else:
+                    product_price = (
+                        await product_price_repository.get_by_stripe_price_id(
+                            price.id,
+                            options=product_price_repository.get_eager_options(),
+                        )
+                    )
+                if product_price is None:
+                    raise ProductPriceDoesNotExist(invoice.id, price.id)
 
-            # Ensure renewals inherit original metadata and custom fields
-            user_metadata = subscription.user_metadata
-            custom_field_data = subscription.custom_field_data
+            items.append(
+                OrderItem(
+                    label=line.description or "",
+                    amount=line.amount,
+                    tax_amount=tax_amount,
+                    proration=line.proration,
+                    product_price=product_price,
+                )
+            )
 
-        if checkout is not None:
-            user_metadata = checkout.user_metadata
-            custom_field_data = checkout.custom_field_data
+        # Determine billing reason
+        billing_reason = OrderBillingReason.subscription_cycle
+        if invoice.billing_reason is not None:
+            try:
+                billing_reason = OrderBillingReason(invoice.billing_reason)
+            except ValueError as e:
+                log.error(
+                    "Unknown billing reason, fallback to 'subscription_cycle'",
+                    invoice_id=invoice.id,
+                    billing_reason=invoice.billing_reason,
+                )
 
-        # Create Order
-        order = Order(
-            amount=amount,
-            tax_amount=tax,
-            currency=invoice.currency,
-            billing_reason=billing_reason,
-            billing_address=billing_address,
-            stripe_invoice_id=invoice.id,
-            product=product,
-            product_price=product_price,
-            discount=discount,
-            subscription=subscription,
-            checkout=checkout,
-            user_metadata=user_metadata,
-            custom_field_data=custom_field_data,
-            created_at=datetime.fromtimestamp(invoice.created, tz=UTC),
+        # Calculate discount amount
+        discount_amount = 0
+        if invoice.total_discount_amounts:
+            for stripe_discount_amount in invoice.total_discount_amounts:
+                discount_amount += stripe_discount_amount.amount
+
+        # Ensure it inherits original metadata and custom fields
+        user_metadata = (
+            checkout.user_metadata
+            if checkout is not None
+            else subscription.user_metadata
+        )
+        custom_field_data = (
+            checkout.custom_field_data
+            if checkout is not None
+            else subscription.custom_field_data
         )
 
-        organization = await organization_service.get(session, product.organization_id)
-        assert organization is not None
-
-        # Get or create customer
-        assert invoice.customer is not None
-        if customer is None:
-            stripe_customer = await stripe_service.get_customer(
-                get_expandable_id(invoice.customer)
-            )
-            customer = await customer_service.get_or_create_from_stripe_customer(
-                session, stripe_customer, organization
-            )
-
-        order.customer = customer
-        session.add(order)
-        await session.flush()
+        repository = OrderRepository.from_session(session)
+        order = await repository.create(
+            Order(
+                amount=invoice.subtotal,
+                discount_amount=discount_amount,
+                tax_amount=invoice.tax or 0,
+                currency=invoice.currency,
+                billing_reason=billing_reason,
+                billing_address=billing_address,
+                stripe_invoice_id=invoice.id,
+                customer=customer,
+                product=subscription.product,
+                discount=discount,
+                subscription=subscription,
+                checkout=checkout,
+                items=items,
+                user_metadata=user_metadata,
+                custom_field_data=custom_field_data,
+                created_at=datetime.fromtimestamp(invoice.created, tz=UTC),
+            ),
+            flush=True,
+        )
 
         # Create the transactions balances for the order, if payment was actually made
         # Payment can be skipped in two cases:
         # * The invoice total is zero, like a free product (obviously)
         # * A balance was applied to the invoice, generally because customer has a credit after a subscription downgrade
-        # FIXME: need to find a better way to handle out-of-band, but that's a quick fix for now
-        if invoice.amount_paid > 0 or (invoice.paid_out_of_band and invoice.total > 0):
-            charge_id = get_expandable_id(invoice.charge) if invoice.charge else None
-            # With Polar Checkout, we mark the order paid out-of-band,
-            # so we need to retrieve the charge manually from metadata
-            if charge_id is None:
-                invoice_metadata = invoice.metadata or {}
-                payment_intent_id = invoice_metadata.get("payment_intent_id")
-                if payment_intent_id is None:
-                    raise InvoiceWithoutCharge(invoice.id)
-
-                payment_intent = await stripe_service.get_payment_intent(
-                    payment_intent_id
-                )
-                if payment_intent.latest_charge is None:
-                    raise InvoiceWithoutCharge(invoice.id)
-                charge_id = get_expandable_id(payment_intent.latest_charge)
-
-            await self._create_order_balance(
-                session, order, charge_id=get_expandable_id(charge_id)
-            )
-
-        if order.subscription is None:
+        if invoice.amount_paid > 0:
+            assert invoice.charge is not None
             enqueue_job(
-                "benefit.enqueue_benefits_grants",
-                task="grant",
-                customer_id=customer.id,
-                product_id=product.id,
+                "order.balance",
                 order_id=order.id,
-            )
-
-            await self.send_admin_notification(session, organization, order)
-            await self.send_confirmation_email(session, organization, order)
-
-        if invoice.billing_reason in ["manual", "subscription_create"]:
-            enqueue_job(
-                "order.discord_notification",
-                order_id=order.id,
-            )
-
-        # Notify checkout channel that an order has been created from it
-        if checkout is not None:
-            await publish_checkout_event(
-                checkout.client_secret, CheckoutEvent.order_created
+                charge_id=get_expandable_id(invoice.charge),
             )
 
         await self._send_webhook(session, order)
@@ -589,13 +667,11 @@ class OrderService(ResourceServiceReader[Order]):
         session.add(order)
         return order
 
-    async def _create_order_balance(
+    async def create_order_balance(
         self, session: AsyncSession, order: Order, charge_id: str
     ) -> None:
-        product = order.product
-        account = await account_service.get_by_organization_id(
-            session, product.organization_id
-        )
+        organization = order.organization
+        account = await account_service.get_by_organization_id(session, organization.id)
 
         # Retrieve the payment transaction and link it to the order
         payment_transaction = await balance_transaction_service.get_by(
@@ -620,17 +696,13 @@ class OrderService(ResourceServiceReader[Order]):
 
         # No account, create the held balance
         if account is None:
-            managing_organization = await organization_service.get(
-                session, product.organization_id
-            )
-            assert managing_organization is not None
-            held_balance.organization_id = managing_organization.id
+            held_balance.organization = organization
 
             # Sanity check: make sure we didn't already create a held balance for this order
             existing_held_balance = await held_balance_service.get_by(
                 session,
                 payment_transaction_id=payment_transaction.id,
-                organization_id=managing_organization.id,
+                organization_id=organization.id,
             )
             if existing_held_balance is not None:
                 raise AlreadyBalancedOrder(order, payment_transaction)
@@ -639,12 +711,12 @@ class OrderService(ResourceServiceReader[Order]):
 
             await notifications_service.send_to_org_members(
                 session=session,
-                org_id=managing_organization.id,
+                org_id=organization.id,
                 notif=PartialNotification(
                     type=NotificationType.maintainer_create_account,
                     payload=MaintainerCreateAccountNotificationPayload(
-                        organization_name=managing_organization.slug,
-                        url=managing_organization.account_url,
+                        organization_name=organization.slug,
+                        url=organization.account_url,
                     ),
                 ),
             )
@@ -687,62 +759,5 @@ class OrderService(ResourceServiceReader[Order]):
         assert organization is not None
         await webhook_service.send(session, organization, event)
 
-    def _get_base_order_statement(self) -> Select[tuple[Order]]:
-        statement = (
-            select(Order)
-            .where(Order.deleted_at.is_(None))
-            .join(Order.product)
-            .options(contains_eager(Order.product))
-        )
-        return statement
 
-    def _get_readable_order_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[Order]]:
-        statement = self._get_base_order_statement()
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Product.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Product.organization_id == auth_subject.subject.id,
-            )
-
-        return statement
-
-    def _get_readable_subscription_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[Subscription]]:
-        statement = (
-            select(Subscription)
-            .where(Subscription.deleted_at.is_(None))
-            .join(Subscription.product)
-            .options(contains_eager(Subscription.product))
-        )
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Product.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Product.organization_id == auth_subject.subject.id,
-            )
-
-        return statement
-
-
-order = OrderService(Order)
+order = OrderService()

@@ -93,7 +93,7 @@ async def get(
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
     """Get an order by ID."""
-    order = await order_service.user_get_by_id(session, auth_subject, id)
+    order = await order_service.get(session, auth_subject, id)
 
     if order is None:
         raise ResourceNotFound()
@@ -113,7 +113,7 @@ async def invoice(
     session: AsyncSession = Depends(get_db_session),
 ) -> OrderInvoice:
     """Get an order's invoice data."""
-    order = await order_service.user_get_by_id(session, auth_subject, id)
+    order = await order_service.get(session, auth_subject, id)
 
     if order is None:
         raise ResourceNotFound()

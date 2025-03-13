@@ -9,6 +9,7 @@ from polar.worker import (
     task,
 )
 
+from .repository import CheckoutRepository
 from .service import checkout as checkout_service
 
 
@@ -29,4 +30,5 @@ async def handle_free_success(
 )
 async def expire_open_checkouts(ctx: JobContext) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        await checkout_service.expire_open_checkouts(session)
+        repository = CheckoutRepository.from_session(session)
+        await repository.expire_open_checkouts()

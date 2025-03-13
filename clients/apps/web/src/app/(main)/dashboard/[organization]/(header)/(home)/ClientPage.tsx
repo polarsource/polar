@@ -129,13 +129,24 @@ const HeroChart = ({ organization }: HeroChartProps) => {
   const mergedData = useMemo(() => {
     if (!currentPeriodMetricsData || !previousPeriodMetricsData) return []
 
-    const metric = selectedMetric
+    return currentPeriodMetricsData.periods.map((period, i) => {
+      const metric = currentPeriodMetricsData.metrics[selectedMetric]
+      const currentValue = period[selectedMetric]
+      const previousValue =
+        previousPeriodMetricsData.periods[i]?.[selectedMetric] ?? 0
 
-    return currentPeriodMetricsData.periods.map((period, i) => ({
-      timestamp: period.timestamp,
-      current: period[metric],
-      previous: previousPeriodMetricsData.periods[i]?.[metric] ?? 0,
-    }))
+      return {
+        timestamp: period.timestamp,
+        current:
+          metric.type === 'currency'
+            ? getCentsInDollarString(currentValue)
+            : currentValue,
+        previous:
+          metric.type === 'currency'
+            ? getCentsInDollarString(previousValue)
+            : previousValue,
+      }
+    })
   }, [currentPeriodMetricsData, previousPeriodMetricsData, selectedMetric])
 
   const metricValue = useMemo(() => {
@@ -298,7 +309,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
                     currentPeriodMetricsData?.metrics[selectedMetric]
 
                   if (metric?.type === 'currency') {
-                    return `$${getCentsInDollarString(parseInt(value as string))}`
+                    return `$${parseInt(value as string)}`
                   } else {
                     return value
                   }

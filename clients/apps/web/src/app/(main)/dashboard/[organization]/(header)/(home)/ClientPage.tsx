@@ -324,15 +324,6 @@ const HeroChart = ({ organization }: HeroChartProps) => {
                     labelKey="metric"
                   />
                 }
-                /* formatter={(value, name) => {
-                  const metric = metricsData.metrics[selectedMetric]
-
-                  if (metric?.type === 'currency') {
-                    return `$${getCentsInDollarString(parseInt(value as string))}`
-                  } else {
-                    return value
-                  }
-                }} */
               />
               <Line
                 dataKey="previous"

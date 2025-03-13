@@ -4,6 +4,8 @@ sidebarTitle: "Zapier"
 description: "Connect Polar to hundreds of other apps with Zapier"
 ---
 
+import { ZapierEmbed } from "/snippets/zapier-embed.mdx";
+
 [Zapier](https://zapier.com/apps/polar/integrations) lets you connect Polar to 2,000+ other web services. Automated connections called Zaps, set up in minutes with no coding, can automate your day-to-day tasks and build workflows between apps that otherwise wouldn't be possible.
 
 Each Zap has one app as the **Trigger**, where your information comes from and which causes one or more **Actions** in other apps, where your data gets sent automatically.
@@ -17,9 +19,7 @@ Need to perform actions in Polar? Tell us about your use case [here](https://git
 
 ## Getting Started with Zapier
 
-Sign up for a free [Zapier](https://zapier.com/apps/polar/integrations) account, from there you can jump right in. To help you hit the ground running, here are some popular pre-made Zaps.
-
-<script src="https://zapier.com/zapbook/embed/widget.js?services=polar&container=true&limit=5,"></script>
+Sign up for a free [Zapier](https://zapier.com/apps/polar/integrations) account, from there you can jump right in. To help you hit the ground running, you'll find popular pre-made Zaps below.
 
 ## How do I connect Polar to Zapier?
 
@@ -34,24 +34,4 @@ If you have any additional questions, you can open a ticket with Zapier Support 
 
 ## Popular use cases
 
-<script
-  type="module"
-  src="https://cdn.zapier.com/packages/partner-sdk/v0/zapier-elements/zapier-elements.esm.js"
-></script>
-
-<link
-  rel="stylesheet"
-  href="https://cdn.zapier.com/packages/partner-sdk/v0/zapier-elements/zapier-elements.css"
-/>
-
-<zapier-workflow
-sign-up-email="email_of_your_user@example.com"
-sign-up-first-name="first_name_of_your_user"
-sign-up-last-name="last_name_of_your_user"
-client-id="Zci4gpfx7Co47mBoFOYm0m8bmnzB5UPcw7eGhpSR"
-theme="auto"
-intro-copy-display="hide"
-manage-zaps-display="show"
-guess-zap-display="show"
-
-> </zapier-workflow>
+<ZapierEmbed />

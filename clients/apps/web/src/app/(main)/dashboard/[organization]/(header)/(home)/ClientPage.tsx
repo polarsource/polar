@@ -1,7 +1,6 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { Chart } from '@/components/Metrics/Chart'
 import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
 import Spinner from '@/components/Shared/Spinner'
 import {
@@ -28,6 +27,16 @@ import {
 } from '@polar-sh/ui/components/atoms/Select'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
+import {
+  CartesianGrid,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  Line,
+  LineChart,
+  XAxis,
+  YAxis,
+} from '@polar-sh/ui/components/ui/chart'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
@@ -67,26 +76,74 @@ const getIntervalStartDate = (
   }
 }
 
+const getPreviousPeriod = (
+  startDate: Date,
+  interval: schemas['TimeInterval'],
+) => {
+  switch (interval) {
+    case 'year':
+      return new Date(startDate.setFullYear(startDate.getFullYear() - 3))
+    case 'month':
+      return new Date(startDate.setFullYear(startDate.getFullYear() - 1))
+    case 'week':
+      return new Date(startDate.setMonth(startDate.getMonth() - 3))
+    case 'day':
+      return new Date(startDate.setDate(startDate.getDate() - 30))
+    case 'hour':
+      return new Date(startDate.setHours(startDate.getHours() - 24))
+  }
+}
+
 const HeroChart = ({ organization }: HeroChartProps) => {
   const [selectedMetric, setSelectedMetric] =
     React.useState<keyof schemas['Metrics']>('revenue')
   const [selectedInterval, setSelectedInterval] =
     React.useState<schemas['TimeInterval']>('day')
 
-  const { data: metricsData, isLoading: metricsLoading } = useMetrics({
+  const {
+    data: currentPeriodMetricsData,
+    isLoading: currentPeriodMetricsLoading,
+  } = useMetrics({
     organization_id: organization.id,
     startDate: getIntervalStartDate(selectedInterval, organization),
     endDate: new Date(),
     interval: selectedInterval,
   })
 
-  const metricValue = useMemo(() => {
-    if (!metricsData) return 0
+  const previousPeriod = getPreviousPeriod(
+    getIntervalStartDate(selectedInterval, organization),
+    selectedInterval,
+  )
 
-    const metric = metricsData.metrics[selectedMetric]
+  const {
+    data: previousPeriodMetricsData,
+    isLoading: previousPeriodMetricsLoading,
+  } = useMetrics({
+    organization_id: organization.id,
+    startDate: previousPeriod,
+    endDate: getIntervalStartDate(selectedInterval, organization),
+    interval: selectedInterval,
+  })
+
+  const mergedData = useMemo(() => {
+    if (!currentPeriodMetricsData || !previousPeriodMetricsData) return []
+
+    const metric = selectedMetric
+
+    return currentPeriodMetricsData.periods.map((period, i) => ({
+      timestamp: period.timestamp,
+      current: period[metric],
+      previous: previousPeriodMetricsData.periods[i]?.[metric] ?? 0,
+    }))
+  }, [currentPeriodMetricsData, previousPeriodMetricsData, selectedMetric])
+
+  const metricValue = useMemo(() => {
+    if (!currentPeriodMetricsData) return 0
+
+    const metric = currentPeriodMetricsData.metrics[selectedMetric]
     const value = computeCumulativeValue(
       metric,
-      metricsData.periods.map((period) => period[selectedMetric]),
+      currentPeriodMetricsData.periods.map((period) => period[selectedMetric]),
     )
 
     if (metric?.type === 'currency') {
@@ -94,7 +151,10 @@ const HeroChart = ({ organization }: HeroChartProps) => {
     } else {
       return value
     }
-  }, [metricsData, selectedMetric])
+  }, [currentPeriodMetricsData, selectedMetric])
+
+  const metricLoading =
+    currentPeriodMetricsLoading || previousPeriodMetricsLoading
 
   return (
     <ShadowBox className="dark:bg-polar-800 flex flex-col bg-gray-100 p-2 shadow-sm">
@@ -125,6 +185,12 @@ const HeroChart = ({ organization }: HeroChartProps) => {
                 Current Period
               </span>
             </div>
+            <div className="flex flex-row items-center gap-x-2">
+              <span className="dark:border-polar-600 h-3 w-3 rounded-full border-2 border-gray-500" />
+              <span className="dark:text-polar-500 text-sm text-gray-500">
+                Previous Period
+              </span>
+            </div>
           </div>
         </div>
         <Tabs
@@ -150,23 +216,122 @@ const HeroChart = ({ organization }: HeroChartProps) => {
         </Tabs>
       </div>
       <div className="dark:bg-polar-900 flex flex-col gap-y-2 rounded-3xl bg-white p-4">
-        {metricsLoading ? (
+        {metricLoading ? (
           <div className="flex h-[300px] flex-col items-center justify-center">
             <Spinner />
           </div>
-        ) : metricsData ? (
-          <Chart
-            data={metricsData.periods.map((period) => ({
-              timestamp: period.timestamp,
-              [selectedMetric]: period[selectedMetric],
-            }))}
+        ) : mergedData.length > 0 ? (
+          <ChartContainer
+            className="h-[300px]"
             config={{
-              [selectedMetric]: {
-                label: metricDisplayNames[selectedMetric],
+              current: {
+                label: 'Current',
                 color: '#2563eb',
               },
+              previous: {
+                label: 'Previous',
+                color: '#383942',
+              },
+              metric: {
+                label: metricDisplayNames[selectedMetric],
+              },
             }}
-          />
+          >
+            <LineChart
+              accessibilityLayer
+              data={mergedData}
+              margin={{
+                left: 12,
+                right: 12,
+              }}
+            >
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="timestamp"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tickFormatter={(value) => {
+                  switch (selectedInterval) {
+                    case 'hour':
+                      return value.toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false,
+                      })
+                    case 'day':
+                    case 'week':
+                      return value.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: '2-digit',
+                      })
+                    case 'month':
+                      return value.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: '2-digit',
+                        year: '2-digit',
+                      })
+                    case 'year':
+                      return value.toLocaleDateString('en-US', {
+                        month: 'short',
+                        year: 'numeric',
+                      })
+                    default:
+                      return value.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: '2-digit',
+                      })
+                  }
+                }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tickFormatter={(value) => {
+                  const metric =
+                    currentPeriodMetricsData?.metrics[selectedMetric]
+
+                  if (metric?.type === 'currency') {
+                    return `$${getCentsInDollarString(parseInt(value as string))}`
+                  } else {
+                    return value
+                  }
+                }}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={
+                  <ChartTooltipContent
+                    className="text-black dark:text-white"
+                    indicator="dot"
+                    labelKey="metric"
+                  />
+                }
+                /* formatter={(value, name) => {
+                  const metric = metricsData.metrics[selectedMetric]
+
+                  if (metric?.type === 'currency') {
+                    return `$${getCentsInDollarString(parseInt(value as string))}`
+                  } else {
+                    return value
+                  }
+                }} */
+              />
+              <Line
+                dataKey="previous"
+                stroke="var(--color-previous)"
+                type="linear"
+                dot={false}
+              />
+              <Line
+                dataKey="current"
+                stroke="var(--color-current)"
+                type="linear"
+                dot={false}
+              />
+            </LineChart>
+          </ChartContainer>
         ) : (
           <div className="flex h-[300px] flex-col items-center justify-center">
             <span className="text-lg">No data available</span>

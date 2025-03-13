@@ -948,7 +948,8 @@ async def create_order(
     *,
     product: Product,
     customer: Customer,
-    items: list[OrderItem],
+    amount: int = 1000,
+    tax_amount: int = 0,
     discount_amount: int = 0,
     subscription: Subscription | None = None,
     stripe_invoice_id: str | None = "INVOICE_ID",
@@ -958,10 +959,17 @@ async def create_order(
 ) -> Order:
     order = Order(
         created_at=created_at or utc_now(),
-        amount=sum(item.amount for item in items),
-        tax_amount=sum(item.tax_amount for item in items),
+        amount=amount,
+        tax_amount=tax_amount,
         discount_amount=discount_amount,
-        items=items,
+        items=[
+            OrderItem(
+                label="",
+                amount=amount,
+                tax_amount=tax_amount,
+                proration=False,
+            )
+        ],
         currency="usd",
         billing_reason=billing_reason,
         stripe_invoice_id=stripe_invoice_id,

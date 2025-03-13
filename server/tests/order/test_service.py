@@ -713,9 +713,7 @@ class TestCreateOrderBalance:
         product: Product,
         customer: Customer,
     ) -> None:
-        order = await create_order(
-            save_fixture, product=product, customer=customer, items=[]
-        )
+        order = await create_order(save_fixture, product=product, customer=customer)
         with pytest.raises(PaymentTransactionForChargeDoesNotExist):
             await order_service.create_order_balance(session, order, "CHARGE_ID")
 
@@ -726,9 +724,7 @@ class TestCreateOrderBalance:
         product: Product,
         customer: Customer,
     ) -> None:
-        order = await create_order(
-            save_fixture, product=product, customer=customer, items=[]
-        )
+        order = await create_order(save_fixture, product=product, customer=customer)
         payment_transaction = await create_transaction(
             save_fixture, type=TransactionType.payment, charge_id="CHARGE_ID"
         )
@@ -759,9 +755,7 @@ class TestCreateOrderBalance:
         customer: Customer,
         organization_account: Account,
     ) -> None:
-        order = await create_order(
-            save_fixture, product=product, customer=customer, items=[]
-        )
+        order = await create_order(save_fixture, product=product, customer=customer)
         payment_transaction = await create_transaction(
             save_fixture, type=TransactionType.payment, charge_id="CHARGE_ID"
         )
@@ -827,9 +821,7 @@ async def test_send_confirmation_email(
     with WatcherEmailRenderer() as email_sender:
         mocker.patch("polar.order.service.enqueue_email", email_sender)
 
-        order = await create_order(
-            save_fixture, product=product, customer=customer, items=[]
-        )
+        order = await create_order(save_fixture, product=product, customer=customer)
 
         async def _send_confirmation_email() -> None:
             await order_service.send_confirmation_email(session, organization, order)

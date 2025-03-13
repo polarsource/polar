@@ -29,6 +29,7 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from '@polar-sh/ui/components/ui/radio-group'
+import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { Textarea } from '@polar-sh/ui/components/ui/textarea'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
@@ -228,10 +229,13 @@ export const OrganizationDetailsForm: React.FC<
         rules={{ required: 'This field is required.' }}
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Name</FormLabel>
+            <FormLabel>{inKYCMode && `Organization `}Name</FormLabel>
             <FormControl>
               <Input {...field} />
             </FormControl>
+            <FormDescription>
+              What customers will see in checkout, receipts and more.
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -291,10 +295,6 @@ export const OrganizationDetailsForm: React.FC<
             <FormControl>
               <Input {...field} placeholder="https://" />
             </FormControl>
-            <FormDescription>
-              Remember buying that domain back when it was all just an idea?
-              You&apos;ve now made it real - let&apos;s go! 🚀
-            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -315,7 +315,13 @@ export const OrganizationDetailsForm: React.FC<
       <OrganizationSocialLinks />
       {inKYCMode && (
         <>
-          <h3>Business details</h3>
+          <Separator />
+          <div>
+            <h3 className="font-medium">Compliance information</h3>
+            <p className="text-sm">
+              Please fill this out accurately &amp; thoroughly for our reviews.
+            </p>
+          </div>
           <FormField
             control={control}
             name="details.about"
@@ -323,7 +329,10 @@ export const OrganizationDetailsForm: React.FC<
               <FormItem>
                 <FormLabel>About you and your business</FormLabel>
                 <FormControl>
-                  <Textarea {...field} placeholder="About you" />
+                  <Textarea
+                    {...field}
+                    placeholder="I'm the founder of AcmeCo - building a SaaS application for easier uptime monitoring for developers."
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -338,7 +347,7 @@ export const OrganizationDetailsForm: React.FC<
                 <FormControl>
                   <Textarea
                     {...field}
-                    placeholder="Describe the products you aim to sell in detail"
+                    placeholder="We'll sell SaaS tiers with different credits for uptime monitoring combined with one-time purchases for some premium add-on features."
                   />
                 </FormControl>
                 <FormMessage />
@@ -354,7 +363,7 @@ export const OrganizationDetailsForm: React.FC<
                 <FormControl>
                   <Textarea
                     {...field}
-                    placeholder="Just with checkout links? Or integrate our API? Will you listen to webhooks?"
+                    placeholder="We will integrate the API & Webhooks within our service and use checkout links to promote products on social media. Finally, we will use Polar license keys to validate access to our desktop app."
                   />
                 </FormControl>
                 <FormMessage />
@@ -594,7 +603,7 @@ const OrganizationProfileSettings: React.FC<
                 />
               </FormControl>
               <FormDescription>
-                Your customer portal is hosted at{' '}
+                Your slug determines the customer portal URL, e.g{' '}
                 <span className="rounded bg-gray-200 px-2 py-0.5 text-gray-700">
                   https://polar.sh/{organization.slug}/portal
                 </span>{' '}
@@ -606,7 +615,7 @@ const OrganizationProfileSettings: React.FC<
                 >
                   contact support
                 </a>{' '}
-                to change this.
+                to change the slug.
               </FormDescription>
             </div>
           </>

@@ -39,6 +39,7 @@ import {
 } from '@polar-sh/ui/components/ui/chart'
 import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import { motion } from 'framer-motion'
+import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import React, { useContext, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -72,7 +73,7 @@ const getIntervalStartDate = (
     case 'day':
       return new Date(new Date().setDate(new Date().getDate() - 30))
     case 'hour':
-      return new Date(new Date().setHours(new Date().getHours() - 24))
+      return new Date(new Date().setHours(new Date().getHours() - 12))
   }
 }
 
@@ -90,7 +91,7 @@ const getPreviousPeriod = (
     case 'day':
       return new Date(startDate.setDate(startDate.getDate() - 30))
     case 'hour':
-      return new Date(startDate.setHours(startDate.getHours() - 24))
+      return new Date(startDate.setHours(startDate.getHours() - 12))
   }
 }
 
@@ -152,6 +153,10 @@ const HeroChart = ({ organization }: HeroChartProps) => {
       return value
     }
   }, [currentPeriodMetricsData, selectedMetric])
+
+  const { resolvedTheme } = useTheme()
+
+  const isDark = resolvedTheme === 'dark'
 
   const metricLoading =
     currentPeriodMetricsLoading || previousPeriodMetricsLoading
@@ -230,7 +235,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
               },
               previous: {
                 label: 'Previous',
-                color: '#383942',
+                color: isDark ? '#383942' : '#ccc',
               },
               metric: {
                 label: metricDisplayNames[selectedMetric],
@@ -322,6 +327,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
                 dataKey="previous"
                 stroke="var(--color-previous)"
                 type="linear"
+                strokeWidth={1.5}
                 dot={false}
               />
               <Line
@@ -329,6 +335,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
                 stroke="var(--color-current)"
                 type="linear"
                 dot={false}
+                strokeWidth={1.5}
               />
             </LineChart>
           </ChartContainer>

@@ -6,7 +6,7 @@ from typing import Any
 import stripe as stripe_lib
 import structlog
 from sqlalchemy import UnaryExpression, asc, desc, select
-from sqlalchemy.orm import aliased, contains_eager, joinedload
+from sqlalchemy.orm import contains_eager
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
@@ -39,7 +39,7 @@ from polar.models import (
     Product,
     ProductPrice,
     ProductPriceCustom,
-    Subscription,
+    ProductPriceFree,
     Transaction,
     User,
 )
@@ -212,25 +212,20 @@ class OrderService:
         repository = OrderRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject)
 
-        statement = statement.join(Order.discount, isouter=True).options(
-            joinedload(Order.subscription).joinedload(Subscription.customer),
-            contains_eager(Order.discount),
+        statement = (
+            statement.join(Order.discount, isouter=True)
+            .join(Order.product)
+            .options(
+                *repository.get_eager_options(
+                    customer_load=contains_eager(Order.customer),
+                    product_load=contains_eager(Order.product),
+                    discount_load=contains_eager(Order.discount),
+                )
+            )
         )
 
-        OrderProductPrice = aliased(ProductPrice)
-        statement = statement.join(
-            OrderProductPrice, onclause=Order.product_price_id == OrderProductPrice.id
-        ).options(contains_eager(Order.product_price.of_type(OrderProductPrice)))
-
-        OrderCustomer = aliased(Customer)
-        statement = statement.join(
-            OrderCustomer, onclause=Order.customer_id == OrderCustomer.id
-        ).options(contains_eager(Order.customer.of_type(OrderCustomer)))
-
         if organization_id is not None:
-            statement = statement.where(
-                OrderCustomer.organization_id.in_(organization_id)
-            )
+            statement = statement.where(Customer.organization_id.in_(organization_id))
 
         if product_id is not None:
             statement = statement.where(Order.product_id.in_(product_id))
@@ -261,7 +256,7 @@ class OrderService:
             ]:
                 order_by_clauses.append(clause_function(Order.subtotal_amount))
             elif criterion == OrderSortProperty.customer:
-                order_by_clauses.append(clause_function(OrderCustomer.email))
+                order_by_clauses.append(clause_function(Customer.email))
             elif criterion == OrderSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
             elif criterion == OrderSortProperty.discount:
@@ -281,7 +276,11 @@ class OrderService:
         repository = OrderRepository.from_session(session)
         statement = (
             repository.get_readable_statement(auth_subject)
-            .options(*repository.get_eager_options())
+            .options(
+                *repository.get_eager_options(
+                    customer_load=contains_eager(Order.customer)
+                )
+            )
             .where(Order.id == id)
         )
         return await repository.get_one_or_none(statement)
@@ -325,6 +324,7 @@ class OrderService:
 
         stripe_price_ids: list[str] = []
         prices = product.prices
+        free_pricing = True
         for price in prices:
             # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
             if isinstance(price, ProductPriceCustom):
@@ -334,6 +334,10 @@ class OrderService:
                     product, price, checkout.amount, checkout.currency
                 )
                 stripe_price_ids.append(ad_hoc_price.id)
+            else:
+                stripe_price_ids.append(price.stripe_price_id)
+            if not isinstance(price, ProductPriceFree):
+                free_pricing = False
 
         (
             stripe_invoice,
@@ -343,7 +347,8 @@ class OrderService:
             currency=checkout.currency or "usd",
             prices=stripe_price_ids,
             coupon=(checkout.discount.stripe_coupon_id if checkout.discount else None),
-            automatic_tax=product.is_tax_applicable,
+            # Disable automatic tax for free pricing, since we don't collect customer address in that case
+            automatic_tax=product.is_tax_applicable and not free_pricing,
             metadata=metadata,
         )
 
@@ -447,9 +452,7 @@ class OrderService:
             raise SubscriptionDoesNotExist(invoice.id, stripe_subscription_id)
 
         # Get customer
-        print(
-            "TODO: eager load customer from subscription ;) Need subscription repo to do this properly"
-        )
+        # TODO: eager load customer from subscription ;) Need subscription repo to do this properly"
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id(subscription.customer_id)
         assert customer is not None
@@ -575,18 +578,27 @@ class OrderService:
             flush=True,
         )
 
-        # Create the transactions balances for the order, if payment was actually made
-        # Payment can be skipped in two cases:
-        # * The invoice total is zero, like a free product (obviously)
-        # * A balance was applied to the invoice, generally because customer has a credit after a subscription downgrade
-        if invoice.amount_paid > 0:
-            assert invoice.charge is not None
+        # Enqueue the balance creation, if it has a charge generated by Stripe
+        if invoice.charge:
             enqueue_job(
                 "order.balance",
                 order_id=order.id,
                 charge_id=get_expandable_id(invoice.charge),
             )
+        # or if it has an associated out-of-band payment intent
+        elif invoice.metadata and (
+            payment_intent_id := invoice.metadata.get("payment_intent_id")
+        ):
+            payment_intent = await stripe_service.get_payment_intent(payment_intent_id)
+            assert payment_intent.latest_charge is not None
+            enqueue_job(
+                "order.balance",
+                order_id=order.id,
+                charge_id=get_expandable_id(payment_intent.latest_charge),
+            )
 
+        # Trigger notifications
+        enqueue_job("order.discord_notification", order_id=order.id)
         await self._send_webhook(session, order)
 
         return order

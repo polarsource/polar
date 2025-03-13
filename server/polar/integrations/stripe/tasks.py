@@ -14,7 +14,7 @@ from polar.checkout.service import checkout as checkout_service
 from polar.exceptions import PolarTaskError
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook, ProductType
 from polar.logging import Logger
-from polar.order.service import NotAnOrderInvoice
+from polar.order.service import NotAnOrderInvoice, NotASubscriptionInvoice
 from polar.order.service import (
     SubscriptionDoesNotExist as OrderSubscriptionDoesNotExist,
 )
@@ -23,7 +23,6 @@ from polar.pledge.service import pledge as pledge_service
 from polar.refund.service import refund as refund_service
 from polar.subscription.service import SubscriptionDoesNotExist
 from polar.subscription.service import subscription as subscription_service
-from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
@@ -340,21 +339,17 @@ async def invoice_paid(
             invoice = stripe.Invoice.construct_from(event["data"]["object"], None)
             try:
                 await order_service.create_order_from_stripe(session, invoice=invoice)
-            except (
-                OrderSubscriptionDoesNotExist,
-                PaymentTransactionForChargeDoesNotExist,
-            ) as e:
+            except OrderSubscriptionDoesNotExist as e:
                 log.warning(e.message, event_id=event["id"])
                 # Retry because Stripe webhooks order is not guaranteed,
-                # so we might not have been able to handle subscription.created
-                # or charge.succeeded yet!
+                # so we might not have been able to handle subscription.created yet!
                 if ctx["job_try"] <= MAX_RETRIES:
                     raise Retry(compute_backoff(ctx["job_try"])) from e
                 # Raise the exception to be notified about it
                 else:
                     raise
-            except NotAnOrderInvoice:
-                # Ignore invoices that are not for orders (e.g. for pledges)
+            except (NotAnOrderInvoice, NotASubscriptionInvoice):
+                # Ignore invoices that are not for products (pledges) and subscriptions
                 return
 
 

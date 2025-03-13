@@ -21,7 +21,6 @@ from polar.models.order import OrderStatus
 from polar.models.refund import RefundReason, RefundStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
-from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
 from polar.refund.schemas import RefundCreate
 from tests.fixtures import random_objects as ro
@@ -271,13 +270,13 @@ class TestCreateRefunds(StripeRefund):
         product_organization_second: Product,
         stripe_service_mock: MagicMock,
         product: Product,
-        customer: Customer,
+        customer_organization_second: Customer,
     ) -> None:
         # Complex Swedish order. $99.9 with 25% VAT = $24.75
         order, payment = await create_order_and_payment(
             save_fixture,
             product=product_organization_second,
-            customer=customer,
+            customer=customer_organization_second,
             amount=1000,
             tax_amount=250,
         )
@@ -394,11 +393,13 @@ class TestCreateRefunds(StripeRefund):
             refund_tax_amount=500,
         )
         assert response.status_code == 400
-        order = await order_service.get(session, order.id)  # type: ignore
-        assert order
-        assert order.refunded_amount == amount_before_exceed_attempt
-        assert order.refunded_tax_amount == tax_before_exceed_attempt
-        assert order.refundable_amount == 2000
+
+        order_repository = OrderRepository.from_session(session)
+        updated = await order_repository.get_by_id(order.id)
+        assert updated is not None
+        assert updated.refunded_amount == amount_before_exceed_attempt
+        assert updated.refunded_tax_amount == tax_before_exceed_attempt
+        assert updated.refundable_amount == 2000
 
         # Still 2_000 remaining
         order, response = await self.create_order_refund(

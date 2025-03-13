@@ -304,7 +304,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         statement = (
             select(Subscription)
             .where(Subscription.stripe_subscription_id == stripe_subscription_id)
-            .options(joinedload(Subscription.customer))
+            .options(
+                joinedload(Subscription.customer), joinedload(Subscription.product)
+            )
         )
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()

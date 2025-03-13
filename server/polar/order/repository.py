@@ -1,7 +1,9 @@
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Select, select
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import joinedload
+from sqlalchemy.orm.strategy_options import selectinload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import (
@@ -10,7 +12,17 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Customer, Order, Subscription, UserOrganization
+from polar.models import (
+    Customer,
+    Order,
+    OrderItem,
+    ProductPrice,
+    Subscription,
+    UserOrganization,
+)
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm.strategy_options import _AbstractLoad
 
 
 class OrderRepository(
@@ -23,10 +35,8 @@ class OrderRepository(
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Order]]:
-        statement = (
-            self.get_base_statement()
-            .join(Customer, Order.customer_id == Customer.id)
-            .options(contains_eager(Order.customer))
+        statement = self.get_base_statement().join(
+            Customer, Order.customer_id == Customer.id
         )
 
         if is_user(auth_subject):
@@ -46,9 +56,19 @@ class OrderRepository(
 
         return statement
 
-    def get_eager_options(self) -> Options:
+    def get_eager_options(
+        self,
+        *,
+        customer_load: "_AbstractLoad | None" = None,
+        product_load: "_AbstractLoad | None" = None,
+        discount_load: "_AbstractLoad | None" = None,
+    ) -> Options:
         return (
-            joinedload(Order.customer),
+            customer_load if customer_load else joinedload(Order.customer),
+            discount_load if discount_load else joinedload(Order.discount),
+            product_load if product_load else joinedload(Order.product),
             joinedload(Order.subscription).joinedload(Subscription.customer),
-            joinedload(Order.discount),
+            selectinload(Order.items)
+            .joinedload(OrderItem.product_price)
+            .joinedload(ProductPrice.product),
         )

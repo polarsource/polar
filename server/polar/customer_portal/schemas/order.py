@@ -20,7 +20,15 @@ class CustomerOrderBase(TimestampedSchema):
 
     customer_id: UUID4
     product_id: UUID4
-    product_price_id: UUID4
+    product_price_id: UUID4 = Field(
+        deprecated="Use `items` instead.",
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "product_price_id",
+            # Validate from ORM model
+            AliasPath("legacy_product_price", "id"),
+        ),
+    )
     subscription_id: UUID4 | None
 
 
@@ -45,7 +53,15 @@ class CustomerOrder(CustomerOrderBase):
         deprecated="Use `customer_id`.",
     )
     product: CustomerOrderProduct
-    product_price: ProductPrice
+    product_price: ProductPrice = Field(
+        deprecated="Use `items` instead.",
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "product_price",
+            # Validate from ORM model
+            "legacy_product_price",
+        ),
+    )
     subscription: CustomerOrderSubscription | None
 
 

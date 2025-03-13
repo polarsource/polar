@@ -138,6 +138,7 @@ class TestList:
         product: Product,
         product_organization_second: Product,
         customer: Customer,
+        customer_organization_second: Customer,
     ) -> None:
         order = await create_order(
             save_fixture,
@@ -148,7 +149,7 @@ class TestList:
         await create_order(
             save_fixture,
             product=product_organization_second,
-            customer=customer,
+            customer=customer_organization_second,
             stripe_invoice_id="INVOICE_2",
         )
 
@@ -172,6 +173,7 @@ class TestList:
         product: Product,
         product_organization_second: Product,
         customer: Customer,
+        customer_organization_second: Customer,
     ) -> None:
         user_organization_second_admin = UserOrganization(
             user_id=user.id, organization_id=organization_second.id
@@ -187,7 +189,7 @@ class TestList:
         order_organization_second = await create_order(
             save_fixture,
             product=product_organization_second,
-            customer=customer,
+            customer=customer_organization_second,
             stripe_invoice_id="INVOICE_2",
         )
 
@@ -221,6 +223,7 @@ class TestList:
         product: Product,
         product_organization_second: Product,
         customer: Customer,
+        customer_organization_second: Customer,
     ) -> None:
         order = await create_order(
             save_fixture,
@@ -231,7 +234,7 @@ class TestList:
         await create_order(
             save_fixture,
             product=product_organization_second,
-            customer=customer,
+            customer=customer_organization_second,
             stripe_invoice_id="INVOICE_2",
         )
 
@@ -363,8 +366,8 @@ class TestCreateFromCheckout:
         stripe_service_mock.create_out_of_band_invoice.return_value = (
             stripe_invoice,
             {
-                price.stripe_price_id: stripe_invoice.lines[i]
-                for i, price in enumerate(product_one_time.prices)
+                price.stripe_price_id: line
+                for price, line in zip(product_one_time.prices, stripe_invoice.lines)
             },
         )
 
@@ -381,7 +384,14 @@ class TestCreateFromCheckout:
         assert order.product == product_one_time
         assert len(order.items) == len(product_one_time.prices)
 
-        stripe_service_mock.create_out_of_band_invoice.assert_called_once()
+        stripe_service_mock.create_out_of_band_invoice.assert_called_once_with(
+            customer=customer.stripe_customer_id,
+            currency=checkout.currency,
+            prices=[price.stripe_price_id for price in product_one_time.prices],
+            coupon=None,
+            automatic_tax=True,
+            metadata=ANY,
+        )
 
         enqueue_job_mock.assert_any_call(
             "order.balance", order_id=order.id, charge_id="CHARGE_ID"
@@ -428,8 +438,10 @@ class TestCreateFromCheckout:
         stripe_service_mock.create_out_of_band_invoice.return_value = (
             stripe_invoice,
             {
-                price.stripe_price_id: stripe_invoice.lines[i]
-                for i, price in enumerate(product_one_time_custom_price.prices)
+                price.stripe_price_id: line
+                for price, line in zip(
+                    product_one_time_custom_price.prices, stripe_invoice.lines
+                )
             },
         )
 
@@ -446,7 +458,14 @@ class TestCreateFromCheckout:
         assert order.product == product_one_time_custom_price
         assert len(order.items) == len(product_one_time_custom_price.prices)
 
-        stripe_service_mock.create_out_of_band_invoice.assert_called_once()
+        stripe_service_mock.create_out_of_band_invoice.assert_called_once_with(
+            customer=customer.stripe_customer_id,
+            currency=checkout.currency,
+            prices=["STRIPE_CUSTOM_PRICE_ID"],
+            coupon=None,
+            automatic_tax=True,
+            metadata=ANY,
+        )
 
         enqueue_job_mock.assert_any_call(
             "order.balance", order_id=order.id, charge_id="CHARGE_ID"
@@ -488,8 +507,10 @@ class TestCreateFromCheckout:
         stripe_service_mock.create_out_of_band_invoice.return_value = (
             stripe_invoice,
             {
-                price.stripe_price_id: stripe_invoice.lines[i]
-                for i, price in enumerate(product_one_time_free_price.prices)
+                price.stripe_price_id: line
+                for price, line in zip(
+                    product_one_time_free_price.prices, stripe_invoice.lines
+                )
             },
         )
 
@@ -502,7 +523,16 @@ class TestCreateFromCheckout:
         assert order.product == product_one_time_free_price
         assert len(order.items) == len(product_one_time_free_price.prices)
 
-        stripe_service_mock.create_out_of_band_invoice.assert_called_once()
+        stripe_service_mock.create_out_of_band_invoice.assert_called_once_with(
+            customer=customer.stripe_customer_id,
+            currency="usd",
+            prices=[
+                price.stripe_price_id for price in product_one_time_free_price.prices
+            ],
+            coupon=None,
+            automatic_tax=False,
+            metadata=ANY,
+        )
 
         enqueue_job_mock.assert_any_call(
             "benefit.enqueue_benefits_grants",

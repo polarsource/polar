@@ -13068,36 +13068,90 @@ export interface components {
              * @description The organization ID.
              */
             id: string;
-            /** Name */
+            /**
+             * Name
+             * @description Organization name shown in checkout, customer portal, emails etc.
+             */
             name: string;
-            /** Slug */
+            /**
+             * Slug
+             * @description Unique organization slug in checkout, customer portal and credit card statements.
+             */
             slug: string;
-            /** Avatar Url */
-            avatar_url: string | null;
-            /** Bio */
-            bio: string | null;
-            /** Company */
-            company: string | null;
-            /** Blog */
-            blog: string | null;
-            /** Location */
-            location: string | null;
-            /** Email */
-            email: string | null;
-            /** Twitter Username */
-            twitter_username: string | null;
-            /** Pledge Minimum Amount */
-            pledge_minimum_amount: number;
-            /** Pledge Badge Show Amount */
-            pledge_badge_show_amount: boolean;
-            /** Default Upfront Split To Contributors */
-            default_upfront_split_to_contributors: number | null;
-            /** @description Settings for the organization profile */
-            profile_settings: components["schemas"]["OrganizationProfileSettings"] | null;
-            /** @description Settings for the organization features */
+            /**
+             * Avatar Url
+             * @description Avatar URL shown in checkout, customer portal, emails etc.
+             */
+            avatar_url?: string | null;
+            /**
+             * Email
+             * @description Public support email.
+             */
+            email?: string | null;
+            /**
+             * Website
+             * @description Official website of the organization.
+             */
+            website?: string | null;
+            /**
+             * Socials
+             * @description Links to social profiles.
+             */
+            socials: components["schemas"]["OrganizationSocialLink"][];
+            /**
+             * Details Submitted At
+             * @description When the business details were submitted.
+             */
+            details_submitted_at?: string | null;
+            /** @description Organization feature settings */
             feature_settings: components["schemas"]["OrganizationFeatureSettings"] | null;
             /** @description Settings related to subscriptions management */
             subscription_settings: components["schemas"]["OrganizationSubscriptionSettings"];
+            /**
+             * Bio
+             * @deprecated
+             */
+            bio: string | null;
+            /**
+             * Company
+             * @deprecated
+             */
+            company: string | null;
+            /**
+             * Blog
+             * @deprecated
+             */
+            blog: string | null;
+            /**
+             * Location
+             * @deprecated
+             */
+            location: string | null;
+            /**
+             * Twitter Username
+             * @deprecated
+             */
+            twitter_username: string | null;
+            /**
+             * Pledge Minimum Amount
+             * @deprecated
+             */
+            pledge_minimum_amount: number;
+            /**
+             * Pledge Badge Show Amount
+             * @deprecated
+             */
+            pledge_badge_show_amount: boolean;
+            /**
+             * Default Upfront Split To Contributors
+             * @deprecated
+             */
+            default_upfront_split_to_contributors: number | null;
+            /**
+             * @deprecated
+             * @description Settings for the organization profile
+             */
+            profile_settings: components["schemas"]["OrganizationProfileSettings"] | null;
         };
         /** OrganizationAccessToken */
         OrganizationAccessToken: {
@@ -13293,8 +13347,70 @@ export interface components {
             slug: string;
             /** Avatar Url */
             avatar_url?: string | null;
+            /**
+             * Email
+             * @description Public support email.
+             */
+            email?: string | null;
+            /**
+             * Website
+             * @description Official website of the organization.
+             */
+            website?: string | null;
+            /**
+             * Socials
+             * @description Link to social profiles.
+             */
+            socials?: components["schemas"]["OrganizationSocialLink"][] | null;
+            /** @description Additional, private, business details Polar needs about active organizations for compliance (KYC). */
+            details?: components["schemas"]["OrganizationDetails"] | null;
             feature_settings?: components["schemas"]["OrganizationFeatureSettings"] | null;
             subscription_settings?: components["schemas"]["OrganizationSubscriptionSettings"] | null;
+        };
+        /** OrganizationDetails */
+        OrganizationDetails: {
+            /**
+             * About
+             * @description Brief information about you and your business.
+             */
+            about: string;
+            /**
+             * Product Description
+             * @description Description of digital products being sold.
+             */
+            product_description: string;
+            /**
+             * Intended Use
+             * @description How the organization will integrate and use Polar.
+             */
+            intended_use: string;
+            /**
+             * Customer Acquisition
+             * @description Main customer acquisition channels.
+             */
+            customer_acquisition: string[];
+            /**
+             * Future Annual Revenue
+             * @description Estimated revenue in the next 12 months
+             */
+            future_annual_revenue: number;
+            /**
+             * Switching
+             * @description Switching from another platform?
+             * @default true
+             */
+            switching: boolean;
+            /**
+             * Switching From
+             * @description Which platform the organization is migrating from.
+             */
+            switching_from?: ("paddle" | "lemon_squeezy" | "gumroad" | "stripe" | "other") | null;
+            /**
+             * Previous Annual Revenue
+             * @description Revenue from last year if applicable.
+             * @default 0
+             */
+            previous_annual_revenue: number;
         };
         /** OrganizationFeatureSettings */
         OrganizationFeatureSettings: {
@@ -13362,6 +13478,22 @@ export interface components {
              */
             account_id: string;
         };
+        /** OrganizationSocialLink */
+        OrganizationSocialLink: {
+            /** @description The social platform of the URL */
+            platform: components["schemas"]["OrganizationSocialPlatforms"];
+            /**
+             * Url
+             * Format: uri
+             * @description The URL to the organization profile
+             */
+            url: string;
+        };
+        /**
+         * OrganizationSocialPlatforms
+         * @enum {string}
+         */
+        OrganizationSocialPlatforms: "x" | "github" | "facebook" | "instagram" | "youtube" | "tiktok" | "linkedin" | "other";
         /**
          * OrganizationSortProperty
          * @enum {string}
@@ -13407,29 +13539,64 @@ export interface components {
             name?: string | null;
             /** Avatar Url */
             avatar_url?: string | null;
-            /** Default Upfront Split To Contributors */
+            /**
+             * Email
+             * @description Public support email.
+             */
+            email?: string | null;
+            /**
+             * Website
+             * @description Official website of the organization.
+             */
+            website?: string | null;
+            /**
+             * Socials
+             * @description Links to social profiles.
+             */
+            socials?: components["schemas"]["OrganizationSocialLink"][] | null;
+            /** @description Additional, private, business details Polar needs about active organizations for compliance (KYC). */
+            details?: components["schemas"]["OrganizationDetails"] | null;
+            feature_settings?: components["schemas"]["OrganizationFeatureSettings"] | null;
+            subscription_settings?: components["schemas"]["OrganizationSubscriptionSettings"] | null;
+            /**
+             * Default Upfront Split To Contributors
+             * @deprecated
+             */
             default_upfront_split_to_contributors?: number | null;
             /**
              * Pledge Badge Show Amount
+             * @deprecated
              * @default false
              */
             pledge_badge_show_amount: boolean;
-            /** Billing Email */
+            /**
+             * Billing Email
+             * @deprecated
+             */
             billing_email?: string | null;
-            /** Default Badge Custom Content */
+            /**
+             * Default Badge Custom Content
+             * @deprecated
+             */
             default_badge_custom_content?: string | null;
             /**
              * Pledge Minimum Amount
+             * @deprecated
              * @default 2000
              */
             pledge_minimum_amount: number;
-            /** Total Monthly Spending Limit */
+            /**
+             * Total Monthly Spending Limit
+             * @deprecated
+             */
             total_monthly_spending_limit?: number | null;
-            /** Per User Monthly Spending Limit */
+            /**
+             * Per User Monthly Spending Limit
+             * @deprecated
+             */
             per_user_monthly_spending_limit?: number | null;
+            /** @deprecated */
             profile_settings?: components["schemas"]["OrganizationProfileSettings"] | null;
-            feature_settings?: components["schemas"]["OrganizationFeatureSettings"] | null;
-            subscription_settings?: components["schemas"]["OrganizationSubscriptionSettings"] | null;
         };
         /** Pagination */
         Pagination: {
@@ -25686,6 +25853,8 @@ export const orderSortPropertyValues: ReadonlyArray<components["schemas"]["Order
 export const organizationAccessTokenSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationAccessTokenSortProperty"]> = ["created_at", "-created_at", "comment", "-comment", "last_used_at", "-last_used_at", "organization_id", "-organization_id"];
 export const organizationAvatarFileCreateServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileCreate"]["service"]> = ["organization_avatar"];
 export const organizationAvatarFileReadServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileRead"]["service"]> = ["organization_avatar"];
+export const organizationDetailsSwitching_fromValues: ReadonlyArray<components["schemas"]["OrganizationDetails"]["switching_from"]> = ["paddle", "lemon_squeezy", "gumroad", "stripe", "other"];
+export const organizationSocialPlatformsValues: ReadonlyArray<components["schemas"]["OrganizationSocialPlatforms"]> = ["x", "github", "facebook", "instagram", "youtube", "tiktok", "linkedin", "other"];
 export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationSortProperty"]> = ["created_at", "-created_at", "slug", "-slug", "name", "-name"];
 export const paymentProcessorValues: ReadonlyArray<components["schemas"]["PaymentProcessor"]> = ["stripe"];
 export const platformFeeTypeValues: ReadonlyArray<components["schemas"]["PlatformFeeType"]> = ["payment", "international_payment", "subscription", "invoice", "cross_border_transfer", "payout", "account", "dispute", "platform"];

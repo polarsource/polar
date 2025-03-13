@@ -28,6 +28,7 @@ from polar.models import (
 )
 from polar.models.refund import Refund, RefundReason, RefundStatus
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
@@ -143,7 +144,7 @@ class RefundService(ResourceServiceReader[Refund]):
         create_schema: RefundCreate,
     ) -> Refund:
         order_id = create_schema.order_id
-        order = await order_service.user_get_by_id(
+        order = await order_service.get(
             session,
             auth_subject,
             order_id,
@@ -585,9 +586,9 @@ class RefundService(ResourceServiceReader[Refund]):
             raise RefundUnknownPayment(charge_id, payment_type="charge")
 
         if payment.order_id:
-            order = await order_service.get_by_id(
-                session,
-                payment.order_id,
+            order_repository = OrderRepository.from_session(session)
+            order = await order_repository.get_by_id(
+                payment.order_id, options=order_repository.get_eager_options()
             )
             if not order:
                 raise RefundUnknownPayment(payment.order_id, payment_type="order")

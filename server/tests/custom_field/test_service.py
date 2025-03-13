@@ -5,7 +5,7 @@ from polar.custom_field.schemas import CustomFieldUpdateText
 from polar.custom_field.service import custom_field as custom_field_service
 from polar.models import Customer, Order, Organization, Product
 from polar.models.custom_field import CustomFieldText, CustomFieldType
-from polar.order.service import order as order_service
+from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_custom_field, create_order
@@ -56,7 +56,8 @@ class TestUpdate:
 
         assert updated_field.slug == "updatedslug"
 
-        updated_order = await order_service.get(session, order_text_field_data.id)
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order_text_field_data.id)
         assert updated_order is not None
         assert updated_order.custom_field_data == {
             "foo": "bar",

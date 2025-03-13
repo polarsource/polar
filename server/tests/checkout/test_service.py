@@ -1,5 +1,4 @@
 import uuid
-from datetime import timedelta
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
@@ -24,8 +23,6 @@ from polar.checkout.schemas import (
 from polar.checkout.service import (
     AlreadyActiveSubscriptionError,
     CheckoutDoesNotExist,
-    NoCustomerOnCheckout,
-    NoCustomerOnPaymentIntent,
     NoPaymentMethodOnPaymentIntent,
     NotConfirmedCheckout,
     NotOpenCheckout,
@@ -42,7 +39,6 @@ from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
 from polar.kit.tax import IncompleteTaxLocation, TaxIDFormat, calculate_tax
-from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import (
     Checkout,
@@ -63,6 +59,7 @@ from polar.models.product_price import (
     ProductPriceFixed,
     ProductPriceFree,
 )
+from polar.order.service import OrderService
 from polar.postgres import AsyncSession
 from polar.subscription.service import SubscriptionService
 from tests.fixtures.auth import AuthSubjectFixture
@@ -91,6 +88,13 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 def subscription_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=SubscriptionService)
     mocker.patch("polar.checkout.service.subscription_service", new=mock)
+    return mock
+
+
+@pytest.fixture(autouse=True)
+def order_service_mock(mocker: MockerFixture) -> MagicMock:
+    mock = MagicMock(spec=OrderService)
+    mocker.patch("polar.checkout.service.order_service", new=mock)
     return mock
 
 
@@ -2720,16 +2724,6 @@ class TestHandleStripeSuccess:
                 build_stripe_payment_intent(status="canceled"),
             )
 
-    async def test_no_customer_on_payment_intent(
-        self, session: AsyncSession, checkout_confirmed_one_time: Checkout
-    ) -> None:
-        with pytest.raises(NoCustomerOnPaymentIntent):
-            await checkout_service.handle_stripe_success(
-                session,
-                checkout_confirmed_one_time.id,
-                build_stripe_payment_intent(customer=None),
-            )
-
     async def test_no_payment_method_on_payment_intent(
         self, session: AsyncSession, checkout_confirmed_one_time: Checkout
     ) -> None:
@@ -2742,14 +2736,10 @@ class TestHandleStripeSuccess:
 
     async def test_valid_one_time(
         self,
-        stripe_service_mock: MagicMock,
+        order_service_mock: MagicMock,
         session: AsyncSession,
         checkout_confirmed_one_time: Checkout,
     ) -> None:
-        stripe_service_mock.create_out_of_band_invoice.return_value = SimpleNamespace(
-            id="STRIPE_INVOICE_ID", total=checkout_confirmed_one_time.total_amount
-        )
-
         checkout = await checkout_service.handle_stripe_success(
             session,
             checkout_confirmed_one_time.id,
@@ -2759,8 +2749,7 @@ class TestHandleStripeSuccess:
         )
 
         assert checkout.status == CheckoutStatus.succeeded
-        stripe_service_mock.create_out_of_band_invoice.assert_called_once()
-        stripe_service_mock.create_out_of_band_subscription.assert_not_called()
+        order_service_mock.create_from_checkout.assert_called_once()
 
     async def test_valid_recurring(
         self,
@@ -2778,39 +2767,6 @@ class TestHandleStripeSuccess:
 
         assert checkout.status == CheckoutStatus.succeeded
         subscription_service_mock.create_or_update_from_checkout.assert_called_once()
-
-    async def test_valid_one_time_custom(
-        self,
-        save_fixture: SaveFixture,
-        stripe_service_mock: MagicMock,
-        session: AsyncSession,
-        checkout_one_time_custom: Checkout,
-    ) -> None:
-        checkout_one_time_custom.status = CheckoutStatus.confirmed
-        checkout_one_time_custom.amount = 4242
-        await save_fixture(checkout_one_time_custom)
-
-        stripe_service_mock.create_ad_hoc_custom_price.return_value = SimpleNamespace(
-            id="STRIPE_CUSTOM_PRICE_ID"
-        )
-        stripe_service_mock.create_out_of_band_invoice.return_value = SimpleNamespace(
-            id="STRIPE_INVOICE_ID", total=4242
-        )
-        checkout = await checkout_service.handle_stripe_success(
-            session,
-            checkout_one_time_custom.id,
-            build_stripe_payment_intent(amount=4242),
-        )
-
-        assert checkout.status == CheckoutStatus.succeeded
-        stripe_service_mock.create_ad_hoc_custom_price.assert_called_once()
-        stripe_service_mock.create_out_of_band_subscription.assert_not_called()
-
-        stripe_service_mock.create_out_of_band_invoice.assert_called_once()
-        assert (
-            stripe_service_mock.create_out_of_band_invoice.call_args[1]["price"]
-            == "STRIPE_CUSTOM_PRICE_ID"
-        )
 
 
 @pytest.mark.asyncio
@@ -2889,20 +2845,6 @@ class TestHandleFreeSuccess:
                 session, checkout_one_time_free.id
             )
 
-    async def test_no_customer_on_checkout(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        checkout_one_time_free: Checkout,
-    ) -> None:
-        checkout_one_time_free.status = CheckoutStatus.confirmed
-        await save_fixture(checkout_one_time_free)
-
-        with pytest.raises(NoCustomerOnCheckout):
-            await checkout_service.handle_free_success(
-                session, checkout_one_time_free.id
-            )
-
     async def test_payment_required(
         self,
         session: AsyncSession,
@@ -2921,15 +2863,12 @@ class TestHandleFreeSuccess:
 
     async def test_valid_one_time(
         self,
-        stripe_service_mock: MagicMock,
+        order_service_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         checkout_one_time_free: Checkout,
     ) -> None:
         checkout_one_time_free.status = CheckoutStatus.confirmed
-        checkout_one_time_free.payment_processor_metadata = {
-            "customer_id": "STRIPE_CUSTOMER_ID"
-        }
         await save_fixture(checkout_one_time_free)
 
         checkout = await checkout_service.handle_free_success(
@@ -2937,8 +2876,7 @@ class TestHandleFreeSuccess:
         )
 
         assert checkout.status == CheckoutStatus.succeeded
-        stripe_service_mock.create_out_of_band_invoice.assert_called_once()
-        stripe_service_mock.create_out_of_band_subscription.assert_not_called()
+        order_service_mock.create_from_checkout.assert_called_once()
 
     async def test_valid_recurring(
         self,
@@ -2948,9 +2886,6 @@ class TestHandleFreeSuccess:
         checkout_recurring_free: Checkout,
     ) -> None:
         checkout_recurring_free.status = CheckoutStatus.confirmed
-        checkout_recurring_free.payment_processor_metadata = {
-            "customer_id": "STRIPE_CUSTOMER_ID"
-        }
         await save_fixture(checkout_recurring_free)
 
         checkout = await checkout_service.handle_free_success(
@@ -2959,46 +2894,3 @@ class TestHandleFreeSuccess:
 
         assert checkout.status == CheckoutStatus.succeeded
         subscription_service_mock.create_or_update_from_checkout.assert_called_once()
-
-
-@pytest.mark.asyncio
-class TestExpireOpenCheckouts:
-    async def test_valid(
-        self, save_fixture: SaveFixture, session: AsyncSession, product: Product
-    ) -> None:
-        open_checkout = await create_checkout(
-            save_fixture,
-            products=[product],
-            status=CheckoutStatus.open,
-            expires_at=utc_now() + timedelta(days=1),
-        )
-        expired_checkout = await create_checkout(
-            save_fixture,
-            products=[product],
-            status=CheckoutStatus.open,
-            expires_at=utc_now() - timedelta(days=1),
-        )
-        successful_checkout = await create_checkout(
-            save_fixture,
-            products=[product],
-            status=CheckoutStatus.succeeded,
-            expires_at=utc_now() - timedelta(days=1),
-        )
-
-        await checkout_service.expire_open_checkouts(session)
-
-        updated_open_checkout = await checkout_service.get(session, open_checkout.id)
-        assert updated_open_checkout is not None
-        assert updated_open_checkout.status == CheckoutStatus.open
-
-        updated_expired_checkout = await checkout_service.get(
-            session, expired_checkout.id
-        )
-        assert updated_expired_checkout is not None
-        assert updated_expired_checkout.status == CheckoutStatus.expired
-
-        updated_successful_checkout = await checkout_service.get(
-            session, successful_checkout.id
-        )
-        assert updated_successful_checkout is not None
-        assert updated_successful_checkout.status == CheckoutStatus.succeeded

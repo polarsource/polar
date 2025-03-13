@@ -40,7 +40,15 @@ class OrderBase(
 
     customer_id: UUID4
     product_id: UUID4
-    product_price_id: UUID4
+    product_price_id: UUID4 = Field(
+        deprecated="Use `items` instead.",
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "product_price_id",
+            # Validate from ORM model
+            AliasPath("items", 0, "product_price_id"),
+        ),
+    )
     discount_id: UUID4 | None
     subscription_id: UUID4 | None
     checkout_id: UUID4 | None
@@ -128,7 +136,15 @@ class Order(OrderBase):
         deprecated="Use `customer`.",
     )
     product: OrderProduct
-    product_price: ProductPrice
+    product_price: ProductPrice = Field(
+        deprecated="Use `items` instead.",
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "product_price",
+            # Validate from ORM model
+            AliasPath("items", 0, "product_price"),
+        ),
+    )
     discount: OrderDiscount | None
     subscription: OrderSubscription | None
 

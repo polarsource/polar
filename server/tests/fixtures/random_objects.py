@@ -36,6 +36,7 @@ from polar.models import (
     LegacyRecurringProductPriceFixed,
     LegacyRecurringProductPriceFree,
     Order,
+    OrderItem,
     Organization,
     Product,
     ProductBenefit,
@@ -947,28 +948,25 @@ async def create_order(
     *,
     product: Product,
     customer: Customer,
-    product_price: ProductPrice | None = None,
+    items: list[OrderItem],
+    discount_amount: int = 0,
     subscription: Subscription | None = None,
-    amount: int = 1000,
-    tax_amount: int = 0,
     stripe_invoice_id: str | None = "INVOICE_ID",
     billing_reason: OrderBillingReason = OrderBillingReason.purchase,
     created_at: datetime | None = None,
     custom_field_data: dict[str, Any] | None = None,
 ) -> Order:
-    if product_price is None and product.prices:
-        product_price = product.prices[0]
-
     order = Order(
         created_at=created_at or utc_now(),
-        amount=amount,
-        tax_amount=tax_amount,
+        amount=sum(item.amount for item in items),
+        tax_amount=sum(item.tax_amount for item in items),
+        discount_amount=discount_amount,
+        items=items,
         currency="usd",
         billing_reason=billing_reason,
         stripe_invoice_id=stripe_invoice_id,
         customer=customer,
         product=product,
-        product_price=product_price,
         subscription=subscription,
         custom_field_data=custom_field_data or {},
     )

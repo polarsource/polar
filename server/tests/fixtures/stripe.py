@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import stripe as stripe_lib
+from sqlalchemy.util.typing import NotRequired, TypedDict
 
 from polar.integrations.stripe.schemas import ProductType
 from polar.kit.utils import generate_uuid
@@ -132,17 +133,25 @@ def construct_stripe_customer(
     )
 
 
+class StripeLineItem(TypedDict):
+    price_id: str
+    price_metadata: NotRequired[dict[str, str]]
+    amount: int
+    tax_amount: int
+    proration: NotRequired[bool]
+    description: NotRequired[str]
+
+
 def construct_stripe_invoice(
     *,
+    lines: list[StripeLineItem],
     id: str | None = "INVOICE_ID",
-    total: int = 12000,
-    tax: int = 2000,
     amount_paid: int | None = None,
+    discount_amount: int | None = None,
     charge_id: str | None = "CHARGE_ID",
     subscription_id: str | None = "SUBSCRIPTION_ID",
     subscription_details: dict[str, Any] | None = None,
     customer_id: str = "STRIPE_CUSTOMER_ID",
-    lines: list[tuple[str, bool, dict[str, str] | None]] = [("PRICE_ID", False, None)],
     metadata: dict[str, str] = {},
     billing_reason: str = "subscription_create",
     customer_address: dict[str, Any] | None = {"country": "FR"},
@@ -150,9 +159,13 @@ def construct_stripe_invoice(
     discount: Discount | None = None,
     created: int | None = None,
 ) -> stripe_lib.Invoice:
+    tax = sum(line["tax_amount"] for line in lines)
+    subtotal = sum(line["amount"] for line in lines)
+    total = subtotal - (discount_amount or 0) + tax
     return stripe_lib.Invoice.construct_from(
         {
             "id": id,
+            "subtotal": subtotal,
             "total": total,
             "tax": tax,
             "amount_paid": total if amount_paid is None else amount_paid,
@@ -162,15 +175,21 @@ def construct_stripe_invoice(
             "subscription_details": subscription_details,
             "customer": customer_id,
             "customer_address": customer_address,
-            "lines": {
-                "data": [
-                    {
-                        "price": {"id": price_id, "metadata": metadata or {}},
-                        "proration": proration,
-                    }
-                    for price_id, proration, metadata in lines
-                ]
-            },
+            "lines": [
+                {
+                    "price": {
+                        "id": line["price_id"],
+                        "metadata": line.get("price_metadata", {}),
+                    },
+                    "amount": line["amount"],
+                    "tax_amounts": [{"amount": line["tax_amount"]}]
+                    if line["tax_amount"]
+                    else [],
+                    "proration": line.get("proration", False),
+                    "description": line.get("description", None),
+                }
+                for line in lines
+            ],
             "metadata": metadata,
             "billing_reason": billing_reason,
             "paid_out_of_band": paid_out_of_band,
@@ -184,6 +203,9 @@ def construct_stripe_invoice(
                 if discount is not None
                 else None
             ),
+            "total_discount_amounts": [{"amount": discount_amount}]
+            if discount_amount is not None
+            else None,
             "created": created or int(time.time()),
         },
         None,

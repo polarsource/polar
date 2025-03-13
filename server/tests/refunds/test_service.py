@@ -22,7 +22,7 @@ from polar.models import (
 from polar.models.order import OrderStatus
 from polar.models.pledge import PledgeState
 from polar.models.refund import RefundReason, RefundStatus
-from polar.order.service import order as order_service
+from polar.order.repository import OrderRepository
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.refund.schemas import RefundCreate
@@ -194,9 +194,9 @@ class StripeRefund:
         refunded_amount += amount
         refunded_tax_amount += tax
 
-        updated = await order_service.get(session, order.id)
-        if not updated:
-            raise RuntimeError()
+        order_repository = OrderRepository.from_session(session)
+        updated = await order_repository.get_by_id(order.id)
+        assert updated is not None
 
         assert updated.refunded_amount == refunded_amount
         assert updated.refunded_tax_amount == refunded_tax_amount
@@ -268,10 +268,11 @@ class TestCreateAbuse(StripeRefund):
                 ),
             )
 
-        order = await order_service.get(session, order.id)  # type: ignore
-        assert order
-        assert order.refunded_amount == 0
-        assert order.refunded_tax_amount == 0
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.refunded_amount == 0
+        assert updated_order.refunded_tax_amount == 0
 
 
 @pytest.mark.asyncio
@@ -362,10 +363,11 @@ class TestCreatedWebhooks(StripeRefund):
         )
         assert refund_transaction is None
 
-        order = await order_service.get(session, order.id)  # type: ignore
-        assert order
-        assert order.refunded_amount == 0
-        assert order.refunded_tax_amount == 0
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.refunded_amount == 0
+        assert updated_order.refunded_tax_amount == 0
 
         reset_hooks(refund_hooks)
         succeeded_stripe_refund = build_stripe_refund(
@@ -419,11 +421,13 @@ class TestCreatedWebhooks(StripeRefund):
         # Ensure we only record and process refund once
         await self.assert_transaction_amounts_from_refund(session, refund)
         assert_hooks_called_once(refund_hooks, {"created", "succeeded"})
-        order = await order_service.get(session, order.id)  # type: ignore
-        assert order
-        assert order.status == OrderStatus.refunded
-        assert order.refunded_amount == 1000
-        assert order.refunded_tax_amount == 250
+
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.status == OrderStatus.refunded
+        assert updated_order.refunded_amount == 1000
+        assert updated_order.refunded_tax_amount == 250
 
     async def test_valid_partial_refunds(
         self,
@@ -458,11 +462,13 @@ class TestCreatedWebhooks(StripeRefund):
         assert refund.status == RefundStatus.succeeded
         await self.assert_transaction_amounts_from_refund(session, refund)
         assert_hooks_called_once(refund_hooks, {"created", "succeeded"})
-        order = await order_service.get(session, order.id)  # type: ignore
-        assert order
-        assert order.status == OrderStatus.partially_refunded
-        assert order.refunded_amount == 300
-        assert order.refunded_tax_amount == 75
+
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.status == OrderStatus.partially_refunded
+        assert updated_order.refunded_amount == 300
+        assert updated_order.refunded_tax_amount == 75
 
         reset_hooks(refund_hooks)
 
@@ -479,11 +485,13 @@ class TestCreatedWebhooks(StripeRefund):
         assert refund.status == RefundStatus.succeeded
         await self.assert_transaction_amounts_from_refund(session, refund)
         assert_hooks_called_once(refund_hooks, {"created", "succeeded"})
-        order = await order_service.get(session, order.id)  # type: ignore
-        assert order
-        assert order.status == OrderStatus.partially_refunded
-        assert order.refunded_amount == 600
-        assert order.refunded_tax_amount == 150
+
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.status == OrderStatus.partially_refunded
+        assert updated_order.refunded_amount == 600
+        assert updated_order.refunded_tax_amount == 150
 
 
 @pytest.mark.asyncio
@@ -524,10 +532,11 @@ class TestUpdatedWebhooks(StripeRefund):
         assert_hooks_called_once(refund_hooks, {"created"})
         reset_hooks(refund_hooks)
 
-        order = await order_service.get(session, order.id)  # type: ignore
-        assert order
-        assert order.refunded_amount == 0
-        assert order.refunded_tax_amount == 0
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.refunded_amount == 0
+        assert updated_order.refunded_tax_amount == 0
 
         stripe_refund = build_stripe_refund(
             status="succeeded",
@@ -541,7 +550,8 @@ class TestUpdatedWebhooks(StripeRefund):
         assert create_refund_transaction.call_count == 1
         assert_hooks_called_once(refund_hooks, {"updated", "succeeded"})
 
-        order = await order_service.get(session, order.id)  # type: ignore
-        assert order
-        assert order.refunded_amount == 80
-        assert order.refunded_tax_amount == 20
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.refunded_amount == 80
+        assert updated_order.refunded_tax_amount == 20

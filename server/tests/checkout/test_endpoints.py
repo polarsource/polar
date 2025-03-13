@@ -9,6 +9,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
+from polar.checkout.repository import CheckoutRepository
 from polar.checkout.schemas import CheckoutProductCreate
 from polar.checkout.service import checkout as checkout_service
 from polar.enums import SubscriptionRecurringInterval
@@ -397,7 +398,8 @@ class TestClientUpdate:
         assert json["customer_name"] == "Customer Name"
         assert "metadata" not in json
 
-        updated_checkout = await checkout_service.get(session, checkout_open.id)
+        repository = CheckoutRepository.from_session(session)
+        updated_checkout = await repository.get_by_id(checkout_open.id)
         assert updated_checkout is not None
         assert updated_checkout.user_metadata == {}
 

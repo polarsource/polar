@@ -1477,6 +1477,19 @@ async def customer_external_id(
 
 
 @pytest_asyncio.fixture
+async def customer_organization_second(
+    save_fixture: SaveFixture,
+    organization_second: Organization,
+) -> Customer:
+    return await create_customer(
+        save_fixture,
+        organization=organization_second,
+        email=lstr("customer.organization_second@example.com"),
+        stripe_customer_id=lstr("STRIPE_CUSTOMER_ID_4"),
+    )
+
+
+@pytest_asyncio.fixture
 async def subscription(
     save_fixture: SaveFixture,
     product: Product,

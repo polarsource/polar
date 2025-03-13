@@ -144,11 +144,7 @@ class RefundService(ResourceServiceReader[Refund]):
         create_schema: RefundCreate,
     ) -> Refund:
         order_id = create_schema.order_id
-        order = await order_service.get(
-            session,
-            auth_subject,
-            order_id,
-        )
+        order = await order_service.get(session, auth_subject, order_id)
         if not order:
             raise PolarRequestValidationError(
                 [

@@ -72,7 +72,6 @@ class TransactionService(BaseTransactionService):
             # Order
             subqueryload(Transaction.order).options(
                 joinedload(Order.product).options(joinedload(Product.organization)),
-                joinedload(Order.product_price),
             ),
         )
 
@@ -127,7 +126,6 @@ class TransactionService(BaseTransactionService):
                 # Order
                 subqueryload(Transaction.order).options(
                     joinedload(Order.product).options(joinedload(Product.organization)),
-                    joinedload(Order.product_price),
                 ),
                 # Paid transactions (joining on itself)
                 subqueryload(Transaction.paid_transactions)
@@ -144,14 +142,13 @@ class TransactionService(BaseTransactionService):
                 .subqueryload(Transaction.order)
                 .options(
                     joinedload(Order.product),
-                    joinedload(Order.product_price),
                 ),
                 subqueryload(Transaction.paid_transactions).subqueryload(
                     Transaction.account_incurred_transactions
                 ),
-                subqueryload(Transaction.paid_transactions)
-                .subqueryload(Transaction.order)
-                .options(joinedload(Order.product_price)),
+                subqueryload(Transaction.paid_transactions).subqueryload(
+                    Transaction.order
+                ),
                 subqueryload(Transaction.paid_transactions),
             )
             .where(Transaction.id == id)

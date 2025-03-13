@@ -30,6 +30,7 @@ if TYPE_CHECKING:
         Discount,
         Organization,
         Product,
+        ProductPrice,
         Subscription,
     )
 
@@ -146,6 +147,17 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         # Items are almost always needed, so eager loading makes sense
         lazy="selectin",
     )
+
+    @property
+    def legacy_product_price(self) -> "ProductPrice":
+        """
+        Dummy method to keep API backward compatibility
+        by fetching a product price at all costs.
+        """
+        for item in self.items:
+            if item.product_price:
+                return item.product_price
+        return self.product.prices[0]
 
     @hybrid_property
     def subtotal_amount(self) -> int:

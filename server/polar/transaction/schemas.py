@@ -4,7 +4,6 @@ from polar.enums import Platforms, SubscriptionRecurringInterval
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.pledge import PledgeState
 from polar.models.transaction import PlatformFeeType, Processor, TransactionType
-from polar.product.schemas import ProductPrice
 
 
 class TransactionExternalOrganization(IDSchema, TimestampedSchema):
@@ -59,12 +58,8 @@ class TransactionProduct(IDSchema, TimestampedSchema):
     organization: TransactionOrganization | None
 
 
-TransactionProductPrice = ProductPrice
-
-
 class TransactionOrder(IDSchema, TimestampedSchema):
     product: TransactionProduct
-    product_price: TransactionProductPrice
     subscription_id: UUID4 | None
 
 

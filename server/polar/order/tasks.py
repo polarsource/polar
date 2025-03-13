@@ -2,17 +2,18 @@ import uuid
 
 import structlog
 from arq import Retry
+from babel.numbers import format_currency
 from sqlalchemy.orm import joinedload
 
+from polar.config import settings
 from polar.exceptions import PolarTaskError
 from polar.integrations.discord.internal_webhook import (
     get_branded_discord_embed,
     send_internal_webhook,
 )
-from polar.kit.money import get_cents_in_dollar_string
 from polar.logging import Logger
 from polar.models import Customer, Order
-from polar.organization.service import organization as organization_service
+from polar.models.order import OrderBillingReason
 from polar.product.service.product import product as product_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.worker import (
@@ -34,13 +35,6 @@ MAX_RETRIES = 10
 class OrderTaskError(PolarTaskError): ...
 
 
-class OrganizationDoesNotExist(OrderTaskError):
-    def __init__(self, organization_id: uuid.UUID) -> None:
-        self.organization_id = organization_id
-        message = f"The organization with id {organization_id} does not exist."
-        super().__init__(message)
-
-
 class ProductDoesNotExist(OrderTaskError):
     def __init__(self, product_id: uuid.UUID) -> None:
         self.product_id = product_id
@@ -52,13 +46,6 @@ class OrderDoesNotExist(OrderTaskError):
     def __init__(self, order_id: uuid.UUID) -> None:
         self.order_id = order_id
         message = f"The order with id {order_id} does not exist."
-        super().__init__(message)
-
-
-class PriceDoesNotExist(OrderTaskError):
-    def __init__(self, price_id: uuid.UUID) -> None:
-        self.price_id = price_id
-        message = f"The price with id {price_id} does not exist."
         super().__init__(message)
 
 
@@ -109,22 +96,36 @@ async def order_discord_notification(
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
         order_repository = OrderRepository.from_session(session)
-        order = await order_repository.get_by_id(order_id)
+        order = await order_repository.get_by_id(
+            order_id,
+            options=order_repository.get_eager_options(
+                customer_load=joinedload(Order.customer).joinedload(
+                    Customer.organization
+                )
+            ),
+        )
         if order is None:
             raise OrderDoesNotExist(order_id)
 
-        product = await product_service.get(session, order.product_id)
-        if not product:
-            raise ProductDoesNotExist(order.product_id)
+        if order.billing_reason not in {
+            OrderBillingReason.purchase,
+            OrderBillingReason.subscription_create,
+        }:
+            return
 
-        product_org = await organization_service.get(session, product.organization_id)
-        if not product_org:
-            raise OrganizationDoesNotExist(product.organization_id)
+        product = order.product
+        customer = order.customer
+        organization = order.customer.organization
+        subscription = order.subscription
 
-        if price.recurring_interval:
-            description = f"${get_cents_in_dollar_string(order.subtotal_amount)}/{price.recurring_interval}"
+        amount = format_currency(order.subtotal_amount / 100, "USD", locale="en_US")
+        if subscription:
+            amount = f"{amount} / {subscription.recurring_interval}"
+
+        if order.billing_reason == OrderBillingReason.subscription_create:
+            description = "New subscription"
         else:
-            description = f"${get_cents_in_dollar_string(order.subtotal_amount)}"
+            description = "One-time purchase"
 
         await send_internal_webhook(
             {
@@ -136,9 +137,21 @@ async def order_discord_notification(
                             "description": description,
                             "fields": [
                                 {
-                                    "name": "Org",
-                                    "value": f"[{product_org.slug}](https://polar.sh/{product_org.slug})",
-                                }
+                                    "name": "Organization",
+                                    "value": f"[{organization.name}]({
+                                        settings.generate_external_url(
+                                            f'/backoffice/organizations/{organization.id}'
+                                        )
+                                    })",
+                                },
+                                {
+                                    "name": "Amount",
+                                    "value": amount,
+                                },
+                                {
+                                    "name": "Customer",
+                                    "value": customer.email,
+                                },
                             ],
                         }
                     )

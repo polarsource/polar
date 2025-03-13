@@ -3,18 +3,19 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, or_, select
-from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload
+from sqlalchemy import UnaryExpression, asc, desc
+from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceServiceReader
+from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import Customer, Order, Organization, Product, ProductPrice
+from polar.models import Customer, Order, Product
 from polar.models.product import ProductBillingType
+
+from ..repository.order import CustomerOrderRepository
 
 
 class CustomerOrderError(PolarError): ...
@@ -31,12 +32,11 @@ class CustomerOrderSortProperty(StrEnum):
     created_at = "created_at"
     amount = "amount"
     subtotal_amount = "subtotal_amount"
-    organization = "organization"
     product = "product"
     subscription = "subscription"
 
 
-class CustomerOrderService(ResourceServiceReader[Order]):
+class CustomerOrderService:
     async def list(
         self,
         session: AsyncSession,
@@ -52,23 +52,16 @@ class CustomerOrderService(ResourceServiceReader[Order]):
             (CustomerOrderSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Order], int]:
-        statement = self._get_readable_order_statement(auth_subject)
-
-        statement = statement.join(
-            Organization, onclause=Product.organization_id == Organization.id
-        ).options(
-            joinedload(Order.customer),
-            joinedload(Order.subscription),
-            contains_eager(Order.product).options(
-                selectinload(Product.product_medias),
-                contains_eager(Product.organization),
-            ),
+        repository = CustomerOrderRepository.from_session(session)
+        statement = (
+            repository.get_readable_statement(auth_subject)
+            .join(Order.product)
+            .options(
+                *repository.get_eager_options(
+                    product_load=contains_eager(Order.product)
+                )
+            )
         )
-
-        OrderProductPrice = aliased(ProductPrice)
-        statement = statement.join(
-            OrderProductPrice, onclause=Order.product_price_id == OrderProductPrice.id
-        ).options(contains_eager(Order.product_price.of_type(OrderProductPrice)))
 
         if organization_id is not None:
             statement = statement.where(Product.organization_id.in_(organization_id))
@@ -83,12 +76,7 @@ class CustomerOrderService(ResourceServiceReader[Order]):
             statement = statement.where(Order.subscription_id.in_(subscription_id))
 
         if query is not None:
-            statement = statement.where(
-                or_(
-                    Product.name.ilike(f"%{query}%"),
-                    Organization.slug.ilike(f"%{query}%"),
-                )
-            )
+            statement = statement.where(Product.name.ilike(f"%{query}%"))
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
@@ -100,15 +88,15 @@ class CustomerOrderService(ResourceServiceReader[Order]):
                 CustomerOrderSortProperty.subtotal_amount,
             ]:
                 order_by_clauses.append(clause_function(Order.subtotal_amount))
-            elif criterion == CustomerOrderSortProperty.organization:
-                order_by_clauses.append(clause_function(Organization.slug))
             elif criterion == CustomerOrderSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
             elif criterion == CustomerOrderSortProperty.subscription:
                 order_by_clauses.append(clause_function(Order.subscription_id))
         statement = statement.order_by(*order_by_clauses)
 
-        return await paginate(session, statement, pagination=pagination)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
     async def get_by_id(
         self,
@@ -116,22 +104,13 @@ class CustomerOrderService(ResourceServiceReader[Order]):
         auth_subject: AuthSubject[Customer],
         id: uuid.UUID,
     ) -> Order | None:
+        repository = CustomerOrderRepository.from_session(session)
         statement = (
-            self._get_readable_order_statement(auth_subject)
+            repository.get_readable_statement(auth_subject)
             .where(Order.id == id)
-            .options(
-                joinedload(Order.customer),
-                joinedload(Order.product_price),
-                joinedload(Order.subscription),
-                contains_eager(Order.product).options(
-                    selectinload(Product.product_medias),
-                    joinedload(Product.organization),
-                ),
-            )
+            .options(*repository.get_eager_options())
         )
-
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
+        return await repository.get_one_or_none(statement)
 
     async def get_order_invoice_url(self, order: Order) -> str:
         if order.stripe_invoice_id is None:
@@ -144,18 +123,5 @@ class CustomerOrderService(ResourceServiceReader[Order]):
 
         return stripe_invoice.hosted_invoice_url
 
-    def _get_readable_order_statement(
-        self, auth_subject: AuthSubject[Customer]
-    ) -> Select[tuple[Order]]:
-        return (
-            select(Order)
-            .where(
-                Order.deleted_at.is_(None),
-                Order.customer_id == auth_subject.subject.id,
-            )
-            .join(Order.product)
-            .options(contains_eager(Order.product))
-        )
 
-
-customer_order = CustomerOrderService(Order)
+customer_order = CustomerOrderService()

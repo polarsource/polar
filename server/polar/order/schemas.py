@@ -46,7 +46,7 @@ class OrderBase(
             # Validate from stored webhook payload
             "product_price_id",
             # Validate from ORM model
-            AliasPath("items", 0, "product_price_id"),
+            AliasPath("legacy_product_price", "id"),
         ),
     )
     discount_id: UUID4 | None
@@ -142,7 +142,7 @@ class Order(OrderBase):
             # Validate from stored webhook payload
             "product_price",
             # Validate from ORM model
-            AliasPath("items", 0, "product_price"),
+            "legacy_product_price",
         ),
     )
     discount: OrderDiscount | None

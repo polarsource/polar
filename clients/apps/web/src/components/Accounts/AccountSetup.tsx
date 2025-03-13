@@ -5,20 +5,9 @@ import { ACCOUNT_TYPE_DISPLAY_NAMES } from '@/utils/account'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
-import { Form, FormField } from '@polar-sh/ui/components/ui/form'
-import { Separator } from '@polar-sh/ui/components/ui/separator'
-import { useForm } from 'react-hook-form'
 
 interface AccoutSetupProps {
   organization: schemas['Organization'] | undefined
-  accounts: schemas['Account'][]
   organizationAccount: schemas['Account'] | undefined
   personalAccount?: schemas['Account']
   loading: boolean
@@ -28,7 +17,6 @@ interface AccoutSetupProps {
 
 export const AccountSetup: React.FC<AccoutSetupProps> = ({
   organization,
-  accounts,
   organizationAccount,
   personalAccount,
   loading,
@@ -42,9 +30,6 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
     organizationAccount.id !== personalAccount.id
   const isActive = currentAccount?.status === 'active'
   const isUnderReview = currentAccount?.status === 'under_review'
-
-  const linkAccountForm = useForm<{ account_id: string }>()
-  const { control, handleSubmit } = linkAccountForm
 
   const goToOnboarding = async (account: schemas['Account']) => {
     const link = await unwrap(
@@ -75,15 +60,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
 
   return (
     <div className="flex flex-col gap-y-4">
-      <div className="flex flex-row items-center justify-between">
-        <div className="flex flex-col gap-y-2">
-          <h2 className="text-lg font-medium">Payout account</h2>
-          <p className="dark:text-polar-500 text-sm text-gray-500">
-            Account where you can receive money transfers from Polar
-          </p>
-        </div>
-      </div>
-      <Separator className="my-8" />
+      {/* TODO: User linking can be removed with issue funding later */}
       <div className="flex flex-col gap-6 text-sm">
         {bothOrganizationAndPersonal && (
           <>
@@ -127,91 +104,22 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
           <>
             {organization && (
               <p>
-                You don&apos;t have a payout account setup for{' '}
-                <span className="font-medium">{organization.name}</span>.
+                Your organization{' '}
+                <span className="font-medium">{organization.name}</span> does
+                not have a payout account setup.
               </p>
             )}
             {!organization && (
               <p>You don&apos;t have a payout account setup.</p>
             )}
 
-            {accounts.length > 0 && (
-              <p>
-                You can select one of your existing account or create a new one.{' '}
-                {accounts.length === 0 && ' You should create one.'}
-              </p>
-            )}
-            <div className="flex min-h-12 flex-col items-center gap-4 sm:flex-row">
-              {accounts.length > 0 && (
-                <Form {...linkAccountForm}>
-                  <form
-                    onSubmit={handleSubmit((data) =>
-                      onLinkAccount(data.account_id),
-                    )}
-                    className="flex w-full flex-col items-center gap-4 sm:w-3/4 sm:flex-row"
-                  >
-                    <div className="w-full sm:grow">
-                      <FormField
-                        control={control}
-                        name="account_id"
-                        rules={{ required: 'This field is required' }}
-                        render={({ field }) => (
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select an existing payout account" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {accounts.map((account) => (
-                                <SelectItem key={account.id} value={account.id}>
-                                  <div className="flex flex-row gap-2">
-                                    <div>
-                                      {
-                                        ACCOUNT_TYPE_DISPLAY_NAMES[
-                                          account.account_type
-                                        ]
-                                      }
-                                    </div>
-                                    <div className="dark:text-polar-500 text-sm text-gray-700">
-                                      <AccountAssociations
-                                        account={account}
-                                        prefix="Used by"
-                                      />
-                                    </div>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </div>
-                    <Button
-                      type="submit"
-                      variant="secondary"
-                      className="w-full whitespace-nowrap sm:w-1/4"
-                      loading={loading}
-                      disabled={loading}
-                    >
-                      Link account
-                    </Button>
-                    <Separator
-                      orientation="vertical"
-                      className="hidden h-12 sm:block"
-                    />
-                  </form>
-                </Form>
-              )}
-              <Button
-                className="w-full whitespace-nowrap md:w-fit md:grow-0 md:self-start"
-                onClick={onAccountSetup}
-                disabled={loading}
-              >
-                Create new account
-              </Button>
-            </div>
+            <Button
+              className="w-full whitespace-nowrap md:w-fit md:grow-0 md:self-start"
+              onClick={onAccountSetup}
+              disabled={loading}
+            >
+              Create new account
+            </Button>
           </>
         )}
         {currentAccount && !bothOrganizationAndPersonal && isUnderReview && (

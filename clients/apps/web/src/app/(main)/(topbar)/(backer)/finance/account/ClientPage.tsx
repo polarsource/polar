@@ -49,7 +49,6 @@ export default function ClientPage() {
         <AccountSetup
           organization={undefined}
           organizationAccount={undefined}
-          accounts={accounts.items || []}
           personalAccount={personalAccount}
           loading={linkAccountLoading}
           onLinkAccount={onLinkAccount}

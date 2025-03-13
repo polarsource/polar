@@ -1,11 +1,9 @@
+import { setValidationErrors } from '@/utils/api/errors'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { setValidationErrors } from '@/utils/api/errors'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
-import { useState, useCallback } from 'react'
-import { useForm, useFormContext } from 'react-hook-form'
 import {
   Form,
   FormControl,
@@ -15,6 +13,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { useCallback, useState } from 'react'
+import { useForm, useFormContext } from 'react-hook-form'
 
 const stripeConnectWhitelist = CONFIG.STRIPE_COUNTRIES_WHITELIST_CSV.split(',')
 
@@ -34,7 +34,7 @@ const AccountCreateModal = ({
   const form = useForm<AccountForm>({
     defaultValues: {
       country: 'US',
-    }
+    },
   })
 
   const {
@@ -101,7 +101,7 @@ const AccountCreateModal = ({
       setLoading(false)
       await goToOnboarding(account)
     },
-    [setLoading, forOrganizationId, forUserId, goToOnboarding, setError]
+    [setLoading, forOrganizationId, forUserId, goToOnboarding, setError],
   )
 
   return (
@@ -134,8 +134,6 @@ const AccountCreateModal = ({
     </>
   )
 }
-
-import React from 'react'
 
 export const AccountCountry = () => {
   const { control } = useFormContext<AccountForm>()

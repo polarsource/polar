@@ -9,7 +9,7 @@ import {
   CardFooter,
   CardHeader,
 } from '@polar-sh/ui/components/atoms/Card'
-import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -44,7 +44,7 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
       <CardContent className="flex flex-col gap-y-1 pb-6 text-lg">
         <h3>{order.product.name}</h3>
         <span className="dark:text-polar-500 text-gray-400">
-          ${getCentsInDollarString(order.amount, false)}
+          {formatCurrencyAndAmount(order.net_amount, order.currency)}
         </span>
       </CardContent>
       <Link

@@ -231,8 +231,14 @@ export const CHECKOUT_PREVIEW = createCheckoutPreview(
 export const ORDER_PREVIEW: schemas['CustomerOrder'] = {
   id: '123',
   amount: 10000,
-  currency: 'usd',
+  subtotal_amount: 10000,
+  discount_amount: 0,
+  net_amount: 10000,
   tax_amount: 1200,
+  total_amount: 11200,
+  refunded_amount: 0,
+  refunded_tax_amount: 0,
+  currency: 'usd',
   user_id: '123',
   customer_id: '123',
   product_id: PRODUCT_PREVIEW.id,
@@ -246,6 +252,18 @@ export const ORDER_PREVIEW: schemas['CustomerOrder'] = {
   },
   created_at: new Date().toISOString(),
   modified_at: new Date().toISOString(),
+  items: [
+    {
+      created_at: new Date().toISOString(),
+      modified_at: null,
+      id: '123',
+      label: '',
+      amount: 10000,
+      tax_amount: 1200,
+      proration: false,
+      product_price_id: PRODUCT_PREVIEW.prices[0].id,
+    },
+  ],
 }
 
 export const SUBSCRIPTION_ORDER_PREVIEW: schemas['CustomerSubscription'] = {

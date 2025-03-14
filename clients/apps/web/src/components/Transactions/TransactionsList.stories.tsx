@@ -109,25 +109,11 @@ const product: schemas['TransactionProduct'] = {
   organization,
 }
 
-const product_price: schemas['ProductPrice'] = {
-  created_at: '',
-  modified_at: null,
-  id: '',
-  amount_type: 'fixed',
-  type: 'recurring',
-  recurring_interval: 'month',
-  price_amount: 4000,
-  price_currency: 'usd',
-  is_archived: false,
-  product_id: product.id,
-}
-
 const order: schemas['TransactionOrder'] = {
   created_at: '',
   modified_at: null,
   id: '',
   product,
-  product_price,
   subscription_id: null,
 }
 

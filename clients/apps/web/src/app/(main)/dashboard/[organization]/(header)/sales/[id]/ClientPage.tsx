@@ -96,7 +96,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     hide: hideRefundModal,
   } = useModal()
 
-  const canRefund = (order?.refunded_amount ?? 0) < (order?.amount ?? 0)
+  const canRefund = (order?.refunded_amount ?? 0) < (order?.net_amount ?? 0)
 
   if (!order || !product) {
     return null
@@ -172,14 +172,24 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
             <Separator className="dark:bg-polar-700 my-4 h-[1px] bg-gray-300" />
 
+            <DetailRow title="Subtotal">
+              <span>{formatCurrencyAndAmount(order.subtotal_amount)}</span>
+            </DetailRow>
+            <DetailRow title="Discount">
+              <span>
+                {order.discount_amount
+                  ? formatCurrencyAndAmount(-order.discount_amount)
+                  : '—'}
+              </span>
+            </DetailRow>
+            <DetailRow title="Net amount">
+              <span>{formatCurrencyAndAmount(order.net_amount)}</span>
+            </DetailRow>
             <DetailRow title="Tax">
               <span>{formatCurrencyAndAmount(order.tax_amount)}</span>
             </DetailRow>
-            <DetailRow title="Discount">
-              <span>{order.discount ? order.discount.code : '—'}</span>
-            </DetailRow>
-            <DetailRow title="Amount">
-              <span>{formatCurrencyAndAmount(order.amount)}</span>
+            <DetailRow title="Total">
+              <span>{formatCurrencyAndAmount(order.total_amount)}</span>
             </DetailRow>
             {order.billing_address ? (
               <>

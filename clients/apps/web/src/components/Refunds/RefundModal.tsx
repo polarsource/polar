@@ -30,7 +30,7 @@ interface RefundModalProps {
 }
 
 export const RefundModal = ({ order, hide }: RefundModalProps) => {
-  const maximumRefundAmount = order.amount - (order.refunded_amount ?? 0)
+  const maximumRefundAmount = order.net_amount - order.refunded_amount
   const canRefund = maximumRefundAmount > 0
 
   const form = useForm<schemas['RefundCreate']>({

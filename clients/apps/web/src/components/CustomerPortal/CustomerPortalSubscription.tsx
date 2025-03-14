@@ -196,7 +196,7 @@ const CustomerPortalSubscription = ({
                   cell: ({ row }) => (
                     <span className="dark:text-polar-500 text-sm text-gray-500">
                       {formatCurrencyAndAmount(
-                        row.original.amount,
+                        row.original.total_amount,
                         row.original.currency,
                         0,
                       )}

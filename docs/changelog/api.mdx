@@ -1,0 +1,25 @@
+---
+title: API Changelog
+sidebarTitle: API
+description: Stay up to date with the latest changes, improvements and deprecations to the Polar API.
+---
+
+<Update label="2025-03-14">
+  ## Subscriptions and Orders schema changes
+
+To prepare our next move to support usage-based billing, we've made some changes to the [`Subscription`](/api-reference/subscriptions/get) and [`Order`](/api-reference/orders/get) schemas. The main reason behind those is that we need to support multiple prices and items in a single subscription or order.
+
+- <Icon icon="circle-exclamation" size={16} color="orange" /> **Deprecated**:
+  `Subscription.price_id` and `Subscription.price`. Use the
+  `Subscription.prices` array instead.
+- <Icon icon="circle-exclamation" size={16} color="orange" /> **Deprecated**:
+  `Order.product_price_id` and `Order.product_price`. Use the `Order.items`
+  array instead.
+- <Icon icon="circle-exclamation" size={16} color="orange" /> **Deprecated**:
+  `Order.amount`. Use the `Order.net_amount` instead. It has the same value and
+  meaning, but the new name is more explicit.
+- <Icon icon="check" size={16} color="green" /> **Added**:
+  `Order.subtotal_amount`, `Order.discount_amount`, and `Order.total_amount`
+  fields to provide a more detailed breakdown of the order amount.
+
+</Update>

@@ -8620,12 +8620,6 @@ export interface components {
              */
             id: string;
             /**
-             * Amount
-             * @deprecated
-             * @description Amount in cents, before discounts and taxes.
-             */
-            amount: number;
-            /**
              * Subtotal Amount
              * @description Amount in cents, before discounts and taxes.
              */
@@ -8640,6 +8634,12 @@ export interface components {
              * @description Amount in cents, after discounts but before taxes.
              */
             net_amount: number;
+            /**
+             * Amount
+             * @deprecated
+             * @description Amount in cents, after discounts but before taxes.
+             */
+            amount: number;
             /**
              * Tax Amount
              * @description Sales tax amount in cents.
@@ -12785,12 +12785,6 @@ export interface components {
             /** Status */
             status: string;
             /**
-             * Amount
-             * @deprecated
-             * @description Amount in cents, before discounts and taxes.
-             */
-            amount: number;
-            /**
              * Subtotal Amount
              * @description Amount in cents, before discounts and taxes.
              */
@@ -12805,6 +12799,12 @@ export interface components {
              * @description Amount in cents, after discounts but before taxes.
              */
             net_amount: number;
+            /**
+             * Amount
+             * @deprecated
+             * @description Amount in cents, after discounts but before taxes.
+             */
+            amount: number;
             /**
              * Tax Amount
              * @description Sales tax amount in cents.

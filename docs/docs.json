@@ -449,7 +449,7 @@
         "groups": [
           {
             "group": "Changelog",
-            "pages": ["changelog/recent"]
+            "pages": ["changelog/recent", "changelog/api"]
           }
         ]
       },

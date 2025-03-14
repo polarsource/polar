@@ -18,7 +18,10 @@ export const org: schemas['Organization'] = {
   modified_at: null,
   name: 'Pydantic',
   slug: 'pydantic',
+  socials: [],
+  website: 'https://pydantic.dev',
   avatar_url: 'https://avatars.githubusercontent.com/u/110818415?s=48&v=4',
+  details_submitted_at: null,
   pledge_minimum_amount: 2000,
   pledge_badge_show_amount: true,
   profile_settings: {

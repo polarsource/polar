@@ -27,13 +27,15 @@ class OrderBase(
     CustomFieldDataOutputMixin, MetadataOutputMixin, IDSchema, TimestampedSchema
 ):
     status: str
-    amount: int
-    tax_amount: int
-    refunded_amount: int = Field(
-        ...,
-        description="Amount refunded",
+    amount: int = Field(description="Amount in cents, before discounts and taxes.")
+    discount_amount: int = Field(description="Discount amount in cents.")
+    tax_amount: int = Field(description="Sales tax amount in cents.")
+    subtotal_amount: int = Field(
+        description="Amount in cents, after discounts but before taxes."
     )
-    refunded_tax_amount: int = Field(..., description="Sales tax refunded")
+    total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
+    refunded_amount: int = Field(description="Amount refunded in cents.")
+    refunded_tax_amount: int = Field(description="Sales tax refunded in cents.")
     currency: str
     billing_reason: OrderBillingReason
     billing_address: Address | None
@@ -115,6 +117,18 @@ class OrderSubscription(SubscriptionBase, MetadataOutputMixin):
     )
 
 
+class OrderItemSchema(IDSchema, TimestampedSchema):
+    """
+    An order line item.
+    """
+
+    label: str = Field(description="Description of the line item charge.")
+    amount: int = Field(description="Amount in cents, before discounts and taxes.")
+    tax_amount: int = Field(description="Sales tax amount in cents.")
+    proration: bool = Field(description="Whether this charge is due to a proration.")
+    product_price_id: UUID4 | None = Field(description="Associated price ID, if any.")
+
+
 class Order(OrderBase):
     customer: OrderCustomer
     user_id: UUID4 = Field(
@@ -147,6 +161,7 @@ class Order(OrderBase):
     )
     discount: OrderDiscount | None
     subscription: OrderSubscription | None
+    items: list[OrderItemSchema] = Field(description="Line items composing the order.")
 
 
 class OrderInvoice(Schema):

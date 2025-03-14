@@ -66,7 +66,7 @@ const CustomerPortalOrder = ({
             <h3 className="text-lg font-medium">{order.product.name}</h3>
             <div className="flex flex-col gap-4">
               <h1 className="text-4xl font-light">
-                {formatCurrencyAndAmount(order.amount, order.currency, 0)}
+                {formatCurrencyAndAmount(order.total_amount, order.currency, 0)}
               </h1>
               <p className="dark:text-polar-500 text-sm text-gray-400">
                 Purchased on{' '}

@@ -142,7 +142,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       },
     },
     {
-      accessorKey: 'amount',
+      accessorKey: 'net_amount',
       enableSorting: true,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Amount" />

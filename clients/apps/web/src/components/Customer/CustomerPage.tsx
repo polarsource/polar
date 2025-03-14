@@ -327,7 +327,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 accessorKey: 'amount',
                 cell: ({ row: { original } }) => (
                   <AmountLabel
-                    amount={original.amount}
+                    amount={original.net_amount}
                     currency={original.currency}
                   />
                 ),

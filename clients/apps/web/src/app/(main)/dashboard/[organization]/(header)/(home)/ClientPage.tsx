@@ -323,8 +323,16 @@ const HeroChart = ({ organization }: HeroChartProps) => {
 
                       const formattedValue =
                         metric?.type === 'currency'
-                          ? `$${getCentsInDollarString(parseInt(value as string))}`
-                          : value
+                          ? formatCurrencyAndAmount(
+                              value as number,
+                              'USD',
+                              0,
+                              'compact',
+                            )
+                          : Intl.NumberFormat('en-US', {
+                              notation: 'compact',
+                              maximumFractionDigits: 2,
+                            }).format(value as number)
 
                       return (
                         <div className="flex w-full flex-row justify-between">

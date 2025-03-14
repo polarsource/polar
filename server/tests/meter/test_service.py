@@ -40,6 +40,53 @@ async def create_meter(
 @pytest.mark.asyncio
 class TestGetQuantities:
     @pytest.mark.parametrize(
+        "aggregation",
+        [
+            CountAggregation(),
+            PropertyAggregation(func=AggregationFunction.sum, property="tokens"),
+            PropertyAggregation(func=AggregationFunction.max, property="tokens"),
+            PropertyAggregation(func=AggregationFunction.min, property="tokens"),
+            PropertyAggregation(func=AggregationFunction.avg, property="tokens"),
+        ],
+    )
+    async def test_no_event(
+        self,
+        aggregation: Aggregation,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        timestamp = utc_now()
+
+        meter = await create_meter(
+            save_fixture,
+            name="Lite Model Usage",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=aggregation,
+            organization=customer.organization,
+        )
+
+        result = await meter_service.get_quantities(
+            session,
+            meter,
+            customer_id=[customer.id],
+            start_timestamp=timestamp,
+            end_timestamp=timestamp,
+            interval=TimeInterval.day,
+        )
+
+        assert len(result.quantities) == 1
+        quantity = result.quantities[0]
+        assert quantity.quantity == 0
+
+    @pytest.mark.parametrize(
         "aggregation,expected_value",
         [
             (CountAggregation(), 4),

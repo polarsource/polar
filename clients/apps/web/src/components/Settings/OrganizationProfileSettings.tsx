@@ -118,7 +118,10 @@ const OrganizationSocialLinks = () => {
 
     try {
       const url = new URL(value)
-      const newPlatform = SOCIAL_PLATFORM_DOMAINS[url.hostname] ?? 'other'
+      const hostname = url.hostname as keyof typeof SOCIAL_PLATFORM_DOMAINS
+      const newPlatform = (SOCIAL_PLATFORM_DOMAINS[hostname] ??
+        'other') as schemas['OrganizationSocialPlatforms']
+
       const updatedSocials = [...socials]
       updatedSocials[index] = {
         platform: newPlatform,
@@ -136,7 +139,7 @@ const OrganizationSocialLinks = () => {
           key={index}
           control={control}
           name={`socials.${index}`}
-          render={({ field }) => (
+          render={() => (
             <FormItem>
               <FormControl>
                 <div className="flex flex-row items-center gap-x-2">

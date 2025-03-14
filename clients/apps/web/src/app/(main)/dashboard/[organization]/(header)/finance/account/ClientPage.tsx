@@ -89,8 +89,8 @@ export default function ClientPage({
         >
           <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
           <span className="text-sm">
-            Please share details of your intended use case of Polar for our
-            compliance- and{' '}
+            Please share details of your use case for Polar for our compliance-
+            and{' '}
             <a
               href="https://docs.polar.sh/merchant-of-record/acceptable-use"
               className="text-blue-500"

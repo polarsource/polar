@@ -8619,10 +8619,47 @@ export interface components {
              * Format: uuid4
              */
             id: string;
-            /** Amount */
+            /**
+             * Amount
+             * @deprecated
+             * @description Amount in cents, before discounts and taxes.
+             */
             amount: number;
-            /** Tax Amount */
+            /**
+             * Subtotal Amount
+             * @description Amount in cents, before discounts and taxes.
+             */
+            subtotal_amount: number;
+            /**
+             * Discount Amount
+             * @description Discount amount in cents.
+             */
+            discount_amount: number;
+            /**
+             * Net Amount
+             * @description Amount in cents, after discounts but before taxes.
+             */
+            net_amount: number;
+            /**
+             * Tax Amount
+             * @description Sales tax amount in cents.
+             */
             tax_amount: number;
+            /**
+             * Total Amount
+             * @description Amount in cents, after discounts and taxes.
+             */
+            total_amount: number;
+            /**
+             * Refunded Amount
+             * @description Amount refunded in cents.
+             */
+            refunded_amount: number;
+            /**
+             * Refunded Tax Amount
+             * @description Sales tax refunded in cents.
+             */
+            refunded_tax_amount: number;
             /** Currency */
             currency: string;
             /**
@@ -8638,6 +8675,7 @@ export interface components {
             /**
              * Product Price Id
              * Format: uuid4
+             * @deprecated
              */
             product_price_id: string;
             /** Subscription Id */
@@ -8649,9 +8687,17 @@ export interface components {
              */
             user_id: string;
             product: components["schemas"]["CustomerOrderProduct"];
-            /** Product Price */
+            /**
+             * Product Price
+             * @deprecated
+             */
             product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             subscription: components["schemas"]["CustomerOrderSubscription"] | null;
+            /**
+             * Items
+             * @description Line items composing the order.
+             */
+            items: components["schemas"]["OrderItemSchema"][];
         };
         /**
          * CustomerOrderInvoice
@@ -8732,7 +8778,7 @@ export interface components {
          * CustomerOrderSortProperty
          * @enum {string}
          */
-        CustomerOrderSortProperty: "created_at" | "-created_at" | "amount" | "-amount" | "organization" | "-organization" | "product" | "-product" | "subscription" | "-subscription";
+        CustomerOrderSortProperty: "created_at" | "-created_at" | "amount" | "-amount" | "net_amount" | "-net_amount" | "product" | "-product" | "subscription" | "-subscription";
         /** CustomerOrderSubscription */
         CustomerOrderSubscription: {
             /**
@@ -12738,18 +12784,45 @@ export interface components {
             };
             /** Status */
             status: string;
-            /** Amount */
+            /**
+             * Amount
+             * @deprecated
+             * @description Amount in cents, before discounts and taxes.
+             */
             amount: number;
-            /** Tax Amount */
+            /**
+             * Subtotal Amount
+             * @description Amount in cents, before discounts and taxes.
+             */
+            subtotal_amount: number;
+            /**
+             * Discount Amount
+             * @description Discount amount in cents.
+             */
+            discount_amount: number;
+            /**
+             * Net Amount
+             * @description Amount in cents, after discounts but before taxes.
+             */
+            net_amount: number;
+            /**
+             * Tax Amount
+             * @description Sales tax amount in cents.
+             */
             tax_amount: number;
             /**
+             * Total Amount
+             * @description Amount in cents, after discounts and taxes.
+             */
+            total_amount: number;
+            /**
              * Refunded Amount
-             * @description Amount refunded
+             * @description Amount refunded in cents.
              */
             refunded_amount: number;
             /**
              * Refunded Tax Amount
-             * @description Sales tax refunded
+             * @description Sales tax refunded in cents.
              */
             refunded_tax_amount: number;
             /** Currency */
@@ -12769,6 +12842,7 @@ export interface components {
             /**
              * Product Price Id
              * Format: uuid4
+             * @deprecated
              */
             product_price_id: string;
             /** Discount Id */
@@ -12787,11 +12861,19 @@ export interface components {
             /** @deprecated */
             user: components["schemas"]["OrderUser"];
             product: components["schemas"]["OrderProduct"];
-            /** Product Price */
+            /**
+             * Product Price
+             * @deprecated
+             */
             product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /** Discount */
             discount: (components["schemas"]["DiscountFixedOnceForeverDurationBase"] | components["schemas"]["DiscountFixedRepeatDurationBase"] | components["schemas"]["DiscountPercentageOnceForeverDurationBase"] | components["schemas"]["DiscountPercentageRepeatDurationBase"]) | null;
             subscription: components["schemas"]["OrderSubscription"] | null;
+            /**
+             * Items
+             * @description Line items composing the order.
+             */
+            items: components["schemas"]["OrderItemSchema"][];
         };
         /**
          * OrderBillingReason
@@ -12872,6 +12954,54 @@ export interface components {
              */
             url: string;
         };
+        /**
+         * OrderItemSchema
+         * @description An order line item.
+         */
+        OrderItemSchema: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Label
+             * @description Description of the line item charge.
+             */
+            label: string;
+            /**
+             * Amount
+             * @description Amount in cents, before discounts and taxes.
+             */
+            amount: number;
+            /**
+             * Tax Amount
+             * @description Sales tax amount in cents.
+             */
+            tax_amount: number;
+            /**
+             * Proration
+             * @description Whether this charge is due to a proration.
+             */
+            proration: boolean;
+            /**
+             * Product Price Id
+             * @description Associated price ID, if any.
+             */
+            product_price_id: string | null;
+        };
         /** OrderProduct */
         OrderProduct: {
             /**
@@ -12924,7 +13054,7 @@ export interface components {
          * OrderSortProperty
          * @enum {string}
          */
-        OrderSortProperty: "created_at" | "-created_at" | "amount" | "-amount" | "customer" | "-customer" | "product" | "-product" | "discount" | "-discount" | "subscription" | "-subscription";
+        OrderSortProperty: "created_at" | "-created_at" | "amount" | "-amount" | "net_amount" | "-net_amount" | "customer" | "-customer" | "product" | "-product" | "discount" | "-discount" | "subscription" | "-subscription";
         /** OrderSubscription */
         OrderSubscription: {
             /** Metadata */
@@ -15684,8 +15814,6 @@ export interface components {
              */
             id: string;
             product: components["schemas"]["TransactionProduct"];
-            /** Product Price */
-            product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /** Subscription Id */
             subscription_id: string | null;
         };
@@ -25808,7 +25936,7 @@ export const customerBenefitGrantLicenseKeysUpdateBenefit_typeValues: ReadonlyAr
 export const customerBenefitGrantSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantSortProperty"]> = ["granted_at", "-granted_at", "type", "-type", "organization", "-organization"];
 export const customerCancellationReasonValues: ReadonlyArray<components["schemas"]["CustomerCancellationReason"]> = ["customer_service", "low_quality", "missing_features", "switched_service", "too_complex", "too_expensive", "unused", "other"];
 export const customerOAuthPlatformValues: ReadonlyArray<components["schemas"]["CustomerOAuthPlatform"]> = ["github", "discord"];
-export const customerOrderSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerOrderSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "organization", "-organization", "product", "-product", "subscription", "-subscription"];
+export const customerOrderSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerOrderSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "net_amount", "-net_amount", "product", "-product", "subscription", "-subscription"];
 export const customerSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerSortProperty"]> = ["created_at", "-created_at", "email", "-email", "name", "-name"];
 export const customerSubscriptionSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerSubscriptionSortProperty"]> = ["started_at", "-started_at", "amount", "-amount", "status", "-status", "organization", "-organization", "product", "-product"];
 export const discountDurationValues: ReadonlyArray<components["schemas"]["DiscountDuration"]> = ["once", "forever", "repeating"];
@@ -25851,7 +25979,7 @@ export const oAuth2ClientConfigurationUpdateToken_endpoint_auth_methodValues: Re
 export const oAuth2ClientConfigurationUpdateGrant_typesValues: ReadonlyArray<components["schemas"]["OAuth2ClientConfigurationUpdate"]["grant_types"]> = ["authorization_code", "refresh_token"];
 export const oAuthPlatformValues: ReadonlyArray<components["schemas"]["OAuthPlatform"]> = ["github", "github_repository_benefit", "google"];
 export const orderBillingReasonValues: ReadonlyArray<components["schemas"]["OrderBillingReason"]> = ["purchase", "subscription_create", "subscription_cycle", "subscription_update"];
-export const orderSortPropertyValues: ReadonlyArray<components["schemas"]["OrderSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "customer", "-customer", "product", "-product", "discount", "-discount", "subscription", "-subscription"];
+export const orderSortPropertyValues: ReadonlyArray<components["schemas"]["OrderSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "net_amount", "-net_amount", "customer", "-customer", "product", "-product", "discount", "-discount", "subscription", "-subscription"];
 export const organizationAccessTokenSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationAccessTokenSortProperty"]> = ["created_at", "-created_at", "comment", "-comment", "last_used_at", "-last_used_at", "organization_id", "-organization_id"];
 export const organizationAvatarFileCreateServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileCreate"]["service"]> = ["organization_avatar"];
 export const organizationAvatarFileReadServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileRead"]["service"]> = ["organization_avatar"];

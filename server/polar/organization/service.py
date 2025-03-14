@@ -167,12 +167,19 @@ class OrganizationService(ResourceServiceReader[Organization]):
         update_dict = update_schema.model_dump(
             by_alias=True,
             exclude_unset=True,
-            exclude={"profile_settings", "feature_settings", "subscription_settings"},
+            exclude={
+                "profile_settings",
+                "feature_settings",
+                "subscription_settings",
+                "details",
+            },
         )
         for key, value in update_dict.items():
             setattr(organization, key, value)
 
-        if not previous_details and organization.details:
+        # Only store details once to avoid API overrides later w/o review
+        if not previous_details and update_schema.details:
+            organization.details = update_schema.details.model_dump()
             organization.details_submitted_at = datetime.now(UTC)
 
         session.add(organization)

@@ -13082,17 +13082,17 @@ export interface components {
              * Avatar Url
              * @description Avatar URL shown in checkout, customer portal, emails etc.
              */
-            avatar_url?: string | null;
+            avatar_url: string | null;
             /**
              * Email
              * @description Public support email.
              */
-            email?: string | null;
+            email: string | null;
             /**
              * Website
              * @description Official website of the organization.
              */
-            website?: string | null;
+            website: string | null;
             /**
              * Socials
              * @description Links to social profiles.
@@ -13102,7 +13102,7 @@ export interface components {
              * Details Submitted At
              * @description When the business details were submitted.
              */
-            details_submitted_at?: string | null;
+            details_submitted_at: string | null;
             /** @description Organization feature settings */
             feature_settings: components["schemas"]["OrganizationFeatureSettings"] | null;
             /** @description Settings related to subscriptions management */

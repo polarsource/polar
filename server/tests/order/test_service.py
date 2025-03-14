@@ -337,7 +337,7 @@ class TestCreateFromCheckout:
         with pytest.raises(MissingStripeCustomerID):
             await order_service.create_from_checkout(session, checkout, None)
 
-    async def test_new_fixed(
+    async def test_fixed(
         self,
         enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
@@ -404,7 +404,7 @@ class TestCreateFromCheckout:
             order_id=order.id,
         )
 
-    async def test_new_custom(
+    async def test_custom(
         self,
         enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
@@ -478,7 +478,7 @@ class TestCreateFromCheckout:
             order_id=order.id,
         )
 
-    async def test_new_free(
+    async def test_free(
         self,
         enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
@@ -539,6 +539,74 @@ class TestCreateFromCheckout:
             task="grant",
             customer_id=customer.id,
             product_id=product_one_time_free_price.id,
+            order_id=order.id,
+        )
+
+    async def test_fixed_discounted_100(
+        self,
+        enqueue_job_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        discount_percentage_100: Discount,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            discount=discount_percentage_100,
+        )
+
+        discount_amount = sum(
+            cast(ProductPriceFixed, price).price_amount
+            for price in product_one_time.prices
+        )
+        stripe_invoice = construct_stripe_invoice(
+            lines=[
+                {
+                    "price_id": price.stripe_price_id,
+                    "amount": cast(ProductPriceFixed, price).price_amount,
+                    "tax_amount": 0,
+                }
+                for price in product_one_time.prices
+            ],
+            discount=discount_percentage_100,
+            discount_amount=discount_amount,
+        )
+        stripe_service_mock.create_out_of_band_invoice.return_value = (
+            stripe_invoice,
+            {
+                price.stripe_price_id: line
+                for price, line in zip(product_one_time.prices, stripe_invoice.lines)
+            },
+        )
+
+        order = await order_service.create_from_checkout(session, checkout, None)
+
+        assert order.net_amount == 0
+        assert order.discount_amount == discount_amount
+        assert order.billing_reason == OrderBillingReason.purchase
+        assert order.customer == checkout.customer
+        assert order.product == product_one_time
+        assert len(order.items) == len(product_one_time.prices)
+
+        stripe_service_mock.create_out_of_band_invoice.assert_called_once_with(
+            customer=customer.stripe_customer_id,
+            currency="usd",
+            prices=[price.stripe_price_id for price in product_one_time.prices],
+            coupon=discount_percentage_100.stripe_coupon_id,
+            automatic_tax=False,
+            metadata=ANY,
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product_one_time.id,
             order_id=order.id,
         )
 

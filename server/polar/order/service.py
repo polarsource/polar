@@ -39,7 +39,6 @@ from polar.models import (
     Product,
     ProductPrice,
     ProductPriceCustom,
-    ProductPriceFree,
     Transaction,
     User,
 )
@@ -321,7 +320,6 @@ class OrderService:
 
         stripe_price_ids: list[str] = []
         prices = product.prices
-        free_pricing = True
         for price in prices:
             # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
             if isinstance(price, ProductPriceCustom):
@@ -333,8 +331,6 @@ class OrderService:
                 stripe_price_ids.append(ad_hoc_price.id)
             else:
                 stripe_price_ids.append(price.stripe_price_id)
-            if not isinstance(price, ProductPriceFree):
-                free_pricing = False
 
         (
             stripe_invoice,
@@ -344,8 +340,8 @@ class OrderService:
             currency=checkout.currency or "usd",
             prices=stripe_price_ids,
             coupon=(checkout.discount.stripe_coupon_id if checkout.discount else None),
-            # Disable automatic tax for free pricing, since we don't collect customer address in that case
-            automatic_tax=product.is_tax_applicable and not free_pricing,
+            # Disable automatic tax for free purchases, since we don't collect customer address in that case
+            automatic_tax=checkout.is_payment_required,
             metadata=metadata,
         )
 

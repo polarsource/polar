@@ -15,12 +15,27 @@ from polar.subscription.schemas import SubscriptionBase
 
 class CustomerOrderBase(TimestampedSchema):
     id: UUID4
-    amount: int = Field(description="Amount in cents, before discounts and taxes.")
-    discount_amount: int = Field(description="Discount amount in cents.")
-    tax_amount: int = Field(description="Sales tax amount in cents.")
+    amount: int = Field(
+        description="Amount in cents, before discounts and taxes.",
+        deprecated=(
+            "Use `subtotal_amount`. "
+            "It has the same value and meaning, but the name is more descriptive."
+        ),
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "amount",
+            # Validate from ORM model
+            "subtotal_amount",
+        ),
+    )
     subtotal_amount: int = Field(
+        description="Amount in cents, before discounts and taxes."
+    )
+    discount_amount: int = Field(description="Discount amount in cents.")
+    net_amount: int = Field(
         description="Amount in cents, after discounts but before taxes."
     )
+    tax_amount: int = Field(description="Sales tax amount in cents.")
     total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
     refunded_amount: int = Field(description="Amount refunded in cents.")
     refunded_tax_amount: int = Field(description="Sales tax refunded in cents.")

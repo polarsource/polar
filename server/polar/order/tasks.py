@@ -118,7 +118,7 @@ async def order_discord_notification(
         organization = order.customer.organization
         subscription = order.subscription
 
-        amount = format_currency(order.subtotal_amount / 100, "USD", locale="en_US")
+        amount = format_currency(order.net_amount / 100, "USD", locale="en_US")
         if subscription:
             amount = f"{amount} / {subscription.recurring_interval}"
 

@@ -112,19 +112,19 @@ def upgrade() -> None:
         """
     )
     op.alter_column("orders", "discount_amount", nullable=False)
-
+    op.alter_column("orders", "amount", new_column_name="subtotal_amount")
     op.drop_column("orders", "product_price_id")
 
     op.create_index(
-        "ix_subtotal_amount",
+        "ix_net_amount",
         "orders",
-        [sa.literal_column("(amount - discount_amount)")],
+        [sa.literal_column("(subtotal_amount - discount_amount)")],
         unique=False,
     )
     op.create_index(
         "ix_total_amount",
         "orders",
-        [sa.literal_column("(amount - discount_amount + tax_amount)")],
+        [sa.literal_column("(subtotal_amount - discount_amount + tax_amount)")],
         unique=False,
     )
 
@@ -137,6 +137,7 @@ def downgrade() -> None:
     op.drop_index("ix_subtotal_amount", table_name="orders")
 
     op.drop_column("orders", "discount_amount")
+    op.alter_column("orders", "subtotal_amount", new_column_name="amount")
 
     op.add_column(
         "orders",

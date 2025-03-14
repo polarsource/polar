@@ -250,11 +250,8 @@ class OrderService:
             clause_function = desc if is_desc else asc
             if criterion == OrderSortProperty.created_at:
                 order_by_clauses.append(clause_function(Order.created_at))
-            elif criterion in [
-                OrderSortProperty.amount,
-                OrderSortProperty.subtotal_amount,
-            ]:
-                order_by_clauses.append(clause_function(Order.subtotal_amount))
+            elif criterion in {OrderSortProperty.amount, OrderSortProperty.net_amount}:
+                order_by_clauses.append(clause_function(Order.net_amount))
             elif criterion == OrderSortProperty.customer:
                 order_by_clauses.append(clause_function(Customer.email))
             elif criterion == OrderSortProperty.product:
@@ -371,7 +368,7 @@ class OrderService:
         repository = OrderRepository.from_session(session)
         order = await repository.create(
             Order(
-                amount=stripe_invoice.subtotal,
+                subtotal_amount=stripe_invoice.subtotal,
                 discount_amount=discount_amount,
                 tax_amount=stripe_invoice.tax or 0,
                 currency=stripe_invoice.currency,
@@ -558,7 +555,7 @@ class OrderService:
         repository = OrderRepository.from_session(session)
         order = await repository.create(
             Order(
-                amount=invoice.subtotal,
+                subtotal_amount=invoice.subtotal,
                 discount_amount=discount_amount,
                 tax_amount=invoice.tax or 0,
                 currency=invoice.currency,
@@ -615,7 +612,7 @@ class OrderService:
                 payload=MaintainerNewProductSaleNotificationPayload(
                     customer_name=order.customer.email,
                     product_name=product.name,
-                    product_price_amount=order.subtotal_amount,
+                    product_price_amount=order.net_amount,
                     organization_name=organization.slug,
                 ),
             ),

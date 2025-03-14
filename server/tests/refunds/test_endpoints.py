@@ -52,7 +52,7 @@ async def create_order_and_payment(
         save_fixture,
         product=product,
         customer=customer,
-        amount=amount,
+        subtotal_amount=amount,
         tax_amount=tax_amount,
         stripe_invoice_id=stripe_invoice_id,
         subscription=subscription,

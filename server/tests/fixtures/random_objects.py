@@ -948,7 +948,7 @@ async def create_order(
     *,
     product: Product,
     customer: Customer,
-    amount: int = 1000,
+    subtotal_amount: int = 1000,
     tax_amount: int = 0,
     discount_amount: int = 0,
     subscription: Subscription | None = None,
@@ -959,13 +959,13 @@ async def create_order(
 ) -> Order:
     order = Order(
         created_at=created_at or utc_now(),
-        amount=amount,
+        subtotal_amount=subtotal_amount,
         tax_amount=tax_amount,
         discount_amount=discount_amount,
         items=[
             OrderItem(
                 label="",
-                amount=amount,
+                amount=subtotal_amount,
                 tax_amount=tax_amount,
                 proration=False,
             )
@@ -987,18 +987,18 @@ async def create_order_and_payment(
     *,
     product: Product,
     customer: Customer,
-    amount: int,
+    subtotal_amount: int,
     tax_amount: int,
 ) -> tuple[Order, Transaction]:
     order = await create_order(
         save_fixture,
         product=product,
         customer=customer,
-        amount=amount,
+        subtotal_amount=subtotal_amount,
         tax_amount=tax_amount,
     )
     payment = await create_payment_transaction(
-        save_fixture, amount=amount, tax_amount=tax_amount, order=order
+        save_fixture, amount=subtotal_amount, tax_amount=tax_amount, order=order
     )
     return order, payment
 

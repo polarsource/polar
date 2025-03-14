@@ -51,7 +51,7 @@ class RevenueMetric(Metric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
-        return func.sum(Order.subtotal_amount)
+        return func.sum(Order.net_amount)
 
 
 class CumulativeRevenueMetric(Metric):
@@ -64,7 +64,7 @@ class CumulativeRevenueMetric(Metric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
-        return func.sum(Order.subtotal_amount)
+        return func.sum(Order.net_amount)
 
 
 class AverageOrderValueMetric(Metric):
@@ -77,7 +77,7 @@ class AverageOrderValueMetric(Metric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
-        return func.cast(func.ceil(func.avg(Order.subtotal_amount)), Integer)
+        return func.cast(func.ceil(func.avg(Order.net_amount)), Integer)
 
 
 class OneTimeProductsMetric(Metric):
@@ -103,7 +103,7 @@ class OneTimeProductsRevenueMetric(Metric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
-        return func.sum(Order.subtotal_amount).filter(Order.subscription_id.is_(None))
+        return func.sum(Order.net_amount).filter(Order.subscription_id.is_(None))
 
 
 class NewSubscriptionsMetric(Metric):
@@ -134,7 +134,7 @@ class NewSubscriptionsRevenueMetric(Metric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
-        return func.sum(Order.subtotal_amount).filter(
+        return func.sum(Order.net_amount).filter(
             i.sql_date_trunc(
                 cast(SQLColumnExpression[datetime], Subscription.started_at)
             )
@@ -170,7 +170,7 @@ class RenewedSubscriptionsRevenueMetric(Metric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
-        return func.sum(Order.subtotal_amount).filter(
+        return func.sum(Order.net_amount).filter(
             i.sql_date_trunc(
                 cast(SQLColumnExpression[datetime], Subscription.started_at)
             )

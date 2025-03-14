@@ -31,7 +31,7 @@ class InvoiceNotAvailable(CustomerOrderError):
 class CustomerOrderSortProperty(StrEnum):
     created_at = "created_at"
     amount = "amount"
-    subtotal_amount = "subtotal_amount"
+    net_amount = "net_amount"
     product = "product"
     subscription = "subscription"
 
@@ -83,11 +83,11 @@ class CustomerOrderService:
             clause_function = desc if is_desc else asc
             if criterion == CustomerOrderSortProperty.created_at:
                 order_by_clauses.append(clause_function(Order.created_at))
-            elif criterion in [
+            elif criterion in {
                 CustomerOrderSortProperty.amount,
-                CustomerOrderSortProperty.subtotal_amount,
-            ]:
-                order_by_clauses.append(clause_function(Order.subtotal_amount))
+                CustomerOrderSortProperty.net_amount,
+            }:
+                order_by_clauses.append(clause_function(Order.net_amount))
             elif criterion == CustomerOrderSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
             elif criterion == CustomerOrderSortProperty.subscription:

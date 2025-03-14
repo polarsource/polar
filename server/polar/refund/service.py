@@ -346,7 +346,7 @@ class RefundService(ResourceServiceReader[Refund]):
         if refund_amount == order.refundable_amount:
             return order.refundable_tax_amount
 
-        ratio = order.tax_amount / order.subtotal_amount
+        ratio = order.tax_amount / order.net_amount
         tax_amount = round(refund_amount * ratio)
         return tax_amount
 

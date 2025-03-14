@@ -189,7 +189,7 @@ async def _create_fixtures(
             save_fixture,
             product=products[order_fixture["product"]],
             customer=customer,
-            amount=order_fixture["amount"],
+            subtotal_amount=order_fixture["amount"],
             created_at=_date_to_datetime(order_fixture["created_at"]),
             subscription=order_subscription,
             stripe_invoice_id=None,

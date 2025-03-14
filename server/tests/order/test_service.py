@@ -377,7 +377,7 @@ class TestCreateFromCheckout:
             session, checkout, payment_intent
         )
 
-        assert order.subtotal_amount == checkout.subtotal_amount
+        assert order.net_amount == checkout.subtotal_amount
         assert order.discount_amount == 0
         assert order.billing_reason == OrderBillingReason.purchase
         assert order.customer == checkout.customer
@@ -451,7 +451,7 @@ class TestCreateFromCheckout:
             session, checkout, payment_intent
         )
 
-        assert order.subtotal_amount == checkout.subtotal_amount
+        assert order.net_amount == checkout.subtotal_amount
         assert order.discount_amount == 0
         assert order.billing_reason == OrderBillingReason.purchase
         assert order.customer == checkout.customer
@@ -516,7 +516,7 @@ class TestCreateFromCheckout:
 
         order = await order_service.create_from_checkout(session, checkout, None)
 
-        assert order.subtotal_amount == 0
+        assert order.net_amount == 0
         assert order.discount_amount == 0
         assert order.billing_reason == OrderBillingReason.purchase
         assert order.customer == checkout.customer
@@ -589,7 +589,7 @@ class TestCreateOrderFromStripe:
 
         order = await order_service.create_order_from_stripe(session, invoice)
 
-        assert order.subtotal_amount == invoice.total
+        assert order.net_amount == invoice.total
         assert order.customer == subscription.customer
         assert order.product == product
         assert order.subscription == subscription
@@ -627,7 +627,7 @@ class TestCreateOrderFromStripe:
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
 
         assert order.discount_amount == cast(DiscountFixed, discount_fixed_once).amount
-        assert order.subtotal_amount == invoice.total
+        assert order.net_amount == invoice.total
         assert order.discount == discount_fixed_once
 
     @pytest.mark.parametrize(
@@ -794,10 +794,10 @@ class TestCreateOrderBalance:
             "polar.order.service.balance_transaction_service.create_balance_from_charge"
         )
         create_balance_from_charge_mock.return_value = (
-            Transaction(type=TransactionType.balance, amount=-order.subtotal_amount),
+            Transaction(type=TransactionType.balance, amount=-order.net_amount),
             Transaction(
                 type=TransactionType.balance,
-                amount=order.subtotal_amount,
+                amount=order.net_amount,
                 account_id=organization_account.id,
             ),
         )

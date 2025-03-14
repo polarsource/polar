@@ -40,7 +40,7 @@ def typer_async(f):  # type: ignore
     return wrapper
 
 
-semaphore = asyncio.Semaphore(64)
+semaphore = asyncio.Semaphore(48)
 
 
 async def process_order(
@@ -84,9 +84,9 @@ async def process_order(
         for stripe_discount_amount in stripe_invoice.total_discount_amounts:
             discount_amount += stripe_discount_amount.amount
     order.discount_amount = discount_amount
-    order.amount = stripe_invoice.subtotal
+    order.subtotal_amount = stripe_invoice.subtotal
 
-    assert order.amount == sum([item.amount for item in items])
+    assert order.subtotal_amount == sum([item.amount for item in items])
     assert order.total_amount == stripe_invoice.total
 
     return order, items

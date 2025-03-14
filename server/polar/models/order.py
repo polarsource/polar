@@ -67,14 +67,16 @@ class OrderRefundExceedsBalance(PolarError):
 class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "orders"
     __table_args__ = (
-        Index("ix_subtotal_amount", text("(amount - discount_amount)")),
-        Index("ix_total_amount", text("(amount - discount_amount + tax_amount)")),
+        Index("ix_net_amount", text("(subtotal_amount - discount_amount)")),
+        Index(
+            "ix_total_amount", text("(subtotal_amount - discount_amount + tax_amount)")
+        ),
     )
 
     status: Mapped[OrderStatus] = mapped_column(
         String, nullable=False, default=OrderStatus.paid
     )
-    amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    subtotal_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     discount_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
@@ -160,22 +162,22 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return self.product.prices[0]
 
     @hybrid_property
-    def subtotal_amount(self) -> int:
-        return self.amount - self.discount_amount
+    def net_amount(self) -> int:
+        return self.subtotal_amount - self.discount_amount
 
-    @subtotal_amount.inplace.expression
+    @net_amount.inplace.expression
     @classmethod
-    def _subtotal_amount_expression(cls) -> ColumnElement[int]:
-        return cls.amount - cls.discount_amount
+    def _net_amount_expression(cls) -> ColumnElement[int]:
+        return cls.subtotal_amount - cls.discount_amount
 
     @hybrid_property
     def total_amount(self) -> int:
-        return self.subtotal_amount + self.tax_amount
+        return self.net_amount + self.tax_amount
 
     @total_amount.inplace.expression
     @classmethod
     def _total_amount_expression(cls) -> ColumnElement[int]:
-        return cls.subtotal_amount + cls.tax_amount
+        return cls.net_amount + cls.tax_amount
 
     @property
     def taxed(self) -> int:
@@ -187,7 +189,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @property
     def refundable_amount(self) -> int:
-        return self.subtotal_amount - self.refunded_amount
+        return self.net_amount - self.refunded_amount
 
     @property
     def refundable_tax_amount(self) -> int:
@@ -200,13 +202,13 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         new_amount = self.refunded_amount + refunded_amount
         new_tax_amount = self.refunded_tax_amount + refunded_tax_amount
         exceeds_original_amount = (
-            new_amount > self.subtotal_amount or new_tax_amount > self.tax_amount
+            new_amount > self.net_amount or new_tax_amount > self.tax_amount
         )
         if exceeds_original_amount:
             raise OrderRefundExceedsBalance(self, refunded_amount, refunded_tax_amount)
 
         new_status = OrderStatus.partially_refunded
-        if new_amount == self.subtotal_amount:
+        if new_amount == self.net_amount:
             new_status = OrderStatus.refunded
 
         self.status = new_status
@@ -215,5 +217,5 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     def set_refunded(self) -> None:
         self.status = OrderStatus.refunded
-        self.refunded_amount = self.subtotal_amount
+        self.refunded_amount = self.net_amount
         self.refunded_tax_amount = self.tax_amount

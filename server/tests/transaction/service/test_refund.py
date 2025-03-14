@@ -74,7 +74,7 @@ class TestCreateRefunds:
             save_fixture,
             product=product,
             customer=customer,
-            amount=charge.amount,
+            subtotal_amount=charge.amount,
         )
         balance_transaction = build_stripe_balance_transaction()
         stripe_service_mock.get_balance_transaction.return_value = balance_transaction

@@ -240,7 +240,7 @@ class TestCreateAbuse(StripeRefund):
             save_fixture,
             product=product,
             customer=customer,
-            amount=1000,
+            subtotal_amount=1000,
             tax_amount=250,
         )
 
@@ -342,7 +342,7 @@ class TestCreatedWebhooks(StripeRefund):
             save_fixture,
             product=product,
             customer=customer,
-            amount=1000,
+            subtotal_amount=1000,
             tax_amount=250,
         )
 
@@ -398,7 +398,7 @@ class TestCreatedWebhooks(StripeRefund):
             save_fixture,
             product=product,
             customer=customer,
-            amount=1000,
+            subtotal_amount=1000,
             tax_amount=250,
         )
         assert order.refunded_amount == 0
@@ -443,7 +443,7 @@ class TestCreatedWebhooks(StripeRefund):
             save_fixture,
             product=product,
             customer=customer,
-            amount=1000,
+            subtotal_amount=1000,
             tax_amount=250,
         )
         assert order.refunded_amount == 0
@@ -510,7 +510,7 @@ class TestUpdatedWebhooks(StripeRefund):
             save_fixture,
             product=product_organization_second,
             customer=customer,
-            amount=1000,
+            subtotal_amount=1000,
             tax_amount=250,
         )
 

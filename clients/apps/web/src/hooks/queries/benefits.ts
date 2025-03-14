@@ -39,19 +39,17 @@ const _invalidateBenefitsQueries = ({
 
 export const useInfiniteBenefits = (
   orgId: string,
-  limit = 30,
-  type?: schemas['BenefitType'],
+  parameters?: operations['benefits:list']['parameters']['query'],
 ) =>
   useInfiniteQuery({
-    queryKey: ['infinite', 'benefits', 'organization', orgId, { type }],
+    queryKey: ['infinite', 'benefits', 'organization', orgId, parameters],
     queryFn: ({ pageParam }) =>
       unwrap(
         api.GET('/v1/benefits/', {
           params: {
             query: {
+              ...parameters,
               organization_id: orgId,
-              limit,
-              type,
               page: pageParam,
             },
           },
@@ -60,7 +58,6 @@ export const useInfiniteBenefits = (
     retry: defaultRetry,
     enabled: !!orgId,
     initialPageParam: 1,
-
     getNextPageParam: (lastPage, _allPages, lastPageParam) => {
       if (
         lastPageParam === lastPage.pagination.max_page ||
@@ -75,19 +72,17 @@ export const useInfiniteBenefits = (
 
 export const useBenefits = (
   orgId?: string,
-  limit = 30,
-  type?: schemas['BenefitType'],
+  parameters?: operations['benefits:list']['parameters']['query'],
 ) =>
   useQuery({
-    queryKey: ['benefits', 'organization', orgId, { type }],
+    queryKey: ['benefits', 'organization', orgId, parameters],
     queryFn: () =>
       unwrap(
         api.GET('/v1/benefits/', {
           params: {
             query: {
+              ...parameters,
               organization_id: orgId,
-              limit,
-              type,
             },
           },
         }),

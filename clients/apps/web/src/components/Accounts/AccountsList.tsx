@@ -11,9 +11,14 @@ import AccountAssociations from './AccountAssociations'
 interface AccountsListProps {
   accounts: schemas['Account'][]
   returnPath: string
+  pauseActions?: boolean
 }
 
-const AccountsList = ({ accounts, returnPath }: AccountsListProps) => {
+const AccountsList = ({
+  accounts,
+  returnPath,
+  pauseActions,
+}: AccountsListProps) => {
   return (
     <table className="-mx-4 w-full text-left">
       <thead className="dark:text-polar-500 text-gray-500">
@@ -49,6 +54,7 @@ const AccountsList = ({ accounts, returnPath }: AccountsListProps) => {
           <AccountListItem
             key={account.id}
             account={account}
+            pauseActions={pauseActions}
             returnPath={returnPath}
           />
         ))}
@@ -62,9 +68,15 @@ export default AccountsList
 interface AccountListItemProps {
   account: schemas['Account']
   returnPath: string
+  pauseActions?: boolean
 }
 
-const AccountListItem = ({ account, returnPath }: AccountListItemProps) => {
+const AccountListItem = ({
+  account,
+  returnPath,
+  pauseActions,
+}: AccountListItemProps) => {
+  pauseActions = pauseActions === true
   const childClass = twMerge(
     'dark:group-hover:bg-polar-700 px-4 py-2 transition-colors group-hover:bg-blue-50 group-hover:text-gray-950 text-gray-700 dark:text-polar-200 group-hover:dark:text-white',
   )
@@ -114,7 +126,7 @@ const AccountListItem = ({ account, returnPath }: AccountListItemProps) => {
       </td>
       <td className={twMerge(childClass, 'rounded-r-xl uppercase')}>
         {!isActive && !isUnderReview && (
-          <Button size="sm" onClick={goToOnboarding}>
+          <Button size="sm" onClick={goToOnboarding} disabled={pauseActions}>
             Continue setup
           </Button>
         )}

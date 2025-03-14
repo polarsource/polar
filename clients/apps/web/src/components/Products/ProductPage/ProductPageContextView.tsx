@@ -31,7 +31,9 @@ export const ProductPageContextView = ({
   product,
 }: ProductPageContextViewProps) => {
   const router = useRouter()
-  const benefits = useBenefits(organization.id, 100)
+  const benefits = useBenefits(organization.id, {
+    limit: 100,
+  })
   const organizationBenefits = useMemo(
     () => benefits.data?.items ?? [],
     [benefits],

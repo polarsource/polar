@@ -45,6 +45,9 @@ async def list(
         None, title="BenefitType Filter", description="Filter by benefit type."
     ),
     session: AsyncSession = Depends(get_db_session),
+    query: str | None = Query(
+        None, title="Query", description="Filter by description."
+    ),
 ) -> ListResource[BenefitSchema]:
     """List benefits."""
     results, count = await benefit_service.list(
@@ -53,6 +56,7 @@ async def list(
         type=type,
         organization_id=organization_id,
         pagination=pagination,
+        query=query,
     )
 
     return ListResource.from_paginated_results(

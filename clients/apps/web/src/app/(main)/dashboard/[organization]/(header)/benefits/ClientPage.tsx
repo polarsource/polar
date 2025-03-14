@@ -16,9 +16,10 @@ import Spinner from '@/components/Shared/Spinner'
 import { useToast } from '@/components/Toast/use-toast'
 import { useDeleteBenefit, useInfiniteBenefits } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
-import { AddOutlined, MoreVertOutlined } from '@mui/icons-material'
+import { AddOutlined, MoreVertOutlined, Search } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,9 +43,13 @@ const ClientPage = ({
     'benefitId',
     parseAsString,
   )
+  const [query, setQuery] = useQueryState('query', parseAsString)
 
   const { data, fetchNextPage, hasNextPage } = useInfiniteBenefits(
     organization.id,
+    {
+      query: query ?? undefined,
+    },
   )
 
   const benefits = useMemo(
@@ -204,6 +209,20 @@ const ClientPage = ({
                 <AddOutlined fontSize="small" />
               </Button>
             </div>
+          </div>
+          <div className="flex flex-row items-center gap-3 px-4 py-2">
+            <div className="dark:bg-polar-800 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+              <Search
+                fontSize="inherit"
+                className="dark:text-polar-500 text-gray-500"
+              />
+            </div>
+            <Input
+              className="w-full rounded-none border-none bg-transparent p-0 !shadow-none ring-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:bg-transparent"
+              placeholder="Search Benefits"
+              value={query ?? undefined}
+              onChange={(e) => setQuery(e.target.value)}
+            />
           </div>
           <div className="dark:divide-polar-800 flex h-full flex-grow flex-col divide-y divide-gray-50 overflow-y-auto">
             {benefits.map((benefit) => (

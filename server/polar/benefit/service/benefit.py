@@ -97,6 +97,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         type: Sequence[BenefitType] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
+        query: str | None = None,
     ) -> tuple[Sequence[Benefit], int]:
         statement = self._get_readable_benefit_statement(auth_subject)
 
@@ -105,6 +106,9 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
 
         if organization_id is not None:
             statement = statement.where(Benefit.organization_id.in_(organization_id))
+
+        if query is not None:
+            statement = statement.where(Benefit.description.ilike(f"%{query}%"))
 
         statement = statement.order_by(
             Benefit.type,

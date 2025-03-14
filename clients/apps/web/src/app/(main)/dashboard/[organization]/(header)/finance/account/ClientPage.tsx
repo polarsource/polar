@@ -27,7 +27,7 @@ const OrganizationDetailsModal = ({
   return (
     <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
       <div className="flex flex-row items-center gap-x-4">
-        <h2 className="text-xl">Organization details</h2>
+        <h2 className="text-xl">Organization Details</h2>
       </div>
       <OrganizationProfileSettings
         organization={organization}

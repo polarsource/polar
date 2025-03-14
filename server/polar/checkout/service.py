@@ -7,6 +7,7 @@ from typing import Any
 import stripe as stripe_lib
 import structlog
 from sqlalchemy import UnaryExpression, asc, desc, func, select
+from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import (
     Anonymous,
@@ -984,7 +985,11 @@ class CheckoutService:
     ) -> tuple[Sequence[Product], Product, ProductPrice]:
         product_price_repository = ProductPriceRepository.from_session(session)
         price = await product_price_repository.get_readable_by_id(
-            product_price_id, auth_subject
+            product_price_id,
+            auth_subject,
+            options=(
+                contains_eager(ProductPrice.product).joinedload(Product.organization),
+            ),
         )
 
         if price is None:

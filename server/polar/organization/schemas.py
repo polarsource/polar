@@ -160,26 +160,21 @@ class OrganizationProfileSettings(Schema):
 class Organization(IDSchema, TimestampedSchema):
     id: OrganizationID
     name: str = Field(
-        ...,
         description="Organization name shown in checkout, customer portal, emails etc.",
     )
     slug: str = Field(
-        ...,
         description="Unique organization slug in checkout, customer portal and credit card statements.",
     )
     avatar_url: str | None = Field(
-        None, description="Avatar URL shown in checkout, customer portal, emails etc."
+        description="Avatar URL shown in checkout, customer portal, emails etc."
     )
 
-    email: str | None = Field(None, description="Public support email.")
-    website: str | None = Field(
-        None, description="Official website of the organization."
-    )
+    email: str | None = Field(description="Public support email.")
+    website: str | None = Field(description="Official website of the organization.")
     socials: list[OrganizationSocialLink] = Field(
         description="Links to social profiles.",
     )
     details_submitted_at: datetime | None = Field(
-        None,
         description="When the business details were submitted.",
     )
 

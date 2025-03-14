@@ -108,7 +108,7 @@ export default function ClientPage({
           organization={organization}
           organizationAccount={organizationAccount}
           loading={linkAccountLoading}
-          disabled={requireDetails}
+          pauseActions={requireDetails}
           onLinkAccount={onLinkAccount}
           onAccountSetup={showSetupModal}
         />
@@ -128,6 +128,7 @@ export default function ClientPage({
           {accounts?.items && (
             <AccountsList
               accounts={accounts?.items}
+              pauseActions={requireDetails}
               returnPath={`/dashboard/${organization.slug}/finance/account`}
             />
           )}

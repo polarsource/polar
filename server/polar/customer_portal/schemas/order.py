@@ -1,6 +1,7 @@
 from pydantic import UUID4, AliasChoices, AliasPath, Field
 
 from polar.kit.schemas import Schema, TimestampedSchema
+from polar.order.schemas import OrderItemSchema
 from polar.organization.schemas import Organization
 from polar.product.schemas import (
     BenefitPublicList,
@@ -14,8 +15,15 @@ from polar.subscription.schemas import SubscriptionBase
 
 class CustomerOrderBase(TimestampedSchema):
     id: UUID4
-    amount: int
-    tax_amount: int
+    amount: int = Field(description="Amount in cents, before discounts and taxes.")
+    discount_amount: int = Field(description="Discount amount in cents.")
+    tax_amount: int = Field(description="Sales tax amount in cents.")
+    subtotal_amount: int = Field(
+        description="Amount in cents, after discounts but before taxes."
+    )
+    total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
+    refunded_amount: int = Field(description="Amount refunded in cents.")
+    refunded_tax_amount: int = Field(description="Sales tax refunded in cents.")
     currency: str
 
     customer_id: UUID4
@@ -63,6 +71,7 @@ class CustomerOrder(CustomerOrderBase):
         ),
     )
     subscription: CustomerOrderSubscription | None
+    items: list[OrderItemSchema] = Field(description="Line items composing the order.")
 
 
 class CustomerOrderInvoice(Schema):

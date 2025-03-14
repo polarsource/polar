@@ -231,7 +231,7 @@ export const OrganizationDetailsForm: React.FC<
           <FormItem>
             <FormLabel>{inKYCMode && `Organization `}Name</FormLabel>
             <FormControl>
-              <Input {...field} />
+              <Input {...field} value={field.value || ''} />
             </FormControl>
             <FormDescription>
               What customers will see in checkout, receipts and more.
@@ -293,7 +293,11 @@ export const OrganizationDetailsForm: React.FC<
           <FormItem>
             <FormLabel>Website</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="https://" />
+              <Input
+                {...field}
+                value={field.value || ''}
+                placeholder="https://"
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -306,7 +310,12 @@ export const OrganizationDetailsForm: React.FC<
           <FormItem>
             <FormLabel>Support Email</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="support@example.com" required />
+              <Input
+                {...field}
+                value={field.value || ''}
+                placeholder="support@example.com"
+                required
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -418,7 +427,12 @@ export const OrganizationDetailsForm: React.FC<
               <FormItem>
                 <FormLabel>Estimated sales per year (USD)</FormLabel>
                 <FormControl>
-                  <Input {...field} type="number" placeholder="13337" />
+                  <Input
+                    {...field}
+                    type="number"
+                    value={field.value || ''}
+                    placeholder="13337"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -506,7 +520,12 @@ export const OrganizationDetailsForm: React.FC<
                       How much did you sell for last year (USD)?
                     </FormLabel>
                     <FormControl>
-                      <Input {...field} type="number" placeholder="1000" />
+                      <Input
+                        {...field}
+                        type="number"
+                        value={field.value || ''}
+                        placeholder="1000"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -537,10 +556,7 @@ const OrganizationProfileSettings: React.FC<
 
   const updateOrganization = useUpdateOrganization()
 
-  const onSubmit = async (body: {
-    name: string
-    avatar_url: string | null
-  }) => {
+  const onSubmit = async (body: schemas['OrganizationUpdate']) => {
     const { error } = await updateOrganization.mutateAsync({
       id: organization.id,
       body: {
@@ -626,7 +642,7 @@ const OrganizationProfileSettings: React.FC<
         />
         <div>
           <Button type="submit" loading={updateOrganization.isPending}>
-            Save
+            {inKYCMode ? 'Submit' : 'Save'}
           </Button>
         </div>
       </form>

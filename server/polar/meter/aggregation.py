@@ -18,7 +18,7 @@ class CountAggregation(BaseModel):
     func: Literal[AggregationFunction.cnt] = AggregationFunction.cnt
 
     def get_sql_column(self, model: type[Any]) -> Any:
-        return func.count()
+        return func.count(model.id)
 
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
         return true()

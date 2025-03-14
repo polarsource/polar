@@ -37,7 +37,10 @@ import {
   XAxis,
   YAxis,
 } from '@polar-sh/ui/components/ui/chart'
-import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
+import {
+  formatCurrencyAndAmount,
+  getCentsInDollarString,
+} from '@polar-sh/ui/lib/money'
 import { motion } from 'framer-motion'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
@@ -246,7 +249,7 @@ const HeroChart = ({ organization }: HeroChartProps) => {
               accessibilityLayer
               data={mergedData}
               margin={{
-                left: 12,
+                left: 0,
                 right: 12,
               }}
             >
@@ -298,9 +301,12 @@ const HeroChart = ({ organization }: HeroChartProps) => {
                     currentPeriodMetricsData?.metrics[selectedMetric]
 
                   if (metric?.type === 'currency') {
-                    return `$${getCentsInDollarString(parseInt(value as string))}`
+                    return formatCurrencyAndAmount(value, 'USD', 0, 'compact')
                   } else {
-                    return value
+                    return Intl.NumberFormat('en-US', {
+                      notation: 'compact',
+                      maximumFractionDigits: 2,
+                    }).format(value)
                   }
                 }}
               />

@@ -1,7 +1,9 @@
 import { useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
+  AddOutlined,
   AddPhotoAlternateOutlined,
+  CloseOutlined,
   Facebook,
   GitHub,
   Instagram,
@@ -146,21 +148,22 @@ const OrganizationSocialLinks = () => {
                   <div className="">
                     {getIcon(social.platform, 'text-gray-400 h-4')}
                   </div>
-                  <div>
+                  <div className="flex grow">
                     <Input
                       value={social.url || ''}
                       onChange={(e) => handleChange(index, e.target.value)}
-                      className="w-72"
+                      className="w-full"
                       placeholder="https://"
                     />
                   </div>
                   <Button
                     type="button"
                     variant="ghost"
-                    className="text-xxs h-8 w-8 rounded-full bg-gray-300 p-0"
+                    size="icon"
+                    className="h-10 w-10"
                     onClick={() => handleRemoveSocial(index)}
                   >
-                    x
+                    <CloseOutlined fontSize="small" />
                   </Button>
                 </div>
               </FormControl>
@@ -173,9 +176,11 @@ const OrganizationSocialLinks = () => {
         type="button"
         variant="secondary"
         onClick={handleAddSocial}
-        className="w-fit"
+        className="self-start"
+        wrapperClassNames="flex flex-row items-center gap-x-2"
       >
-        Add +
+        <AddOutlined fontSize="small" />
+        Add
       </Button>
     </div>
   )
@@ -328,10 +333,10 @@ export const OrganizationDetailsForm: React.FC<
       {inKYCMode && (
         <>
           <Separator />
-          <div>
-            <h3 className="font-medium">Compliance information</h3>
-            <p className="text-sm">
-              Please fill this out accurately &amp; thoroughly for our reviews.
+          <div className="flex flex-col gap-y-2">
+            <h3 className="font-medium">Compliance Information</h3>
+            <p className="dark:text-polar-500 text-sm text-gray-500">
+              Please fill this out accurately &amp; thoroughly for our reviews
             </p>
           </div>
           <FormField
@@ -434,7 +439,7 @@ export const OrganizationDetailsForm: React.FC<
                     {...field}
                     type="number"
                     value={field.value || ''}
-                    placeholder="13337"
+                    placeholder="1000"
                   />
                 </FormControl>
                 <FormMessage />
@@ -623,7 +628,7 @@ const OrganizationProfileSettings: React.FC<
               </FormControl>
               <FormDescription>
                 Your slug determines the customer portal URL, e.g{' '}
-                <span className="rounded bg-gray-200 px-2 py-0.5 text-gray-700">
+                <span className="dark:bg-polar-800 dark:text-polar-500 rounded bg-gray-200 px-2 py-1 text-gray-500">
                   https://polar.sh/{organization.slug}/portal
                 </span>{' '}
                 -{' '}

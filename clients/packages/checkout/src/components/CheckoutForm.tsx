@@ -111,6 +111,9 @@ const BaseCheckoutForm = ({
     formState: { errors },
   } = form
 
+  const discount = checkout.discount
+  const isDiscountWithoutCode = discount && discount.code === null
+
   const country = watch('customerBillingAddress.country')
   const watcher: WatchObserver<CheckoutUpdatePublic> = useCallback(
     async (value, { name, type }) => {
@@ -229,6 +232,10 @@ const BaseCheckoutForm = ({
         )
       : {}
 
+    // Avoid overwriting a programmatically set discount without a code.
+    if (!data.discountCode && isDiscountWithoutCode) {
+      delete data.discountCode
+    }
     await confirm({
       ...data,
       customFieldData: cleanedFieldData,

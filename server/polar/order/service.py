@@ -6,13 +6,14 @@ from typing import Any
 import stripe as stripe_lib
 import structlog
 from sqlalchemy import UnaryExpression, asc, desc, select
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import contains_eager
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
+from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
@@ -38,7 +39,6 @@ from polar.models import (
     Product,
     ProductPrice,
     ProductPriceCustom,
-    Subscription,
     Transaction,
     User,
 )
@@ -57,7 +57,7 @@ from polar.order.repository import OrderRepository
 from polar.order.sorting import OrderSortProperty
 from polar.organization.service import organization as organization_service
 from polar.product.repository import ProductPriceRepository
-from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.service import subscription as subscription_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
@@ -439,19 +439,17 @@ class OrderService:
 
         # Get subscription
         stripe_subscription_id = get_expandable_id(invoice.subscription)
-        subscription_repository = SubscriptionRepository.from_session(session)
-        subscription = await subscription_repository.get_by_stripe_subscription_id(
-            stripe_subscription_id,
-            options=(
-                joinedload(Subscription.product),
-                joinedload(Subscription.customer),
-            ),
+        subscription = await subscription_service.get_by_stripe_subscription_id(
+            session, stripe_subscription_id
         )
         if subscription is None:
             raise SubscriptionDoesNotExist(invoice.id, stripe_subscription_id)
 
         # Get customer
-        customer = subscription.customer
+        # TODO: eager load customer from subscription ;) Need subscription repo to do this properly"
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(subscription.customer_id)
+        assert customer is not None
 
         # Retrieve billing address
         billing_address: Address | None = None

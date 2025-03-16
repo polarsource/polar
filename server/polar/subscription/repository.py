@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy.orm import contains_eager
 
 from polar.kit.repository import (
+    Options,
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
@@ -28,7 +29,11 @@ class SubscriptionRepository(
         return await self.get_all(statement)
 
     async def get_by_id_and_organization(
-        self, id: UUID, organization_id: UUID
+        self,
+        id: UUID,
+        organization_id: UUID,
+        *,
+        options: Options = (),
     ) -> Subscription | None:
         statement = (
             self.get_base_statement()
@@ -37,6 +42,6 @@ class SubscriptionRepository(
                 Subscription.id == id,
                 Product.organization_id == organization_id,
             )
-            .options(contains_eager(Subscription.product))
+            .options(contains_eager(Subscription.product), *options)
         )
         return await self.get_one_or_none(statement)

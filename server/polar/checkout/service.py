@@ -7,7 +7,7 @@ from typing import Any
 import stripe as stripe_lib
 import structlog
 from sqlalchemy import UnaryExpression, asc, desc, func, select
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import (
     Anonymous,
@@ -1214,7 +1214,9 @@ class CheckoutService:
     ) -> tuple[Subscription, Customer]:
         subscription_repository = SubscriptionRepository.from_session(session)
         subscription = await subscription_repository.get_by_id_and_organization(
-            subscription_id, organization_id
+            subscription_id,
+            organization_id,
+            options=(joinedload(Subscription.customer),),
         )
 
         if subscription is None:

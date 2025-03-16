@@ -1,13 +1,14 @@
 from collections import namedtuple
 from datetime import datetime
 from types import SimpleNamespace
-from unittest.mock import MagicMock, call
+from unittest.mock import AsyncMock, MagicMock, call
 
 import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
+from polar.checkout.eventstream import CheckoutEvent
 from polar.exceptions import BadRequest, ResourceUnavailable
 from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
@@ -111,6 +112,11 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
+@pytest.fixture
+def publish_checkout_event_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch("polar.subscription.service.publish_checkout_event")
+
+
 @pytest.mark.asyncio
 class TestCreateOrUpdateFromCheckout:
     async def test_not_recurring_product(
@@ -167,6 +173,7 @@ class TestCreateOrUpdateFromCheckout:
 
     async def test_new_fixed(
         self,
+        publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product: Product,
@@ -199,8 +206,13 @@ class TestCreateOrUpdateFromCheckout:
         stripe_service_mock.create_out_of_band_subscription.assert_called_once()
         stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
 
+        publish_checkout_event_mock.assert_called_once_with(
+            checkout.client_secret, CheckoutEvent.subscription_created
+        )
+
     async def test_new_custom(
         self,
+        publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_recurring_custom_price: Product,
@@ -245,8 +257,13 @@ class TestCreateOrUpdateFromCheckout:
         ] == ["STRIPE_CUSTOM_PRICE_ID"]
         stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
 
+        publish_checkout_event_mock.assert_called_once_with(
+            checkout.client_secret, CheckoutEvent.subscription_created
+        )
+
     async def test_new_free(
         self,
+        publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_recurring_free_price: Product,
@@ -286,8 +303,13 @@ class TestCreateOrUpdateFromCheckout:
         )
         stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
 
+        publish_checkout_event_mock.assert_called_once_with(
+            checkout.client_secret, CheckoutEvent.subscription_created
+        )
+
     async def test_new_custom_discount_percentage_100(
         self,
+        publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_recurring_custom_price: Product,
@@ -332,8 +354,13 @@ class TestCreateOrUpdateFromCheckout:
         ] == ["STRIPE_CUSTOM_PRICE_ID"]
         stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
 
+        publish_checkout_event_mock.assert_called_once_with(
+            checkout.client_secret, CheckoutEvent.subscription_created
+        )
+
     async def test_upgrade_fixed(
         self,
+        publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_recurring_free_price: Product,
@@ -374,6 +401,10 @@ class TestCreateOrUpdateFromCheckout:
 
         stripe_service_mock.update_out_of_band_subscription.assert_called_once()
         stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
+
+        publish_checkout_event_mock.assert_called_once_with(
+            checkout.client_secret, CheckoutEvent.subscription_created
+        )
 
 
 @pytest.mark.asyncio

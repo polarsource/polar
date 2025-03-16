@@ -9,6 +9,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
+from polar.checkout.eventstream import CheckoutEvent
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
@@ -99,6 +100,11 @@ def stripe_service_mock(mocker: MockerFixture, customer: Customer) -> MagicMock:
 @pytest.fixture
 def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.order.service.enqueue_job")
+
+
+@pytest.fixture
+def publish_checkout_event_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch("polar.order.service.publish_checkout_event")
 
 
 @pytest.fixture
@@ -339,6 +345,7 @@ class TestCreateFromCheckout:
 
     async def test_fixed(
         self,
+        publish_checkout_event_mock: AsyncMock,
         enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -403,9 +410,13 @@ class TestCreateFromCheckout:
             product_id=product_one_time.id,
             order_id=order.id,
         )
+        publish_checkout_event_mock.assert_awaited_once_with(
+            checkout.client_secret, CheckoutEvent.order_created
+        )
 
     async def test_custom(
         self,
+        publish_checkout_event_mock: AsyncMock,
         enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -477,9 +488,13 @@ class TestCreateFromCheckout:
             product_id=product_one_time_custom_price.id,
             order_id=order.id,
         )
+        publish_checkout_event_mock.assert_awaited_once_with(
+            checkout.client_secret, CheckoutEvent.order_created
+        )
 
     async def test_free(
         self,
+        publish_checkout_event_mock: AsyncMock,
         enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -541,9 +556,13 @@ class TestCreateFromCheckout:
             product_id=product_one_time_free_price.id,
             order_id=order.id,
         )
+        publish_checkout_event_mock.assert_awaited_once_with(
+            checkout.client_secret, CheckoutEvent.order_created
+        )
 
     async def test_fixed_discounted_100(
         self,
+        publish_checkout_event_mock: AsyncMock,
         enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -608,6 +627,9 @@ class TestCreateFromCheckout:
             customer_id=customer.id,
             product_id=product_one_time.id,
             order_id=order.id,
+        )
+        publish_checkout_event_mock.assert_awaited_once_with(
+            checkout.client_secret, CheckoutEvent.order_created
         )
 
 
@@ -774,6 +796,7 @@ class TestCreateOrderFromStripe:
 
     async def test_checkout(
         self,
+        publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         subscription: Subscription,
@@ -800,6 +823,10 @@ class TestCreateOrderFromStripe:
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
 
         assert order.checkout == checkout
+
+        publish_checkout_event_mock.assert_awaited_once_with(
+            checkout.client_secret, CheckoutEvent.order_created
+        )
 
 
 @pytest.mark.asyncio

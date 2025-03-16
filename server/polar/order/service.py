@@ -318,7 +318,7 @@ class OrderService:
         if payment_intent is not None:
             metadata["payment_intent_id"] = payment_intent.id
 
-        stripe_price_ids: list[str] = []
+        price_id_map: dict[str, str] = {}
         prices = product.prices
         for price in prices:
             # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
@@ -328,9 +328,9 @@ class OrderService:
                 ad_hoc_price = await stripe_service.create_ad_hoc_custom_price(
                     product, price, checkout.amount, checkout.currency
                 )
-                stripe_price_ids.append(ad_hoc_price.id)
+                price_id_map[price.stripe_price_id] = ad_hoc_price.id
             else:
-                stripe_price_ids.append(price.stripe_price_id)
+                price_id_map[price.stripe_price_id] = price.stripe_price_id
 
         (
             stripe_invoice,
@@ -338,7 +338,7 @@ class OrderService:
         ) = await stripe_service.create_out_of_band_invoice(
             customer=stripe_customer_id,
             currency=checkout.currency or "usd",
-            prices=stripe_price_ids,
+            prices=list(price_id_map.values()),
             coupon=(checkout.discount.stripe_coupon_id if checkout.discount else None),
             # Disable automatic tax for free purchases, since we don't collect customer address in that case
             automatic_tax=checkout.is_payment_required,
@@ -347,7 +347,8 @@ class OrderService:
 
         items: list[OrderItem] = []
         for price in prices:
-            line_item = price_line_item_map[price.stripe_price_id]
+            stripe_price_id = price_id_map[price.stripe_price_id]
+            line_item = price_line_item_map[stripe_price_id]
             items.append(
                 OrderItem.from_price(
                     price,

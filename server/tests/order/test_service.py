@@ -449,10 +449,8 @@ class TestCreateFromCheckout:
         stripe_service_mock.create_out_of_band_invoice.return_value = (
             stripe_invoice,
             {
-                price.stripe_price_id: line
-                for price, line in zip(
-                    product_one_time_custom_price.prices, stripe_invoice.lines
-                )
+                price: line
+                for price, line in zip(["STRIPE_CUSTOM_PRICE_ID"], stripe_invoice.lines)
             },
         )
 

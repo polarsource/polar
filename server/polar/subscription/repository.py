@@ -45,3 +45,11 @@ class SubscriptionRepository(
             .options(contains_eager(Subscription.product), *options)
         )
         return await self.get_one_or_none(statement)
+
+    async def get_by_stripe_subscription_id(
+        self, stripe_subscription_id: str, *, options: Options = ()
+    ) -> Subscription | None:
+        statement = self.get_base_statement().where(
+            Subscription.stripe_subscription_id == stripe_subscription_id
+        )
+        return await self.get_one_or_none(statement)

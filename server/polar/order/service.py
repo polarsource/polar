@@ -594,6 +594,12 @@ class OrderService:
         enqueue_job("order.discord_notification", order_id=order.id)
         await self._send_webhook(session, order)
 
+        # Notify checkout channel that an order has been created from it
+        if checkout is not None:
+            await publish_checkout_event(
+                checkout.client_secret, CheckoutEvent.order_created
+            )
+
         return order
 
     async def send_admin_notification(

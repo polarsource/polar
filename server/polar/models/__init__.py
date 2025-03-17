@@ -17,6 +17,7 @@ from .discount_redemption import DiscountRedemption
 from .downloadable import Downloadable
 from .email_verification import EmailVerification
 from .event import Event
+from .external_event import ExternalEvent
 from .external_organization import ExternalOrganization
 from .file import File
 from .held_balance import HeldBalance
@@ -84,6 +85,7 @@ __all__ = [
     "Downloadable",
     "EmailVerification",
     "Event",
+    "ExternalEvent",
     "ExternalOrganization",
     "File",
     "HeldBalance",

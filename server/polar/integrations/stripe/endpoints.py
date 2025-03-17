@@ -4,8 +4,10 @@ from fastapi import Depends, HTTPException, Query, Request
 from starlette.responses import RedirectResponse
 
 from polar.config import settings
+from polar.external_event.service import external_event as external_event_service
+from polar.models.external_event import ExternalEventSource
+from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
-from polar.worker import enqueue_job
 
 log = structlog.get_logger()
 
@@ -31,11 +33,12 @@ DIRECT_IMPLEMENTED_WEBHOOKS = {
 CONNECT_IMPLEMENTED_WEBHOOKS = {"account.updated", "payout.paid"}
 
 
-async def enqueue(event: stripe.Event) -> None:
+async def enqueue(session: AsyncSession, event: stripe.Event) -> None:
     event_type: str = event["type"]
     task_name = f"stripe.webhook.{event_type}"
-    enqueue_job(task_name, event)
-    log.info("stripe.webhook.queued", task_name=task_name)
+    await external_event_service.enqueue(
+        session, ExternalEventSource.stripe, task_name, event.id, event
+    )
 
 
 @router.get("/refresh", name="integrations.stripe.refresh")
@@ -65,19 +68,21 @@ class WebhookEventGetter:
 
 @router.post("/webhook", status_code=202, name="integrations.stripe.webhook")
 async def webhook(
+    session: AsyncSession = Depends(get_db_session),
     event: stripe.Event = Depends(WebhookEventGetter(settings.STRIPE_WEBHOOK_SECRET)),
 ) -> None:
     if event["type"] in DIRECT_IMPLEMENTED_WEBHOOKS:
-        await enqueue(event)
+        await enqueue(session, event)
 
 
 @router.post(
     "/webhook-connect", status_code=202, name="integrations.stripe.webhook_connect"
 )
 async def webhook_connect(
+    session: AsyncSession = Depends(get_db_session),
     event: stripe.Event = Depends(
         WebhookEventGetter(settings.STRIPE_CONNECT_WEBHOOK_SECRET)
     ),
 ) -> None:
     if event["type"] in CONNECT_IMPLEMENTED_WEBHOOKS:
-        return await enqueue(event)
+        return await enqueue(session, event)

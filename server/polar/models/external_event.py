@@ -3,7 +3,14 @@ from enum import StrEnum
 from typing import Any, Literal
 
 import stripe as stripe_lib
-from sqlalchemy import TIMESTAMP, Boolean, ColumnElement, String, type_coerce
+from sqlalchemy import (
+    TIMESTAMP,
+    Boolean,
+    ColumnElement,
+    String,
+    UniqueConstraint,
+    type_coerce,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column
@@ -18,6 +25,7 @@ class ExternalEventSource(StrEnum):
 
 class ExternalEvent(RecordModel):
     __tablename__ = "external_events"
+    __table_args__ = (UniqueConstraint("source", "external_id"),)
 
     source: Mapped[ExternalEventSource] = mapped_column(
         StrEnumType(ExternalEventSource), nullable=False, index=True

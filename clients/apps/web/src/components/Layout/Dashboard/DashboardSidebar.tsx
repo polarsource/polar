@@ -47,7 +47,8 @@ export const DashboardSidebar = () => {
     <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader
         className={twMerge(
-          'flex md:pt-3.5',
+          'flex',
+          CONFIG.IS_SANDBOX ? 'md:pt-10' : 'md:pt-3.5',
           isCollapsed
             ? 'flex-row items-center justify-between gap-y-4 md:flex-col md:items-start md:justify-start'
             : 'flex-row items-center justify-between',

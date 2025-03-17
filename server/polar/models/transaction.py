@@ -257,7 +257,7 @@ class Transaction(RecordModel):
 
     account_id: Mapped[UUID | None] = mapped_column(
         Uuid,
-        ForeignKey("accounts.id", ondelete="set null"),
+        ForeignKey("accounts.id", ondelete="restrict"),
         nullable=True,
         index=True,
     )

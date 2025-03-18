@@ -11,6 +11,7 @@ from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
+from polar.locker import Locker, get_locker
 from polar.models import Transaction as TransactionModel
 from polar.models.transaction import TransactionType
 from polar.openapi import APITag
@@ -121,6 +122,7 @@ async def create_payout(
     auth_subject: WebUser,
     payout_create: PayoutCreate,
     session: AsyncSession = Depends(get_db_session),
+    locker: Locker = Depends(get_locker),
     authz: Authz = Depends(Authz.authz),
 ) -> TransactionModel:
     account_id = payout_create.account_id
@@ -131,7 +133,9 @@ async def create_payout(
     if not await authz.can(auth_subject.subject, AccessType.write, account):
         raise NotPermitted()
 
-    return await payout_transaction_service.create_payout(session, account=account)
+    return await payout_transaction_service.create_payout(
+        session, locker, account=account
+    )
 
 
 @router.get("/payouts/{id}/csv")

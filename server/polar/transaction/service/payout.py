@@ -1,3 +1,4 @@
+import datetime
 from collections.abc import AsyncIterable, Sequence
 from datetime import timedelta
 from typing import cast
@@ -15,6 +16,7 @@ from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.utils import generate_uuid, utc_now
+from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import Account, Issue, Order, Pledge, Transaction
 from polar.models.transaction import Processor, TransactionType
@@ -59,6 +61,13 @@ class NotReadyAccount(PayoutTransactionError):
             f"The owner should go through the onboarding on {account.account_type}"
         )
         super().__init__(message)
+
+
+class PendingPayoutCreation(PayoutTransactionError):
+    def __init__(self, account: Account) -> None:
+        self.account = account
+        message = f"A payout is already being created for the account {account.id}."
+        super().__init__(message, 409)
 
 
 class UnmatchingTransfersAmount(PayoutTransactionError):
@@ -120,74 +129,84 @@ class PayoutTransactionService(BaseTransactionService):
         )
 
     async def create_payout(
-        self, session: AsyncSession, *, account: Account
+        self, session: AsyncSession, locker: Locker, *, account: Account
     ) -> Transaction:
-        if account.is_under_review():
-            raise UnderReviewAccount(account)
-        if not account.is_payout_ready():
-            raise NotReadyAccount(account)
+        lock_name = f"payout:{account.id}"
+        if await locker.is_locked(lock_name):
+            raise PendingPayoutCreation(account)
 
-        balance_amount = await transaction_service.get_transactions_sum(
-            session, account.id
-        )
-        if balance_amount < settings.ACCOUNT_PAYOUT_MINIMUM_BALANCE:
-            raise InsufficientBalance(account, balance_amount)
+        async with locker.lock(
+            lock_name,
+            # Creating a payout may take lot of time because of individual Stripe transfers
+            timeout=datetime.timedelta(minutes=10).total_seconds(),
+            blocking_timeout=1,
+        ):
+            if account.is_under_review():
+                raise UnderReviewAccount(account)
+            if not account.is_payout_ready():
+                raise NotReadyAccount(account)
 
-        try:
-            (
-                balance_amount_after_fees,
-                payout_fees_balances,
-            ) = await platform_fee_transaction_service.create_payout_fees_balances(
-                session, account=account, balance_amount=balance_amount
+            balance_amount = await transaction_service.get_transactions_sum(
+                session, account.id
             )
-        except PayoutAmountTooLow as e:
-            raise InsufficientBalance(account, balance_amount) from e
+            if balance_amount < settings.ACCOUNT_PAYOUT_MINIMUM_BALANCE:
+                raise InsufficientBalance(account, balance_amount)
 
-        transaction = Transaction(
-            id=generate_uuid(),
-            type=TransactionType.payout,
-            currency="usd",  # FIXME: Main Polar currency
-            amount=-balance_amount_after_fees,
-            account_currency=account.currency,
-            account_amount=-balance_amount_after_fees,
-            tax_amount=0,
-            account=account,
-            pledge=None,
-            issue_reward=None,
-            order=None,
-            paid_transactions=[],
-            incurred_transactions=[],
-            account_incurred_transactions=[],
-        )
+            try:
+                (
+                    balance_amount_after_fees,
+                    payout_fees_balances,
+                ) = await platform_fee_transaction_service.create_payout_fees_balances(
+                    session, account=account, balance_amount=balance_amount
+                )
+            except PayoutAmountTooLow as e:
+                raise InsufficientBalance(account, balance_amount) from e
 
-        unpaid_balance_transactions = await self._get_unpaid_balance_transactions(
-            session, account
-        )
-
-        if account.account_type == AccountType.stripe:
-            transaction = await self._prepare_stripe_payout(
-                session,
-                transaction=transaction,
+            transaction = Transaction(
+                id=generate_uuid(),
+                type=TransactionType.payout,
+                currency="usd",  # FIXME: Main Polar currency
+                amount=-balance_amount_after_fees,
+                account_currency=account.currency,
+                account_amount=-balance_amount_after_fees,
+                tax_amount=0,
                 account=account,
-                unpaid_balance_transactions=unpaid_balance_transactions,
+                pledge=None,
+                issue_reward=None,
+                order=None,
+                paid_transactions=[],
+                incurred_transactions=[],
+                account_incurred_transactions=[],
             )
-        elif account.account_type == AccountType.open_collective:
-            transaction.processor = Processor.open_collective
 
-        for balance_transaction in unpaid_balance_transactions:
-            transaction.paid_transactions.append(balance_transaction)
+            unpaid_balance_transactions = await self._get_unpaid_balance_transactions(
+                session, account
+            )
 
-        for outgoing, incoming in payout_fees_balances:
-            transaction.incurred_transactions.append(outgoing)
-            transaction.account_incurred_transactions.append(outgoing)
-            transaction.incurred_transactions.append(incoming)
+            if account.account_type == AccountType.stripe:
+                transaction = await self._prepare_stripe_payout(
+                    session,
+                    transaction=transaction,
+                    account=account,
+                    unpaid_balance_transactions=unpaid_balance_transactions,
+                )
+            elif account.account_type == AccountType.open_collective:
+                transaction.processor = Processor.open_collective
 
-        session.add(transaction)
-        await session.flush()
+            for balance_transaction in unpaid_balance_transactions:
+                transaction.paid_transactions.append(balance_transaction)
 
-        enqueue_job("payout.created", payout_id=transaction.id)
+            for outgoing, incoming in payout_fees_balances:
+                transaction.incurred_transactions.append(outgoing)
+                transaction.account_incurred_transactions.append(outgoing)
+                transaction.incurred_transactions.append(incoming)
 
-        return transaction
+            session.add(transaction)
+            await session.flush()
+
+            enqueue_job("payout.created", payout_id=transaction.id)
+
+            return transaction
 
     async def trigger_stripe_payouts(self, session: AsyncSession) -> None:
         """

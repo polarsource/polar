@@ -3,6 +3,7 @@ import uuid
 from collections.abc import Generator
 from typing import Annotated, Any
 
+from babel.numbers import format_currency
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import or_
@@ -19,7 +20,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
 
-from ..components import button, datatable, description_list, input
+from ..components import accordion, button, datatable, description_list, input
 from ..layout import layout
 from ..responses import HXRedirectResponse
 from .forms import AccountReviewForm
@@ -216,10 +217,14 @@ async def get(
                 description_list.DescriptionListDateTimeItem(
                     "created_at", "Created At"
                 ),
+                description_list.DescriptionListDateTimeItem(
+                    "created_at", "Created At"
+                ),
+                description_list.DescriptionListLinkItem("website", "Website"),
             ).render(request, organization):
                 pass
-            with tag.div(classes="flex flex-row gap-4"):
-                with tag.div(classes="card card-border w-full lg:w-1/2 shadow-sm"):
+            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+                with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
                         with tag.h2(classes="card-title"):
                             text("Account")
@@ -254,3 +259,45 @@ async def get(
                                     ):
                                         with button(type="submit", variant="primary"):
                                             text("Approve")
+
+                with tag.div(classes="card card-border w-full shadow-sm"):
+                    with tag.div(classes="card-body"):
+                        with tag.h2(classes="card-title"):
+                            text("Details")
+
+                        a = "organization-details-accordion"
+                        with accordion.item(a, "About"):
+                            with tag.p(classes="whitespace-pre-line"):
+                                text(organization.details.get("about", "—"))
+                        with accordion.item(a, "Product Description"):
+                            with tag.p(classes="whitespace-pre-line"):
+                                text(
+                                    organization.details.get("product_description", "—")
+                                )
+                        with accordion.item(a, "Intended Use"):
+                            with tag.p(classes="whitespace-pre-line"):
+                                text(organization.details.get("intended_use", "—"))
+                        with accordion.item(a, "Acquisition"):
+                            with tag.ul(classes="list-disc list-inside"):
+                                for acquisition in organization.details.get(
+                                    "customer_acquisition", []
+                                ):
+                                    with tag.li():
+                                        text(acquisition)
+                        with accordion.item(a, "Expected annual revenue"):
+                            expected_revenue = organization.details.get(
+                                "future_annual_revenue"
+                            )
+                            if expected_revenue:
+                                text(
+                                    format_currency(
+                                        expected_revenue, "USD", locale="en_US"
+                                    )
+                                )
+                            else:
+                                text("—")
+                        if organization.details.get("switching"):
+                            with accordion.item(a, "Switching from"):
+                                text(
+                                    f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'USD', locale='en_US')})"
+                                )

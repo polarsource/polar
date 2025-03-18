@@ -681,6 +681,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if not subscription.stripe_subscription_id:
             raise ResourceUnavailable()
 
+        previous_ends_at = subscription.ends_at
+        previous_status = subscription.status
         stripe_subscription = await stripe_service.uncancel_subscription(
             subscription.stripe_subscription_id,
         )
@@ -690,6 +692,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.customer_cancellation_reason = None
         subscription.customer_cancellation_comment = None
         session.add(subscription)
+
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=previous_status,
+            previous_ends_at=previous_ends_at,
+        )
         return subscription
 
     async def revoke(

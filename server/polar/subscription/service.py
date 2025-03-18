@@ -42,17 +42,14 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
-    LegacyRecurringProductPriceCustom,
     Organization,
     Product,
     ProductBenefit,
-    ProductPriceCustom,
     Subscription,
     SubscriptionProductPrice,
     User,
     UserOrganization,
 )
-from polar.models.product_price import LegacyRecurringProductPriceFree, ProductPriceFree
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -63,6 +60,7 @@ from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import sql
+from polar.product.guard import is_custom_price, is_free_price, is_static_price
 from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookTypeObject
@@ -364,9 +362,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         free_pricing = True
         for price in prices:
             # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
-            if isinstance(
-                price, ProductPriceCustom | LegacyRecurringProductPriceCustom
-            ):
+            if is_custom_price(price):
                 assert checkout.amount is not None
                 assert checkout.currency is not None
                 ad_hoc_price = await stripe_service.create_ad_hoc_custom_price(
@@ -376,14 +372,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 subscription_product_prices.append(
                     SubscriptionProductPrice.from_price(price, checkout.amount)
                 )
-            else:
+            elif is_static_price(price):
                 stripe_price_ids.append(price.stripe_price_id)
                 subscription_product_prices.append(
                     SubscriptionProductPrice.from_price(price)
                 )
-            if not isinstance(
-                price, ProductPriceFree | LegacyRecurringProductPriceFree
-            ):
+            if not is_free_price(price):
                 free_pricing = False
 
         subscription = checkout.subscription
@@ -639,7 +633,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         prices = product.prices
 
         for price in prices:
-            if isinstance(price, ProductPriceCustom):
+            if is_custom_price(price):
                 raise PolarRequestValidationError(
                     [
                         {
@@ -669,7 +663,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         await stripe_service.update_subscription_price(
             subscription.stripe_subscription_id,
-            new_prices=[price.stripe_price_id for price in prices],
+            new_prices=[
+                price.stripe_price_id for price in prices if is_static_price(price)
+            ],
             proration_behavior=proration_behavior.to_stripe(),
             metadata={
                 "type": ProductType.product,

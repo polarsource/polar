@@ -37,7 +37,6 @@ from polar.models import (
     Organization,
     Product,
     ProductPrice,
-    ProductPriceCustom,
     Subscription,
     Transaction,
     User,
@@ -56,6 +55,7 @@ from polar.notifications.service import notifications as notifications_service
 from polar.order.repository import OrderRepository
 from polar.order.sorting import OrderSortProperty
 from polar.organization.service import organization as organization_service
+from polar.product.guard import is_custom_price, is_static_price
 from polar.product.repository import ProductPriceRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
@@ -332,14 +332,14 @@ class OrderService:
         prices = product.prices
         for price in prices:
             # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
-            if isinstance(price, ProductPriceCustom):
+            if is_custom_price(price):
                 assert checkout.amount is not None
                 assert checkout.currency is not None
                 ad_hoc_price = await stripe_service.create_ad_hoc_custom_price(
                     product, price, checkout.amount, checkout.currency
                 )
                 price_id_map[price.stripe_price_id] = ad_hoc_price.id
-            else:
+            elif is_static_price(price):
                 price_id_map[price.stripe_price_id] = price.stripe_price_id
 
         (
@@ -357,15 +357,16 @@ class OrderService:
 
         items: list[OrderItem] = []
         for price in prices:
-            stripe_price_id = price_id_map[price.stripe_price_id]
-            line_item = price_line_item_map[stripe_price_id]
-            items.append(
-                OrderItem.from_price(
-                    price,
-                    sum(t.amount for t in line_item.tax_amounts),
-                    line_item.amount,
+            if is_static_price(price):
+                stripe_price_id = price_id_map[price.stripe_price_id]
+                line_item = price_line_item_map[stripe_price_id]
+                items.append(
+                    OrderItem.from_price(
+                        price,
+                        sum(t.amount for t in line_item.tax_amounts),
+                        line_item.amount,
+                    )
                 )
-            )
 
         discount_amount = 0
         if stripe_invoice.total_discount_amounts:

@@ -35,7 +35,38 @@ def base(request: Request, title_parts: Sequence[str]) -> Generator[None]:
             with title(title_parts):
                 pass
 
+            with tag.script(type="text/hyperscript"):
+                text("""
+                on every htmx:beforeSend from <form />
+                    for submitButton in <button[type='submit'] /> in it
+                    toggle @disabled on submitButton until htmx:afterOnLoad
+                    end
+                end
+
+                behavior CopyToClipboard(text)
+                    on click call navigator.clipboard.writeText(text)
+                    then add @disabled to me
+                    then toggle .hidden on <div /> in me
+                    then wait 5s
+                    then toggle .hidden on <div /> in me
+                    then remove @disabled from me
+                end
+
+                behavior Toast
+                    init
+                        wait 5s
+                        remove me
+                    end
+                    on click remove me
+                end
+                """)
+
         with tag.body():
+            yield
+
+            with tag.div(id="modal"):
+                pass
+
             with tag.div(
                 classes="absolute z-40 bottom-1 right-1 hidden",
                 _="""
@@ -52,17 +83,6 @@ def base(request: Request, title_parts: Sequence[str]) -> Generator[None]:
             ):
                 with tag.span(classes="loading loading-spinner loading-sm"):
                     pass
-
-            with tag.script(type="text/hyperscript"):
-                text("""
-                on every htmx:beforeSend from <form />
-                    for submitButton in <button[type='submit'] /> in it
-                    toggle @disabled on submitButton until htmx:afterOnLoad
-                    end
-                end
-                """)
-
-            yield
 
 
 __all__ = ["base", "title"]

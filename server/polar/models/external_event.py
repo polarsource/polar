@@ -33,7 +33,7 @@ class ExternalEvent(RecordModel):
     handled_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
-    task_name: Mapped[str | None] = mapped_column(String, nullable=False, index=True)
+    task_name: Mapped[str] = mapped_column(String, nullable=False, index=True)
     external_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
     data: Mapped[dict[str, Any]] = mapped_column("data", JSONB, nullable=False)
 
@@ -44,7 +44,7 @@ class ExternalEvent(RecordModel):
     @is_handled.inplace.expression
     @classmethod
     def _is_handled_expression(cls) -> ColumnElement[bool]:
-        return type_coerce(cls.is_handled.is_not(None), Boolean)
+        return type_coerce(cls.handled_at.is_not(None), Boolean)
 
     __mapper_args__ = {
         "polymorphic_on": "source",

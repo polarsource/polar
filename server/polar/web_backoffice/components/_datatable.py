@@ -1,9 +1,10 @@
 import contextlib
-from collections.abc import Generator, Sequence
+import typing
+from collections.abc import Callable, Generator, Sequence
 from datetime import datetime
 from enum import Enum, auto
 from inspect import isgenerator
-from typing import Generic, TypeVar
+from typing import Generic, Protocol, TypeVar
 
 from fastapi import Request
 from fastapi.datastructures import URL
@@ -13,10 +14,9 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import PE, Sorting
 
 from .. import formatters
-from ._button import button
 from ._clipboard_button import clipboard_button
 
-M = TypeVar("M")
+M = TypeVar("M", contravariant=True)
 
 
 class DatatableColumn(Generic[M]):
@@ -40,8 +40,41 @@ class DatatableColumn(Generic[M]):
 class DatatableAttrColumn(Generic[M, PE], DatatableColumn[M]):
     attr: str
     sorting: PE | None
-    href_route_name: str | None
     clipboard: bool
+    href_getter: Callable[[Request, M], str | None] | None
+    external_href: bool
+
+    @typing.overload
+    def __init__(
+        self,
+        attr: str,
+        label: str | None = None,
+        *,
+        clipboard: bool = False,
+        href_route_name: str,
+        sorting: PE | None = None,
+    ) -> None: ...
+
+    @typing.overload
+    def __init__(
+        self,
+        attr: str,
+        label: str | None = None,
+        *,
+        clipboard: bool = False,
+        external_href: Callable[[Request, M], str | None],
+        sorting: PE | None = None,
+    ) -> None: ...
+
+    @typing.overload
+    def __init__(
+        self,
+        attr: str,
+        label: str | None = None,
+        *,
+        sorting: PE | None = None,
+        clipboard: bool = False,
+    ) -> None: ...
 
     def __init__(
         self,
@@ -49,28 +82,38 @@ class DatatableAttrColumn(Generic[M, PE], DatatableColumn[M]):
         label: str | None = None,
         *,
         sorting: PE | None = None,
-        href_route_name: str | None = None,
         clipboard: bool = False,
+        href_route_name: str | None = None,
+        external_href: Callable[[Request, M], str | None] | None = None,
     ) -> None:
         self.attr = attr
         self.sorting = sorting
-        self.href_route_name = href_route_name
         self.clipboard = clipboard
+
+        self.href_getter = None
+        self.external_href = False
+        if external_href is not None:
+            self.href_getter = external_href
+            self.external_href = True
+        elif href_route_name is not None:
+            self.href_getter = lambda r, i: str(
+                r.url_for(href_route_name, id=getattr(i, "id"))
+            )
+
         super().__init__(label or attr)
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
         value = self.get_value(item)
-        href = (
-            request.url_for(self.href_route_name, id=getattr(item, "id"))
-            if self.href_route_name
-            else None
-        )
+        href = self.href_getter(request, item) if self.href_getter else None
         with tag.div(classes="flex items-center gap-1"):
             value_tag = tag.a if href else tag.div
             with value_tag():
                 if href:
                     classes("link")
                     attr("href", str(href))
+                    if self.external_href:
+                        attr("target", "_blank")
+                        attr("rel", "noopener noreferrer")
                 text(value if value is not None else "—")
             if value is not None and self.clipboard:
                 with clipboard_button(value):
@@ -92,32 +135,90 @@ class DatatableDateTimeColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
         return formatters.datetime(value)
 
 
+class DatatableAction(Protocol[M]):
+    @contextlib.contextmanager
+    def render(self, request: Request, item: M) -> Generator[None]: ...
+
+    def is_hidden(self, request: Request, item: M) -> bool: ...
+
+
+class DatatableActionLink(DatatableAction[M]):
+    def __init__(
+        self, label: str, href: str | URL | Callable[[Request, M], str]
+    ) -> None:
+        self.label = label
+        self.href = href
+
+    @contextlib.contextmanager
+    def render(self, request: Request, item: M) -> Generator[None]:
+        href: str
+        if callable(self.href):
+            href = self.href(request, item)
+        else:
+            href = str(self.href)
+        with tag.a(href=href):
+            text(self.label)
+        yield
+
+    def is_hidden(self, request: Request, item: M) -> bool:
+        return False
+
+
+class DatatableActionHTMX(DatatableAction[M]):
+    def __init__(
+        self,
+        label: str,
+        href: str | URL | Callable[[Request, M], str],
+        target: str,
+        hidden: Callable[[Request, M], bool] | None = None,
+    ) -> None:
+        self.label = label
+        self.href = href
+        self.target = target
+        self.hidden = hidden
+
+    @contextlib.contextmanager
+    def render(self, request: Request, item: M) -> Generator[None]:
+        href: str
+        if callable(self.href):
+            href = self.href(request, item)
+        else:
+            href = str(self.href)
+        with tag.button(type="button", hx_get=str(href), hx_target=self.target):
+            text(self.label)
+        yield
+
+    def is_hidden(self, request: Request, item: M) -> bool:
+        if self.hidden is None:
+            return False
+        return self.hidden(request, item)
+
+
 class DatatableActionsColumn(Generic[M], DatatableColumn[M]):
-    def __init__(self, label: str, *actions: tuple[str, str | URL]) -> None:
+    def __init__(self, label: str, *actions: DatatableAction[M]) -> None:
         self.actions = actions
         super().__init__(label)
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
         item_id = getattr(item, "id")
-        with button(
-            size="sm",
-            ghost=True,
-            type="button",
-            popovertarget=f"popover-{item_id}",
-            style=f"anchor-name:--anchor-{item_id}",
-        ):
-            with tag.div(classes="font-normal icon-ellipsis-vertical"):
-                pass
-        with tag.ul(
-            classes="dropdown menu rounded-box bg-base-200 w-48 shadow-sm",
-            popover="true",
-            id=f"popover-{item_id}",
-            style=f"position-anchor:--anchor-{item_id}",
-        ):
-            for label, url in self.actions:
-                with tag.li():
-                    with tag.a(href=str(url)):
-                        text(label)
+        with tag.details(classes="dropdown"):
+            with tag.summary(type="button", classes="btn btn-ghost m-1"):
+                with tag.div(classes="font-normal icon-ellipsis-vertical"):
+                    pass
+
+            displayed_actions = [
+                action for action in self.actions if not action.is_hidden(request, item)
+            ]
+            if not displayed_actions:
+                return None
+
+            with tag.ul(
+                classes="menu dropdown-content bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm",
+            ):
+                for action in displayed_actions:
+                    with tag.li():
+                        with action.render(request, item):
+                            pass
         return None
 
 

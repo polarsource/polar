@@ -49,6 +49,11 @@ class ExternalEventService:
         enqueue_job(task_name, event.id)
         return event
 
+    async def resend(self, event: ExternalEvent) -> None:
+        if event.is_handled:
+            raise ExternalEventAlreadyHandled(event.id)
+        enqueue_job(event.task_name, event.id)
+
     @contextlib.asynccontextmanager
     async def handle(
         self, session: AsyncSession, source: ExternalEventSource, event_id: uuid.UUID

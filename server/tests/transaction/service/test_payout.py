@@ -12,6 +12,7 @@ from polar.config import settings
 from polar.enums import AccountType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
+from polar.locker import Locker
 from polar.models import Account, Organization, Transaction, User
 from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
@@ -52,7 +53,12 @@ class TestCreatePayout:
         "balance", [-1000, 0, settings.ACCOUNT_PAYOUT_MINIMUM_BALANCE - 1]
     )
     async def test_insufficient_balance(
-        self, balance: int, session: AsyncSession, save_fixture: SaveFixture, user: User
+        self,
+        balance: int,
+        session: AsyncSession,
+        locker: Locker,
+        save_fixture: SaveFixture,
+        user: User,
     ) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
@@ -73,10 +79,12 @@ class TestCreatePayout:
         session.expunge_all()
 
         with pytest.raises(InsufficientBalance):
-            await payout_transaction_service.create_payout(session, account=account)
+            await payout_transaction_service.create_payout(
+                session, locker, account=account
+            )
 
     async def test_under_review_account(
-        self, session: AsyncSession, user: User
+        self, session: AsyncSession, locker: Locker, user: User
     ) -> None:
         account = Account(
             status=Account.Status.UNDER_REVIEW,
@@ -90,9 +98,13 @@ class TestCreatePayout:
         session.expunge_all()
 
         with pytest.raises(UnderReviewAccount):
-            await payout_transaction_service.create_payout(session, account=account)
+            await payout_transaction_service.create_payout(
+                session, locker, account=account
+            )
 
-    async def test_inactive_account(self, session: AsyncSession, user: User) -> None:
+    async def test_inactive_account(
+        self, session: AsyncSession, locker: Locker, user: User
+    ) -> None:
         account = Account(
             status=Account.Status.ONBOARDING_STARTED,
             account_type=AccountType.stripe,
@@ -105,10 +117,12 @@ class TestCreatePayout:
         session.expunge_all()
 
         with pytest.raises(NotReadyAccount):
-            await payout_transaction_service.create_payout(session, account=account)
+            await payout_transaction_service.create_payout(
+                session, locker, account=account
+            )
 
     async def test_payout_disabled_account(
-        self, session: AsyncSession, user: User
+        self, session: AsyncSession, locker: Locker, user: User
     ) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
@@ -123,11 +137,14 @@ class TestCreatePayout:
         session.expunge_all()
 
         with pytest.raises(NotReadyAccount):
-            await payout_transaction_service.create_payout(session, account=account)
+            await payout_transaction_service.create_payout(
+                session, locker, account=account
+            )
 
     async def test_stripe(
         self,
         session: AsyncSession,
+        locker: Locker,
         save_fixture: SaveFixture,
         user: User,
         stripe_service_mock: MagicMock,
@@ -164,7 +181,7 @@ class TestCreatePayout:
         session.expunge_all()
 
         payout = await payout_transaction_service.create_payout(
-            session, account=account
+            session, locker, account=account
         )
 
         assert payout.account == account
@@ -203,6 +220,7 @@ class TestCreatePayout:
     async def test_stripe_different_currencies(
         self,
         session: AsyncSession,
+        locker: Locker,
         save_fixture: SaveFixture,
         user: User,
         stripe_service_mock: MagicMock,
@@ -250,7 +268,7 @@ class TestCreatePayout:
         session.expunge_all()
 
         payout = await payout_transaction_service.create_payout(
-            session, account=account
+            session, locker, account=account
         )
 
         assert payout.account == account
@@ -272,6 +290,7 @@ class TestCreatePayout:
     async def test_stripe_refund(
         self,
         session: AsyncSession,
+        locker: Locker,
         save_fixture: SaveFixture,
         user: User,
         stripe_service_mock: MagicMock,
@@ -334,7 +353,7 @@ class TestCreatePayout:
         )
 
         payout = await payout_transaction_service.create_payout(
-            session, account=account
+            session, locker, account=account
         )
 
         assert payout.account == account
@@ -380,6 +399,7 @@ class TestCreatePayout:
     async def test_stripe_refund_of_paid_payment(
         self,
         session: AsyncSession,
+        locker: Locker,
         save_fixture: SaveFixture,
         user: User,
         stripe_service_mock: MagicMock,
@@ -455,7 +475,7 @@ class TestCreatePayout:
         session.expunge_all()
 
         payout = await payout_transaction_service.create_payout(
-            session, account=account
+            session, locker, account=account
         )
 
         assert payout.account == account
@@ -493,7 +513,11 @@ class TestCreatePayout:
         stripe_service_mock.create_payout.assert_not_called()
 
     async def test_open_collective(
-        self, session: AsyncSession, save_fixture: SaveFixture, user: User
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        save_fixture: SaveFixture,
+        user: User,
     ) -> None:
         account = Account(
             status=Account.Status.ACTIVE,
@@ -517,7 +541,7 @@ class TestCreatePayout:
         session.expunge_all()
 
         payout = await payout_transaction_service.create_payout(
-            session, account=account
+            session, locker, account=account
         )
 
         assert payout.account == account

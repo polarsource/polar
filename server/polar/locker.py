@@ -4,7 +4,7 @@ from collections.abc import AsyncGenerator
 import structlog
 from fastapi import Depends
 from redis.asyncio.lock import Lock
-from redis.exceptions import LockError, LockNotOwnedError
+from redis.exceptions import LockNotOwnedError
 
 from polar.exceptions import PolarError
 from polar.logging import Logger
@@ -67,7 +67,7 @@ class Locker:
         """
         lock = Lock(
             self.redis,
-            f"polarlock:{name}",
+            self._get_key(name),
             timeout=timeout,
             sleep=sleep,
             blocking=True,
@@ -76,18 +76,17 @@ class Locker:
         )
 
         log.debug("try to acquire lock", name=name)
+        acquired = await lock.acquire()
 
-        try:
-            await lock.acquire()
-        except LockError as e:
+        if not acquired:
             log.error(
                 "could not acquire lock before set limit",
                 name=name,
                 blocking_timeout=blocking_timeout,
             )
-            raise TimeoutLockError() from e
-
-        log.debug("acquired lock", name=name)
+            raise TimeoutLockError()
+        else:
+            log.debug("acquired lock", name=name)
 
         try:
             yield lock
@@ -102,6 +101,22 @@ class Locker:
                 )
                 raise ExpiredLockError() from e
             log.debug("released lock", name=name)
+
+    async def is_locked(self, name: str) -> bool:
+        """
+        Check if a lock is currently held.
+
+        Args:
+            name: Name of the lock. Automatically prefixed by `polarlock:`.
+
+        Returns:
+            bool: True if the lock is currently held, False otherwise.
+        """
+        lock = Lock(self.redis, self._get_key(name))
+        return await lock.locked()
+
+    def _get_key(self, name: str) -> str:
+        return f"polarlock:{name}"
 
 
 async def get_locker(redis: Redis = Depends(get_redis)) -> Locker:

@@ -1,3 +1,4 @@
+from . import _accordion as accordion
 from . import _datatable as datatable
 from . import _description_list as description_list
 from . import _input as input
@@ -8,6 +9,7 @@ from ._layout import layout
 from ._modal import modal
 
 __all__ = [
+    "accordion",
     "alert",
     "button",
     "description_list",

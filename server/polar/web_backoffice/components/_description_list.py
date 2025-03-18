@@ -66,6 +66,23 @@ class DescriptionListDateTimeItem(DescriptionListAttrItem[M]):
         return formatters.datetime(value)
 
 
+class DescriptionListLinkItem(DescriptionListAttrItem[M]):
+    def render(self, request: Request, item: M) -> Generator[None] | None:
+        value = self.get_value(item)
+        with tag.div(classes="flex items-center gap-1"):
+            if value is not None:
+                with tag.a(
+                    href=value,
+                    classes="link",
+                    target="_blank",
+                    rel="noopener noreferrer",
+                ):
+                    text(value)
+            else:
+                text("—")
+        return None
+
+
 class DescriptionListCurrencyItem(DescriptionListAttrItem[M]):
     def get_value(self, item: M) -> str | None:
         value: int | None = getattr(item, self.attr)
@@ -98,5 +115,6 @@ __all__ = [
     "DescriptionListItem",
     "DescriptionListAttrItem",
     "DescriptionListDateTimeItem",
+    "DescriptionListLinkItem",
     "DescriptionList",
 ]

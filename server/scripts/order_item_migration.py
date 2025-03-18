@@ -113,6 +113,7 @@ async def pledge_invoice_payment_fix(
                 stripe_price_id,
                 product_price_id,
             ) = r._tuple()
+            assert stripe_price_id is not None
             price_map[stripe_price_id] = product_price_id
         typer.echo(f"Price map built with {len(price_map)} entries")
 

@@ -52,6 +52,7 @@ from .product_price import (
     ProductPriceCustom,
     ProductPriceFixed,
     ProductPriceFree,
+    ProductPriceMeteredUnit,
 )
 from .refund import Refund
 from .repository import Repository
@@ -118,6 +119,7 @@ __all__ = [
     "ProductPriceCustom",
     "ProductPriceFixed",
     "ProductPriceFree",
+    "ProductPriceMeteredUnit",
     "LegacyRecurringProductPriceFree",
     "LegacyRecurringProductPriceFixed",
     "LegacyRecurringProductPriceCustom",

@@ -346,24 +346,12 @@ class StripeService:
         product: str,
         params: stripe_lib.Price.CreateParams,
         *,
-        set_default: bool = False,
         idempotency_key: str | None = None,
     ) -> stripe_lib.Price:
         params = {**params, "product": product}
         if idempotency_key is not None:
             params["idempotency_key"] = idempotency_key
-        price = await stripe_lib.Price.create_async(**params)
-        if set_default:
-            await stripe_lib.Product.modify_async(
-                product,
-                default_price=price.id,
-                idempotency_key=(
-                    f"{idempotency_key}_set_default"
-                    if idempotency_key is not None
-                    else None
-                ),
-            )
-        return price
+        return await stripe_lib.Price.create_async(**params)
 
     async def update_product(
         self, product: str, **kwargs: Unpack[stripe_lib.Product.ModifyParams]

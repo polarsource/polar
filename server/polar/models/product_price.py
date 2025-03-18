@@ -27,7 +27,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
-    from polar.models import Product
+    from polar.models import Meter, Product
 
 
 class ProductPriceType(StrEnum):
@@ -42,6 +42,7 @@ class ProductPriceAmountType(StrEnum):
     fixed = "fixed"
     custom = "custom"
     free = "free"
+    metered_unit = "metered_unit"
 
 
 class HasPriceCurrency:
@@ -67,7 +68,7 @@ class ProductPrice(RecordModel):
     )
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    stripe_price_id: Mapped[str] = mapped_column(String, nullable=False)
+    stripe_price_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     product_id: Mapped[UUID] = mapped_column(
         Uuid,
@@ -106,6 +107,15 @@ class ProductPrice(RecordModel):
                 ProductPriceAmountType.custom,
             )
         )
+
+    @hybrid_property
+    def is_metered(self) -> bool:
+        return self.amount_type in {ProductPriceAmountType.metered_unit}
+
+    @is_metered.inplace.expression
+    @classmethod
+    def _is_metered_price_expression(cls) -> ColumnElement[bool]:
+        return cls.amount_type.in_((ProductPriceAmountType.metered_unit,))
 
     @property
     def legacy_type(self) -> ProductPriceType | None:
@@ -158,6 +168,7 @@ class NewProductPrice:
 
 
 class _ProductPriceFixed(HasPriceCurrency, ProductPrice):
+    stripe_price_id: Mapped[str] = mapped_column(use_existing_column=True)
     price_amount: Mapped[int] = mapped_column(Integer, nullable=True)
     amount_type: Mapped[Literal[ProductPriceAmountType.fixed]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.fixed
@@ -184,6 +195,7 @@ class LegacyRecurringProductPriceFixed(LegacyRecurringProductPrice, _ProductPric
 
 
 class _ProductPriceCustom(HasPriceCurrency, ProductPrice):
+    stripe_price_id: Mapped[str] = mapped_column(use_existing_column=True)
     amount_type: Mapped[Literal[ProductPriceAmountType.custom]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.custom
     )
@@ -220,6 +232,7 @@ class LegacyRecurringProductPriceCustom(
 
 
 class _ProductPriceFree(ProductPrice):
+    stripe_price_id: Mapped[str] = mapped_column(use_existing_column=True)
     amount_type: Mapped[Literal[ProductPriceAmountType.free]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.free
     )
@@ -240,6 +253,40 @@ class ProductPriceFree(NewProductPrice, _ProductPriceFree):
 class LegacyRecurringProductPriceFree(LegacyRecurringProductPrice, _ProductPriceFree):
     __mapper_args__ = {
         "polymorphic_identity": f"{LEGACY_IDENTITY_PREFIX}{ProductPriceAmountType.free}",
+        "polymorphic_load": "inline",
+    }
+
+
+class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
+    amount_type: Mapped[Literal[ProductPriceAmountType.metered_unit]] = mapped_column(
+        use_existing_column=True, default=ProductPriceAmountType.metered_unit
+    )
+    unit_amount: Mapped[int] = mapped_column(
+        Integer,
+        # Polymorphic columns must be nullable, as they don't apply to other types
+        nullable=True,
+    )
+    included_units: Mapped[int] = mapped_column(
+        Integer,
+        # Polymorphic columns must be nullable, as they don't apply to other types
+        nullable=True,
+        default=0,
+    )
+    cap_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    meter_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("meters.id"),
+        # Polymorphic columns must be nullable, as they don't apply to other types
+        nullable=True,
+        index=True,
+    )
+
+    @declared_attr
+    def meter(cls) -> Mapped["Meter"]:
+        return relationship("Meter", lazy="raise_on_sql")
+
+    __mapper_args__ = {
+        "polymorphic_abstract": True,
         "polymorphic_load": "inline",
     }
 

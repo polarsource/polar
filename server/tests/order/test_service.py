@@ -43,6 +43,7 @@ from polar.order.service import (
     SubscriptionDoesNotExist,
 )
 from polar.order.service import order as order_service
+from polar.product.guard import is_static_price
 from polar.transaction.service.balance import (
     PaymentTransactionForChargeDoesNotExist,
 )
@@ -369,6 +370,7 @@ class TestCreateFromCheckout:
                     "tax_amount": 0,
                 }
                 for price in product_one_time.prices
+                if is_static_price(price)
             ]
         )
         stripe_service_mock.create_out_of_band_invoice.return_value = (
@@ -510,6 +512,7 @@ class TestCreateFromCheckout:
                     "tax_amount": 0,
                 }
                 for price in product_one_time_free_price.prices
+                if is_static_price(price)
             ]
         )
         stripe_service_mock.create_out_of_band_invoice.return_value = (
@@ -584,6 +587,7 @@ class TestCreateFromCheckout:
                     "tax_amount": 0,
                 }
                 for price in product_one_time.prices
+                if is_static_price(price)
             ],
             discount=discount_percentage_100,
             discount_amount=discount_amount,
@@ -665,6 +669,7 @@ class TestCreateOrderFromStripe:
                     "tax_amount": 0,
                 }
                 for price in product.prices
+                if is_static_price(price)
             ],
             created=created_unix_timestamp,
             customer_id=cast(str, subscription.customer.stripe_customer_id),
@@ -697,6 +702,7 @@ class TestCreateOrderFromStripe:
                     "tax_amount": 0,
                 }
                 for price in product.prices
+                if is_static_price(price)
             ],
             customer_id=cast(str, subscription.customer.stripe_customer_id),
             discount_amount=cast(DiscountFixed, discount_fixed_once).amount,
@@ -739,6 +745,7 @@ class TestCreateOrderFromStripe:
                     "tax_amount": 0,
                 }
                 for price in product.prices
+                if is_static_price(price)
             ],
             customer_address=customer_address,
         )
@@ -775,6 +782,7 @@ class TestCreateOrderFromStripe:
                     "tax_amount": 0,
                 }
                 for price in product.prices
+                if is_static_price(price)
             ],
             customer_address=None,
             billing_reason="manual",
@@ -804,6 +812,7 @@ class TestCreateOrderFromStripe:
                     "tax_amount": 0,
                 }
                 for price in product.prices
+                if is_static_price(price)
             ],
             customer_id=cast(str, subscription.customer.stripe_customer_id),
             subscription_details={

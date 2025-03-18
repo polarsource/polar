@@ -47,10 +47,9 @@ class Refund(MetadataOutputMixin, IDSchema, TimestampedSchema):
 class RefundCreate(MetadataInputMixin, Schema):
     order_id: UUID4
     reason: RefundReason
-    amount: int
+    amount: int = Field(description="Amount to refund in cents. Minimum is 1.", gt=0)
     comment: str | None = Field(
-        None,
-        description="An internal comment about the refund.",
+        None, description="An internal comment about the refund."
     )
     revoke_benefits: bool = Field(
         False,

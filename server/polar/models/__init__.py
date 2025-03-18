@@ -3,6 +3,7 @@ from polar.kit.db.models import Model, TimestampedModel
 from .account import Account
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
+from .billing_entry import BillingEntry
 from .checkout import Checkout
 from .checkout_link import CheckoutLink
 from .checkout_link_product import CheckoutLinkProduct
@@ -71,6 +72,7 @@ __all__ = [
     "Account",
     "Benefit",
     "BenefitGrant",
+    "BillingEntry",
     "Checkout",
     "CheckoutLink",
     "CheckoutLinkProduct",

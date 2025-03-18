@@ -54,6 +54,7 @@ const Button = React.forwardRef<
       fullWidth,
       disabled,
       children,
+      type = 'button',
       ...props
     },
     ref,
@@ -66,6 +67,7 @@ const Button = React.forwardRef<
         )}
         ref={ref}
         disabled={disabled || loading}
+        type={type}
         {...props}
       >
         {loading ? (

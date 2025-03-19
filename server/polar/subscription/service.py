@@ -121,7 +121,8 @@ class SubscriptionDoesNotExist(SubscriptionError):
 
 
 class AlreadyCanceledSubscription(SubscriptionError):
-    def __init__(self) -> None:
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
         message = (
             "This subscription is already canceled or will be at the end of the period."
         )
@@ -129,9 +130,17 @@ class AlreadyCanceledSubscription(SubscriptionError):
 
 
 class SubscriptionNotActiveOnStripe(SubscriptionError):
-    def __init__(self) -> None:
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
         message = "This subscription is not active on Stripe."
         super().__init__(message, 400)
+
+
+class SubscriptionUpdatePending(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription is pending an update."
+        super().__init__(message, 409)
 
 
 @overload
@@ -505,12 +514,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         *,
         update: SubscriptionUpdate,
     ) -> Subscription:
-        async with locker.lock(
-            f"subscription:{subscription.id}", timeout=5, blocking_timeout=5
-        ):
+        lock_name = f"subscription:{subscription.id}"
+        if await locker.is_locked(lock_name):
+            raise SubscriptionUpdatePending(subscription)
+        async with locker.lock(lock_name, timeout=5, blocking_timeout=1):
             if isinstance(update, SubscriptionUpdateProduct):
                 if subscription.revoked or subscription.cancel_at_period_end:
-                    raise AlreadyCanceledSubscription()
+                    raise AlreadyCanceledSubscription(subscription)
                 return await self.update_product(
                     session,
                     subscription,
@@ -638,7 +648,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 )
 
         if subscription.stripe_subscription_id is None:
-            raise SubscriptionNotActiveOnStripe()
+            raise SubscriptionNotActiveOnStripe(subscription)
 
         subscription.product = product
         subscription.subscription_product_prices = [
@@ -801,7 +811,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         immediately: bool = False,
     ) -> Subscription:
         if not subscription.can_cancel(immediately):
-            raise AlreadyCanceledSubscription()
+            raise AlreadyCanceledSubscription(subscription)
 
         previous_status = subscription.status
         previous_ends_at = subscription.ends_at

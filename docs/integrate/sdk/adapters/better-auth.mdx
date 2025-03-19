@@ -133,6 +133,8 @@ The plugin adds the following API routes:
 - `GET /portal` - Redirects to Polar Customer Portal for authenticated user
 - `POST /polar/webhooks` - Incoming webhooks are automatically parsed & validated
 
+Remember, these endpoints are deployed relative to your BetterAuth instance. If you mount your BetterAuth instance at `/auth`, the routes will be `/auth/checkout/:slug`, `/auth/state`, `/auth/portal`, and `/auth/polar/webhooks`.
+
 ## Customers
 
 When `createCustomerOnSignUp` is enabled, a new Polar Customer is automatically created when a new User is added in the Better-Auth Database.

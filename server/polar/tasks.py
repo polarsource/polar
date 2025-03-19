@@ -11,6 +11,7 @@ from polar.integrations.github import tasks as github
 from polar.integrations.loops import tasks as loops
 from polar.integrations.stripe import tasks as stripe
 from polar.magic_link import tasks as magic_link
+from polar.meter import tasks as meter
 from polar.notifications import tasks as notifications
 from polar.order import tasks as order
 from polar.organization import tasks as organization
@@ -33,6 +34,7 @@ __all__ = [
     "eventstream",
     "github",
     "loops",
+    "meter",
     "stripe",
     "magic_link",
     "order",

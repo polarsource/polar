@@ -8,11 +8,9 @@ from polar.kit.db.models import RecordModel
 from polar.models.product_price import (
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
-    LegacyRecurringProductPriceFree,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
-    ProductPriceFree,
 )
 
 if TYPE_CHECKING:
@@ -53,6 +51,6 @@ class SubscriptionProductPrice(RecordModel):
             amount = price.price_amount
         elif isinstance(price, ProductPriceCustom | LegacyRecurringProductPriceCustom):
             assert amount is not None, "amount must be provided for custom prices"
-        elif isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
+        else:
             amount = 0
         return cls(product_price=price, amount=amount)

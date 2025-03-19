@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime
 from typing import Any, Generic, Protocol, Self, TypeAlias, TypeVar
 
@@ -77,6 +77,11 @@ class RepositoryBase(Generic[M]):
     async def get_all(self, statement: Select[tuple[M]]) -> Sequence[M]:
         result = await self.session.execute(statement)
         return result.scalars().unique().all()
+
+    async def stream(self, statement: Select[tuple[M]]) -> AsyncGenerator[M, None]:
+        results = await self.session.stream(statement)
+        async for result in results.unique().scalars():
+            yield result
 
     async def paginate(
         self, statement: Select[tuple[M]], *, limit: int, page: int

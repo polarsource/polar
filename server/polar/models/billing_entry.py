@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, ForeignKey, Uuid
@@ -10,7 +10,14 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StrEnumType
 
 if TYPE_CHECKING:
-    from polar.models import Customer, Event, OrderItem, ProductPrice
+    from polar.models import (
+        Customer,
+        Event,
+        OrderItem,
+        ProductPrice,
+        Subscription,
+        SubscriptionProductPrice,
+    )
 
 
 class BillingEntryDirection(StrEnum):
@@ -36,6 +43,9 @@ class BillingEntry(RecordModel):
     product_price_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("product_prices.id", ondelete="cascade"), nullable=False
     )
+    subscription_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("subscriptions.id", ondelete="cascade"), nullable=True
+    )
     event_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("events.id", ondelete="cascade"), nullable=False
     )
@@ -52,9 +62,30 @@ class BillingEntry(RecordModel):
         return relationship("ProductPrice", lazy="raise_on_sql")
 
     @declared_attr
+    def subscription(cls) -> Mapped["Subscription | None"]:
+        return relationship("Subscription", lazy="raise_on_sql")
+
+    @declared_attr
     def event(cls) -> Mapped["Event"]:
         return relationship("Event", lazy="raise_on_sql")
 
     @declared_attr
     def order_item(cls) -> Mapped["OrderItem | None"]:
         return relationship("OrderItem", lazy="raise_on_sql")
+
+    @classmethod
+    def from_metered_event(
+        cls,
+        customer: "Customer",
+        subscription_product_price: "SubscriptionProductPrice",
+        event: "Event",
+    ) -> Self:
+        return cls(
+            start_timestamp=event.timestamp,
+            end_timestamp=event.timestamp,
+            direction=BillingEntryDirection.debit,
+            customer=customer,
+            product_price=subscription_product_price.product_price,
+            subscription=subscription_product_price.subscription,
+            event=event,
+        )

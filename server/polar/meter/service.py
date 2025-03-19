@@ -15,14 +15,17 @@ from sqlalchemy import (
 )
 
 from polar.auth.models import AuthSubject, Organization, User
+from polar.billing_entry.repository import BillingEntryRepository
 from polar.event.repository import EventRepository
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
-from polar.models import Event, Meter
+from polar.models import BillingEntry, Event, Meter, SubscriptionProductPrice
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
+from polar.subscription.repository import SubscriptionProductPriceRepository
+from polar.worker import enqueue_job
 
 from .repository import MeterRepository
 from .schemas import MeterCreate, MeterQuantities, MeterQuantity, MeterUpdate
@@ -114,15 +117,8 @@ class MeterService:
         pagination: PaginationParams,
     ) -> tuple[Sequence[Event], int]:
         repository = EventRepository.from_session(session)
-        statement = (
-            repository.get_base_statement()
-            .where(
-                Event.organization_id == meter.organization_id,
-                meter.filter.get_sql_clause(Event),
-                # Additional clauses to make sure we work on rows with the right type for aggregation
-                meter.aggregation.get_sql_clause(Event),
-            )
-            .order_by(Event.timestamp.desc())
+        statement = repository.get_meter_statement(meter).order_by(
+            Event.timestamp.desc()
         )
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page
@@ -183,6 +179,63 @@ class MeterService:
                 async for row in result
             ]
         )
+
+    async def enqueue_billing(self, session: AsyncSession) -> None:
+        repository = MeterRepository.from_session(session)
+        statement = repository.get_base_statement().order_by(Meter.created_at.asc())
+        async for meter in repository.stream(statement):
+            enqueue_job("meter.billing_entries", meter.id)
+
+    async def create_billing_entries(
+        self, session: AsyncSession, meter: Meter
+    ) -> Sequence[BillingEntry]:
+        event_repository = EventRepository.from_session(session)
+        statement = (
+            event_repository.get_meter_statement(meter)
+            .where(Event.customer.is_not(None))
+            .order_by(Event.timestamp.asc())
+        )
+        last_billed_event = meter.last_billed_event
+        if last_billed_event is not None:
+            statement = statement.where(Event.timestamp > last_billed_event.timestamp)
+        events = await event_repository.get_all(statement)
+
+        subscription_product_price_repository = (
+            SubscriptionProductPriceRepository.from_session(session)
+        )
+        customer_price_map: dict[uuid.UUID, SubscriptionProductPrice | None] = {}
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        entries: list[BillingEntry] = []
+        for event in events:
+            customer = event.customer
+            assert customer is not None
+
+            # Retrieve an active price for the customer and meter
+            try:
+                subscription_product_price = customer_price_map[customer.id]
+            except KeyError:
+                subscription_product_price = await subscription_product_price_repository.get_by_customer_and_meter(
+                    customer.id, meter.id
+                )
+                customer_price_map[customer.id] = subscription_product_price
+            if subscription_product_price is None:
+                continue
+
+            # Create a billing entry
+            entries.append(
+                await billing_entry_repository.create(
+                    BillingEntry.from_metered_event(
+                        customer, subscription_product_price, event
+                    )
+                )
+            )
+
+        # Update the last billed event
+        meter.last_billed_event = events[-1] if events else last_billed_event
+        session.add(meter)
+
+        return entries
 
 
 meter = MeterService()

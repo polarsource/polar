@@ -63,6 +63,10 @@ class SubscriptionStatus(StrEnum):
         return {cls.past_due, cls.canceled, cls.unpaid}  # type: ignore
 
     @classmethod
+    def billable_statuses(cls) -> set[Self]:
+        return cls.active_statuses() | {cls.past_due}  # type: ignore
+
+    @classmethod
     def is_incomplete(cls, status: Self) -> bool:
         return status in cls.incomplete_statuses()
 
@@ -73,6 +77,10 @@ class SubscriptionStatus(StrEnum):
     @classmethod
     def is_revoked(cls, status: Self) -> bool:
         return status in cls.revoked_statuses()
+
+    @classmethod
+    def is_billable(cls, status: Self) -> bool:
+        return status in cls.billable_statuses()
 
 
 class CustomerCancellationReason(StrEnum):
@@ -219,6 +227,18 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def _revoked_expression(cls) -> ColumnElement[bool]:
         return type_coerce(
             cls.status.in_(SubscriptionStatus.revoked_statuses()),
+            Boolean,
+        )
+
+    @hybrid_property
+    def billable(self) -> bool:
+        return SubscriptionStatus.is_billable(self.status)
+
+    @billable.inplace.expression
+    @classmethod
+    def _billable_expression(cls) -> ColumnElement[bool]:
+        return type_coerce(
+            cls.status.in_(SubscriptionStatus.billable_statuses()),
             Boolean,
         )
 

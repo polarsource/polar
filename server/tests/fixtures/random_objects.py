@@ -35,6 +35,7 @@ from polar.models import (
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
     LegacyRecurringProductPriceFree,
+    Meter,
     Order,
     OrderItem,
     Organization,
@@ -45,6 +46,7 @@ from polar.models import (
     ProductPriceCustom,
     ProductPriceFixed,
     ProductPriceFree,
+    ProductPriceMeteredUnit,
     Refund,
     Repository,
     Subscription,
@@ -595,7 +597,10 @@ async def create_product(
     name: str = "Product",
     is_archived: bool = False,
     prices: Sequence[
-        tuple[int] | tuple[int | None, int | None, int | None] | tuple[None]
+        tuple[int]
+        | tuple[int | None, int | None, int | None]
+        | tuple[None]
+        | tuple[Meter, int, int, int | None]
     ] = [(1000,)],
     attached_custom_fields: Sequence[tuple[CustomField, bool]] = [],
     is_tax_applicable: bool = True,
@@ -620,7 +625,12 @@ async def create_product(
     await save_fixture(product)
 
     for price in prices:
-        product_price: ProductPriceFixed | ProductPriceCustom | ProductPriceFree
+        product_price: (
+            ProductPriceFixed
+            | ProductPriceCustom
+            | ProductPriceFree
+            | ProductPriceMeteredUnit
+        )
         if len(price) == 1:
             (amount,) = price
             if amount is None:
@@ -631,7 +641,7 @@ async def create_product(
                 product_price = await create_product_price_fixed(
                     save_fixture, product=product, amount=amount
                 )
-        else:
+        elif len(price) == 3:
             (
                 minimum_amount,
                 maximum_amount,
@@ -643,6 +653,16 @@ async def create_product(
                 minimum_amount=minimum_amount,
                 maximum_amount=maximum_amount,
                 preset_amount=preset_amount,
+            )
+        else:
+            meter, unit_amount, included_units, cap_amount = price
+            product_price = await create_product_price_metered_unit(
+                save_fixture,
+                product=product,
+                meter=meter,
+                unit_amount=unit_amount,
+                included_units=included_units,
+                cap_amount=cap_amount,
             )
         product.prices.append(product_price)
         product.all_prices.append(product_price)
@@ -697,6 +717,28 @@ async def create_product_price_free(
         stripe_price_id=rstr("PRICE_ID"),
         product=product,
     )
+    await save_fixture(price)
+    return price
+
+
+async def create_product_price_metered_unit(
+    save_fixture: SaveFixture,
+    *,
+    product: Product,
+    meter: Meter,
+    unit_amount: int = 100,
+    included_units: int = 0,
+    cap_amount: int | None = None,
+) -> ProductPriceMeteredUnit:
+    price = ProductPriceMeteredUnit(
+        price_currency="usd",
+        unit_amount=unit_amount,
+        included_units=included_units,
+        cap_amount=cap_amount,
+        meter=meter,
+        product=product,
+    )
+    assert price.amount_type == ProductPriceAmountType.metered_unit
     await save_fixture(price)
     return price
 
@@ -1679,7 +1721,7 @@ async def create_event(
     event = Event(
         timestamp=timestamp or utc_now(),
         name=name,
-        customer=customer,
+        customer_id=customer.id if customer else None,
         external_customer_id=external_customer_id,
         organization=organization,
         user_metadata=metadata or {},

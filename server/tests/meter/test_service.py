@@ -2,7 +2,9 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
+import pytest_asyncio
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import (
@@ -13,10 +15,15 @@ from polar.meter.aggregation import (
 )
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.meter.service import meter as meter_service
-from polar.models import Customer, Meter, Organization
+from polar.models import Customer, Event, Meter, Organization, Product, Subscription
+from polar.models.billing_entry import BillingEntryDirection
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_event
+from tests.fixtures.random_objects import (
+    create_active_subscription,
+    create_event,
+    create_product,
+)
 
 
 async def create_meter(
@@ -355,3 +362,148 @@ class TestGetQuantities:
         assert len(result.quantities) == 1
         quantity = result.quantities[0]
         assert quantity.quantity == 0
+
+
+@pytest_asyncio.fixture
+async def events(save_fixture: SaveFixture, customer: Customer) -> list[Event]:
+    timestamp = utc_now()
+    return [
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 20, "model": "lite"},
+        ),
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 10, "model": "lite"},
+        ),
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=3),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 10, "model": "lite"},
+        ),
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=4),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 0, "model": "lite"},
+        ),
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=5),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 100, "model": "pro"},
+        ),
+    ]
+
+
+@pytest_asyncio.fixture
+async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
+    return await create_meter(
+        save_fixture,
+        name="Lite Model Usage",
+        filter=Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(property="model", operator=FilterOperator.eq, value="lite")
+            ],
+        ),
+        aggregation=PropertyAggregation(
+            func=AggregationFunction.sum, property="tokens"
+        ),
+        organization=organization,
+    )
+
+
+@pytest_asyncio.fixture
+async def product_metered_unit(
+    save_fixture: SaveFixture, meter: Meter, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[(meter, 100, 0, None)],
+    )
+
+
+@pytest_asyncio.fixture
+async def metered_subscription(
+    save_fixture: SaveFixture, customer: Customer, product_metered_unit: Product
+) -> Subscription:
+    return await create_active_subscription(
+        save_fixture, customer=customer, product=product_metered_unit
+    )
+
+
+@pytest.mark.asyncio
+class TestCreateBillingEntries:
+    async def test_no_subscription(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        events: list[Event],
+        meter: Meter,
+        product_metered_unit: Product,
+    ) -> None:
+        entries = await meter_service.create_billing_entries(session, meter)
+
+        assert len(entries) == 0
+        assert meter.last_billed_event == events[-2]
+
+    async def test_no_last_billed_event(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        events: list[Event],
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        entries = await meter_service.create_billing_entries(session, meter)
+
+        assert len(entries) == 4
+        for entry in entries:
+            assert entry.event is not None
+            assert entry.start_timestamp == entry.event.timestamp
+            assert entry.end_timestamp == entry.event.timestamp
+            assert entry.direction == BillingEntryDirection.debit
+            assert entry.customer == customer
+            assert entry.product_price == product_metered_unit.prices[0]
+
+        assert meter.last_billed_event == events[-2]
+
+    async def test_last_billed_event(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        events: list[Event],
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        meter.last_billed_event = events[1]
+        entries = await meter_service.create_billing_entries(session, meter)
+
+        assert len(entries) == 2
+        for entry in entries:
+            assert entry.event is not None
+            assert entry.start_timestamp == entry.event.timestamp
+            assert entry.end_timestamp == entry.event.timestamp
+            assert entry.direction == BillingEntryDirection.debit
+            assert entry.customer == customer
+            assert entry.product_price == product_metered_unit.prices[0]
+
+        assert meter.last_billed_event == events[-2]

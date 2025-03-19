@@ -168,7 +168,9 @@ class NewProductPrice:
 
 
 class _ProductPriceFixed(HasPriceCurrency, ProductPrice):
-    stripe_price_id: Mapped[str] = mapped_column(use_existing_column=True)
+    stripe_price_id: Mapped[str] = mapped_column(
+        use_existing_column=True, nullable=True
+    )
     price_amount: Mapped[int] = mapped_column(Integer, nullable=True)
     amount_type: Mapped[Literal[ProductPriceAmountType.fixed]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.fixed
@@ -195,7 +197,9 @@ class LegacyRecurringProductPriceFixed(LegacyRecurringProductPrice, _ProductPric
 
 
 class _ProductPriceCustom(HasPriceCurrency, ProductPrice):
-    stripe_price_id: Mapped[str] = mapped_column(use_existing_column=True)
+    stripe_price_id: Mapped[str] = mapped_column(
+        use_existing_column=True, nullable=True
+    )
     amount_type: Mapped[Literal[ProductPriceAmountType.custom]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.custom
     )
@@ -232,7 +236,9 @@ class LegacyRecurringProductPriceCustom(
 
 
 class _ProductPriceFree(ProductPrice):
-    stripe_price_id: Mapped[str] = mapped_column(use_existing_column=True)
+    stripe_price_id: Mapped[str] = mapped_column(
+        use_existing_column=True, nullable=True
+    )
     amount_type: Mapped[Literal[ProductPriceAmountType.free]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.free
     )
@@ -286,7 +292,7 @@ class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
         return relationship("Meter", lazy="raise_on_sql")
 
     __mapper_args__ = {
-        "polymorphic_abstract": True,
+        "polymorphic_identity": ProductPriceAmountType.metered_unit,
         "polymorphic_load": "inline",
     }
 

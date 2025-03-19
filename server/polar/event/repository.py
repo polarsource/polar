@@ -6,7 +6,7 @@ from sqlalchemy import ColumnElement, Select, insert, or_, select
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
-from polar.models import Customer, Event, UserOrganization
+from polar.models import Customer, Event, Meter, UserOrganization
 
 
 class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
@@ -64,4 +64,12 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                     Customer.external_id.in_(external_customer_id)
                 )
             ),
+        )
+
+    def get_meter_statement(self, meter: Meter) -> Select[tuple[Event]]:
+        return self.get_base_statement().where(
+            Event.organization_id == meter.organization_id,
+            meter.filter.get_sql_clause(Event),
+            # Additional clauses to make sure we work on rows with the right type for aggregation
+            meter.aggregation.get_sql_clause(Event),
         )

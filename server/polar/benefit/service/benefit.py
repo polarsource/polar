@@ -3,12 +3,13 @@ from collections.abc import Sequence
 from typing import Any, TypeVar, overload
 
 from pydantic import BaseModel
-from sqlalchemy import Select, delete, select
+from sqlalchemy import Select, UnaryExpression, asc, delete, desc, select
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
+from polar.benefit.sorting import BenefitSortProperty
 from polar.exceptions import NotPermitted, PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
@@ -98,6 +99,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         type: Sequence[BenefitType] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
+        sorting: BenefitSortProperty,
         query: str | None = None,
     ) -> tuple[Sequence[Benefit], int]:
         statement = self._get_readable_benefit_statement(auth_subject)
@@ -111,10 +113,14 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         if query is not None:
             statement = statement.where(Benefit.description.ilike(f"%{query}%"))
 
-        statement = statement.order_by(
-            Benefit.type,
-            Benefit.created_at,
-        )
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == BenefitSortProperty.created_at:
+                order_by_clauses.append(clause_function(Benefit.created_at))
+            elif criterion == BenefitSortProperty.description:
+                order_by_clauses.append(clause_function(Benefit.description))
+        statement = statement.order_by(*order_by_clauses)
 
         results, count = await paginate(session, statement, pagination=pagination)
 

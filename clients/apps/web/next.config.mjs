@@ -126,18 +126,6 @@ const nextConfig = {
           ],
           destination: '/docs/:path',
         },
-
-        // polar.new rewrite
-        {
-          source: '/',
-          destination: '/new',
-          has: [
-            {
-              type: 'host',
-              value: 'polar.new',
-            },
-          ],
-        },
       ],
     }
   },
@@ -308,25 +296,6 @@ const nextConfig = {
           {
             type: 'host',
             value: defaultFrontendHostname,
-          },
-        ],
-        missing: [
-          {
-            type: 'host',
-            value: 'polar.new',
-          },
-        ],
-        permanent: false,
-      },
-
-      // Redirect polar.new/anything (but not "polar.new/") to "polar.new/"
-      {
-        source: '/(.+)',
-        destination: 'https://polar.new',
-        has: [
-          {
-            type: 'host',
-            value: 'polar.new',
           },
         ],
         permanent: false,

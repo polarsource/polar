@@ -5,20 +5,14 @@ import {
   useIssueAddComment,
   useIssueAddPolarBadge,
   useIssueRemovePolarBadge,
-  useListPledesForIssue,
   useOrganizationBadgeSettings,
   useUpdateIssue,
 } from '@/hooks/queries'
-import { queryClient } from '@/utils/api/query'
-import { api } from '@/utils/client'
 import { githubIssueLink } from '@/utils/github'
 import { HeartIcon } from '@heroicons/react/24/outline'
 import { CardGiftcardOutlined, WifiTethering } from '@mui/icons-material'
-import { schemas, unwrap } from '@polar-sh/client'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { schemas } from '@polar-sh/client'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
-import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
   Tabs,
   TabsContent,
@@ -26,13 +20,8 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
-import Banner from '@polar-sh/ui/components/molecules/Banner'
-import {
-  formatCurrencyAndAmount,
-  getCentsInDollarString,
-} from '@polar-sh/ui/lib/money'
 import Image from 'next/image'
-import { ChangeEvent, useMemo, useRef, useState } from 'react'
+import { ChangeEvent, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ModalHeader, Modal as ModernModal } from '../Modal'
 import { useModal } from '../Modal/useModal'
@@ -530,52 +519,6 @@ const RewardsTab = (props: {
     })
   }
 
-  const [selfPledgeAmount, setSelfPledgeAmount] = useState(0)
-  const [pledgeIsLoading, setPledgeIsLoading] = useState(false)
-
-  const [bannerSeededPledge, setBannerSeededPledge] = useState(false)
-
-  const [createdSeedPledge, setCreatedSeedPledge] = useState<
-    schemas['Pledge'] | undefined
-  >(undefined)
-
-  const onSubmitSeedReward = async () => {
-    setPledgeIsLoading(true)
-
-    const p = await unwrap(
-      api.POST('/v1/pledges/pay_on_completion', {
-        body: {
-          issue_id: props.issue.id,
-          amount: selfPledgeAmount,
-          currency: 'usd',
-        },
-      }),
-    )
-
-    queryClient.invalidateQueries({
-      queryKey: ['pledge', 'byIssue', props.issue.id],
-    })
-
-    setPledgeIsLoading(false)
-    setCreatedSeedPledge(p)
-
-    setBannerSeededPledge(true)
-    bannerTimeout.current && clearTimeout(bannerTimeout.current)
-    bannerTimeout.current = setTimeout(() => {
-      setBannerSeededPledge(false)
-    }, 10_000)
-  }
-
-  const issuePledges = useListPledesForIssue(props.issue.id)
-
-  const selfSeededAmount = (issuePledges.data?.items || [])
-    .filter((p) => p.authed_can_admin_sender)
-    .map((p) => p.amount)
-    .reduce((a, b) => a + b, 0)
-
-  type Timeout = ReturnType<typeof setTimeout>
-  const bannerTimeout = useRef<Timeout | null>(null)
-
   return (
     <div className="flex w-full flex-col space-y-6">
       {linkedOrganization && (
@@ -585,72 +528,6 @@ const RewardsTab = (props: {
           onSave={saveUpFrontSplit}
           isIssue={true}
         />
-      )}
-
-      {contributorsShare !== undefined && (
-        <>
-          <hr className="dark:bg-polar-500 bg-gray-500" />
-
-          <div className="flex w-full flex-col space-y-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="dark:text-polar-100 text-sm font-medium text-gray-900">
-                  Boost reward
-                </div>
-                <div className="dark:text-polar-400 mt-1 text-xs text-gray-600">
-                  You have pledged{' '}
-                  <b>${getCentsInDollarString(selfSeededAmount)} </b>
-                  to be paid on completion.
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="flex items-center gap-2">
-                  <Avatar
-                    className="h-6 w-6"
-                    avatar_url={props.user.avatar_url}
-                    name={props.user.email}
-                  />
-                  <div className="text-sm">{props.user.email}</div>
-                </div>
-
-                <MoneyInput
-                  id="self_pledge"
-                  name="self_pledge"
-                  placeholder={1000}
-                  value={selfPledgeAmount}
-                  onChange={setSelfPledgeAmount}
-                  className="max-w-[150px]"
-                />
-
-                <Button
-                  fullWidth={false}
-                  disabled={selfPledgeAmount === 0}
-                  loading={pledgeIsLoading}
-                  onClick={onSubmitSeedReward}
-                  size="lg"
-                >
-                  Pledge
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <hr className="dark:bg-polar-500 bg-gray-500" />
-        </>
-      )}
-
-      {bannerSeededPledge && createdSeedPledge && (
-        <Banner color="blue">
-          Amazing! You have seeded the reward with a{' '}
-          <strong>
-            {formatCurrencyAndAmount(
-              createdSeedPledge.amount,
-              createdSeedPledge.currency,
-            )}
-          </strong>{' '}
-          pledge - to be paid on completion.
-        </Banner>
       )}
     </div>
   )

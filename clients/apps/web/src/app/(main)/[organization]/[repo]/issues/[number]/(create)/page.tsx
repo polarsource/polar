@@ -1,10 +1,8 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { resolveIssuePath } from '@/utils/issue'
 import { organizationPageLink } from '@/utils/nav'
-import { schemas, unwrap } from '@polar-sh/client'
 import { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
-import ClientPage from './ClientPage'
 
 const cacheConfig = {
   cache: 'no-store',
@@ -100,51 +98,14 @@ export default async function Page({
     )
   }
 
-  let issueHTMLBody: string | undefined
-  let pledgers: schemas['Pledger'][] = []
-  let rewards: schemas['RewardsSummary'] | undefined
-
-  const [bodyResponse, pledgeSummary, rewardsSummary] = await Promise.all([
-    unwrap(
-      api.GET('/v1/issues/{id}/body', {
-        params: { path: { id: issue.id } },
-        next: { revalidate: 60 },
-        parseAs: 'text',
-      }),
-    ), // Cache for 60s
-    unwrap(
-      api.GET('/v1/pledges/summary', {
-        params: { query: { issue_id: issue.id } },
-        ...cacheConfig,
-      }),
-    ),
-    unwrap(
-      api.GET('/v1/rewards/summary', {
-        params: { query: { issue_id: issue.id } },
-        ...cacheConfig,
-      }),
-    ),
-  ])
-
-  issueHTMLBody = bodyResponse as string
-  pledgers = pledgeSummary.pledges
-    .map(({ pledger }) => pledger)
-    .filter((p): p is schemas['Pledger'] => !!p)
-  rewards = rewardsSummary
-
-  // Closed issue, redirect to donation instead if linked organization
-  if (issue.issue_closed_at) {
-    redirect(organizationPageLink(organization, `donate?issue_id=${issue.id}`))
-  }
-
   return (
-    <ClientPage
-      issue={issue}
-      organization={organization}
-      htmlBody={issueHTMLBody}
-      pledgers={pledgers}
-      rewards={rewards}
-      gotoURL={undefined}
-    />
+    <div className="flex w-full justify-center">
+      <div className="w-full rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 lg:w-1/2 dark:bg-yellow-950">
+        <h1 className="text-2xl">
+          We&apos;re sunsetting GitHub Issue Funding at Polar
+        </h1>
+        <p>Sorry, we do not accept new pledges on issues.</p>
+      </div>
+    </div>
   )
 }

@@ -230,6 +230,8 @@ export const CHECKOUT_PREVIEW = createCheckoutPreview(
 
 export const ORDER_PREVIEW: schemas['CustomerOrder'] = {
   id: '123',
+  status: 'paid',
+  paid: true,
   amount: 10000,
   subtotal_amount: 10000,
   discount_amount: 0,

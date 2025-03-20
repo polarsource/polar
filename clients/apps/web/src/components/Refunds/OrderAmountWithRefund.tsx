@@ -10,6 +10,11 @@ export const OrderAmountWithRefund = ({
   return (
     <div className="flex flex-row gap-x-2">
       <span>{formatCurrencyAndAmount(order.net_amount, order.currency)}</span>
+      {order.status == 'pending' && (
+        <Pill color="yellow" className="flex flex-row">
+          <span>Pending</span>
+        </Pill>
+      )}
       {order.status == 'refunded' && (
         <Pill color="blue" className="flex flex-row">
           <span>Refunded</span>

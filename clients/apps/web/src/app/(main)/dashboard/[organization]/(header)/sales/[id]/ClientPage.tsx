@@ -64,13 +64,15 @@ const OrderProductItem = ({ product }: OrderProductItemProps) => {
   )
 }
 
-const OrderStatusDisplayName: Record<string, string> = {
+const OrderStatusDisplayName: Record<schemas['OrderStatus'], string> = {
+  pending: 'Pending payment',
   paid: 'Paid',
   refunded: 'Refunded',
   partially_refunded: 'Partially Refunded',
 }
 
-const OrderStatusDisplayColor: Record<string, string> = {
+const OrderStatusDisplayColor: Record<schemas['OrderStatus'], string> = {
+  pending: 'bg-yellow-100 text-yellow-500 dark:bg-yellow-950',
   paid: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950',
   refunded: 'bg-blue-100 text-blue-400 dark:bg-blue-950',
   partially_refunded: 'bg-purple-100 text-purple-500 dark:bg-purple-950',

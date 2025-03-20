@@ -5923,6 +5923,11 @@ export interface components {
             properties?: components["schemas"]["BenefitLicenseKeysCreateProperties"] | null;
         };
         /**
+         * BenefitSortProperty
+         * @enum {string}
+         */
+        BenefitSortProperty: "created_at" | "-created_at" | "description" | "-description";
+        /**
          * BenefitType
          * @enum {string}
          */
@@ -20295,6 +20300,8 @@ export interface operations {
                 page?: number;
                 /** @description Size of a page, defaults to 10. Maximum is 100. */
                 limit?: number;
+                /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+                sorting?: components["schemas"]["BenefitSortProperty"][] | null;
             };
             header?: never;
             path?: never;
@@ -26024,6 +26031,7 @@ export const benefitGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<co
 export const benefitGrantGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGrantGitHubRepositoryProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
 export const benefitLicenseKeyExpirationPropertiesTimeframeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeyExpirationProperties"]["timeframe"]> = ["year", "month", "day"];
 export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeysCreate"]["type"]> = ["license_keys"];
+export const benefitSortPropertyValues: ReadonlyArray<components["schemas"]["BenefitSortProperty"]> = ["created_at", "-created_at", "description", "-description"];
 export const benefitTypeValues: ReadonlyArray<components["schemas"]["BenefitType"]> = ["custom", "discord", "github_repository", "downloadables", "license_keys"];
 export const body_oauth2_consentActionValues: ReadonlyArray<components["schemas"]["Body_oauth2_consent"]["action"]> = ["allow", "deny"];
 export const checkoutLinkSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutLinkSortProperty"]> = ["created_at", "-created_at", "label", "-label", "success_url", "-success_url", "allow_discount_codes", "-allow_discount_codes"];

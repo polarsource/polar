@@ -402,9 +402,6 @@ class TestCreateFromCheckout:
         )
 
         enqueue_job_mock.assert_any_call(
-            "order.balance", order_id=order.id, charge_id="CHARGE_ID"
-        )
-        enqueue_job_mock.assert_any_call(
             "benefit.enqueue_benefits_grants",
             task="grant",
             customer_id=customer.id,
@@ -477,9 +474,6 @@ class TestCreateFromCheckout:
             metadata=ANY,
         )
 
-        enqueue_job_mock.assert_any_call(
-            "order.balance", order_id=order.id, charge_id="CHARGE_ID"
-        )
         enqueue_job_mock.assert_any_call(
             "benefit.enqueue_benefits_grants",
             task="grant",
@@ -812,7 +806,9 @@ class TestCreateOrderFromStripe:
                 for price in product.prices
             ],
             customer_id=cast(str, subscription.customer.stripe_customer_id),
-            metadata={"checkout_id": str(checkout.id)},
+            subscription_details={
+                "metadata": {"checkout_id": str(checkout.id)},
+            },
         )
 
         order = await order_service.create_order_from_stripe(session, invoice=invoice)

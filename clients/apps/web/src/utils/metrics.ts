@@ -316,7 +316,7 @@ export const computeCumulativeValue = (
       const nonZeroValues = values.filter((value) => value !== 0)
       return (
         nonZeroValues.reduce((acc, value) => acc + value, 0) /
-        nonZeroValues.length
+        (nonZeroValues.length || 1)
       )
     case 'lastValue':
       return values[values.length - 1]

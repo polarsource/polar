@@ -1152,46 +1152,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/pledges": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create
-         * @description Creates a pledge from a payment intent
-         */
-        post: operations["pledges:create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/pledges/pay_on_completion": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create Pay On Completion
-         * @description Creates a pay_on_completion type of pledge
-         */
-        post: operations["pledges:create_pay_on_completion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/pledges/{id}/create_invoice": {
         parameters: {
             query?: never;
@@ -1210,40 +1170,6 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
-        trace?: never;
-    };
-    "/v1/pledges/payment_intent": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create Payment Intent */
-        post: operations["pledges:create_payment_intent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/pledges/payment_intent/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update Payment Intent */
-        patch: operations["pledges:update_payment_intent"];
         trace?: never;
     };
     "/v1/pledges/{pledge_id}/dispute": {
@@ -3807,7 +3733,7 @@ export interface webhooks {
          *     * A customer purchases a one-time product. In this case, `billing_reason` is set to `purchase`.
          *     * A customer starts a subscription. In this case, `billing_reason` is set to `subscription_create`.
          *     * A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.
-         *     * A subscription is upgraded, downgraded or revoked with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.
+         *     * A subscription is upgraded or downgraded with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.
          *
          *     <Warning>The order might not be paid yet, so the `status` field might be `pending`.</Warning>
          *
@@ -7563,37 +7489,6 @@ export interface components {
              */
             func: "count";
         };
-        /** CreatePledgeFromPaymentIntent */
-        CreatePledgeFromPaymentIntent: {
-            /** Payment Intent Id */
-            payment_intent_id: string;
-        };
-        /** CreatePledgePayLater */
-        CreatePledgePayLater: {
-            /**
-             * Issue Id
-             * Format: uuid
-             */
-            issue_id: string;
-            /** Amount */
-            amount: number;
-            /**
-             * Currency
-             * @description The currency. Currently, only `usd` is supported.
-             * @default usd
-             */
-            currency: string;
-            /**
-             * On Behalf Of Organization Id
-             * @description The organization to give credit to. The pledge will be paid by the authenticated user.
-             */
-            on_behalf_of_organization_id?: string | null;
-            /**
-             * By Organization Id
-             * @description The organization to create the pledge as. The pledge will be paid by this organization.
-             */
-            by_organization_id?: string | null;
-        };
         /** CurrencyAmount */
         CurrencyAmount: {
             /**
@@ -8672,6 +8567,12 @@ export interface components {
              * Format: uuid4
              */
             id: string;
+            status: components["schemas"]["OrderStatus"];
+            /**
+             * Paid
+             * @description Whether the order has been paid for.
+             */
+            paid: boolean;
             /**
              * Subtotal Amount
              * @description Amount in cents, before discounts and taxes.
@@ -14021,72 +13922,6 @@ export interface components {
          * @enum {string}
          */
         PledgeState: "initiated" | "created" | "pending" | "refunded" | "disputed" | "charge_disputed" | "cancelled";
-        /** PledgeStripePaymentIntentCreate */
-        PledgeStripePaymentIntentCreate: {
-            /**
-             * Issue Id
-             * Format: uuid
-             */
-            issue_id: string;
-            /** Email */
-            email: string;
-            /** Amount */
-            amount: number;
-            /**
-             * Currency
-             * @description The currency. Currently, only `usd` is supported.
-             * @default usd
-             */
-            currency: string;
-            /**
-             * Setup Future Usage
-             * @description If the payment method should be saved for future usage.
-             */
-            setup_future_usage?: "on_session" | null;
-            /**
-             * On Behalf Of Organization Id
-             * @description The organization to give credit to. The pledge will be paid by the authenticated user.
-             */
-            on_behalf_of_organization_id?: string | null;
-        };
-        /** PledgeStripePaymentIntentMutationResponse */
-        PledgeStripePaymentIntentMutationResponse: {
-            /** Payment Intent Id */
-            payment_intent_id: string;
-            /** Amount */
-            amount: number;
-            /** Currency */
-            currency: string;
-            /** Fee */
-            fee: number;
-            /** Amount Including Fee */
-            amount_including_fee: number;
-            /** Client Secret */
-            client_secret: string | null;
-        };
-        /** PledgeStripePaymentIntentUpdate */
-        PledgeStripePaymentIntentUpdate: {
-            /** Email */
-            email: string;
-            /** Amount */
-            amount: number;
-            /**
-             * Currency
-             * @description The currency. Currently, only `usd` is supported.
-             * @default usd
-             */
-            currency: string;
-            /**
-             * Setup Future Usage
-             * @description If the payment method should be saved for future usage.
-             */
-            setup_future_usage?: "on_session" | null;
-            /**
-             * On Behalf Of Organization Id
-             * @description The organization to give credit to. The pledge will be paid by the authenticated user.
-             */
-            on_behalf_of_organization_id?: string | null;
-        };
         /**
          * PledgeType
          * @enum {string}
@@ -16552,7 +16387,7 @@ export interface components {
          *     * A customer purchases a one-time product. In this case, `billing_reason` is set to `purchase`.
          *     * A customer starts a subscription. In this case, `billing_reason` is set to `subscription_create`.
          *     * A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.
-         *     * A subscription is upgraded, downgraded or revoked with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.
+         *     * A subscription is upgraded or downgraded with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.
          *
          *     <Warning>The order might not be paid yet, so the `status` field might be `pending`.</Warning>
          *
@@ -18988,72 +18823,6 @@ export interface operations {
             };
         };
     };
-    "pledges:create": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreatePledgeFromPaymentIntent"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Pledge"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "pledges:create_pay_on_completion": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreatePledgePayLater"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Pledge"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     "pledges:create_invoice": {
         parameters: {
             query?: never;
@@ -19072,74 +18841,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Pledge"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "pledges:create_payment_intent": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PledgeStripePaymentIntentCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PledgeStripePaymentIntentMutationResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "pledges:update_payment_intent": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PledgeStripePaymentIntentUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PledgeStripePaymentIntentMutationResponse"];
                 };
             };
             /** @description Validation Error */

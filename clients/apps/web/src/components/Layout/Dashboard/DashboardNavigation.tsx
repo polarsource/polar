@@ -48,6 +48,7 @@ const MaintainerNavigation = () => {
           <SidebarMenuButton tooltip={route.title} asChild>
             <Link
               key={route.link}
+              prefetch={true}
               className={twMerge(
                 'flex flex-row items-center rounded-lg border border-transparent px-2 transition-colors dark:border-transparent',
                 route.isActive

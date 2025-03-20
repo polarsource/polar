@@ -135,14 +135,6 @@ async def payment_intent_succeeded(
                             raise
                     return
 
-                # payments for pay_upfront (pi has metadata)
-                if metadata.get("type") == ProductType.pledge:
-                    await pledge_service.handle_payment_intent_success(
-                        session=session,
-                        payload=payload,
-                    )
-                    return
-
                 # payment for pay_on_completion
                 # metadata is on the invoice, not the payment_intent
                 if payload.invoice:

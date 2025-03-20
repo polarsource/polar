@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Literal, Self
-from uuid import UUID
+from typing import Annotated, Self
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
 from polar.funding.funding_schema import Funding
 from polar.issue.schemas import Issue
@@ -178,66 +177,3 @@ PledgeCurrency = Annotated[
         description="The currency. Currently, only `usd` is supported.",
     ),
 ]
-
-
-class CreatePledgeFromPaymentIntent(Schema):
-    payment_intent_id: str
-
-
-class CreatePledgePayLater(Schema):
-    issue_id: UUID
-    amount: int = Field(gt=0, le=MAXIMUM_AMOUNT)
-    currency: PledgeCurrency
-    on_behalf_of_organization_id: UUID | None = Field(
-        None,
-        description="The organization to give credit to. The pledge will be paid by the authenticated user.",
-    )
-    by_organization_id: UUID | None = Field(
-        None,
-        description="The organization to create the pledge as. The pledge will be paid by this organization.",
-    )
-
-    @model_validator(mode="after")
-    def validate_payer(self) -> Self:
-        if self.on_behalf_of_organization_id and self.by_organization_id:
-            raise ValueError(
-                "on_behalf_of_organization_id and by_organization_id are mutually exclusive"
-            )
-
-        return self
-
-
-class PledgeStripePaymentIntentCreate(Schema):
-    issue_id: UUID
-    email: str
-    amount: int = Field(gt=0, le=MAXIMUM_AMOUNT)
-    currency: PledgeCurrency
-    setup_future_usage: Literal["on_session"] | None = Field(
-        None, description="If the payment method should be saved for future usage."
-    )
-    on_behalf_of_organization_id: UUID | None = Field(
-        None,
-        description="The organization to give credit to. The pledge will be paid by the authenticated user.",
-    )
-
-
-class PledgeStripePaymentIntentUpdate(Schema):
-    email: str
-    amount: int = Field(gt=0, le=MAXIMUM_AMOUNT)
-    currency: PledgeCurrency
-    setup_future_usage: Literal["on_session"] | None = Field(
-        None, description="If the payment method should be saved for future usage."
-    )
-    on_behalf_of_organization_id: UUID | None = Field(
-        None,
-        description="The organization to give credit to. The pledge will be paid by the authenticated user.",
-    )
-
-
-class PledgeStripePaymentIntentMutationResponse(Schema):
-    payment_intent_id: str
-    amount: int
-    currency: str
-    fee: int
-    amount_including_fee: int
-    client_secret: str | None

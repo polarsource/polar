@@ -1,16 +1,13 @@
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Query
-from sqlalchemy.orm import joinedload
 
-from polar import locker
 from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import Subject, is_user
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.issue.service import issue as issue_service
 from polar.kit.pagination import ListResource, Pagination
-from polar.models.issue import Issue
 from polar.models.pledge import Pledge
 from polar.models.user import User
 from polar.openapi import APITag
@@ -23,18 +20,12 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 
-from .payment_intent_service import payment_intent_service
-from .schemas import (
-    CreatePledgeFromPaymentIntent,
-    CreatePledgePayLater,
-    PledgePledgesSummary,
-    PledgeSpending,
-    PledgeStripePaymentIntentCreate,
-    PledgeStripePaymentIntentMutationResponse,
-    PledgeStripePaymentIntentUpdate,
-)
 from .schemas import (
     Pledge as PledgeSchema,
+)
+from .schemas import (
+    PledgePledgesSummary,
+    PledgeSpending,
 )
 from .service import pledge as pledge_service
 
@@ -317,72 +308,6 @@ async def get(
 
 
 @router.post(
-    "/pledges",
-    response_model=PledgeSchema,
-    description="Creates a pledge from a payment intent",
-    status_code=200,
-    tags=[APITag.private],
-)
-async def create(
-    create: CreatePledgeFromPaymentIntent,
-    auth_subject: WebUserOrAnonymous,
-    session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
-    locker: locker.Locker = Depends(locker.get_locker),
-) -> PledgeSchema:
-    async with locker.lock(
-        f"create_pledge_from_intent:{create.payment_intent_id}",
-        timeout=60 * 60,
-        blocking_timeout=5,
-    ):
-        pledge = await payment_intent_service.create_pledge(
-            session=session,
-            payment_intent_id=create.payment_intent_id,
-        )
-
-    ret = await pledge_service.get_with_loaded(session, pledge.id)
-    if not ret:
-        raise ResourceNotFound()
-
-    return await to_schema(session, auth_subject.subject, ret)
-
-
-@router.post(
-    "/pledges/pay_on_completion",
-    response_model=PledgeSchema,
-    description="Creates a pay_on_completion type of pledge",
-    status_code=200,
-    tags=[APITag.private],
-)
-async def create_pay_on_completion(
-    create: CreatePledgePayLater,
-    auth_subject: WebUser,
-    session: AsyncSession = Depends(get_db_session),
-) -> PledgeSchema:
-    is_org_pledge = True if create.by_organization_id else False
-    is_user_pledge = True if not is_org_pledge else False
-
-    pledge = await pledge_service.create_pay_on_completion(
-        session=session,
-        issue_id=create.issue_id,
-        amount=create.amount,
-        currency=create.currency,
-        by_user=auth_subject.subject if is_user_pledge else None,
-        on_behalf_of_organization_id=create.on_behalf_of_organization_id
-        if is_user_pledge
-        else None,
-        by_organization_id=create.by_organization_id if is_org_pledge else None,
-        authenticated_user=auth_subject.subject,
-    )
-
-    ret = await pledge_service.get_with_loaded(session, pledge.id)
-    if not ret:
-        raise ResourceNotFound()
-
-    return await to_schema(session, auth_subject.subject, ret)
-
-
-@router.post(
     "/pledges/{id}/create_invoice",
     response_model=PledgeSchema,
     description="Creates an invoice for pay_on_completion pledges",
@@ -409,76 +334,6 @@ async def create_invoice(
         raise ResourceNotFound()
 
     return await to_schema(session, auth_subject.subject, ret)
-
-
-@router.post(
-    "/pledges/payment_intent",
-    response_model=PledgeStripePaymentIntentMutationResponse,
-    status_code=200,
-    tags=[APITag.private],
-)
-async def create_payment_intent(
-    intent: PledgeStripePaymentIntentCreate,
-    auth_subject: WebUserOrAnonymous,
-    session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
-) -> PledgeStripePaymentIntentMutationResponse:
-    issue = await issue_service.get(
-        session,
-        intent.issue_id,
-        options=(joinedload(Issue.organization), joinedload(Issue.repository)),
-    )
-    if not issue:
-        raise ResourceNotFound()
-
-    if not await authz.can(auth_subject.subject, AccessType.read, issue):
-        raise Unauthorized()
-
-    # If on behalf of org, check that user is member of this org.
-    if intent.on_behalf_of_organization_id:
-        if not is_user(auth_subject):
-            raise Unauthorized()
-        member = await user_organization_service.get_by_user_and_org(
-            session, auth_subject.subject.id, intent.on_behalf_of_organization_id
-        )
-        if not member:
-            raise Unauthorized()
-
-    return await payment_intent_service.create_payment_intent(
-        session=session,
-        user=auth_subject.subject if is_user(auth_subject) else None,
-        pledge_issue=issue,
-        pledge_issue_org=issue.organization,
-        pledge_issue_repo=issue.repository,
-        intent=intent,
-    )
-
-
-@router.patch(
-    "/pledges/payment_intent/{id}",
-    response_model=PledgeStripePaymentIntentMutationResponse,
-    tags=[APITag.private],
-)
-async def update_payment_intent(
-    id: str,
-    auth_subject: WebUserOrAnonymous,
-    updates: PledgeStripePaymentIntentUpdate,
-    session: AsyncSession = Depends(get_db_session),
-) -> PledgeStripePaymentIntentMutationResponse:
-    # If on behalf of org, check that user is member of this org.
-    if updates.on_behalf_of_organization_id:
-        if not is_user(auth_subject):
-            raise Unauthorized()
-        member = await user_organization_service.get_by_user_and_org(
-            session, auth_subject.subject.id, updates.on_behalf_of_organization_id
-        )
-        if not member:
-            raise Unauthorized()
-
-    return await payment_intent_service.update_payment_intent(
-        payment_intent_id=id,
-        updates=updates,
-    )
 
 
 @router.post(

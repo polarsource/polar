@@ -14,7 +14,7 @@ from polar.posthog import posthog
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
-from . import auth
+from . import auth, sorting
 from .schemas import Benefit as BenefitSchema
 from .schemas import (
     BenefitCreate,
@@ -38,6 +38,7 @@ BenefitNotFound = {
 async def list(
     auth_subject: auth.BenefitsRead,
     pagination: PaginationParamsQuery,
+    sorting: sorting.ListSorting,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
@@ -57,6 +58,7 @@ async def list(
         organization_id=organization_id,
         pagination=pagination,
         query=query,
+        sorting=sorting,
     )
 
     return ListResource.from_paginated_results(

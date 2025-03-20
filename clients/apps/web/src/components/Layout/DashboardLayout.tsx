@@ -117,7 +117,7 @@ const SubNav = (props: { items: SubRouteWithActive[] }) => {
       <TabsList className="flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0">
         {props.items.map((item) => {
           return (
-            <Link key={item.title} href={item.link}>
+            <Link key={item.title} href={item.link} prefetch={true}>
               <TabsTrigger
                 className="flex flex-row items-center gap-x-2 px-4"
                 value={item.title}

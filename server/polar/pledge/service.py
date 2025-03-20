@@ -78,7 +78,6 @@ from polar.webhook.service import webhook as webhook_service
 
 from .hooks import (
     PledgeHook,
-    pledge_created,
     pledge_disputed,
     pledge_updated,
 )
@@ -637,14 +636,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
         )
         await session.commit()
 
-        if pledge.type == PledgeType.pay_upfront:
-            return await self.mark_created_by_payment_id(
-                session,
-                payment_id=payload.id,
-                amount_received=payload.amount_received,
-                transaction_id=payload.latest_charge,
-            )
-
         if pledge.type == PledgeType.pay_on_completion:
             return await self.handle_paid_invoice(
                 session,
@@ -654,48 +645,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
 
         raise Exception(f"unhandeled pledge type type: {pledge.type}")
-
-    async def mark_created_by_payment_id(
-        self,
-        session: AsyncSession,
-        payment_id: str,
-        amount_received: int,
-        transaction_id: str,
-    ) -> None:
-        pledge = await self.get_by_payment_id(session, payment_id)
-        if not pledge:
-            raise ResourceNotFound(f"Pledge not found with payment_id: {payment_id}")
-
-        # Already in the expected state
-        if pledge.state == PledgeState.created:
-            return None
-
-        if pledge.state not in PledgeState.to_created_states():
-            raise Exception(f"pledge is in unexpected state: {pledge.state}")
-
-        if pledge.type != PledgeType.pay_upfront:
-            raise Exception(f"pledge is of unexpected type: {pledge.type}")
-
-        issue = await issue_service.get(session, pledge.issue_id)
-        if not issue:
-            raise Exception("issue not found")
-
-        stmt = (
-            sql.Update(Pledge)
-            .where(
-                Pledge.id == pledge.id,
-                Pledge.state.in_(PledgeState.to_created_states()),
-            )
-            .values(
-                state=PledgeState.created,
-                amount_received=amount_received,
-            )
-        )
-        await session.execute(stmt)
-        await session.commit()
-        await pledge_created.call(PledgeHook(session, pledge))
-
-        await self.after_pledge_created(session, pledge, issue, authenticated_user=None)
 
     async def handle_paid_invoice(
         self,
@@ -1010,97 +959,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         await pledge_disputed.call(PledgeHook(session, pledge))
         await self.after_pledge_updated(session, pledge)
-
-    async def create_pay_on_completion(
-        self,
-        session: AsyncSession,
-        issue_id: UUID,
-        by_user: User | None,
-        amount: int,
-        currency: str,
-        on_behalf_of_organization_id: UUID | None,
-        by_organization_id: UUID | None,
-        authenticated_user: User,
-    ) -> Pledge:
-        if by_user and by_organization_id:
-            raise BadRequest("by_user and by_organization_id are mutually exclusive")
-
-        if on_behalf_of_organization_id and not by_user:
-            raise BadRequest("on_behalf_of_organization_id requires by_user to be set")
-
-        if not by_user and not by_organization_id:
-            raise BadRequest("Either by_user or by_organization_id myst be set")
-
-        if by_organization_id:
-            # will throw an error if this pledge is not allowed per the spending limits
-            await self.assert_can_pledge_by_organization(
-                session, by_organization_id, authenticated_user, amount
-            )
-
-        issue = await issue_service.get(session, issue_id)
-        if not issue:
-            raise ResourceNotFound("Issue Not Found")
-
-        pledge = Pledge(
-            issue_id=issue.id,
-            repository_id=issue.repository_id,
-            organization_id=issue.organization_id,
-            amount=amount,
-            currency=currency,
-            fee=0,
-            state=PledgeState.created,
-            type=PledgeType.pay_on_completion,
-            by_user_id=by_user.id if by_user else None,
-            on_behalf_of_organization_id=on_behalf_of_organization_id,
-            by_organization_id=by_organization_id,
-            created_by_user_id=authenticated_user.id,
-        )
-        session.add(pledge)
-        await session.flush()
-
-        await pledge_created.call(PledgeHook(session, pledge))
-
-        await self.after_pledge_created(session, pledge, issue, authenticated_user)
-
-        return pledge
-
-    async def after_pledge_created(
-        self,
-        session: AsyncSession,
-        pledge: Pledge,
-        issue: Issue,
-        authenticated_user: User | None,
-    ) -> None:
-        if pledge.by_organization_id and authenticated_user:
-            await self.send_team_admin_member_pledged_notification(
-                session, pledge, authenticated_user
-            )
-
-        # if the issue is already confirmed completed, mark this pledge as pending, and
-        # send invoices
-        if issue.confirmed_solved_at:
-            await self.mark_pending_by_issue_id(session, issue.id)
-
-        if not issue.confirmed_solved_at and issue.state == Issue.State.CLOSED:
-            changed = await issue_service.mark_needs_confirmation(session, issue.id)
-            if changed:
-                await self.pledge_confirmation_pending_notifications(
-                    session,
-                    issue.id,
-                )
-
-        full_pledge = await self.get_with_loaded(session, pledge.id)
-        assert full_pledge
-
-        # send webhooks to receiving organization
-        if receiving_external_org := await external_organization_service.get_linked(
-            session, pledge.organization_id
-        ):
-            await webhook_service.send(
-                session,
-                receiving_external_org.safe_organization,
-                (WebhookEventType.pledge_created, full_pledge),
-            )
 
     async def after_pledge_updated(
         self,

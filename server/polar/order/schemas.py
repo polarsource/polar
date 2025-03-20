@@ -11,7 +11,7 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.address import Address
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import IDSchema, MergeJSONSchema, Schema, TimestampedSchema
-from polar.models.order import OrderBillingReason
+from polar.models.order import OrderBillingReason, OrderStatus
 from polar.product.schemas import ProductBase, ProductPrice
 from polar.subscription.schemas import SubscriptionBase
 
@@ -26,7 +26,10 @@ OrderNotFound = {
 class OrderBase(
     CustomFieldDataOutputMixin, MetadataOutputMixin, IDSchema, TimestampedSchema
 ):
-    status: str
+    status: OrderStatus = Field(examples=["paid"])
+    paid: bool = Field(
+        description="Whether the order has been paid for.", examples=[True]
+    )
     subtotal_amount: int = Field(
         description="Amount in cents, before discounts and taxes."
     )

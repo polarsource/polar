@@ -144,6 +144,7 @@ class StripeLineItem(TypedDict):
 
 def construct_stripe_invoice(
     *,
+    status: str = "draft",
     lines: list[StripeLineItem],
     id: str | None = "INVOICE_ID",
     amount_paid: int | None = None,
@@ -165,6 +166,7 @@ def construct_stripe_invoice(
     return stripe_lib.Invoice.construct_from(
         {
             "id": id,
+            "status": status,
             "subtotal": subtotal,
             "total": total,
             "tax": tax,

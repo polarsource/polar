@@ -14,7 +14,11 @@ from polar.exceptions import PolarTaskError
 from polar.external_event.service import external_event as external_event_service
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook, ProductType
 from polar.logging import Logger
-from polar.order.service import NotAnOrderInvoice, NotASubscriptionInvoice
+from polar.order.service import (
+    NotAnOrderInvoice,
+    NotASubscriptionInvoice,
+    OrderDoesNotExist,
+)
 from polar.order.service import (
     SubscriptionDoesNotExist as OrderSubscriptionDoesNotExist,
 )
@@ -328,9 +332,9 @@ async def customer_subscription_deleted(
                         raise
 
 
-@task("stripe.webhook.invoice.paid", max_tries=MAX_RETRIES)
+@task("stripe.webhook.invoice.created", max_tries=MAX_RETRIES)
 @stripe_api_connection_error_retry
-async def invoice_paid(
+async def invoice_created(
     ctx: JobContext, event_id: uuid.UUID, polar_context: PolarWorkerContext
 ) -> None:
     with polar_context.to_execution_context():
@@ -353,6 +357,30 @@ async def invoice_paid(
                 except (NotAnOrderInvoice, NotASubscriptionInvoice):
                     # Ignore invoices that are not for products (pledges) and subscriptions
                     return
+
+
+@task("stripe.webhook.invoice.paid", max_tries=MAX_RETRIES)
+@stripe_api_connection_error_retry
+async def invoice_paid(
+    ctx: JobContext, event_id: uuid.UUID, polar_context: PolarWorkerContext
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            async with external_event_service.handle_stripe(session, event_id) as event:
+                invoice = cast(stripe_lib.Invoice, event.stripe_data.data.object)
+                try:
+                    await order_service.update_order_from_stripe(
+                        session, invoice=invoice
+                    )
+                except OrderDoesNotExist as e:
+                    log.warning(e.message, event_id=event.id)
+                    # Retry because Stripe webhooks order is not guaranteed,
+                    # so we might not have been able to handle invoice.created yet!
+                    if ctx["job_try"] <= MAX_RETRIES:
+                        raise Retry(compute_backoff(ctx["job_try"])) from e
+                    # Raise the exception to be notified about it
+                    else:
+                        raise
 
 
 @task("stripe.webhook.payout.paid")

@@ -32,6 +32,16 @@ class OrderRepository(
 ):
     model = Order
 
+    async def get_by_stripe_invoice_id(
+        self, stripe_invoice_id: str, *, options: Options = ()
+    ) -> Order | None:
+        statement = (
+            self.get_base_statement()
+            .where(Order.stripe_invoice_id == stripe_invoice_id)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Order]]:

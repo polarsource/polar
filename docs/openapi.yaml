@@ -14436,13 +14436,87 @@
     "order.created": {
       "post": {
         "summary": "order.created",
-        "description": "Sent when a new order is created.\n\nA new order is created when:\n\n* A customer purchases a one-time product. In this case, `billing_reason` is set to `purchase`.\n* A customer starts a subscription. In this case, `billing_reason` is set to `subscription_create`.\n* A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.\n* A subscription is upgraded, downgraded or revoked with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.\n\n**Discord & Slack support:** Full",
+        "description": "Sent when a new order is created.\n\nA new order is created when:\n\n* A customer purchases a one-time product. In this case, `billing_reason` is set to `purchase`.\n* A customer starts a subscription. In this case, `billing_reason` is set to `subscription_create`.\n* A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.\n* A subscription is upgraded or downgraded with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.\n\n<Warning>The order might not be paid yet, so the `status` field might be `pending`.</Warning>\n\n**Discord & Slack support:** Full",
         "operationId": "_endpointorder_created_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/WebhookOrderCreatedPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "order.updated": {
+      "post": {
+        "summary": "order.updated",
+        "description": "Sent when an order is updated.\n\nAn order is updated when:\n\n* Its status changes, e.g. from `pending` to `paid`.\n* It's refunded, partially or fully.\n\n**Discord & Slack support:** Full",
+        "operationId": "_endpointorder_updated_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookOrderUpdatedPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "order.paid": {
+      "post": {
+        "summary": "order.paid",
+        "description": "Sent when an order is paid.\n\nWhen you receive this event, the order is fully processed and payment has been received.\n\n**Discord & Slack support:** Full",
+        "operationId": "_endpointorder_paid_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookOrderPaidPayload"
               }
             }
           },
@@ -24138,6 +24212,20 @@
             "format": "uuid4",
             "title": "Id"
           },
+          "status": {
+            "$ref": "#/components/schemas/OrderStatus",
+            "examples": [
+              "paid"
+            ]
+          },
+          "paid": {
+            "type": "boolean",
+            "title": "Paid",
+            "description": "Whether the order has been paid for.",
+            "examples": [
+              true
+            ]
+          },
           "subtotal_amount": {
             "type": "integer",
             "title": "Subtotal Amount",
@@ -24256,6 +24344,8 @@
           "created_at",
           "modified_at",
           "id",
+          "status",
+          "paid",
           "subtotal_amount",
           "discount_amount",
           "net_amount",
@@ -32689,8 +32779,18 @@
             "description": "Key-value object storing custom field values."
           },
           "status": {
-            "type": "string",
-            "title": "Status"
+            "$ref": "#/components/schemas/OrderStatus",
+            "examples": [
+              "paid"
+            ]
+          },
+          "paid": {
+            "type": "boolean",
+            "title": "Paid",
+            "description": "Whether the order has been paid for.",
+            "examples": [
+              true
+            ]
           },
           "subtotal_amount": {
             "type": "integer",
@@ -32881,6 +32981,7 @@
           "id",
           "metadata",
           "status",
+          "paid",
           "subtotal_amount",
           "discount_amount",
           "net_amount",
@@ -33296,6 +33397,16 @@
           "-subscription"
         ],
         "title": "OrderSortProperty"
+      },
+      "OrderStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "paid",
+          "refunded",
+          "partially_refunded"
+        ],
+        "title": "OrderStatus"
       },
       "OrderSubscription": {
         "properties": {
@@ -36327,7 +36438,9 @@
           },
           "amount": {
             "type": "integer",
-            "title": "Amount"
+            "exclusiveMinimum": 0,
+            "title": "Amount",
+            "description": "Amount to refund in cents. Minimum is 1."
           },
           "comment": {
             "anyOf": [
@@ -38411,7 +38524,29 @@
           "data"
         ],
         "title": "WebhookOrderCreatedPayload",
-        "description": "Sent when a new order is created.\n\nA new order is created when:\n\n* A customer purchases a one-time product. In this case, `billing_reason` is set to `purchase`.\n* A customer starts a subscription. In this case, `billing_reason` is set to `subscription_create`.\n* A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.\n* A subscription is upgraded, downgraded or revoked with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.\n\n**Discord & Slack support:** Full"
+        "description": "Sent when a new order is created.\n\nA new order is created when:\n\n* A customer purchases a one-time product. In this case, `billing_reason` is set to `purchase`.\n* A customer starts a subscription. In this case, `billing_reason` is set to `subscription_create`.\n* A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.\n* A subscription is upgraded or downgraded with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.\n\n<Warning>The order might not be paid yet, so the `status` field might be `pending`.</Warning>\n\n**Discord & Slack support:** Full"
+      },
+      "WebhookOrderPaidPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "order.paid",
+            "title": "Type",
+            "examples": [
+              "order.paid"
+            ]
+          },
+          "data": {
+            "$ref": "#/components/schemas/Order"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "title": "WebhookOrderPaidPayload",
+        "description": "Sent when an order is paid.\n\nWhen you receive this event, the order is fully processed and payment has been received.\n\n**Discord & Slack support:** Full"
       },
       "WebhookOrderRefundedPayload": {
         "properties": {
@@ -38434,6 +38569,28 @@
         ],
         "title": "WebhookOrderRefundedPayload",
         "description": "Sent when an order is fully or partially refunded.\n\n**Discord & Slack support:** Full"
+      },
+      "WebhookOrderUpdatedPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "order.updated",
+            "title": "Type",
+            "examples": [
+              "order.updated"
+            ]
+          },
+          "data": {
+            "$ref": "#/components/schemas/Order"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "title": "WebhookOrderUpdatedPayload",
+        "description": "Sent when an order is updated.\n\nAn order is updated when:\n\n* Its status changes, e.g. from `pending` to `paid`.\n* It's refunded, partially or fully.\n\n**Discord & Slack support:** Full"
       },
       "WebhookOrganizationUpdatedPayload": {
         "properties": {

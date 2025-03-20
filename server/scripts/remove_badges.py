@@ -5,10 +5,11 @@ from typing import Any
 
 import structlog
 import typer
+from arq.connections import create_pool as arq_create_pool
 from githubkit.exception import RequestFailed
 from rich.progress import Progress
-from sqlalchemy import select
-from sqlalchemy.orm import joinedload
+from sqlalchemy import func, select
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.integrations.github.badge import GithubBadge
 from polar.integrations.github.client import get_app_installation_client
@@ -16,7 +17,8 @@ from polar.kit.db.postgres import AsyncSession
 from polar.models import ExternalOrganization, Issue
 from polar.models.external_organization import NotInstalledExternalOrganization
 from polar.postgres import create_async_engine
-from polar.redis import Redis, create_redis
+from polar.redis import Redis
+from polar.worker import QueueName, WorkerSettings, enqueue_job, flush_enqueued_jobs
 
 cli = typer.Typer()
 
@@ -84,46 +86,52 @@ async def platform_fees_migration() -> None:
     engine = create_async_engine("script")
     async with engine.connect() as connection:
         async with connection.begin() as transaction:
-            async with create_redis() as redis:
-                session = AsyncSession(
-                    bind=connection,
-                    expire_on_commit=False,
-                    join_transaction_mode="create_savepoint",
-                )
+            arq_pool = await arq_create_pool(WorkerSettings.redis_settings)
+            session = AsyncSession(
+                bind=connection,
+                expire_on_commit=False,
+                join_transaction_mode="create_savepoint",
+            )
 
-                statement = (
-                    select(Issue)
-                    .where(Issue.pledge_badge_ever_embedded.is_not(None))
-                    .options(
-                        joinedload(Issue.organization).joinedload(
-                            ExternalOrganization.organization
-                        ),
-                        joinedload(Issue.repository),
+            statement = (
+                select(Issue)
+                .join(Issue.organization)
+                .join(ExternalOrganization.organization)
+                .options(
+                    contains_eager(Issue.organization).contains_eager(
+                        ExternalOrganization.organization
+                    ),
+                    joinedload(Issue.repository),
+                )
+                .where(
+                    Issue.pledge_badge_ever_embedded.is_not(None),
+                    ExternalOrganization.installation_id.is_not(None),
+                    ExternalOrganization.installation_suspended_at.is_(None),
+                )
+            )
+            count_statement = statement.with_only_columns(func.count("*"))
+            count_result = await session.execute(count_statement)
+            count = count_result.scalar_one()
+
+            stream = await session.stream(statement)
+
+            tasks = []
+            with Progress() as progress:
+                progress_task = progress.add_task(
+                    "[red]Processing issues...", total=count
+                )
+                progress.start_task(progress_task)
+                async for issue in stream.scalars():
+                    enqueue_job(
+                        "github.badge.remove_on_issue",
+                        issue.id,
+                        queue_name=QueueName.github_crawl,
                     )
-                )
-                stream = await session.stream(statement)
+                    progress.update(progress_task, advance=1)
 
-                tasks = []
-                with Progress() as progress:
-                    async with asyncio.TaskGroup() as tg:
-                        progress_task = progress.add_task(
-                            "[red]Processing issues...", total=None
-                        )
-                        async for issue in stream.scalars():
-                            task = tg.create_task(process_issue(session, redis, issue))
-                            task.add_done_callback(
-                                lambda _: progress.update(progress_task, advance=1)
-                            )
-                            tasks.append(task)
-                        progress.update(progress_task, total=len(tasks))
-                        progress.start_task(progress_task)
-
-                for task in tasks:
-                    success, issue_id = task.result()
-                    if not success:
-                        typer.echo(f"Failed to process issue {issue_id}")
-
-                await session.commit()
+            typer.echo("Flushing jobs...")
+            await flush_enqueued_jobs(arq_pool)
+            typer.echo("Jobs flushed")
 
 
 if __name__ == "__main__":

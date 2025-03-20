@@ -4,6 +4,30 @@ sidebarTitle: API
 description: Stay up to date with the latest changes, improvements and deprecations to the Polar API.
 ---
 
+<Update label="2025-03-20">
+  ## New order status and webhooks
+
+Until now, Polar only kept track of fully processed, **paid** orders. To help you keep track of the order lifecycle, we've added a new status `pending`, which is a transitive state meaning the order is created but not paid yet. In most cases, the order will transition from `pending` to `paid` in a short time.
+
+- <Icon icon="circle-exclamation" size={16} color="orange" /> When receiving
+  `order.created` event, the order status might not be `paid`.
+- <Icon icon="check" size={16} color="green" /> **Added**:
+  [`order.updated`](/api-reference/webhooks/order.updated) webhook, sent when
+  the order status changes or when it's partially or fully refunded.
+- <Icon icon="check" size={16} color="green" /> **Added**:
+  [`order.paid`](/api-reference/webhooks/order.paid) webhook, sent when the
+  order is fully processed and paid.
+- <Icon icon="check" size={16} color="green" /> **Added**:
+  [`Order.paid`](/api-reference/orders/get#response-paid) property to the order
+  schema.
+
+<Info>
+  If you were relying on the `order.created` webhook to keep track of succesful
+  orders, we recommend you to switch to `order.paid`.
+</Info>
+
+</Update>
+
 <Update label="2025-03-14">
   ## Subscriptions and Orders schema changes
 

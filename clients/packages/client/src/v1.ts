@@ -3809,9 +3809,62 @@ export interface webhooks {
          *     * A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.
          *     * A subscription is upgraded, downgraded or revoked with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.
          *
+         *     <Warning>The order might not be paid yet, so the `status` field might be `pending`.</Warning>
+         *
          *     **Discord & Slack support:** Full
          */
         post: operations["_endpointorder_created_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "order.updated": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * order.updated
+         * @description Sent when an order is updated.
+         *
+         *     An order is updated when:
+         *
+         *     * Its status changes, e.g. from `pending` to `paid`.
+         *     * It's refunded, partially or fully.
+         *
+         *     **Discord & Slack support:** Full
+         */
+        post: operations["_endpointorder_updated_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "order.paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * order.paid
+         * @description Sent when an order is paid.
+         *
+         *     When you receive this event, the order is fully processed and payment has been received.
+         *
+         *     **Discord & Slack support:** Full
+         */
+        post: operations["_endpointorder_paid_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12782,8 +12835,12 @@ export interface components {
             custom_field_data?: {
                 [key: string]: string | number | boolean | null;
             };
-            /** Status */
-            status: string;
+            status: components["schemas"]["OrderStatus"];
+            /**
+             * Paid
+             * @description Whether the order has been paid for.
+             */
+            paid: boolean;
             /**
              * Subtotal Amount
              * @description Amount in cents, before discounts and taxes.
@@ -13055,6 +13112,11 @@ export interface components {
          * @enum {string}
          */
         OrderSortProperty: "created_at" | "-created_at" | "amount" | "-amount" | "net_amount" | "-net_amount" | "customer" | "-customer" | "product" | "-product" | "discount" | "-discount" | "subscription" | "-subscription";
+        /**
+         * OrderStatus
+         * @enum {string}
+         */
+        OrderStatus: "pending" | "paid" | "refunded" | "partially_refunded";
         /** OrderSubscription */
         OrderSubscription: {
             /** Metadata */
@@ -14817,7 +14879,10 @@ export interface components {
              */
             order_id: string;
             reason: components["schemas"]["RefundReason"];
-            /** Amount */
+            /**
+             * Amount
+             * @description Amount to refund in cents. Minimum is 1.
+             */
             amount: number;
             /**
              * Comment
@@ -16472,7 +16537,7 @@ export interface components {
          * WebhookEventType
          * @enum {string}
          */
-        WebhookEventType: "checkout.created" | "checkout.updated" | "customer.created" | "customer.updated" | "customer.deleted" | "customer.state_changed" | "order.created" | "order.refunded" | "subscription.created" | "subscription.updated" | "subscription.active" | "subscription.canceled" | "subscription.uncanceled" | "subscription.revoked" | "refund.created" | "refund.updated" | "product.created" | "product.updated" | "benefit.created" | "benefit.updated" | "benefit_grant.created" | "benefit_grant.updated" | "benefit_grant.revoked" | "organization.updated" | "pledge.created" | "pledge.updated";
+        WebhookEventType: "checkout.created" | "checkout.updated" | "customer.created" | "customer.updated" | "customer.deleted" | "customer.state_changed" | "order.created" | "order.updated" | "order.paid" | "order.refunded" | "subscription.created" | "subscription.updated" | "subscription.active" | "subscription.canceled" | "subscription.uncanceled" | "subscription.revoked" | "refund.created" | "refund.updated" | "product.created" | "product.updated" | "benefit.created" | "benefit.updated" | "benefit_grant.created" | "benefit_grant.updated" | "benefit_grant.revoked" | "organization.updated" | "pledge.created" | "pledge.updated";
         /**
          * WebhookFormat
          * @enum {string}
@@ -16489,6 +16554,8 @@ export interface components {
          *     * A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.
          *     * A subscription is upgraded, downgraded or revoked with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.
          *
+         *     <Warning>The order might not be paid yet, so the `status` field might be `pending`.</Warning>
+         *
          *     **Discord & Slack support:** Full
          */
         WebhookOrderCreatedPayload: {
@@ -16497,6 +16564,22 @@ export interface components {
              * @constant
              */
             type: "order.created";
+            data: components["schemas"]["Order"];
+        };
+        /**
+         * WebhookOrderPaidPayload
+         * @description Sent when an order is paid.
+         *
+         *     When you receive this event, the order is fully processed and payment has been received.
+         *
+         *     **Discord & Slack support:** Full
+         */
+        WebhookOrderPaidPayload: {
+            /**
+             * Type
+             * @constant
+             */
+            type: "order.paid";
             data: components["schemas"]["Order"];
         };
         /**
@@ -16511,6 +16594,25 @@ export interface components {
              * @constant
              */
             type: "order.refunded";
+            data: components["schemas"]["Order"];
+        };
+        /**
+         * WebhookOrderUpdatedPayload
+         * @description Sent when an order is updated.
+         *
+         *     An order is updated when:
+         *
+         *     * Its status changes, e.g. from `pending` to `paid`.
+         *     * It's refunded, partially or fully.
+         *
+         *     **Discord & Slack support:** Full
+         */
+        WebhookOrderUpdatedPayload: {
+            /**
+             * Type
+             * @constant
+             */
+            type: "order.updated";
             data: components["schemas"]["Order"];
         };
         /**
@@ -25214,6 +25316,72 @@ export interface operations {
             };
         };
     };
+    _endpointorder_updated_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookOrderUpdatedPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    _endpointorder_paid_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookOrderPaidPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     _endpointorder_refunded_post: {
         parameters: {
             query?: never;
@@ -25980,6 +26148,7 @@ export const oAuth2ClientConfigurationUpdateGrant_typesValues: ReadonlyArray<com
 export const oAuthPlatformValues: ReadonlyArray<components["schemas"]["OAuthPlatform"]> = ["github", "github_repository_benefit", "google"];
 export const orderBillingReasonValues: ReadonlyArray<components["schemas"]["OrderBillingReason"]> = ["purchase", "subscription_create", "subscription_cycle", "subscription_update"];
 export const orderSortPropertyValues: ReadonlyArray<components["schemas"]["OrderSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "net_amount", "-net_amount", "customer", "-customer", "product", "-product", "discount", "-discount", "subscription", "-subscription"];
+export const orderStatusValues: ReadonlyArray<components["schemas"]["OrderStatus"]> = ["pending", "paid", "refunded", "partially_refunded"];
 export const organizationAccessTokenSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationAccessTokenSortProperty"]> = ["created_at", "-created_at", "comment", "-comment", "last_used_at", "-last_used_at", "organization_id", "-organization_id"];
 export const organizationAvatarFileCreateServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileCreate"]["service"]> = ["organization_avatar"];
 export const organizationAvatarFileReadServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileRead"]["service"]> = ["organization_avatar"];
@@ -26022,7 +26191,7 @@ export const timeIntervalValues: ReadonlyArray<components["schemas"]["TimeInterv
 export const transactionSortPropertyValues: ReadonlyArray<components["schemas"]["TransactionSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
 export const transactionTypeValues: ReadonlyArray<components["schemas"]["TransactionType"]> = ["payment", "processor_fee", "refund", "dispute", "dispute_reversal", "balance", "payout"];
 export const userSignupAttributionIntentValues: ReadonlyArray<components["schemas"]["UserSignupAttribution"]["intent"]> = ["creator", "pledge", "purchase", "subscription", "newsletter_subscription"];
-export const webhookEventTypeValues: ReadonlyArray<components["schemas"]["WebhookEventType"]> = ["checkout.created", "checkout.updated", "customer.created", "customer.updated", "customer.deleted", "customer.state_changed", "order.created", "order.refunded", "subscription.created", "subscription.updated", "subscription.active", "subscription.canceled", "subscription.uncanceled", "subscription.revoked", "refund.created", "refund.updated", "product.created", "product.updated", "benefit.created", "benefit.updated", "benefit_grant.created", "benefit_grant.updated", "benefit_grant.revoked", "organization.updated", "pledge.created", "pledge.updated"];
+export const webhookEventTypeValues: ReadonlyArray<components["schemas"]["WebhookEventType"]> = ["checkout.created", "checkout.updated", "customer.created", "customer.updated", "customer.deleted", "customer.state_changed", "order.created", "order.updated", "order.paid", "order.refunded", "subscription.created", "subscription.updated", "subscription.active", "subscription.canceled", "subscription.uncanceled", "subscription.revoked", "refund.created", "refund.updated", "product.created", "product.updated", "benefit.created", "benefit.updated", "benefit_grant.created", "benefit_grant.updated", "benefit_grant.revoked", "organization.updated", "pledge.created", "pledge.updated"];
 export const webhookFormatValues: ReadonlyArray<components["schemas"]["WebhookFormat"]> = ["raw", "discord", "slack"];
 export const revokeTokenRequestToken_type_hintValues: ReadonlyArray<components["schemas"]["RevokeTokenRequest"]["token_type_hint"]> = ["access_token", "refresh_token"];
 export const introspectTokenRequestToken_type_hintValues: ReadonlyArray<components["schemas"]["IntrospectTokenRequest"]["token_type_hint"]> = ["access_token", "refresh_token"];

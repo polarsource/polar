@@ -61,6 +61,8 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.customer_deleted], Customer]
     | tuple[Literal[WebhookEventType.customer_state_changed], Customer]
     | tuple[Literal[WebhookEventType.order_created], Order]
+    | tuple[Literal[WebhookEventType.order_updated], Order]
+    | tuple[Literal[WebhookEventType.order_paid], Order]
     | tuple[Literal[WebhookEventType.order_refunded], Order]
     | tuple[Literal[WebhookEventType.subscription_created], Subscription]
     | tuple[Literal[WebhookEventType.subscription_updated], Subscription]
@@ -271,21 +273,16 @@ class WebhookCustomerStateChangedPayload(BaseWebhookPayload):
     data: CustomerStateSchema
 
 
-class WebhookOrderCreatedPayload(BaseWebhookPayload):
+class WebhookOrderPayloadBase(BaseWebhookPayload):
     """
-    Sent when a new order is created.
-
-    A new order is created when:
-
-    * A customer purchases a one-time product. In this case, `billing_reason` is set to `purchase`.
-    * A customer starts a subscription. In this case, `billing_reason` is set to `subscription_create`.
-    * A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.
-    * A subscription is upgraded, downgraded or revoked with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.
-
-    **Discord & Slack support:** Full
+    Base class for order payloads.
     """
 
-    type: Literal[WebhookEventType.order_created]
+    type: (
+        Literal[WebhookEventType.order_created]
+        | Literal[WebhookEventType.order_updated]
+        | Literal[WebhookEventType.order_paid]
+    )
     data: OrderSchema
 
     def get_discord_payload(self, target: User | Organization) -> str:
@@ -348,6 +345,52 @@ class WebhookOrderCreatedPayload(BaseWebhookPayload):
         )
 
         return json.dumps(payload)
+
+
+class WebhookOrderCreatedPayload(WebhookOrderPayloadBase):
+    """
+    Sent when a new order is created.
+
+    A new order is created when:
+
+    * A customer purchases a one-time product. In this case, `billing_reason` is set to `purchase`.
+    * A customer starts a subscription. In this case, `billing_reason` is set to `subscription_create`.
+    * A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.
+    * A subscription is upgraded or downgraded with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.
+
+    <Warning>The order might not be paid yet, so the `status` field might be `pending`.</Warning>
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.order_created]
+
+
+class WebhookOrderUpdatedPayload(WebhookOrderPayloadBase):
+    """
+    Sent when an order is updated.
+
+    An order is updated when:
+
+    * Its status changes, e.g. from `pending` to `paid`.
+    * It's refunded, partially or fully.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.order_updated]
+
+
+class WebhookOrderPaidPayload(WebhookOrderPayloadBase):
+    """
+    Sent when an order is paid.
+
+    When you receive this event, the order is fully processed and payment has been received.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.order_paid]
 
 
 class WebhookOrderRefundedPayload(BaseWebhookPayload):
@@ -1128,6 +1171,8 @@ WebhookPayload = Annotated[
     | WebhookCustomerDeletedPayload
     | WebhookCustomerStateChangedPayload
     | WebhookOrderCreatedPayload
+    | WebhookOrderUpdatedPayload
+    | WebhookOrderPaidPayload
     | WebhookOrderRefundedPayload
     | WebhookSubscriptionCreatedPayload
     | WebhookSubscriptionUpdatedPayload

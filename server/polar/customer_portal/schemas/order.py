@@ -1,6 +1,7 @@
 from pydantic import UUID4, AliasChoices, AliasPath, Field
 
 from polar.kit.schemas import Schema, TimestampedSchema
+from polar.models.order import OrderStatus
 from polar.order.schemas import OrderItemSchema
 from polar.organization.schemas import Organization
 from polar.product.schemas import (
@@ -15,6 +16,10 @@ from polar.subscription.schemas import SubscriptionBase
 
 class CustomerOrderBase(TimestampedSchema):
     id: UUID4
+    status: OrderStatus = Field(examples=["paid"])
+    paid: bool = Field(
+        description="Whether the order has been paid for.", examples=[True]
+    )
     subtotal_amount: int = Field(
         description="Amount in cents, before discounts and taxes."
     )

@@ -43,6 +43,7 @@ class OrderBillingReason(StrEnum):
 
 
 class OrderStatus(StrEnum):
+    pending = "pending"
     paid = "paid"
     refunded = "refunded"
     partially_refunded = "partially_refunded"
@@ -74,7 +75,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
 
     status: Mapped[OrderStatus] = mapped_column(
-        String, nullable=False, default=OrderStatus.paid
+        String, nullable=False, default=OrderStatus.pending
     )
     subtotal_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     discount_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -160,6 +161,21 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
             if item.product_price:
                 return item.product_price
         return self.product.prices[0]
+
+    @hybrid_property
+    def paid(self) -> bool:
+        return self.status in {
+            OrderStatus.paid,
+            OrderStatus.refunded,
+            OrderStatus.partially_refunded,
+        }
+
+    @paid.inplace.expression
+    @classmethod
+    def _paid_expression(cls) -> ColumnElement[bool]:
+        return cls.status.in_(
+            (OrderStatus.paid, OrderStatus.refunded, OrderStatus.partially_refunded)
+        )
 
     @hybrid_property
     def net_amount(self) -> int:

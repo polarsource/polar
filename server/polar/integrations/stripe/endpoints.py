@@ -28,6 +28,7 @@ DIRECT_IMPLEMENTED_WEBHOOKS = {
     "refund.failed",
     "customer.subscription.updated",
     "customer.subscription.deleted",
+    "invoice.created",
     "invoice.paid",
 }
 CONNECT_IMPLEMENTED_WEBHOOKS = {"account.updated", "payout.paid"}

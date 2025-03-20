@@ -29,7 +29,7 @@ from polar.models import (
 )
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountFixed
-from polar.models.order import OrderBillingReason
+from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.organization import Organization
 from polar.models.product import ProductBillingType
 from polar.models.transaction import TransactionType
@@ -38,6 +38,7 @@ from polar.order.service import (
     MissingStripeCustomerID,
     NotAnOrderInvoice,
     NotASubscriptionInvoice,
+    OrderDoesNotExist,
     RecurringProduct,
     SubscriptionDoesNotExist,
 )
@@ -685,10 +686,6 @@ class TestCreateOrderFromStripe:
         assert order.billing_reason == invoice.billing_reason
         assert order.created_at == created_datetime
 
-        enqueue_job_mock.assert_any_call(
-            "order.balance", order_id=order.id, charge_id="CHARGE_ID"
-        )
-
     async def test_discount(
         self,
         session: AsyncSession,
@@ -824,6 +821,70 @@ class TestCreateOrderFromStripe:
 
         publish_checkout_event_mock.assert_awaited_once_with(
             checkout.client_secret, CheckoutEvent.order_created
+        )
+
+
+@pytest.mark.asyncio
+class TestUpdateOrderFromStripe:
+    async def test_not_existing(self, session: AsyncSession) -> None:
+        invoice = construct_stripe_invoice(lines=[])
+        with pytest.raises(OrderDoesNotExist):
+            await order_service.update_order_from_stripe(session, invoice=invoice)
+
+    async def test_paid_charge(
+        self,
+        enqueue_job_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        invoice = construct_stripe_invoice(status="paid", lines=[])
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_invoice_id=invoice.id,
+        )
+
+        updated_order = await order_service.update_order_from_stripe(
+            session, invoice=invoice
+        )
+        assert updated_order.status == OrderStatus.paid
+
+        enqueue_job_mock.assert_any_call(
+            "order.balance", order_id=order.id, charge_id="CHARGE_ID"
+        )
+
+    async def test_paid_out_of_band(
+        self,
+        enqueue_job_mock: AsyncMock,
+        stripe_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        payment_intent = build_stripe_payment_intent(amount=1000)
+        stripe_service_mock.get_payment_intent.return_value = payment_intent
+
+        invoice = construct_stripe_invoice(
+            status="paid", lines=[], metadata={"payment_intent_id": payment_intent.id}
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_invoice_id=invoice.id,
+        )
+
+        updated_order = await order_service.update_order_from_stripe(
+            session, invoice=invoice
+        )
+        assert updated_order.status == OrderStatus.paid
+
+        enqueue_job_mock.assert_any_call(
+            "order.balance", order_id=order.id, charge_id=payment_intent.latest_charge
         )
 
 

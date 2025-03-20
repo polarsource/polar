@@ -79,7 +79,7 @@ from polar.models.discount import (
     DiscountType,
 )
 from polar.models.issue import Issue
-from polar.models.order import OrderBillingReason
+from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import (
     ProductPriceAmountType,
@@ -946,6 +946,7 @@ async def create_customer(
 async def create_order(
     save_fixture: SaveFixture,
     *,
+    status: OrderStatus = OrderStatus.paid,
     product: Product,
     customer: Customer,
     subtotal_amount: int = 1000,
@@ -959,6 +960,7 @@ async def create_order(
 ) -> Order:
     order = Order(
         created_at=created_at or utc_now(),
+        status=status,
         subtotal_amount=subtotal_amount,
         tax_amount=tax_amount,
         discount_amount=discount_amount,

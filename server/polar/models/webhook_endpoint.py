@@ -20,6 +20,8 @@ class WebhookEventType(StrEnum):
     customer_deleted = "customer.deleted"
     customer_state_changed = "customer.state_changed"
     order_created = "order.created"
+    order_updated = "order.updated"
+    order_paid = "order.paid"
     order_refunded = "order.refunded"
     subscription_created = "subscription.created"
     subscription_updated = "subscription.updated"

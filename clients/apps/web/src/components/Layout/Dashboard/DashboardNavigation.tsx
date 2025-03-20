@@ -80,6 +80,7 @@ const MaintainerNavigation = () => {
                   <SidebarMenuSubItem key={subRoute.link}>
                     <Link
                       href={subRoute.link}
+                      prefetch={true}
                       className={twMerge(
                         'dark:text-polar-500 ml-4 text-sm font-medium text-gray-500',
                         subRoute.isActive && 'text-blue-500 dark:text-white',

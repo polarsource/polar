@@ -10,6 +10,7 @@ from rich.progress import Progress
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from polar.integrations.github.badge import GithubBadge
 from polar.integrations.github.client import get_app_installation_client
 from polar.kit.db.postgres import AsyncSession
 from polar.models import ExternalOrganization, Issue
@@ -56,20 +57,22 @@ async def process_issue(
         repo = issue.repository
         if org is not None:
             try:
-                client = get_app_installation_client(
-                    external_org.safe_installation_id, redis=redis
-                )
-                response = await client.rest.issues.async_remove_label(
-                    external_org.name, repo.name, issue.number, repo.pledge_badge_label
-                )
-                labels = [
-                    label.model_dump(mode="json") for label in response.parsed_data
-                ]
-                issue.labels = labels
-                issue.has_pledge_badge_label = Issue.contains_pledge_badge_label(
-                    labels, repo.pledge_badge_label
-                )
+                badge = GithubBadge(external_org, repo, issue, org)
+                await badge.remove(redis)
+                issue.pledge_badge_embedded_at = None
                 session.add(issue)
+                try:
+                    client = get_app_installation_client(
+                        external_org.safe_installation_id, redis=redis
+                    )
+                    response = await client.rest.issues.async_remove_label(
+                        external_org.name,
+                        repo.name,
+                        issue.number,
+                        repo.pledge_badge_label,
+                    )
+                except Exception:
+                    pass
             except (RequestFailed, NotInstalledExternalOrganization):
                 return False, str(issue.id)
         return True, str(issue.id)
@@ -90,7 +93,7 @@ async def platform_fees_migration() -> None:
 
                 statement = (
                     select(Issue)
-                    .where(Issue.pledge_badge_embedded_at.is_not(None))
+                    .where(Issue.pledge_badge_ever_embedded.is_not(None))
                     .options(
                         joinedload(Issue.organization).joinedload(
                             ExternalOrganization.organization
@@ -104,7 +107,7 @@ async def platform_fees_migration() -> None:
                 with Progress() as progress:
                     async with asyncio.TaskGroup() as tg:
                         progress_task = progress.add_task(
-                            "[red]Processing orders...", total=None
+                            "[red]Processing issues...", total=None
                         )
                         async for issue in stream.scalars():
                             task = tg.create_task(process_issue(session, redis, issue))

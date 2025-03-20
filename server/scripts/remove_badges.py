@@ -10,7 +10,7 @@ from rich.progress import Progress
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from polar.integrations.github.service.issue import github_issue as github_issue_service
+from polar.integrations.github.client import get_app_installation_client
 from polar.kit.db.postgres import AsyncSession
 from polar.models import ExternalOrganization, Issue
 from polar.models.external_organization import NotInstalledExternalOrganization
@@ -56,9 +56,20 @@ async def process_issue(
         repo = issue.repository
         if org is not None:
             try:
-                await github_issue_service.remove_polar_label(
-                    session, redis, external_org, repo, issue
+                client = get_app_installation_client(
+                    external_org.safe_installation_id, redis=redis
                 )
+                response = await client.rest.issues.async_remove_label(
+                    external_org.name, repo.name, issue.number, repo.pledge_badge_label
+                )
+                labels = [
+                    label.model_dump(mode="json") for label in response.parsed_data
+                ]
+                issue.labels = labels
+                issue.has_pledge_badge_label = Issue.contains_pledge_badge_label(
+                    labels, repo.pledge_badge_label
+                )
+                session.add(issue)
             except (RequestFailed, NotInstalledExternalOrganization):
                 return False, str(issue.id)
         return True, str(issue.id)
@@ -66,11 +77,7 @@ async def process_issue(
 
 @cli.command()
 @typer_async
-async def platform_fees_migration(
-    dry_run: bool = typer.Option(
-        False, help="If `True`, changes won't be commited to the database."
-    ),
-) -> None:
+async def platform_fees_migration() -> None:
     engine = create_async_engine("script")
     async with engine.connect() as connection:
         async with connection.begin() as transaction:
@@ -112,6 +119,8 @@ async def platform_fees_migration(
                     success, issue_id = task.result()
                     if not success:
                         typer.echo(f"Failed to process issue {issue_id}")
+
+                await session.commit()
 
 
 if __name__ == "__main__":

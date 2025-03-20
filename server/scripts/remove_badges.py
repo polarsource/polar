@@ -13,6 +13,7 @@ from sqlalchemy.orm import joinedload
 from polar.integrations.github.service.issue import github_issue as github_issue_service
 from polar.kit.db.postgres import AsyncSession
 from polar.models import ExternalOrganization, Issue
+from polar.models.external_organization import NotInstalledExternalOrganization
 from polar.postgres import create_async_engine
 from polar.redis import Redis, create_redis
 
@@ -58,7 +59,7 @@ async def process_issue(
                 await github_issue_service.remove_polar_label(
                     session, redis, external_org, repo, issue
                 )
-            except RequestFailed as e:
+            except (RequestFailed, NotInstalledExternalOrganization):
                 return False, str(issue.id)
         return True, str(issue.id)
 

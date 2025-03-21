@@ -33,6 +33,7 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
+    create_checkout_link,
     create_product,
     set_product_benefits,
 )
@@ -928,6 +929,7 @@ class TestUpdate:
     )
     async def test_valid_archive(
         self,
+        save_fixture: SaveFixture,
         session: AsyncSession,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
@@ -935,6 +937,7 @@ class TestUpdate:
         user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
+        checkout_link = await create_checkout_link(save_fixture, products=[product])
         archive_product_mock: MagicMock = stripe_service_mock.archive_product
 
         update_schema = ProductUpdate(is_archived=True)
@@ -949,6 +952,10 @@ class TestUpdate:
         archive_product_mock.assert_called_once_with(product.stripe_product_id)
 
         assert updated_product.is_archived
+
+        # Ensure we remove archived product from related checkout links
+        await session.refresh(checkout_link, {"checkout_link_products"})
+        assert checkout_link.checkout_link_products == []
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

@@ -9,6 +9,7 @@ from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
 from polar.benefit.service.benefit import benefit as benefit_service
+from polar.checkout_link.repository import CheckoutLinkProductRepository
 from polar.custom_field.service import custom_field as custom_field_service
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.file.service import file as file_service
@@ -541,7 +542,7 @@ class ProductService(ResourceServiceReader[Product]):
                     session.add(deleted_price)
 
         if update_schema.is_archived:
-            product = await self._archive(product)
+            product = await self._archive(session, product)
 
         for attr, value in update_schema.model_dump(
             exclude_unset=True,
@@ -640,11 +641,16 @@ class ProductService(ResourceServiceReader[Product]):
 
         return product, added_benefits, deleted_benefits
 
-    async def _archive(self, product: Product) -> Product:
+    async def _archive(self, session: AsyncSession, product: Product) -> Product:
         if product.stripe_product_id is not None:
             await stripe_service.archive_product(product.stripe_product_id)
 
         product.is_archived = True
+
+        checkout_link_product_repository = CheckoutLinkProductRepository.from_session(
+            session
+        )
+        await checkout_link_product_repository.delete_by_product_id(product.id)
 
         return product
 

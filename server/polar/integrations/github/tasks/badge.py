@@ -193,3 +193,40 @@ async def remove_badges_on_repository(
                 external_organization=organization,
             ):
                 enqueue_job("github.badge.remove_on_issue", i.id)
+
+
+@task("github.badge.remove_label", max_tries=BADGE_UPDATE_MAX_RETRIES)
+@github_rate_limit_retry
+async def remove_label(
+    ctx: JobContext,
+    issue_id: UUID,
+    polar_context: PolarWorkerContext,
+) -> None:
+    with polar_context.to_execution_context():
+        async with AsyncSessionMaker(ctx) as session:
+            issue = await github_issue.get(session, issue_id, allow_deleted=True)
+            if not issue or not issue.organization_id or not issue.repository_id:
+                log.warning(
+                    "github.badge.embed_on_issue",
+                    error="issue not found",
+                    issue_id=issue_id,
+                )
+                return
+
+            (
+                external_organization,
+                repository,
+            ) = await get_external_organization_and_repo(
+                session, issue.organization_id, issue.repository_id, allow_deleted=True
+            )
+
+            try:
+                await github_issue.remove_polar_label(
+                    session,
+                    get_worker_redis(ctx),
+                    organization=external_organization,
+                    repository=repository,
+                    issue=issue,
+                )
+            except httpx.HTTPError as e:
+                raise Retry(compute_backoff(ctx["job_try"])) from e

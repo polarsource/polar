@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, delete, select
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -82,3 +82,17 @@ class CheckoutLinkRepository(
             )
 
         return statement
+
+
+class CheckoutLinkProductRepository(
+    RepositorySoftDeletionIDMixin[CheckoutLinkProduct, UUID],
+    RepositorySoftDeletionMixin[CheckoutLinkProduct],
+    RepositoryBase[CheckoutLinkProduct],
+):
+    model = CheckoutLinkProduct
+
+    async def delete_by_product_id(self, product_id: UUID) -> None:
+        statement = delete(CheckoutLinkProduct).where(
+            CheckoutLinkProduct.product_id == product_id
+        )
+        await self.session.execute(statement)

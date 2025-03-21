@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Any, Literal, LiteralString, NotRequired, TypedDict
 
 from pydantic import BaseModel, Field, create_model
@@ -132,7 +133,7 @@ class ValidationError(TypedDict):
 
 
 class PolarRequestValidationError(PolarError):
-    def __init__(self, errors: list[ValidationError]) -> None:
+    def __init__(self, errors: Sequence[ValidationError]) -> None:
         self._errors = errors
 
     def errors(self) -> list[ErrorDetails]:

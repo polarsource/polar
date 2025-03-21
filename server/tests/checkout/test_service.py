@@ -1280,6 +1280,45 @@ class TestClientCreate:
 
 @pytest.mark.asyncio
 class TestCheckoutLinkCreate:
+    async def test_all_archived_products(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+    ) -> None:
+        product_one_time.is_archived = True
+        await save_fixture(product_one_time)
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            products=[product_one_time],
+            success_url="https://example.com/success",
+            user_metadata={"key": "value"},
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.checkout_link_create(session, checkout_link)
+
+    async def test_some_archived_products(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        product_one_time_free_price: Product,
+    ) -> None:
+        product_one_time.is_archived = True
+        await save_fixture(product_one_time)
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            products=[product_one_time, product_one_time_free_price],
+            success_url="https://example.com/success",
+            user_metadata={"key": "value"},
+        )
+
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+
+        assert checkout.product == product_one_time_free_price
+        assert checkout.products == [product_one_time_free_price]
+
     async def test_valid(
         self,
         save_fixture: SaveFixture,

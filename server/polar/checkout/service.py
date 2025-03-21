@@ -566,7 +566,23 @@ class CheckoutService:
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
         ip_address: str | None = None,
     ) -> Checkout:
-        products = checkout_link.products
+        products: list[Product] = []
+        for product in checkout_link.products:
+            if not product.is_archived:
+                products.append(product)
+
+        if len(products) == 0:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "products"),
+                        "msg": "No valid products.",
+                        "input": checkout_link.products,
+                    }
+                ]
+            )
+
         product = products[0]
         price = product.prices[0]
 

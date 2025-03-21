@@ -517,7 +517,11 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         lock_name = f"subscription:{subscription.id}"
         if await locker.is_locked(lock_name):
             raise SubscriptionUpdatePending(subscription)
-        async with locker.lock(lock_name, timeout=5, blocking_timeout=1):
+        async with locker.lock(
+            lock_name,
+            timeout=10.0,  # Quite long, but we've experienced slow responses from Stripe in test mode
+            blocking_timeout=1,
+        ):
             if isinstance(update, SubscriptionUpdateProduct):
                 if subscription.revoked or subscription.cancel_at_period_end:
                     raise AlreadyCanceledSubscription(subscription)

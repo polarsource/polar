@@ -934,10 +934,16 @@ class TestUpdate:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
+        product_second: Product,
         user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
-        checkout_link = await create_checkout_link(save_fixture, products=[product])
+        checkout_link_one_product = await create_checkout_link(
+            save_fixture, products=[product]
+        )
+        checkout_link_two_products = await create_checkout_link(
+            save_fixture, products=[product, product_second]
+        )
         archive_product_mock: MagicMock = stripe_service_mock.archive_product
 
         update_schema = ProductUpdate(is_archived=True)
@@ -954,8 +960,17 @@ class TestUpdate:
         assert updated_product.is_archived
 
         # Ensure we remove archived product from related checkout links
-        await session.refresh(checkout_link, {"checkout_link_products"})
-        assert checkout_link.checkout_link_products == []
+        await session.refresh(
+            checkout_link_one_product, {"deleted_at", "checkout_link_products"}
+        )
+        assert checkout_link_one_product.deleted_at is not None
+        assert checkout_link_one_product.checkout_link_products == []
+
+        await session.refresh(
+            checkout_link_two_products, {"deleted_at", "checkout_link_products"}
+        )
+        assert checkout_link_two_products.deleted_at is None
+        assert len(checkout_link_two_products.checkout_link_products) == 1
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

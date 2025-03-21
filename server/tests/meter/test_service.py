@@ -22,26 +22,9 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_event,
+    create_meter,
     create_product,
 )
-
-
-async def create_meter(
-    save_fixture: SaveFixture,
-    *,
-    organization: Organization,
-    filter: Filter,
-    aggregation: Aggregation,
-    name: str = "My Meter",
-    customer: Customer | None = None,
-    external_customer_id: str | None = None,
-    metadata: dict[str, str | int | bool] | None = None,
-) -> Meter:
-    meter = Meter(
-        name=name, organization=organization, filter=filter, aggregation=aggregation
-    )
-    await save_fixture(meter)
-    return meter
 
 
 @pytest.mark.asyncio

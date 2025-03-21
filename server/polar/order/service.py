@@ -10,6 +10,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
+from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
@@ -523,6 +524,20 @@ class OrderService:
                     product_price=product_price,
                 )
             )
+
+        # Add pending billing entries
+        stripe_customer_id = customer.stripe_customer_id
+        assert stripe_customer_id is not None
+        pending_items = await billing_entry_service.create_order_items_from_pending(
+            session,
+            subscription,
+            stripe_invoice_id=invoice.id,
+            stripe_customer_id=stripe_customer_id,
+        )
+        items.extend(pending_items)
+        # Reload the invoice to get totals with added pending items
+        if len(pending_items) > 0:
+            invoice = await stripe_service.get_invoice(invoice.id)
 
         # Determine billing reason
         billing_reason = OrderBillingReason.subscription_cycle

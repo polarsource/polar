@@ -115,7 +115,6 @@ async def platform_fees_migration() -> None:
 
             stream = await session.stream(statement)
 
-            tasks = []
             with Progress() as progress:
                 progress_task = progress.add_task(
                     "[red]Processing issues...", total=count

@@ -18,6 +18,7 @@ async def get_external_organization_and_repo(
     session: AsyncSession,
     external_organization_id: UUID,
     repository_id: UUID,
+    allow_deleted: bool = False,
 ) -> tuple[ExternalOrganization, Repository]:
     external_organization = await service.github_organization.get_linked(
         session, external_organization_id
@@ -31,7 +32,9 @@ async def get_external_organization_and_repo(
             "no external organization found or not linked to a Polar organization"
         )
 
-    repository = await service.github_repository.get(session, repository_id)
+    repository = await service.github_repository.get(
+        session, repository_id, allow_deleted=allow_deleted
+    )
     if not repository:
         log.warning("no repository found", repository_id=repository_id)
         raise ValueError("no repository found")

@@ -9,7 +9,6 @@ from arq.connections import create_pool as arq_create_pool
 from githubkit.exception import RequestFailed
 from rich.progress import Progress
 from sqlalchemy import func, select
-from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.integrations.github.badge import GithubBadge
 from polar.integrations.github.client import get_app_installation_client
@@ -94,17 +93,10 @@ async def platform_fees_migration() -> None:
             )
 
             statement = (
-                select(Issue)
+                select(Issue.id)
                 .join(Issue.organization)
-                .join(ExternalOrganization.organization)
-                .options(
-                    contains_eager(Issue.organization).contains_eager(
-                        ExternalOrganization.organization
-                    ),
-                    joinedload(Issue.repository),
-                )
                 .where(
-                    Issue.pledge_badge_ever_embedded.is_not(None),
+                    Issue.pledge_badge_embedded_at.is_not(None),
                     ExternalOrganization.installation_id.is_not(None),
                     ExternalOrganization.installation_suspended_at.is_(None),
                 )
@@ -123,7 +115,7 @@ async def platform_fees_migration() -> None:
                 async for issue in stream.scalars():
                     enqueue_job(
                         "github.badge.remove_on_issue",
-                        issue.id,
+                        issue,
                         queue_name=QueueName.github_crawl,
                     )
                     progress.update(progress_task, advance=1)

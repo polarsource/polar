@@ -76,7 +76,7 @@ class RepositoryBase(Generic[M]):
 
     async def get_all(self, statement: Select[tuple[M]]) -> Sequence[M]:
         result = await self.session.execute(statement)
-        return result.scalars().all()
+        return result.scalars().unique().all()
 
     async def paginate(
         self, statement: Select[tuple[M]], *, limit: int, page: int

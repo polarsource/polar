@@ -1,8 +1,9 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Select, delete, select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import (
@@ -83,16 +84,23 @@ class CheckoutLinkRepository(
 
         return statement
 
-
-class CheckoutLinkProductRepository(
-    RepositorySoftDeletionIDMixin[CheckoutLinkProduct, UUID],
-    RepositorySoftDeletionMixin[CheckoutLinkProduct],
-    RepositoryBase[CheckoutLinkProduct],
-):
-    model = CheckoutLinkProduct
-
-    async def delete_by_product_id(self, product_id: UUID) -> None:
-        statement = delete(CheckoutLinkProduct).where(
-            CheckoutLinkProduct.product_id == product_id
+    async def archive_product(self, product_id: UUID) -> None:
+        statement = (
+            self.get_base_statement()
+            .join(
+                CheckoutLinkProduct,
+                onclause=CheckoutLinkProduct.checkout_link_id == CheckoutLink.id,
+            )
+            .where(CheckoutLinkProduct.product_id == product_id)
+            .options(contains_eager(CheckoutLink.checkout_link_products))
         )
-        await self.session.execute(statement)
+        checkout_links = await self.get_all(statement)
+        for checkout_link in checkout_links:
+            checkout_link.checkout_link_products = [
+                product
+                for product in checkout_link.checkout_link_products
+                if product.product_id != product_id
+            ]
+            if not checkout_link.checkout_link_products:
+                await self.soft_delete(checkout_link)
+            self.session.add(checkout_link)

@@ -114,7 +114,7 @@ async def platform_fees_migration() -> None:
                 progress.start_task(progress_task)
                 async for issue in stream.scalars():
                     enqueue_job(
-                        "github.badge.remove_on_issue",
+                        "github.badge.remove_label",
                         issue,
                         queue_name=QueueName.github_crawl,
                     )

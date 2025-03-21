@@ -237,5 +237,14 @@ class MeterService:
 
         return entries
 
+    async def get_quantity(
+        self, session: AsyncSession, meter: Meter, events: Sequence[uuid.UUID]
+    ) -> float:
+        statement = select(
+            func.coalesce(meter.aggregation.get_sql_column(Event), 0)
+        ).where(Event.id.in_(events))
+        result = await session.scalar(statement)
+        return result or 0.0
+
 
 meter = MeterService()

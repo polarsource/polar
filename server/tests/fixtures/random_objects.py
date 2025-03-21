@@ -18,6 +18,8 @@ from polar.enums import (
 from polar.kit.address import Address
 from polar.kit.tax import TaxID
 from polar.kit.utils import utc_now
+from polar.meter.aggregation import Aggregation
+from polar.meter.filter import Filter
 from polar.models import (
     Account,
     Benefit,
@@ -1728,3 +1730,21 @@ async def create_event(
     )
     await save_fixture(event)
     return event
+
+
+async def create_meter(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization,
+    filter: Filter,
+    aggregation: Aggregation,
+    name: str = "My Meter",
+    customer: Customer | None = None,
+    external_customer_id: str | None = None,
+    metadata: dict[str, str | int | bool] | None = None,
+) -> Meter:
+    meter = Meter(
+        name=name, organization=organization, filter=filter, aggregation=aggregation
+    )
+    await save_fixture(meter)
+    return meter

@@ -877,6 +877,27 @@ class StripeService:
 
         return invoice, price_line_item_map
 
+    async def create_invoice_item(
+        self,
+        *,
+        customer: str,
+        invoice: str,
+        amount: int,
+        currency: str,
+        description: str,
+        tax_behavior: Literal["exclusive", "inclusive"] = "exclusive",
+        metadata: dict[str, str] | None = None,
+    ) -> stripe_lib.InvoiceItem:
+        return await stripe_lib.InvoiceItem.create_async(
+            customer=customer,
+            invoice=invoice,
+            amount=amount,
+            currency=currency,
+            description=description,
+            tax_behavior=tax_behavior,
+            metadata=metadata or {},
+        )
+
     async def create_tax_calculation(
         self,
         **params: Unpack[stripe_lib.tax.Calculation.CreateParams],

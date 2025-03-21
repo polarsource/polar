@@ -111,7 +111,7 @@ async def remove_badge(
 ) -> None:
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
-            issue = await github_issue.get(session, issue_id)
+            issue = await github_issue.get(session, issue_id, allow_deleted=True)
             if not issue or not issue.organization_id or not issue.repository_id:
                 log.warning(
                     "github.badge.embed_on_issue",
@@ -124,7 +124,7 @@ async def remove_badge(
                 external_organization,
                 repository,
             ) = await get_external_organization_and_repo(
-                session, issue.organization_id, issue.repository_id
+                session, issue.organization_id, issue.repository_id, allow_deleted=True
             )
 
             try:

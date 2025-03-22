@@ -45,6 +45,9 @@ export async function middleware(request: NextRequest) {
       cache: 'no-cache',
     })
     if (!response.ok && response.status !== 401) {
+      console.error(
+        `Error response: status=${response.status}, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}, body=${await response.clone().text()}`,
+      )
       throw new Error(
         'Unexpected response status while fetching authenticated user',
       )

@@ -26,6 +26,7 @@ log: Logger = structlog.get_logger()
 
 GRANT_REVOKE_MAX_TRIES = 16
 
+
 class BenefitTaskError(PolarTaskError): ...
 
 

@@ -307,6 +307,52 @@ class TestCreateOrUpdateFromCheckout:
             checkout.client_secret, CheckoutEvent.subscription_created
         )
 
+    async def test_new_metered(
+        self,
+        publish_checkout_event_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_metered: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_recurring_metered],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+        )
+
+        stripe_subscription = construct_stripe_subscription(
+            product=product_recurring_metered
+        )
+        stripe_service_mock.create_out_of_band_subscription.return_value = (
+            stripe_subscription,
+            SimpleNamespace(id="STRIPE_INVOICE_ID", total=checkout.total_amount),
+        )
+
+        subscription = await subscription_service.create_or_update_from_checkout(
+            session, checkout, None
+        )
+
+        assert subscription.status == stripe_subscription.status
+        assert subscription.prices == product_recurring_metered.prices
+        assert subscription.amount == 0
+        assert subscription.currency == "usd"
+
+        stripe_service_mock.create_out_of_band_subscription.assert_called_once()
+        assert (
+            stripe_service_mock.create_out_of_band_subscription.call_args[1][
+                "automatic_tax"
+            ]
+            is True
+        )
+        stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
+
+        publish_checkout_event_mock.assert_called_once_with(
+            checkout.client_secret, CheckoutEvent.subscription_created
+        )
+
     async def test_new_custom_discount_percentage_100(
         self,
         publish_checkout_event_mock: AsyncMock,

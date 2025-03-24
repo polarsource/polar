@@ -372,13 +372,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 subscription_product_prices.append(
                     SubscriptionProductPrice.from_price(price, checkout.amount)
                 )
-            elif is_static_price(price):
-                stripe_price_ids.append(price.stripe_price_id)
+            else:
+                if is_static_price(price):
+                    stripe_price_ids.append(price.stripe_price_id)
+                if not is_free_price(price):
+                    free_pricing = False
                 subscription_product_prices.append(
                     SubscriptionProductPrice.from_price(price)
                 )
-            if not is_free_price(price):
-                free_pricing = False
 
         subscription = checkout.subscription
         new_subscription = False

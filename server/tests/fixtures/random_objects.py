@@ -18,8 +18,11 @@ from polar.enums import (
 from polar.kit.address import Address
 from polar.kit.tax import TaxID
 from polar.kit.utils import utc_now
-from polar.meter.aggregation import Aggregation
-from polar.meter.filter import Filter
+from polar.meter.aggregation import (
+    Aggregation,
+    CountAggregation,
+)
+from polar.meter.filter import Filter, FilterConjunction
 from polar.models import (
     Account,
     Benefit,
@@ -1291,6 +1294,24 @@ async def product_recurring_free_price(
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
         prices=[(None,)],
+    )
+
+
+@pytest_asyncio.fixture
+async def product_recurring_metered(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    meter = await create_meter(
+        save_fixture,
+        filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+        aggregation=CountAggregation(),
+        organization=organization,
+    )
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[(meter, 100, 0, None)],
     )
 
 

@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -34,6 +34,11 @@ from tests.fixtures.random_objects import create_benefit
 @pytest.fixture
 def authz(session: AsyncSession) -> Authz:
     return Authz(session)
+
+
+@pytest.fixture
+def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch("polar.benefit.service.benefit.enqueue_job")
 
 
 @pytest.mark.asyncio
@@ -504,22 +509,13 @@ class TestUserDelete:
     )
     async def test_valid(
         self,
-        mocker: MockerFixture,
+        enqueue_job_mock: AsyncMock,
         session: AsyncSession,
         authz: Authz,
         benefit_organization: Benefit,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
     ) -> None:
-        enqueue_benefit_grant_updates_mock = mocker.patch.object(
-            benefit_grant_service,
-            "enqueue_benefit_grant_deletions",
-            spec=BenefitGrantService.enqueue_benefit_grant_updates,
-        )
-
-        # then
-        session.expunge_all()
-
         # load
         benefit_organization_loaded = await benefit_service.get(
             session, benefit_organization.id
@@ -532,4 +528,6 @@ class TestUserDelete:
 
         assert updated_benefit.deleted_at is not None
 
-        enqueue_benefit_grant_updates_mock.assert_awaited_once()
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.delete", benefit_id=benefit_organization.id
+        )

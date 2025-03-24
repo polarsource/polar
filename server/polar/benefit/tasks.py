@@ -206,6 +206,20 @@ async def benefit_update(
             raise Retry(e.defer_seconds) from e
 
 
+@task("benefit.delete")
+async def benefit_delete(
+    ctx: JobContext,
+    benefit_id: uuid.UUID,
+    polar_context: PolarWorkerContext,
+) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        benefit = await benefit_service.get(session, benefit_id, allow_deleted=True)
+        if benefit is None:
+            raise BenefitDoesNotExist(benefit_id)
+
+        await benefit_grant_service.enqueue_benefit_grant_deletions(session, benefit)
+
+
 @task("benefit.revoke_customer")
 async def benefit_revoke_customer(
     ctx: JobContext,

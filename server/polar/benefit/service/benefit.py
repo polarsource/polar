@@ -27,6 +27,7 @@ from polar.organization.resolver import get_payload_organization
 from polar.postgres import sql
 from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
+from polar.worker import enqueue_job
 
 from ..benefits import get_benefit_service
 from ..schemas import BenefitCreate, BenefitUpdate
@@ -172,12 +173,11 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         session.add(benefit)
         await session.flush()
 
-        if organization:
-            await webhook_service.send(
-                session,
-                target=organization,
-                we=(WebhookEventType.benefit_created, benefit),
-            )
+        await webhook_service.send(
+            session,
+            target=organization,
+            we=(WebhookEventType.benefit_created, benefit),
+        )
 
         return benefit
 
@@ -217,12 +217,11 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
             session, redis, benefit, previous_properties
         )
 
-        if benefit.organization:
-            await webhook_service.send(
-                session,
-                target=benefit.organization,
-                we=(WebhookEventType.benefit_updated, benefit),
-            )
+        await webhook_service.send(
+            session,
+            target=benefit.organization,
+            we=(WebhookEventType.benefit_updated, benefit),
+        )
 
         return benefit
 
@@ -248,14 +247,13 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         )
         await session.execute(statement)
 
-        await benefit_grant_service.enqueue_benefit_grant_deletions(session, benefit)
+        enqueue_job("benefit.delete", benefit_id=benefit.id)
 
-        if benefit.organization:
-            await webhook_service.send(
-                session,
-                target=benefit.organization,
-                we=(WebhookEventType.benefit_updated, benefit),
-            )
+        await webhook_service.send(
+            session,
+            target=benefit.organization,
+            we=(WebhookEventType.benefit_updated, benefit),
+        )
 
         return benefit
 

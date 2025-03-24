@@ -135,6 +135,22 @@ class DatatableDateTimeColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
         return formatters.datetime(value)
 
 
+class DatatableBooleanColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
+    def render(self, request: Request, item: M) -> Generator[None] | None:
+        value: bool | None = getattr(item, self.attr)
+        with tag.div():
+            if value is None:
+                text("—")
+            elif value:
+                with tag.div(classes="icon-check"):
+                    pass
+            else:
+                with tag.div(classes="icon-x"):
+                    pass
+
+        return None
+
+
 class DatatableAction(Protocol[M]):
     @contextlib.contextmanager
     def render(self, request: Request, item: M) -> Generator[None]: ...
@@ -228,8 +244,11 @@ class SortWay(Enum):
 
 
 class Datatable(Generic[M, PE]):
-    def __init__(self, *columns: DatatableColumn[M]) -> None:
+    def __init__(
+        self, *columns: DatatableColumn[M], empty_message: str | None = None
+    ) -> None:
         self.columns = columns
+        self.empty_message = empty_message or "No items found"
 
     @contextlib.contextmanager
     def render(
@@ -271,12 +290,20 @@ class Datatable(Generic[M, PE]):
                                             classes("icon-arrow-up-z-a")
 
                 with tag.tbody():
-                    for item in items:
+                    if not items:
                         with tag.tr():
-                            for column in self.columns:
-                                with tag.td():
-                                    with column._do_render(request, item):
-                                        pass
+                            with tag.td(
+                                classes="text-2xl h-96 text-gray-500 text-center my-10",
+                                colspan=len(self.columns),
+                            ):
+                                text(self.empty_message)
+                    else:
+                        for item in items:
+                            with tag.tr():
+                                for column in self.columns:
+                                    with tag.td():
+                                        with column._do_render(request, item):
+                                            pass
 
         yield
 

@@ -25,7 +25,16 @@ def render_toasts(scope: Scope) -> Generator[None]:
         id="toast", classes="toast toast-bottom toast-end", hx_swap_oob="beforeend"
     ):
         for toast in toasts:
-            with alert(toast.variant, _="install Toast"):
+            with alert(
+                toast.variant,
+                _="""
+                init
+                    wait 5s
+                    remove me
+                end
+                on click remove me
+                """,
+            ):
                 text(toast.message)
     yield
 

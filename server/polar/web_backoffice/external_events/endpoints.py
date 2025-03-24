@@ -152,8 +152,9 @@ async def resend(
                     text(external_event.task_name)
                 text(".")
             with tag.div(classes="modal-action"):
-                with button(ghost=True):
-                    text("Cancel")
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
                 with button(
                     type="button",
                     variant="primary",

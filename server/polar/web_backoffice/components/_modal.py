@@ -16,7 +16,7 @@ def modal(title: str, *, open: bool = False) -> Generator[None]:
                 ):
                     with tag.div(classes="icon-x"):
                         pass
-            with tag.h3(classes="text-lg font-bold"):
+            with tag.h3(classes="text-lg font-bold mb-4"):
                 text(title)
             yield
         with tag.form(method="dialog", classes="modal-backdrop"):

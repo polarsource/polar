@@ -12,7 +12,7 @@
     "@tailwindcss/postcss": "^4.0.14",
     "daisyui": "^5.0.6",
     "esbuild": "^0.25.1",
-    "htmx.org": "^1.9.12",
+    "htmx.org": "^2.0.4",
     "hyperscript.org": "^0.9.14",
     "lucide-static": "^0.482.0",
     "tailwindcss": "^4.0.14"

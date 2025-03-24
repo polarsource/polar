@@ -51,14 +51,6 @@ def base(request: Request, title_parts: Sequence[str]) -> Generator[None]:
                     then toggle .hidden on <div /> in me
                     then remove @disabled from me
                 end
-
-                behavior Toast
-                    init
-                        wait 5s
-                        remove me
-                    end
-                    on click remove me
-                end
                 """)
 
         with tag.body():

@@ -23,9 +23,24 @@ def _get_field_errors(errors: list[ErrorDetails], key: str) -> list[ErrorDetails
     return [error for error in errors if error["loc"][0] == key]
 
 
-class InputField:
-    def __init__(self, type: str = "text") -> None:
+class FormField:
+    @contextlib.contextmanager
+    def render(
+        self,
+        id: str,
+        label: str,
+        *,
+        required: bool = False,
+        value: Any | None = None,
+        errors: list[ErrorDetails] = [],
+    ) -> Generator[None]:
+        raise NotImplementedError()
+
+
+class InputField(FormField):
+    def __init__(self, type: str = "text", **kwargs: Any) -> None:
         self.type = type
+        self.kwargs = kwargs
 
     @contextlib.contextmanager
     def render(
@@ -48,7 +63,8 @@ class InputField:
                     name=id,
                     type=self.type,
                     required=required,
-                    value=str(value),
+                    value=str(value) if value is not None else "",
+                    **self.kwargs,
                 ):
                     pass
             for error in errors:
@@ -58,8 +74,8 @@ class InputField:
 
 
 class CurrencyField(InputField):
-    def __init__(self) -> None:
-        self.type = "number"
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__("number", **kwargs)
 
     @contextlib.contextmanager
     def render(
@@ -83,9 +99,54 @@ class CurrencyField(InputField):
         yield
 
 
-def _get_input_field(field: FieldInfo) -> InputField:
+class SelectField(FormField):
+    def __init__(
+        self,
+        options: list[tuple[str, str]],
+        placeholder: str = "Select an option",
+        **kwargs: Any,
+    ) -> None:
+        self.options = options
+        self.placeholder = placeholder
+        self.kwargs = kwargs
+
+    @contextlib.contextmanager
+    def render(
+        self,
+        id: str,
+        label: str,
+        *,
+        required: bool = False,
+        value: str | None = None,
+        errors: list[ErrorDetails] = [],
+    ) -> Generator[None]:
+        with tag.div(classes="flex flex-col"):
+            with tag.label(classes="select w-full", **{"for": id}):
+                if errors:
+                    classes("select-error")
+                with tag.span(classes="label"):
+                    text(label)
+                with tag.select(
+                    id=id,
+                    name=id,
+                    required=required,
+                    **self.kwargs,
+                ):
+                    with tag.option(value="", selected=value is None):
+                        text(self.placeholder)
+                    for option_value, option_label in self.options:
+                        selected = value == option_value if value is not None else False
+                        with tag.option(value=option_value, selected=selected):
+                            text(option_label)
+            for error in errors:
+                with tag.div(classes="validator-hint text-error"):
+                    text(error["msg"])
+        yield
+
+
+def _get_input_field(field: FieldInfo) -> FormField:
     for meta in field.metadata:
-        if isinstance(meta, InputField):
+        if isinstance(meta, FormField):
             return meta
     return InputField()
 

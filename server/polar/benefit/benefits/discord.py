@@ -116,7 +116,7 @@ class BenefitDiscordService(
                 error_bound_logger = error_bound_logger.bind(
                     status_code=e.response.status_code, body=e.response.text
                 )
-            error_bound_logger.warning("HTTP error while adding member")
+            error_bound_logger.warning("HTTP error while removing member")
             raise BenefitRetriableError(5 * 2**attempt) from e
 
         bound_logger.debug("Benefit revoked")

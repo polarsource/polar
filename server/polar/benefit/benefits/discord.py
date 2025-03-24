@@ -14,6 +14,7 @@ from polar.models import Customer, Organization, User
 from polar.models.benefit import BenefitDiscord, BenefitDiscordProperties
 from polar.models.benefit_grant import BenefitGrantDiscordProperties
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
+from polar.worker import compute_backoff
 
 from .base import (
     BenefitActionRequiredError,
@@ -77,7 +78,7 @@ class BenefitDiscordService(
                     status_code=e.response.status_code, body=e.response.text
                 )
             error_bound_logger.warning("HTTP error while adding member")
-            raise BenefitRetriableError(5 * 2**attempt) from e
+            raise BenefitRetriableError(compute_backoff(attempt)) from e
 
         bound_logger.debug("Benefit granted")
 
@@ -117,7 +118,7 @@ class BenefitDiscordService(
                     status_code=e.response.status_code, body=e.response.text
                 )
             error_bound_logger.warning("HTTP error while removing member")
-            raise BenefitRetriableError(5 * 2**attempt) from e
+            raise BenefitRetriableError(compute_backoff(attempt)) from e
 
         bound_logger.debug("Benefit revoked")
 

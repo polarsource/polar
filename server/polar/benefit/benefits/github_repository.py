@@ -19,6 +19,7 @@ from polar.models.benefit import (
 from polar.models.benefit_grant import BenefitGrantGitHubRepositoryProperties
 from polar.models.customer import CustomerOAuthPlatform
 from polar.posthog import posthog
+from polar.worker import compute_backoff
 
 from .base import (
     BenefitActionRequiredError,
@@ -103,7 +104,7 @@ class BenefitGitHubRepositoryService(
         except RateLimitExceeded as e:
             raise BenefitRetriableError(int(e.retry_after.total_seconds())) from e
         except (RequestTimeout, RequestError) as e:
-            raise BenefitRetriableError(2**attempt) from e
+            raise BenefitRetriableError(compute_backoff(attempt)) from e
 
         bound_logger.debug("Benefit granted")
 
@@ -169,7 +170,7 @@ class BenefitGitHubRepositoryService(
         except RateLimitExceeded as e:
             raise BenefitRetriableError(int(e.retry_after.total_seconds())) from e
         except (RequestTimeout, RequestError) as e:
-            raise BenefitRetriableError(2**attempt) from e
+            raise BenefitRetriableError(compute_backoff(attempt)) from e
 
         bound_logger.debug("Benefit revoked")
 

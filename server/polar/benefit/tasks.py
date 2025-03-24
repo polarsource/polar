@@ -24,6 +24,7 @@ from .service.benefit_grant_scope import resolve_scope
 
 log: Logger = structlog.get_logger()
 
+GRANT_REVOKE_MAX_TRIES = 16
 
 class BenefitTaskError(PolarTaskError): ...
 
@@ -93,7 +94,7 @@ async def enqueue_benefits_grants(
         )
 
 
-@task("benefit.grant")
+@task("benefit.grant", max_tries=GRANT_REVOKE_MAX_TRIES)
 async def benefit_grant(
     ctx: JobContext,
     customer_id: uuid.UUID,
@@ -133,7 +134,7 @@ async def benefit_grant(
             raise Retry(e.defer_seconds) from e
 
 
-@task("benefit.revoke")
+@task("benefit.revoke", max_tries=GRANT_REVOKE_MAX_TRIES)
 async def benefit_revoke(
     ctx: JobContext,
     customer_id: uuid.UUID,

@@ -455,8 +455,30 @@ class ProductPriceFree(ProductPriceFreeBase):
     """
 
 
+class ProductPriceMeteredUnit(ProductPriceBase):
+    """
+    A metered, usage-based, price for a product, with a fixed unit price.
+    """
+
+    amount_type: Literal[ProductPriceAmountType.metered_unit]
+    unit_amount: int = Field(description="The price per unit in cents.")
+    included_units: int = Field(
+        description=(
+            "The number of units included in the price. "
+            "They will be deducted from the total."
+        )
+    )
+    cap_amount: int | None = Field(
+        description=(
+            "The maximum amount in cents that can be charged, "
+            "regardless of the number of units consumed."
+        )
+    )
+    meter_id: UUID4 = Field(description="The ID of the meter associated to the price.")
+
+
 NewProductPrice = Annotated[
-    ProductPriceFixed | ProductPriceCustom | ProductPriceFree,
+    ProductPriceFixed | ProductPriceCustom | ProductPriceFree | ProductPriceMeteredUnit,
     Discriminator("amount_type"),
     SetSchemaReference("ProductPrice"),
 ]

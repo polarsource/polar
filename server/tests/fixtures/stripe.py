@@ -17,6 +17,7 @@ from polar.models import (
     Subscription,
 )
 from polar.models.subscription import SubscriptionStatus
+from polar.product.guard import is_static_price
 
 
 def cloned_stripe_canceled_subscription(
@@ -99,6 +100,7 @@ def construct_stripe_subscription(
                         }
                     }
                     for price in prices
+                    if is_static_price(price)
                 ]
             },
             "current_period_start": now_timestamp,

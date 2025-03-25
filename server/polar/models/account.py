@@ -27,6 +27,7 @@ class Account(RecordModel):
         CREATED = "created"
         ONBOARDING_STARTED = "onboarding_started"
         UNDER_REVIEW = "under_review"
+        DENIED = "denied"
         ACTIVE = "active"
 
         def get_display_name(self) -> str:

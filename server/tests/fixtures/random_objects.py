@@ -1762,10 +1762,15 @@ async def create_meter(
     name: str = "My Meter",
     customer: Customer | None = None,
     external_customer_id: str | None = None,
+    last_billed_event: Event | None = None,
     metadata: dict[str, str | int | bool] | None = None,
 ) -> Meter:
     meter = Meter(
-        name=name, organization=organization, filter=filter, aggregation=aggregation
+        name=name,
+        organization=organization,
+        filter=filter,
+        aggregation=aggregation,
+        last_billed_event=last_billed_event,
     )
     await save_fixture(meter)
     return meter

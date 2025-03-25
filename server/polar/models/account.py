@@ -35,6 +35,7 @@ class Account(RecordModel):
                 Account.Status.CREATED: "Created",
                 Account.Status.ONBOARDING_STARTED: "Onboarding Started",
                 Account.Status.UNDER_REVIEW: "Under Review",
+                Account.Status.DENIED: "Denied",
                 Account.Status.ACTIVE: "Active",
             }[self]
 

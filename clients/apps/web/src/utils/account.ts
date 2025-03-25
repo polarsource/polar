@@ -19,6 +19,7 @@ export const ACCOUNT_STATUS_DISPLAY_NAMES: Record<schemas['Status'], string> = {
   onboarding_started: 'Onboarding incomplete',
   under_review: 'Under review',
   active: 'Active',
+  denied: 'Denied',
 }
 
 export const ACCOUNT_TYPE_ICON: Record<schemas['AccountType'], React.FC> = {

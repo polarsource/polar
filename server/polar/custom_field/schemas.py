@@ -5,7 +5,6 @@ from pydantic import Discriminator, Field, StringConstraints, TypeAdapter
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
-    OptionalMetadataInputMixin,
 )
 from polar.kit.schemas import (
     ClassName,
@@ -102,7 +101,7 @@ CustomFieldCreate = Annotated[
 ]
 
 
-class CustomFieldUpdateBase(OptionalMetadataInputMixin, Schema):
+class CustomFieldUpdateBase(MetadataInputMixin, Schema):
     """Schema to update an existing custom field."""
 
     name: Name | None = None

@@ -1896,6 +1896,37 @@ class TestUpdate:
 
         assert checkout.user_metadata == {"key": "value"}
 
+    async def test_valid_metadata_reset(
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        checkout_one_time_free: Checkout,
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            locker,
+            checkout_one_time_free,
+            CheckoutUpdate(metadata={}),
+        )
+
+        assert checkout.user_metadata == {}
+
+    async def test_valid_metadata_untouched(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        checkout_one_time_free: Checkout,
+    ) -> None:
+        checkout_one_time_free.user_metadata = {"key": "value"}
+        await save_fixture(checkout_one_time_free)
+
+        checkout = await checkout_service.update(
+            session, locker, checkout_one_time_free, CheckoutUpdate()
+        )
+
+        assert checkout.user_metadata == {"key": "value"}
+
     async def test_valid_customer_metadata(
         self,
         session: AsyncSession,

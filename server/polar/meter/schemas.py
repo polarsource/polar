@@ -7,7 +7,6 @@ from pydantic import UUID4, Field
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
-    OptionalMetadataInputMixin,
 )
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.meter.aggregation import Aggregation
@@ -38,7 +37,7 @@ class MeterCreate(Schema, MetadataInputMixin):
     )
 
 
-class MeterUpdate(Schema, OptionalMetadataInputMixin):
+class MeterUpdate(Schema, MetadataInputMixin):
     name: str | None = Field(None, description=_name_description, min_length=3)
     filter: Filter | None = Field(None, description=_filter_description)
     aggregation: Aggregation | None = Field(None, description=_aggregation_description)

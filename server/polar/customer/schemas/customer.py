@@ -9,7 +9,6 @@ from polar.kit.address import Address
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
-    OptionalMetadataInputMixin,
 )
 from polar.kit.schemas import (
     CUSTOMER_ID_EXAMPLE,
@@ -62,7 +61,7 @@ class CustomerCreate(MetadataInputMixin, Schema):
     )
 
 
-class CustomerUpdate(OptionalMetadataInputMixin, Schema):
+class CustomerUpdate(MetadataInputMixin, Schema):
     external_id: str | None = Field(
         default=None,
         description=_external_id_description,

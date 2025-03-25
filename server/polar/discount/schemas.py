@@ -16,7 +16,6 @@ from pydantic import (
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
-    OptionalMetadataInputMixin,
 )
 from polar.kit.schemas import (
     ClassName,
@@ -245,7 +244,7 @@ class DiscountPercentageRepeatDurationCreate(
     """
 
 
-class DiscountUpdate(OptionalMetadataInputMixin, Schema):
+class DiscountUpdate(MetadataInputMixin, Schema):
     """
     Schema to update a discount.
     """

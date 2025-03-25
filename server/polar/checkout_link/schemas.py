@@ -8,7 +8,6 @@ from polar.enums import PaymentProcessor
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
-    OptionalMetadataInputMixin,
 )
 from polar.kit.schemas import (
     IDSchema,
@@ -100,7 +99,7 @@ CheckoutLinkCreate = (
 )
 
 
-class CheckoutLinkUpdate(OptionalMetadataInputMixin):
+class CheckoutLinkUpdate(MetadataInputMixin):
     """Schema to update an existing checkout link."""
 
     products: list[UUID4] | None = Field(

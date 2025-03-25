@@ -4,7 +4,9 @@ from decimal import Decimal
 import pytest
 import pytest_asyncio
 
+from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
+from polar.exceptions import PolarRequestValidationError
 from polar.kit.time_queries import TimeInterval
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import (
@@ -14,10 +16,19 @@ from polar.meter.aggregation import (
     PropertyAggregation,
 )
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
+from polar.meter.schemas import MeterCreate, MeterUpdate
 from polar.meter.service import meter as meter_service
-from polar.models import Customer, Event, Meter, Organization, Product, Subscription
+from polar.models import (
+    Customer,
+    Event,
+    Meter,
+    Organization,
+    Product,
+    Subscription,
+)
 from polar.models.billing_entry import BillingEntryDirection
 from polar.postgres import AsyncSession
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -25,6 +36,174 @@ from tests.fixtures.random_objects import (
     create_meter,
     create_product,
 )
+
+
+@pytest.mark.asyncio
+class TestCreate:
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_last_billed_event_set(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        events = [
+            await create_event(
+                save_fixture,
+                organization=organization,
+                name="not_matching",
+            ),
+            await create_event(
+                save_fixture,
+                organization=organization,
+                name="matching",
+            ),
+            await create_event(
+                save_fixture,
+                organization=organization,
+                name="not_matching",
+            ),
+        ]
+
+        meter = await meter_service.create(
+            session,
+            MeterCreate(
+                name="Meter",
+                filter=Filter(
+                    conjunction=FilterConjunction.and_,
+                    clauses=[
+                        FilterClause(
+                            property="name",
+                            operator=FilterOperator.eq,
+                            value="matching",
+                        ),
+                    ],
+                ),
+                aggregation=CountAggregation(),
+            ),
+            auth_subject,
+        )
+
+        assert meter.last_billed_event == events[1]
+
+
+@pytest.mark.asyncio
+class TestUpdate:
+    @pytest.mark.parametrize(
+        "meter_update",
+        [
+            MeterUpdate(  # pyright: ignore
+                filter=Filter(
+                    conjunction=FilterConjunction.and_,
+                    clauses=[
+                        FilterClause(
+                            property="name",
+                            operator=FilterOperator.eq,
+                            value="matching",
+                        )
+                    ],
+                )
+            ),
+            MeterUpdate(  # pyright: ignore
+                aggregation=PropertyAggregation(
+                    func=AggregationFunction.sum, property="tokens"
+                )
+            ),
+        ],
+    )
+    async def test_sensitive_update_forbidden(
+        self,
+        meter_update: MeterUpdate,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            name="matching",
+        )
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=CountAggregation(),
+            last_billed_event=event,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await meter_service.update(session, meter, meter_update)
+
+    @pytest.mark.parametrize(
+        "meter_update",
+        [
+            MeterUpdate(  # pyright: ignore
+                filter=Filter(
+                    conjunction=FilterConjunction.and_,
+                    clauses=[
+                        FilterClause(
+                            property="name",
+                            operator=FilterOperator.eq,
+                            value="matching",
+                        )
+                    ],
+                )
+            ),
+            MeterUpdate(  # pyright: ignore
+                aggregation=PropertyAggregation(
+                    func=AggregationFunction.sum, property="tokens"
+                )
+            ),
+        ],
+    )
+    async def test_sensitive_update_allowed(
+        self,
+        meter_update: MeterUpdate,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=CountAggregation(),
+            last_billed_event=None,
+        )
+
+        updated_meter = await meter_service.update(session, meter, meter_update)
+
+        if meter_update.filter:
+            assert updated_meter.filter == meter_update.filter
+        if meter_update.aggregation:
+            assert updated_meter.aggregation == meter_update.aggregation
+
+    async def test_insensitive_update(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            name="matching",
+        )
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=CountAggregation(),
+            last_billed_event=event,
+        )
+
+        updated_meter = await meter_service.update(
+            session,
+            meter,
+            MeterUpdate(name="New Name"),  # pyright: ignore
+        )
+        assert updated_meter.name == "New Name"
 
 
 @pytest.mark.asyncio

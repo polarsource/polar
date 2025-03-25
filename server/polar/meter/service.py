@@ -13,10 +13,12 @@ from sqlalchemy import (
     func,
     select,
 )
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.event.repository import EventRepository
+from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -78,8 +80,10 @@ class MeterService:
         id: uuid.UUID,
     ) -> Meter | None:
         repository = MeterRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
-            Meter.id == id
+        statement = (
+            repository.get_readable_statement(auth_subject)
+            .where(Meter.id == id)
+            .options(joinedload(Meter.last_billed_event))
         )
         return await repository.get_one_or_none(statement)
 
@@ -93,21 +97,68 @@ class MeterService:
         organization = await get_payload_organization(
             session, auth_subject, meter_create
         )
-        return await repository.create(
+
+        meter = await repository.create(
             Meter(
-                **meter_create.model_dump(by_alias=True),
+                **meter_create.model_dump(
+                    by_alias=True, exclude={"filter", "aggregation"}
+                ),
+                filter=meter_create.filter,
+                aggregation=meter_create.aggregation,
                 organization=organization,
-            )
+            ),
+            flush=True,
         )
+
+        # Retrieve the latest matching event for the meter and set it as the last billed event
+        # This is done to ensure that the meter is billed from the last event onwards
+        event_repository = EventRepository.from_session(session)
+        statement = (
+            event_repository.get_meter_statement(meter)
+            .order_by(Event.timestamp.desc())
+            .limit(1)
+        )
+        last_billed_event = await event_repository.get_one_or_none(statement)
+        await repository.update(
+            meter, update_dict={"last_billed_event": last_billed_event}
+        )
+
+        return meter
 
     async def update(
         self, session: AsyncSession, meter: Meter, meter_update: MeterUpdate
     ) -> Meter:
         repository = MeterRepository.from_session(session)
-        return await repository.update(
-            meter,
-            update_dict=meter_update.model_dump(by_alias=True, exclude_unset=True),
+
+        errors: list[ValidationError] = []
+        if meter.last_billed_event is not None:
+            sensitive_fields = {"filter", "aggregation"}
+            for sensitive_field in sensitive_fields:
+                if sensitive_field in meter_update.model_fields_set:
+                    errors.append(
+                        {
+                            "type": "forbidden",
+                            "loc": ("body", sensitive_field),
+                            "msg": (
+                                "This field can't be updated because the meter "
+                                "is already aggregating events."
+                            ),
+                            "input": getattr(meter_update, sensitive_field),
+                        }
+                    )
+
+        if errors:
+            raise PolarRequestValidationError(errors)
+
+        update_dict = meter_update.model_dump(
+            by_alias=True, exclude_unset=True, exclude={"filter", "aggregation"}
         )
+        if meter_update.filter is not None:
+            update_dict["filter"] = meter_update.filter
+        if meter_update.aggregation is not None:
+            update_dict["aggregation"] = meter_update.aggregation
+
+        return await repository.update(meter, update_dict=update_dict)
 
     async def events(
         self,

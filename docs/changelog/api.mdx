@@ -4,6 +4,22 @@ sidebarTitle: API
 description: Stay up to date with the latest changes, improvements and deprecations to the Polar API.
 ---
 
+<Update label="2025-03-25">
+  ## Checkout amount fields changes and depreciations
+
+To be more consistent with the [Order schema changes](#2025-03-14), we've made some changes to the field related to amounts in the Checkout schema.
+
+- <Icon icon="check" size={16} color="green" /> **Added**:
+  [`checkout.discount_amount`](/api-reference/checkouts/get-session#response-discount-amount).
+- <Icon icon="check" size={16} color="green" /> **Added**:
+  [`checkout.net_amount`](/api-reference/checkouts/get-session#response-net-amount).
+- <Icon icon="circle-exclamation" size={16} color="orange" /> **Deprecated**:
+  `checkout.subtotal_amount`, use
+  [`checkout.net_amount`](/api-reference/checkouts/get-session#response-net-amount)
+  instead.
+
+</Update>
+
 <Update label="2025-03-20">
   ## New order status and webhooks
 

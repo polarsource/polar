@@ -469,6 +469,7 @@ class ProductPriceMeteredUnit(ProductPriceBase):
     """
 
     amount_type: Literal[ProductPriceAmountType.metered_unit]
+    price_currency: str = Field(description="The currency.")
     unit_amount: int = Field(description="The price per unit in cents.")
     included_units: int = Field(
         description=(

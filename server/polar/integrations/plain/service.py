@@ -2,7 +2,7 @@
 import asyncio
 import contextlib
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Coroutine
 from typing import Any
 
 import pycountry
@@ -76,6 +76,16 @@ class AccountReviewThreadCreationError(PlainServiceError):
         )
 
 
+_card_getter_semaphore = asyncio.Semaphore(3)
+
+
+async def _card_getter_task(
+    coroutine: Coroutine[Any, Any, CustomerCard | None],
+) -> CustomerCard | None:
+    async with _card_getter_semaphore:
+        return await coroutine
+
+
 class PlainService:
     async def get_cards(
         self, session: AsyncSession, request: CustomerCardsRequest
@@ -84,12 +94,22 @@ class PlainService:
         async with asyncio.TaskGroup() as tg:
             if CustomerCardKey.organization in request.cardKeys:
                 tasks.append(
-                    tg.create_task(self._get_organization_card(session, request))
+                    tg.create_task(
+                        _card_getter_task(self._get_organization_card(session, request))
+                    )
                 )
             if CustomerCardKey.customer in request.cardKeys:
-                tasks.append(tg.create_task(self.get_customer_card(session, request)))
+                tasks.append(
+                    tg.create_task(
+                        _card_getter_task(self.get_customer_card(session, request))
+                    )
+                )
             if CustomerCardKey.order in request.cardKeys:
-                tasks.append(tg.create_task(self._get_order_card(session, request)))
+                tasks.append(
+                    tg.create_task(
+                        _card_getter_task(self._get_order_card(session, request))
+                    )
+                )
 
         cards = [card for task in tasks if (card := task.result()) is not None]
         return CustomerCardsResponse(cards=cards)

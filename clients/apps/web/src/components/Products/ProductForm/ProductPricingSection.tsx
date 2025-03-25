@@ -193,7 +193,7 @@ export const ProductPricingSection = ({
   )
   const [legacyMigration, setLegacyMigration] = useState(false)
 
-  const [amountType, setAmountType] = useState<'fixed' | 'custom' | 'free'>(
+  const [amountType, setAmountType] = useState(
     prices.length > 0 && (prices as schemas['ProductPrice'][])[0].amount_type
       ? (prices as schemas['ProductPrice'][])[0].amount_type
       : 'fixed',

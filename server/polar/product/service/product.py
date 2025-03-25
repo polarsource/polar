@@ -532,7 +532,13 @@ class ProductService(ResourceServiceReader[Product]):
             deleted_prices = set(product.prices) - existing_prices
             updated_prices = list(existing_prices) + added_prices
             for deleted_price in deleted_prices:
-                if deleted_price.stripe_price_id is not None:
+                if (
+                    deleted_price.stripe_price_id is not None
+                    and product.stripe_product_id is not None
+                ):
+                    await stripe_service.update_product(
+                        product.stripe_product_id, default_price=""
+                    )
                     await stripe_service.archive_price(deleted_price.stripe_price_id)
                 deleted_price.is_archived = True
                 session.add(deleted_price)

@@ -5,7 +5,6 @@ from collections.abc import Sequence
 from sqlalchemy.orm import joinedload
 
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import BillingEntry, OrderItem, Subscription
 from polar.postgres import AsyncSession
@@ -39,10 +38,7 @@ class BillingEntryService:
 
             entries_list = list(entries)
 
-            meter_repository = MeterRepository.from_session(session)
-            meter = await meter_repository.get_by_id(price.meter_id)
-            assert meter is not None
-
+            meter = price.meter
             units = await meter_service.get_quantity(
                 session, meter, [entry.event_id for entry in entries_list]
             )

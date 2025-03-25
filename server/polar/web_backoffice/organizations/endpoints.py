@@ -37,7 +37,10 @@ def account_badge(account: Account | None) -> Generator[None]:
         else:
             if account.status == Account.Status.ACTIVE:
                 classes("badge-success")
-            elif account.status == Account.Status.UNDER_REVIEW:
+            elif (
+                account.status == Account.Status.UNDER_REVIEW
+                or account.status == Account.Status.DENIED
+            ):
                 classes("badge-warning")
             else:
                 classes("badge-neutral")

@@ -1,6 +1,12 @@
 from typing import Annotated
 
-from pydantic import UUID4, AnyUrl, Field, PlainSerializer, UrlConstraints
+from pydantic import (
+    UUID4,
+    AnyUrl,
+    Field,
+    PlainSerializer,
+    UrlConstraints,
+)
 
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
@@ -32,6 +38,7 @@ EndpointSecret = Annotated[
     Field(
         description="The secret used to sign the webhook events.",
         examples=["f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA"],
+        min_length=1,
     ),
 ]
 EndpointEvents = Annotated[

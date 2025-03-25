@@ -6002,25 +6002,30 @@ export interface components {
             /** Amount */
             amount: number | null;
             /**
+             * Discount Amount
+             * @description Discount amount in cents.
+             */
+            discount_amount: number | null;
+            /**
+             * Net Amount
+             * @description Amount in cents, after discounts but before taxes.
+             */
+            net_amount: number | null;
+            /**
              * Tax Amount
-             * @description Computed tax amount to pay in cents.
+             * @description Sales tax amount in cents.
              */
             tax_amount: number | null;
+            /**
+             * Total Amount
+             * @description Amount in cents, after discounts and taxes.
+             */
+            total_amount: number | null;
             /**
              * Currency
              * @description Currency code of the checkout session.
              */
             currency: string | null;
-            /**
-             * Subtotal Amount
-             * @description Subtotal amount in cents, including discounts and before tax.
-             */
-            subtotal_amount: number | null;
-            /**
-             * Total Amount
-             * @description Total amount to pay in cents, including discounts and after tax.
-             */
-            total_amount: number | null;
             /**
              * Product Id
              * Format: uuid4
@@ -6089,6 +6094,11 @@ export interface components {
             payment_processor_metadata: {
                 [key: string]: string;
             };
+            /**
+             * Subtotal Amount
+             * @deprecated
+             */
+            subtotal_amount: number | null;
             /** Metadata */
             metadata: {
                 [key: string]: string | number | boolean;
@@ -6602,10 +6612,22 @@ export interface components {
          * @description Schema to update an existing checkout link.
          */
         CheckoutLinkUpdate: {
-            /** Metadata */
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
             metadata?: {
                 [key: string]: string | number | boolean;
-            } | null;
+            };
             /**
              * Products
              * @description List of products that will be available to select at checkout.
@@ -7064,25 +7086,30 @@ export interface components {
             /** Amount */
             amount: number | null;
             /**
+             * Discount Amount
+             * @description Discount amount in cents.
+             */
+            discount_amount: number | null;
+            /**
+             * Net Amount
+             * @description Amount in cents, after discounts but before taxes.
+             */
+            net_amount: number | null;
+            /**
              * Tax Amount
-             * @description Computed tax amount to pay in cents.
+             * @description Sales tax amount in cents.
              */
             tax_amount: number | null;
+            /**
+             * Total Amount
+             * @description Amount in cents, after discounts and taxes.
+             */
+            total_amount: number | null;
             /**
              * Currency
              * @description Currency code of the checkout session.
              */
             currency: string | null;
-            /**
-             * Subtotal Amount
-             * @description Subtotal amount in cents, including discounts and before tax.
-             */
-            subtotal_amount: number | null;
-            /**
-             * Total Amount
-             * @description Total amount to pay in cents, including discounts and after tax.
-             */
-            total_amount: number | null;
             /**
              * Product Id
              * Format: uuid4
@@ -7151,6 +7178,11 @@ export interface components {
             payment_processor_metadata: {
                 [key: string]: string;
             };
+            /**
+             * Subtotal Amount
+             * @deprecated
+             */
+            subtotal_amount: number | null;
             /**
              * Products
              * @description List of products available to select.
@@ -7237,25 +7269,30 @@ export interface components {
             /** Amount */
             amount: number | null;
             /**
+             * Discount Amount
+             * @description Discount amount in cents.
+             */
+            discount_amount: number | null;
+            /**
+             * Net Amount
+             * @description Amount in cents, after discounts but before taxes.
+             */
+            net_amount: number | null;
+            /**
              * Tax Amount
-             * @description Computed tax amount to pay in cents.
+             * @description Sales tax amount in cents.
              */
             tax_amount: number | null;
+            /**
+             * Total Amount
+             * @description Amount in cents, after discounts and taxes.
+             */
+            total_amount: number | null;
             /**
              * Currency
              * @description Currency code of the checkout session.
              */
             currency: string | null;
-            /**
-             * Subtotal Amount
-             * @description Subtotal amount in cents, including discounts and before tax.
-             */
-            subtotal_amount: number | null;
-            /**
-             * Total Amount
-             * @description Total amount to pay in cents, including discounts and after tax.
-             */
-            total_amount: number | null;
             /**
              * Product Id
              * Format: uuid4
@@ -7325,6 +7362,11 @@ export interface components {
                 [key: string]: string;
             };
             /**
+             * Subtotal Amount
+             * @deprecated
+             */
+            subtotal_amount: number | null;
+            /**
              * Products
              * @description List of products available to select.
              */
@@ -7365,7 +7407,7 @@ export interface components {
              */
             custom_field_data?: {
                 [key: string]: string | number | boolean | null;
-            } | null;
+            };
             /**
              * Product Id
              * @description ID of the product to checkout. Must be present in the checkout's product list.
@@ -7386,10 +7428,22 @@ export interface components {
             customer_billing_address?: components["schemas"]["Address"] | null;
             /** Customer Tax Id */
             customer_tax_id?: string | null;
-            /** Metadata */
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
             metadata?: {
                 [key: string]: string | number | boolean;
-            } | null;
+            };
             /**
              * Discount Id
              * @description ID of the discount to apply to the checkout.
@@ -7440,7 +7494,7 @@ export interface components {
              */
             custom_field_data?: {
                 [key: string]: string | number | boolean | null;
-            } | null;
+            };
             /**
              * Product Id
              * @description ID of the product to checkout. Must be present in the checkout's product list.
@@ -8048,10 +8102,22 @@ export interface components {
          * @description Schema to update a custom field of type checkbox.
          */
         CustomFieldUpdateCheckbox: {
-            /** Metadata */
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
             metadata?: {
                 [key: string]: string | number | boolean;
-            } | null;
+            };
             /** Name */
             name?: string | null;
             /** Slug */
@@ -8068,10 +8134,22 @@ export interface components {
          * @description Schema to update a custom field of type date.
          */
         CustomFieldUpdateDate: {
-            /** Metadata */
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
             metadata?: {
                 [key: string]: string | number | boolean;
-            } | null;
+            };
             /** Name */
             name?: string | null;
             /** Slug */
@@ -8088,10 +8166,22 @@ export interface components {
          * @description Schema to update a custom field of type number.
          */
         CustomFieldUpdateNumber: {
-            /** Metadata */
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
             metadata?: {
                 [key: string]: string | number | boolean;
-            } | null;
+            };
             /** Name */
             name?: string | null;
             /** Slug */
@@ -8108,10 +8198,22 @@ export interface components {
          * @description Schema to update a custom field of type select.
          */
         CustomFieldUpdateSelect: {
-            /** Metadata */
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
             metadata?: {
                 [key: string]: string | number | boolean;
-            } | null;
+            };
             /** Name */
             name?: string | null;
             /** Slug */
@@ -8128,10 +8230,22 @@ export interface components {
          * @description Schema to update a custom field of type text.
          */
         CustomFieldUpdateText: {
-            /** Metadata */
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
             metadata?: {
                 [key: string]: string | number | boolean;
-            } | null;
+            };
             /** Name */
             name?: string | null;
             /** Slug */
@@ -9496,10 +9610,22 @@ export interface components {
         };
         /** CustomerUpdate */
         CustomerUpdate: {
-            /** Metadata */
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
             metadata?: {
                 [key: string]: string | number | boolean;
-            } | null;
+            };
             /**
              * External Id
              * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
@@ -10452,10 +10578,22 @@ export interface components {
          * @description Schema to update a discount.
          */
         DiscountUpdate: {
-            /** Metadata */
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
             metadata?: {
                 [key: string]: string | number | boolean;
-            } | null;
+            };
             /** Name */
             name?: string | null;
             /** Code */
@@ -12333,10 +12471,22 @@ export interface components {
         MeterSortProperty: "created_at" | "-created_at" | "name" | "-name";
         /** MeterUpdate */
         MeterUpdate: {
-            /** Metadata */
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
             metadata?: {
                 [key: string]: string | number | boolean;
-            } | null;
+            };
             /**
              * Name
              * @description The name of the meter. Will be shown on customer's invoices and usage.
@@ -14261,7 +14411,7 @@ export interface components {
             /** Public Url */
             readonly public_url: string;
         };
-        ProductPrice: components["schemas"]["ProductPriceFixed"] | components["schemas"]["ProductPriceCustom"] | components["schemas"]["ProductPriceFree"];
+        ProductPrice: components["schemas"]["ProductPriceFixed"] | components["schemas"]["ProductPriceCustom"] | components["schemas"]["ProductPriceFree"] | components["schemas"]["ProductPriceMeteredUnit"];
         /**
          * ProductPriceCustom
          * @description A pay-what-you-want price for a product.
@@ -14487,6 +14637,94 @@ export interface components {
             amount_type: "free";
         };
         /**
+         * ProductPriceMeter
+         * @description A meter associated to a metered price.
+         */
+        ProductPriceMeter: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the meter.
+             */
+            name: string;
+        };
+        /**
+         * ProductPriceMeteredUnit
+         * @description A metered, usage-based, price for a product, with a fixed unit price.
+         */
+        ProductPriceMeteredUnit: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the price.
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            amount_type: "metered_unit";
+            /**
+             * Is Archived
+             * @description Whether the price is archived and no longer available.
+             */
+            is_archived: boolean;
+            /**
+             * Product Id
+             * Format: uuid4
+             * @description The ID of the product owning the price.
+             */
+            product_id: string;
+            /** @deprecated */
+            type: components["schemas"]["ProductPriceType"];
+            /** @deprecated */
+            recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
+            /**
+             * Price Currency
+             * @description The currency.
+             */
+            price_currency: string;
+            /**
+             * Unit Amount
+             * @description The price per unit in cents.
+             */
+            unit_amount: number;
+            /**
+             * Included Units
+             * @description The number of units included in the price. They will be deducted from the total.
+             */
+            included_units: number;
+            /**
+             * Cap Amount
+             * @description The maximum amount in cents that can be charged, regardless of the number of units consumed.
+             */
+            cap_amount: number | null;
+            /**
+             * Meter Id
+             * Format: uuid4
+             * @description The ID of the meter associated to the price.
+             */
+            meter_id: string;
+            /** @description The meter associated to the price. */
+            meter: components["schemas"]["ProductPriceMeter"];
+        };
+        /**
          * ProductPriceType
          * @enum {string}
          */
@@ -14567,10 +14805,22 @@ export interface components {
          * @description Schema to update a product.
          */
         ProductUpdate: {
-            /** Metadata */
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
             metadata?: {
                 [key: string]: string | number | boolean;
-            } | null;
+            };
             /** Name */
             name?: string | null;
             /**
@@ -15059,7 +15309,7 @@ export interface components {
          * Status
          * @enum {string}
          */
-        Status: "created" | "onboarding_started" | "under_review" | "active";
+        Status: "created" | "onboarding_started" | "under_review" | "denied" | "active";
         /**
          * Storefront
          * @description Schema of a public storefront.
@@ -25869,6 +26119,7 @@ export const productMediaFileReadServiceValues: ReadonlyArray<components["schema
 export const productPriceCustomAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceCustom"]["amount_type"]> = ["custom"];
 export const productPriceFixedAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceFixed"]["amount_type"]> = ["fixed"];
 export const productPriceFreeAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceFree"]["amount_type"]> = ["free"];
+export const productPriceMeteredUnitAmount_typeValues: ReadonlyArray<components["schemas"]["ProductPriceMeteredUnit"]["amount_type"]> = ["metered_unit"];
 export const productPriceTypeValues: ReadonlyArray<components["schemas"]["ProductPriceType"]> = ["one_time", "recurring"];
 export const productSortPropertyValues: ReadonlyArray<components["schemas"]["ProductSortProperty"]> = ["created_at", "-created_at", "name", "-name", "price_amount_type", "-price_amount_type", "price_amount", "-price_amount"];
 export const propertyAggregationFuncValues: ReadonlyArray<components["schemas"]["PropertyAggregation"]["func"]> = ["avg", "max", "min", "sum"];
@@ -25880,7 +26131,7 @@ export const rewardPaidNotificationTypeValues: ReadonlyArray<components["schemas
 export const rewardStateValues: ReadonlyArray<components["schemas"]["RewardState"]> = ["pending", "paid"];
 export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "admin", "web_default", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write"];
 export const stateValues: ReadonlyArray<components["schemas"]["State"]> = ["open", "closed"];
-export const statusValues: ReadonlyArray<components["schemas"]["Status"]> = ["created", "onboarding_started", "under_review", "active"];
+export const statusValues: ReadonlyArray<components["schemas"]["Status"]> = ["created", "onboarding_started", "under_review", "denied", "active"];
 export const subTypeValues: ReadonlyArray<components["schemas"]["SubType"]> = ["user", "organization"];
 export const subscriptionProrationBehaviorValues: ReadonlyArray<components["schemas"]["SubscriptionProrationBehavior"]> = ["invoice", "prorate"];
 export const subscriptionRecurringIntervalValues: ReadonlyArray<components["schemas"]["SubscriptionRecurringInterval"]> = ["month", "year"];

@@ -16,7 +16,6 @@ from polar.custom_field.attachment import AttachedCustomField
 from polar.custom_field.data import (
     CustomFieldDataInputMixin,
     CustomFieldDataOutputMixin,
-    OptionalCustomFieldDataInputMixin,
 )
 from polar.discount.schemas import (
     DiscountFixedBase,
@@ -31,7 +30,6 @@ from polar.kit.metadata import (
     MetadataField,
     MetadataInputMixin,
     MetadataOutputMixin,
-    OptionalMetadataInputMixin,
 )
 from polar.kit.schemas import (
     EmailStrDNS,
@@ -239,7 +237,7 @@ class CheckoutCreatePublic(Schema):
     )
 
 
-class CheckoutUpdateBase(OptionalCustomFieldDataInputMixin, Schema):
+class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     product_id: UUID4 | None = Field(
         default=None,
         description=(
@@ -265,7 +263,7 @@ class CheckoutUpdateBase(OptionalCustomFieldDataInputMixin, Schema):
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
 
 
-class CheckoutUpdate(OptionalMetadataInputMixin, CheckoutUpdateBase):
+class CheckoutUpdate(MetadataInputMixin, CheckoutUpdateBase):
     """Update an existing checkout session using an access token."""
 
     discount_id: UUID4 | None = Field(
@@ -290,7 +288,7 @@ class CheckoutUpdatePublic(CheckoutUpdateBase):
     )
 
 
-class CheckoutConfirmBase(CustomFieldDataInputMixin, CheckoutUpdatePublic): ...
+class CheckoutConfirmBase(CheckoutUpdatePublic): ...
 
 
 class CheckoutConfirmStripe(CheckoutConfirmBase):

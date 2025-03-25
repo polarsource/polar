@@ -16,7 +16,6 @@ from polar.kit.db.models import Model
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
-    OptionalMetadataInputMixin,
 )
 from polar.kit.schemas import (
     EmptyStrToNoneValidator,
@@ -262,7 +261,7 @@ ProductPriceUpdate = Annotated[
 ]
 
 
-class ProductUpdate(OptionalMetadataInputMixin, Schema):
+class ProductUpdate(MetadataInputMixin, Schema):
     """
     Schema to update a product.
     """

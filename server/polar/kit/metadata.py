@@ -65,12 +65,6 @@ class MetadataInputMixin(BaseModel):
     )
 
 
-class OptionalMetadataInputMixin(BaseModel):
-    metadata: MetadataField | None = Field(
-        default=None, serialization_alias="user_metadata"
-    )
-
-
 class MetadataOutputMixin(BaseModel):
     metadata: dict[str, str | int | bool] = Field(
         validation_alias=AliasChoices("user_metadata", "metadata")

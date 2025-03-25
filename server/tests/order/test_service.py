@@ -387,7 +387,7 @@ class TestCreateFromCheckout:
             session, checkout, payment_intent
         )
 
-        assert order.net_amount == checkout.subtotal_amount
+        assert order.net_amount == checkout.net_amount
         assert order.discount_amount == 0
         assert order.billing_reason == OrderBillingReason.purchase
         assert order.customer == checkout.customer
@@ -460,7 +460,7 @@ class TestCreateFromCheckout:
             session, checkout, payment_intent
         )
 
-        assert order.net_amount == checkout.subtotal_amount
+        assert order.net_amount == checkout.net_amount
         assert order.discount_amount == 0
         assert order.billing_reason == OrderBillingReason.purchase
         assert order.customer == checkout.customer

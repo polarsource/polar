@@ -455,6 +455,14 @@ class ProductPriceFree(ProductPriceFreeBase):
     """
 
 
+class ProductPriceMeter(IDSchema):
+    """
+    A meter associated to a metered price.
+    """
+
+    name: str = Field(description="The name of the meter.")
+
+
 class ProductPriceMeteredUnit(ProductPriceBase):
     """
     A metered, usage-based, price for a product, with a fixed unit price.
@@ -475,6 +483,7 @@ class ProductPriceMeteredUnit(ProductPriceBase):
         )
     )
     meter_id: UUID4 = Field(description="The ID of the meter associated to the price.")
+    meter: ProductPriceMeter = Field(description="The meter associated to the price.")
 
 
 NewProductPrice = Annotated[

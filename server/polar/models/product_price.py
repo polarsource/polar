@@ -291,7 +291,8 @@ class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
 
     @declared_attr
     def meter(cls) -> Mapped["Meter"]:
-        return relationship("Meter", lazy="raise_on_sql")
+        # For convenience, eager load it, at it's embedded in all schemas outputting a price
+        return relationship("Meter", lazy="joined")
 
     def get_amount_and_label(self, units: float) -> tuple[int, str]:
         label = f"({format_decimal(units, locale='en_US')} consumed units"

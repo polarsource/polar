@@ -1510,14 +1510,14 @@ class CheckoutService:
 
         if (
             checkout.currency is not None
-            and checkout.subtotal_amount is not None
+            and checkout.net_amount is not None
             and checkout.customer_billing_address is not None
             and checkout.product.stripe_product_id is not None
         ):
             try:
                 tax_amount = await calculate_tax(
                     checkout.currency,
-                    checkout.subtotal_amount,
+                    checkout.net_amount,
                     checkout.product.stripe_product_id,
                     checkout.customer_billing_address,
                     (

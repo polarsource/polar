@@ -204,22 +204,24 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return self.customer_tax_id[0] if self.customer_tax_id is not None else None
 
     @property
-    def subtotal_amount(self) -> int | None:
+    def discount_amount(self) -> int | None:
         if self.amount is None:
             return None
-        discount_amount = (
-            self.discount.get_discount_amount(self.amount)
-            if self.discount is not None
-            else 0
-        )
+        return self.discount.get_discount_amount(self.amount) if self.discount else 0
+
+    @property
+    def net_amount(self) -> int | None:
+        if self.amount is None:
+            return None
+        discount_amount = self.discount_amount or 0
         return self.amount - discount_amount
 
     @property
     def total_amount(self) -> int | None:
-        subtotal_amount = self.subtotal_amount
-        if subtotal_amount is None:
+        net_amount = self.net_amount
+        if net_amount is None:
             return None
-        return subtotal_amount + (self.tax_amount or 0)
+        return net_amount + (self.tax_amount or 0)
 
     @property
     def is_discount_applicable(self) -> bool:

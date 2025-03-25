@@ -60,7 +60,7 @@ Amount = Annotated[
     int,
     Field(
         description=(
-            "Amount to pay in cents. "
+            "Amount in cents, before discounts and taxes. "
             "Only useful for custom prices, it'll be ignored for fixed and free prices."
         )
     ),
@@ -334,14 +334,15 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
         "Used as a security measure to send messages only to the embedding page."
     )
     amount: Amount | None
-    tax_amount: int | None = Field(description="Computed tax amount to pay in cents.")
-    currency: str | None = Field(description="Currency code of the checkout session.")
-    subtotal_amount: int | None = Field(
-        description="Subtotal amount in cents, including discounts and before tax."
+    discount_amount: int | None = Field(description="Discount amount in cents.")
+    net_amount: int | None = Field(
+        description="Amount in cents, after discounts but before taxes."
     )
+    tax_amount: int | None = Field(description="Sales tax amount in cents.")
     total_amount: int | None = Field(
-        description="Total amount to pay in cents, including discounts and after tax."
+        description="Amount in cents, after discounts and taxes."
     )
+    currency: str | None = Field(description="Currency code of the checkout session.")
     product_id: UUID4 = Field(description="ID of the product to checkout.")
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
     discount_id: UUID4 | None = Field(
@@ -386,6 +387,10 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     )
 
     payment_processor_metadata: dict[str, str]
+
+    subtotal_amount: int | None = Field(
+        deprecated="Use `net_amount`.", validation_alias="net_amount"
+    )
 
 
 class CheckoutProduct(ProductBase):

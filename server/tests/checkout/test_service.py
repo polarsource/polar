@@ -899,7 +899,7 @@ class TestCreate:
         assert checkout.discount == discount_fixed_once
         assert checkout.amount == price.price_amount
         assert (
-            checkout.subtotal_amount
+            checkout.net_amount
             == price.price_amount
             - discount_fixed_once.get_discount_amount(price.price_amount)
         )
@@ -2021,7 +2021,7 @@ class TestUpdate:
         assert isinstance(price, ProductPriceFixed)
         assert checkout.amount == price.price_amount
         assert (
-            checkout.subtotal_amount
+            checkout.net_amount
             == price.price_amount
             - discount_fixed_once.get_discount_amount(price.price_amount)
         )
@@ -2048,7 +2048,7 @@ class TestUpdate:
         assert isinstance(price, ProductPriceFixed)
         assert checkout.amount == price.price_amount
         assert (
-            checkout.subtotal_amount
+            checkout.net_amount
             == price.price_amount
             - discount_fixed_once.get_discount_amount(price.price_amount)
         )

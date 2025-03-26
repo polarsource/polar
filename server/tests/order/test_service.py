@@ -382,7 +382,7 @@ class TestCreateFromCheckout:
             },
         )
 
-        payment_intent = build_stripe_payment_intent(amount=checkout.total_amount or 0)
+        payment_intent = build_stripe_payment_intent(amount=checkout.total_amount)
 
         order = await order_service.create_from_checkout(
             session, checkout, payment_intent
@@ -459,7 +459,7 @@ class TestCreateFromCheckout:
             },
         )
 
-        payment_intent = build_stripe_payment_intent(amount=checkout.total_amount or 0)
+        payment_intent = build_stripe_payment_intent(amount=checkout.total_amount)
 
         order = await order_service.create_from_checkout(
             session, checkout, payment_intent

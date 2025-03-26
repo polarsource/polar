@@ -193,7 +193,7 @@ class TestCreateOrUpdateFromCheckout:
             SimpleNamespace(id="STRIPE_INVOICE_ID", total=checkout.total_amount),
         )
 
-        payment_intent = build_stripe_payment_intent(amount=checkout.total_amount or 0)
+        payment_intent = build_stripe_payment_intent(amount=checkout.total_amount)
 
         subscription = await subscription_service.create_or_update_from_checkout(
             session, checkout, payment_intent
@@ -239,7 +239,7 @@ class TestCreateOrUpdateFromCheckout:
             SimpleNamespace(id="STRIPE_INVOICE_ID", total=checkout.total_amount),
         )
 
-        payment_intent = build_stripe_payment_intent(amount=checkout.total_amount or 0)
+        payment_intent = build_stripe_payment_intent(amount=checkout.total_amount)
 
         subscription = await subscription_service.create_or_update_from_checkout(
             session, checkout, payment_intent
@@ -434,7 +434,7 @@ class TestCreateOrUpdateFromCheckout:
             SimpleNamespace(id="STRIPE_INVOICE_ID", total=checkout.total_amount),
         )
 
-        payment_intent = build_stripe_payment_intent(amount=checkout.total_amount or 0)
+        payment_intent = build_stripe_payment_intent(amount=checkout.total_amount)
 
         subscription = await subscription_service.create_or_update_from_checkout(
             session, checkout, payment_intent

@@ -41,6 +41,7 @@ from .product_price import (
     ProductPriceCustom,
     ProductPriceFixed,
     ProductPriceFree,
+    ProductPriceMeteredUnit,
 )
 from .subscription import Subscription
 
@@ -86,9 +87,9 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
         Boolean, nullable=False, default=True
     )
 
-    amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    amount: Mapped[int] = mapped_column(Integer, nullable=False)
     tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
-    currency: Mapped[str | None] = mapped_column(String(3), nullable=True, default=None)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False)
 
     product_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=False
@@ -204,24 +205,16 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return self.customer_tax_id[0] if self.customer_tax_id is not None else None
 
     @property
-    def discount_amount(self) -> int | None:
-        if self.amount is None:
-            return None
+    def discount_amount(self) -> int:
         return self.discount.get_discount_amount(self.amount) if self.discount else 0
 
     @property
-    def net_amount(self) -> int | None:
-        if self.amount is None:
-            return None
-        discount_amount = self.discount_amount or 0
-        return self.amount - discount_amount
+    def net_amount(self) -> int:
+        return self.amount - self.discount_amount
 
     @property
-    def total_amount(self) -> int | None:
-        net_amount = self.net_amount
-        if net_amount is None:
-            return None
-        return net_amount + (self.tax_amount or 0)
+    def total_amount(self) -> int:
+        return self.net_amount + (self.tax_amount or 0)
 
     @property
     def is_discount_applicable(self) -> bool:
@@ -230,7 +223,8 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
             ProductPriceFixed
             | ProductPriceCustom
             | LegacyRecurringProductPriceFixed
-            | LegacyRecurringProductPriceCustom,
+            | LegacyRecurringProductPriceCustom
+            | ProductPriceMeteredUnit,
         )
 
     @property
@@ -241,7 +235,7 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @property
     def is_payment_required(self) -> bool:
-        return self.total_amount is not None and self.total_amount > 0
+        return self.total_amount > 0
 
     @property
     def is_payment_setup_required(self) -> bool:

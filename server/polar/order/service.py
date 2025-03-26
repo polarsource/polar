@@ -334,8 +334,6 @@ class OrderService:
         for price in prices:
             # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
             if is_custom_price(price):
-                assert checkout.amount is not None
-                assert checkout.currency is not None
                 ad_hoc_price = await stripe_service.create_ad_hoc_custom_price(
                     product, price, checkout.amount, checkout.currency
                 )
@@ -348,7 +346,7 @@ class OrderService:
             price_line_item_map,
         ) = await stripe_service.create_out_of_band_invoice(
             customer=stripe_customer_id,
-            currency=checkout.currency or "usd",
+            currency=checkout.currency,
             prices=list(price_id_map.values()),
             coupon=(checkout.discount.stripe_coupon_id if checkout.discount else None),
             # Disable automatic tax for free purchases, since we don't collect customer address in that case

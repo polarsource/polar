@@ -1753,19 +1753,21 @@ async def create_event(
     return event
 
 
+METER_ID = uuid.uuid4()
+
+
 async def create_meter(
     save_fixture: SaveFixture,
     *,
     organization: Organization,
-    filter: Filter,
-    aggregation: Aggregation,
+    id: uuid.UUID = METER_ID,
     name: str = "My Meter",
-    customer: Customer | None = None,
-    external_customer_id: str | None = None,
+    filter: Filter = Filter(conjunction=FilterConjunction.and_, clauses=[]),
+    aggregation: Aggregation = CountAggregation(),
     last_billed_event: Event | None = None,
-    metadata: dict[str, str | int | bool] | None = None,
 ) -> Meter:
     meter = Meter(
+        id=id,
         name=name,
         organization=organization,
         filter=filter,
@@ -1774,3 +1776,8 @@ async def create_meter(
     )
     await save_fixture(meter)
     return meter
+
+
+@pytest_asyncio.fixture
+async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
+    return await create_meter(save_fixture, organization=organization)

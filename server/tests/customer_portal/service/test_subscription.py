@@ -23,6 +23,7 @@ from polar.models import (
 )
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
+from polar.product.guard import is_static_price
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
     SubscriptionNotActiveOnStripe,
@@ -190,7 +191,11 @@ class TestUpdate:
 
         stripe_service_mock.update_subscription_price.assert_called_once_with(
             subscription.stripe_subscription_id,
-            new_prices=[price.stripe_price_id for price in product_second.prices],
+            new_prices=[
+                price.stripe_price_id
+                for price in product_second.prices
+                if is_static_price(price)
+            ],
             proration_behavior="create_prorations",
             metadata={
                 "type": "product",

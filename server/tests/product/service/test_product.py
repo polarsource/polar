@@ -11,7 +11,15 @@ from polar.authz.service import Authz
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
-from polar.models import Benefit, File, Organization, Product, User, UserOrganization
+from polar.models import (
+    Benefit,
+    File,
+    Meter,
+    Organization,
+    Product,
+    User,
+    UserOrganization,
+)
 from polar.models.benefit import BenefitType
 from polar.models.file import FileServiceTypes, ProductMediaFile
 from polar.models.product_price import (
@@ -19,12 +27,14 @@ from polar.models.product_price import (
     ProductPriceFixed,
 )
 from polar.postgres import AsyncSession
+from polar.product.guard import is_static_price
 from polar.product.schemas import (
     ExistingProductPrice,
     ProductCreate,
     ProductPriceCustomCreate,
     ProductPriceFixedCreate,
     ProductPriceFreeCreate,
+    ProductPriceMeteredUnitCreate,
     ProductUpdate,
 )
 from polar.product.service.product import product as product_service
@@ -32,6 +42,7 @@ from polar.product.sorting import ProductSortProperty
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    METER_ID,
     create_benefit,
     create_checkout_link,
     create_product,
@@ -401,7 +412,9 @@ class TestCreate:
         assert product.stripe_product_id == "PRODUCT_ID"
 
         assert len(product.prices) == 1
-        assert product.prices[0].stripe_price_id == "PRICE_ID"
+        price = product.prices[0]
+        assert is_static_price(price)
+        assert price.stripe_price_id == "PRICE_ID"
 
     @pytest.mark.auth
     async def test_user_empty_description(
@@ -637,7 +650,7 @@ class TestCreate:
         "create_schema",
         (
             ProductCreate(
-                name="Product",
+                name="One-time fixed",
                 recurring_interval=None,
                 prices=[
                     ProductPriceFixedCreate(
@@ -648,7 +661,7 @@ class TestCreate:
                 ],
             ),
             ProductCreate(
-                name="Product",
+                name="One-time custom",
                 recurring_interval=None,
                 prices=[
                     ProductPriceCustomCreate(
@@ -661,7 +674,7 @@ class TestCreate:
                 ],
             ),
             ProductCreate(
-                name="Product",
+                name="One-time free",
                 recurring_interval=None,
                 prices=[
                     ProductPriceFreeCreate(
@@ -670,11 +683,24 @@ class TestCreate:
                 ],
             ),
             ProductCreate(
-                name="Product",
+                name="Recurring free",
                 recurring_interval=SubscriptionRecurringInterval.month,
                 prices=[
                     ProductPriceFreeCreate(
                         amount_type=ProductPriceAmountType.free,
+                    )
+                ],
+            ),
+            ProductCreate(
+                name="Recurring metered unit",
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[
+                    ProductPriceMeteredUnitCreate(
+                        amount_type=ProductPriceAmountType.metered_unit,
+                        price_currency="usd",
+                        unit_amount=100,
+                        included_units=0,
+                        meter_id=METER_ID,
                     )
                 ],
             ),
@@ -689,6 +715,7 @@ class TestCreate:
         organization: Organization,
         user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
+        meter: Meter,
     ) -> None:
         create_product_mock: MagicMock = stripe_service_mock.create_product
         create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
@@ -703,11 +730,75 @@ class TestCreate:
         assert product.organization_id == organization.id
 
         create_product_mock.assert_called_once()
-        create_price_for_product_mock.assert_called_once()
         assert product.stripe_product_id == "PRODUCT_ID"
 
-        assert len(product.prices) == 1
-        assert product.prices[0].stripe_price_id == "PRICE_ID"
+        assert len(product.prices) == len(create_schema.prices)
+        for price in product.prices:
+            if is_static_price(price):
+                assert price.stripe_price_id == "PRICE_ID"
+
+    @pytest.mark.auth
+    async def test_invalid_several_static_prices(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        stripe_service_mock: MagicMock,
+        meter: Meter,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreate(
+                    name="Product",
+                    recurring_interval=None,
+                    prices=[
+                        ProductPriceFixedCreate(
+                            amount_type=ProductPriceAmountType.fixed,
+                            price_amount=1000,
+                            price_currency="usd",
+                        ),
+                        ProductPriceFixedCreate(
+                            amount_type=ProductPriceAmountType.fixed,
+                            price_amount=2000,
+                            price_currency="usd",
+                        ),
+                    ],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_invalid_metered_not_existing_meter(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        stripe_service_mock: MagicMock,
+        meter: Meter,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreate(
+                    name="Product",
+                    recurring_interval=None,
+                    prices=[
+                        ProductPriceMeteredUnitCreate(
+                            amount_type=ProductPriceAmountType.metered_unit,
+                            price_currency="usd",
+                            unit_amount=100,
+                            included_units=0,
+                            meter_id=uuid.uuid4(),
+                        ),
+                    ],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
 
 
 @pytest.mark.asyncio
@@ -903,7 +994,9 @@ class TestUpdate:
                 ),
             ]
         )
-        deleted_price_id = product.prices[0].stripe_price_id
+        deleted_price = product.prices[0]
+        assert is_static_price(deleted_price)
+        deleted_price_id = deleted_price.stripe_price_id
 
         updated_product = await product_service.update(
             session,
@@ -1239,7 +1332,9 @@ class TestUpdate:
         archive_price_mock: MagicMock = stripe_service_mock.archive_price
 
         old_price_ids = [
-            p.stripe_price_id for p in product_recurring_monthly_and_yearly.prices
+            p.stripe_price_id
+            for p in product_recurring_monthly_and_yearly.prices
+            if is_static_price(p)
         ]
 
         update_schema = ProductUpdate(
@@ -1265,6 +1360,69 @@ class TestUpdate:
             archive_price_mock.assert_any_call(old_price_id)
 
         assert len(updated_product.prices) == 1
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_invalid_several_static_prices(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        authz: Authz,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        update_schema = ProductUpdate(
+            prices=[
+                ExistingProductPrice(id=product.prices[0].id),
+                ProductPriceFixedCreate(
+                    amount_type=ProductPriceAmountType.fixed,
+                    price_amount=2000,
+                    price_currency="usd",
+                ),
+            ]
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.update(
+                session,
+                authz,
+                product,
+                update_schema,
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_invalid_metered_not_existing_meter(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        authz: Authz,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        update_schema = ProductUpdate(
+            prices=[
+                ProductPriceMeteredUnitCreate(
+                    amount_type=ProductPriceAmountType.metered_unit,
+                    price_currency="usd",
+                    unit_amount=100,
+                    included_units=0,
+                    meter_id=uuid.uuid4(),
+                ),
+            ]
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.update(
+                session,
+                authz,
+                product,
+                update_schema,
+                auth_subject,
+            )
 
 
 @pytest.mark.asyncio

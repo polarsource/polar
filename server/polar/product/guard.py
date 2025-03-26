@@ -12,6 +12,21 @@ from polar.models import (
 )
 
 
+def is_legacy_price(
+    price: ProductPrice,
+) -> TypeIs[
+    LegacyRecurringProductPriceFixed
+    | LegacyRecurringProductPriceFree
+    | LegacyRecurringProductPriceCustom
+]:
+    return isinstance(
+        price,
+        LegacyRecurringProductPriceFixed
+        | LegacyRecurringProductPriceFree
+        | LegacyRecurringProductPriceCustom,
+    )
+
+
 def is_custom_price(
     price: ProductPrice,
 ) -> TypeIs[ProductPriceCustom | LegacyRecurringProductPriceCustom]:

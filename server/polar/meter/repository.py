@@ -10,6 +10,12 @@ from polar.models import Meter, UserOrganization
 class MeterRepository(RepositoryBase[Meter], RepositoryIDMixin[Meter, UUID]):
     model = Meter
 
+    async def get_readable_by_id(
+        self, id: UUID, auth_subject: AuthSubject[User | Organization]
+    ) -> Meter | None:
+        statement = self.get_readable_statement(auth_subject).where(Meter.id == id)
+        return await self.get_one_or_none(statement)
+
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Meter]]:

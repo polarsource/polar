@@ -125,11 +125,7 @@ class TestUpdate:
             name="matching",
         )
         meter = await create_meter(
-            save_fixture,
-            organization=organization,
-            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
-            aggregation=CountAggregation(),
-            last_billed_event=event,
+            save_fixture, organization=organization, last_billed_event=event
         )
 
         with pytest.raises(PolarRequestValidationError):
@@ -165,11 +161,7 @@ class TestUpdate:
         organization: Organization,
     ) -> None:
         meter = await create_meter(
-            save_fixture,
-            organization=organization,
-            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
-            aggregation=CountAggregation(),
-            last_billed_event=None,
+            save_fixture, organization=organization, last_billed_event=None
         )
 
         updated_meter = await meter_service.update(session, meter, meter_update)
@@ -191,11 +183,7 @@ class TestUpdate:
             name="matching",
         )
         meter = await create_meter(
-            save_fixture,
-            organization=organization,
-            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
-            aggregation=CountAggregation(),
-            last_billed_event=event,
+            save_fixture, organization=organization, last_billed_event=event
         )
 
         updated_meter = await meter_service.update(

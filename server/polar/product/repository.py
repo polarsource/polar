@@ -86,7 +86,7 @@ class ProductPriceRepository(
     ) -> ProductPrice | None:
         statement = (
             self.get_base_statement()
-            .where(ProductPrice.stripe_price_id == stripe_price_id)
+            .where(ProductPrice.__table__.c["stripe_price_id"] == stripe_price_id)
             .options(*options)
         )
         return await self.get_one_or_none(statement)

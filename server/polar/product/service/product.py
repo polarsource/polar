@@ -45,6 +45,7 @@ from polar.models.product_price import HasStripePriceId, ProductPriceAmountType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.organization.service import organization as organization_service
+from polar.posthog import posthog as posthog_service
 from polar.product.guard import is_legacy_price, is_metered_price, is_static_price
 from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
@@ -647,6 +648,19 @@ class ProductService(ResourceServiceReader[Product]):
                 if is_metered_price(price) and isinstance(
                     price_schema, ProductPriceMeteredCreateBase
                 ):
+                    if not posthog_service.has_feature_flag(
+                        auth_subject, "usage_based_billing"
+                    ):
+                        errors.append(
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "prices", index),
+                                "msg": "Metered pricing is not generally available yet.",
+                                "input": price_schema,
+                            }
+                        )
+                        continue
+
                     price.meter = await meter_repository.get_readable_by_id(
                         price_schema.meter_id, auth_subject
                     )

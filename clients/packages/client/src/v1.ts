@@ -5999,28 +5999,31 @@ export interface components {
              * @description When checkout is embedded, represents the Origin of the page embedding the checkout. Used as a security measure to send messages only to the embedding page.
              */
             embed_origin: string | null;
-            /** Amount */
-            amount: number | null;
+            /**
+             * Amount
+             * @description Amount in cents, before discounts and taxes.
+             */
+            amount: number;
             /**
              * Discount Amount
              * @description Discount amount in cents.
              */
-            discount_amount: number | null;
+            discount_amount: number;
             /**
              * Net Amount
              * @description Amount in cents, after discounts but before taxes.
              */
-            net_amount: number | null;
+            net_amount: number;
             /**
              * Tax Amount
-             * @description Sales tax amount in cents.
+             * @description Sales tax amount in cents. If `null`, it means there is no enough information yet to calculate it.
              */
             tax_amount: number | null;
             /**
              * Total Amount
              * @description Amount in cents, after discounts and taxes.
              */
-            total_amount: number | null;
+            total_amount: number;
             /**
              * Currency
              * @description Currency code of the checkout session.
@@ -7083,28 +7086,31 @@ export interface components {
              * @description When checkout is embedded, represents the Origin of the page embedding the checkout. Used as a security measure to send messages only to the embedding page.
              */
             embed_origin: string | null;
-            /** Amount */
-            amount: number | null;
+            /**
+             * Amount
+             * @description Amount in cents, before discounts and taxes.
+             */
+            amount: number;
             /**
              * Discount Amount
              * @description Discount amount in cents.
              */
-            discount_amount: number | null;
+            discount_amount: number;
             /**
              * Net Amount
              * @description Amount in cents, after discounts but before taxes.
              */
-            net_amount: number | null;
+            net_amount: number;
             /**
              * Tax Amount
-             * @description Sales tax amount in cents.
+             * @description Sales tax amount in cents. If `null`, it means there is no enough information yet to calculate it.
              */
             tax_amount: number | null;
             /**
              * Total Amount
              * @description Amount in cents, after discounts and taxes.
              */
-            total_amount: number | null;
+            total_amount: number;
             /**
              * Currency
              * @description Currency code of the checkout session.
@@ -7266,28 +7272,31 @@ export interface components {
              * @description When checkout is embedded, represents the Origin of the page embedding the checkout. Used as a security measure to send messages only to the embedding page.
              */
             embed_origin: string | null;
-            /** Amount */
-            amount: number | null;
+            /**
+             * Amount
+             * @description Amount in cents, before discounts and taxes.
+             */
+            amount: number;
             /**
              * Discount Amount
              * @description Discount amount in cents.
              */
-            discount_amount: number | null;
+            discount_amount: number;
             /**
              * Net Amount
              * @description Amount in cents, after discounts but before taxes.
              */
-            net_amount: number | null;
+            net_amount: number;
             /**
              * Tax Amount
-             * @description Sales tax amount in cents.
+             * @description Sales tax amount in cents. If `null`, it means there is no enough information yet to calculate it.
              */
             tax_amount: number | null;
             /**
              * Total Amount
              * @description Amount in cents, after discounts and taxes.
              */
-            total_amount: number | null;
+            total_amount: number;
             /**
              * Currency
              * @description Currency code of the checkout session.
@@ -14281,7 +14290,7 @@ export interface components {
              * ProductPriceCreateList
              * @description List of available prices for this product. Currently, only a single price is supported.
              */
-            prices: (components["schemas"]["ProductPriceFixedCreate"] | components["schemas"]["ProductPriceCustomCreate"] | components["schemas"]["ProductPriceFreeCreate"])[];
+            prices: (components["schemas"]["ProductPriceFixedCreate"] | components["schemas"]["ProductPriceCustomCreate"] | components["schemas"]["ProductPriceFreeCreate"] | components["schemas"]["ProductPriceMeteredUnitCreate"])[];
             /**
              * Medias
              * @description List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
@@ -14725,6 +14734,44 @@ export interface components {
             meter: components["schemas"]["ProductPriceMeter"];
         };
         /**
+         * ProductPriceMeteredUnitCreate
+         * @description Schema to create a metered price with a fixed unit price.
+         */
+        ProductPriceMeteredUnitCreate: {
+            /**
+             * Amount Type
+             * @constant
+             */
+            amount_type: "metered_unit";
+            /**
+             * Meter Id
+             * Format: uuid4
+             * @description The ID of the meter associated to the price.
+             */
+            meter_id: string;
+            /**
+             * Price Currency
+             * @description The currency. Currently, only `usd` is supported.
+             * @default usd
+             */
+            price_currency: string;
+            /**
+             * Unit Amount
+             * @description The price per unit in cents.
+             */
+            unit_amount: number;
+            /**
+             * Included Units
+             * @description The number of units included in the price. They will be deducted from the total.
+             */
+            included_units: number;
+            /**
+             * Cap Amount
+             * @description Optional maximum amount in cents that can be charged, regardless of the number of units consumed.
+             */
+            cap_amount?: number | null;
+        };
+        /**
          * ProductPriceType
          * @enum {string}
          */
@@ -14839,7 +14886,7 @@ export interface components {
              * Prices
              * @description List of available prices for this product. If you want to keep existing prices, include them in the list as an `ExistingProductPrice` object.
              */
-            prices?: (components["schemas"]["ExistingProductPrice"] | components["schemas"]["ProductPriceFixedCreate"] | components["schemas"]["ProductPriceCustomCreate"] | components["schemas"]["ProductPriceFreeCreate"])[] | null;
+            prices?: (components["schemas"]["ExistingProductPrice"] | components["schemas"]["ProductPriceFixedCreate"] | components["schemas"]["ProductPriceCustomCreate"] | components["schemas"]["ProductPriceFreeCreate"] | components["schemas"]["ProductPriceMeteredUnitCreate"])[] | null;
             /**
              * Medias
              * @description List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.

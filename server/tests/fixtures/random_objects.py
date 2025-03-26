@@ -1299,19 +1299,25 @@ async def product_recurring_free_price(
 
 @pytest_asyncio.fixture
 async def product_recurring_metered(
-    save_fixture: SaveFixture, organization: Organization
+    save_fixture: SaveFixture, organization: Organization, meter: Meter
 ) -> Product:
-    meter = await create_meter(
-        save_fixture,
-        filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
-        aggregation=CountAggregation(),
-        organization=organization,
-    )
     return await create_product(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
         prices=[(meter, 100, 0, None)],
+    )
+
+
+@pytest_asyncio.fixture
+async def product_recurring_fixed_and_metered(
+    save_fixture: SaveFixture, organization: Organization, meter: Meter
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[(meter, 100, 0, None), (2000,)],
     )
 
 
@@ -1374,10 +1380,11 @@ async def create_checkout(
         amount = price.price_amount
         currency = price.price_currency
     elif isinstance(price, ProductPriceCustom):
+        amount = amount or 10_00
         currency = price.price_currency
     else:
-        amount = None
-        currency = None
+        amount = 0
+        currency = "usd"
 
     checkout = Checkout(
         payment_processor=payment_processor,

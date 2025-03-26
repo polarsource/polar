@@ -331,15 +331,18 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
         "represents the Origin of the page embedding the checkout. "
         "Used as a security measure to send messages only to the embedding page."
     )
-    amount: Amount | None
-    discount_amount: int | None = Field(description="Discount amount in cents.")
-    net_amount: int | None = Field(
+    amount: int = Field(description="Amount in cents, before discounts and taxes.")
+    discount_amount: int = Field(description="Discount amount in cents.")
+    net_amount: int = Field(
         description="Amount in cents, after discounts but before taxes."
     )
-    tax_amount: int | None = Field(description="Sales tax amount in cents.")
-    total_amount: int | None = Field(
-        description="Amount in cents, after discounts and taxes."
+    tax_amount: int | None = Field(
+        description=(
+            "Sales tax amount in cents. "
+            "If `null`, it means there is no enough information yet to calculate it."
+        )
     )
+    total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
     currency: str | None = Field(description="Currency code of the checkout session.")
     product_id: UUID4 = Field(description="ID of the product to checkout.")
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")

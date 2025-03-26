@@ -61,6 +61,7 @@ from polar.models.product_price import (
 )
 from polar.order.service import OrderService
 from polar.postgres import AsyncSession
+from polar.product.guard import is_fixed_price, is_metered_price
 from polar.subscription.service import SubscriptionService
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -548,8 +549,8 @@ class TestCreate:
         assert checkout.product_price == price
         assert checkout.product == product_one_time_free_price
         assert checkout.products == [product_one_time_free_price]
-        assert checkout.amount is None
-        assert checkout.currency is None
+        assert checkout.amount == 0
+        assert checkout.currency == "usd"
         assert checkout.user_metadata == {"key": "value"}
 
     @pytest.mark.auth(
@@ -589,6 +590,60 @@ class TestCreate:
             assert checkout.amount == amount
         assert checkout.currency == price.price_currency
         assert checkout.user_metadata == {"key": "value"}
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_metered_price(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_recurring_metered: Product,
+    ) -> None:
+        price = product_recurring_metered.prices[0]
+        assert is_metered_price(price)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(products=[product_recurring_metered.id]),
+            auth_subject,
+        )
+
+        assert checkout.product_price == price
+        assert checkout.product == product_recurring_metered
+        assert checkout.products == [product_recurring_metered]
+        assert checkout.currency == price.price_currency
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_fixed_and_metered_price(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_recurring_fixed_and_metered: Product,
+    ) -> None:
+        static_price = next(
+            p for p in product_recurring_fixed_and_metered.prices if is_fixed_price(p)
+        )
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(products=[product_recurring_fixed_and_metered.id]),
+            auth_subject,
+        )
+
+        assert checkout.product_price == static_price
+        assert checkout.product == product_recurring_fixed_and_metered
+        assert checkout.products == [product_recurring_fixed_and_metered]
+        assert checkout.amount == static_price.price_amount
+        assert checkout.currency == static_price.price_currency
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1253,8 +1308,8 @@ class TestClientCreate:
 
         assert checkout.product_price == price
         assert checkout.product == product_one_time_free_price
-        assert checkout.amount is None
-        assert checkout.currency is None
+        assert checkout.amount == 0
+        assert checkout.currency == "usd"
 
     async def test_valid_custom_price(
         self,
@@ -1766,7 +1821,8 @@ class TestUpdate:
 
         price = checkout_one_time_free.product_price
         assert isinstance(price, ProductPriceFree)
-        assert checkout.amount is None
+        assert checkout.amount == 0
+        assert checkout.currency == "usd"
 
     async def test_valid_tax_id(
         self,
@@ -2152,30 +2208,6 @@ class TestUpdate:
 
 @pytest.mark.asyncio
 class TestConfirm:
-    async def test_missing_amount_on_custom_price(
-        self,
-        session: AsyncSession,
-        locker: Locker,
-        auth_subject: AuthSubject[Anonymous],
-        checkout_one_time_custom: Checkout,
-    ) -> None:
-        with pytest.raises(PolarRequestValidationError):
-            await checkout_service.confirm(
-                session,
-                locker,
-                auth_subject,
-                checkout_one_time_custom,
-                CheckoutConfirmStripe.model_validate(
-                    {
-                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
-                        "amount": None,
-                        "customer_name": "Customer Name",
-                        "customer_email": "customer@example.com",
-                        "customer_billing_address": {"country": "FR"},
-                    }
-                ),
-            )
-
     @pytest.mark.parametrize(
         "payload",
         [
@@ -2814,7 +2846,7 @@ class TestHandleStripeSuccess:
             session,
             checkout_confirmed_one_time.id,
             build_stripe_payment_intent(
-                amount=checkout_confirmed_one_time.total_amount or 0
+                amount=checkout_confirmed_one_time.total_amount
             ),
         )
 
@@ -2831,7 +2863,7 @@ class TestHandleStripeSuccess:
             session,
             checkout_confirmed_recurring.id,
             build_stripe_payment_intent(
-                amount=checkout_confirmed_recurring.total_amount or 0
+                amount=checkout_confirmed_recurring.total_amount
             ),
         )
 

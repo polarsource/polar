@@ -363,8 +363,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         for price in prices:
             # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
             if is_custom_price(price):
-                assert checkout.amount is not None
-                assert checkout.currency is not None
                 ad_hoc_price = await stripe_service.create_ad_hoc_custom_price(
                     product, price, amount=checkout.amount, currency=checkout.currency
                 )
@@ -396,7 +394,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 stripe_invoice,
             ) = await stripe_service.create_out_of_band_subscription(
                 customer=stripe_customer_id,
-                currency=checkout.currency or "usd",
+                currency=checkout.currency,
                 prices=stripe_price_ids,
                 coupon=(
                     checkout.discount.stripe_coupon_id if checkout.discount else None

@@ -51,12 +51,9 @@ from polar.models import (
     Discount,
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
-    LegacyRecurringProductPriceFree,
     Organization,
     Product,
     ProductPrice,
-    ProductPriceCustom,
-    ProductPriceFixed,
     Subscription,
     User,
 )
@@ -65,12 +62,16 @@ from polar.models.checkout_product import CheckoutProduct
 from polar.models.discount import DiscountDuration
 from polar.models.product_price import (
     ProductPriceAmountType,
-    ProductPriceFree,
 )
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import order as order_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
+from polar.product.guard import (
+    is_currency_price,
+    is_custom_price,
+    is_fixed_price,
+)
 from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.service.product import product as product_service
 from polar.subscription.repository import SubscriptionRepository
@@ -253,12 +254,13 @@ class CheckoutService:
                 session, auth_subject, checkout_create.products
             )
             product = products[0]
-            price = products[0].prices[0]
+            # Select the static price in priority, as it determines the amount and specific behavior, like PWYW
+            price = product.get_static_price() or product.prices[0]
 
         if product.organization.is_blocked():
             raise NotPermitted()
 
-        if checkout_create.amount is not None and isinstance(price, ProductPriceCustom):
+        if checkout_create.amount is not None and is_custom_price(price):
             if (
                 price.minimum_amount is not None
                 and checkout_create.amount < price.minimum_amount
@@ -359,16 +361,16 @@ class CheckoutService:
 
         amount = checkout_create.amount
         currency = None
-        if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
+        if is_fixed_price(price):
             amount = price.price_amount
             currency = price.price_currency
-        elif isinstance(price, ProductPriceCustom | LegacyRecurringProductPriceCustom):
+        elif is_custom_price(price):
             currency = price.price_currency
             if amount is None:
-                amount = price.preset_amount or 1000
-        elif isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
-            amount = None
-            currency = None
+                amount = price.preset_amount or settings.CUSTOM_PRICE_PRESET_FALLBACK
+        else:
+            amount = 0
+            currency = price.price_currency if is_currency_price(price) else "usd"
 
         custom_field_data = validate_custom_field_data(
             product.attached_custom_fields,
@@ -500,18 +502,16 @@ class CheckoutService:
 
         price = product.prices[0]
 
-        amount = None
-        currency = None
-        if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
+        amount = 0
+        currency = "usd"
+        if is_fixed_price(price):
             amount = price.price_amount
             currency = price.price_currency
-        elif isinstance(price, ProductPriceCustom | LegacyRecurringProductPriceCustom):
+        elif is_custom_price(price):
             currency = price.price_currency
-            if amount is None:
-                amount = price.preset_amount or 1000
-        elif isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
-            amount = None
-            currency = None
+            amount = price.preset_amount or settings.CUSTOM_PRICE_PRESET_FALLBACK
+        elif is_currency_price(price):
+            currency = price.price_currency
 
         checkout = Checkout(
             payment_processor=PaymentProcessor.stripe,
@@ -586,18 +586,16 @@ class CheckoutService:
         product = products[0]
         price = product.prices[0]
 
-        amount = None
-        currency = None
-        if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
+        amount = 0
+        currency = "usd"
+        if is_fixed_price(price):
             amount = price.price_amount
             currency = price.price_currency
-        elif isinstance(price, ProductPriceCustom | LegacyRecurringProductPriceCustom):
+        elif is_custom_price(price):
             currency = price.price_currency
-            if amount is None:
-                amount = price.preset_amount or 1000
-        elif isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
-            amount = None
-            currency = None
+            amount = price.preset_amount or settings.CUSTOM_PRICE_PRESET_FALLBACK
+        elif is_currency_price(price):
+            currency = price.price_currency
 
         discount: Discount | None = None
         if checkout_link.discount_id is not None:
@@ -727,18 +725,6 @@ class CheckoutService:
                 }
             )
 
-        if checkout.amount is None and isinstance(
-            checkout.product_price, ProductPriceCustom
-        ):
-            errors.append(
-                {
-                    "type": "missing",
-                    "loc": ("body", "amount"),
-                    "msg": "Amount is required for custom prices.",
-                    "input": None,
-                }
-            )
-
         # Case where the price was archived after the checkout was created
         if checkout.product_price.is_archived:
             errors.append(
@@ -814,8 +800,8 @@ class CheckoutService:
                 try:
                     if checkout.is_payment_required:
                         payment_intent_params: stripe_lib.PaymentIntent.CreateParams = {
-                            "amount": checkout.total_amount or 0,
-                            "currency": checkout.currency or "usd",
+                            "amount": checkout.total_amount,
+                            "currency": checkout.currency,
                             "automatic_payment_methods": {"enabled": True},
                             "confirm": True,
                             "confirmation_token": checkout_confirm.confirmation_token_id,
@@ -828,7 +814,7 @@ class CheckoutService:
                                 f"/checkout/{checkout.client_secret}/confirmation"
                             ),
                         }
-                        if checkout.product_price.is_recurring:
+                        if checkout.product.is_recurring:
                             payment_intent_params["setup_future_usage"] = "off_session"
                         intent = await stripe_service.create_payment_intent(
                             **payment_intent_params
@@ -1079,7 +1065,10 @@ class CheckoutService:
                 ]
             )
 
-        return [product], product, product.prices[0]
+        # Select the static price in priority, as it determines the amount and specific behavior, like PWYW
+        price = product.get_static_price() or product.prices[0]
+
+        return [product], product, price
 
     async def _get_validated_products(
         self,
@@ -1342,17 +1331,18 @@ class CheckoutService:
                 price = product.prices[0]
 
             checkout.product_price = price
-            if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
+            checkout.amount = 0
+            checkout.currency = "usd"
+            if is_fixed_price(price):
                 checkout.amount = price.price_amount
                 checkout.currency = price.price_currency
-            elif isinstance(
-                price, ProductPriceCustom | LegacyRecurringProductPriceCustom
-            ):
-                checkout.amount = price.preset_amount
+            elif is_custom_price(price):
+                checkout.amount = (
+                    price.preset_amount or settings.CUSTOM_PRICE_PRESET_FALLBACK
+                )
                 checkout.currency = price.price_currency
-            elif isinstance(price, ProductPriceFree | LegacyRecurringProductPriceFree):
-                checkout.amount = None
-                checkout.currency = None
+            elif is_currency_price(price):
+                checkout.currency = price.price_currency
 
             # When changing product, remove the discount if it's not applicable
             if checkout.discount is not None and not checkout.discount.is_applicable(
@@ -1361,7 +1351,7 @@ class CheckoutService:
                 checkout.discount = None
 
         price = checkout.product_price
-        if checkout_update.amount is not None and isinstance(price, ProductPriceCustom):
+        if checkout_update.amount is not None and is_custom_price(price):
             if (
                 price.minimum_amount is not None
                 and checkout_update.amount < price.minimum_amount
@@ -1509,9 +1499,7 @@ class CheckoutService:
             return checkout
 
         if (
-            checkout.currency is not None
-            and checkout.net_amount is not None
-            and checkout.customer_billing_address is not None
+            checkout.customer_billing_address is not None
             and checkout.product.stripe_product_id is not None
         ):
             try:
@@ -1693,8 +1681,6 @@ class CheckoutService:
     async def _create_ad_hoc_custom_price(
         self, checkout: Checkout, *, idempotency_key: str | None = None
     ) -> stripe_lib.Price:
-        assert checkout.amount is not None
-        assert checkout.currency is not None
         assert checkout.product.stripe_product_id is not None
         price_params: stripe_lib.Price.CreateParams = {
             "unit_amount": checkout.amount,

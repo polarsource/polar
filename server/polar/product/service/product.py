@@ -1,9 +1,10 @@
+import builtins
 import uuid
 from collections.abc import Sequence
 from typing import Any, List, Literal, TypeVar  # noqa: UP035
 
 import stripe
-from sqlalchemy import Select, UnaryExpression, asc, case, desc, func, select
+from sqlalchemy import Select, UnaryExpression, asc, case, desc, func, inspect, select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -13,7 +14,12 @@ from polar.checkout_link.repository import (
     CheckoutLinkRepository,
 )
 from polar.custom_field.service import custom_field as custom_field_service
-from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
+from polar.exceptions import (
+    NotPermitted,
+    PolarError,
+    PolarRequestValidationError,
+    ValidationError,
+)
 from polar.file.service import file as file_service
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -21,11 +27,9 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
+from polar.meter.repository import MeterRepository
 from polar.models import (
     Benefit,
-    LegacyRecurringProductPriceCustom,
-    LegacyRecurringProductPriceFixed,
-    LegacyRecurringProductPriceFree,
     Organization,
     Product,
     ProductBenefit,
@@ -37,10 +41,12 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.product_custom_field import ProductCustomField
-from polar.models.product_price import ProductPriceAmountType
+from polar.models.product_price import HasStripePriceId, ProductPriceAmountType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.organization.service import organization as organization_service
+from polar.product.guard import is_legacy_price, is_metered_price, is_static_price
+from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
@@ -48,6 +54,8 @@ from polar.worker import enqueue_job
 from ..schemas import (
     ExistingProductPrice,
     ProductCreate,
+    ProductPriceCreate,
+    ProductPriceMeteredCreateBase,
     ProductUpdate,
 )
 from ..sorting import ProductSortProperty
@@ -253,28 +261,38 @@ class ProductService(ResourceServiceReader[Product]):
         create_schema: ProductCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Product:
+        repository = ProductRepository.from_session(session)
         organization = await get_payload_organization(
             session, auth_subject, create_schema
         )
 
-        product = Product(
-            organization=organization,
-            prices=[],
-            product_benefits=[],
-            product_medias=[],
-            attached_custom_fields=[],
-            **create_schema.model_dump(
-                exclude={
-                    "organization_id",
-                    "prices",
-                    "medias",
-                    "attached_custom_fields",
-                },
-                by_alias=True,
-            ),
+        errors: list[ValidationError] = []
+
+        prices, _, prices_errors = await self._get_validated_prices(
+            session, create_schema.prices, None, auth_subject
         )
-        session.add(product)
-        await session.flush()
+        errors.extend(prices_errors)
+
+        product = await repository.create(
+            Product(
+                organization=organization,
+                prices=prices,
+                all_prices=prices,
+                product_benefits=[],
+                product_medias=[],
+                attached_custom_fields=[],
+                **create_schema.model_dump(
+                    exclude={
+                        "organization_id",
+                        "prices",
+                        "medias",
+                        "attached_custom_fields",
+                    },
+                    by_alias=True,
+                ),
+            ),
+            flush=True,
+        )
         assert product.id is not None
 
         if create_schema.medias is not None:
@@ -283,15 +301,13 @@ class ProductService(ResourceServiceReader[Product]):
                     session, file_id, organization_id=product.organization_id
                 )
                 if file is None:
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "medias", order),
-                                "msg": "File does not exist or is not yet uploaded.",
-                                "input": file_id,
-                            }
-                        ]
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "medias", order),
+                            "msg": "File does not exist or is not yet uploaded.",
+                            "input": file_id,
+                        }
                     )
                 product.product_medias.append(ProductMedia(file=file, order=order))
 
@@ -304,15 +320,13 @@ class ProductService(ResourceServiceReader[Product]):
                 organization.id,
             )
             if custom_field is None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "attached_custom_fields", order),
-                            "msg": "Custom field does not exist.",
-                            "input": attached_custom_field.custom_field_id,
-                        }
-                    ]
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "attached_custom_fields", order),
+                        "msg": "Custom field does not exist.",
+                        "input": attached_custom_field.custom_field_id,
+                    }
                 )
             product.attached_custom_fields.append(
                 ProductCustomField(
@@ -321,6 +335,9 @@ class ProductService(ResourceServiceReader[Product]):
                     required=attached_custom_field.required,
                 )
             )
+
+        if errors:
+            raise PolarRequestValidationError(errors)
 
         metadata: dict[str, str] = {"product_id": str(product.id)}
         metadata["organization_id"] = str(organization.id)
@@ -333,21 +350,16 @@ class ProductService(ResourceServiceReader[Product]):
         )
         product.stripe_product_id = stripe_product.id
 
-        for index, price_create in enumerate(create_schema.prices):
-            stripe_price = await stripe_service.create_price_for_product(
-                stripe_product.id,
-                price_create.get_stripe_price_params(product.recurring_interval),
-            )
-            model_class = price_create.get_model_class()
-            price = model_class(
-                **price_create.model_dump(),
-                stripe_price_id=stripe_price.id,
-                product=product,
-            )
+        for price in product.all_prices:
+            if isinstance(price, HasStripePriceId):
+                stripe_price = await stripe_service.create_price_for_product(
+                    stripe_product.id,
+                    price.get_stripe_price_params(product.recurring_interval),
+                )
+                price.stripe_price_id = stripe_price.id
             session.add(price)
 
         await session.flush()
-        await session.refresh(product, {"prices"})
 
         await self._after_product_created(session, auth_subject, product)
 
@@ -366,68 +378,25 @@ class ProductService(ResourceServiceReader[Product]):
         if not await authz.can(subject, AccessType.write, product):
             raise NotPermitted()
 
-        if update_schema.prices is not None and len(update_schema.prices) < 1:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "too_short",
-                        "loc": (
-                            "body",
-                            "prices",
-                        ),
-                        "msg": "At least one price is required.",
-                        "input": update_schema.prices,
-                    }
-                ]
-            )
+        errors: list[ValidationError] = []
 
         # Prevent non-legacy products from changing their recurring interval
         if (
             update_schema.recurring_interval is not None
             and update_schema.recurring_interval != product.recurring_interval
-            and not all(
-                isinstance(
-                    price,
-                    LegacyRecurringProductPriceFixed
-                    | LegacyRecurringProductPriceCustom
-                    | LegacyRecurringProductPriceFree,
-                )
-                for price in product.prices
-            )
+            and not all(is_legacy_price(price) for price in product.prices)
         ):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "recurring_interval"),
-                        "msg": "Recurring interval cannot be changed.",
-                        "input": update_schema.recurring_interval,
-                    }
-                ]
-            )
-
-        # Allow legacy products with both monthly/yearly prices to be updated
-        # but prevent new products from having both prices
-        if (
-            update_schema.prices is not None
-            and len(update_schema.prices) > 1
-            and not all(
-                isinstance(price, ExistingProductPrice)
-                for price in update_schema.prices
-            )
-        ):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "prices"),
-                        "msg": "Only one active price is allowed.",
-                        "input": update_schema.prices,
-                    }
-                ]
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "recurring_interval"),
+                    "msg": "Recurring interval cannot be changed.",
+                    "input": update_schema.recurring_interval,
+                }
             )
 
         if update_schema.medias is not None:
+            medias_errors: list[ValidationError] = []
             nested = await session.begin_nested()
             product.medias = []
             await session.flush()
@@ -437,20 +406,23 @@ class ProductService(ResourceServiceReader[Product]):
                     session, file_id, organization_id=product.organization_id
                 )
                 if file is None:
-                    await nested.rollback()
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "medias", order),
-                                "msg": "File does not exist or is not yet uploaded.",
-                                "input": file_id,
-                            }
-                        ]
+                    medias_errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "medias", order),
+                            "msg": "File does not exist or is not yet uploaded.",
+                            "input": file_id,
+                        }
                     )
+                    continue
                 product.product_medias.append(ProductMedia(file=file, order=order))
 
+            if medias_errors:
+                await nested.rollback()
+                errors.extend(medias_errors)
+
         if update_schema.attached_custom_fields is not None:
+            attached_custom_fields_errors: list[ValidationError] = []
             nested = await session.begin_nested()
             product.attached_custom_fields = []
             await session.flush()
@@ -464,17 +436,15 @@ class ProductService(ResourceServiceReader[Product]):
                     product.organization_id,
                 )
                 if custom_field is None:
-                    await nested.rollback()
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "attached_custom_fields", order),
-                                "msg": "Custom field does not exist.",
-                                "input": attached_custom_field.custom_field_id,
-                            }
-                        ]
+                    attached_custom_fields_errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "attached_custom_fields", order),
+                            "msg": "Custom field does not exist.",
+                            "input": attached_custom_field.custom_field_id,
+                        }
                     )
+                    continue
                 product.attached_custom_fields.append(
                     ProductCustomField(
                         custom_field=custom_field,
@@ -482,6 +452,21 @@ class ProductService(ResourceServiceReader[Product]):
                         required=attached_custom_field.required,
                     )
                 )
+
+            if attached_custom_fields_errors:
+                await nested.rollback()
+                errors.extend(attached_custom_fields_errors)
+
+        prices = product.prices
+        added_prices: list[ProductPrice] = []
+        if update_schema.prices is not None:
+            prices, added_prices, prices_errors = await self._get_validated_prices(
+                session, update_schema.prices, product, auth_subject
+            )
+            errors.extend(prices_errors)
+
+        if errors:
+            raise PolarRequestValidationError(errors)
 
         if product.is_archived and update_schema.is_archived is False:
             product = await self._unarchive(product)
@@ -505,43 +490,28 @@ class ProductService(ResourceServiceReader[Product]):
         if update_schema.recurring_interval is not None:
             product.recurring_interval = update_schema.recurring_interval
 
-        existing_prices: set[ProductPrice] = set()
-        added_prices: list[ProductPrice] = []
-        if update_schema.prices is not None:
-            for price_update in update_schema.prices:
-                if isinstance(price_update, ExistingProductPrice):
-                    existing_price = product.get_price(price_update.id)
-                    if existing_price is not None:
-                        existing_prices.add(existing_price)
-                    continue
-
+        for price in added_prices:
+            if isinstance(price, HasStripePriceId):
                 assert product.stripe_product_id is not None
                 stripe_price = await stripe_service.create_price_for_product(
                     product.stripe_product_id,
-                    price_update.get_stripe_price_params(product.recurring_interval),
+                    price.get_stripe_price_params(product.recurring_interval),
                 )
-                model_class = price_update.get_model_class()
-                price = model_class(
-                    **price_update.model_dump(),
-                    stripe_price_id=stripe_price.id,
-                    product=product,
-                )
-                session.add(price)
-                added_prices.append(price)
+                price.stripe_price_id = stripe_price.id
 
-            deleted_prices = set(product.prices) - existing_prices
-            updated_prices = list(existing_prices) + added_prices
-            for deleted_price in deleted_prices:
-                if (
-                    deleted_price.stripe_price_id is not None
-                    and product.stripe_product_id is not None
-                ):
-                    await stripe_service.update_product(
-                        product.stripe_product_id, default_price=""
-                    )
-                    await stripe_service.archive_price(deleted_price.stripe_price_id)
-                deleted_price.is_archived = True
-                session.add(deleted_price)
+        existing_prices = set(p for p in prices if inspect(p).persistent)
+        deleted_prices = set(product.prices) - existing_prices
+        for deleted_price in deleted_prices:
+            assert product.stripe_product_id is not None
+            if isinstance(deleted_price, HasStripePriceId):
+                await stripe_service.update_product(
+                    product.stripe_product_id, default_price=""
+                )
+                await stripe_service.archive_price(deleted_price.stripe_price_id)
+            deleted_price.is_archived = True
+
+        product.prices = prices
+        product.all_prices = [*prices, *deleted_prices]
 
         if update_schema.is_archived:
             product = await self._archive(session, product)
@@ -556,7 +526,6 @@ class ProductService(ResourceServiceReader[Product]):
 
         session.add(product)
         await session.flush()
-        await session.refresh(product, {"prices"})
 
         await self._after_product_updated(session, product)
 
@@ -642,6 +611,82 @@ class ProductService(ResourceServiceReader[Product]):
         await self._after_product_updated(session, product)
 
         return product, added_benefits, deleted_benefits
+
+    async def _get_validated_prices(
+        self,
+        session: AsyncSession,
+        prices_schema: Sequence[ExistingProductPrice | ProductPriceCreate],
+        product: Product | None,
+        auth_subject: AuthSubject[User | Organization],
+    ) -> tuple[
+        builtins.list[ProductPrice],
+        builtins.list[ProductPrice],
+        builtins.list[ValidationError],
+    ]:
+        meter_repository = MeterRepository.from_session(session)
+        prices: list[ProductPrice] = []
+        added_prices: list[ProductPrice] = []
+        errors: list[ValidationError] = []
+        for index, price_schema in enumerate(prices_schema):
+            if isinstance(price_schema, ExistingProductPrice):
+                assert product is not None
+                price = product.get_price(price_schema.id)
+                if price is None:
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "prices", index),
+                            "msg": "Price does not exist.",
+                            "input": price_schema.id,
+                        }
+                    )
+                    continue
+            else:
+                model_class = price_schema.get_model_class()
+                price = model_class(**price_schema.model_dump())
+                if is_metered_price(price) and isinstance(
+                    price_schema, ProductPriceMeteredCreateBase
+                ):
+                    price.meter = await meter_repository.get_readable_by_id(
+                        price_schema.meter_id, auth_subject
+                    )
+                    if price.meter is None:
+                        errors.append(
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "prices", index, "meter_id"),
+                                "msg": "Meter does not exist.",
+                                "input": price_schema.meter_id,
+                            }
+                        )
+                        continue
+                added_prices.append(price)
+            prices.append(price)
+
+        if len(prices) < 1:
+            errors.append(
+                {
+                    "type": "too_short",
+                    "loc": ("body", "prices"),
+                    "msg": "At least one price is required.",
+                    "input": prices_schema,
+                }
+            )
+
+        static_prices = [p for p in prices if is_static_price(p)]
+        if len(static_prices) > 1:
+            # Bypass that rule for legacy recurring products
+            if not all(is_legacy_price(p) for p in static_prices):
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "prices"),
+                        "msg": "Only one static price is allowed.",
+                        "input": prices_schema,
+                    }
+                )
+
+        return prices, added_prices, errors
 
     async def _archive(self, session: AsyncSession, product: Product) -> Product:
         if product.stripe_product_id is not None:

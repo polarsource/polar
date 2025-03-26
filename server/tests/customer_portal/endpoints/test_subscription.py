@@ -9,6 +9,7 @@ from polar.integrations.stripe.service import StripeService
 from polar.models import Customer, Organization, Product, Subscription
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
+from polar.product.guard import is_static_price
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -126,7 +127,11 @@ class TestCustomerSubscriptionProductUpdate:
         assert stripe_service_mock.revoke_subscription.called is False
         stripe_service_mock.update_subscription_price.assert_called_once_with(
             subscription.stripe_subscription_id,
-            new_prices=[price.stripe_price_id for price in product_second.prices],
+            new_prices=[
+                price.stripe_price_id
+                for price in product_second.prices
+                if is_static_price(price)
+            ],
             proration_behavior=organization.proration_behavior.to_stripe(),
             metadata={
                 "type": "product",

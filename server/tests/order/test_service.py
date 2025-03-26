@@ -378,6 +378,7 @@ class TestCreateFromCheckout:
             {
                 price.stripe_price_id: line
                 for price, line in zip(product_one_time.prices, stripe_invoice.lines)
+                if is_static_price(price)
             },
         )
 
@@ -397,7 +398,11 @@ class TestCreateFromCheckout:
         stripe_service_mock.create_out_of_band_invoice.assert_called_once_with(
             customer=customer.stripe_customer_id,
             currency=checkout.currency,
-            prices=[price.stripe_price_id for price in product_one_time.prices],
+            prices=[
+                price.stripe_price_id
+                for price in product_one_time.prices
+                if is_static_price(price)
+            ],
             coupon=None,
             automatic_tax=True,
             metadata=ANY,
@@ -522,6 +527,7 @@ class TestCreateFromCheckout:
                 for price, line in zip(
                     product_one_time_free_price.prices, stripe_invoice.lines
                 )
+                if is_static_price(price)
             },
         )
 
@@ -538,7 +544,9 @@ class TestCreateFromCheckout:
             customer=customer.stripe_customer_id,
             currency="usd",
             prices=[
-                price.stripe_price_id for price in product_one_time_free_price.prices
+                price.stripe_price_id
+                for price in product_one_time_free_price.prices
+                if is_static_price(price)
             ],
             coupon=None,
             automatic_tax=False,
@@ -597,6 +605,7 @@ class TestCreateFromCheckout:
             {
                 price.stripe_price_id: line
                 for price, line in zip(product_one_time.prices, stripe_invoice.lines)
+                if is_static_price(price)
             },
         )
 
@@ -612,7 +621,11 @@ class TestCreateFromCheckout:
         stripe_service_mock.create_out_of_band_invoice.assert_called_once_with(
             customer=customer.stripe_customer_id,
             currency="usd",
-            prices=[price.stripe_price_id for price in product_one_time.prices],
+            prices=[
+                price.stripe_price_id
+                for price in product_one_time.prices
+                if is_static_price(price)
+            ],
             coupon=discount_percentage_100.stripe_coupon_id,
             automatic_tax=False,
             metadata=ANY,

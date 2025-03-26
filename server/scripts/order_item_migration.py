@@ -105,7 +105,9 @@ async def pledge_invoice_payment_fix(
     sessionmaker = create_async_sessionmaker(engine)
     async with sessionmaker() as session:
         # Build price map
-        price_map_statement = select(ProductPrice.stripe_price_id, ProductPrice.id)
+        price_map_statement = select(
+            ProductPrice.__table__.c["stripe_price_id"], ProductPrice.id
+        )
         price_map_results = await session.stream(price_map_statement)
         price_map: dict[str, UUID] = {}
         async for r in price_map_results:

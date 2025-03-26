@@ -1,7 +1,6 @@
 import builtins
 from typing import Annotated, Any, Literal
 
-import stripe as stripe_lib
 from pydantic import UUID4, Discriminator, Field, Tag, computed_field
 from pydantic.aliases import AliasChoices
 
@@ -38,6 +37,9 @@ from polar.models.product_price import (
 )
 from polar.models.product_price import (
     ProductPriceFree as ProductPriceFreeModel,
+)
+from polar.models.product_price import (
+    ProductPriceMeteredUnit as ProductPriceMeteredUnitModel,
 )
 from polar.organization.schemas import OrganizationID
 
@@ -106,20 +108,6 @@ class ProductPriceFixedCreate(ProductPriceCreateBase):
     def get_model_class(self) -> builtins.type[ProductPriceFixedModel]:
         return ProductPriceFixedModel
 
-    def get_stripe_price_params(
-        self, recurring_interval: SubscriptionRecurringInterval | None
-    ) -> stripe_lib.Price.CreateParams:
-        params: stripe_lib.Price.CreateParams = {
-            "unit_amount": self.price_amount,
-            "currency": self.price_currency,
-        }
-        if recurring_interval is not None:
-            params = {
-                **params,
-                "recurring": {"interval": recurring_interval.as_literal()},
-            }
-        return params
-
 
 class ProductPriceCustomCreate(ProductPriceCreateBase):
     """
@@ -145,27 +133,6 @@ class ProductPriceCustomCreate(ProductPriceCreateBase):
     def get_model_class(self) -> builtins.type[ProductPriceCustomModel]:
         return ProductPriceCustomModel
 
-    def get_stripe_price_params(
-        self, recurring_interval: SubscriptionRecurringInterval | None
-    ) -> stripe_lib.Price.CreateParams:
-        custom_unit_amount_params: stripe_lib.Price.CreateParamsCustomUnitAmount = {
-            "enabled": True,
-        }
-        if self.minimum_amount is not None:
-            custom_unit_amount_params["minimum"] = self.minimum_amount
-        if self.maximum_amount is not None:
-            custom_unit_amount_params["maximum"] = self.maximum_amount
-        if self.preset_amount is not None:
-            custom_unit_amount_params["preset"] = self.preset_amount
-
-        # `recurring_interval` is unused because we actually create ad-hoc prices,
-        # since Stripe doesn't support PWYW pricing for subscriptions.
-
-        return {
-            "currency": self.price_currency,
-            "custom_unit_amount": custom_unit_amount_params,
-        }
-
 
 class ProductPriceFreeCreate(ProductPriceCreateBase):
     """
@@ -177,34 +144,58 @@ class ProductPriceFreeCreate(ProductPriceCreateBase):
     def get_model_class(self) -> builtins.type[ProductPriceFreeModel]:
         return ProductPriceFreeModel
 
-    def get_stripe_price_params(
-        self, recurring_interval: SubscriptionRecurringInterval | None
-    ) -> stripe_lib.Price.CreateParams:
-        params: stripe_lib.Price.CreateParams = {
-            "unit_amount": 0,
-            "currency": "usd",
-        }
-        if recurring_interval is not None:
-            params = {
-                **params,
-                "recurring": {"interval": recurring_interval.as_literal()},
-            }
 
-        return params
+class ProductPriceMeteredCreateBase(ProductPriceCreateBase):
+    meter_id: UUID4 = Field(description="The ID of the meter associated to the price.")
+
+
+class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
+    """
+    Schema to create a metered price with a fixed unit price.
+    """
+
+    amount_type: Literal[ProductPriceAmountType.metered_unit]
+    price_currency: PriceCurrency
+    unit_amount: int = Field(ge=0, description="The price per unit in cents.")
+    included_units: int = Field(
+        ge=0,
+        description=(
+            "The number of units included in the price. "
+            "They will be deducted from the total."
+        ),
+    )
+    cap_amount: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Optional maximum amount in cents that can be charged, "
+            "regardless of the number of units consumed."
+        ),
+    )
+
+    def get_model_class(self) -> builtins.type[ProductPriceMeteredUnitModel]:
+        return ProductPriceMeteredUnitModel
 
 
 ProductPriceCreate = (
-    ProductPriceFixedCreate | ProductPriceCustomCreate | ProductPriceFreeCreate
+    ProductPriceFixedCreate
+    | ProductPriceCustomCreate
+    | ProductPriceFreeCreate
+    | ProductPriceMeteredUnitCreate
 )
 
 
 ProductPriceCreateList = Annotated[
     list[ProductPriceCreate],
-    Field(min_length=1, max_length=1),
+    Field(min_length=1),
     MergeJSONSchema(
         {
             "title": "ProductPriceCreateList",
-            "description": "List with a single price.",
+            "description": (
+                "List of prices for the product. "
+                "At most one static price (fixed, custom or free) is allowed. "
+                "Any number of metered prices can be added."
+            ),
         }
     ),
 ]

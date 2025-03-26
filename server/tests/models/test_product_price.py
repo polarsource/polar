@@ -1,13 +1,8 @@
 import pytest
 
-from polar.meter.aggregation import AggregationFunction, PropertyAggregation
-from polar.meter.filter import Filter, FilterConjunction
-from polar.models import Product
+from polar.models import Meter, Product
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import (
-    create_meter,
-    create_product_price_metered_unit,
-)
+from tests.fixtures.random_objects import create_product_price_metered_unit
 
 
 @pytest.mark.asyncio
@@ -31,16 +26,8 @@ async def test_get_amount_and_label(
     expected: int,
     save_fixture: SaveFixture,
     product: Product,
+    meter: Meter,
 ) -> None:
-    meter = await create_meter(
-        save_fixture,
-        filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
-        aggregation=PropertyAggregation(
-            func=AggregationFunction.sum, property="tokens"
-        ),
-        organization=product.organization,
-    )
-
     price = await create_product_price_metered_unit(
         save_fixture,
         product=product,

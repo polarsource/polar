@@ -149,6 +149,7 @@ uv run task emails
 > [!NOTE]
 > If you're in local development, you should build the email renderer binary ,as it's reuquired for first time.
 git checkout old-branch-name
+
 **2. Apply the database migrations**
 
 ```sh

@@ -141,7 +141,15 @@ The backend consists of an API server, a general-purpose worker and a worker ded
 cd server
 ```
 
-**1. Apply the database migrations**
+**1. Build email  binary**
+
+```sh
+uv run task emails
+```
+> [!NOTE]
+> If you're in local development, you should build the email renderer binary ,as it's reuquired for first time.
+git checkout old-branch-name
+**2. Apply the database migrations**
 
 ```sh
 uv run task db_migrate
@@ -150,7 +158,7 @@ uv run task db_migrate
 > [!NOTE]
 > You don't necessarily need to run it each time you start the server, but it's a good idea to regularly do it nonetheless.
 
-**2. Start server and workers**
+**3. Start server and workers**
 
 ```sh
 uv run task api

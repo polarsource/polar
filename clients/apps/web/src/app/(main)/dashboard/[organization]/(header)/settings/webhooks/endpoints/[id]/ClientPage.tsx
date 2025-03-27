@@ -1,104 +1,113 @@
-'use client'
+"use client";
 
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { InlineModal } from '@/components/Modal/InlineModal'
-import { useModal } from '@/components/Modal/useModal'
-import EditWebhookModal from '@/components/Settings/Webhook/EditWebhookModal'
-import DeliveriesTable from '@/components/Settings/Webhook/WebhookDeliveriesTable'
-import { useWebhookEndpoint } from '@/hooks/queries'
+import { DashboardBody } from "@/components/Layout/DashboardLayout";
+import { ConfirmModal } from "@/components/Modal/ConfirmModal";
+import { useModal } from "@/components/Modal/useModal";
+import WebhookContextView from "@/components/Settings/Webhook/WebhookContextView";
+import DeliveriesTable from "@/components/Settings/Webhook/WebhookDeliveriesTable";
+import { toast } from "@/components/Toast/use-toast";
+import { getStatusRedirect } from "@/components/Toast/utils";
+import { useDeleteWebhookEndpoint, useWebhookEndpoint } from "@/hooks/queries";
 import {
-  DataTablePaginationState,
-  DataTableSortingState,
-} from '@/utils/datatable'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
-import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
-import { useParams } from 'next/navigation'
+	DataTablePaginationState,
+	DataTableSortingState,
+} from "@/utils/datatable";
+import { schemas } from "@polar-sh/client";
+import Button from "@polar-sh/ui/components/atoms/Button";
+import { useParams, useRouter } from "next/navigation";
+import { useCallback } from "react";
 
 export default function ClientPage({
-  organization,
-  pagination,
-  sorting,
+	organization,
+	pagination,
+	sorting,
 }: {
-  organization: schemas['Organization']
-  pagination: DataTablePaginationState
-  sorting: DataTableSortingState
+	organization: schemas["Organization"];
+	pagination: DataTablePaginationState;
+	sorting: DataTableSortingState;
 }) {
-  const {
-    isShown: isEditWeebhookEndpointModalShown,
-    hide: hideEditWebhookEndpointModal,
-    show: showEditWebhookEndpointModal,
-  } = useModal()
+	const { id }: { id: string } = useParams();
 
-  const { id }: { id: string } = useParams()
+	const { data: endpoint } = useWebhookEndpoint(id);
 
-  const { data: endpoint } = useWebhookEndpoint(id)
+	const {
+		hide: hideDeleteModal,
+		isShown: isArchiveModalShown,
+		show: showArchiveModal,
+	} = useModal();
 
-  if (!endpoint) {
-    return null
-  }
+	const router = useRouter();
 
-  return (
-    <DashboardBody title="Webhook">
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-y-1">
-          <h3>Endpoint</h3>
-          <pre className="text-sm text-gray-950 dark:text-white">
-            {endpoint.url}
-          </pre>
-        </div>
+	const deleteWebhookEndpoint = useDeleteWebhookEndpoint();
 
-        <div className="flex flex-col gap-y-4">
-          <h3>Events</h3>
+	const handleDeleteWebhookEndpoint = useCallback(async () => {
+		if (!endpoint) return;
 
-          <div className="flex flex-col space-y-2">
-            {endpoint.events.length > 0 ? (
-              <>
-                {endpoint.events.map((event) => (
-                  <div
-                    className="flex flex-row items-center space-x-3 space-y-0"
-                    key={event}
-                  >
-                    <Checkbox checked={true} disabled={true} />
-                    <span className="text-sm leading-none">{event}</span>
-                  </div>
-                ))}
-              </>
-            ) : (
-              <span>This endpoint is not subscribing to any events</span>
-            )}
-          </div>
-        </div>
+		const { error } = await deleteWebhookEndpoint.mutateAsync({
+			id: endpoint.id,
+		});
 
-        <Button
-          className="self-start"
-          asChild
-          onClick={showEditWebhookEndpointModal}
-        >
-          Edit
-        </Button>
+		if (error) {
+			toast({
+				title: "Webhook Endpoint Deletion Failed",
+				description: `Error deleting Webhook Endpoint: ${error.detail}`,
+			});
+			return;
+		}
 
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-lg font-medium">Deliveries</h2>
-        </div>
-        <DeliveriesTable
-          endpoint={endpoint}
-          pagination={pagination}
-          sorting={sorting}
-          organization={organization}
-        />
-      </div>
-      <InlineModal
-        isShown={isEditWeebhookEndpointModalShown}
-        hide={hideEditWebhookEndpointModal}
-        modalContent={
-          <EditWebhookModal
-            organization={organization}
-            endpoint={endpoint}
-            hide={hideEditWebhookEndpointModal}
-          />
-        }
-      />
-    </DashboardBody>
-  )
+		hideDeleteModal();
+
+		router.push(
+			getStatusRedirect(
+				`/dashboard/${organization.slug}/settings/webhooks`,
+				"Webhook Endpoint Deleted",
+				"Webhook Endpoint was deleted successfully",
+			),
+		);
+	}, [deleteWebhookEndpoint, hideDeleteModal, router, endpoint, organization]);
+
+	if (!endpoint) {
+		return null;
+	}
+
+	return (
+		<DashboardBody
+			title="Webhook"
+			header={
+				<Button variant="destructive" onClick={showArchiveModal}>
+					Delete
+				</Button>
+			}
+			contextView={
+				<WebhookContextView organization={organization} endpoint={endpoint} />
+			}
+			className="gap-y-8"
+			wide
+		>
+			<h3 className="text-lg">{endpoint.url}</h3>
+			<div className="flex flex-col gap-4">
+				<div className="flex items-center justify-between gap-2">
+					<h2 className="text-xl font-medium">Deliveries</h2>
+				</div>
+				<DeliveriesTable
+					endpoint={endpoint}
+					pagination={pagination}
+					sorting={sorting}
+					organization={organization}
+				/>
+			</div>
+
+			<ConfirmModal
+				title="Delete Webhook Endpoint"
+				description={
+					"This action will delete the endpoint configuration and stop sending webhooks to it"
+				}
+				destructiveText="Delete"
+				onConfirm={handleDeleteWebhookEndpoint}
+				isShown={isArchiveModalShown}
+				hide={hideDeleteModal}
+				destructive
+			/>
+		</DashboardBody>
+	);
 }

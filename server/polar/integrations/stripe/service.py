@@ -402,6 +402,35 @@ class StripeService:
             idempotency_key=idempotency_key,
         )
 
+    async def create_placeholder_price(
+        self,
+        product: "Product",
+        currency: str,
+        *,
+        idempotency_key: str | None = None,
+    ) -> stripe_lib.Price:
+        assert product.stripe_product_id is not None
+        price_params: stripe_lib.Price.CreateParams = {
+            "unit_amount": 0,
+            "currency": currency,
+            "metadata": {
+                "product_id": str(product.id),
+            },
+        }
+
+        if product.is_recurring:
+            assert product.recurring_interval is not None
+            recurring_interval = product.recurring_interval
+            price_params["recurring"] = {
+                "interval": recurring_interval.as_literal(),
+            }
+
+        return await self.create_price_for_product(
+            product.stripe_product_id,
+            price_params,
+            idempotency_key=idempotency_key,
+        )
+
     async def update_subscription_price(
         self,
         id: str,

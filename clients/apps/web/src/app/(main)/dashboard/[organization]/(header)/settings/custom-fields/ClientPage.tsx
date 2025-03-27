@@ -213,18 +213,20 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const deleteCustomField = useDeleteCustomField()
 
   return (
-    <DashboardBody>
+    <DashboardBody
+      header={
+        <Button
+          wrapperClassNames="flex flex-row gap-x-2"
+          type="button"
+          onClick={() => setShowNewModal(true)}
+        >
+          <AddOutlined className="h-4 w-4" />
+          <span>New Custom Field</span>
+        </Button>
+      }
+      wide
+    >
       <div className="flex flex-col gap-8">
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            wrapperClassNames="flex flex-row gap-x-2"
-            type="button"
-            onClick={() => setShowNewModal(true)}
-          >
-            <AddOutlined className="h-4 w-4" />
-            <span>New Custom Field</span>
-          </Button>
-        </div>
         {customFields && pageCount !== undefined && (
           <DataTable
             columns={columns}

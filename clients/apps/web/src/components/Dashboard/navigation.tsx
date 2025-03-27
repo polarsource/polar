@@ -49,9 +49,12 @@ export type RouteWithActive = Route & {
 
 const applySubRouteIsActive = (
   path: string,
+  parentRoute: Route,
 ): ((r: SubRoute) => SubRouteWithActive) => {
   return (r: SubRoute): SubRouteWithActive => {
-    const isActive = r.link === path
+    const isActive =
+      r.link === path ||
+      (parentRoute.link !== r.link && path.startsWith(r.link))
     return {
       ...r,
       isActive,
@@ -70,7 +73,7 @@ const applyIsActive = (path: string): ((r: Route) => RouteWithActive) => {
       isActive = Boolean(path && path.startsWith(r.link))
     }
 
-    const subs = r.subs ? r.subs.map(applySubRouteIsActive(path)) : undefined
+    const subs = r.subs ? r.subs.map(applySubRouteIsActive(path, r)) : undefined
 
     return {
       ...r,
@@ -140,11 +143,6 @@ export const useBackerRoutes = (): RouteWithActive[] => {
   return backerRoutesList()
     .filter((o) => o.if)
     .map(applyIsActive(path))
-}
-
-export const usePersonalFinanceSubRoutes = (): SubRouteWithActive[] => {
-  const path = usePathname()
-  return personalFinanceSubRoutesList().map(applySubRouteIsActive(path))
 }
 
 // internals below

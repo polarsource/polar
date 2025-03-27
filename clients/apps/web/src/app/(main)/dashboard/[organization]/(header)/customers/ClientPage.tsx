@@ -193,7 +193,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     sorting: [sorting],
   })
 
-  const customers = data?.pages.flatMap((page) => page.items) || []
+  const customers = useMemo(
+    () => data?.pages.flatMap((page) => page.items) ?? [],
+    [data],
+  )
 
   const selectedCustomer = useMemo(() => {
     if (selectedCustomerId) {

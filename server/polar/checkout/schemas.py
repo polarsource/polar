@@ -343,7 +343,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
         )
     )
     total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
-    currency: str | None = Field(description="Currency code of the checkout session.")
+    currency: str = Field(description="Currency code of the checkout session.")
     product_id: UUID4 = Field(description="ID of the product to checkout.")
     product_price_id: UUID4 = Field(description="ID of the product price to checkout.")
     discount_id: UUID4 | None = Field(

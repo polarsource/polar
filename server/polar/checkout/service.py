@@ -748,7 +748,7 @@ class CheckoutService:
                 )
 
         if (
-            checkout.is_payment_required
+            checkout.is_payment_form_required
             and checkout_confirm.confirmation_token_id is None
         ):
             errors.append(

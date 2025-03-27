@@ -379,6 +379,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     SubscriptionProductPrice.from_price(price)
                 )
 
+        # We always need at least one price to create a subscription on Stripe
+        # It happens if we only have metered prices on the product
+        if len(stripe_price_ids) == 0:
+            placeholder_price = await stripe_service.create_placeholder_price(
+                product, checkout.currency
+            )
+            stripe_price_ids.append(placeholder_price.id)
+
         subscription = checkout.subscription
         new_subscription = False
         previous_ends_at = subscription.ends_at if subscription else None
@@ -389,6 +397,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         # New subscription
         if subscription is None:
+            assert product.stripe_product_id is not None
             (
                 stripe_subscription,
                 stripe_invoice,

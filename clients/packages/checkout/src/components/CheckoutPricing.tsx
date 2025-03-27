@@ -15,7 +15,11 @@ import { useForm } from 'react-hook-form'
 import { useDebouncedCallback } from '../hooks/debounce'
 import { getDiscountDisplay } from '../utils/discount'
 import { formatCurrencyNumber } from '../utils/money'
-import { hasRecurringIntervals, isLegacyRecurringPrice } from '../utils/product'
+import {
+  getMeteredPrices,
+  hasRecurringIntervals,
+  isLegacyRecurringPrice,
+} from '../utils/product'
 import AmountLabel from './AmountLabel'
 import ProductPriceLabel from './ProductPriceLabel'
 
@@ -39,6 +43,26 @@ const DollarSignIcon = ({ className }: { className?: string }) => {
   )
 }
 
+const GaugeIcon = ({ className }: { className?: string }) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="m12 14 4-4" />
+      <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+    </svg>
+  )
+}
+
 const CheckoutProductAmountLabel = ({
   checkout,
 }: {
@@ -52,8 +76,8 @@ const CheckoutProductAmountLabel = ({
   return (
     <div className="flex flex-row justify-between">
       <AmountLabel
-        amount={checkout.subtotalAmount || 0}
-        currency={checkout.currency || 'USD'}
+        amount={checkout.netAmount}
+        currency={checkout.currency || 'usd'}
         interval={
           isLegacyRecurringPrice(productPrice)
             ? productPrice.recurringInterval
@@ -91,6 +115,12 @@ const CheckoutPricing = ({
   const [, , hasBothIntervals] = useMemo(
     () => hasRecurringIntervals(product),
     [product],
+  )
+
+  // Get the metered prices, minus the currently selected one, in case there are only metered prices
+  const meteredPrices = useMemo(
+    () => getMeteredPrices(product).filter((p) => p.id !== productPrice.id),
+    [product, productPrice],
   )
 
   const form = useForm<{ amount: number }>({
@@ -204,6 +234,20 @@ const CheckoutPricing = ({
             </>
           )}
         </h1>
+        {meteredPrices.length > 0 && (
+          <div className="text-sm">
+            <h2 className="mb-2 font-semibold">+ additional metered usage</h2>
+            {meteredPrices.map((price) => (
+              <div
+                key={price.id}
+                className="dark:text-polar-500 flex flex-row gap-1 text-sm text-gray-400"
+              >
+                <GaugeIcon className="h-4 w-4" />
+                <ProductPriceLabel product={product} price={price} />
+              </div>
+            ))}
+          </div>
+        )}
         <p className="dark:text-polar-500 text-sm text-gray-400">
           Before VAT and taxes
         </p>

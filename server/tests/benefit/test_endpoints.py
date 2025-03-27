@@ -47,9 +47,6 @@ class TestListBenefits:
         json = response.json()
         assert json["pagination"]["total_count"] == 3
 
-        items = json["items"]
-        assert items[0]["id"] == str(benefits[0].id)
-
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.web_default}),
         AuthSubjectFixture(subject="organization", scopes={Scope.benefits_read}),

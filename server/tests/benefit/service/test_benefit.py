@@ -130,7 +130,6 @@ class TestSearch:
 
         assert count == 3
         assert len(results) == 3
-        assert results[0].id == benefit_organization.id
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization(

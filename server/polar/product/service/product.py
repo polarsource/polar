@@ -197,6 +197,7 @@ class ProductService(ResourceServiceReader[Product]):
                 contains_eager(Product.organization),
                 selectinload(Product.product_medias),
                 selectinload(Product.attached_custom_fields),
+                selectinload(Product.all_prices),
             )
             .limit(1)
         )

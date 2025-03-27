@@ -6,7 +6,8 @@ const isExistingProductPrice = (
     | schemas['ExistingProductPrice']
     | schemas['ProductPriceFixedCreate']
     | schemas['ProductPriceCustomCreate']
-    | schemas['ProductPriceFreeCreate'],
+    | schemas['ProductPriceFreeCreate']
+    | schemas['ProductPriceMeteredUnitCreate'],
 ): price is schemas['ExistingProductPrice'] => 'id' in price && price.id !== ''
 
 const priceCreateUpdateToPrice = (
@@ -14,7 +15,8 @@ const priceCreateUpdateToPrice = (
   price:
     | schemas['ProductPriceFixedCreate']
     | schemas['ProductPriceCustomCreate']
-    | schemas['ProductPriceFreeCreate'],
+    | schemas['ProductPriceFreeCreate']
+    | schemas['ProductPriceMeteredUnitCreate'],
 ): schemas['ProductPrice'] => {
   const base = {
     id: '',

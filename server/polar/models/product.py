@@ -75,7 +75,12 @@ class Product(MetadataMixin, RecordModel):
 
     @declared_attr
     def all_prices(cls) -> Mapped[list["ProductPrice"]]:
-        return relationship("ProductPrice", lazy="raise", back_populates="product")
+        return relationship(
+            "ProductPrice",
+            lazy="raise",
+            cascade="all, delete-orphan",
+            back_populates="product",
+        )
 
     @declared_attr
     def prices(cls) -> Mapped[list["ProductPrice"]]:

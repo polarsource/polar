@@ -645,7 +645,7 @@ class ProductService(ResourceServiceReader[Product]):
                     continue
             else:
                 model_class = price_schema.get_model_class()
-                price = model_class(**price_schema.model_dump())
+                price = model_class(product=product, **price_schema.model_dump())
                 if is_metered_price(price) and isinstance(
                     price_schema, ProductPriceMeteredCreateBase
                 ):

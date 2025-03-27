@@ -14,6 +14,7 @@ from polar.exceptions import NotPermitted, PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
+from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.models import (
     Benefit,
@@ -99,7 +100,9 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         type: Sequence[BenefitType] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        sorting: BenefitSortProperty,
+        sorting: list[Sorting[BenefitSortProperty]] = [
+            (BenefitSortProperty.created_at, True)
+        ],
         query: str | None = None,
     ) -> tuple[Sequence[Benefit], int]:
         statement = self._get_readable_benefit_statement(auth_subject)

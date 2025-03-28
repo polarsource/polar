@@ -1,5 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import { Check, Download, Key } from 'lucide-react'
+import { Check, Download, Gauge, Key } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 import GitHubIcon from '../Icons/GitHubIcon'
 
@@ -19,6 +19,8 @@ export const resolveBenefitCategoryIcon = (
       return <Download className={cn} />
     case 'license_keys':
       return <Key className={cn} />
+    case 'meter_credit':
+      return <Gauge className={cn} />
     default:
       return <Check className={cn} />
   }

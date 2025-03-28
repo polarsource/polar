@@ -28,6 +28,14 @@ export const hasLegacyRecurringPrices = (
   prices: schemas['LegacyRecurringProductPrice'][]
 } => product.prices.some(isLegacyRecurringPrice)
 
+export const isStaticPrice = (
+  price: schemas['ProductPrice'],
+): price is
+  | schemas['ProductPriceFixed']
+  | schemas['ProductPriceCustom']
+  | schemas['ProductPriceFree'] =>
+  ['fixed', 'custom', 'free'].includes(price.amount_type)
+
 const _getProductById = async (
   api: Client,
   id: string,

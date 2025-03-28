@@ -17,6 +17,7 @@ const priceCreateUpdateToPrice = (
     | schemas['ProductPriceCustomCreate']
     | schemas['ProductPriceFreeCreate']
     | schemas['ProductPriceMeteredUnitCreate'],
+  meters: schemas['Meter'][],
 ): schemas['ProductPrice'] => {
   const base = {
     id: '',
@@ -52,6 +53,24 @@ const priceCreateUpdateToPrice = (
       ...base,
       ...price,
     }
+  } else if (price.amount_type === 'metered_unit') {
+    const meter = price.meter_id
+      ? meters.find((m) => m.id === price.meter_id)
+      : undefined
+    return {
+      ...base,
+      ...price,
+      price_currency: price.price_currency ?? 'usd',
+      unit_amount: price.unit_amount ?? 0,
+      cap_amount: price.cap_amount ?? null,
+      meter_id: price.meter_id ?? '',
+      meter: meter
+        ? { id: meter.id, name: meter.name }
+        : {
+            id: '',
+            name: '',
+          },
+    }
   }
 
   return {
@@ -66,6 +85,7 @@ export const productUpdateToProduct = (
   productUpdate: schemas['ProductUpdate'] & ProductFullMediasMixin,
   benefits: schemas['Benefit'][],
   product: schemas['Product'],
+  meters: schemas['Meter'][],
 ): schemas['Product'] => {
   const { full_medias, ...productUpdateRest } = productUpdate
   return {
@@ -76,7 +96,7 @@ export const productUpdateToProduct = (
       productUpdateRest.prices
         ?.map<
           schemas['ProductPrice']
-        >((price) => (isExistingProductPrice(price) ? (price as schemas['ProductPrice']) : priceCreateUpdateToPrice(productUpdate, price)))
+        >((price) => (isExistingProductPrice(price) ? (price as schemas['ProductPrice']) : priceCreateUpdateToPrice(productUpdate, price, meters)))
         .filter((price): price is schemas['ProductPrice'] => 'type' in price) ??
       [],
     medias: full_medias,
@@ -88,6 +108,7 @@ export const productCreateToProduct = (
   organizationId: string,
   productCreate: schemas['ProductCreate'] & ProductFullMediasMixin,
   benefits: schemas['Benefit'][],
+  meters: schemas['Meter'][],
 ): schemas['Product'] => {
   const { full_medias, ...productCreateRest } = productCreate
   return {
@@ -98,7 +119,7 @@ export const productCreateToProduct = (
     description: productCreateRest.description ?? '',
     prices:
       productCreate.prices?.map<schemas['ProductPrice']>((price) =>
-        priceCreateUpdateToPrice(productCreate, price),
+        priceCreateUpdateToPrice(productCreate, price, meters),
       ) ?? [],
     medias: full_medias,
     benefits,

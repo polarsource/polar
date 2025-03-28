@@ -1,3 +1,4 @@
+import { usePostHog } from '@/hooks/posthog'
 import { useDeleteBenefit } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
@@ -7,7 +8,7 @@ import {
   MoreVertOutlined,
   RemoveOutlined,
 } from '@mui/icons-material'
-import { schemas } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
@@ -176,6 +177,8 @@ const ProductBenefitsForm = ({
     searchParams?.get('create_benefit') === 'true',
   )
 
+  const { isFeatureEnabled } = usePostHog()
+
   const handleCheckedChange = useCallback(
     (benefit: schemas['Benefit']) => (checked: boolean) => {
       if (checked) {
@@ -196,13 +199,17 @@ const ProductBenefitsForm = ({
       compact={compact}
     >
       <div className="flex w-full flex-col gap-y-2">
-        {Object.entries(benefitsDisplayNames)
-          .filter(([type]) => type !== 'usage')
-          .map(([type, title]) => (
+        {enums.benefitTypeValues
+          .filter(
+            (type) =>
+              type !== 'meter_credit' ||
+              isFeatureEnabled('usage_based_billing'),
+          )
+          .map((type) => (
             <BenefitsContainer
               key={type}
-              title={title}
-              type={type as schemas['BenefitType']}
+              title={benefitsDisplayNames[type]}
+              type={type}
               handleCheckedChange={handleCheckedChange}
               enabledBenefits={benefits}
               benefits={organizationBenefits.filter(

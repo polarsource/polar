@@ -9,7 +9,7 @@ import {
 } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useMeters = (
+export const useMetersInfinite = (
   organizationId: string,
   parameters?: Omit<
     NonNullable<operations['meters:list']['parameters']['query']>,
@@ -34,6 +34,26 @@ export const useMeters = (
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPageParam === lastPage.pagination.max_page ? null : lastPageParam + 1,
     initialPageParam: 1,
+  })
+
+export const useMeters = (
+  organizationId: string,
+  parameters?: Omit<
+    NonNullable<operations['meters:list']['parameters']['query']>,
+    'organization_id'
+  >,
+) =>
+  useQuery({
+    queryKey: ['meters', { organizationId, parameters }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/meters/', {
+          params: {
+            query: { organization_id: organizationId, ...(parameters || {}) },
+          },
+        }),
+      ),
+    retry: defaultRetry,
   })
 
 export const useMeter = (id: string, initialData?: schemas['Meter']) =>

@@ -33,7 +33,7 @@ class OrderItem(RecordModel):
     )
     product_price_id: Mapped[UUID | None] = mapped_column(
         Uuid,
-        ForeignKey("product_prices.id", ondelete="cascade"),
+        ForeignKey("product_prices.id", ondelete="restrict"),
         nullable=True,
     )
 

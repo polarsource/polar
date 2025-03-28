@@ -158,6 +158,7 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
     price_currency: PriceCurrency
     unit_amount: int = Field(ge=0, description="The price per unit in cents.")
     included_units: int = Field(
+        default=0,
         ge=0,
         description=(
             "The number of units included in the price. "

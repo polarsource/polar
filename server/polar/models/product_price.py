@@ -329,7 +329,6 @@ class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
         Integer,
         # Polymorphic columns must be nullable, as they don't apply to other types
         nullable=True,
-        default=0,
     )
     cap_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     meter_id: Mapped[UUID] = mapped_column(

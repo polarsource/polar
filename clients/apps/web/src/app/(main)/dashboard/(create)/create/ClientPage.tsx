@@ -12,6 +12,7 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Form,
   FormField,
@@ -36,8 +37,12 @@ export default function ClientPage({
   const posthog = usePostHog()
   const { currentUser, setUserOrganizations, userOrganizations } = useAuth()
   const router = useRouter()
-  const form = useForm<{ name: string; slug: string }>({
-    defaultValues: { name: initialSlug || '', slug: initialSlug || '' },
+  const form = useForm<{ name: string; slug: string; terms: boolean }>({
+    defaultValues: {
+      name: initialSlug || '',
+      slug: initialSlug || '',
+      terms: false,
+    },
   })
   const {
     control,
@@ -80,7 +85,13 @@ export default function ClientPage({
     }
   }, [name, editedSlug, slug, setValue])
 
-  const onSubmit = async (data: { name: string; slug: string }) => {
+  const onSubmit = async (data: {
+    name: string
+    slug: string
+    terms: boolean
+  }) => {
+    if (!data.terms) return
+
     const params = {
       ...data,
       slug: slug as string,
@@ -118,7 +129,7 @@ export default function ClientPage({
               <div className="flex flex-col items-center gap-y-2">
                 <h1 className="text-2xl">Let&apos;s get started</h1>
                 <p className="dark:text-polar-400 text-center text-gray-600">
-                  To start monetizing on Polar, you need to create an
+                  To start monetizing with Polar you need to create an
                   organization.
                 </p>
               </div>
@@ -159,6 +170,83 @@ export default function ClientPage({
                   </>
                 )}
               />
+
+              <div className="dark:text-polar-400 mt-2 text-gray-600">
+                <FormField
+                  control={control}
+                  name="terms"
+                  rules={{
+                    required: 'You have to accept the terms',
+                  }}
+                  render={({ field }) => {
+                    return (
+                      <FormItem>
+                        <div className="flex flex-row items-center gap-x-3">
+                          <Checkbox
+                            id="terms"
+                            checked={field.value}
+                            onCheckedChange={(checked) => {
+                              // String | boolean type for some reason
+                              const value = checked ? true : false
+                              setValue('terms', value)
+                            }}
+                          />
+                          <label
+                            htmlFor="terms"
+                            className="text-sm font-medium"
+                          >
+                            I confirm and agree to the terms below
+                          </label>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )
+                  }}
+                />
+                <hr className="my-4" />
+                <ul className="ml-1 list-inside list-disc space-y-2 text-xs">
+                  <li>
+                    <a
+                      href="https://docs.polar.sh/merchant-of-record/acceptable-use"
+                      className="text-blue-500"
+                      target="_blank"
+                    >
+                      Acceptable Use Policy
+                    </a>
+                    . I&apos;ll only sell digital products and SaaS that
+                    complies with it or risk suspension.
+                  </li>
+                  <li>
+                    <a
+                      href="https://docs.polar.sh/merchant-of-record/account-reviews"
+                      className="text-blue-500"
+                      target="_blank"
+                    >
+                      Account Reviews
+                    </a>
+                    . I&apos;ll comply with all reviews and requests for
+                    compliance materials (KYC/AML).
+                  </li>
+                  <li>
+                    <a
+                      href="https://polar.sh/legal/terms"
+                      className="text-blue-500"
+                      target="_blank"
+                    >
+                      Terms of Service
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="https://polar.sh/legal/privacy"
+                      className="text-blue-500"
+                      target="_blank"
+                    >
+                      Privacy Policy
+                    </a>
+                  </li>
+                </ul>
+              </div>
             </div>
             {errors.root && (
               <p className="text-destructive-foreground text-sm">

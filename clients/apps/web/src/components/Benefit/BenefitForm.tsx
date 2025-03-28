@@ -29,7 +29,7 @@ import { useFormContext } from 'react-hook-form'
 import { DownloadablesBenefitForm } from './Downloadables/BenefitForm'
 import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
 import { LicenseKeysBenefitForm } from './LicenseKeys/BenefitForm'
-import { UsageBenefitForm } from './Usage/UsageBenefitForm'
+import { MeterCreditBenefitForm } from './MeterCredit/BenefitForm'
 import { benefitsDisplayNames } from './utils'
 
 export const NewBenefitForm = ({
@@ -103,7 +103,6 @@ export const BenefitForm = ({
       />
 
       {!update ? <BenefitTypeSelect /> : null}
-      {type === 'usage' && <UsageBenefitForm update={update} />}
       {type === 'custom' && <CustomBenefitForm update={update} />}
       {type === 'discord' && <DiscordBenefitForm />}
       {type === 'github_repository' && (
@@ -113,6 +112,9 @@ export const BenefitForm = ({
         <DownloadablesBenefitForm organization={organization} update={update} />
       )}
       {type === 'license_keys' && <LicenseKeysBenefitForm />}
+      {type === 'meter_credit' && (
+        <MeterCreditBenefitForm organization={organization} />
+      )}
     </>
   )
 }
@@ -301,16 +303,17 @@ const BenefitTypeSelect = ({}) => {
                   <SelectValue placeholder="Select a benefit type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.values(enums.benefitTypeValues).map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {benefitsDisplayNames[value]}
-                    </SelectItem>
-                  ))}
-                  {isFeatureEnabled('usage_benefits') && (
-                    <SelectItem key="usage" value="usage">
-                      Usage
-                    </SelectItem>
-                  )}
+                  {enums.benefitTypeValues
+                    .filter(
+                      (type) =>
+                        type !== 'meter_credit' ||
+                        isFeatureEnabled('usage_based_billing'),
+                    )
+                    .map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {benefitsDisplayNames[value]}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </FormControl>

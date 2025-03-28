@@ -1,6 +1,7 @@
 'use client'
 
-import { isLegacyRecurringPrice } from '@/utils/product'
+import { useMeters } from '@/hooks/queries/meters'
+import { isLegacyRecurringPrice, isStaticPrice } from '@/utils/product'
 import { ErrorMessage } from '@hookform/error-message'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -14,34 +15,28 @@ import {
 } from '@polar-sh/ui/components/atoms/Select'
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  UseFieldArrayReturn,
-  useFieldArray,
-  useFormContext,
-} from 'react-hook-form'
+import React, { useCallback, useMemo, useState } from 'react'
+import { useFieldArray, useFormContext } from 'react-hook-form'
 import { Section } from '../../Layout/Section'
 import { ProductFormType } from './ProductForm'
 
-export interface ProductPriceItemProps {
+export interface ProductPriceFixedItemProps {
   index: number
-  fieldArray: UseFieldArrayReturn<ProductFormType, 'prices', 'id'>
 }
 
-export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
+export const ProductPriceFixedItem: React.FC<ProductPriceFixedItemProps> = ({
   index,
 }) => {
-  const { control, register, setValue } = useFormContext<ProductFormType>()
+  const { control, setValue } = useFormContext<ProductFormType>()
 
   return (
-    <div className="flex items-center gap-2">
-      <input type="hidden" {...register(`prices.${index}.id`)} />
-      <input type="hidden" {...register(`prices.${index}.amount_type`)} />
+    <>
       <FormField
         control={control}
         name={`prices.${index}.price_amount`}
@@ -70,7 +65,7 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
           )
         }}
       />
-    </div>
+    </>
   )
 }
 
@@ -81,12 +76,10 @@ export interface ProductPriceCustomItemProps {
 export const ProductPriceCustomItem: React.FC<ProductPriceCustomItemProps> = ({
   index,
 }) => {
-  const { control, register, setValue } = useFormContext<ProductFormType>()
+  const { control, setValue } = useFormContext<ProductFormType>()
 
   return (
     <div className="flex w-40 flex-col gap-4">
-      <input type="hidden" {...register(`prices.${index}.id`)} />
-      <input type="hidden" {...register(`prices.${index}.amount_type`)} />
       <FormField
         control={control}
         name={`prices.${index}.minimum_amount`}
@@ -151,26 +144,229 @@ export interface ProductPriceFreeItemProps {
   index: number
 }
 
-export const ProductPriceFreeItem: React.FC<ProductPriceFreeItemProps> = ({
-  index,
-}) => {
-  const { register } = useFormContext<ProductFormType>()
+export const ProductPriceFreeItem: React.FC<ProductPriceFreeItemProps> = () => {
+  return <></>
+}
+
+export interface ProductPriceMeteredUnitItemProps {
+  organization: schemas['Organization']
+  index: number
+}
+
+export const ProductPriceMeteredUnitItem: React.FC<
+  ProductPriceMeteredUnitItemProps
+> = ({ organization, index }) => {
+  const { control, setValue } = useFormContext<ProductFormType>()
+  const { data: meters } = useMeters(organization.id, {
+    sorting: ['name'],
+  })
 
   return (
     <>
-      <input type="hidden" {...register(`prices.${index}.id`)} />
-      <input type="hidden" {...register(`prices.${index}.amount_type`)} />
+      {meters && meters.items && (
+        <FormField
+          control={control}
+          name={`prices.${index}.meter_id`}
+          rules={{
+            required: 'This field is required',
+          }}
+          render={({ field }) => {
+            return (
+              <FormItem>
+                <FormLabel>Meter</FormLabel>
+                <FormControl>
+                  <Select
+                    {...field}
+                    onValueChange={(v) => {
+                      field.onChange(v)
+                      setValue(`prices.${index}.id`, '')
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a meter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {meters.items.map((meter) => (
+                        <SelectItem key={meter.id} value={meter.id}>
+                          {meter.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
+        />
+      )}
+      <FormField
+        control={control}
+        name={`prices.${index}.unit_amount`}
+        rules={{
+          min: 0,
+          required: 'This field is required',
+        }}
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <FormLabel>Amount per unit</FormLabel>
+              <FormControl>
+                <MoneyInput
+                  {...field}
+                  name={field.name}
+                  value={field.value || undefined}
+                  onChange={(v) => {
+                    field.onChange(v)
+                    setValue(`prices.${index}.id`, '')
+                  }}
+                  placeholder={10}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
+      <FormField
+        control={control}
+        name={`prices.${index}.cap_amount`}
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <FormLabel>Cap amount</FormLabel>
+              <FormControl>
+                <MoneyInput
+                  {...field}
+                  name={field.name}
+                  value={field.value || undefined}
+                  onChange={(v) => {
+                    field.onChange(v)
+                    setValue(`prices.${index}.id`, '')
+                  }}
+                  placeholder={10000}
+                />
+              </FormControl>
+              <FormDescription>
+                Optional maximum amount that can be charged, regardless of the
+                number of units consumed.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
     </>
   )
 }
 
+export interface ProductPriceItemProps {
+  organization: schemas['Organization']
+  index: number
+}
+
+export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
+  organization,
+  index,
+}) => {
+  const { register, control, setValue, watch } =
+    useFormContext<ProductFormType>()
+  const amountType = watch(`prices.${index}.amount_type`)
+
+  const prices = watch('prices')
+  const staticPriceIndex = prices
+    ? (prices as schemas['ProductPrice'][]).findIndex(isStaticPrice)
+    : -1
+
+  const onAmountTypeChange = useCallback(
+    (amountType: schemas['ProductCreate']['prices'][number]['amount_type']) => {
+      const replace = (v: schemas['ProductCreate']['prices'][number]) => {
+        setValue(`prices.${index}`, v)
+      }
+      if (amountType === 'fixed') {
+        replace({
+          amount_type: 'fixed',
+          price_currency: 'usd',
+          price_amount: 0,
+        })
+      } else if (amountType === 'custom') {
+        replace({
+          amount_type: 'custom',
+          price_currency: 'usd',
+        })
+      } else if (amountType === 'free') {
+        replace({
+          amount_type: 'free',
+        })
+      } else if (amountType === 'metered_unit') {
+        replace({
+          amount_type: 'metered_unit',
+          price_currency: 'usd',
+          unit_amount: 0,
+          meter_id: '',
+        })
+      }
+    },
+    [index, setValue],
+  )
+
+  return (
+    <div className="flex flex-col gap-2">
+      <input type="hidden" {...register(`prices.${index}.id`)} />
+      <FormField
+        control={control}
+        name={`prices.${index}.amount_type`}
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <FormControl>
+                <Select
+                  value={field.value}
+                  onValueChange={(v) => {
+                    field.onChange(v)
+                    onAmountTypeChange(v as any)
+                    setValue(`prices.${index}.id`, '')
+                  }}
+                  disabled={staticPriceIndex > -1 && staticPriceIndex !== index}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a price type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fixed">Fixed price</SelectItem>
+                    <SelectItem value="custom">Pay what you want</SelectItem>
+                    <SelectItem value="free">Free</SelectItem>
+                    <SelectItem value="metered_unit">Metered price</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )
+        }}
+      />
+      {amountType === 'fixed' && <ProductPriceFixedItem index={index} />}
+      {amountType === 'custom' && <ProductPriceCustomItem index={index} />}
+      {amountType === 'free' && <ProductPriceFreeItem index={index} />}
+      {amountType === 'metered_unit' && (
+        <ProductPriceMeteredUnitItem
+          organization={organization}
+          index={index}
+        />
+      )}
+    </div>
+  )
+}
+
 export interface ProductPricingSectionProps {
+  organization: schemas['Organization']
   className?: string
   update?: boolean
   compact?: boolean
 }
 
 export const ProductPricingSection = ({
+  organization,
   className,
   update,
   compact,
@@ -185,19 +381,13 @@ export const ProductPricingSection = ({
     control,
     name: 'prices',
   })
-  const { fields: prices, replace } = pricesFieldArray
+  const { fields: prices, replace, append } = pricesFieldArray
 
   const isLegacyRecurringProduct = useMemo(
     () => (prices as schemas['ProductPrice'][]).some(isLegacyRecurringPrice),
     [prices],
   )
   const [legacyMigration, setLegacyMigration] = useState(false)
-
-  const [amountType, setAmountType] = useState(
-    prices.length > 0 && (prices as schemas['ProductPrice'][])[0].amount_type
-      ? (prices as schemas['ProductPrice'][])[0].amount_type
-      : 'fixed',
-  )
 
   const switchToNewPricingModel = useCallback(() => {
     setLegacyMigration(true)
@@ -212,34 +402,7 @@ export const ProductPricingSection = ({
         recurring_interval: null,
       },
     ])
-  }, [])
-
-  useEffect(() => {
-    if (update) return
-
-    if (amountType === 'fixed') {
-      replace([
-        {
-          amount_type: 'fixed',
-          price_currency: 'usd',
-          price_amount: 0,
-        },
-      ])
-    } else if (amountType === 'custom') {
-      replace([
-        {
-          amount_type: 'custom',
-          price_currency: 'usd',
-        },
-      ])
-    } else {
-      replace([
-        {
-          amount_type: 'free',
-        },
-      ])
-    }
-  }, [update, replace, amountType])
+  }, [prices, replace, setValue])
 
   return (
     <Section
@@ -300,39 +463,23 @@ export const ProductPricingSection = ({
               )
             }}
           />
-          <Select
-            value={amountType}
-            onValueChange={(value) =>
-              setAmountType(value as 'fixed' | 'custom' | 'free')
-            }
-            disabled={update}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select a product" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="fixed">Fixed price</SelectItem>
-              <SelectItem value="custom">Pay what you want</SelectItem>
-              <SelectItem value="free">Free</SelectItem>
-            </SelectContent>
-          </Select>
           {prices.map((price, index) => (
-            <>
-              {amountType === 'fixed' && (
-                <ProductPriceItem
-                  key={price.id}
-                  index={index}
-                  fieldArray={pricesFieldArray}
-                />
-              )}
-              {amountType === 'custom' && (
-                <ProductPriceCustomItem key={price.id} index={index} />
-              )}
-              {amountType === 'free' && (
-                <ProductPriceFreeItem key={price.id} index={index} />
-              )}
-            </>
+            <div key={price.id} className="rounded-xl border p-4">
+              <ProductPriceItem organization={organization} index={index} />
+            </div>
           ))}
+          <Button
+            onClick={() =>
+              append({
+                amount_type: 'metered_unit',
+                price_currency: 'usd',
+                meter_id: '',
+                unit_amount: 0,
+              })
+            }
+          >
+            Add price
+          </Button>
           <ErrorMessage
             errors={errors}
             name="prices"

@@ -3,6 +3,7 @@ import {
   useCreateProduct,
   useUpdateProductBenefits,
 } from '@/hooks/queries'
+import { useMeters } from '@/hooks/queries/meters'
 import { useStore } from '@/store'
 import { setValidationErrors } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
@@ -39,6 +40,9 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     () => benefits.data?.items ?? [],
     [benefits],
   )
+  const meters = useMeters(organization.id, {
+    sorting: ['name'],
+  })
 
   const {
     formDrafts: { ProductCreate: savedFormValues },
@@ -89,6 +93,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     enabledBenefitIds
       .map((id) => organizationBenefits.find((b) => b.id === id))
       .filter(Boolean) as schemas['Benefit'][],
+    meters.data?.items ?? [],
   )
 
   const onSubmit = useCallback(
@@ -187,11 +192,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
         <div className="flex h-full flex-col justify-between p-8 py-12">
           <CheckoutInfo
             className="md:w-full md:p-0"
-            checkout={createCheckoutPreview(
-              reconciledProduct,
-              reconciledProduct.prices[0],
-              organization,
-            )}
+            checkout={createCheckoutPreview(reconciledProduct, organization)}
             themePreset={themePreset}
           />
         </div>

@@ -32,7 +32,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
   return (
     <div className="dark:divide-polar-700 flex flex-col divide-y">
       <ProductInfoSection compact={compact} />
-      <ProductPricingSection update={update} compact={compact} />
+      <ProductPricingSection
+        organization={organization}
+        update={update}
+        compact={compact}
+      />
       <ProductMediaSection organization={organization} compact={compact} />
       <ProductCustomFieldSection
         organization={organization}

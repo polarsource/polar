@@ -5698,6 +5698,15 @@ export interface components {
             /** Display Key */
             display_key?: string;
         };
+        /** BenefitGrantMeterCreditProperties */
+        BenefitGrantMeterCreditProperties: {
+            /** Last Credited Meter Id */
+            last_credited_meter_id: string;
+            /** Last Credited Units */
+            last_credited_units: number;
+            /** Last Credited At */
+            last_credited_at: string;
+        };
         /** BenefitGrantWebhook */
         BenefitGrantWebhook: {
             /**
@@ -6031,8 +6040,8 @@ export interface components {
          * @description Properties for creating a benefit of type `meter_unit`.
          */
         BenefitMeterCreditCreateProperties: {
-            /** Unit */
-            unit: number;
+            /** Units */
+            units: number;
             /**
              * Meter Id
              * Format: uuid4
@@ -6044,8 +6053,69 @@ export interface components {
          * @description Properties for a benefit of type `meter_unit`.
          */
         BenefitMeterCreditProperties: {
-            /** Unit */
-            unit: number;
+            /** Units */
+            units: number;
+            /**
+             * Meter Id
+             * Format: uuid4
+             */
+            meter_id: string;
+        };
+        /** BenefitMeterCreditSubscriber */
+        BenefitMeterCreditSubscriber: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
+             * Type
+             * @constant
+             */
+            type: "meter_credit";
+            /**
+             * Description
+             * @description The description of the benefit.
+             */
+            description: string;
+            /**
+             * Selectable
+             * @description Whether the benefit is selectable when creating a product.
+             */
+            selectable: boolean;
+            /**
+             * Deletable
+             * @description Whether the benefit is deletable.
+             */
+            deletable: boolean;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the benefit.
+             */
+            organization_id: string;
+            organization: components["schemas"]["Organization"];
+            properties: components["schemas"]["BenefitMeterCreditSubscriberProperties"];
+        };
+        /**
+         * BenefitMeterCreditSubscriberProperties
+         * @description Properties available to subscribers for a benefit of type `meter_unit`.
+         */
+        BenefitMeterCreditSubscriberProperties: {
+            /** Units */
+            units: number;
             /**
              * Meter Id
              * Format: uuid4
@@ -6177,7 +6247,7 @@ export interface components {
              * Currency
              * @description Currency code of the checkout session.
              */
-            currency: string | null;
+            currency: string;
             /**
              * Product Id
              * Format: uuid4
@@ -7264,7 +7334,7 @@ export interface components {
              * Currency
              * @description Currency code of the checkout session.
              */
-            currency: string | null;
+            currency: string;
             /**
              * Product Id
              * Format: uuid4
@@ -7450,7 +7520,7 @@ export interface components {
              * Currency
              * @description Currency code of the checkout session.
              */
-            currency: string | null;
+            currency: string;
             /**
              * Product Id
              * Format: uuid4
@@ -8481,7 +8551,7 @@ export interface components {
             /** Avatar Url */
             readonly avatar_url: string;
         };
-        CustomerBenefitGrant: components["schemas"]["CustomerBenefitGrantDiscord"] | components["schemas"]["CustomerBenefitGrantGitHubRepository"] | components["schemas"]["CustomerBenefitGrantDownloadables"] | components["schemas"]["CustomerBenefitGrantLicenseKeys"] | components["schemas"]["CustomerBenefitGrantCustom"];
+        CustomerBenefitGrant: components["schemas"]["CustomerBenefitGrantDiscord"] | components["schemas"]["CustomerBenefitGrantGitHubRepository"] | components["schemas"]["CustomerBenefitGrantDownloadables"] | components["schemas"]["CustomerBenefitGrantLicenseKeys"] | components["schemas"]["CustomerBenefitGrantCustom"] | components["schemas"]["CustomerBenefitGrantMeterCredit"];
         /** CustomerBenefitGrantCustom */
         CustomerBenefitGrantCustom: {
             /**
@@ -8759,12 +8829,65 @@ export interface components {
              */
             benefit_type: "license_keys";
         };
+        /** CustomerBenefitGrantMeterCredit */
+        CustomerBenefitGrantMeterCredit: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /** Granted At */
+            granted_at: string | null;
+            /** Revoked At */
+            revoked_at: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             */
+            customer_id: string;
+            /**
+             * Benefit Id
+             * Format: uuid4
+             */
+            benefit_id: string;
+            /** Subscription Id */
+            subscription_id: string | null;
+            /** Order Id */
+            order_id: string | null;
+            /** Is Granted */
+            is_granted: boolean;
+            /** Is Revoked */
+            is_revoked: boolean;
+            customer: components["schemas"]["CustomerPortalCustomer"];
+            benefit: components["schemas"]["BenefitMeterCreditSubscriber"];
+            properties: components["schemas"]["BenefitGrantMeterCreditProperties"];
+        };
+        /** CustomerBenefitGrantMeterCreditUpdate */
+        CustomerBenefitGrantMeterCreditUpdate: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            benefit_type: "meter_credit";
+        };
         /**
          * CustomerBenefitGrantSortProperty
          * @enum {string}
          */
         CustomerBenefitGrantSortProperty: "granted_at" | "-granted_at" | "type" | "-type" | "organization" | "-organization";
-        CustomerBenefitGrantUpdate: components["schemas"]["CustomerBenefitGrantDiscordUpdate"] | components["schemas"]["CustomerBenefitGrantGitHubRepositoryUpdate"] | components["schemas"]["CustomerBenefitGrantDownloadablesUpdate"] | components["schemas"]["CustomerBenefitGrantLicenseKeysUpdate"] | components["schemas"]["CustomerBenefitGrantCustomUpdate"];
+        CustomerBenefitGrantUpdate: components["schemas"]["CustomerBenefitGrantDiscordUpdate"] | components["schemas"]["CustomerBenefitGrantGitHubRepositoryUpdate"] | components["schemas"]["CustomerBenefitGrantDownloadablesUpdate"] | components["schemas"]["CustomerBenefitGrantLicenseKeysUpdate"] | components["schemas"]["CustomerBenefitGrantCustomUpdate"] | components["schemas"]["CustomerBenefitGrantMeterCreditUpdate"];
         /**
          * CustomerCancellationReason
          * @enum {string}
@@ -26281,6 +26404,7 @@ export const customerBenefitGrantDiscordUpdateBenefit_typeValues: ReadonlyArray<
 export const customerBenefitGrantDownloadablesUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantDownloadablesUpdate"]["benefit_type"]> = ["downloadables"];
 export const customerBenefitGrantGitHubRepositoryUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantGitHubRepositoryUpdate"]["benefit_type"]> = ["github_repository"];
 export const customerBenefitGrantLicenseKeysUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantLicenseKeysUpdate"]["benefit_type"]> = ["license_keys"];
+export const customerBenefitGrantMeterCreditUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantMeterCreditUpdate"]["benefit_type"]> = ["meter_credit"];
 export const customerBenefitGrantSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantSortProperty"]> = ["granted_at", "-granted_at", "type", "-type", "organization", "-organization"];
 export const customerCancellationReasonValues: ReadonlyArray<components["schemas"]["CustomerCancellationReason"]> = ["customer_service", "low_quality", "missing_features", "switched_service", "too_complex", "too_expensive", "unused", "other"];
 export const customerOAuthPlatformValues: ReadonlyArray<components["schemas"]["CustomerOAuthPlatform"]> = ["github", "discord"];

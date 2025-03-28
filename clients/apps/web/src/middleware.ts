@@ -7,12 +7,12 @@ const POLAR_AUTH_COOKIE_KEY =
   process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
 
 const AUTHENTICATED_ROUTES = [
-  new RegExp('/start(/.*)?'),
-  new RegExp('/dashboard(/.*)?'),
-  new RegExp('/funding(/.*)?'),
-  new RegExp('/finance(/.*)?'),
-  new RegExp('/settings(/.*)?'),
-  new RegExp('/backoffice(/.*)?'),
+  new RegExp('^/start(/.*)?'),
+  new RegExp('^/dashboard(/.*)?'),
+  new RegExp('^/funding(/.*)?'),
+  new RegExp('^/finance(/.*)?'),
+  new RegExp('^/settings(/.*)?'),
+  new RegExp('^/backoffice(/.*)?'),
 ]
 
 const requiresAuthentication = (request: NextRequest): boolean => {

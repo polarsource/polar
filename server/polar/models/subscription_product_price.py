@@ -27,7 +27,7 @@ class SubscriptionProductPrice(RecordModel):
     )
     product_price_id: Mapped[UUID] = mapped_column(
         Uuid,
-        ForeignKey("product_prices.id", ondelete="cascade"),
+        ForeignKey("product_prices.id", ondelete="restrict"),
         primary_key=True,
     )
     amount: Mapped[int] = mapped_column(Integer, nullable=False)

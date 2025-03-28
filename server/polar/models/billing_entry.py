@@ -41,7 +41,7 @@ class BillingEntry(RecordModel):
         Uuid, ForeignKey("customers.id", ondelete="cascade"), nullable=False
     )
     product_price_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("product_prices.id", ondelete="cascade"), nullable=False
+        Uuid, ForeignKey("product_prices.id", ondelete="restrict"), nullable=False
     )
     subscription_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("subscriptions.id", ondelete="cascade"), nullable=True

@@ -91,6 +91,10 @@ class Product(MetadataMixin, RecordModel):
                 "ProductPrice.is_archived.is_(False)"
                 ")"
             ),
+            order_by="(case("
+            "(ProductPrice.amount_type.in_(['fixed', 'custom', 'free']), 0), "
+            "(ProductPrice.amount_type == 'metered_unit', 1), "
+            "), ProductPrice.created_at)",
             viewonly=True,
         )
 

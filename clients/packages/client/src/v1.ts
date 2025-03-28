@@ -6033,7 +6033,7 @@ export interface components {
              * Currency
              * @description Currency code of the checkout session.
              */
-            currency: string | null;
+            currency: string;
             /**
              * Product Id
              * Format: uuid4
@@ -7120,7 +7120,7 @@ export interface components {
              * Currency
              * @description Currency code of the checkout session.
              */
-            currency: string | null;
+            currency: string;
             /**
              * Product Id
              * Format: uuid4
@@ -7306,7 +7306,7 @@ export interface components {
              * Currency
              * @description Currency code of the checkout session.
              */
-            currency: string | null;
+            currency: string;
             /**
              * Product Id
              * Format: uuid4

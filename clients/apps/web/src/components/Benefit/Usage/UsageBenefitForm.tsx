@@ -1,6 +1,6 @@
 'use client'
 
-import { useMeters } from '@/hooks/queries/meters'
+import { useMetersInfinite } from '@/hooks/queries/meters'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -42,7 +42,7 @@ export const UsageBenefitForm = ({ update: _ }: { update: boolean }) => {
   const { control, watch } = useFormContext<UsageBenefitCreate>()
 
   const { organization } = useContext(MaintainerOrganizationContext)
-  const { data: metersData } = useMeters(organization.id)
+  const { data: metersData } = useMetersInfinite(organization.id)
 
   const meterId = watch('properties.meterId', undefined)
 

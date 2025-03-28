@@ -7,7 +7,7 @@ import { MeterUpdateModal } from '@/components/Meter/MeterUpdateModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import Spinner from '@/components/Shared/Spinner'
-import { useMeters } from '@/hooks/queries/meters'
+import { useMetersInfinite } from '@/hooks/queries/meters'
 import { useInViewport } from '@/hooks/utils'
 import {
   AddOutlined,
@@ -43,10 +43,13 @@ const ClientPage = ({
     defaultValue: '',
   })
 
-  const { data, hasNextPage, fetchNextPage } = useMeters(organization?.id, {
-    sorting: [sorting],
-    query,
-  })
+  const { data, hasNextPage, fetchNextPage } = useMetersInfinite(
+    organization?.id,
+    {
+      sorting: [sorting],
+      query,
+    },
+  )
 
   const {
     isShown: isCreateMeterModalShown,

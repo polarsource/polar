@@ -1,6 +1,7 @@
 import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
 import type { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice'
 import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
+import type { ProductPriceMeteredUnit } from '@polar-sh/sdk/models/components/productpricemeteredunit'
 
 export const hasRecurringIntervals = (
   product: CheckoutProduct,
@@ -26,3 +27,11 @@ export const hasLegacyRecurringPrices = (
 ): product is CheckoutProduct & {
   prices: LegacyRecurringProductPrice[]
 } => product.prices.some(isLegacyRecurringPrice)
+
+export const isMeteredPrice = (
+  price: ProductPrice | LegacyRecurringProductPrice,
+): price is ProductPriceMeteredUnit => price.amountType === 'metered_unit'
+
+export const getMeteredPrices = (
+  product: CheckoutProduct,
+): ProductPriceMeteredUnit[] => product.prices.filter(isMeteredPrice)

@@ -165,9 +165,21 @@ const ORGANIZATION: schemas['Organization'] = {
 
 export const createCheckoutPreview = (
   product: schemas['CheckoutProduct'],
-  price: schemas['ProductPrice'],
   organization: schemas['Organization'],
 ): CheckoutPublic => {
+  const prices = product.prices.map((price, index) => ({
+    ...price,
+    id: `price_${index}`,
+  }))
+  const staticPrice = prices.find((price) =>
+    ['fixed', 'custom', 'free'].includes(price.amount_type),
+  )
+  const price = staticPrice ?? prices[0]
+  const productWithPrices = {
+    ...product,
+    prices,
+  }
+
   const amount =
     price.amount_type === 'custom'
       ? (price.minimum_amount ?? 0)
@@ -183,13 +195,15 @@ export const createCheckoutPreview = (
     status: 'open',
     expires_at: new Date().toISOString(),
     client_secret: 'CLIENT_SECRET',
-    products: [product],
-    product: product,
-    product_id: product.id,
+    products: [productWithPrices],
+    product: productWithPrices,
+    product_id: productWithPrices.id,
     product_price: price,
     product_price_id: price.id,
     amount,
     tax_amount: null,
+    discount_amount: 0,
+    net_amount: 0,
     subtotal_amount: amount,
     total_amount: amount,
     is_discount_applicable: price.amount_type === 'fixed',
@@ -224,7 +238,6 @@ export const createCheckoutPreview = (
 
 export const CHECKOUT_PREVIEW = createCheckoutPreview(
   PRODUCT_PREVIEW,
-  PRODUCT_PREVIEW.prices[0],
   ORGANIZATION,
 )
 

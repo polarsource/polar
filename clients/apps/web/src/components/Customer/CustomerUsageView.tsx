@@ -1,4 +1,4 @@
-import { useMeterQuantities, useMeters } from '@/hooks/queries/meters'
+import { useMeterQuantities, useMetersInfinite } from '@/hooks/queries/meters'
 import { schemas } from '@polar-sh/client'
 import { TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
 import { useMemo } from 'react'
@@ -9,7 +9,7 @@ export const CustomerUsageView = ({
 }: {
   customer: schemas['Customer']
 }) => {
-  const { data } = useMeters(customer.organization_id)
+  const { data } = useMetersInfinite(customer.organization_id)
 
   const meters = data?.pages.flatMap((page) => page.items) ?? []
 

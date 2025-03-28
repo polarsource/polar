@@ -135,17 +135,6 @@ class OrderDoesNotExist(OrderError):
         super().__init__(message)
 
 
-class ProductPriceDoesNotExist(OrderError):
-    def __init__(self, invoice_id: str, stripe_price_id: str) -> None:
-        self.invoice_id = invoice_id
-        self.stripe_price_id = stripe_price_id
-        message = (
-            f"Received invoice {invoice_id} from Stripe with price {stripe_price_id}, "
-            f"but no associated ProductPrice exists."
-        )
-        super().__init__(message)
-
-
 class DiscountDoesNotExist(OrderError):
     def __init__(self, invoice_id: str, coupon_id: str) -> None:
         self.invoice_id = invoice_id
@@ -510,8 +499,6 @@ class OrderService:
                             options=product_price_repository.get_eager_options(),
                         )
                     )
-                if product_price is None:
-                    raise ProductPriceDoesNotExist(invoice.id, price.id)
 
             items.append(
                 OrderItem(

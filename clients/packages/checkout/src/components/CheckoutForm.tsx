@@ -38,9 +38,10 @@ import { UseFormReturn, WatchObserver } from 'react-hook-form'
 import { useDebouncedCallback } from '../hooks/debounce'
 import { getDiscountDisplay } from '../utils/discount'
 import { formatCurrencyNumber } from '../utils/money'
-import { hasLegacyRecurringPrices } from '../utils/product'
+import { getMeteredPrices, hasLegacyRecurringPrices } from '../utils/product'
 import AmountLabel from './AmountLabel'
 import CustomFieldInput from './CustomFieldInput'
+import MeteredPriceLabel from './MeteredPriceLabel'
 import PolarLogo from './PolarLogo'
 
 const DetailRow = ({
@@ -113,6 +114,13 @@ const BaseCheckoutForm = ({
 
   const discount = checkout.discount
   const isDiscountWithoutCode = discount && discount.code === null
+
+  const { product, productPrice } = checkout
+  const meteredPrices = useMemo(() => getMeteredPrices(product), [product])
+  const onlyMeteredPrices = useMemo(
+    () => meteredPrices.length === product.prices.length,
+    [meteredPrices, product],
+  )
 
   const country = watch('customerBillingAddress.country')
   const watcher: WatchObserver<CheckoutUpdatePublic> = useCallback(
@@ -581,7 +589,7 @@ const BaseCheckoutForm = ({
             </div>
             {!checkout.isFreeProductPrice && (
               <div className="flex flex-col gap-y-2">
-                {checkout.amount !== null && checkout.currency ? (
+                {checkout.currency ? (
                   <>
                     <DetailRow title="Subtotal">
                       <AmountLabel
@@ -595,7 +603,7 @@ const BaseCheckoutForm = ({
                         title={`${checkout.discount.name} (${getDiscountDisplay(checkout.discount)})`}
                       >
                         {formatCurrencyNumber(
-                          (checkout.subtotalAmount || 0) - checkout.amount,
+                          -checkout.discountAmount,
                           checkout.currency,
                         )}
                       </DetailRow>
@@ -610,11 +618,25 @@ const BaseCheckoutForm = ({
                     )}
                     <DetailRow title="Total" emphasis>
                       <AmountLabel
-                        amount={checkout.totalAmount || 0}
+                        amount={checkout.totalAmount}
                         currency={checkout.currency}
                         interval={interval}
                       />
                     </DetailRow>
+                    {meteredPrices.length > 0 && (
+                      <DetailRow
+                        title="Additional metered usage"
+                        emphasis
+                      ></DetailRow>
+                    )}
+                    {meteredPrices.map((meteredPrice) => (
+                      <DetailRow
+                        title={meteredPrice.meter.name}
+                        key={meteredPrice.id}
+                      >
+                        <MeteredPriceLabel price={meteredPrice} />
+                      </DetailRow>
+                    ))}
                   </>
                 ) : (
                   <span>Free</span>

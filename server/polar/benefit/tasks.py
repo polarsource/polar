@@ -4,6 +4,7 @@ from typing import Literal, Unpack
 import structlog
 from arq import Retry
 
+from polar.benefit.repository import BenefitRepository
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
@@ -19,7 +20,6 @@ from polar.worker import (
 
 from .grant.scope import resolve_scope
 from .grant.service import benefit_grant as benefit_grant_service
-from .service import benefit as benefit_service
 from .strategies import BenefitRetriableError
 
 log: Logger = structlog.get_logger()
@@ -109,7 +109,10 @@ async def benefit_grant(
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
 
-        benefit = await benefit_service.get(session, benefit_id, loaded=True)
+        benefit_repository = BenefitRepository.from_session(session)
+        benefit = await benefit_repository.get_by_id(
+            benefit_id, options=benefit_repository.get_eager_options()
+        )
         if benefit is None:
             raise BenefitDoesNotExist(benefit_id)
 
@@ -153,7 +156,10 @@ async def benefit_revoke(
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
 
-        benefit = await benefit_service.get(session, benefit_id, loaded=True)
+        benefit_repository = BenefitRepository.from_session(session)
+        benefit = await benefit_repository.get_by_id(
+            benefit_id, options=benefit_repository.get_eager_options()
+        )
         if benefit is None:
             raise BenefitDoesNotExist(benefit_id)
 
@@ -213,7 +219,10 @@ async def benefit_delete(
     polar_context: PolarWorkerContext,
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        benefit = await benefit_service.get(session, benefit_id, allow_deleted=True)
+        benefit_repository = BenefitRepository.from_session(session)
+        benefit = await benefit_repository.get_by_id(
+            benefit_id, options=benefit_repository.get_eager_options()
+        )
         if benefit is None:
             raise BenefitDoesNotExist(benefit_id)
 

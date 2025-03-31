@@ -552,7 +552,7 @@ class ProductService(ResourceServiceReader[Product]):
 
         new_product_benefits: list[ProductBenefit] = []
         for order, benefit_id in enumerate(benefits):
-            benefit = await benefit_service.get_by_id(session, auth_subject, benefit_id)
+            benefit = await benefit_service.get(session, auth_subject, benefit_id)
             if benefit is None:
                 raise PolarRequestValidationError(
                     [

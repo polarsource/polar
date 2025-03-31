@@ -11,7 +11,6 @@ from polar.external_organization.service import (
 )
 from polar.issue.service import issue as issue_service
 from polar.models.account import Account
-from polar.models.benefit import Benefit
 from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
@@ -43,7 +42,6 @@ Object = (
     | Issue
     | Pledge
     | Product
-    | Benefit
     | LicenseKey
 )
 
@@ -222,17 +220,6 @@ class Authz:
             and isinstance(object, Pledge)
         ):
             return await self._can_user_write_pledge(subject, object)
-
-        #
-        # Benefit
-        #
-        if isinstance(object, Benefit) and accessType == AccessType.write:
-            if isinstance(subject, User):
-                return await self._can_user_write_organization(
-                    subject, object.organization
-                )
-            if isinstance(subject, Organization):
-                return object.organization_id == subject.id
 
         #
         # SubscriptionTier

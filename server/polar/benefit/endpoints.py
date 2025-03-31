@@ -1,8 +1,7 @@
 from fastapi import Depends, Query
 
-from polar.authz.service import Authz
 from polar.customer.schemas.customer import CustomerID
-from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Benefit
@@ -10,7 +9,6 @@ from polar.models.benefit import BenefitType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
-from polar.posthog import posthog
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
@@ -80,7 +78,7 @@ async def get(
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
     """Get a benefit by ID."""
-    benefit = await benefit_service.get_by_id(session, auth_subject, id)
+    benefit = await benefit_service.get(session, auth_subject, id)
 
     if benefit is None:
         raise ResourceNotFound()
@@ -116,7 +114,7 @@ async def grants(
 
     It's especially useful to check if a user has been granted a benefit.
     """
-    benefit = await benefit_service.get_by_id(session, auth_subject, id)
+    benefit = await benefit_service.get(session, auth_subject, id)
 
     if benefit is None:
         raise ResourceNotFound()
@@ -156,14 +154,6 @@ async def create(
         session, redis, benefit_create, auth_subject
     )
 
-    posthog.auth_subject_event(
-        auth_subject,
-        "benefits",
-        "api",
-        "create",
-        {"benefit_id": benefit.id},
-    )
-
     return benefit
 
 
@@ -173,10 +163,6 @@ async def create(
     response_model=BenefitSchema,
     responses={
         200: {"description": "Benefit updated."},
-        403: {
-            "description": "You don't have the permission to update this benefit.",
-            "model": NotPermitted.schema(),
-        },
         404: BenefitNotFound,
     },
 )
@@ -184,31 +170,19 @@ async def update(
     id: BenefitID,
     benefit_update: BenefitUpdate,
     auth_subject: auth.BenefitsWrite,
-    authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> Benefit:
     """
     Update a benefit.
     """
-    benefit = await benefit_service.get_by_id(session, auth_subject, id)
+    benefit = await benefit_service.get(session, auth_subject, id)
 
     if benefit is None:
         raise ResourceNotFound()
 
-    if benefit_update.type != benefit.type:
-        raise BadRequest("The type of a benefit can't be changed.")
-
-    posthog.auth_subject_event(
-        auth_subject,
-        "benefits",
-        "api",
-        "update",
-        {"benefit_id": benefit.id},
-    )
-
-    return await benefit_service.user_update(
-        session, redis, authz, benefit, benefit_update, auth_subject
+    return await benefit_service.update(
+        session, redis, benefit, benefit_update, auth_subject
     )
 
 
@@ -219,10 +193,7 @@ async def update(
     responses={
         204: {"description": "Benefit deleted."},
         403: {
-            "description": (
-                "You don't have the permission to update this benefit "
-                "or it's not deletable."
-            ),
+            "description": "This benefit is not deletable.",
             "model": NotPermitted.schema(),
         },
         404: BenefitNotFound,
@@ -231,7 +202,6 @@ async def update(
 async def delete(
     id: BenefitID,
     auth_subject: auth.BenefitsWrite,
-    authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """
@@ -241,17 +211,9 @@ async def delete(
     > Every grants associated with the benefit will be revoked.
     > Users will lose access to the benefit.
     """
-    benefit = await benefit_service.get_by_id(session, auth_subject, id)
+    benefit = await benefit_service.get(session, auth_subject, id)
 
     if benefit is None:
         raise ResourceNotFound()
 
-    posthog.auth_subject_event(
-        auth_subject,
-        "benefits",
-        "api",
-        "delete",
-        {"benefit_id": benefit.id},
-    )
-
-    await benefit_service.user_delete(session, authz, benefit, auth_subject)
+    await benefit_service.delete(session, benefit)

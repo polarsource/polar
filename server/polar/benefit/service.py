@@ -1,97 +1,34 @@
 import uuid
 from collections.abc import Sequence
-from typing import Any, TypeVar, overload
+from typing import Any
 
 from pydantic import BaseModel
-from sqlalchemy import Select, UnaryExpression, asc, delete, desc, select
-from sqlalchemy.exc import InvalidRequestError
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy import UnaryExpression, asc, delete, desc
 
-from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.authz.service import AccessType, Authz
-from polar.exceptions import NotPermitted, PolarError
+from polar.auth.models import AuthSubject
+from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceService
+from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.kit.utils import utc_now
-from polar.models import (
-    Benefit,
-    Organization,
-    ProductBenefit,
-    User,
-    UserOrganization,
-)
+from polar.models import Benefit, Organization, ProductBenefit, User
 from polar.models.benefit import BenefitType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
-from polar.postgres import sql
 from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .grant.service import benefit_grant as benefit_grant_service
 from .registry import get_benefit_strategy
+from .repository import BenefitRepository
 from .schemas import BenefitCreate, BenefitUpdate
 from .sorting import BenefitSortProperty
-
-B = TypeVar("B", bound=Benefit)
 
 
 class BenefitError(PolarError): ...
 
 
-class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
-    @overload
-    async def get(
-        self,
-        session: AsyncSession,
-        id: uuid.UUID,
-        allow_deleted: bool = False,
-        loaded: bool = False,
-        *,
-        class_: None = None,
-        options: Sequence[sql.ExecutableOption] | None = None,
-    ) -> Benefit | None: ...
-
-    @overload
-    async def get(
-        self,
-        session: AsyncSession,
-        id: uuid.UUID,
-        allow_deleted: bool = False,
-        loaded: bool = False,
-        *,
-        class_: type[B] | None = None,
-        options: Sequence[sql.ExecutableOption] | None = None,
-    ) -> B | None: ...
-
-    async def get(
-        self,
-        session: AsyncSession,
-        id: uuid.UUID,
-        allow_deleted: bool = False,
-        loaded: bool = False,
-        *,
-        class_: Any = None,
-        options: Sequence[sql.ExecutableOption] | None = None,
-    ) -> Any | None:
-        if class_ is None:
-            class_ = Benefit
-
-        query = select(class_).where(class_.id == id)
-        if not allow_deleted:
-            query = query.where(class_.deleted_at.is_(None))
-
-        if loaded:
-            query = query.options(joinedload(class_.organization))
-
-        if options is not None:
-            query = query.options(*options)
-
-        res = await session.execute(query)
-        return res.scalar_one_or_none()
-
+class BenefitService:
     async def list(
         self,
         session: AsyncSession,
@@ -105,7 +42,8 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         ],
         query: str | None = None,
     ) -> tuple[Sequence[Benefit], int]:
-        statement = self._get_readable_benefit_statement(auth_subject)
+        repository = BenefitRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject)
 
         if type is not None:
             statement = statement.where(Benefit.type.in_(type))
@@ -125,24 +63,23 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
                 order_by_clauses.append(clause_function(Benefit.description))
         statement = statement.order_by(*order_by_clauses)
 
-        results, count = await paginate(session, statement, pagination=pagination)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
-        return results, count
-
-    async def get_by_id(
+    async def get(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Benefit | None:
+        repository = BenefitRepository.from_session(session)
         statement = (
-            self._get_readable_benefit_statement(auth_subject)
-            .where(Benefit.id == id, Benefit.deleted_at.is_(None))
-            .options(contains_eager(Benefit.organization))
+            repository.get_readable_statement(auth_subject)
+            .where(Benefit.id == id)
+            .options(*repository.get_eager_options())
         )
-
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
+        return await repository.get_one_or_none(statement)
 
     async def user_create(
         self,
@@ -190,25 +127,33 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
 
         return benefit
 
-    async def user_update(
+    async def update(
         self,
         session: AsyncSession,
         redis: Redis,
-        authz: Authz,
         benefit: Benefit,
-        update_schema: BenefitUpdate,
+        benefit_update: BenefitUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Benefit:
-        benefit = await self._with_organization(session, benefit)
+        if benefit_update.type != benefit.type:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "type"),
+                        "msg": "Benefit type cannot be changed.",
+                        "input": benefit.type,
+                    }
+                ]
+            )
 
-        if not await authz.can(auth_subject.subject, AccessType.write, benefit):
-            raise NotPermitted()
-
-        update_dict = update_schema.model_dump(
+        update_dict = benefit_update.model_dump(
             by_alias=True, exclude_unset=True, exclude={"type", "properties"}
         )
 
-        properties_update: BaseModel | None = getattr(update_schema, "properties", None)
+        properties_update: BaseModel | None = getattr(
+            benefit_update, "properties", None
+        )
         if properties_update is not None:
             benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
             update_dict["properties"] = await benefit_strategy.validate_properties(
@@ -234,23 +179,12 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
 
         return benefit
 
-    async def user_delete(
-        self,
-        session: AsyncSession,
-        authz: Authz,
-        benefit: Benefit,
-        auth_subject: AuthSubject[User | Organization],
-    ) -> Benefit:
-        benefit = await self._with_organization(session, benefit)
-
-        if not await authz.can(auth_subject.subject, AccessType.write, benefit):
-            raise NotPermitted()
-
+    async def delete(self, session: AsyncSession, benefit: Benefit) -> Benefit:
         if not benefit.deletable:
             raise NotPermitted()
 
-        benefit.deleted_at = utc_now()
-        session.add(benefit)
+        repository = BenefitRepository.from_session(session)
+        await repository.soft_delete(benefit)
         statement = delete(ProductBenefit).where(
             ProductBenefit.benefit_id == benefit.id
         )
@@ -266,39 +200,5 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
 
         return benefit
 
-    async def _with_organization(
-        self, session: AsyncSession, benefit: Benefit
-    ) -> Benefit:
-        try:
-            benefit.organization
-        except InvalidRequestError:
-            await session.refresh(benefit, {"organization"})
-        return benefit
 
-    def _get_readable_benefit_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[Any]:
-        statement = (select(Benefit).join(Benefit.organization, full=True)).where(
-            # Prevent to return `None` objects due to the full outer join
-            Benefit.id.is_not(None),
-            Benefit.deleted_at.is_(None),
-        )
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.join(
-                UserOrganization,
-                onclause=UserOrganization.organization_id == Benefit.organization_id,
-                full=True,
-            ).where(
-                UserOrganization.user_id == user.id,
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Benefit.organization_id == auth_subject.subject.id,
-            )
-
-        return statement
-
-
-benefit = BenefitService(Benefit)
+benefit = BenefitService()

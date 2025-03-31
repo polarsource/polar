@@ -929,6 +929,9 @@ class TestUpdate:
         )
         assert updated_product.description == product.description
 
+        assert len(updated_product.prices) == 1
+        assert len(updated_product.all_prices) == 1
+
         update_product_mock.assert_not_called()
 
     @pytest.mark.auth(
@@ -1006,6 +1009,8 @@ class TestUpdate:
             auth_subject,
         )
 
+        await session.flush()
+
         create_price_for_product_mock.assert_called_once()
         archive_price_mock.assert_called_once_with(deleted_price_id)
 
@@ -1015,6 +1020,9 @@ class TestUpdate:
         assert isinstance(new_price, ProductPriceFixed)
         assert new_price.price_amount == 12000
         assert new_price.stripe_price_id == "NEW_PRICE_ID"
+
+        assert len(updated_product.all_prices) == 2
+        assert deleted_price in updated_product.all_prices
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

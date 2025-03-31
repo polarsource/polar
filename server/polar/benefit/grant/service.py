@@ -22,13 +22,13 @@ from polar.webhook.webhooks import WebhookPayloadTypeAdapter
 from polar.worker import enqueue_job
 
 from ..registry import get_benefit_strategy
-from ..repository.benefit_grant import BenefitGrantRepository
 from ..schemas import BenefitGrantWebhook
 from ..strategies import (
     BenefitActionRequiredError,
     BenefitGrantProperties,
     BenefitProperties,
 )
+from .repository import BenefitGrantRepository
 from .scope import scope_to_args
 
 log: Logger = structlog.get_logger()

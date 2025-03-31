@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from typing import Any, List, Literal, TypeVar  # noqa: UP035
 
 import stripe
-from sqlalchemy import Select, UnaryExpression, asc, case, desc, func, inspect, select
+from sqlalchemy import Select, UnaryExpression, asc, case, desc, func, select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -270,7 +270,7 @@ class ProductService(ResourceServiceReader[Product]):
 
         errors: list[ValidationError] = []
 
-        prices, _, prices_errors = await self._get_validated_prices(
+        prices, _, _, prices_errors = await self._get_validated_prices(
             session, create_schema.prices, None, auth_subject
         )
         errors.extend(prices_errors)
@@ -460,9 +460,15 @@ class ProductService(ResourceServiceReader[Product]):
                 errors.extend(attached_custom_fields_errors)
 
         prices = product.prices
+        existing_prices = set(product.prices)
         added_prices: list[ProductPrice] = []
         if update_schema.prices is not None:
-            prices, added_prices, prices_errors = await self._get_validated_prices(
+            (
+                prices,
+                existing_prices,
+                added_prices,
+                prices_errors,
+            ) = await self._get_validated_prices(
                 session, update_schema.prices, product, auth_subject
             )
             errors.extend(prices_errors)
@@ -492,16 +498,6 @@ class ProductService(ResourceServiceReader[Product]):
         if update_schema.recurring_interval is not None:
             product.recurring_interval = update_schema.recurring_interval
 
-        for price in added_prices:
-            if isinstance(price, HasStripePriceId):
-                assert product.stripe_product_id is not None
-                stripe_price = await stripe_service.create_price_for_product(
-                    product.stripe_product_id,
-                    price.get_stripe_price_params(product.recurring_interval),
-                )
-                price.stripe_price_id = stripe_price.id
-
-        existing_prices = set(p for p in prices if inspect(p).persistent)
         deleted_prices = set(product.prices) - existing_prices
         for deleted_price in deleted_prices:
             assert product.stripe_product_id is not None
@@ -512,8 +508,14 @@ class ProductService(ResourceServiceReader[Product]):
                 await stripe_service.archive_price(deleted_price.stripe_price_id)
             deleted_price.is_archived = True
 
-        product.prices = prices
-        product.all_prices = [*prices, *deleted_prices]
+        for price in added_prices:
+            if isinstance(price, HasStripePriceId):
+                assert product.stripe_product_id is not None
+                stripe_price = await stripe_service.create_price_for_product(
+                    product.stripe_product_id,
+                    price.get_stripe_price_params(product.recurring_interval),
+                )
+                price.stripe_price_id = stripe_price.id
 
         if update_schema.is_archived:
             product = await self._archive(session, product)
@@ -528,6 +530,8 @@ class ProductService(ResourceServiceReader[Product]):
 
         session.add(product)
         await session.flush()
+
+        await session.refresh(product, {"prices", "all_prices"})
 
         await self._after_product_updated(session, product)
 
@@ -622,11 +626,13 @@ class ProductService(ResourceServiceReader[Product]):
         auth_subject: AuthSubject[User | Organization],
     ) -> tuple[
         builtins.list[ProductPrice],
+        builtins.set[ProductPrice],
         builtins.list[ProductPrice],
         builtins.list[ValidationError],
     ]:
         meter_repository = MeterRepository.from_session(session)
         prices: list[ProductPrice] = []
+        existing_prices: set[ProductPrice] = set()
         added_prices: list[ProductPrice] = []
         errors: list[ValidationError] = []
         for index, price_schema in enumerate(prices_schema):
@@ -643,6 +649,7 @@ class ProductService(ResourceServiceReader[Product]):
                         }
                     )
                     continue
+                existing_prices.add(price)
             else:
                 model_class = price_schema.get_model_class()
                 price = model_class(product=product, **price_schema.model_dump())
@@ -701,7 +708,7 @@ class ProductService(ResourceServiceReader[Product]):
                     }
                 )
 
-        return prices, added_prices, errors
+        return prices, existing_prices, added_prices, errors
 
     async def _archive(self, session: AsyncSession, product: Product) -> Product:
         if product.stripe_product_id is not None:

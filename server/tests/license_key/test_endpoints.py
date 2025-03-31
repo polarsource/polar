@@ -6,7 +6,7 @@ from httpx import AsyncClient
 
 from polar.auth.models import AuthSubject
 from polar.benefit.strategies.license_keys.schemas import (
-    BenefitLicenseKeyActivationProperties,
+    BenefitLicenseKeyActivationCreateProperties,
     BenefitLicenseKeysCreateProperties,
 )
 from polar.kit.pagination import PaginationParams
@@ -224,7 +224,7 @@ class TestLicenseKeyEndpoints:
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
-                activations=BenefitLicenseKeyActivationProperties(
+                activations=BenefitLicenseKeyActivationCreateProperties(
                     limit=2, enable_customer_admin=True
                 ),
             ),

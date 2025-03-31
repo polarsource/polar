@@ -110,7 +110,7 @@ export const TeamSection = ({ active }: { active: boolean }) => {
       <p>
         From building startups before to Shop.app, Shop Pay and writing the book
         on FastAPI or React UI engine in Battlefield. Our team is small and
-        battle scared.
+        battle scarred.
       </p>
       <p>
         Want to build the future of payments for developers? We&apos;re looking

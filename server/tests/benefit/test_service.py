@@ -38,7 +38,7 @@ def authz(session: AsyncSession) -> Authz:
 
 @pytest.fixture
 def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
-    return mocker.patch("polar.benefit.service.benefit.enqueue_job")
+    return mocker.patch("polar.benefit.service.enqueue_job")
 
 
 @pytest.mark.asyncio

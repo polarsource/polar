@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from typing import cast
 
 from polar.benefit.strategies.license_keys.properties import (
     BenefitGrantLicenseKeysProperties,
@@ -9,7 +8,7 @@ from polar.benefit.strategies.license_keys.schemas import (
 )
 from polar.benefit.strategies.license_keys.service import BenefitLicenseKeysService
 from polar.models import Benefit, Customer, LicenseKey, Organization, Product
-from polar.models.benefit import BenefitLicenseKeys, BenefitType
+from polar.models.benefit import BenefitType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession, sql
 from polar.redis import Redis
@@ -32,7 +31,7 @@ class TestLicenseKey:
         organization: Organization,
         product: Product,
         properties: BenefitLicenseKeysCreateProperties,
-    ) -> tuple[BenefitLicenseKeys, BenefitGrantLicenseKeysProperties]:
+    ) -> tuple[Benefit, BenefitGrantLicenseKeysProperties]:
         benefit = await create_benefit(
             save_fixture,
             type=BenefitType.license_keys,
@@ -43,7 +42,7 @@ class TestLicenseKey:
             session,
             redis,
             save_fixture,
-            cast(BenefitLicenseKeys, benefit),
+            benefit,
             customer=customer,
             product=product,
         )
@@ -54,10 +53,10 @@ class TestLicenseKey:
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
-        benefit: BenefitLicenseKeys,
+        benefit: Benefit,
         customer: Customer,
         product: Product,
-    ) -> tuple[BenefitLicenseKeys, BenefitGrantLicenseKeysProperties]:
+    ) -> tuple[Benefit, BenefitGrantLicenseKeysProperties]:
         subscription = await create_subscription(
             save_fixture,
             product=product,
@@ -77,9 +76,9 @@ class TestLicenseKey:
         cls,
         session: AsyncSession,
         redis: Redis,
-        benefit: BenefitLicenseKeys,
+        benefit: Benefit,
         customer: Customer,
-    ) -> tuple[BenefitLicenseKeys, BenefitGrantLicenseKeysProperties]:
+    ) -> tuple[Benefit, BenefitGrantLicenseKeysProperties]:
         service = BenefitLicenseKeysService(session, redis)
         granted = await service.grant(benefit, customer, {})
         return benefit, granted
@@ -89,9 +88,9 @@ class TestLicenseKey:
         cls,
         session: AsyncSession,
         redis: Redis,
-        benefit: BenefitLicenseKeys,
+        benefit: Benefit,
         customer: Customer,
-    ) -> tuple[BenefitLicenseKeys, BenefitGrantLicenseKeysProperties]:
+    ) -> tuple[Benefit, BenefitGrantLicenseKeysProperties]:
         service = BenefitLicenseKeysService(session, redis)
         revoked = await service.revoke(benefit, customer, {})
         return benefit, revoked

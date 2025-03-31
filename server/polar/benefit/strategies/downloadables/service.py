@@ -10,8 +10,7 @@ from polar.customer_portal.service.downloadables import (
     downloadable as downloadable_service,
 )
 from polar.logging import Logger
-from polar.models import Customer, Organization, User
-from polar.models.benefit import BenefitDownloadables
+from polar.models import Benefit, Customer, Organization, User
 
 from ..base.service import BenefitServiceProtocol
 from . import schemas
@@ -30,21 +29,20 @@ def get_active_file_ids(properties: BenefitDownloadablesProperties) -> list[UUID
 
 class BenefitDownloadablesService(
     BenefitServiceProtocol[
-        BenefitDownloadables,
-        BenefitDownloadablesProperties,
-        BenefitGrantDownloadablesProperties,
+        BenefitDownloadablesProperties, BenefitGrantDownloadablesProperties
     ]
 ):
     async def grant(
         self,
-        benefit: BenefitDownloadables,
+        benefit: Benefit,
         customer: Customer,
         grant_properties: BenefitGrantDownloadablesProperties,
         *,
         update: bool = False,
         attempt: int = 1,
     ) -> BenefitGrantDownloadablesProperties:
-        file_ids = get_active_file_ids(benefit.properties)
+        properties = self._get_properties(benefit)
+        file_ids = get_active_file_ids(properties)
         if not file_ids:
             return {}
 
@@ -65,7 +63,7 @@ class BenefitDownloadablesService(
 
     async def revoke(
         self,
-        benefit: BenefitDownloadables,
+        benefit: Benefit,
         customer: Customer,
         grant_properties: BenefitGrantDownloadablesProperties,
         *,
@@ -79,11 +77,10 @@ class BenefitDownloadablesService(
         return {}
 
     async def requires_update(
-        self,
-        benefit: BenefitDownloadables,
-        previous_properties: BenefitDownloadablesProperties,
+        self, benefit: Benefit, previous_properties: BenefitDownloadablesProperties
     ) -> bool:
-        new_file_ids = set(get_active_file_ids(benefit.properties))
+        properties = self._get_properties(benefit)
+        new_file_ids = set(get_active_file_ids(properties))
         previous_file_ids = set(get_active_file_ids(previous_properties))
         return new_file_ids != previous_file_ids
 

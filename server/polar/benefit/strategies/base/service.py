@@ -1,4 +1,4 @@
-from typing import Any, Protocol, TypeVar
+from typing import Any, Protocol, TypeVar, cast
 
 from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
@@ -52,12 +52,11 @@ class BenefitActionRequiredError(BenefitServiceError):
     """
 
 
-B = TypeVar("B", bound=Benefit, contravariant=True)
 BP = TypeVar("BP", bound=BenefitProperties)
 BGP = TypeVar("BGP", bound=BenefitGrantProperties)
 
 
-class BenefitServiceProtocol(Protocol[B, BP, BGP]):
+class BenefitServiceProtocol(Protocol[BP, BGP]):
     """
     Protocol that should be implemented by each benefit type service.
 
@@ -75,7 +74,7 @@ class BenefitServiceProtocol(Protocol[B, BP, BGP]):
 
     async def grant(
         self,
-        benefit: B,
+        benefit: Benefit,
         customer: Customer,
         grant_properties: BGP,
         *,
@@ -110,7 +109,7 @@ class BenefitServiceProtocol(Protocol[B, BP, BGP]):
 
     async def revoke(
         self,
-        benefit: B,
+        benefit: Benefit,
         customer: Customer,
         grant_properties: BGP,
         *,
@@ -139,7 +138,7 @@ class BenefitServiceProtocol(Protocol[B, BP, BGP]):
         """
         ...
 
-    async def requires_update(self, benefit: B, previous_properties: BP) -> bool:
+    async def requires_update(self, benefit: Benefit, previous_properties: BP) -> bool:
         """
         Determines if a benefit update requires to trigger the granting logic again.
 
@@ -175,3 +174,15 @@ class BenefitServiceProtocol(Protocol[B, BP, BGP]):
             properties are invalid.
         """
         ...
+
+    def _get_properties(self, benefit: Benefit) -> BP:
+        """
+        Returns the Benefit properties.
+
+        Args:
+            benefit: The benefit.
+
+        Returns:
+            The benefit properties.
+        """
+        return cast(BP, benefit.properties)

@@ -1,7 +1,12 @@
+from typing import cast
+
 from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.benefit.schemas import BenefitID
+from polar.benefit.strategies.license_keys.properties import (
+    BenefitLicenseKeysProperties,
+)
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -90,7 +95,8 @@ async def get(
         raise ResourceNotFound()
 
     ret = LicenseKeyWithActivations.model_validate(lk)
-    activations = lk.benefit.properties.get("activations")
+    properties = cast(BenefitLicenseKeysProperties, lk.benefit.properties)
+    activations = properties.get("activations")
     if not (activations and activations.get("enable_customer_admin")):
         ret.activations = []
 

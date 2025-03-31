@@ -23,10 +23,10 @@ from sqlalchemy.orm import (
     relationship,
 )
 
-from polar.benefit.strategies import BenefitGrantProperties
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
+    from polar.benefit.strategies import BenefitGrantProperties
     from polar.models import Benefit, Customer, Order, Subscription
 
 
@@ -86,9 +86,6 @@ class BenefitGrant(RecordModel):
     revoked_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
-    properties: Mapped[BenefitGrantProperties] = mapped_column(
-        "properties", JSONB, nullable=False, default=dict
-    )
 
     customer_id: Mapped[UUID] = mapped_column(
         Uuid,
@@ -139,6 +136,10 @@ class BenefitGrant(RecordModel):
     scope: Mapped[BenefitGrantScopeArgs] = composite(
         "subscription_id", "order_id", comparator_factory=BenefitGrantScopeComparator
     )
+
+    @declared_attr
+    def properties(cls) -> Mapped["BenefitGrantProperties"]:
+        return mapped_column("properties", JSONB, nullable=False, default=dict)
 
     @hybrid_property
     def is_granted(self) -> bool:

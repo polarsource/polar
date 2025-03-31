@@ -14,10 +14,12 @@ import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/ch
 import ShadowBox, {
   ShadowBoxOnMd,
 } from '@polar-sh/ui/components/atoms/ShadowBox'
+import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { CheckoutCard } from './CheckoutCard'
 import CheckoutProductInfo from './CheckoutProductInfo'
 
@@ -39,6 +41,11 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const embed = _embed === true
   const { resolvedTheme } = useTheme()
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
+
+  const themePreset = useThemePreset(
+    checkout.organization.slug === 'midday' ? 'midday' : 'polar',
+    theme,
+  )
 
   const router = useRouter()
   const [fullLoading, setFullLoading] = useState(false)
@@ -127,9 +134,23 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
 
   if (embed) {
     return (
-      <ShadowBox className="dark:bg-polar-900 flex flex-col gap-y-12 bg-white">
-        <ShadowBox className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-6 rounded-3xl bg-gray-50">
-          <CheckoutProductSwitcher checkout={checkout} update={update} />
+      <ShadowBox
+        className={twMerge(
+          themePreset.polar.checkoutInnerWrapper,
+          'flex flex-col gap-y-12 overflow-hidden',
+        )}
+      >
+        <ShadowBox
+          className={twMerge(
+            themePreset.polar.checkoutCardWrapper,
+            'flex flex-col gap-6',
+          )}
+        >
+          <CheckoutProductSwitcher
+            checkout={checkout}
+            update={update}
+            themePreset={themePreset}
+          />
           <CheckoutPricing checkout={checkout} update={update} />
         </ShadowBox>
         <CheckoutForm
@@ -140,22 +161,36 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           loading={loading}
           loadingLabel={label}
           theme={theme}
+          themePreset={themePreset}
         />
       </ShadowBox>
     )
   }
 
   return (
-    <ShadowBoxOnMd className="md:dark:border-polar-700 dark:divide-polar-700 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-transparent overflow-hidden md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-0 md:gap-y-24 md:divide-x md:border md:border-gray-100 md:p-0">
+    <ShadowBoxOnMd
+      className={twMerge(
+        themePreset.polar.checkoutInnerWrapper,
+        'md:dark:border-polar-700 dark:divide-polar-700 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-transparent overflow-hidden md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-0 md:gap-y-24 md:divide-x md:border md:border-gray-100 md:p-0',
+      )}
+    >
       <div className="flex flex-col gap-y-8 md:p-12">
         <CheckoutProductInfo
           organization={checkout.organization}
           product={checkout.product}
         />
-        <CheckoutProductSwitcher checkout={checkout} update={update} />
-        <CheckoutCard checkout={checkout} update={update} />
+        <CheckoutProductSwitcher
+          checkout={checkout}
+          update={update}
+          themePreset={themePreset}
+        />
+        <CheckoutCard
+          checkout={checkout}
+          update={update}
+          themePreset={themePreset}
+        />
       </div>
-      <div className="flex flex-col gap-y-8 md:p-12 lg:p-20">
+      <div className="flex flex-col gap-y-8 md:p-12">
         <CheckoutForm
           form={form}
           checkout={checkout}
@@ -164,6 +199,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           loading={loading}
           loadingLabel={label}
           theme={theme}
+          themePreset={themePreset}
         />
       </div>
     </ShadowBoxOnMd>

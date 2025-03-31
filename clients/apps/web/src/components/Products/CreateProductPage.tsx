@@ -8,6 +8,7 @@ import { setValidationErrors } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
+import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -174,6 +175,8 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     return () => window.removeEventListener('pagehide', pagehideListener)
   }, [newProduct, saveDraft])
 
+  const themePreset = useThemePreset('polar')
+
   return (
     <DashboardBody
       title="Create Product"
@@ -189,6 +192,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
               reconciledProduct.prices[0],
               organization,
             )}
+            themePreset={themePreset}
           />
         </div>
       }

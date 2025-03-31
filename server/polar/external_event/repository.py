@@ -27,6 +27,14 @@ class ExternalEventRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_by_source_and_external_id(
+        self, source: ExternalEventSource, external_id: str
+    ) -> ExternalEvent | None:
+        statement = self.get_base_statement().where(
+            ExternalEvent.source == source, ExternalEvent.external_id == external_id
+        )
+        return await self.get_one_or_none(statement)
+
     def get_sorting_clause(self, property: ExternalEventSortProperty) -> SortingClause:
         match property:
             case ExternalEventSortProperty.created_at:

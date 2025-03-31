@@ -10,8 +10,7 @@ from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.integrations.discord.service import discord_bot as discord_bot_service
 from polar.logging import Logger
-from polar.models import Customer, Organization, User
-from polar.models.benefit import BenefitDiscord
+from polar.models import Benefit, Customer, Organization, User
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 from polar.worker import compute_backoff
 
@@ -27,13 +26,11 @@ log: Logger = structlog.get_logger()
 
 
 class BenefitDiscordService(
-    BenefitServiceProtocol[
-        BenefitDiscord, BenefitDiscordProperties, BenefitGrantDiscordProperties
-    ]
+    BenefitServiceProtocol[BenefitDiscordProperties, BenefitGrantDiscordProperties]
 ):
     async def grant(
         self,
-        benefit: BenefitDiscord,
+        benefit: Benefit,
         customer: Customer,
         grant_properties: BenefitGrantDiscordProperties,
         *,
@@ -46,8 +43,9 @@ class BenefitDiscordService(
         )
         bound_logger.debug("Grant benefit")
 
-        guild_id = benefit.properties["guild_id"]
-        role_id = benefit.properties["role_id"]
+        properties = self._get_properties(benefit)
+        guild_id = properties["guild_id"]
+        role_id = properties["role_id"]
 
         # If we already granted this benefit, make sure we revoke the previous config
         if update and grant_properties:
@@ -91,7 +89,7 @@ class BenefitDiscordService(
 
     async def revoke(
         self,
-        benefit: BenefitDiscord,
+        benefit: Benefit,
         customer: Customer,
         grant_properties: BenefitGrantDiscordProperties,
         *,
@@ -125,11 +123,9 @@ class BenefitDiscordService(
         return {}
 
     async def requires_update(
-        self,
-        benefit: BenefitDiscord,
-        previous_properties: BenefitDiscordProperties,
+        self, benefit: Benefit, previous_properties: BenefitDiscordProperties
     ) -> bool:
-        new_properties = benefit.properties
+        new_properties = self._get_properties(benefit)
         return (
             new_properties["guild_id"] != previous_properties["guild_id"]
             or new_properties["role_id"] != previous_properties["role_id"]

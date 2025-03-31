@@ -1,7 +1,11 @@
+from typing import cast
 from uuid import UUID
 
 import pytest
 
+from polar.benefit.strategies.downloadables.properties import (
+    BenefitDownloadablesProperties,
+)
 from polar.benefit.strategies.downloadables.schemas import (
     BenefitDownloadablesCreateProperties,
 )
@@ -283,7 +287,7 @@ class TestDownloadblesBenefit:
         assert downloadable.file_id == files[1].id
 
         # Mimic creator enabling all files again
-        benefit.properties["archived"] = {}
+        cast(BenefitDownloadablesProperties, benefit.properties)["archived"] = {}
         session.add(benefit)
         await session.flush()
 
@@ -353,8 +357,8 @@ class TestDownloadblesBenefit:
             assert grant.status == DownloadableStatus.granted
 
         # Mimic creator disabling a file
-        benefit.properties["archived"] = {
-            files[0].id: True,
+        cast(BenefitDownloadablesProperties, benefit.properties)["archived"] = {
+            files[0].id: True
         }
         session.add(benefit)
         await session.flush()

@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal, cast
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -51,7 +51,7 @@ class TestGrantBenefit:
         assert grant.customer == customer
         assert grant.benefit_id == benefit_organization.id
         assert grant.is_granted
-        assert grant.properties == {"external_id": "abc"}
+        assert cast(Any, grant.properties) == {"external_id": "abc"}
         benefit_strategy_mock.grant.assert_called_once()
 
     async def test_existing_grant_not_granted(
@@ -184,7 +184,7 @@ class TestRevokeBenefit:
 
         assert updated_grant.id == grant.id
         assert updated_grant.is_revoked
-        assert updated_grant.properties == {"message": "ok"}
+        assert cast(Any, updated_grant.properties) == {"message": "ok"}
         benefit_strategy_mock.revoke.assert_called_once()
 
     async def test_existing_grant_already_revoked(
@@ -288,7 +288,7 @@ class TestRevokeBenefit:
 
         assert updated_grant.id == first_grant.id
         assert updated_grant.is_revoked
-        assert updated_grant.properties == {"message": "ok"}
+        assert cast(Any, updated_grant.properties) == {"message": "ok"}
         benefit_strategy_mock.revoke.assert_called_once()
 
     async def test_action_required_error(
@@ -541,7 +541,7 @@ class TestUpdateBenefitGrant:
 
         assert updated_grant.id == grant.id
         assert updated_grant.is_granted
-        assert updated_grant.properties == {"external_id": "xyz"}
+        assert cast(Any, updated_grant.properties) == {"external_id": "xyz"}
         benefit_strategy_mock.grant.assert_called_once()
         assert benefit_strategy_mock.grant.call_args[1]["update"] is True
 
@@ -637,9 +637,7 @@ class TestEnqueueCustomerGrantDeletions:
         grant2.set_granted()
         await save_fixture(grant2)
 
-        enqueue_job_mock = mocker.patch(
-            "polar.benefit.service.benefit_grant.enqueue_job"
-        )
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
 
         await benefit_grant_service.enqueue_customer_grant_deletions(session, customer)
 

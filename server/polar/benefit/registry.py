@@ -1,6 +1,5 @@
 from typing import Any
 
-from polar.models import Benefit
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -22,7 +21,7 @@ from .strategies.license_keys.service import BenefitLicenseKeysService
 
 _STRATEGY_CLASS_MAP: dict[
     BenefitType,
-    type[BenefitServiceProtocol[Any, Any, Any]],
+    type[BenefitServiceProtocol[Any, Any]],
 ] = {
     BenefitType.custom: BenefitCustomService,
     BenefitType.discord: BenefitDiscordService,
@@ -34,7 +33,7 @@ _STRATEGY_CLASS_MAP: dict[
 
 def get_benefit_strategy(
     type: BenefitType, session: AsyncSession, redis: Redis
-) -> BenefitServiceProtocol[Benefit, BenefitProperties, BenefitGrantProperties]:
+) -> BenefitServiceProtocol[BenefitProperties, BenefitGrantProperties]:
     return _STRATEGY_CLASS_MAP[type](session, redis)
 
 

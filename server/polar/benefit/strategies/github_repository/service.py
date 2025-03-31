@@ -11,8 +11,7 @@ from polar.integrations.github_repository_benefit.service import (
     github_repository_benefit_user_service,
 )
 from polar.logging import Logger
-from polar.models import Customer, Organization, User
-from polar.models.benefit import BenefitGitHubRepository
+from polar.models import Benefit, Customer, Organization, User
 from polar.models.customer import CustomerOAuthPlatform
 from polar.posthog import posthog
 from polar.worker import compute_backoff
@@ -33,14 +32,12 @@ log: Logger = structlog.get_logger()
 
 class BenefitGitHubRepositoryService(
     BenefitServiceProtocol[
-        BenefitGitHubRepository,
-        BenefitGitHubRepositoryProperties,
-        BenefitGrantGitHubRepositoryProperties,
+        BenefitGitHubRepositoryProperties, BenefitGrantGitHubRepositoryProperties
     ]
 ):
     async def grant(
         self,
-        benefit: BenefitGitHubRepository,
+        benefit: Benefit,
         customer: Customer,
         grant_properties: BenefitGrantGitHubRepositoryProperties,
         *,
@@ -55,9 +52,10 @@ class BenefitGitHubRepositoryService(
 
         client = await self._get_github_app_client(benefit)
 
-        repository_owner = benefit.properties["repository_owner"]
-        repository_name = benefit.properties["repository_name"]
-        permission = benefit.properties["permission"]
+        properties = self._get_properties(benefit)
+        repository_owner = properties["repository_owner"]
+        repository_name = properties["repository_name"]
+        permission = properties["permission"]
 
         if (account_id := grant_properties.get("account_id")) is None:
             raise BenefitActionRequiredError(
@@ -118,7 +116,7 @@ class BenefitGitHubRepositoryService(
 
     async def revoke(
         self,
-        benefit: BenefitGitHubRepository,
+        benefit: Benefit,
         customer: Customer,
         grant_properties: BenefitGrantGitHubRepositoryProperties,
         *,
@@ -131,8 +129,9 @@ class BenefitGitHubRepositoryService(
 
         client = await self._get_github_app_client(benefit)
 
-        repository_owner = benefit.properties["repository_owner"]
-        repository_name = benefit.properties["repository_name"]
+        properties = self._get_properties(benefit)
+        repository_owner = properties["repository_owner"]
+        repository_name = properties["repository_name"]
 
         if (account_id := grant_properties.get("account_id")) is None:
             raise BenefitActionRequiredError(
@@ -177,11 +176,9 @@ class BenefitGitHubRepositoryService(
         return {}
 
     async def requires_update(
-        self,
-        benefit: BenefitGitHubRepository,
-        previous_properties: BenefitGitHubRepositoryProperties,
+        self, benefit: Benefit, previous_properties: BenefitGitHubRepositoryProperties
     ) -> bool:
-        new_properties = benefit.properties
+        new_properties = self._get_properties(benefit)
         return (
             new_properties["repository_owner"]
             != previous_properties["repository_owner"]
@@ -316,10 +313,11 @@ class BenefitGitHubRepositoryService(
         return None
 
     async def _get_github_app_client(
-        self, benefit: BenefitGitHubRepository
+        self, benefit: Benefit
     ) -> GitHub[AppInstallationAuthStrategy]:
-        repository_owner = benefit.properties["repository_owner"]
-        repository_name = benefit.properties["repository_name"]
+        properties = self._get_properties(benefit)
+        repository_owner = properties["repository_owner"]
+        repository_name = properties["repository_name"]
         installation = (
             await github_repository_benefit_user_service.get_repository_installation(
                 self.redis, owner=repository_owner, name=repository_name

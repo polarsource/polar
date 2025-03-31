@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from typing import cast
 
 from sqlalchemy.orm import contains_eager
 
@@ -11,7 +10,7 @@ from polar.benefit.strategies.downloadables.schemas import (
 )
 from polar.benefit.strategies.downloadables.service import BenefitDownloadablesService
 from polar.models import Benefit, Customer, Downloadable, File, Organization, Product
-from polar.models.benefit import BenefitDownloadables, BenefitType
+from polar.models.benefit import BenefitType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession, sql
 from polar.redis import Redis
@@ -34,7 +33,7 @@ class TestDownloadable:
         organization: Organization,
         product: Product,
         properties: BenefitDownloadablesCreateProperties,
-    ) -> tuple[BenefitDownloadables, BenefitGrantDownloadablesProperties]:
+    ) -> tuple[Benefit, BenefitGrantDownloadablesProperties]:
         benefit = await create_benefit(
             save_fixture,
             type=BenefitType.downloadables,
@@ -45,7 +44,7 @@ class TestDownloadable:
             session,
             redis,
             save_fixture,
-            cast(BenefitDownloadables, benefit),
+            benefit,
             customer=customer,
             product=product,
         )
@@ -56,10 +55,10 @@ class TestDownloadable:
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
-        benefit: BenefitDownloadables,
+        benefit: Benefit,
         customer: Customer,
         product: Product,
-    ) -> tuple[BenefitDownloadables, BenefitGrantDownloadablesProperties]:
+    ) -> tuple[Benefit, BenefitGrantDownloadablesProperties]:
         subscription = await create_subscription(
             save_fixture,
             product=product,
@@ -79,9 +78,9 @@ class TestDownloadable:
         cls,
         session: AsyncSession,
         redis: Redis,
-        benefit: BenefitDownloadables,
+        benefit: Benefit,
         customer: Customer,
-    ) -> tuple[BenefitDownloadables, BenefitGrantDownloadablesProperties]:
+    ) -> tuple[Benefit, BenefitGrantDownloadablesProperties]:
         service = BenefitDownloadablesService(session, redis)
         granted = await service.grant(benefit, customer, {})
         return benefit, granted
@@ -91,9 +90,9 @@ class TestDownloadable:
         cls,
         session: AsyncSession,
         redis: Redis,
-        benefit: BenefitDownloadables,
+        benefit: Benefit,
         customer: Customer,
-    ) -> tuple[BenefitDownloadables, BenefitGrantDownloadablesProperties]:
+    ) -> tuple[Benefit, BenefitGrantDownloadablesProperties]:
         service = BenefitDownloadablesService(session, redis)
         revoked = await service.revoke(benefit, customer, {})
         return benefit, revoked

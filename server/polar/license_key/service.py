@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import cast
 from uuid import UUID
 
 import structlog
@@ -6,6 +7,9 @@ from sqlalchemy import Select, func, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.benefit.strategies.license_keys.properties import (
+    BenefitLicenseKeysProperties,
+)
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
@@ -19,7 +23,6 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.benefit import BenefitLicenseKeys
 from polar.postgres import AsyncSession
 
 from .schemas import (
@@ -318,10 +321,10 @@ class LicenseKeyService(
         session: AsyncSession,
         *,
         customer: Customer,
-        benefit: BenefitLicenseKeys,
+        benefit: Benefit,
         license_key_id: UUID | None = None,
     ) -> LicenseKey:
-        props = benefit.properties
+        props = cast(BenefitLicenseKeysProperties, benefit.properties)
         create_schema = LicenseKeyCreate.build(
             organization_id=benefit.organization_id,
             customer_id=customer.id,
@@ -411,7 +414,7 @@ class LicenseKeyService(
         self,
         session: AsyncSession,
         customer: Customer,
-        benefit: BenefitLicenseKeys,
+        benefit: Benefit,
         license_key_id: UUID,
     ) -> LicenseKey:
         key = await self.get_by_grant_or_raise(

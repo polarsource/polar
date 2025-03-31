@@ -1,21 +1,18 @@
 from typing import Any, cast
 
 from polar.auth.models import AuthSubject
-from polar.models import Customer, Organization, User
-from polar.models.benefit import BenefitCustom
+from polar.models import Benefit, Customer, Organization, User
 
 from ..base.service import BenefitServiceProtocol
 from .properties import BenefitCustomProperties, BenefitGrantCustomProperties
 
 
 class BenefitCustomService(
-    BenefitServiceProtocol[
-        BenefitCustom, BenefitCustomProperties, BenefitGrantCustomProperties
-    ]
+    BenefitServiceProtocol[BenefitCustomProperties, BenefitGrantCustomProperties]
 ):
     async def grant(
         self,
-        benefit: BenefitCustom,
+        benefit: Benefit,
         customer: Customer,
         grant_properties: BenefitGrantCustomProperties,
         *,
@@ -26,7 +23,7 @@ class BenefitCustomService(
 
     async def revoke(
         self,
-        benefit: BenefitCustom,
+        benefit: Benefit,
         customer: Customer,
         grant_properties: BenefitGrantCustomProperties,
         *,
@@ -35,9 +32,7 @@ class BenefitCustomService(
         return {}
 
     async def requires_update(
-        self,
-        benefit: BenefitCustom,
-        previous_properties: BenefitCustomProperties,
+        self, benefit: Benefit, previous_properties: BenefitCustomProperties
     ) -> bool:
         return False
 

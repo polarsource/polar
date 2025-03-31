@@ -8,8 +8,7 @@ import structlog
 from polar.auth.models import AuthSubject
 from polar.license_key.service import license_key as license_key_service
 from polar.logging import Logger
-from polar.models import Customer, Organization, User
-from polar.models.benefit import BenefitLicenseKeys
+from polar.models import Benefit, Customer, Organization, User
 
 from ..base.service import BenefitServiceProtocol
 from .properties import BenefitGrantLicenseKeysProperties, BenefitLicenseKeysProperties
@@ -19,16 +18,14 @@ log: Logger = structlog.get_logger()
 
 class BenefitLicenseKeysService(
     BenefitServiceProtocol[
-        BenefitLicenseKeys,
-        BenefitLicenseKeysProperties,
-        BenefitGrantLicenseKeysProperties,
+        BenefitLicenseKeysProperties, BenefitGrantLicenseKeysProperties
     ]
 ):
     should_revoke_individually = True
 
     async def grant(
         self,
-        benefit: BenefitLicenseKeys,
+        benefit: Benefit,
         customer: Customer,
         grant_properties: BenefitGrantLicenseKeysProperties,
         *,
@@ -52,7 +49,7 @@ class BenefitLicenseKeysService(
 
     async def revoke(
         self,
-        benefit: BenefitLicenseKeys,
+        benefit: Benefit,
         customer: Customer,
         grant_properties: BenefitGrantLicenseKeysProperties,
         *,
@@ -79,10 +76,10 @@ class BenefitLicenseKeysService(
 
     async def requires_update(
         self,
-        benefit: BenefitLicenseKeys,
+        benefit: Benefit,
         previous_properties: BenefitLicenseKeysProperties,
     ) -> bool:
-        c = benefit.properties
+        c = self._get_properties(benefit)
         pre = previous_properties
 
         diff_expires = c.get("expires", None) != pre.get("expires", None)

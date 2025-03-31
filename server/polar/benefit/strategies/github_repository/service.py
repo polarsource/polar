@@ -12,11 +12,7 @@ from polar.integrations.github_repository_benefit.service import (
 )
 from polar.logging import Logger
 from polar.models import Customer, Organization, User
-from polar.models.benefit import (
-    BenefitGitHubRepository,
-    BenefitGitHubRepositoryProperties,
-)
-from polar.models.benefit_grant import BenefitGrantGitHubRepositoryProperties
+from polar.models.benefit import BenefitGitHubRepository
 from polar.models.customer import CustomerOAuthPlatform
 from polar.posthog import posthog
 from polar.worker import compute_backoff
@@ -26,6 +22,10 @@ from ..base.service import (
     BenefitPropertiesValidationError,
     BenefitRetriableError,
     BenefitServiceProtocol,
+)
+from .properties import (
+    BenefitGitHubRepositoryProperties,
+    BenefitGrantGitHubRepositoryProperties,
 )
 
 log: Logger = structlog.get_logger()

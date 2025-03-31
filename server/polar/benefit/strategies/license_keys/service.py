@@ -9,10 +9,10 @@ from polar.auth.models import AuthSubject
 from polar.license_key.service import license_key as license_key_service
 from polar.logging import Logger
 from polar.models import Customer, Organization, User
-from polar.models.benefit import BenefitLicenseKeys, BenefitLicenseKeysProperties
-from polar.models.benefit_grant import BenefitGrantLicenseKeysProperties
+from polar.models.benefit import BenefitLicenseKeys
 
 from ..base.service import BenefitServiceProtocol
+from .properties import BenefitGrantLicenseKeysProperties, BenefitLicenseKeysProperties
 
 log: Logger = structlog.get_logger()
 

@@ -1,6 +1,6 @@
-from .ads.properties import BenefitGrantAdsProperties
 from .base import (
     BenefitActionRequiredError,
+    BenefitProperties,
     BenefitPropertiesValidationError,
     BenefitRetriableError,
     BenefitServiceError,
@@ -17,11 +17,11 @@ BenefitGrantProperties = (
     | BenefitGrantGitHubRepositoryProperties
     | BenefitGrantDownloadablesProperties
     | BenefitGrantLicenseKeysProperties
-    | BenefitGrantAdsProperties
     | BenefitGrantCustomProperties
 )
 
 __all__ = [
+    "BenefitProperties",
     "BenefitActionRequiredError",
     "BenefitServiceProtocol",
     "BenefitPropertiesValidationError",

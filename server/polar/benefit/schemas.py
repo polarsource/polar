@@ -14,10 +14,8 @@ from polar.kit.schemas import (
     SetSchemaReference,
 )
 from polar.models.benefit import BenefitType
-from polar.models.benefit_grant import (
-    BenefitGrantProperties,
-)
 
+from .strategies import BenefitGrantProperties
 from .strategies.base.schemas import (
     BenefitBase,
     BenefitGrantBase,

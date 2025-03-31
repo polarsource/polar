@@ -5,14 +5,14 @@ from dateutil.relativedelta import relativedelta
 from pydantic import UUID4, AliasChoices, AliasPath, Field
 
 from polar.benefit.schemas import BenefitID
+from polar.benefit.strategies.license_keys.properties import (
+    BenefitLicenseKeyActivationProperties,
+    BenefitLicenseKeyExpirationProperties,
+)
 from polar.customer.schemas.customer import CustomerBase
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.schemas import Schema
 from polar.kit.utils import generate_uuid, utc_now
-from polar.models.benefit import (
-    BenefitLicenseKeyActivationProperties,
-    BenefitLicenseKeyExpirationProperties,
-)
 from polar.models.license_key import LicenseKeyStatus
 
 ###############################################################################

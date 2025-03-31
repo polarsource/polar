@@ -10,6 +10,18 @@ from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
 
 if TYPE_CHECKING:
+    from polar.benefit.strategies import BenefitProperties
+    from polar.benefit.strategies.custom.properties import BenefitCustomProperties
+    from polar.benefit.strategies.discord.properties import BenefitDiscordProperties
+    from polar.benefit.strategies.downloadables.properties import (
+        BenefitDownloadablesProperties,
+    )
+    from polar.benefit.strategies.github_repository.properties import (
+        BenefitGitHubRepositoryProperties,
+    )
+    from polar.benefit.strategies.license_keys.properties import (
+        BenefitLicenseKeysProperties,
+    )
     from polar.models import BenefitGrant, Organization
 
 

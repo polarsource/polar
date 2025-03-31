@@ -11,8 +11,7 @@ from polar.customer.repository import CustomerRepository
 from polar.integrations.discord.service import discord_bot as discord_bot_service
 from polar.logging import Logger
 from polar.models import Customer, Organization, User
-from polar.models.benefit import BenefitDiscord, BenefitDiscordProperties
-from polar.models.benefit_grant import BenefitGrantDiscordProperties
+from polar.models.benefit import BenefitDiscord
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 from polar.worker import compute_backoff
 
@@ -22,6 +21,7 @@ from ..base.service import (
     BenefitRetriableError,
     BenefitServiceProtocol,
 )
+from .properties import BenefitDiscordProperties, BenefitGrantDiscordProperties
 
 log: Logger = structlog.get_logger()
 

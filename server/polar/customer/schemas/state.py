@@ -4,6 +4,7 @@ from typing import Literal
 from pydantic import UUID4, AliasChoices, Field
 from pydantic.aliases import AliasPath
 
+from polar.benefit.strategies import BenefitGrantProperties
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.metadata import (
@@ -19,7 +20,6 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.models.benefit import BenefitType
-from polar.models.benefit_grant import BenefitGrantProperties
 from polar.models.subscription import SubscriptionStatus
 
 from .customer import CustomerBase

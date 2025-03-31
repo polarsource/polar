@@ -14,6 +14,6 @@
       ]
     },
   },
-  "include": ["src"],
+  "include": ["src", "../ui/src/hooks/theming.ts"],
   "exclude": ["node_modules", "dist"]
 }

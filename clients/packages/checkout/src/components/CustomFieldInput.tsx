@@ -21,6 +21,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import type { MarkdownToJSX } from 'markdown-to-jsx'
 import Markdown from 'markdown-to-jsx'
 import type { ControllerRenderProps } from 'react-hook-form'
@@ -78,12 +79,14 @@ interface CustomFieldTextInputProps {
   customField: CustomFieldText
   required: boolean
   field: ControllerRenderProps
+  themePreset: ThemingPresetProps
 }
 
 const CustomFieldTextInput: React.FC<CustomFieldTextInputProps> = ({
   customField,
   required,
   field,
+  themePreset,
 }) => {
   if (customField.properties.textarea) {
     return (
@@ -100,7 +103,7 @@ const CustomFieldTextInput: React.FC<CustomFieldTextInputProps> = ({
   return (
     <Input
       {...field}
-      className="bg-white shadow-sm"
+      className={themePreset.polar.input}
       type="text"
       placeholder={customField.properties.formPlaceholder}
       required={required}
@@ -114,18 +117,20 @@ interface CustomFieldNumberInputProps {
   customField: CustomFieldNumber
   required: boolean
   field: ControllerRenderProps
+  themePreset: ThemingPresetProps
 }
 
 const CustomFieldNumberInput: React.FC<CustomFieldNumberInputProps> = ({
   customField,
   required,
   field,
+  themePreset,
 }) => {
   return (
     <Input
       {...field}
       type="number"
-      className="bg-white shadow-sm"
+      className={themePreset.polar.input}
       placeholder={customField.properties.formPlaceholder}
       required={required}
       min={customField.properties.ge}
@@ -138,12 +143,14 @@ interface CustomFieldDateInputProps {
   customField: CustomFieldDate
   required: boolean
   field: ControllerRenderProps
+  themePreset: ThemingPresetProps
 }
 
 const CustomFieldDateInput: React.FC<CustomFieldDateInputProps> = ({
   customField,
   required,
   field,
+  themePreset,
 }) => {
   const { ge, le } = customField.properties
   const min = ge ? new Date(ge * 1000).toISOString().slice(0, 10) : undefined
@@ -153,7 +160,7 @@ const CustomFieldDateInput: React.FC<CustomFieldDateInputProps> = ({
     <Input
       {...field}
       type={'date'}
-      className="bg-white shadow-sm"
+      className={themePreset.polar.input}
       placeholder={customField.properties.formPlaceholder}
       required={required}
       min={min}
@@ -166,12 +173,14 @@ interface CustomFieldCheckboxInputProps {
   customField: CustomFieldCheckbox
   required: boolean
   field: ControllerRenderProps
+  themePreset: ThemingPresetProps
 }
 
 const CustomFieldCheckboxInput: React.FC<CustomFieldCheckboxInputProps> = ({
   customField,
   required,
   field,
+  themePreset,
 }) => {
   return (
     <FormItem>
@@ -181,6 +190,7 @@ const CustomFieldCheckboxInput: React.FC<CustomFieldCheckboxInputProps> = ({
             defaultChecked={field.value}
             onCheckedChange={field.onChange}
             required={required}
+            className={themePreset.polar.checkbox}
           />
         </FormControl>
         {/* @ts-ignore */}
@@ -243,12 +253,14 @@ interface CustomFieldInputProps {
   customField: CustomField
   required: boolean
   field: ControllerRenderProps
+  themePreset: ThemingPresetProps
 }
 
 const CustomFieldInput: React.FC<CustomFieldInputProps> = ({
   customField,
   required,
   field,
+  themePreset,
 }) => {
   const InputComponent = getInputComponent(customField)
 
@@ -258,6 +270,7 @@ const CustomFieldInput: React.FC<CustomFieldInputProps> = ({
         customField={customField}
         required={required}
         field={field}
+        themePreset={themePreset}
       />
     )
   }
@@ -271,6 +284,7 @@ const CustomFieldInput: React.FC<CustomFieldInputProps> = ({
           customField={customField}
           required={required}
           field={field}
+          themePreset={themePreset}
         />
       </FormControl>
       <FormMessage />

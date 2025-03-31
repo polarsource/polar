@@ -77,11 +77,17 @@ const CA_PROVINCES: Record<string, string> = {
 }
 
 const CountryStatePicker = ({
+  className,
   value,
   onChange,
   country,
   autoComplete,
+  itemClassName,
+  contentClassName,
 }: {
+  className?: string
+  contentClassName?: string
+  itemClassName?: string
   value?: string
   onChange: (value: string) => void
   country: string
@@ -95,12 +101,17 @@ const CountryStatePicker = ({
         value={value}
         autoComplete={autoComplete}
       >
-        <SelectTrigger>
+        <SelectTrigger className={className}>
           <SelectValue placeholder={country === 'US' ? 'State' : 'Province'} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className={contentClassName}>
           {Object.entries(states).map(([code, name]) => (
-            <SelectItem key={code} value={code} textValue={name}>
+            <SelectItem
+              key={code}
+              value={code}
+              textValue={name}
+              className={itemClassName}
+            >
               {name}
             </SelectItem>
           ))}

@@ -6,6 +6,8 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from '@polar-sh/ui/components/ui/radio-group'
+import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
+import { cn } from '@polar-sh/ui/lib/utils'
 import { useCallback } from 'react'
 import { hasLegacyRecurringPrices } from '../utils/product'
 import ProductPriceLabel from './ProductPriceLabel'
@@ -14,12 +16,14 @@ interface CheckoutProductSwitcherProps {
   checkout: CheckoutPublic
   update?: (data: CheckoutUpdatePublic) => Promise<CheckoutPublic>
   disabled?: boolean
+  themePreset: ThemingPresetProps
 }
 
 const CheckoutProductSwitcher = ({
   checkout,
   update,
   disabled,
+  themePreset,
 }: CheckoutProductSwitcherProps) => {
   const {
     product: selectedProduct,
@@ -61,10 +65,17 @@ const CheckoutProductSwitcher = ({
             {product.prices.map((price) => (
               <label
                 key={price.id}
-                className={`flex cursor-pointer flex-row items-center gap-4 rounded-2xl border p-6 hover:border-blue-500 ${price.id === selectedProduct.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ''}`}
+                className={cn(
+                  themePreset.polar.checkoutProductSwitch,
+                  `flex cursor-pointer flex-row items-center gap-4 border p-6 transition-colors`,
+                  price.id === selectedProduct.id
+                    ? themePreset.polar.checkoutProductSwitchSelected
+                    : '',
+                )}
                 htmlFor={`product-${price.id}`}
               >
                 <RadioGroupItem
+                  className="hidden"
                   value={`${product.id}:${price.id}`}
                   id={`product-${price.id}`}
                 />
@@ -78,10 +89,17 @@ const CheckoutProductSwitcher = ({
         ) : (
           <label
             key={product.id}
-            className={`flex cursor-pointer flex-row items-center gap-4 rounded-2xl border p-6 hover:border-blue-500 ${product.id === selectedProduct.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ''}`}
+            className={cn(
+              themePreset.polar.checkoutProductSwitch,
+              `flex cursor-pointer flex-row items-center gap-4 border p-6 transition-colors`,
+              product.id === selectedProduct.id
+                ? themePreset.polar.checkoutProductSwitchSelected
+                : '',
+            )}
             htmlFor={`product-${product.id}`}
           >
             <RadioGroupItem
+              className="hidden"
               value={`${product.id}:${product.prices[0].id}`}
               id={`product-${product.id}`}
             />

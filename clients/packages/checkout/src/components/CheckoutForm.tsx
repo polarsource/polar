@@ -16,6 +16,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
+import { cn } from '@polar-sh/ui/lib/utils'
 import {
   Elements,
   ElementsConsumer,
@@ -36,7 +38,6 @@ import {
 } from 'react'
 import { UseFormReturn, WatchObserver } from 'react-hook-form'
 import { useDebouncedCallback } from '../hooks/debounce'
-import { useThemePreset } from '../hooks/theming'
 import { getDiscountDisplay } from '../utils/discount'
 import { formatCurrencyNumber } from '../utils/money'
 import { hasLegacyRecurringPrices } from '../utils/product'
@@ -87,6 +88,7 @@ interface BaseCheckoutFormProps {
   loading: boolean
   loadingLabel: string | undefined
   disabled?: boolean
+  themePreset: ThemingPresetProps
 }
 
 const BaseCheckoutForm = ({
@@ -98,6 +100,7 @@ const BaseCheckoutForm = ({
   loadingLabel,
   disabled,
   children,
+  themePreset: themePresetProps,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasLegacyRecurringPrices(checkout.product)
     ? checkout.productPrice.recurringInterval
@@ -274,7 +277,7 @@ const BaseCheckoutForm = ({
                       <Input
                         type="email"
                         autoComplete="email"
-                        className="bg-white shadow-sm"
+                        className={themePresetProps.polar.input}
                         {...field}
                         value={field.value || ''}
                         disabled={checkout.customerId !== null}
@@ -300,7 +303,7 @@ const BaseCheckoutForm = ({
                         <FormLabel>Cardholder name</FormLabel>
                         <FormControl>
                           <Input
-                            className="bg-white shadow-sm"
+                            className={themePresetProps.polar.input}
                             type="text"
                             autoComplete="name"
                             {...field}
@@ -327,6 +330,13 @@ const BaseCheckoutForm = ({
                               autoComplete="billing country"
                               value={field.value || undefined}
                               onChange={field.onChange}
+                              className={themePresetProps.polar.dropdown}
+                              itemClassName={
+                                themePresetProps.polar.dropdownItem
+                              }
+                              contentClassName={
+                                themePresetProps.polar.dropdownContent
+                              }
                             />
                             <FormMessage />
                           </>
@@ -348,6 +358,13 @@ const BaseCheckoutForm = ({
                                 country={country}
                                 value={field.value || undefined}
                                 onChange={field.onChange}
+                                className={themePresetProps.polar.dropdown}
+                                itemClassName={
+                                  themePresetProps.polar.dropdownItem
+                                }
+                                contentClassName={
+                                  themePresetProps.polar.dropdownContent
+                                }
                               />
                               <FormMessage />
                             </>
@@ -370,7 +387,7 @@ const BaseCheckoutForm = ({
                                   type="text"
                                   autoComplete="billing address-line1"
                                   placeholder="Line 1"
-                                  className="bg-white shadow-sm"
+                                  className={themePresetProps.polar.input}
                                   {...field}
                                   value={field.value || ''}
                                 />
@@ -389,7 +406,7 @@ const BaseCheckoutForm = ({
                                   type="text"
                                   autoComplete="billing address-line2"
                                   placeholder="Line 2"
-                                  className="bg-white shadow-sm"
+                                  className={themePresetProps.polar.input}
                                   {...field}
                                   value={field.value || ''}
                                 />
@@ -412,7 +429,7 @@ const BaseCheckoutForm = ({
                                     type="text"
                                     autoComplete="billing postal-code"
                                     placeholder="Postal code"
-                                    className="bg-white shadow-sm"
+                                    className={themePresetProps.polar.input}
                                     {...field}
                                     value={field.value || ''}
                                   />
@@ -434,7 +451,7 @@ const BaseCheckoutForm = ({
                                     type="text"
                                     autoComplete="billing address-level2"
                                     placeholder="City"
-                                    className="bg-white shadow-sm"
+                                    className={themePresetProps.polar.input}
                                     {...field}
                                     value={field.value || ''}
                                   />
@@ -478,7 +495,7 @@ const BaseCheckoutForm = ({
                               <Input
                                 type="text"
                                 autoComplete="off"
-                                className="bg-white shadow-sm"
+                                className={themePresetProps.polar.input}
                                 {...field}
                                 value={field.value || ''}
                               />
@@ -520,7 +537,7 @@ const BaseCheckoutForm = ({
                           <Input
                             type="text"
                             autoComplete="off"
-                            className="bg-white shadow-sm"
+                            className={themePresetProps.polar.input}
                             {...field}
                             value={field.value || ''}
                             disabled={checkoutDiscounted}
@@ -574,6 +591,7 @@ const BaseCheckoutForm = ({
                         customField={customField}
                         required={required}
                         field={field}
+                        themePreset={themePresetProps}
                       />
                     )}
                   />
@@ -627,7 +645,7 @@ const BaseCheckoutForm = ({
                 type="submit"
                 size="lg"
                 wrapperClassNames="text-base"
-                className="w-full"
+                className={cn(themePresetProps.polar.button, 'w-full')}
                 disabled={disabled}
                 loading={loading}
               >
@@ -679,21 +697,24 @@ interface CheckoutFormProps {
   loading: boolean
   loadingLabel: string | undefined
   theme?: 'light' | 'dark'
+  themePreset: ThemingPresetProps
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
-  const { checkout, update, confirm, loading, loadingLabel, theme } = props
+  const {
+    checkout,
+    update,
+    confirm,
+    loading,
+    loadingLabel,
+    themePreset: themePresetProps,
+  } = props
   const {
     paymentProcessorMetadata: { publishable_key },
   } = checkout
   const stripePromise = useMemo(
     () => loadStripe(publishable_key),
     [publishable_key],
-  )
-
-  const themePresetProps = useThemePreset(
-    checkout.organization.slug === 'midday' ? 'midday' : 'polar',
-    theme,
   )
 
   const elementsOptions = useMemo<StripeElementsOptions>(() => {

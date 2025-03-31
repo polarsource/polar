@@ -28,7 +28,7 @@ const SelectTrigger = React.forwardRef<
   <SelectTriggerPrimitive
     ref={ref}
     className={twMerge(
-      'dark:bg-polar-800 dark:hover:bg-polar-700 dark:border-polar-700 flex flex-row gap-x-2 rounded-xl border border-gray-200 bg-white px-4 shadow-sm transition-colors hover:bg-gray-50',
+      'dark:bg-polar-800 dark:hover:bg-polar-700 dark:border-polar-700 flex flex-row gap-x-2 rounded-xl border border-gray-200 bg-white px-3 shadow-sm transition-colors hover:bg-gray-50',
       className,
     )}
     {...props}

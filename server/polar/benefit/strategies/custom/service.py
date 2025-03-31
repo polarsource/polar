@@ -2,10 +2,10 @@ from typing import Any, cast
 
 from polar.auth.models import AuthSubject
 from polar.models import Customer, Organization, User
-from polar.models.benefit import BenefitCustom, BenefitCustomProperties
-from polar.models.benefit_grant import BenefitGrantCustomProperties
+from polar.models.benefit import BenefitCustom
 
 from ..base.service import BenefitServiceProtocol
+from .properties import BenefitCustomProperties, BenefitGrantCustomProperties
 
 
 class BenefitCustomService(

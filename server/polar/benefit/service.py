@@ -9,7 +9,6 @@ from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
-from polar.benefit.sorting import BenefitSortProperty
 from polar.exceptions import NotPermitted, PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
@@ -34,6 +33,7 @@ from polar.worker import enqueue_job
 from .grant.service import benefit_grant as benefit_grant_service
 from .registry import get_benefit_strategy
 from .schemas import BenefitCreate, BenefitUpdate
+from .sorting import BenefitSortProperty
 
 B = TypeVar("B", bound=Benefit)
 

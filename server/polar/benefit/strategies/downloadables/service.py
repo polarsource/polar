@@ -11,13 +11,14 @@ from polar.customer_portal.service.downloadables import (
 )
 from polar.logging import Logger
 from polar.models import Customer, Organization, User
-from polar.models.benefit import BenefitDownloadables, BenefitDownloadablesProperties
-from polar.models.benefit_grant import BenefitGrantDownloadablesProperties
+from polar.models.benefit import BenefitDownloadables
 
-from ..base.service import (
-    BenefitServiceProtocol,
-)
+from ..base.service import BenefitServiceProtocol
 from . import schemas
+from .properties import (
+    BenefitDownloadablesProperties,
+    BenefitGrantDownloadablesProperties,
+)
 
 log: Logger = structlog.get_logger()
 

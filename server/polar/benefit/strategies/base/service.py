@@ -3,9 +3,10 @@ from typing import Any, Protocol, TypeVar
 from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.models import Benefit, Customer, Organization, User
-from polar.models.benefit import BenefitProperties
 from polar.postgres import AsyncSession
 from polar.redis import Redis
+
+from .properties import BenefitGrantProperties, BenefitProperties
 
 
 class BenefitServiceError(PolarError): ...
@@ -53,7 +54,7 @@ class BenefitActionRequiredError(BenefitServiceError):
 
 B = TypeVar("B", bound=Benefit, contravariant=True)
 BP = TypeVar("BP", bound=BenefitProperties)
-BGP = TypeVar("BGP", bound=BenefitProperties)
+BGP = TypeVar("BGP", bound=BenefitGrantProperties)
 
 
 class BenefitServiceProtocol(Protocol[B, BP, BGP]):

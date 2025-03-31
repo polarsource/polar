@@ -3,13 +3,26 @@ from typing import Annotated, Literal, TypedDict
 
 from pydantic import UUID4, Discriminator, TypeAdapter
 
-from polar.benefit.schemas import (
-    BenefitCustomSubscriber,
-    BenefitDiscordSubscriber,
-    BenefitDownloadablesSubscriber,
-    BenefitGitHubRepositorySubscriber,
-    BenefitLicenseKeysSubscriber,
+from polar.benefit.strategies.custom.properties import BenefitGrantCustomProperties
+from polar.benefit.strategies.custom.schemas import BenefitCustomSubscriber
+from polar.benefit.strategies.discord.properties import BenefitGrantDiscordProperties
+from polar.benefit.strategies.discord.schemas import BenefitDiscordSubscriber
+from polar.benefit.strategies.downloadables.properties import (
+    BenefitGrantDownloadablesProperties,
 )
+from polar.benefit.strategies.downloadables.schemas import (
+    BenefitDownloadablesSubscriber,
+)
+from polar.benefit.strategies.github_repository.properties import (
+    BenefitGrantGitHubRepositoryProperties,
+)
+from polar.benefit.strategies.github_repository.schemas import (
+    BenefitGitHubRepositorySubscriber,
+)
+from polar.benefit.strategies.license_keys.properties import (
+    BenefitGrantLicenseKeysProperties,
+)
+from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysSubscriber
 from polar.kit.schemas import (
     ClassName,
     IDSchema,
@@ -19,13 +32,6 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.models.benefit import BenefitType
-from polar.models.benefit_grant import (
-    BenefitGrantCustomProperties,
-    BenefitGrantDiscordProperties,
-    BenefitGrantDownloadablesProperties,
-    BenefitGrantGitHubRepositoryProperties,
-    BenefitGrantLicenseKeysProperties,
-)
 from polar.models.customer import CustomerOAuthPlatform
 
 from .customer import CustomerPortalCustomer

@@ -9,6 +9,7 @@ from typing import Any, Literal, Unpack
 
 import pytest_asyncio
 
+from polar.benefit.strategies import BenefitGrantProperties
 from polar.enums import (
     AccountType,
     PaymentProcessor,
@@ -61,11 +62,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
-from polar.models.benefit_grant import (
-    BenefitGrant,
-    BenefitGrantProperties,
-    BenefitGrantScope,
-)
+from polar.models.benefit_grant import BenefitGrant, BenefitGrantScope
 from polar.models.checkout import CheckoutStatus, get_expires_at
 from polar.models.custom_field import (
     CustomFieldCheckbox,

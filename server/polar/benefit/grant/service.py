@@ -6,9 +6,6 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from polar.benefit.registry import get_benefit_strategy
-from polar.benefit.schemas import BenefitGrantWebhook
-from polar.benefit.strategies.base import BenefitActionRequiredError
 from polar.customer.repository import CustomerRepository
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
@@ -16,8 +13,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
 from polar.models import Benefit, BenefitGrant, Customer, Product
-from polar.models.benefit import BenefitProperties
-from polar.models.benefit_grant import BenefitGrantPropertiesBase, BenefitGrantScope
+from polar.models.benefit_grant import BenefitGrantScope
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
 from polar.redis import Redis
@@ -25,7 +21,14 @@ from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookPayloadTypeAdapter
 from polar.worker import enqueue_job
 
+from ..registry import get_benefit_strategy
 from ..repository.benefit_grant import BenefitGrantRepository
+from ..schemas import BenefitGrantWebhook
+from ..strategies import (
+    BenefitActionRequiredError,
+    BenefitGrantProperties,
+    BenefitProperties,
+)
 from .scope import scope_to_args
 
 log: Logger = structlog.get_logger()
@@ -423,7 +426,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             | Literal[WebhookEventType.benefit_grant_updated]
             | Literal[WebhookEventType.benefit_grant_revoked]
         ),
-        previous_grant_properties: BenefitGrantPropertiesBase,
+        previous_grant_properties: BenefitGrantProperties,
     ) -> None:
         loaded = await self.get(session, grant.id, loaded=True)
         data = BenefitGrantWebhook.model_validate(loaded)

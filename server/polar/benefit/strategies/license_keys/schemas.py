@@ -18,15 +18,20 @@ class BenefitLicenseKeyExpirationProperties(Schema):
     timeframe: Literal["year", "month", "day"]
 
 
-class BenefitLicenseKeyActivationProperties(Schema):
+class BenefitLicenseKeyActivationCreateProperties(Schema):
     limit: int = Field(gt=0, le=50)
+    enable_customer_admin: bool
+
+
+class BenefitLicenseKeyActivationProperties(Schema):
+    limit: int
     enable_customer_admin: bool
 
 
 class BenefitLicenseKeysCreateProperties(Schema):
     prefix: str | None = None
     expires: BenefitLicenseKeyExpirationProperties | None = None
-    activations: BenefitLicenseKeyActivationProperties | None = None
+    activations: BenefitLicenseKeyActivationCreateProperties | None = None
     limit_usage: int | None = Field(gt=0, default=None)
 
 

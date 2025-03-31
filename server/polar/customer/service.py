@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 from stripe import Customer as StripeCustomer
 
 from polar.auth.models import AuthSubject
-from polar.benefit.repository.benefit_grant import BenefitGrantRepository
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams

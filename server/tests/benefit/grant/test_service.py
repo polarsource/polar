@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, call
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
-from polar.benefit.repository.benefit_grant import BenefitGrantRepository
 from polar.benefit.strategies import BenefitActionRequiredError, BenefitServiceProtocol
 from polar.models import Benefit, BenefitGrant, Customer, Product, Subscription
 from polar.postgres import AsyncSession

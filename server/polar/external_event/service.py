@@ -40,6 +40,11 @@ class ExternalEventService:
         data: dict[str, Any],
     ) -> ExternalEvent:
         repository = ExternalEventRepository.from_session(session)
+
+        event = await repository.get_by_source_and_external_id(source, external_id)
+        if event is not None:
+            return event
+
         event = await repository.create(
             ExternalEvent(
                 source=source, task_name=task_name, external_id=external_id, data=data

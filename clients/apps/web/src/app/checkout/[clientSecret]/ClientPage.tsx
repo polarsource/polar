@@ -12,6 +12,7 @@ const ClientPage = ({
   theme?: 'light' | 'dark'
 }) => {
   const { checkout } = useCheckout()
+
   return (
     <CheckoutLayout checkout={checkout} embed={embed} theme={theme}>
       <Checkout embed={embed} theme={theme} />

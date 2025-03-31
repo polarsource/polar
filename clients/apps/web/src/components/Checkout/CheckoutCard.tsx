@@ -5,22 +5,30 @@ import { CheckoutPricing } from '@polar-sh/checkout/components'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-
+import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
+import { twMerge } from 'tailwind-merge'
 export interface CheckoutCardProps {
   checkout: CheckoutPublic
   update?: (body: CheckoutUpdatePublic) => Promise<CheckoutPublic>
   disabled?: boolean
+  themePreset: ThemingPresetProps
 }
 
 export const CheckoutCard = ({
   checkout,
   update,
   disabled,
+  themePreset,
 }: CheckoutCardProps) => {
   const { product } = checkout
 
   return (
-    <ShadowBox className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-6 rounded-3xl bg-white shadow-xl">
+    <ShadowBox
+      className={twMerge(
+        themePreset.polar.checkoutCardWrapper,
+        'flex flex-col gap-6',
+      )}
+    >
       <CheckoutPricing
         checkout={checkout}
         update={update}

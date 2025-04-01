@@ -34,7 +34,7 @@ async def create_redis() -> AsyncGenerator[Redis, None]:
         ),
     )
     yield redis
-    await redis.close()
+    await redis.close(True)
 
 
 async def get_redis(request: Request) -> Redis:

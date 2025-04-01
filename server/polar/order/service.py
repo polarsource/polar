@@ -799,7 +799,7 @@ class OrderService:
         enqueue_job("order.discord_notification", order_id=order.id)
 
         if order.paid:
-            await self._send_webhook(session, order, WebhookEventType.order_paid)
+            await self._on_order_paid(session, order)
 
         # Notify checkout channel that an order has been created from it
         if order.checkout:
@@ -816,7 +816,21 @@ class OrderService:
             order.status == OrderStatus.paid and previous_status != OrderStatus.paid
         )
         if became_paid:
-            await self._send_webhook(session, order, WebhookEventType.order_paid)
+            await self._on_order_paid(session, order)
+
+    async def _on_order_paid(self, session: AsyncSession, order: Order) -> None:
+        assert order.paid
+
+        await self._send_webhook(session, order, WebhookEventType.order_paid)
+
+        if (
+            order.subscription_id is not None
+            and order.billing_reason == OrderBillingReason.subscription_cycle
+        ):
+            enqueue_job(
+                "benefit.enqueue_benefit_grant_cycles",
+                subscription_id=order.subscription_id,
+            )
 
     async def _send_webhook(
         self,

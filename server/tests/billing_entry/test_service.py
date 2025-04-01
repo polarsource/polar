@@ -7,6 +7,7 @@ from pytest_mock.plugin import MockerFixture
 
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.enums import SubscriptionRecurringInterval
+from polar.event.system import SystemEvent
 from polar.integrations.stripe.service import StripeService
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.meter.filter import Filter, FilterConjunction
@@ -22,6 +23,7 @@ from polar.models import (
     Subscription,
 )
 from polar.models.billing_entry import BillingEntryDirection
+from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.product.guard import is_metered_price
 from tests.fixtures.database import SaveFixture
@@ -90,7 +92,7 @@ async def order(
     )
 
 
-async def create_billing_entry(
+async def create_event_billing_entry(
     save_fixture: SaveFixture,
     *,
     customer: Customer,
@@ -106,6 +108,51 @@ async def create_billing_entry(
         organization=customer.organization,
         customer=customer,
         metadata={"tokens": tokens},
+    )
+    billing_entry = BillingEntry(
+        start_timestamp=event.timestamp,
+        end_timestamp=event.timestamp,
+        direction=BillingEntryDirection.debit,
+        customer=customer,
+        product_price=price,
+        subscription=subscription,
+        event=event,
+    )
+    if not pending:
+        assert order is not None, "Order must be provided if not pending"
+        order_item = OrderItem(
+            label="",
+            amount=100,
+            tax_amount=0,
+            product_price=price,
+        )
+        order.items.append(order_item)
+        await save_fixture(order)
+        billing_entry.order_item = order_item
+
+    await save_fixture(billing_entry)
+    return billing_entry
+
+
+async def create_credit_billing_entry(
+    save_fixture: SaveFixture,
+    *,
+    customer: Customer,
+    product: Product,
+    price: ProductPrice,
+    subscription: Subscription,
+    units: int,
+    meter: Meter,
+    pending: bool = True,
+    order: Order | None = None,
+) -> BillingEntry:
+    event = await create_event(
+        save_fixture,
+        organization=customer.organization,
+        source=EventSource.system,
+        name=SystemEvent.meter_credited,
+        customer=customer,
+        metadata={"meter_id": str(meter.id), "units": units},
     )
     billing_entry = BillingEntry(
         start_timestamp=event.timestamp,
@@ -152,7 +199,7 @@ class TestCreateOrderItemsFromPending:
         price = product_metered_unit.prices[0]
         assert is_metered_price(price)
         entries = [
-            await create_billing_entry(
+            await create_event_billing_entry(
                 save_fixture,
                 customer=customer,
                 product=product_metered_unit,
@@ -162,7 +209,7 @@ class TestCreateOrderItemsFromPending:
                 pending=False,
                 order=order,
             ),
-            await create_billing_entry(
+            await create_event_billing_entry(
                 save_fixture,
                 customer=customer,
                 product=product_metered_unit,
@@ -170,7 +217,7 @@ class TestCreateOrderItemsFromPending:
                 subscription=metered_subscription,
                 tokens=20,
             ),
-            await create_billing_entry(
+            await create_event_billing_entry(
                 save_fixture,
                 customer=customer,
                 product=product_metered_unit,
@@ -227,7 +274,7 @@ class TestCreateOrderItemsFromPending:
         assert is_metered_price(current_price)
 
         entries = [
-            await create_billing_entry(
+            await create_event_billing_entry(
                 save_fixture,
                 customer=customer,
                 product=product_metered_unit,
@@ -235,7 +282,7 @@ class TestCreateOrderItemsFromPending:
                 subscription=metered_subscription,
                 tokens=10,
             ),
-            await create_billing_entry(
+            await create_event_billing_entry(
                 save_fixture,
                 customer=customer,
                 product=product_metered_unit,
@@ -243,7 +290,7 @@ class TestCreateOrderItemsFromPending:
                 subscription=metered_subscription,
                 tokens=20,
             ),
-            await create_billing_entry(
+            await create_event_billing_entry(
                 save_fixture,
                 customer=customer,
                 product=product_metered_unit,
@@ -251,7 +298,7 @@ class TestCreateOrderItemsFromPending:
                 subscription=metered_subscription,
                 tokens=30,
             ),
-            await create_billing_entry(
+            await create_event_billing_entry(
                 save_fixture,
                 customer=customer,
                 product=product_metered_unit,
@@ -306,4 +353,84 @@ class TestCreateOrderItemsFromPending:
                 ),
             ],
             any_order=True,
+        )
+
+    async def test_credit_events(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+        order: Order,
+    ) -> None:
+        stripe_service_mock.create_invoice_item.return_value = SimpleNamespace(
+            id="STRIPE_INVOICE_ITEM_ID"
+        )
+
+        price = product_metered_unit.prices[0]
+        assert is_metered_price(price)
+        entries = [
+            await create_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                product=product_metered_unit,
+                price=price,
+                subscription=metered_subscription,
+                tokens=10,
+                pending=False,
+                order=order,
+            ),
+            await create_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                product=product_metered_unit,
+                price=price,
+                subscription=metered_subscription,
+                tokens=20,
+            ),
+            await create_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                product=product_metered_unit,
+                price=price,
+                subscription=metered_subscription,
+                tokens=30,
+            ),
+            await create_credit_billing_entry(
+                save_fixture,
+                customer=customer,
+                product=product_metered_unit,
+                price=price,
+                subscription=metered_subscription,
+                meter=meter,
+                units=10,
+            ),
+        ]
+
+        order_items = await billing_entry_service.create_order_items_from_pending(
+            session,
+            metered_subscription,
+            stripe_invoice_id="STRIPE_INVOICE_ID",
+            stripe_customer_id="STRIPE_CUSTOMER_ID",
+        )
+
+        assert len(order_items) == 1
+
+        order_item = order_items[0]
+        assert meter.name in order_item.label
+        assert order_item.amount == 40_00
+
+        for entry in entries[1:]:
+            assert entry.order_item == order_item
+
+        stripe_service_mock.create_invoice_item.assert_awaited_once_with(
+            customer="STRIPE_CUSTOMER_ID",
+            invoice="STRIPE_INVOICE_ID",
+            amount=40_00,
+            currency=price.price_currency,
+            description=order_item.label,
+            metadata=ANY,
         )

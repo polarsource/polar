@@ -61,6 +61,16 @@ class BenefitDownloadablesService(
             "files": granted,
         }
 
+    async def cycle(
+        self,
+        benefit: Benefit,
+        customer: Customer,
+        grant_properties: BenefitGrantDownloadablesProperties,
+        *,
+        attempt: int = 1,
+    ) -> BenefitGrantDownloadablesProperties:
+        return grant_properties
+
     async def revoke(
         self,
         benefit: Benefit,

@@ -212,6 +212,33 @@ async def benefit_update(
             raise Retry(e.defer_seconds) from e
 
 
+@task("benefit.cycle")
+async def benefit_cycle(
+    ctx: JobContext,
+    benefit_grant_id: uuid.UUID,
+    polar_context: PolarWorkerContext,
+) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        benefit_grant = await benefit_grant_service.get(
+            session, benefit_grant_id, loaded=True
+        )
+        if benefit_grant is None:
+            raise BenefitGrantDoesNotExist(benefit_grant_id)
+
+        try:
+            await benefit_grant_service.cycle_benefit_grant(
+                session, get_worker_redis(ctx), benefit_grant, attempt=ctx["job_try"]
+            )
+        except BenefitRetriableError as e:
+            log.warning(
+                "Retriable error encountered while cycling benefit",
+                error=str(e),
+                defer_seconds=e.defer_seconds,
+                benefit_grant_id=str(benefit_grant_id),
+            )
+            raise Retry(e.defer_seconds) from e
+
+
 @task("benefit.delete")
 async def benefit_delete(
     ctx: JobContext,

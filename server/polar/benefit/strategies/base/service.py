@@ -107,6 +107,37 @@ class BenefitServiceProtocol(Protocol[BP, BGP]):
         """
         ...
 
+    async def cycle(
+        self,
+        benefit: Benefit,
+        customer: Customer,
+        grant_properties: BGP,
+        *,
+        attempt: int = 1,
+    ) -> BGP:
+        """
+        Executes the logic when a subscription is renewed for a new cycle for a granted benefit.
+
+        Args:
+            benefit: The granted Benefit.
+            customer: The customer.
+            grant_properties: Stored properties for this specific benefit and customer.
+            attempt: Number of times we attempted to grant the benefit.
+            Useful for the worker to implement retry logic.
+
+        Returns:
+            A dictionary with data to store for this specific benefit and customer.
+            For example, it can be useful to store external identifiers
+            that may help when updating the grant or revoking it.
+            **Existing properties will be overriden, so be sure to include all the data
+            you want to keep.**
+
+        Raises:
+            BenefitRetriableError: An temporary error occured,
+            we should be able to retry later.
+        """
+        ...
+
     async def revoke(
         self,
         benefit: Benefit,

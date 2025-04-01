@@ -25,6 +25,7 @@ def benefit_strategy_mock(mocker: MockerFixture) -> MagicMock:
     strategy_mock.should_revoke_individually = False
     strategy_mock.grant.return_value = {}
     strategy_mock.revoke.return_value = {}
+    strategy_mock.cycle.return_value = {}
     mock = mocker.patch("polar.benefit.grant.service.get_benefit_strategy")
     mock.return_value = strategy_mock
     return strategy_mock
@@ -545,7 +546,7 @@ class TestUpdateBenefitGrant:
         benefit_strategy_mock.grant.assert_called_once()
         assert benefit_strategy_mock.grant.call_args[1]["update"] is True
 
-    async def test_TODO_error(
+    async def test_action_required_error(
         self,
         session: AsyncSession,
         redis: Redis,
@@ -571,6 +572,128 @@ class TestUpdateBenefitGrant:
             session, redis, grant_loaded
         )
 
+        assert not updated_grant.is_granted
+
+
+@pytest.mark.asyncio
+class TestEnqueueBenefitGrantCycles:
+    async def test_required_update_revoked(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        benefit_organization_second: Benefit,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        revoked_grant = BenefitGrant(
+            subscription=subscription, customer=customer, benefit=benefit_organization
+        )
+        revoked_grant.set_revoked()
+        await save_fixture(revoked_grant)
+
+        grant = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization_second,
+        )
+        grant.set_granted()
+        await save_fixture(grant)
+
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+
+        await benefit_grant_service.enqueue_benefit_grant_cycles(
+            session, redis, subscription=subscription
+        )
+
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.cycle", benefit_grant_id=grant.id
+        )
+
+
+@pytest.mark.asyncio
+class TestCycleBenefitGrant:
+    async def test_revoked_grant(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        grant = BenefitGrant(
+            subscription=subscription, customer=customer, benefit=benefit_organization
+        )
+        grant.set_revoked()
+        await save_fixture(grant)
+
+        updated_grant = await benefit_grant_service.cycle_benefit_grant(
+            session, redis, grant
+        )
+
+        assert updated_grant.id == grant.id
+        benefit_strategy_mock.cycle.assert_not_called()
+
+    async def test_granted_grant(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        benefit_strategy_mock.cycle.return_value = {"external_id": "xyz"}
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            properties={"external_id": "abc"},
+            subscription=subscription,
+        )
+
+        updated_grant = await benefit_grant_service.cycle_benefit_grant(
+            session, redis, grant
+        )
+
+        benefit_strategy_mock.cycle.assert_called_once()
+
+        assert updated_grant.id == grant.id
+        assert updated_grant.is_granted
+        assert cast(Any, updated_grant.properties) == {"external_id": "xyz"}
+
+    async def test_action_required_error(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        benefit_strategy_mock.cycle.side_effect = BenefitActionRequiredError("Error")
+
+        updated_grant = await benefit_grant_service.cycle_benefit_grant(
+            session, redis, grant
+        )
+
+        benefit_strategy_mock.cycle.assert_called_once()
         assert not updated_grant.is_granted
 
 

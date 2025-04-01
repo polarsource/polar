@@ -114,6 +114,16 @@ class BenefitGitHubRepositoryService(
             "permission": permission,
         }
 
+    async def cycle(
+        self,
+        benefit: Benefit,
+        customer: Customer,
+        grant_properties: BenefitGrantGitHubRepositoryProperties,
+        *,
+        attempt: int = 1,
+    ) -> BenefitGrantGitHubRepositoryProperties:
+        return grant_properties
+
     async def revoke(
         self,
         benefit: Benefit,

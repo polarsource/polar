@@ -87,6 +87,16 @@ class BenefitDiscordService(
             "role_id": role_id,
         }
 
+    async def cycle(
+        self,
+        benefit: Benefit,
+        customer: Customer,
+        grant_properties: BenefitGrantDiscordProperties,
+        *,
+        attempt: int = 1,
+    ) -> BenefitGrantDiscordProperties:
+        return grant_properties
+
     async def revoke(
         self,
         benefit: Benefit,

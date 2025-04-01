@@ -47,6 +47,16 @@ class BenefitLicenseKeysService(
             "display_key": key.display_key,
         }
 
+    async def cycle(
+        self,
+        benefit: Benefit,
+        customer: Customer,
+        grant_properties: BenefitGrantLicenseKeysProperties,
+        *,
+        attempt: int = 1,
+    ) -> BenefitGrantLicenseKeysProperties:
+        return grant_properties
+
     async def revoke(
         self,
         benefit: Benefit,

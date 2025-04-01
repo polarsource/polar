@@ -21,6 +21,16 @@ class BenefitCustomService(
     ) -> BenefitGrantCustomProperties:
         return {}
 
+    async def cycle(
+        self,
+        benefit: Benefit,
+        customer: Customer,
+        grant_properties: BenefitGrantCustomProperties,
+        *,
+        attempt: int = 1,
+    ) -> BenefitGrantCustomProperties:
+        return {}
+
     async def revoke(
         self,
         benefit: Benefit,

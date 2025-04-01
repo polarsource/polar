@@ -36,6 +36,7 @@ class WebhookEventType(StrEnum):
     benefit_created = "benefit.created"
     benefit_updated = "benefit.updated"
     benefit_grant_created = "benefit_grant.created"
+    benefit_grant_cycled = "benefit_grant.cycled"
     benefit_grant_updated = "benefit_grant.updated"
     benefit_grant_revoked = "benefit_grant.revoked"
     organization_updated = "organization.updated"

@@ -1,16 +1,38 @@
 import itertools
 import uuid
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 
 from sqlalchemy.orm import joinedload
 
+from polar.event.system import SystemEvent
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.meter.service import meter as meter_service
 from polar.models import BillingEntry, OrderItem, Subscription
+from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.product.guard import is_metered_price
 
 from .repository import BillingEntryRepository
+
+
+def non_negative_running_sum(values: Iterator[int]) -> int:
+    """
+    Calculate the non-negative running sum of a sequence.
+    The sum never goes below zero - if adding a value would make it negative,
+    the sum becomes zero instead.
+
+    Args:
+        values: An iterable of integers
+
+    Returns:
+        The non-negative running sum
+    """
+    current_sum = 0
+
+    for value in values:
+        current_sum = max(0, current_sum + value)
+
+    return current_sum
 
 
 class BillingEntryService:
@@ -25,7 +47,10 @@ class BillingEntryService:
         repository = BillingEntryRepository.from_session(session)
         pending_entries = await repository.get_pending_by_subscription(
             subscription.id,
-            options=(joinedload(BillingEntry.product_price),),
+            options=(
+                joinedload(BillingEntry.product_price),
+                joinedload(BillingEntry.event),
+            ),
         )
         entries_by_price = itertools.groupby(
             pending_entries, lambda entry: entry.product_price
@@ -37,12 +62,27 @@ class BillingEntryService:
                 raise NotImplementedError()
 
             entries_list = list(entries)
+            meter_events = [
+                entry.event_id
+                for entry in entries_list
+                if entry.event.source == EventSource.user
+            ]
+            credit_events = sorted(
+                [
+                    entry.event
+                    for entry in entries_list
+                    if entry.event.source == EventSource.system
+                    and entry.event.name == SystemEvent.meter_credited
+                ],
+                key=lambda event: event.timestamp,
+            )
 
             meter = price.meter
-            units = await meter_service.get_quantity(
-                session, meter, [entry.event_id for entry in entries_list]
+            units = await meter_service.get_quantity(session, meter, meter_events)
+            credited_units = non_negative_running_sum(
+                event.user_metadata["units"] for event in credit_events
             )
-            amount, amount_label = price.get_amount_and_label(units)
+            amount, amount_label = price.get_amount_and_label(units - credited_units)
             label = f"{meter.name} — {amount_label}"
 
             order_item_id = uuid.uuid4()
@@ -57,6 +97,7 @@ class BillingEntryService:
                     "product_price_id": str(price.id),
                     "meter_id": str(meter.id),
                     "units": str(units),
+                    "credited_units": str(credited_units),
                     "unit_amount": str(price.unit_amount),
                     "cap_amount": str(price.cap_amount),
                 },

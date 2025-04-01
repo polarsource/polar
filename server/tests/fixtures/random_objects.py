@@ -85,6 +85,7 @@ from polar.models.discount import (
     DiscountPercentage,
     DiscountType,
 )
+from polar.models.event import EventSource
 from polar.models.issue import Issue
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
@@ -1749,6 +1750,7 @@ async def create_event(
     save_fixture: SaveFixture,
     *,
     organization: Organization,
+    source: EventSource = EventSource.user,
     name: str = "test",
     timestamp: datetime | None = None,
     customer: Customer | None = None,
@@ -1757,6 +1759,7 @@ async def create_event(
 ) -> Event:
     event = Event(
         timestamp=timestamp or utc_now(),
+        source=source,
         name=name,
         customer_id=customer.id if customer else None,
         external_customer_id=external_customer_id,

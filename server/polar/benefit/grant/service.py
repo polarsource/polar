@@ -357,6 +357,61 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         )
         return grant
 
+    async def enqueue_benefit_grant_cycles(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        **scope: Unpack[BenefitGrantScope],
+    ) -> None:
+        repository = BenefitGrantRepository.from_session(session)
+        grants = await repository.list_granted_by_scope(**scope)
+        for grant in grants:
+            enqueue_job("benefit.cycle", benefit_grant_id=grant.id)
+
+    async def cycle_benefit_grant(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        grant: BenefitGrant,
+        *,
+        attempt: int = 1,
+    ) -> BenefitGrant:
+        # Don't cycle revoked benefits
+        if grant.is_revoked:
+            return grant
+
+        benefit = grant.benefit
+
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(grant.customer_id)
+        assert customer is not None
+
+        previous_properties = grant.properties
+        benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
+        try:
+            properties = await benefit_strategy.cycle(
+                benefit,
+                customer,
+                grant.properties,
+                attempt=attempt,
+            )
+        except BenefitActionRequiredError:
+            grant.granted_at = None
+        else:
+            grant.properties = properties
+
+        grant.set_modified_at()
+        session.add(grant)
+
+        await self._send_webhook(
+            session,
+            benefit,
+            grant,
+            event_type=WebhookEventType.benefit_grant_cycled,
+            previous_grant_properties=previous_properties,
+        )
+        return grant
+
     async def enqueue_benefit_grant_deletions(
         self, session: AsyncSession, benefit: Benefit
     ) -> None:
@@ -424,6 +479,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         event_type: (
             Literal[WebhookEventType.benefit_grant_created]
             | Literal[WebhookEventType.benefit_grant_updated]
+            | Literal[WebhookEventType.benefit_grant_cycled]
             | Literal[WebhookEventType.benefit_grant_revoked]
         ),
         previous_grant_properties: BenefitGrantProperties,

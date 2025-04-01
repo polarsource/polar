@@ -33,6 +33,16 @@ class BenefitGrantRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def list_granted_by_scope(
+        self, **scope: Unpack[BenefitGrantScope]
+    ) -> Sequence[BenefitGrant]:
+        statement = self.get_base_statement().where(
+            BenefitGrant.scope == scope,
+            BenefitGrant.is_granted.is_(True),
+            BenefitGrant.deleted_at.is_(None),
+        )
+        return await self.get_all(statement)
+
     async def list_granted_by_benefit(
         self,
         benefit: Benefit,

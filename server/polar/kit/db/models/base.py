@@ -40,6 +40,9 @@ class TimestampedModel(Model):
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
 
+    def set_modified_at(self) -> None:
+        self.modified_at = utc_now()
+
     def set_deleted_at(self) -> None:
         self.deleted_at = utc_now()
 

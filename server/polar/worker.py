@@ -216,7 +216,7 @@ class CronTasksScheduler:
         except KeyboardInterrupt:
             scheduler.shutdown()
         finally:
-            await self._arq_pool.close()
+            await self._arq_pool.close(True)
 
     async def _schedule_task(self, task: str, queue_name: QueueName) -> None:
         if self._arq_pool is None:

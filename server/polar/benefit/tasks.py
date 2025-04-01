@@ -221,7 +221,9 @@ async def benefit_delete(
     async with AsyncSessionMaker(ctx) as session:
         benefit_repository = BenefitRepository.from_session(session)
         benefit = await benefit_repository.get_by_id(
-            benefit_id, options=benefit_repository.get_eager_options()
+            benefit_id,
+            options=benefit_repository.get_eager_options(),
+            include_deleted=True,
         )
         if benefit is None:
             raise BenefitDoesNotExist(benefit_id)

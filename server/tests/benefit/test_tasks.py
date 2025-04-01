@@ -10,6 +10,7 @@ from polar.benefit.tasks import (  # type: ignore[attr-defined]
     BenefitDoesNotExist,
     BenefitGrantDoesNotExist,
     CustomerDoesNotExist,
+    benefit_delete,
     benefit_delete_grant,
     benefit_grant,
     benefit_grant_service,
@@ -302,6 +303,39 @@ class TestBenefitUpdate:
 
 @pytest.mark.asyncio
 class TestBenefitDelete:
+    async def test_soft_deleted_benefit(
+        self,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        job_context: JobContext,
+        polar_worker_context: PolarWorkerContext,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        session: AsyncSession,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+
+        grant = BenefitGrant(
+            subscription=subscription, customer=customer, benefit=benefit_organization
+        )
+        grant.set_granted()
+        await save_fixture(grant)
+
+        benefit_organization.set_deleted_at()
+        await save_fixture(benefit_organization)
+
+        await benefit_delete(
+            job_context,
+            benefit_organization.id,
+            polar_worker_context,
+        )
+
+        enqueue_job_mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+class TestBenefitDeleteGrant:
     async def test_not_existing_grant(
         self,
         job_context: JobContext,

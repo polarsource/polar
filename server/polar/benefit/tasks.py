@@ -212,6 +212,19 @@ async def benefit_update(
             raise Retry(e.defer_seconds) from e
 
 
+@task("benefit.enqueue_benefit_grant_cycles")
+async def enqueue_benefit_grant_cycles(
+    ctx: JobContext,
+    polar_context: PolarWorkerContext,
+    **scope: Unpack[BenefitGrantScopeArgs],
+) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        resolved_scope = await resolve_scope(session, scope)
+        await benefit_grant_service.enqueue_benefit_grant_cycles(
+            session, get_worker_redis(ctx), **resolved_scope
+        )
+
+
 @task("benefit.cycle")
 async def benefit_cycle(
     ctx: JobContext,

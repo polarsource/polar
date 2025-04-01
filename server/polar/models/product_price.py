@@ -325,11 +325,6 @@ class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
         # Polymorphic columns must be nullable, as they don't apply to other types
         nullable=True,
     )
-    included_units: Mapped[int] = mapped_column(
-        Integer,
-        # Polymorphic columns must be nullable, as they don't apply to other types
-        nullable=True,
-    )
     cap_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     meter_id: Mapped[UUID] = mapped_column(
         Uuid,
@@ -347,12 +342,9 @@ class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
     def get_amount_and_label(self, units: float) -> tuple[int, str]:
         label = f"({format_decimal(units, locale='en_US')} consumed units"
 
-        if self.included_units:
-            label += f"- {format_decimal(self.included_units, locale='en_US')} included units"
-
         label += f") × {format_currency(self.unit_amount / 100, self.price_currency.upper(), locale='en_US')}"
 
-        billable_units = max(0, units - self.included_units)
+        billable_units = max(0, units)
         raw_amount = self.unit_amount * billable_units
         amount = (
             math.ceil(raw_amount)

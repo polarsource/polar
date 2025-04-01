@@ -5,9 +5,10 @@ import typing
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
-from typing import Any, Literal, Unpack
+from typing import Any, Literal, TypeAlias, Unpack
 
 import pytest_asyncio
+from typing_extensions import TypeIs
 
 from polar.enums import (
     AccountType,
@@ -593,6 +594,20 @@ async def create_custom_field(
     return custom_field
 
 
+PriceFixtureType: TypeAlias = (
+    tuple[int]
+    | tuple[int | None, int | None, int | None]
+    | tuple[None]
+    | tuple[Meter, int, int | None]
+)
+
+
+def _is_metered_price_fixture_type(
+    price: PriceFixtureType,
+) -> TypeIs[tuple[Meter, int, int | None]]:
+    return isinstance(price[0], Meter)
+
+
 async def create_product(
     save_fixture: SaveFixture,
     *,
@@ -600,12 +615,7 @@ async def create_product(
     recurring_interval: SubscriptionRecurringInterval | None,
     name: str = "Product",
     is_archived: bool = False,
-    prices: Sequence[
-        tuple[int]
-        | tuple[int | None, int | None, int | None]
-        | tuple[None]
-        | tuple[Meter, int, int, int | None]
-    ] = [(1000,)],
+    prices: Sequence[PriceFixtureType] = [(1000,)],
     attached_custom_fields: Sequence[tuple[CustomField, bool]] = [],
     is_tax_applicable: bool = True,
 ) -> Product:
@@ -645,7 +655,16 @@ async def create_product(
                 product_price = await create_product_price_fixed(
                     save_fixture, product=product, amount=amount
                 )
-        elif len(price) == 3:
+        elif _is_metered_price_fixture_type(price):
+            meter, unit_amount, cap_amount = price
+            product_price = await create_product_price_metered_unit(
+                save_fixture,
+                product=product,
+                meter=meter,
+                unit_amount=unit_amount,
+                cap_amount=cap_amount,
+            )
+        else:
             (
                 minimum_amount,
                 maximum_amount,
@@ -658,16 +677,7 @@ async def create_product(
                 maximum_amount=maximum_amount,
                 preset_amount=preset_amount,
             )
-        else:
-            meter, unit_amount, included_units, cap_amount = price
-            product_price = await create_product_price_metered_unit(
-                save_fixture,
-                product=product,
-                meter=meter,
-                unit_amount=unit_amount,
-                included_units=included_units,
-                cap_amount=cap_amount,
-            )
+
         product.prices.append(product_price)
         product.all_prices.append(product_price)
 
@@ -731,13 +741,11 @@ async def create_product_price_metered_unit(
     product: Product,
     meter: Meter,
     unit_amount: int = 100,
-    included_units: int = 0,
     cap_amount: int | None = None,
 ) -> ProductPriceMeteredUnit:
     price = ProductPriceMeteredUnit(
         price_currency="usd",
         unit_amount=unit_amount,
-        included_units=included_units,
         cap_amount=cap_amount,
         meter=meter,
         product=product,
@@ -1304,7 +1312,7 @@ async def product_recurring_metered(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(meter, 100, 0, None)],
+        prices=[(meter, 100, None)],
     )
 
 
@@ -1316,7 +1324,7 @@ async def product_recurring_fixed_and_metered(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(meter, 100, 0, None), (2000,)],
+        prices=[(meter, 100, None), (2000,)],
     )
 
 

@@ -157,14 +157,6 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
     amount_type: Literal[ProductPriceAmountType.metered_unit]
     price_currency: PriceCurrency
     unit_amount: int = Field(ge=0, description="The price per unit in cents.")
-    included_units: int = Field(
-        default=0,
-        ge=0,
-        description=(
-            "The number of units included in the price. "
-            "They will be deducted from the total."
-        ),
-    )
     cap_amount: int | None = Field(
         default=None,
         ge=0,
@@ -462,12 +454,6 @@ class ProductPriceMeteredUnit(ProductPriceBase):
     amount_type: Literal[ProductPriceAmountType.metered_unit]
     price_currency: str = Field(description="The currency.")
     unit_amount: int = Field(description="The price per unit in cents.")
-    included_units: int = Field(
-        description=(
-            "The number of units included in the price. "
-            "They will be deducted from the total."
-        )
-    )
     cap_amount: int | None = Field(
         description=(
             "The maximum amount in cents that can be charged, "

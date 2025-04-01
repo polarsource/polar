@@ -57,7 +57,6 @@ class BillingEntryService:
                     "product_price_id": str(price.id),
                     "meter_id": str(meter.id),
                     "units": str(units),
-                    "included_units": str(price.included_units),
                     "unit_amount": str(price.unit_amount),
                     "cap_amount": str(price.cap_amount),
                 },

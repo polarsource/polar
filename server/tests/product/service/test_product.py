@@ -699,7 +699,6 @@ class TestCreate:
                         amount_type=ProductPriceAmountType.metered_unit,
                         price_currency="usd",
                         unit_amount=100,
-                        included_units=0,
                         meter_id=METER_ID,
                     )
                 ],
@@ -791,7 +790,6 @@ class TestCreate:
                             amount_type=ProductPriceAmountType.metered_unit,
                             price_currency="usd",
                             unit_amount=100,
-                            included_units=0,
                             meter_id=uuid.uuid4(),
                         ),
                     ],
@@ -1418,7 +1416,6 @@ class TestUpdate:
                     amount_type=ProductPriceAmountType.metered_unit,
                     price_currency="usd",
                     unit_amount=100,
-                    included_units=0,
                     meter_id=uuid.uuid4(),
                 ),
             ]

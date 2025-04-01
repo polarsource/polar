@@ -534,13 +534,22 @@ class PayoutTransactionService(BaseTransactionService):
                     stripe_account=account.stripe_id,
                     expand=["balance_transaction"],
                 )
-                stripe_destination_balance_transaction = cast(
-                    stripe_lib.BalanceTransaction,
-                    stripe_destination_charge.balance_transaction,
-                )
-                transaction.account_amount -= (
-                    stripe_destination_balance_transaction.amount
-                )
+
+                # Case where the charge don't lead to a balance transaction,
+                # e.g. when the converted amount is 0
+                if stripe_destination_charge.balance_transaction is None:
+                    balance_transaction_amount = 0
+                else:
+                    stripe_destination_balance_transaction = cast(
+                        stripe_lib.BalanceTransaction,
+                        stripe_destination_charge.balance_transaction,
+                    )
+                    balance_transaction_amount = (
+                        stripe_destination_balance_transaction.amount
+                    )
+
+                transaction.account_amount -= balance_transaction_amount
+
                 log.info(
                     (
                         "Source and destination currency don't match. "
@@ -549,8 +558,7 @@ class PayoutTransactionService(BaseTransactionService):
                     source_currency=transaction.currency,
                     destination_currency=transaction.account_currency,
                     source_amount=amount,
-                    destination_amount=stripe_destination_balance_transaction.amount,
-                    exchange_rate=stripe_destination_balance_transaction.exchange_rate,
+                    destination_amount=balance_transaction_amount,
                     account_id=str(account.id),
                 )
 

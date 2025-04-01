@@ -27,6 +27,7 @@ class BenefitType(StrEnum):
     github_repository = "github_repository"
     downloadables = "downloadables"
     license_keys = "license_keys"
+    meter_credit = "meter_credit"
 
     def is_tax_applicable(self) -> bool:
         try:
@@ -36,6 +37,7 @@ class BenefitType(StrEnum):
                 BenefitType.github_repository: True,
                 BenefitType.downloadables: True,
                 BenefitType.license_keys: True,
+                BenefitType.meter_credit: True,
             }
             return _is_tax_applicable_map[self]
         except KeyError as e:

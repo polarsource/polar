@@ -18,6 +18,7 @@ from .strategies.discord.service import BenefitDiscordService
 from .strategies.downloadables.service import BenefitDownloadablesService
 from .strategies.github_repository.service import BenefitGitHubRepositoryService
 from .strategies.license_keys.service import BenefitLicenseKeysService
+from .strategies.meter_credit.service import BenefitMeterCreditService
 
 _STRATEGY_CLASS_MAP: dict[
     BenefitType,
@@ -28,6 +29,7 @@ _STRATEGY_CLASS_MAP: dict[
     BenefitType.github_repository: BenefitGitHubRepositoryService,
     BenefitType.downloadables: BenefitDownloadablesService,
     BenefitType.license_keys: BenefitLicenseKeysService,
+    BenefitType.meter_credit: BenefitMeterCreditService,
 }
 
 

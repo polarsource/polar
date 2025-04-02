@@ -2,11 +2,22 @@ from collections.abc import Sequence
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Select, insert, or_, select
+from sqlalchemy import (
+    ColumnElement,
+    ColumnExpressionArgument,
+    Select,
+    and_,
+    insert,
+    or_,
+    select,
+)
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.models import Customer, Event, Meter, UserOrganization
+from polar.models.event import EventSource
+
+from .system import SystemEvent
 
 
 class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
@@ -66,10 +77,22 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             ),
         )
 
-    def get_meter_statement(self, meter: Meter) -> Select[tuple[Event]]:
-        return self.get_base_statement().where(
-            Event.organization_id == meter.organization_id,
+    def get_meter_clause(self, meter: Meter) -> ColumnExpressionArgument[bool]:
+        return and_(
             meter.filter.get_sql_clause(Event),
             # Additional clauses to make sure we work on rows with the right type for aggregation
             meter.aggregation.get_sql_clause(Event),
+        )
+
+    def get_meter_credit_clause(self, meter: Meter) -> ColumnExpressionArgument[bool]:
+        return and_(
+            Event.source == EventSource.system,
+            Event.name.in_((SystemEvent.meter_credited,)),
+            Event.user_metadata["meter_id"].astext == str(meter.id),
+        )
+
+    def get_meter_statement(self, meter: Meter) -> Select[tuple[Event]]:
+        return self.get_base_statement().where(
+            Event.organization_id == meter.organization_id,
+            self.get_meter_clause(meter),
         )

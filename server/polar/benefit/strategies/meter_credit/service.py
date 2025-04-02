@@ -27,8 +27,9 @@ class BenefitMeterCreditService(
         attempt: int = 1,
     ) -> BenefitGrantMeterCreditProperties:
         properties = self._get_properties(benefit)
+        meter_id = uuid.UUID(properties["meter_id"])
         return await self._create_event(
-            customer, meter_id=properties["meter_id"], units=properties["units"]
+            customer, meter_id=meter_id, units=properties["units"]
         )
 
     async def cycle(
@@ -40,8 +41,9 @@ class BenefitMeterCreditService(
         attempt: int = 1,
     ) -> BenefitGrantMeterCreditProperties:
         properties = self._get_properties(benefit)
+        meter_id = uuid.UUID(properties["meter_id"])
         return await self._create_event(
-            customer, meter_id=properties["meter_id"], units=properties["units"]
+            customer, meter_id=meter_id, units=properties["units"]
         )
 
     async def revoke(
@@ -54,10 +56,11 @@ class BenefitMeterCreditService(
     ) -> BenefitGrantMeterCreditProperties:
         properties = self._get_properties(benefit)
 
-        units = -grant_properties.get("last_credited_units", properties["units"])
-        return await self._create_event(
-            customer, meter_id=properties["meter_id"], units=units
+        meter_id = uuid.UUID(
+            grant_properties.get("last_credited_meter_id", properties["meter_id"])
         )
+        units = -grant_properties.get("last_credited_units", properties["units"])
+        return await self._create_event(customer, meter_id=meter_id, units=units)
 
     async def requires_update(
         self, benefit: Benefit, previous_properties: BenefitMeterCreditProperties
@@ -100,6 +103,7 @@ class BenefitMeterCreditService(
             )
         )
         return {
+            "last_credited_meter_id": str(meter_id),
             "last_credited_units": units,
             "last_credited_at": utc_now().isoformat(),
         }

@@ -1,13 +1,12 @@
-from pydantic import UUID4
-
 from ..base.properties import BenefitGrantProperties, BenefitProperties
 
 
 class BenefitMeterCreditProperties(BenefitProperties):
-    meter_id: UUID4
+    meter_id: str
     units: int
 
 
 class BenefitGrantMeterCreditProperties(BenefitGrantProperties):
+    last_credited_meter_id: str
     last_credited_units: int
     last_credited_at: str

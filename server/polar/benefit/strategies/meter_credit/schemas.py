@@ -19,7 +19,7 @@ class BenefitMeterCreditProperties(Schema):
     Properties for a benefit of type `meter_unit`.
     """
 
-    unit: int
+    units: int
     meter_id: UUID4
 
 
@@ -28,7 +28,7 @@ class BenefitMeterCreditCreateProperties(Schema):
     Properties for creating a benefit of type `meter_unit`.
     """
 
-    unit: Annotated[int, Gt(0)]
+    units: Annotated[int, Gt(0)]
     meter_id: UUID4
 
 
@@ -37,7 +37,7 @@ class BenefitMeterCreditSubscriberProperties(Schema):
     Properties available to subscribers for a benefit of type `meter_unit`.
     """
 
-    unit: int
+    units: int
     meter_id: UUID4
 
 

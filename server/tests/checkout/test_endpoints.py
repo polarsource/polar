@@ -218,6 +218,42 @@ class TestCreateCheckout:
         assert response.status_code == 201
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    @pytest.mark.parametrize(
+        "customer_billing_address",
+        [
+            pytest.param(
+                {
+                    "city": "New York",
+                    "country": "US",
+                    "line1": "123 Main St",
+                    "postal_code": "10001",
+                    "state": "QC",
+                },
+                id="wrong state",
+            ),
+        ],
+    )
+    async def test_invalid_customer_billing_address(
+        self,
+        api_prefix: str,
+        customer_billing_address: dict[str, str],
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"{api_prefix}/",
+            json={
+                "payment_processor": "stripe",
+                "product_price_id": str(product.prices[0].id),
+                "success_url": "https://example.com/success?checkout_id={CHECKOUT_ID}",
+                "customer_billing_address": customer_billing_address,
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
     async def test_valid(
         self,
         api_prefix: str,
@@ -413,6 +449,41 @@ class TestClientConfirm:
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.parametrize(
+        "customer_billing_address",
+        [
+            pytest.param(
+                {
+                    "city": "New York",
+                    "country": "US",
+                    "line1": "123 Main St",
+                    "postal_code": "10001",
+                    "state": "QC",
+                },
+                id="wrong state",
+            ),
+        ],
+    )
+    async def test_invalid_customer_billing_address(
+        self,
+        api_prefix: str,
+        customer_billing_address: dict[str, str],
+        stripe_service_mock: MagicMock,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        response = await client.post(
+            f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
+            json={
+                "customer_name": "Customer Name",
+                "customer_email": "customer@example.com",
+                "customer_billing_address": customer_billing_address,
+                "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+            },
+        )
+
+        assert response.status_code == 422
 
     async def test_valid(
         self,

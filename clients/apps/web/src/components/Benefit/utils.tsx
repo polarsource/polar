@@ -84,4 +84,5 @@ export const benefitsDisplayNames: {
   discord: 'Discord Invite',
   downloadables: 'File Downloads',
   custom: 'Custom',
+  meter_credit: 'Meter Credits',
 }

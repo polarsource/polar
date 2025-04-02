@@ -14,6 +14,7 @@ from polar.models import Benefit, Organization, ProductBenefit, User
 from polar.models.benefit import BenefitType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
+from polar.posthog import posthog as posthog_service
 from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
@@ -91,6 +92,23 @@ class BenefitService:
         organization = await get_payload_organization(
             session, auth_subject, create_schema
         )
+
+        if (
+            create_schema.type == BenefitType.meter_credit
+            and not posthog_service.has_feature_flag(
+                auth_subject, "usage_based_billing"
+            )
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "type"),
+                        "msg": "Metered benefit is not generally available yet.",
+                        "input": create_schema.type,
+                    }
+                ]
+            )
 
         try:
             is_tax_applicable = getattr(create_schema, "is_tax_applicable")

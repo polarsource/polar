@@ -50,6 +50,12 @@ from .strategies.license_keys.schemas import (
     BenefitLicenseKeysSubscriber,
     BenefitLicenseKeysUpdate,
 )
+from .strategies.meter_credit.schemas import (
+    BenefitMeterCredit,
+    BenefitMeterCreditCreate,
+    BenefitMeterCreditSubscriber,
+    BenefitMeterCreditUpdate,
+)
 
 BENEFIT_DESCRIPTION_MIN_LENGTH = 3
 BENEFIT_DESCRIPTION_MAX_LENGTH = 42
@@ -66,7 +72,8 @@ BenefitCreate = Annotated[
     | BenefitDiscordCreate
     | BenefitGitHubRepositoryCreate
     | BenefitDownloadablesCreate
-    | BenefitLicenseKeysCreate,
+    | BenefitLicenseKeysCreate
+    | BenefitMeterCreditCreate,
     Discriminator("type"),
     SetSchemaReference("BenefitCreate"),
 ]
@@ -78,6 +85,7 @@ BenefitUpdate = (
     | BenefitGitHubRepositoryUpdate
     | BenefitDownloadablesUpdate
     | BenefitLicenseKeysUpdate
+    | BenefitMeterCreditUpdate
 )
 
 
@@ -86,7 +94,8 @@ Benefit = Annotated[
     | BenefitDiscord
     | BenefitGitHubRepository
     | BenefitDownloadables
-    | BenefitLicenseKeys,
+    | BenefitLicenseKeys
+    | BenefitMeterCredit,
     SetSchemaReference("Benefit"),
     MergeJSONSchema({"title": "Benefit"}),
     ClassName("Benefit"),
@@ -98,6 +107,7 @@ benefit_schema_map: dict[BenefitType, type[Benefit]] = {
     BenefitType.github_repository: BenefitGitHubRepository,
     BenefitType.downloadables: BenefitDownloadables,
     BenefitType.license_keys: BenefitLicenseKeys,
+    BenefitType.meter_credit: BenefitMeterCredit,
 }
 
 
@@ -117,7 +127,8 @@ BenefitSubscriber = Annotated[
     | BenefitCustomSubscriber
     | BenefitGitHubRepositorySubscriber
     | BenefitDownloadablesSubscriber
-    | BenefitLicenseKeysSubscriber,
+    | BenefitLicenseKeysSubscriber
+    | BenefitMeterCreditSubscriber,
     Discriminator("type"),
 ]
 

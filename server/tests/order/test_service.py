@@ -766,6 +766,44 @@ class TestCreateOrderFromStripe:
         order = await order_service.create_order_from_stripe(session, invoice=invoice)
         assert order.billing_address is None
 
+    @pytest.mark.parametrize(
+        "customer_address",
+        [
+            {"country": "US", "state": "NY"},
+            {"country": "CA", "state": "QC"},
+        ],
+    )
+    async def test_state_normalization(
+        self,
+        customer_address: dict[str, str],
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        product: Product,
+        subscription: Subscription,
+    ) -> None:
+        invoice = construct_stripe_invoice(
+            amount_paid=100,
+            subscription_id=subscription.stripe_subscription_id,
+            lines=[
+                {
+                    "price_id": price.stripe_price_id,
+                    "amount": cast(ProductPriceFixed, price).price_amount,
+                    "tax_amount": 0,
+                }
+                for price in product.prices
+                if is_static_price(price)
+            ],
+            customer_address=customer_address,
+        )
+
+        order = await order_service.create_order_from_stripe(session, invoice=invoice)
+        assert order.billing_address is not None
+        assert order.billing_address.country == customer_address["country"]
+        assert (
+            order.billing_address.state
+            == f"{customer_address['country']}-{customer_address['state']}"
+        )
+
     async def test_billing_address_from_payment_method(
         self,
         stripe_service_mock: MagicMock,

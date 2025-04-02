@@ -113,7 +113,7 @@ export const useThemePreset = (
           dropdownItem: '',
           checkbox: '',
           checkoutWrapper: 'dark:bg-polar-950 bg-gray-100 dark:text-white',
-          checkoutInnerWrapper: 'rounded-3xl dark:bg-polar-900 bg-white',
+          checkoutInnerWrapper: 'rounded-3xl dark:md:bg-polar-900 md:bg-white',
           checkoutCardWrapper:
             'dark:bg-polar-800 dark:border-polar-700 rounded-3xl bg-white shadow-xl',
           checkoutProductSwitch:

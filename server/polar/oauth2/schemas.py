@@ -6,11 +6,11 @@ from fastapi.openapi.constants import REF_TEMPLATE
 from pydantic import (
     UUID4,
     AfterValidator,
+    AnyUrl,
     BeforeValidator,
     Discriminator,
     EmailStr,
     HttpUrl,
-    AnyUrl,
     TypeAdapter,
 )
 
@@ -20,6 +20,7 @@ from polar.kit.schemas import Schema, TimestampedSchema
 from .sub_type import SubType
 
 _LOCALHOST_HOST_PATTERN = re.compile(r"([^\.]+\.)?localhost(\d+)?", flags=re.IGNORECASE)
+
 
 def _is_localhost(host: str) -> bool:
     try:
@@ -33,8 +34,10 @@ def _is_https_or_localhost(value: HttpUrl) -> HttpUrl:
         raise ValueError("An HTTPS URL is required.")
     return value
 
+
 URIOrLocalhost = Annotated[AnyUrl, AfterValidator(_is_https_or_localhost)]
 Scopes = Annotated[list[Scope], BeforeValidator(scope_to_list)]
+
 
 class OAuth2ClientConfiguration(Schema):
     redirect_uris: list[URIOrLocalhost]

@@ -3,7 +3,7 @@ from typing import Literal
 
 from sqlalchemy.util.typing import TypedDict
 
-from polar.models import Customer, Event
+from polar.models import Customer, Event, Organization
 from polar.models.event import EventSource
 
 
@@ -20,11 +20,13 @@ class SystemEvent(StrEnum):
 def build_system_event(
     name: Literal[SystemEvent.meter_credited],
     customer: Customer,
+    organization: Organization,
     metadata: MeterCreditedMetadata,
 ) -> Event:
     return Event(
         name=name,
         source=EventSource.system,
         customer_id=customer.id,
+        organization=organization,
         user_metadata=metadata,
     )

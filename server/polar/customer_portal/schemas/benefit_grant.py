@@ -23,6 +23,10 @@ from polar.benefit.strategies.license_keys.properties import (
     BenefitGrantLicenseKeysProperties,
 )
 from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysSubscriber
+from polar.benefit.strategies.meter_credit.properties import (
+    BenefitGrantMeterCreditProperties,
+)
+from polar.benefit.strategies.meter_credit.schemas import BenefitMeterCreditSubscriber
 from polar.kit.schemas import (
     ClassName,
     IDSchema,
@@ -78,12 +82,19 @@ class CustomerBenefitGrantCustom(CustomerBenefitGrantBase):
     properties: BenefitGrantCustomProperties
 
 
+class CustomerBenefitGrantMeterCredit(CustomerBenefitGrantBase):
+    customer: CustomerPortalCustomer
+    benefit: BenefitMeterCreditSubscriber
+    properties: BenefitGrantMeterCreditProperties
+
+
 CustomerBenefitGrant = Annotated[
     CustomerBenefitGrantDiscord
     | CustomerBenefitGrantGitHubRepository
     | CustomerBenefitGrantDownloadables
     | CustomerBenefitGrantLicenseKeys
-    | CustomerBenefitGrantCustom,
+    | CustomerBenefitGrantCustom
+    | CustomerBenefitGrantMeterCredit,
     SetSchemaReference("CustomerBenefitGrant"),
     MergeJSONSchema({"title": "CustomerBenefitGrant"}),
     ClassName("CustomerBenefitGrant"),
@@ -133,12 +144,17 @@ class CustomerBenefitGrantCustomUpdate(CustomerBenefitGrantUpdateBase):
     benefit_type: Literal[BenefitType.custom]
 
 
+class CustomerBenefitGrantMeterCreditUpdate(CustomerBenefitGrantUpdateBase):
+    benefit_type: Literal[BenefitType.meter_credit]
+
+
 CustomerBenefitGrantUpdate = Annotated[
     CustomerBenefitGrantDiscordUpdate
     | CustomerBenefitGrantGitHubRepositoryUpdate
     | CustomerBenefitGrantDownloadablesUpdate
     | CustomerBenefitGrantLicenseKeysUpdate
-    | CustomerBenefitGrantCustomUpdate,
+    | CustomerBenefitGrantCustomUpdate
+    | CustomerBenefitGrantMeterCreditUpdate,
     SetSchemaReference("CustomerBenefitGrantUpdate"),
     MergeJSONSchema({"title": "CustomerBenefitGrantUpdate"}),
     Discriminator("benefit_type"),

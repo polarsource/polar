@@ -40,6 +40,7 @@ def _validate_email_renderer_binary_path(value: Path) -> Path:
 
 env = Environment(os.getenv("POLAR_ENV", Environment.development))
 env_file = ".env.testing" if env == Environment.testing else ".env"
+file_extension = ".exe" if os.name == "nt" else ""
 
 
 class Settings(BaseSettings):
@@ -114,7 +115,12 @@ class Settings(BaseSettings):
     # Emails
     EMAIL_RENDERER_BINARY_PATH: Annotated[
         Path, AfterValidator(_validate_email_renderer_binary_path)
-    ] = Path(__file__).parent.parent / "emails" / "bin" / "react-email-pkg"
+    ] = (
+        Path(__file__).parent.parent
+        / "emails"
+        / "bin"
+        / f"react-email-pkg{file_extension}"
+    )
     EMAIL_SENDER: EmailSender = EmailSender.logger
     RESEND_API_KEY: str = ""
     EMAIL_FROM_NAME: str = "Polar"

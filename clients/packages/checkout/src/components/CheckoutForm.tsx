@@ -505,6 +505,7 @@ const BaseCheckoutForm = ({
                                   variant="secondary"
                                   size="sm"
                                   onClick={() => clearTaxId()}
+                                  className={themePresetProps.polar.button}
                                 >
                                   <XIcon className="h-4 w-4" />
                                 </Button>
@@ -555,6 +556,7 @@ const BaseCheckoutForm = ({
                                 variant="secondary"
                                 size="sm"
                                 onClick={addDiscountCode}
+                                className={themePresetProps.polar.button}
                               >
                                 Apply
                               </Button>

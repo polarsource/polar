@@ -10,6 +10,7 @@ from pydantic import (
     Discriminator,
     EmailStr,
     HttpUrl,
+    AnyUrl,
     TypeAdapter,
 )
 
@@ -19,7 +20,6 @@ from polar.kit.schemas import Schema, TimestampedSchema
 from .sub_type import SubType
 
 _LOCALHOST_HOST_PATTERN = re.compile(r"([^\.]+\.)?localhost(\d+)?", flags=re.IGNORECASE)
-
 
 def _is_localhost(host: str) -> bool:
     try:
@@ -33,13 +33,11 @@ def _is_https_or_localhost(value: HttpUrl) -> HttpUrl:
         raise ValueError("An HTTPS URL is required.")
     return value
 
-
-HttpsUrlOrLocalhost = Annotated[HttpUrl, AfterValidator(_is_https_or_localhost)]
+URIOrLocalhost = Annotated[AnyUrl, AfterValidator(_is_https_or_localhost)]
 Scopes = Annotated[list[Scope], BeforeValidator(scope_to_list)]
 
-
 class OAuth2ClientConfiguration(Schema):
-    redirect_uris: list[HttpsUrlOrLocalhost]
+    redirect_uris: list[URIOrLocalhost]
     token_endpoint_auth_method: Literal[
         "client_secret_basic", "client_secret_post", "none"
     ] = "client_secret_post"

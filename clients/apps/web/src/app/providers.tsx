@@ -74,8 +74,10 @@ export function PolarPostHogProvider({
 
 export function PolarThemeProvider({
   children,
+  forceTheme,
 }: {
   children: React.ReactElement
+  forceTheme?: 'light' | 'dark'
 }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -85,7 +87,7 @@ export function PolarThemeProvider({
 
   const forcedTheme = PAGES_WITH_FORCED_DARK_THEME.includes(pathname)
     ? 'dark'
-    : undefined
+    : forceTheme
 
   return (
     <ThemeProvider

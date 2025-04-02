@@ -114,6 +114,7 @@ export const useThemePreset = (
           checkbox: '',
           checkoutWrapper: 'dark:bg-polar-950 bg-gray-100 dark:text-white',
           checkoutInnerWrapper: 'rounded-3xl dark:bg-polar-900 bg-white',
+          checkoutInfo: '',
           checkoutCardWrapper:
             'dark:bg-polar-800 dark:border-polar-700 rounded-3xl bg-white shadow-xl',
           checkoutProductSwitch:
@@ -124,7 +125,7 @@ export const useThemePreset = (
     case 'midday':
       return {
         stripe: {
-          theme: theme === 'dark' ? 'night' : 'stripe',
+          theme: 'night',
           rules: {
             '.Label': {
               color: 'white',
@@ -135,7 +136,7 @@ export const useThemePreset = (
             '.PickerItem': {
               padding: '12px',
               backgroundColor: '#1d1d1d',
-              color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
+              color: 'white',
               borderRadius: '0',
               borderColor: 'transparent',
               boxShadow: '0 0 0 transparent',
@@ -154,7 +155,7 @@ export const useThemePreset = (
             '.Input': {
               padding: '12px',
               backgroundColor: '#1d1d1d',
-              color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
+              color: 'white',
               borderRadius: '0',
               border: 'none',
               boxShadow: '0 0 0 transparent',
@@ -184,14 +185,14 @@ export const useThemePreset = (
             },
             '.Block': {
               backgroundColor: 'transparent',
-              borderColor: theme === 'dark' ? '#353641' : '#EEE',
+              borderColor: '#2c2c2c',
             },
           },
           variables: {
             borderRadius: '0',
             fontSizeBase: '0.875rem',
             spacingGridRow: '18px',
-            colorDanger: theme === 'dark' ? '#F17878' : '#E64D4D',
+            colorDanger: '#F17878',
           },
         },
         polar: {

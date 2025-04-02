@@ -28,7 +28,9 @@ const CheckoutLayout: React.FC<
   }
 
   return (
-    <PolarThemeProvider>
+    <PolarThemeProvider
+      forceTheme={checkout.organization.slug === 'midday' ? 'dark' : undefined}
+    >
       <div className={twMerge('h-full', themingPreset.polar.checkoutWrapper)}>
         <PublicLayout className="gap-y-0 py-6 md:py-12" wide footer={false}>
           {children}

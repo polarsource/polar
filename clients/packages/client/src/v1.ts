@@ -4191,11 +4191,34 @@ export interface webhooks {
         put?: never;
         /**
          * benefit_grant.updated
-         * @description Sent when a new benefit grant is updated.
+         * @description Sent when a benefit grant is updated.
          *
          *     **Discord & Slack support:** Basic
          */
         post: operations["_endpointbenefit_grant_updated_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "benefit_grant.cycled": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * benefit_grant.cycled
+         * @description Sent when a benefit grant is cycled,
+         *     meaning the related subscription has been renewed for another period.
+         *
+         *     **Discord & Slack support:** Basic
+         */
+        post: operations["_endpointbenefit_grant_cycled_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4213,7 +4236,7 @@ export interface webhooks {
         put?: never;
         /**
          * benefit_grant.revoked
-         * @description Sent when a new benefit grant is revoked.
+         * @description Sent when a benefit grant is revoked.
          *
          *     **Discord & Slack support:** Basic
          */
@@ -4830,7 +4853,7 @@ export interface components {
             /** Pledger Email */
             pledger_email: string | null;
         };
-        Benefit: components["schemas"]["BenefitCustom"] | components["schemas"]["BenefitDiscord"] | components["schemas"]["BenefitGitHubRepository"] | components["schemas"]["BenefitDownloadables"] | components["schemas"]["BenefitLicenseKeys"];
+        Benefit: components["schemas"]["BenefitCustom"] | components["schemas"]["BenefitDiscord"] | components["schemas"]["BenefitGitHubRepository"] | components["schemas"]["BenefitDownloadables"] | components["schemas"]["BenefitLicenseKeys"] | components["schemas"]["BenefitMeterCredit"];
         /** BenefitBase */
         BenefitBase: {
             /**
@@ -4874,7 +4897,7 @@ export interface components {
              */
             organization_id: string;
         };
-        BenefitCreate: components["schemas"]["BenefitCustomCreate"] | components["schemas"]["BenefitDiscordCreate"] | components["schemas"]["BenefitGitHubRepositoryCreate"] | components["schemas"]["BenefitDownloadablesCreate"] | components["schemas"]["BenefitLicenseKeysCreate"];
+        BenefitCreate: components["schemas"]["BenefitCustomCreate"] | components["schemas"]["BenefitDiscordCreate"] | components["schemas"]["BenefitGitHubRepositoryCreate"] | components["schemas"]["BenefitDownloadablesCreate"] | components["schemas"]["BenefitLicenseKeysCreate"] | components["schemas"]["BenefitMeterCreditCreate"];
         /**
          * BenefitCustom
          * @description A benefit of type `custom`.
@@ -5750,6 +5773,13 @@ export interface components {
             /** Previous Properties */
             previous_properties?: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"] | null;
         };
+        /** BenefitLicenseKeyActivationCreateProperties */
+        BenefitLicenseKeyActivationCreateProperties: {
+            /** Limit */
+            limit: number;
+            /** Enable Customer Admin */
+            enable_customer_admin: boolean;
+        };
         /** BenefitLicenseKeyActivationProperties */
         BenefitLicenseKeyActivationProperties: {
             /** Limit */
@@ -5838,7 +5868,7 @@ export interface components {
             /** Prefix */
             prefix?: string | null;
             expires?: components["schemas"]["BenefitLicenseKeyExpirationProperties"] | null;
-            activations?: components["schemas"]["BenefitLicenseKeyActivationProperties"] | null;
+            activations?: components["schemas"]["BenefitLicenseKeyActivationCreateProperties"] | null;
             /** Limit Usage */
             limit_usage?: number | null;
         };
@@ -5923,6 +5953,120 @@ export interface components {
             properties?: components["schemas"]["BenefitLicenseKeysCreateProperties"] | null;
         };
         /**
+         * BenefitMeterCredit
+         * @description A benefit of type `meter_unit`.
+         *
+         *     Use it to grant a number of units on a specific meter.
+         */
+        BenefitMeterCredit: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
+             * Type
+             * @constant
+             */
+            type: "meter_credit";
+            /**
+             * Description
+             * @description The description of the benefit.
+             */
+            description: string;
+            /**
+             * Selectable
+             * @description Whether the benefit is selectable when creating a product.
+             */
+            selectable: boolean;
+            /**
+             * Deletable
+             * @description Whether the benefit is deletable.
+             */
+            deletable: boolean;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the benefit.
+             */
+            organization_id: string;
+            properties: components["schemas"]["BenefitMeterCreditProperties"];
+        };
+        /**
+         * BenefitMeterCreditCreate
+         * @description Schema to create a benefit of type `meter_unit`.
+         */
+        BenefitMeterCreditCreate: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "meter_credit";
+            /**
+             * Description
+             * @description The description of the benefit. Will be displayed on products having this benefit.
+             */
+            description: string;
+            /**
+             * Organization Id
+             * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
+             */
+            organization_id?: string | null;
+            properties: components["schemas"]["BenefitMeterCreditCreateProperties"];
+        };
+        /**
+         * BenefitMeterCreditCreateProperties
+         * @description Properties for creating a benefit of type `meter_unit`.
+         */
+        BenefitMeterCreditCreateProperties: {
+            /** Unit */
+            unit: number;
+            /**
+             * Meter Id
+             * Format: uuid4
+             */
+            meter_id: string;
+        };
+        /**
+         * BenefitMeterCreditProperties
+         * @description Properties for a benefit of type `meter_unit`.
+         */
+        BenefitMeterCreditProperties: {
+            /** Unit */
+            unit: number;
+            /**
+             * Meter Id
+             * Format: uuid4
+             */
+            meter_id: string;
+        };
+        /** BenefitMeterCreditUpdate */
+        BenefitMeterCreditUpdate: {
+            /**
+             * Description
+             * @description The description of the benefit. Will be displayed on products having this benefit.
+             */
+            description?: string | null;
+            /**
+             * Type
+             * @constant
+             */
+            type: "meter_credit";
+            properties?: components["schemas"]["BenefitMeterCreditCreateProperties"] | null;
+        };
+        /**
          * BenefitSortProperty
          * @enum {string}
          */
@@ -5931,7 +6075,7 @@ export interface components {
          * BenefitType
          * @enum {string}
          */
-        BenefitType: "custom" | "discord" | "github_repository" | "downloadables" | "license_keys";
+        BenefitType: "custom" | "discord" | "github_repository" | "downloadables" | "license_keys" | "meter_credit";
         /** Body_email-update:verify_email_update */
         "Body_email-update_verify_email_update": {
             /** Token */
@@ -14720,11 +14864,6 @@ export interface components {
              */
             unit_amount: number;
             /**
-             * Included Units
-             * @description The number of units included in the price. They will be deducted from the total.
-             */
-            included_units: number;
-            /**
              * Cap Amount
              * @description The maximum amount in cents that can be charged, regardless of the number of units consumed.
              */
@@ -14765,11 +14904,6 @@ export interface components {
              * @description The price per unit in cents.
              */
             unit_amount: number;
-            /**
-             * Included Units
-             * @description The number of units included in the price. They will be deducted from the total.
-             */
-            included_units: number;
             /**
              * Cap Amount
              * @description Optional maximum amount in cents that can be charged, regardless of the number of units consumed.
@@ -16366,8 +16500,23 @@ export interface components {
             data: components["schemas"]["BenefitGrantWebhook"];
         };
         /**
+         * WebhookBenefitGrantCycledPayload
+         * @description Sent when a benefit grant is cycled,
+         *     meaning the related subscription has been renewed for another period.
+         *
+         *     **Discord & Slack support:** Basic
+         */
+        WebhookBenefitGrantCycledPayload: {
+            /**
+             * Type
+             * @constant
+             */
+            type: "benefit_grant.cycled";
+            data: components["schemas"]["BenefitGrantWebhook"];
+        };
+        /**
          * WebhookBenefitGrantRevokedPayload
-         * @description Sent when a new benefit grant is revoked.
+         * @description Sent when a benefit grant is revoked.
          *
          *     **Discord & Slack support:** Basic
          */
@@ -16381,7 +16530,7 @@ export interface components {
         };
         /**
          * WebhookBenefitGrantUpdatedPayload
-         * @description Sent when a new benefit grant is updated.
+         * @description Sent when a benefit grant is updated.
          *
          *     **Discord & Slack support:** Basic
          */
@@ -16674,7 +16823,7 @@ export interface components {
          * WebhookEventType
          * @enum {string}
          */
-        WebhookEventType: "checkout.created" | "checkout.updated" | "customer.created" | "customer.updated" | "customer.deleted" | "customer.state_changed" | "order.created" | "order.updated" | "order.paid" | "order.refunded" | "subscription.created" | "subscription.updated" | "subscription.active" | "subscription.canceled" | "subscription.uncanceled" | "subscription.revoked" | "refund.created" | "refund.updated" | "product.created" | "product.updated" | "benefit.created" | "benefit.updated" | "benefit_grant.created" | "benefit_grant.updated" | "benefit_grant.revoked" | "organization.updated" | "pledge.created" | "pledge.updated";
+        WebhookEventType: "checkout.created" | "checkout.updated" | "customer.created" | "customer.updated" | "customer.deleted" | "customer.state_changed" | "order.created" | "order.updated" | "order.paid" | "order.refunded" | "subscription.created" | "subscription.updated" | "subscription.active" | "subscription.canceled" | "subscription.uncanceled" | "subscription.revoked" | "refund.created" | "refund.updated" | "product.created" | "product.updated" | "benefit.created" | "benefit.updated" | "benefit_grant.created" | "benefit_grant.cycled" | "benefit_grant.updated" | "benefit_grant.revoked" | "organization.updated" | "pledge.created" | "pledge.updated";
         /**
          * WebhookFormat
          * @enum {string}
@@ -20467,7 +20616,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description You don't have the permission to update this benefit or it's not deletable. */
+            /** @description This benefit is not deletable. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -20507,7 +20656,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["BenefitCustomUpdate"] | components["schemas"]["BenefitDiscordUpdate"] | components["schemas"]["BenefitGitHubRepositoryUpdate"] | components["schemas"]["BenefitDownloadablesUpdate"] | components["schemas"]["BenefitLicenseKeysUpdate"];
+                "application/json": components["schemas"]["BenefitCustomUpdate"] | components["schemas"]["BenefitDiscordUpdate"] | components["schemas"]["BenefitGitHubRepositoryUpdate"] | components["schemas"]["BenefitDownloadablesUpdate"] | components["schemas"]["BenefitLicenseKeysUpdate"] | components["schemas"]["BenefitMeterCreditUpdate"];
             };
         };
         responses: {
@@ -20518,15 +20667,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Benefit"];
-                };
-            };
-            /** @description You don't have the permission to update this benefit. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotPermitted"];
                 };
             };
             /** @description Benefit not found. */
@@ -25981,6 +26121,39 @@ export interface operations {
             };
         };
     };
+    _endpointbenefit_grant_cycled_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebhookBenefitGrantCycledPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     _endpointbenefit_grant_revoked_post: {
         parameters: {
             query?: never;
@@ -26078,8 +26251,9 @@ export const benefitGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<co
 export const benefitGrantGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGrantGitHubRepositoryProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
 export const benefitLicenseKeyExpirationPropertiesTimeframeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeyExpirationProperties"]["timeframe"]> = ["year", "month", "day"];
 export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeysCreate"]["type"]> = ["license_keys"];
+export const benefitMeterCreditCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitMeterCreditCreate"]["type"]> = ["meter_credit"];
 export const benefitSortPropertyValues: ReadonlyArray<components["schemas"]["BenefitSortProperty"]> = ["created_at", "-created_at", "description", "-description"];
-export const benefitTypeValues: ReadonlyArray<components["schemas"]["BenefitType"]> = ["custom", "discord", "github_repository", "downloadables", "license_keys"];
+export const benefitTypeValues: ReadonlyArray<components["schemas"]["BenefitType"]> = ["custom", "discord", "github_repository", "downloadables", "license_keys", "meter_credit"];
 export const body_oauth2_consentActionValues: ReadonlyArray<components["schemas"]["Body_oauth2_consent"]["action"]> = ["allow", "deny"];
 export const checkoutLinkSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutLinkSortProperty"]> = ["created_at", "-created_at", "label", "-label", "success_url", "-success_url", "allow_discount_codes", "-allow_discount_codes"];
 export const checkoutSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutSortProperty"]> = ["created_at", "-created_at", "expires_at", "-expires_at"];
@@ -26198,7 +26372,7 @@ export const timeIntervalValues: ReadonlyArray<components["schemas"]["TimeInterv
 export const transactionSortPropertyValues: ReadonlyArray<components["schemas"]["TransactionSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
 export const transactionTypeValues: ReadonlyArray<components["schemas"]["TransactionType"]> = ["payment", "processor_fee", "refund", "dispute", "dispute_reversal", "balance", "payout"];
 export const userSignupAttributionIntentValues: ReadonlyArray<components["schemas"]["UserSignupAttribution"]["intent"]> = ["creator", "pledge", "purchase", "subscription", "newsletter_subscription"];
-export const webhookEventTypeValues: ReadonlyArray<components["schemas"]["WebhookEventType"]> = ["checkout.created", "checkout.updated", "customer.created", "customer.updated", "customer.deleted", "customer.state_changed", "order.created", "order.updated", "order.paid", "order.refunded", "subscription.created", "subscription.updated", "subscription.active", "subscription.canceled", "subscription.uncanceled", "subscription.revoked", "refund.created", "refund.updated", "product.created", "product.updated", "benefit.created", "benefit.updated", "benefit_grant.created", "benefit_grant.updated", "benefit_grant.revoked", "organization.updated", "pledge.created", "pledge.updated"];
+export const webhookEventTypeValues: ReadonlyArray<components["schemas"]["WebhookEventType"]> = ["checkout.created", "checkout.updated", "customer.created", "customer.updated", "customer.deleted", "customer.state_changed", "order.created", "order.updated", "order.paid", "order.refunded", "subscription.created", "subscription.updated", "subscription.active", "subscription.canceled", "subscription.uncanceled", "subscription.revoked", "refund.created", "refund.updated", "product.created", "product.updated", "benefit.created", "benefit.updated", "benefit_grant.created", "benefit_grant.cycled", "benefit_grant.updated", "benefit_grant.revoked", "organization.updated", "pledge.created", "pledge.updated"];
 export const webhookFormatValues: ReadonlyArray<components["schemas"]["WebhookFormat"]> = ["raw", "discord", "slack"];
 export const revokeTokenRequestToken_type_hintValues: ReadonlyArray<components["schemas"]["RevokeTokenRequest"]["token_type_hint"]> = ["access_token", "refresh_token"];
 export const introspectTokenRequestToken_type_hintValues: ReadonlyArray<components["schemas"]["IntrospectTokenRequest"]["token_type_hint"]> = ["access_token", "refresh_token"];

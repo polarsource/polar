@@ -11,6 +11,7 @@ from sqlalchemy import (
     asc,
     desc,
     func,
+    or_,
     select,
 )
 from sqlalchemy.orm import joinedload
@@ -242,8 +243,16 @@ class MeterService:
     ) -> Sequence[BillingEntry]:
         event_repository = EventRepository.from_session(session)
         statement = (
-            event_repository.get_meter_statement(meter)
-            .where(Event.customer.is_not(None))
+            event_repository.get_base_statement()
+            .where(
+                Event.organization_id == meter.organization_id,
+                or_(
+                    # Events matching meter definitions
+                    event_repository.get_meter_clause(meter),
+                    # System events impacting the meter balance
+                    event_repository.get_meter_credit_clause(meter),
+                ),
+            )
             .order_by(Event.timestamp.asc())
         )
         last_billed_event = meter.last_billed_event

@@ -1,3 +1,4 @@
+import uuid
 from datetime import timedelta
 from decimal import Decimal
 
@@ -6,6 +7,7 @@ import pytest_asyncio
 
 from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
+from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.time_queries import TimeInterval
 from polar.kit.utils import utc_now
@@ -27,6 +29,7 @@ from polar.models import (
     Subscription,
 )
 from polar.models.billing_entry import BillingEntryDirection
+from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -515,7 +518,27 @@ class TestGetQuantities:
 
 
 @pytest_asyncio.fixture
-async def events(save_fixture: SaveFixture, customer: Customer) -> list[Event]:
+async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
+    return await create_meter(
+        save_fixture,
+        name="Lite Model Usage",
+        filter=Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(property="model", operator=FilterOperator.eq, value="lite")
+            ],
+        ),
+        aggregation=PropertyAggregation(
+            func=AggregationFunction.sum, property="tokens"
+        ),
+        organization=organization,
+    )
+
+
+@pytest_asyncio.fixture
+async def events(
+    save_fixture: SaveFixture, customer: Customer, meter: Meter
+) -> list[Event]:
     timestamp = utc_now()
     return [
         await create_event(
@@ -551,27 +574,28 @@ async def events(save_fixture: SaveFixture, customer: Customer) -> list[Event]:
             timestamp=timestamp + timedelta(seconds=5),
             organization=customer.organization,
             customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 10, "meter_id": str(meter.id)},
+        ),
+        # Events that should not be considered by the meter
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=6),
+            organization=customer.organization,
+            customer=customer,
             metadata={"tokens": 100, "model": "pro"},
         ),
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=7),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 10, "meter_id": str(uuid.uuid4())},
+        ),
     ]
-
-
-@pytest_asyncio.fixture
-async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
-    return await create_meter(
-        save_fixture,
-        name="Lite Model Usage",
-        filter=Filter(
-            conjunction=FilterConjunction.and_,
-            clauses=[
-                FilterClause(property="model", operator=FilterOperator.eq, value="lite")
-            ],
-        ),
-        aggregation=PropertyAggregation(
-            func=AggregationFunction.sum, property="tokens"
-        ),
-        organization=organization,
-    )
 
 
 @pytest_asyncio.fixture
@@ -609,7 +633,7 @@ class TestCreateBillingEntries:
         entries = await meter_service.create_billing_entries(session, meter)
 
         assert len(entries) == 0
-        assert meter.last_billed_event == events[-2]
+        assert meter.last_billed_event == events[-3]
 
     async def test_no_last_billed_event(
         self,
@@ -623,7 +647,7 @@ class TestCreateBillingEntries:
     ) -> None:
         entries = await meter_service.create_billing_entries(session, meter)
 
-        assert len(entries) == 4
+        assert len(entries) == 5
         for entry in entries:
             assert entry.event is not None
             assert entry.start_timestamp == entry.event.timestamp
@@ -632,7 +656,7 @@ class TestCreateBillingEntries:
             assert entry.customer == customer
             assert entry.product_price == product_metered_unit.prices[0]
 
-        assert meter.last_billed_event == events[-2]
+        assert meter.last_billed_event == events[-3]
 
     async def test_last_billed_event(
         self,
@@ -647,7 +671,7 @@ class TestCreateBillingEntries:
         meter.last_billed_event = events[1]
         entries = await meter_service.create_billing_entries(session, meter)
 
-        assert len(entries) == 2
+        assert len(entries) == 3
         for entry in entries:
             assert entry.event is not None
             assert entry.start_timestamp == entry.event.timestamp
@@ -656,4 +680,4 @@ class TestCreateBillingEntries:
             assert entry.customer == customer
             assert entry.product_price == product_metered_unit.prices[0]
 
-        assert meter.last_billed_event == events[-2]
+        assert meter.last_billed_event == events[-3]

@@ -138,7 +138,7 @@ class PayoutTransactionService(BaseTransactionService):
         async with locker.lock(
             lock_name,
             # Creating a payout may take lot of time because of individual Stripe transfers
-            timeout=datetime.timedelta(minutes=10).total_seconds(),
+            timeout=datetime.timedelta(hours=1).total_seconds(),
             blocking_timeout=1,
         ):
             if account.is_under_review():

@@ -1,27 +1,4 @@
-import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-
-const AVATAR_COLOR_PAIRS = [
-  [85.2, 50, 21.57], // Pastel Pink
-  [89.5, 50, 134.2], // Pastel Green
-  [87.3, 50, 208.4], // Pastel Blue
-  [86.8, 50, 35.6], // Pastel Orange
-  [92.1, 50, 60.3], // Pastel Yellow
-  [84.9, 50, 280.1], // Pastel Purple
-  [85.4, 50, 0.0], // Pastel Red
-  [90.2, 50, 147.8], // Pastel Mint
-  [88.7, 50, 240.5], // Pastel Periwinkle
-  [86.5, 50, 348.2], // Pastel Rose
-] as const
-
-const computeGradient = (color: (typeof AVATAR_COLOR_PAIRS)[number]) => {
-  const analogousColor1 = (color[2] - 80) % 360
-  const analogousColor2 = (color[2] + 80) % 360
-  return {
-    backgroundImage: `linear-gradient(45deg, oklch(${color[0]}% ${color[1]}% ${analogousColor1}deg), oklch(${color[0]}% ${color[1]}% ${color[2]}deg), oklch(${color[0]}% ${color[1]}% ${analogousColor2}deg))`,
-    backgroundSize: '200% 200%',
-  }
-}
 
 const Avatar = ({
   name,
@@ -36,30 +13,31 @@ const Avatar = ({
   height?: number | undefined
   width?: number | undefined
 }) => {
-  const color = useMemo(
-    () =>
-      AVATAR_COLOR_PAIRS[
-        (name.charCodeAt(0) + new Date().getMinutes()) %
-          AVATAR_COLOR_PAIRS.length
-      ],
-    [name],
-  )
+  const initials = getInitials(name)
 
-  const gradient = computeGradient(color)
+  let showInitials = true
+  if (avatar_url) {
+    // Skip rendering initials in case of `avatar_url`
+    // Unless from Gravatar since they offer a transparent image in case of no avatar
+    // Also have to check for `http` first to avoid running `new URL` on internal NextJS asset paths
+    const avatarHost = avatar_url.startsWith('http')
+      ? new URL(avatar_url).host
+      : null
+    showInitials = avatarHost === 'www.gravatar.com'
+  }
 
   return (
     <div
       className={twMerge(
-        'relative z-[2] flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-sm',
-        avatar_url
-          ? 'dark:bg-polar-800 dark:bg-polar-900 dark:border-polar-700 border-2 border-gray-200 bg-gray-50'
-          : 'animate-gradient',
+        'dark:bg-polar-900 dark:border-polar-700 relative z-[2] flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-200 bg-gray-50 text-sm',
         className,
       )}
-      style={{
-        ...(avatar_url ? {} : gradient),
-      }}
     >
+      {showInitials && (
+        <div className="absolute inset-0 flex items-center justify-center bg-transparent">
+          <span>{initials}</span>
+        </div>
+      )}
       {avatar_url && (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -77,3 +55,14 @@ const Avatar = ({
 }
 
 export default Avatar
+
+const getInitials = (fullName: string) => {
+  const allNames = fullName.trim().split(' ')
+  const initials = allNames.reduce((acc, curr, index) => {
+    if (index === 0 || index === allNames.length - 1) {
+      acc = `${acc}${curr.charAt(0).toUpperCase()}`
+    }
+    return acc
+  }, '')
+  return initials
+}

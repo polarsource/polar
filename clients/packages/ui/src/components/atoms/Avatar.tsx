@@ -46,14 +46,18 @@ const Avatar = ({
   )
 
   const gradient = computeGradient(color)
+
   return (
     <div
       className={twMerge(
-        'animate-gradient relative z-[2] flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-sm',
+        'relative z-[2] flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-sm',
+        avatar_url
+          ? 'dark:bg-polar-800 dark:bg-polar-900 dark:border-polar-700 border-2 border-gray-200 bg-gray-50'
+          : 'animate-gradient',
         className,
       )}
       style={{
-        ...gradient,
+        ...(avatar_url ? {} : gradient),
       }}
     >
       {avatar_url && (

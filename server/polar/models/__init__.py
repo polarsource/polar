@@ -10,6 +10,7 @@ from .checkout_link_product import CheckoutLinkProduct
 from .checkout_product import CheckoutProduct
 from .custom_field import CustomField
 from .customer import Customer
+from .customer_meter import CustomerMeter
 from .customer_session import CustomerSession
 from .customer_session_code import CustomerSessionCode
 from .discount import Discount
@@ -79,6 +80,7 @@ __all__ = [
     "CheckoutLinkProduct",
     "CheckoutProduct",
     "Customer",
+    "CustomerMeter",
     "CustomerSession",
     "CustomerSessionCode",
     "CustomField",

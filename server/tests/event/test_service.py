@@ -1,8 +1,10 @@
 import uuid
 from datetime import timedelta
+from unittest.mock import AsyncMock, call
 
 import pytest
 from pydantic import ValidationError
+from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject, is_user
 from polar.event.repository import EventRepository
@@ -21,6 +23,11 @@ from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_event
+
+
+@pytest.fixture
+def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch("polar.event.service.enqueue_job")
 
 
 @pytest.mark.asyncio
@@ -317,6 +324,7 @@ class TestIngest:
     @pytest.mark.auth
     async def test_valid_user(
         self,
+        enqueue_job_mock: AsyncMock,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
@@ -342,9 +350,16 @@ class TestIngest:
         for event in events:
             assert event.source == EventSource.user
 
+        enqueue_job_mock.assert_called_once_with(
+            "event.ingested", event_ids=[event.id for event in events]
+        )
+
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_valid_organization(
-        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+        self,
+        enqueue_job_mock: AsyncMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
     ) -> None:
         ingest = EventsIngest(
             events=[
@@ -364,3 +379,56 @@ class TestIngest:
 
         for event in events:
             assert event.source == EventSource.user
+
+        enqueue_job_mock.assert_called_once_with(
+            "event.ingested", event_ids=[event.id for event in events]
+        )
+
+
+@pytest.mark.asyncio
+class TestIngested:
+    async def test_basic(
+        self,
+        enqueue_job_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        events = [
+            await create_event(
+                save_fixture,
+                customer=customer,
+                organization=customer.organization,
+                source=EventSource.user,
+            ),
+            await create_event(
+                save_fixture,
+                customer=customer,
+                organization=customer.organization,
+                source=EventSource.user,
+            ),
+            await create_event(
+                save_fixture,
+                customer=customer_second,
+                organization=customer_second.organization,
+                source=EventSource.user,
+            ),
+            await create_event(
+                save_fixture,
+                external_customer_id="UNLINKED_EXTERNAL_CUSTOMER_ID",
+                organization=organization,
+                source=EventSource.user,
+            ),
+        ]
+
+        await event_service.ingested(session, [event.id for event in events])
+
+        enqueue_job_mock.assert_has_calls(
+            [
+                call("customer_meter.update_customer", customer_id=customer.id),
+                call("customer_meter.update_customer", customer_id=customer_second.id),
+            ],
+            any_order=True,
+        )

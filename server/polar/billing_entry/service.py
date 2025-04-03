@@ -1,11 +1,12 @@
 import itertools
 import uuid
-from collections.abc import Iterator, Sequence
+from collections.abc import Sequence
 
 from sqlalchemy.orm import joinedload
 
-from polar.event.system import SystemEvent
+from polar.event.system import is_meter_credit_event
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.kit.math import non_negative_running_sum
 from polar.meter.service import meter as meter_service
 from polar.models import BillingEntry, OrderItem, Subscription
 from polar.models.event import EventSource
@@ -13,26 +14,6 @@ from polar.postgres import AsyncSession
 from polar.product.guard import is_metered_price
 
 from .repository import BillingEntryRepository
-
-
-def non_negative_running_sum(values: Iterator[int]) -> int:
-    """
-    Calculate the non-negative running sum of a sequence.
-    The sum never goes below zero - if adding a value would make it negative,
-    the sum becomes zero instead.
-
-    Args:
-        values: An iterable of integers
-
-    Returns:
-        The non-negative running sum
-    """
-    current_sum = 0
-
-    for value in values:
-        current_sum = max(0, current_sum + value)
-
-    return current_sum
 
 
 class BillingEntryService:
@@ -71,8 +52,7 @@ class BillingEntryService:
                 [
                     entry.event
                     for entry in entries_list
-                    if entry.event.source == EventSource.system
-                    and entry.event.name == SystemEvent.meter_credited
+                    if is_meter_credit_event(entry.event)
                 ],
                 key=lambda event: event.timestamp,
             )

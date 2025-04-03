@@ -15,7 +15,66 @@ def repository(session: AsyncSession) -> EventRepository:
 
 
 @pytest.mark.asyncio
-class TestCustomerComparator:
+class TestCustomerComparatorEq:
+    async def test_customer_id(
+        self,
+        save_fixture: SaveFixture,
+        repository: EventRepository,
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        event = await create_event(
+            save_fixture,
+            timestamp=utc_now(),
+            organization=organization,
+            customer=customer,
+        )
+        await create_event(
+            save_fixture,
+            timestamp=utc_now(),
+            organization=organization,
+            customer=customer_second,
+        )
+
+        statement = repository.get_base_statement().where(Event.customer == customer)
+        result = await repository.get_one_or_none(statement)
+
+        assert result is not None
+        assert result == event
+
+    async def test_customer_external_id(
+        self,
+        save_fixture: SaveFixture,
+        repository: EventRepository,
+        organization: Organization,
+        customer_external_id: Customer,
+        customer: Customer,
+    ) -> None:
+        event = await create_event(
+            save_fixture,
+            timestamp=utc_now(),
+            organization=organization,
+            external_customer_id=customer_external_id.external_id,
+        )
+        await create_event(
+            save_fixture,
+            timestamp=utc_now(),
+            organization=organization,
+            customer=customer,
+        )
+
+        statement = repository.get_base_statement().where(
+            Event.customer == customer_external_id
+        )
+        result = await repository.get_one_or_none(statement)
+
+        assert result is not None
+        assert result == event
+
+
+@pytest.mark.asyncio
+class TestCustomerComparatorIs:
     async def test_customer_id(
         self,
         save_fixture: SaveFixture,

@@ -29,9 +29,10 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         )
         return await self.get_all(statement)
 
-    async def insert_batch(self, events: Sequence[dict[str, Any]]) -> None:
-        statement = insert(Event)
-        await self.session.execute(statement, events)
+    async def insert_batch(self, events: Sequence[dict[str, Any]]) -> Sequence[UUID]:
+        statement = insert(Event).returning(Event.id)
+        result = await self.session.execute(statement, events)
+        return result.scalars().all()
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

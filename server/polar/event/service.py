@@ -13,6 +13,7 @@ from polar.kit.sorting import Sorting
 from polar.models import Customer, Event, Organization, User, UserOrganization
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
+from polar.worker import enqueue_job
 
 from .repository import EventRepository
 from .schemas import EventCreateCustomer, EventsIngest, EventsIngestResponse
@@ -137,9 +138,27 @@ class EventService:
             raise PolarRequestValidationError(errors)
 
         repository = EventRepository.from_session(session)
-        await repository.insert_batch(events)
+        event_ids = await repository.insert_batch(events)
+
+        enqueue_job("event.ingested", event_ids=event_ids)
 
         return EventsIngestResponse(inserted=len(events))
+
+    async def ingested(
+        self, session: AsyncSession, event_ids: Sequence[uuid.UUID]
+    ) -> None:
+        repository = EventRepository.from_session(session)
+        statement = repository.get_base_statement().where(
+            Event.id.in_(event_ids), Event.customer.is_not(None)
+        )
+        events = await repository.get_all(statement)
+        customers: set[Customer] = set()
+        for event in events:
+            assert event.customer is not None
+            customers.add(event.customer)
+
+        for customer in customers:
+            enqueue_job("customer_meter.update_customer", customer_id=customer.id)
 
     async def _get_organization_validation_function(
         self, session: AsyncSession, auth_subject: AuthSubject[User | Organization]

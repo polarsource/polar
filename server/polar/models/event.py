@@ -5,6 +5,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
+    ColumnElement,
     ForeignKey,
     String,
     Uuid,
@@ -38,6 +39,18 @@ class EventSource(StrEnum):
 
 
 class CustomerComparator(Relationship.Comparator[Customer]):
+    def __eq__(self, other: Any) -> ColumnElement[bool]:  # type: ignore[override]
+        if isinstance(other, Customer):
+            clause = Event.customer_id == other.id
+            if other.external_id is not None:
+                clause |= and_(
+                    Event.external_customer_id.is_not(None),
+                    Event.external_customer_id == other.external_id,
+                )
+            return clause
+
+        raise NotImplementedError()
+
     def is_(self, other: Any) -> BinaryExpression[bool]:
         if other is None:
             return cast(

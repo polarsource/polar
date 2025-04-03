@@ -37,7 +37,7 @@ class CustomerMeterService:
                     event_repository.get_meter_credit_clause(meter),
                 ),
             )
-            .order_by(Event.timestamp.asc())
+            .order_by(Event.ingested_at.asc())
         )
 
         repository = CustomerMeterRepository.from_session(session)
@@ -51,7 +51,7 @@ class CustomerMeterService:
             and customer_meter.last_balanced_event is not None
         ):
             statement = statement.where(
-                Event.timestamp > customer_meter.last_balanced_event.timestamp
+                Event.ingested_at > customer_meter.last_balanced_event.ingested_at
             )
 
         events = await event_repository.get_all(statement)

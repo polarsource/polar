@@ -253,11 +253,13 @@ class MeterService:
                     event_repository.get_meter_credit_clause(meter),
                 ),
             )
-            .order_by(Event.timestamp.asc())
+            .order_by(Event.ingested_at.asc())
         )
         last_billed_event = meter.last_billed_event
         if last_billed_event is not None:
-            statement = statement.where(Event.timestamp > last_billed_event.timestamp)
+            statement = statement.where(
+                Event.ingested_at > last_billed_event.ingested_at
+            )
         events = await event_repository.get_all(statement)
 
         subscription_product_price_repository = (

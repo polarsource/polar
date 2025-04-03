@@ -94,6 +94,9 @@ class Event(Model, MetadataMixin):
     __tablename__ = "events"
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)
+    ingested_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, default=utc_now, index=True
+    )
     timestamp: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=utc_now, index=True
     )

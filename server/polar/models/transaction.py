@@ -41,6 +41,8 @@ class TransactionType(StrEnum):
     """A payment processor fee was charged to Polar."""
     refund = "refund"
     """Polar refunded a payment (totally or partially)."""
+    refund_reversal = "refund_reversal"
+    """A Polar refund is reversed (totally or partially)."""
     dispute = "dispute"
     """A Polar payment is disputed (totally or partially)."""
     dispute_reversal = "dispute_reversal"

@@ -229,7 +229,6 @@ class RefundTransactionService(BaseTransactionService):
                 session,
                 source_account=None,
                 destination_account=outgoing.account,
-                payment_transaction=payment_transaction,
                 amount=balance_reversal_amount,
                 pledge=outgoing.pledge,
                 order=outgoing.order,

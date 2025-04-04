@@ -34,9 +34,11 @@ from polar.transaction.service.refund import (
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_order,
     create_order_and_payment,
     create_payment_transaction,
     create_pledge,
+    create_refund,
     create_user,
 )
 from tests.fixtures.stripe import build_stripe_refund
@@ -562,3 +564,53 @@ class TestUpdatedWebhooks(StripeRefund):
         assert updated_order is not None
         assert updated_order.refunded_amount == 80
         assert updated_order.refunded_tax_amount == 20
+
+    async def test_reverted(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product_organization_second: Product,
+        refund_hooks: Hooks,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product_organization_second,
+            customer=customer,
+            status=OrderStatus.refunded,
+            subtotal_amount=80,
+            tax_amount=20,
+            refunded_amount=80,
+            refunded_tax_amount=20,
+        )
+        payment = await create_payment_transaction(
+            save_fixture, amount=80, tax_amount=20, order=order
+        )
+        refund = await create_refund(save_fixture, order, amount=80, tax_amount=20)
+
+        revert_refund_transaction = mocker.patch.object(
+            refund_transaction_service, "revert"
+        )
+
+        updated_refund = await refund_service.update_from_stripe(
+            session,
+            refund,
+            build_stripe_refund(
+                status="failed",
+                amount=100,
+                id=refund.processor_id,
+                charge_id=payment.charge_id,
+            ),
+        )
+
+        assert updated_refund.status == RefundStatus.failed
+
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.refunded_amount == 0
+        assert updated_order.refunded_tax_amount == 0
+        assert updated_order.status == OrderStatus.paid
+
+        revert_refund_transaction.assert_awaited_once()

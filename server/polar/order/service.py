@@ -686,7 +686,7 @@ class OrderService:
                 order_id=order.id,
             )
 
-    async def increment_refunds(
+    async def update_refunds(
         self,
         session: AsyncSession,
         order: Order,
@@ -694,9 +694,7 @@ class OrderService:
         refunded_amount: int,
         refunded_tax_amount: int,
     ) -> Order:
-        order.increment_refunds(
-            refunded_amount, refunded_tax_amount=refunded_tax_amount
-        )
+        order.update_refunds(refunded_amount, refunded_tax_amount=refunded_tax_amount)
         session.add(order)
         return order
 

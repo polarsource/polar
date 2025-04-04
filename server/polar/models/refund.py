@@ -141,58 +141,46 @@ class Refund(MetadataMixin, RecordModel):
         JSONB, nullable=False, default=dict
     )
 
-    order_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("orders.id"),
-        nullable=True,
-        index=True,
+    order_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("orders.id"), nullable=True, index=True
     )
 
     @declared_attr
-    def order(cls) -> Mapped["Order"]:
+    def order(cls) -> Mapped["Order | None"]:
         return relationship("Order", lazy="raise")
 
-    subscription_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("subscriptions.id"),
-        nullable=True,
-        index=True,
+    subscription_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("subscriptions.id"), nullable=True, index=True
     )
 
     @declared_attr
-    def subscription(cls) -> Mapped["Subscription"]:
+    def subscription(cls) -> Mapped["Subscription | None"]:
         return relationship("Subscription", lazy="raise")
 
-    organization_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("organizations.id"),
-        nullable=True,
-        index=True,
+    organization_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("organizations.id"), nullable=True, index=True
     )
 
     @declared_attr
-    def organization(cls) -> Mapped["Organization"]:
+    def organization(cls) -> Mapped["Organization | None"]:
         return relationship("Organization", lazy="raise")
 
-    customer_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("customers.id"),
-        nullable=True,
-        index=True,
+    customer_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("customers.id"), nullable=True, index=True
     )
 
     @declared_attr
-    def customer(cls) -> Mapped["Customer"]:
+    def customer(cls) -> Mapped["Customer | None"]:
         return relationship("Customer", lazy="raise")
 
-    pledge_id: Mapped[UUID] = mapped_column(
+    pledge_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("pledges.id"),
         nullable=True,
     )
 
     @declared_attr
-    def pledge(cls) -> Mapped["Pledge"]:
+    def pledge(cls) -> Mapped["Pledge | None"]:
         return relationship("Pledge", lazy="raise")
 
     # Created refund was set to revoke customer benefits?

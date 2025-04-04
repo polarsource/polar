@@ -214,24 +214,25 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def get_remaining_balance(self) -> int:
         return self.refundable_amount + self.refundable_tax_amount
 
-    def increment_refunds(self, refunded_amount: int, refunded_tax_amount: int) -> None:
+    def update_refunds(self, refunded_amount: int, refunded_tax_amount: int) -> None:
         new_amount = self.refunded_amount + refunded_amount
         new_tax_amount = self.refunded_tax_amount + refunded_tax_amount
         exceeds_original_amount = (
-            new_amount > self.net_amount or new_tax_amount > self.tax_amount
+            new_amount < 0
+            or new_amount > self.net_amount
+            or new_tax_amount < 0
+            or new_tax_amount > self.tax_amount
         )
         if exceeds_original_amount:
             raise OrderRefundExceedsBalance(self, refunded_amount, refunded_tax_amount)
 
-        new_status = OrderStatus.partially_refunded
-        if new_amount == self.net_amount:
+        if new_amount == 0:
+            new_status = OrderStatus.paid
+        elif new_amount == self.net_amount:
             new_status = OrderStatus.refunded
+        else:
+            new_status = OrderStatus.partially_refunded
 
         self.status = new_status
         self.refunded_amount = new_amount
         self.refunded_tax_amount = new_tax_amount
-
-    def set_refunded(self) -> None:
-        self.status = OrderStatus.refunded
-        self.refunded_amount = self.net_amount
-        self.refunded_tax_amount = self.tax_amount

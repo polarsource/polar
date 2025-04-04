@@ -19,6 +19,17 @@ class TransactionRepository(
     model = Transaction
 
 
+class BalanceTransactionRepository(TransactionRepository):
+    def get_base_statement(
+        self, *, include_deleted: bool = False
+    ) -> Select[tuple[Transaction]]:
+        return (
+            super()
+            .get_base_statement(include_deleted=include_deleted)
+            .where(Transaction.type == TransactionType.balance)
+        )
+
+
 class RefundTransactionRepository(TransactionRepository):
     async def get_by_refund_id(self, refund_id: str) -> Transaction | None:
         statement = self.get_base_statement().where(Transaction.refund_id == refund_id)

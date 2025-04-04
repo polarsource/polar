@@ -1007,6 +1007,8 @@ async def create_order(
     subtotal_amount: int = 1000,
     tax_amount: int = 0,
     discount_amount: int = 0,
+    refunded_amount: int = 0,
+    refunded_tax_amount: int = 0,
     subscription: Subscription | None = None,
     stripe_invoice_id: str | None = "INVOICE_ID",
     billing_reason: OrderBillingReason = OrderBillingReason.purchase,
@@ -1019,6 +1021,8 @@ async def create_order(
         subtotal_amount=subtotal_amount,
         tax_amount=tax_amount,
         discount_amount=discount_amount,
+        refunded_amount=refunded_amount,
+        refunded_tax_amount=refunded_tax_amount,
         items=[
             OrderItem(
                 label="",

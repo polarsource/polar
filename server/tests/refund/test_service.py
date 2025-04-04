@@ -28,6 +28,7 @@ from polar.postgres import AsyncSession
 from polar.refund.schemas import RefundCreate
 from polar.refund.service import RefundedAlready
 from polar.refund.service import refund as refund_service
+from polar.transaction.repository import RefundTransactionRepository
 from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
@@ -213,8 +214,11 @@ class StripeRefund:
     async def assert_transaction_amounts_from_refund(
         self, session: AsyncSession, refund: Refund
     ) -> Transaction:
-        refund_transaction = await refund_transaction_service.get_by_refund_id(
-            session, refund.processor_id
+        refund_transaction_repository = RefundTransactionRepository.from_session(
+            session
+        )
+        refund_transaction = await refund_transaction_repository.get_by_refund_id(
+            refund.processor_id
         )
         assert refund_transaction
         assert refund_transaction.amount == -1 * refund.amount
@@ -358,8 +362,11 @@ class TestCreatedWebhooks(StripeRefund):
         assert refund
         assert refund.status == RefundStatus.pending
         assert_hooks_called_once(refund_hooks, {"created"})
-        refund_transaction = await refund_transaction_service.get_by_refund_id(
-            session, refund.processor_id
+        refund_transaction_repository = RefundTransactionRepository.from_session(
+            session
+        )
+        refund_transaction = await refund_transaction_repository.get_by_refund_id(
+            refund.processor_id
         )
         assert refund_transaction is None
 

@@ -45,6 +45,7 @@ async def create_transaction(
     payout_transaction: Transaction | None = None,
     payment_transaction: Transaction | None = None,
     charge_id: str | None = None,
+    refund_id: str | None = None,
     dispute_id: str | None = None,
     created_at: datetime | None = None,
 ) -> Transaction:
@@ -67,6 +68,7 @@ async def create_transaction(
         payout_transaction=payout_transaction,
         payment_transaction=payment_transaction,
         charge_id=charge_id,
+        refund_id=refund_id,
         dispute_id=dispute_id,
     )
     await save_fixture(transaction)

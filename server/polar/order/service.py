@@ -831,8 +831,8 @@ class OrderService:
         organization = await organization_service.get(
             session, order.product.organization_id
         )
-        assert organization is not None
-        await webhook_service.send(session, organization, event_type, order)
+        if organization is not None:
+            await webhook_service.send(session, organization, event_type, order)
 
 
 order = OrderService()

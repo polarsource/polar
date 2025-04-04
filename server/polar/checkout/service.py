@@ -1725,17 +1725,17 @@ class CheckoutService:
         organization = await organization_service.get(
             session, checkout.product.organization_id
         )
-        assert organization is not None
-        events = await webhook_service.send(
-            session, organization, WebhookEventType.checkout_updated, checkout
-        )
-        # No webhook to send, publish the webhook_event immediately
-        if len(events) == 0:
-            await publish_checkout_event(
-                checkout.client_secret,
-                CheckoutEvent.webhook_event_delivered,
-                {"status": checkout.status},
+        if organization is not None:
+            events = await webhook_service.send(
+                session, organization, WebhookEventType.checkout_updated, checkout
             )
+            # No webhook to send, publish the webhook_event immediately
+            if len(events) == 0:
+                await publish_checkout_event(
+                    checkout.client_secret,
+                    CheckoutEvent.webhook_event_delivered,
+                    {"status": checkout.status},
+                )
 
     async def _eager_load_product(
         self, session: AsyncSession, product: Product

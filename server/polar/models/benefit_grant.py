@@ -166,3 +166,11 @@ class BenefitGrant(RecordModel):
     def set_revoked(self) -> None:
         self.granted_at = None
         self.revoked_at = datetime.now(UTC)
+
+    @property
+    def previous_properties(self) -> "BenefitGrantProperties | None":
+        return getattr(self, "_previous_properties", None)
+
+    @previous_properties.setter
+    def previous_properties(self, value: "BenefitGrantProperties") -> None:
+        self._previous_properties = value

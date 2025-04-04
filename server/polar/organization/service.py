@@ -339,9 +339,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
         organization: Organization,
     ) -> None:
         await webhook_service.send(
-            session,
-            target=organization,
-            we=(WebhookEventType.organization_updated, organization),
+            session, organization, WebhookEventType.organization_updated, organization
         )
 
     def _get_readable_organization_statement(

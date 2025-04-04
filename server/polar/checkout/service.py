@@ -1713,7 +1713,7 @@ class CheckoutService:
         )
         assert organization is not None
         await webhook_service.send(
-            session, organization, (WebhookEventType.checkout_created, checkout)
+            session, organization, WebhookEventType.checkout_created, checkout
         )
 
     async def _after_checkout_updated(
@@ -1727,7 +1727,7 @@ class CheckoutService:
         )
         assert organization is not None
         events = await webhook_service.send(
-            session, organization, (WebhookEventType.checkout_updated, checkout)
+            session, organization, WebhookEventType.checkout_updated, checkout
         )
         # No webhook to send, publish the webhook_event immediately
         if len(events) == 0:

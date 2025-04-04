@@ -57,7 +57,7 @@ async def test_webhook_send(
     await save_fixture(endpoint)
 
     await webhook_service.send(
-        session, organization, (WebhookEventType.subscription_created, subscription)
+        session, organization, WebhookEventType.subscription_created, subscription
     )
 
     assert called
@@ -93,7 +93,7 @@ async def test_webhook_send_not_subscribed_to_event(
     await save_fixture(endpoint)
 
     await webhook_service.send(
-        session, organization, (WebhookEventType.subscription_created, subscription)
+        session, organization, WebhookEventType.subscription_created, subscription
     )
 
     assert called is False

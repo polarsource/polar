@@ -47,7 +47,6 @@ from polar.posthog import posthog as posthog_service
 from polar.product.guard import is_legacy_price, is_metered_price, is_static_price
 from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
-from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
 
 from ..schemas import (
@@ -777,25 +776,14 @@ class ProductService(ResourceServiceReader[Product]):
         self,
         session: AsyncSession,
         product: Product,
-        event_type: (
-            Literal[WebhookEventType.product_created]
-            | Literal[WebhookEventType.product_updated]
-        ),
+        event_type: Literal[
+            WebhookEventType.product_created, WebhookEventType.product_updated
+        ],
     ) -> None:
-        # mypy 1.9 is does not allow us to do
-        #    event = (event_type, subscription)
-        # directly, even if it could have...
-        event: WebhookTypeObject | None = None
-        match event_type:
-            case WebhookEventType.product_created:
-                event = (event_type, product)
-            case WebhookEventType.product_updated:
-                event = (event_type, product)
-
         if managing_org := await organization_service.get(
             session, product.organization_id
         ):
-            await webhook_service.send(session, target=managing_org, we=event)
+            await webhook_service.send(session, managing_org, event_type, product)
 
 
 product = ProductService(Product)

@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import Literal, overload
 from uuid import UUID
 
 import structlog
@@ -7,21 +8,33 @@ from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
+from polar.customer.schemas.state import CustomerState
 from polar.exceptions import PolarError, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.models.organization import Organization
-from polar.models.user import User
-from polar.models.user_organization import UserOrganization
-from polar.models.webhook_delivery import WebhookDelivery
+from polar.models import (
+    Benefit,
+    BenefitGrant,
+    Checkout,
+    Customer,
+    Order,
+    Organization,
+    Pledge,
+    Product,
+    Refund,
+    Subscription,
+    User,
+    UserOrganization,
+    WebhookDelivery,
+    WebhookEvent,
+)
 from polar.models.webhook_endpoint import (
     WebhookEndpoint,
     WebhookEventType,
     WebhookFormat,
 )
-from polar.models.webhook_event import WebhookEvent
 from polar.organization.resolver import get_payload_organization
 from polar.webhook.schemas import (
     WebhookEndpointCreate,
@@ -29,13 +42,7 @@ from polar.webhook.schemas import (
 )
 from polar.worker import enqueue_job
 
-from .webhooks import (
-    BaseWebhookPayload,
-    SkipEvent,
-    UnsupportedTarget,
-    WebhookPayloadTypeAdapter,
-    WebhookTypeObject,
-)
+from .webhooks import SkipEvent, UnsupportedTarget, WebhookPayloadTypeAdapter
 
 log: Logger = structlog.get_logger()
 
@@ -228,21 +235,278 @@ class WebhookService:
         res = await session.execute(statement)
         return res.scalars().unique().one_or_none()
 
+    @overload
     async def send(
-        self, session: AsyncSession, target: Organization, we: WebhookTypeObject
-    ) -> list[WebhookEvent]:
-        event, data = we
-        payload = WebhookPayloadTypeAdapter.validate_python(
-            {"type": event, "data": data}
-        )
-        return await self.send_payload(session, target, payload)
-
-    async def send_payload(
         self,
         session: AsyncSession,
         target: Organization,
-        payload: BaseWebhookPayload,
+        event: Literal[WebhookEventType.checkout_created],
+        data: Checkout,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.checkout_updated],
+        data: Checkout,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.customer_created],
+        data: Customer,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.customer_updated],
+        data: Customer,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.customer_deleted],
+        data: Customer,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.customer_state_changed],
+        data: CustomerState,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.order_created],
+        data: Order,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.order_updated],
+        data: Order,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.order_paid],
+        data: Order,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.order_refunded],
+        data: Order,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.subscription_created],
+        data: Subscription,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.subscription_updated],
+        data: Subscription,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.subscription_active],
+        data: Subscription,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.subscription_canceled],
+        data: Subscription,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.subscription_uncanceled],
+        data: Subscription,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.subscription_revoked],
+        data: Subscription,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.refund_created],
+        data: Refund,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.refund_updated],
+        data: Refund,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.product_created],
+        data: Product,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.product_updated],
+        data: Product,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.pledge_created],
+        data: Pledge,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.pledge_updated],
+        data: Pledge,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.organization_updated],
+        data: Organization,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.benefit_created],
+        data: Benefit,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.benefit_updated],
+        data: Benefit,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.benefit_grant_created],
+        data: BenefitGrant,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.benefit_grant_updated],
+        data: BenefitGrant,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.benefit_grant_cycled],
+        data: BenefitGrant,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.benefit_grant_revoked],
+        data: BenefitGrant,
+    ) -> list[WebhookEvent]: ...
+
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: WebhookEventType,
+        data: object,
     ) -> list[WebhookEvent]:
+        payload = WebhookPayloadTypeAdapter.validate_python(
+            {"type": event, "data": data}
+        )
+
         events: list[WebhookEvent] = []
         for e in await self._get_event_target_endpoints(
             session, event=payload.type, target=target
@@ -262,6 +526,7 @@ class WebhookService:
                 continue
             except SkipEvent:
                 continue
+
         return events
 
     def _get_readable_endpoints_statement(

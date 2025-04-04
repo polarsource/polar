@@ -59,7 +59,7 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.customer_created], Customer]
     | tuple[Literal[WebhookEventType.customer_updated], Customer]
     | tuple[Literal[WebhookEventType.customer_deleted], Customer]
-    | tuple[Literal[WebhookEventType.customer_state_changed], Customer]
+    | tuple[Literal[WebhookEventType.customer_state_changed], CustomerStateSchema]
     | tuple[Literal[WebhookEventType.order_created], Order]
     | tuple[Literal[WebhookEventType.order_updated], Order]
     | tuple[Literal[WebhookEventType.order_paid], Order]

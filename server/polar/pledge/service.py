@@ -977,7 +977,8 @@ class PledgeService(ResourceServiceReader[Pledge]):
             await webhook_service.send(
                 session,
                 receiving_external_org.safe_organization,
-                (WebhookEventType.pledge_updated, full_pledge),
+                WebhookEventType.pledge_updated,
+                full_pledge,
             )
 
     async def send_invoices(

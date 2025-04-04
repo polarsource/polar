@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Literal, cast, overload
+from typing import Any, Literal, overload
 
 import stripe as stripe_lib
 import structlog
@@ -63,7 +63,6 @@ from polar.postgres import sql
 from polar.product.guard import is_custom_price, is_free_price, is_static_price
 from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
-from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
 
 from ..product.service.product import product as product_service
@@ -1028,26 +1027,26 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self,
         session: AsyncSession,
         subscription: Subscription,
-        event_type: (
-            Literal[WebhookEventType.subscription_created]
-            | Literal[WebhookEventType.subscription_updated]
-            | Literal[WebhookEventType.subscription_active]
-            | Literal[WebhookEventType.subscription_canceled]
-            | Literal[WebhookEventType.subscription_uncanceled]
-            | Literal[WebhookEventType.subscription_revoked]
-        ),
+        event_type: Literal[
+            WebhookEventType.subscription_created,
+            WebhookEventType.subscription_updated,
+            WebhookEventType.subscription_active,
+            WebhookEventType.subscription_canceled,
+            WebhookEventType.subscription_uncanceled,
+            WebhookEventType.subscription_revoked,
+        ],
     ) -> None:
         # load full subscription with relations
         full_subscription = await self.get(session, subscription.id)
         assert full_subscription
 
-        event = cast(WebhookTypeObject, (event_type, full_subscription))
-
         if tier := await product_service.get_loaded(session, subscription.product_id):
             if subscribed_to_org := await organization_service.get(
                 session, tier.organization_id
             ):
-                await webhook_service.send(session, target=subscribed_to_org, we=event)
+                await webhook_service.send(
+                    session, subscribed_to_org, event_type, full_subscription
+                )
 
     async def enqueue_benefits_grants(
         self, session: AsyncSession, subscription: Subscription

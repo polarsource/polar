@@ -138,9 +138,7 @@ class BenefitService:
         await session.flush()
 
         await webhook_service.send(
-            session,
-            target=organization,
-            we=(WebhookEventType.benefit_created, benefit),
+            session, organization, WebhookEventType.benefit_created, benefit
         )
 
         return benefit
@@ -190,9 +188,7 @@ class BenefitService:
         )
 
         await webhook_service.send(
-            session,
-            target=benefit.organization,
-            we=(WebhookEventType.benefit_updated, benefit),
+            session, benefit.organization, WebhookEventType.benefit_updated, benefit
         )
 
         return benefit
@@ -211,9 +207,7 @@ class BenefitService:
         enqueue_job("benefit.delete", benefit_id=benefit.id)
 
         await webhook_service.send(
-            session,
-            target=benefit.organization,
-            we=(WebhookEventType.benefit_updated, benefit),
+            session, benefit.organization, WebhookEventType.benefit_updated, benefit
         )
 
         return benefit

@@ -36,6 +36,9 @@ from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
 )
 from polar.transaction.service.refund import (
+    RefundTransactionAlreadyExistsError,
+)
+from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
 from polar.webhook.service import webhook as webhook_service
@@ -503,14 +506,14 @@ class RefundService(ResourceServiceReader[Refund]):
         order: Order | None = None,
         pledge: Pledge | None = None,
     ) -> Transaction | None:
-        transaction = await refund_transaction_service.create(
-            session,
-            charge_id=charge_id,
-            payment_transaction=payment,
-            refund=refund,
-        )
-        # Already handled (Stripe webhook || Polar API) so return early
-        if transaction is None:
+        try:
+            transaction = await refund_transaction_service.create(
+                session,
+                charge_id=charge_id,
+                payment_transaction=payment,
+                refund=refund,
+            )
+        except RefundTransactionAlreadyExistsError:
             return None
 
         if order:

@@ -327,11 +327,11 @@ class TestWebhook:
         session: AsyncSession,
         customer: Customer,
     ) -> None:
-        send_payload_mock = mocker.patch("polar.webhook.service.webhook.send_payload")
+        send_mock = mocker.patch("polar.webhook.service.webhook.send")
 
         await customer_service.webhook(session, event_type, customer)
 
-        assert send_payload_mock.call_count == 2
+        assert send_mock.call_count == 2
 
     async def test_state_changed_event(
         self,
@@ -339,10 +339,10 @@ class TestWebhook:
         session: AsyncSession,
         customer: Customer,
     ) -> None:
-        send_payload_mock = mocker.patch("polar.webhook.service.webhook.send_payload")
+        send_mock = mocker.patch("polar.webhook.service.webhook.send")
 
         await customer_service.webhook(
             session, WebhookEventType.customer_state_changed, customer
         )
 
-        assert send_payload_mock.call_count == 1
+        assert send_mock.call_count == 1

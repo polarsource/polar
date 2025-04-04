@@ -18,11 +18,9 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
 from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
-from polar.webhook.webhooks import WebhookPayloadTypeAdapter
 from polar.worker import enqueue_job
 
 from ..registry import get_benefit_strategy
-from ..schemas import BenefitGrantWebhook
 from ..strategies import (
     BenefitActionRequiredError,
     BenefitGrantProperties,
@@ -476,27 +474,18 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         session: AsyncSession,
         benefit: Benefit,
         grant: BenefitGrant,
-        event_type: (
-            Literal[WebhookEventType.benefit_grant_created]
-            | Literal[WebhookEventType.benefit_grant_updated]
-            | Literal[WebhookEventType.benefit_grant_cycled]
-            | Literal[WebhookEventType.benefit_grant_revoked]
-        ),
+        event_type: Literal[
+            WebhookEventType.benefit_grant_created,
+            WebhookEventType.benefit_grant_updated,
+            WebhookEventType.benefit_grant_cycled,
+            WebhookEventType.benefit_grant_revoked,
+        ],
         previous_grant_properties: BenefitGrantProperties,
     ) -> None:
         loaded = await self.get(session, grant.id, loaded=True)
-        data = BenefitGrantWebhook.model_validate(loaded)
-        data.previous_properties = previous_grant_properties
-        await webhook_service.send_payload(
-            session,
-            target=benefit.organization,
-            payload=WebhookPayloadTypeAdapter.validate_python(
-                dict(
-                    type=event_type,
-                    data=data,
-                )
-            ),
-        )
+        assert loaded is not None
+        loaded.previous_properties = previous_grant_properties
+        await webhook_service.send(session, benefit.organization, event_type, loaded)
         enqueue_job(
             "customer.webhook",
             WebhookEventType.customer_state_changed,

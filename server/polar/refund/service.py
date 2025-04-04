@@ -584,9 +584,7 @@ class RefundService(ResourceServiceReader[Refund]):
         refund: Refund,
     ) -> None:
         await webhook_service.send(
-            session,
-            target=organization,
-            we=(WebhookEventType.refund_created, refund),
+            session, organization, WebhookEventType.refund_created, refund
         )
 
     async def _on_succeeded(
@@ -597,9 +595,7 @@ class RefundService(ResourceServiceReader[Refund]):
     ) -> None:
         # Send order.refunded
         await webhook_service.send(
-            session,
-            target=organization,
-            we=(WebhookEventType.order_refunded, order),
+            session, organization, WebhookEventType.order_refunded, order
         )
 
     async def _on_updated(
@@ -609,9 +605,7 @@ class RefundService(ResourceServiceReader[Refund]):
         refund: Refund,
     ) -> None:
         await webhook_service.send(
-            session,
-            target=organization,
-            we=(WebhookEventType.refund_updated, refund),
+            session, organization, WebhookEventType.refund_updated, refund
         )
 
     async def _get_resources(

@@ -18,7 +18,6 @@ from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
 from polar.webhook.service import webhook as webhook_service
-from polar.webhook.webhooks import WebhookPayloadTypeAdapter
 from polar.worker import enqueue_job
 
 from .repository import CustomerRepository
@@ -288,16 +287,17 @@ class CustomerService:
         data: CustomerState | Customer
         if event_type == WebhookEventType.customer_state_changed:
             data = await self.get_state(session, customer)
+            await webhook_service.send(
+                session,
+                customer.organization,
+                WebhookEventType.customer_state_changed,
+                data,
+            )
         else:
             data = customer
-
-        await webhook_service.send_payload(
-            session,
-            target=customer.organization,
-            payload=WebhookPayloadTypeAdapter.validate_python(
-                {"type": event_type, "data": data}
-            ),
-        )
+            await webhook_service.send(
+                session, customer.organization, event_type, customer
+            )
 
         # For created, updated and deleted events, also trigger a state changed event
         if event_type in (

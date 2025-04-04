@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 import stripe as stripe_lib
 import structlog
@@ -67,7 +67,6 @@ from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
 from polar.webhook.service import webhook as webhook_service
-from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
 
 log: Logger = structlog.get_logger()
@@ -829,13 +828,11 @@ class OrderService:
     ) -> None:
         await session.refresh(order.product, {"prices"})
 
-        event = cast(WebhookTypeObject, (event_type, order))
-
         organization = await organization_service.get(
             session, order.product.organization_id
         )
         assert organization is not None
-        await webhook_service.send(session, organization, event)
+        await webhook_service.send(session, organization, event_type, order)
 
 
 order = OrderService()

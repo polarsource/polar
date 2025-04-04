@@ -14,9 +14,21 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
 const links = (organization: schemas['Organization']) => [
-  { href: `/${organization.slug}/portal/`, label: 'Overview' },
-  { href: `/${organization.slug}/portal/usage/`, label: 'Usage' },
-  { href: `/${organization.slug}/portal/settings/`, label: 'Settings' },
+  {
+    href: `/${organization.slug}/portal/overview`,
+    label: 'Overview',
+    isActive: (path: string) => path.includes('/overview'),
+  },
+  {
+    href: `/${organization.slug}/portal/usage`,
+    label: 'Usage',
+    isActive: (path: string) => path.includes('/usage'),
+  },
+  {
+    href: `/${organization.slug}/portal/settings`,
+    label: 'Settings',
+    isActive: (path: string) => path.includes('/settings'),
+  },
 ]
 
 export const Navigation = ({
@@ -30,18 +42,7 @@ export const Navigation = ({
   const { isFeatureEnabled } = usePostHog()
 
   const buildPath = (path: string) => {
-    if (typeof window === 'undefined') {
-      throw new Error('Navigation is not available on the server')
-    }
-
-    const url = new URL(window.location.origin + currentPath)
-    url.pathname = path
-
-    for (const [key, value] of searchParams.entries()) {
-      url.searchParams.set(key, value)
-    }
-
-    return url.toString()
+    return `${path}?${searchParams.toString()}`
   }
 
   const filteredLinks = links(organization).filter(({ label }) =>
@@ -57,9 +58,10 @@ export const Navigation = ({
             href={buildPath(link.href)}
             className={twMerge(
               'dark:text-polar-500 dark:hover:bg-polar-800 rounded-xl border border-transparent px-4 py-2 font-medium text-gray-500 transition-colors duration-75 hover:bg-gray-100',
-              currentPath === link.href &&
+              link.isActive(currentPath) &&
                 'dark:bg-polar-800 dark:border-polar-700 bg-gray-100 text-black dark:text-white',
             )}
+            prefetch
           >
             {link.label}
           </Link>

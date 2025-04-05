@@ -64,7 +64,11 @@ def get_ip_country(client: IPGeolocationClient, ip: str) -> str | None:
     Returns:
         Country alpha-2 code.
     """
-    return cast(str | None, client.getCountry(ip))
+    ret = cast(str | None, client.getCountry(ip))
+    # Convert empty str into None response to ease empty case checking
+    if ret == "":
+        return None
+    return ret
 
 
 if __name__ == "__main__":

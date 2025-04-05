@@ -2743,6 +2743,30 @@
               "title": "Limit"
             },
             "description": "Size of a page, defaults to 10. Maximum is 100."
+          },
+          {
+            "name": "sorting",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BenefitSortProperty"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+              "default": [
+                "-created_at"
+              ],
+              "title": "Sorting"
+            },
+            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
           }
         ],
         "responses": {
@@ -2872,7 +2896,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Create(ctx, components.CreateBenefitCreateDownloadables(\n        components.BenefitDownloadablesCreate{\n            Description: \"yuck forager beneath please shadowy foodstuffs welcome\",\n            OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n            Properties: components.BenefitDownloadablesCreateProperties{\n                Files: []string{\n                    \"<value>\",\n                },\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Create(ctx, components.CreateBenefitCreateGithubRepository(\n        components.BenefitGitHubRepositoryCreate{\n            Description: \"yuck forager beneath please shadowy foodstuffs welcome\",\n            OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n            Properties: components.BenefitGitHubRepositoryCreateProperties{\n                RepositoryOwner: \"polarsource\",\n                RepositoryName: \"private_repo\",\n                Permission: components.BenefitGitHubRepositoryCreatePropertiesPermissionTriage,\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -3030,6 +3054,9 @@
                   },
                   {
                     "$ref": "#/components/schemas/BenefitLicenseKeysUpdate"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BenefitMeterCreditUpdate"
                   }
                 ],
                 "title": "Benefit Update"
@@ -3045,16 +3072,6 @@
                 "schema": {
                   "$ref": "#/components/schemas/Benefit",
                   "title": "Benefit"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "You don't have the permission to update this benefit.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotPermitted"
                 }
               }
             }
@@ -3093,12 +3110,12 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Update(ctx, \"<value>\", operations.CreateBenefitsUpdateBenefitUpdateBenefitGitHubRepositoryUpdate(\n        components.BenefitGitHubRepositoryUpdate{\n            Properties: &components.BenefitGitHubRepositoryCreateProperties{\n                RepositoryOwner: \"polarsource\",\n                RepositoryName: \"private_repo\",\n                Permission: components.BenefitGitHubRepositoryCreatePropertiesPermissionTriage,\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Update(ctx, \"<value>\", operations.CreateBenefitsUpdateBenefitUpdateBenefitDownloadablesUpdate(\n        components.BenefitDownloadablesUpdate{},\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.benefits.update(id=\"<value>\", request_body={\n        \"type\": \"license_keys\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.benefits.update(id=\"<value>\", request_body={\n        \"type\": \"meter_credit\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
@@ -3108,7 +3125,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->benefits->update(\n    id: '<value>',\n    requestBody: new Components\\BenefitLicenseKeysUpdate()\n\n);\n\nif ($response->benefit !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->benefits->update(\n    id: '<value>',\n    requestBody: new Components\\BenefitMeterCreditUpdate()\n\n);\n\nif ($response->benefit !== null) {\n    // handle response\n}"
           }
         ]
       },
@@ -3143,7 +3160,7 @@
             "description": "Benefit deleted."
           },
           "403": {
-            "description": "You don't have the permission to update this benefit or it's not deletable.",
+            "description": "This benefit is not deletable.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3767,17 +3784,17 @@
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.products.create(request={\n        \"name\": \"<value>\",\n        \"recurring_interval\": polar_sdk.SubscriptionRecurringInterval.MONTH,\n        \"prices\": [\n            {\n                \"amount_type\": \"custom\",\n                \"price_currency\": \"usd\",\n            },\n            {\n                \"amount_type\": \"custom\",\n                \"price_currency\": \"usd\",\n            },\n        ],\n        \"organization_id\": \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.products.create(request={\n        \"name\": \"<value>\",\n        \"recurring_interval\": polar_sdk.SubscriptionRecurringInterval.MONTH,\n        \"prices\": [\n            {\n                \"amount_type\": \"custom\",\n                \"price_currency\": \"usd\",\n            },\n            {\n                \"amount_type\": \"free\",\n            },\n        ],\n        \"organization_id\": \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.create({\n    name: \"<value>\",\n    recurringInterval: \"month\",\n    prices: [\n      {\n        priceCurrency: \"usd\",\n      },\n      {\n        priceCurrency: \"usd\",\n      },\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.create({\n    name: \"<value>\",\n    recurringInterval: \"month\",\n    prices: [\n      {\n        priceCurrency: \"usd\",\n      },\n      {},\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\ProductCreate(\n    name: '<value>',\n    recurringInterval: Components\\SubscriptionRecurringInterval::Month,\n    prices: [\n        new Components\\ProductPriceCustomCreate(),\n    ],\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->products->create(\n    request: $request\n);\n\nif ($response->product !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\ProductCreate(\n    name: '<value>',\n    recurringInterval: Components\\SubscriptionRecurringInterval::Month,\n    prices: [\n        new Components\\ProductPriceFreeCreate(),\n    ],\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->products->create(\n    request: $request\n);\n\nif ($response->product !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -15176,7 +15193,7 @@
     "benefit_grant.updated": {
       "post": {
         "summary": "benefit_grant.updated",
-        "description": "Sent when a new benefit grant is updated.\n\n**Discord & Slack support:** Basic",
+        "description": "Sent when a benefit grant is updated.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointbenefit_grant_updated_post",
         "requestBody": {
           "content": {
@@ -15210,10 +15227,47 @@
         }
       }
     },
+    "benefit_grant.cycled": {
+      "post": {
+        "summary": "benefit_grant.cycled",
+        "description": "Sent when a benefit grant is cycled,\nmeaning the related subscription has been renewed for another period.\n\n**Discord & Slack support:** Basic",
+        "operationId": "_endpointbenefit_grant_cycled_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookBenefitGrantCycledPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "benefit_grant.revoked": {
       "post": {
         "summary": "benefit_grant.revoked",
-        "description": "Sent when a new benefit grant is revoked.\n\n**Discord & Slack support:** Basic",
+        "description": "Sent when a benefit grant is revoked.\n\n**Discord & Slack support:** Basic",
         "operationId": "_endpointbenefit_grant_revoked_post",
         "requestBody": {
           "content": {
@@ -15652,6 +15706,9 @@
           },
           {
             "$ref": "#/components/schemas/BenefitLicenseKeys"
+          },
+          {
+            "$ref": "#/components/schemas/BenefitMeterCredit"
           }
         ]
       },
@@ -15737,6 +15794,9 @@
           },
           {
             "$ref": "#/components/schemas/BenefitLicenseKeysCreate"
+          },
+          {
+            "$ref": "#/components/schemas/BenefitMeterCreditCreate"
           }
         ],
         "discriminator": {
@@ -15746,7 +15806,8 @@
             "discord": "#/components/schemas/BenefitDiscordCreate",
             "downloadables": "#/components/schemas/BenefitDownloadablesCreate",
             "github_repository": "#/components/schemas/BenefitGitHubRepositoryCreate",
-            "license_keys": "#/components/schemas/BenefitLicenseKeysCreate"
+            "license_keys": "#/components/schemas/BenefitLicenseKeysCreate",
+            "meter_credit": "#/components/schemas/BenefitMeterCreditCreate"
           }
         }
       },
@@ -17430,12 +17491,30 @@
         ],
         "title": "BenefitGrantWebhook"
       },
+      "BenefitLicenseKeyActivationCreateProperties": {
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "maximum": 50,
+            "exclusiveMinimum": 0,
+            "title": "Limit"
+          },
+          "enable_customer_admin": {
+            "type": "boolean",
+            "title": "Enable Customer Admin"
+          }
+        },
+        "type": "object",
+        "required": [
+          "limit",
+          "enable_customer_admin"
+        ],
+        "title": "BenefitLicenseKeyActivationCreateProperties"
+      },
       "BenefitLicenseKeyActivationProperties": {
         "properties": {
           "limit": {
             "type": "integer",
-            "maximum": 1000,
-            "exclusiveMinimum": 0,
             "title": "Limit"
           },
           "enable_customer_admin": {
@@ -17619,7 +17698,7 @@
           "activations": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/BenefitLicenseKeyActivationProperties"
+                "$ref": "#/components/schemas/BenefitLicenseKeyActivationCreateProperties"
               },
               {
                 "type": "null"
@@ -17863,6 +17942,216 @@
         ],
         "title": "BenefitLicenseKeysUpdate"
       },
+      "BenefitMeterCredit": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the benefit."
+          },
+          "type": {
+            "type": "string",
+            "const": "meter_credit",
+            "title": "Type"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "The description of the benefit."
+          },
+          "selectable": {
+            "type": "boolean",
+            "title": "Selectable",
+            "description": "Whether the benefit is selectable when creating a product."
+          },
+          "deletable": {
+            "type": "boolean",
+            "title": "Deletable",
+            "description": "Whether the benefit is deletable."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the benefit."
+          },
+          "properties": {
+            "$ref": "#/components/schemas/BenefitMeterCreditProperties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "type",
+          "description",
+          "selectable",
+          "deletable",
+          "organization_id",
+          "properties"
+        ],
+        "title": "BenefitMeterCredit",
+        "description": "A benefit of type `meter_unit`.\n\nUse it to grant a number of units on a specific meter."
+      },
+      "BenefitMeterCreditCreate": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "meter_credit",
+            "title": "Type"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 42,
+            "minLength": 3,
+            "title": "Description",
+            "description": "The description of the benefit. Will be displayed on products having this benefit."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "examples": [
+                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                ],
+                "x-polar-selector-widget": {
+                  "displayProperty": "name",
+                  "resourceName": "Organization",
+                  "resourceRoot": "/v1/organizations"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the benefit. **Required unless you use an organization token.**"
+          },
+          "properties": {
+            "$ref": "#/components/schemas/BenefitMeterCreditCreateProperties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "description",
+          "properties"
+        ],
+        "title": "BenefitMeterCreditCreate",
+        "description": "Schema to create a benefit of type `meter_unit`."
+      },
+      "BenefitMeterCreditCreateProperties": {
+        "properties": {
+          "unit": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Unit"
+          },
+          "meter_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Meter Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unit",
+          "meter_id"
+        ],
+        "title": "BenefitMeterCreditCreateProperties",
+        "description": "Properties for creating a benefit of type `meter_unit`."
+      },
+      "BenefitMeterCreditProperties": {
+        "properties": {
+          "unit": {
+            "type": "integer",
+            "title": "Unit"
+          },
+          "meter_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Meter Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unit",
+          "meter_id"
+        ],
+        "title": "BenefitMeterCreditProperties",
+        "description": "Properties for a benefit of type `meter_unit`."
+      },
+      "BenefitMeterCreditUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 42,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "The description of the benefit. Will be displayed on products having this benefit."
+          },
+          "type": {
+            "type": "string",
+            "const": "meter_credit",
+            "title": "Type"
+          },
+          "properties": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitMeterCreditCreateProperties"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "BenefitMeterCreditUpdate"
+      },
+      "BenefitSortProperty": {
+        "type": "string",
+        "enum": [
+          "created_at",
+          "-created_at",
+          "description",
+          "-description"
+        ],
+        "title": "BenefitSortProperty"
+      },
       "BenefitType": {
         "type": "string",
         "enum": [
@@ -17870,7 +18159,8 @@
           "discord",
           "github_repository",
           "downloadables",
-          "license_keys"
+          "license_keys",
+          "meter_credit"
         ],
         "title": "BenefitType"
       },
@@ -17968,40 +18258,17 @@
             "description": "When checkout is embedded, represents the Origin of the page embedding the checkout. Used as a security measure to send messages only to the embedding page."
           },
           "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 99999999,
-                "minimum": 50,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount"
+            "type": "integer",
+            "title": "Amount",
+            "description": "Amount in cents, before discounts and taxes."
           },
           "discount_amount": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
             "title": "Discount Amount",
             "description": "Discount amount in cents."
           },
           "net_amount": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
             "title": "Net Amount",
             "description": "Amount in cents, after discounts but before taxes."
           },
@@ -18015,17 +18282,10 @@
               }
             ],
             "title": "Tax Amount",
-            "description": "Sales tax amount in cents."
+            "description": "Sales tax amount in cents. If `null`, it means there is no enough information yet to calculate it."
           },
           "total_amount": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
             "title": "Total Amount",
             "description": "Amount in cents, after discounts and taxes."
           },
@@ -20398,40 +20658,17 @@
             "description": "When checkout is embedded, represents the Origin of the page embedding the checkout. Used as a security measure to send messages only to the embedding page."
           },
           "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 99999999,
-                "minimum": 50,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount"
+            "type": "integer",
+            "title": "Amount",
+            "description": "Amount in cents, before discounts and taxes."
           },
           "discount_amount": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
             "title": "Discount Amount",
             "description": "Discount amount in cents."
           },
           "net_amount": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
             "title": "Net Amount",
             "description": "Amount in cents, after discounts but before taxes."
           },
@@ -20445,17 +20682,10 @@
               }
             ],
             "title": "Tax Amount",
-            "description": "Sales tax amount in cents."
+            "description": "Sales tax amount in cents. If `null`, it means there is no enough information yet to calculate it."
           },
           "total_amount": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
             "title": "Total Amount",
             "description": "Amount in cents, after discounts and taxes."
           },
@@ -20814,40 +21044,17 @@
             "description": "When checkout is embedded, represents the Origin of the page embedding the checkout. Used as a security measure to send messages only to the embedding page."
           },
           "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 99999999,
-                "minimum": 50,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount"
+            "type": "integer",
+            "title": "Amount",
+            "description": "Amount in cents, before discounts and taxes."
           },
           "discount_amount": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
             "title": "Discount Amount",
             "description": "Discount amount in cents."
           },
           "net_amount": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
             "title": "Net Amount",
             "description": "Amount in cents, after discounts but before taxes."
           },
@@ -20861,17 +21068,10 @@
               }
             ],
             "title": "Tax Amount",
-            "description": "Sales tax amount in cents."
+            "description": "Sales tax amount in cents. If `null`, it means there is no enough information yet to calculate it."
           },
           "total_amount": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
             "title": "Total Amount",
             "description": "Amount in cents, after discounts and taxes."
           },
@@ -35326,11 +35526,13 @@
                 },
                 {
                   "$ref": "#/components/schemas/ProductPriceFreeCreate"
+                },
+                {
+                  "$ref": "#/components/schemas/ProductPriceMeteredUnitCreate"
                 }
               ]
             },
             "type": "array",
-            "maxItems": 1,
             "minItems": 1,
             "title": "ProductPriceCreateList",
             "description": "List of available prices for this product. Currently, only a single price is supported."
@@ -36108,11 +36310,6 @@
             "title": "Unit Amount",
             "description": "The price per unit in cents."
           },
-          "included_units": {
-            "type": "integer",
-            "title": "Included Units",
-            "description": "The number of units included in the price. They will be deducted from the total."
-          },
           "cap_amount": {
             "anyOf": [
               {
@@ -36148,13 +36345,61 @@
           "recurring_interval",
           "price_currency",
           "unit_amount",
-          "included_units",
           "cap_amount",
           "meter_id",
           "meter"
         ],
         "title": "ProductPriceMeteredUnit",
         "description": "A metered, usage-based, price for a product, with a fixed unit price."
+      },
+      "ProductPriceMeteredUnitCreate": {
+        "properties": {
+          "amount_type": {
+            "type": "string",
+            "const": "metered_unit",
+            "title": "Amount Type"
+          },
+          "meter_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Meter Id",
+            "description": "The ID of the meter associated to the price."
+          },
+          "price_currency": {
+            "type": "string",
+            "pattern": "usd",
+            "title": "Price Currency",
+            "description": "The currency. Currently, only `usd` is supported.",
+            "default": "usd"
+          },
+          "unit_amount": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Unit Amount",
+            "description": "The price per unit in cents."
+          },
+          "cap_amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cap Amount",
+            "description": "Optional maximum amount in cents that can be charged, regardless of the number of units consumed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount_type",
+          "meter_id",
+          "unit_amount"
+        ],
+        "title": "ProductPriceMeteredUnitCreate",
+        "description": "Schema to create a metered price with a fixed unit price."
       },
       "ProductPriceType": {
         "type": "string",
@@ -36269,6 +36514,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/ProductPriceFreeCreate"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ProductPriceMeteredUnitCreate"
                     }
                   ]
                 },
@@ -38433,6 +38681,28 @@
         "title": "WebhookBenefitGrantCreatedPayload",
         "description": "Sent when a new benefit grant is created.\n\n**Discord & Slack support:** Basic"
       },
+      "WebhookBenefitGrantCycledPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "benefit_grant.cycled",
+            "title": "Type",
+            "examples": [
+              "benefit_grant.cycled"
+            ]
+          },
+          "data": {
+            "$ref": "#/components/schemas/BenefitGrantWebhook"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "title": "WebhookBenefitGrantCycledPayload",
+        "description": "Sent when a benefit grant is cycled,\nmeaning the related subscription has been renewed for another period.\n\n**Discord & Slack support:** Basic"
+      },
       "WebhookBenefitGrantRevokedPayload": {
         "properties": {
           "type": {
@@ -38453,7 +38723,7 @@
           "data"
         ],
         "title": "WebhookBenefitGrantRevokedPayload",
-        "description": "Sent when a new benefit grant is revoked.\n\n**Discord & Slack support:** Basic"
+        "description": "Sent when a benefit grant is revoked.\n\n**Discord & Slack support:** Basic"
       },
       "WebhookBenefitGrantUpdatedPayload": {
         "properties": {
@@ -38475,7 +38745,7 @@
           "data"
         ],
         "title": "WebhookBenefitGrantUpdatedPayload",
-        "description": "Sent when a new benefit grant is updated.\n\n**Discord & Slack support:** Basic"
+        "description": "Sent when a benefit grant is updated.\n\n**Discord & Slack support:** Basic"
       },
       "WebhookBenefitUpdatedPayload": {
         "properties": {

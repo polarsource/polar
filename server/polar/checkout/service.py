@@ -6,6 +6,7 @@ from typing import Any
 
 import stripe as stripe_lib
 import structlog
+from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import UnaryExpression, asc, desc, func, select
 from sqlalchemy.orm import contains_eager, joinedload
 
@@ -1541,12 +1542,16 @@ class CheckoutService:
         country = ip_geolocation.get_ip_country(
             ip_geolocation_client, checkout.customer_ip_address
         )
-        if country is not None:
-            checkout.customer_billing_address = Address.model_validate(
-                {"country": country}
-            )
-            session.add(checkout)
+        if country is None:
+            return checkout
 
+        try:
+            address = Address.model_validate({"country": country})
+        except PydanticValidationError:
+            return checkout
+
+        checkout.customer_billing_address = address
+        session.add(checkout)
         return checkout
 
     async def _validate_subscription_uniqueness(

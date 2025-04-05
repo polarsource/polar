@@ -52,6 +52,7 @@ const auth = betterAuth({
             // Configure checkout
             checkout: {
                 enabled: true,
+                onlyAuthenticated: false, // Restrict checkout to authenticated users
                 products: [
                     {
                         productId: "123-456-789", // ID of Product from Polar Dashboard
@@ -82,6 +83,7 @@ const auth = betterAuth({
 - `getCustomerCreateParams`: Custom function to provide additional customer creation parameters
 - `enableCustomerPortal`: Enable the customer portal functionality. Deployed as GET endpoint at /portal
 - `checkout.enabled`: Enable checkout functionality. Deployed as GET endpoint at /checkout
+- `checkout.onlyAuthenticated`: Restrict checkout to authenticated users
 - `checkout.products`: Array of products or function returning products. Slug passed will then be passable as route param.
 - `checkout.successUrl`: URL to redirect to after successful checkout
 

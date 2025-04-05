@@ -3,13 +3,14 @@ import { MerchantOfRecord } from '@/components/Landing/MOR'
 import { Testimonials } from '@/components/Landing/Testimonials'
 import { Benefits } from './Benefits'
 import { Checkout } from './Checkout'
-import { Features } from './Features'
+import Features from './Features'
 import { Intro } from './Intro'
 import { Video } from './molecules/Video'
 import { Pricing } from './Pricing'
 import SDKs from './SDKs'
 import { Section } from './Section'
 import { Tools } from './Tools'
+import { Upsell } from './Upsell'
 
 export default function Page() {
   return (
@@ -24,12 +25,13 @@ export const PageContent = () => {
     <>
       <Section className="flex flex-col gap-y-24">
         <Hero />
+        <Features />
         <Intro />
         <SDKs />
         <Benefits />
         <MerchantOfRecord />
         <Checkout />
-        <Features />
+        <Upsell />
       </Section>
       <div className="flex w-full flex-col items-center justify-center py-16 md:max-w-[1440px] md:px-8">
         <Video src="/assets/landing/Polar2024.webm" />

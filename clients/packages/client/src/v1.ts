@@ -16388,7 +16388,7 @@ export interface components {
          * @description Type of transactions.
          * @enum {string}
          */
-        TransactionType: "payment" | "processor_fee" | "refund" | "dispute" | "dispute_reversal" | "balance" | "payout";
+        TransactionType: "payment" | "processor_fee" | "refund" | "refund_reversal" | "dispute" | "dispute_reversal" | "balance" | "payout";
         /** TransactionsBalance */
         TransactionsBalance: {
             /** Currency */
@@ -16527,6 +16527,8 @@ export interface components {
             utm_medium?: string | null;
             /** Utm Campaign */
             utm_campaign?: string | null;
+            /** Campaign */
+            campaign?: string | null;
         };
         /** UserStripePortalSession */
         UserStripePortalSession: {
@@ -26494,7 +26496,7 @@ export const taxIDFormatValues: ReadonlyArray<components["schemas"]["TaxIDFormat
 export const teamAdminMemberPledgedNotificationTypeValues: ReadonlyArray<components["schemas"]["TeamAdminMemberPledgedNotification"]["type"]> = ["TeamAdminMemberPledgedNotification"];
 export const timeIntervalValues: ReadonlyArray<components["schemas"]["TimeInterval"]> = ["year", "month", "week", "day", "hour"];
 export const transactionSortPropertyValues: ReadonlyArray<components["schemas"]["TransactionSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
-export const transactionTypeValues: ReadonlyArray<components["schemas"]["TransactionType"]> = ["payment", "processor_fee", "refund", "dispute", "dispute_reversal", "balance", "payout"];
+export const transactionTypeValues: ReadonlyArray<components["schemas"]["TransactionType"]> = ["payment", "processor_fee", "refund", "refund_reversal", "dispute", "dispute_reversal", "balance", "payout"];
 export const userSignupAttributionIntentValues: ReadonlyArray<components["schemas"]["UserSignupAttribution"]["intent"]> = ["creator", "pledge", "purchase", "subscription", "newsletter_subscription"];
 export const webhookEventTypeValues: ReadonlyArray<components["schemas"]["WebhookEventType"]> = ["checkout.created", "checkout.updated", "customer.created", "customer.updated", "customer.deleted", "customer.state_changed", "order.created", "order.updated", "order.paid", "order.refunded", "subscription.created", "subscription.updated", "subscription.active", "subscription.canceled", "subscription.uncanceled", "subscription.revoked", "refund.created", "refund.updated", "product.created", "product.updated", "benefit.created", "benefit.updated", "benefit_grant.created", "benefit_grant.cycled", "benefit_grant.updated", "benefit_grant.revoked", "organization.updated", "pledge.created", "pledge.updated"];
 export const webhookFormatValues: ReadonlyArray<components["schemas"]["WebhookFormat"]> = ["raw", "discord", "slack"];

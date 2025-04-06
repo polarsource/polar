@@ -40,6 +40,11 @@ const Login = ({
       signup.host = host
     }
 
+    const campaign = searchParams.get('campaign') ?? ''
+    if (campaign) {
+      signup.campaign = campaign
+    }
+
     const utm = {
       source: searchParams.get('utm_source') ?? '',
       medium: searchParams.get('utm_medium') ?? '',

@@ -4,6 +4,7 @@ from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
 from polar.auth.dependencies import WebUser
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.notification_recipient import auth
 from polar.notification_recipient.schemas import (
     NotificationRecipientCreate,
@@ -76,30 +77,37 @@ async def create(
 
 @router.get(
     "/notifications/recipients",
-    response_model=list[NotificationRecipientSchema],
+    response_model=ListResource[NotificationRecipientSchema],
     status_code=200,
     summary="Lists all notification recipients subscribed to notifications",
 )
 async def list(
     auth_subject: auth.NotificationRecipientRead,
+    pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
     expo_push_token: str | None = Query(None, description="Filter by Expo push token."),
     platform: NotificationRecipientPlatform | None = Query(
         None, description="Filter by platform."
     ),
-) -> list[NotificationRecipientSchema]:
+) -> ListResource[NotificationRecipientSchema]:
     """List all devices subscribed to notifications."""
     notification_recipients = await notification_recipient_service.list_by_user(
         session, auth_subject.subject.id, expo_push_token, platform
     )
-    return [
-        NotificationRecipientSchema.model_validate(notification_recipient)
-        for notification_recipient in notification_recipients
-    ]
+
+    return ListResource.from_paginated_results(
+        [
+            NotificationRecipientSchema.model_validate(result)
+            for result in notification_recipients
+        ],
+        len(notification_recipients),
+        pagination,
+    )
 
 
 @router.delete(
     "/notifications/recipients/{id}",
+    status_code=204,
     responses={
         204: {"description": "Notification recipient unsubscribed from notifications."},
         404: {"description": "Notification recipient not found."},

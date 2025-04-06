@@ -13,7 +13,6 @@ from .customer import Customer
 from .customer_meter import CustomerMeter
 from .customer_session import CustomerSession
 from .customer_session_code import CustomerSessionCode
-from .device import Device
 from .discount import Discount
 from .discount_product import DiscountProduct
 from .discount_redemption import DiscountRedemption
@@ -31,6 +30,7 @@ from .license_key_activation import LicenseKeyActivation
 from .magic_link import MagicLink
 from .meter import Meter
 from .notification import Notification
+from .notification_recipient import NotificationRecipient
 from .oauth2_authorization_code import OAuth2AuthorizationCode
 from .oauth2_client import OAuth2Client
 from .oauth2_grant import OAuth2Grant
@@ -85,7 +85,6 @@ __all__ = [
     "CustomerSession",
     "CustomerSessionCode",
     "CustomField",
-    "Device",
     "Discount",
     "DiscountProduct",
     "DiscountRedemption",
@@ -103,6 +102,7 @@ __all__ = [
     "MagicLink",
     "Meter",
     "Notification",
+    "NotificationRecipient",
     "OAuth2AuthorizationCode",
     "OAuth2Client",
     "OAuth2Grant",

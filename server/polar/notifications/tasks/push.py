@@ -1,3 +1,4 @@
+from typing import TypedDict
 from uuid import UUID
 
 import structlog
@@ -17,7 +18,13 @@ from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 log = structlog.get_logger()
 
 
-def send_push_message(token: str, message: str, extra: dict | None = None) -> None:
+class PushMessageExtra(TypedDict, total=False):
+    notification_id: str
+
+
+def send_push_message(
+    token: str, message: str, extra: PushMessageExtra | None = None
+) -> None:
     """Send a push message to a specific device token."""
     try:
         response = PushClient().publish(

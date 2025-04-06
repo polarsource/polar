@@ -87,6 +87,7 @@ from polar.models.discount import (
 )
 from polar.models.event import EventSource
 from polar.models.issue import Issue
+from polar.models.notification_recipient import NotificationRecipient
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import (
@@ -96,6 +97,7 @@ from polar.models.product_price import (
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.models.user import OAuthAccount, OAuthPlatform
+from polar.notification_recipient.schemas import NotificationRecipientPlatform
 from tests.fixtures.database import SaveFixture
 
 
@@ -1802,3 +1804,19 @@ async def create_meter(
 @pytest_asyncio.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     return await create_meter(save_fixture, organization=organization)
+
+
+async def create_notification_recipient(
+    save_fixture: SaveFixture,
+    *,
+    user: User,
+    expo_push_token: str,
+    platform: NotificationRecipientPlatform = NotificationRecipientPlatform.ios,
+) -> NotificationRecipient:
+    notification_recipient = NotificationRecipient(
+        platform=platform,
+        expo_push_token=expo_push_token,
+        user_id=user.id,
+    )
+    await save_fixture(notification_recipient)
+    return notification_recipient

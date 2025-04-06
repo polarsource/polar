@@ -10,8 +10,8 @@ if TYPE_CHECKING:
     from .user import User
 
 
-class Device(RecordModel):
-    __tablename__ = "devices"
+class NotificationRecipient(RecordModel):
+    __tablename__ = "notification_recipients"
 
     user_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("users.id", ondelete="cascade")

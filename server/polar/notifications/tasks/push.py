@@ -8,7 +8,9 @@ from exponent_server_sdk import (
     PushServerError,
 )
 
-from polar.device.service import device as device_service
+from polar.notification_recipient.service import (
+    notification_recipient as notification_recipient_service,
+)
 from polar.notifications.service import notifications
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
@@ -66,22 +68,23 @@ async def notifications_push(
                 log.warning("notifications.push.not_found")
                 return
 
-            devices = await device_service.list_by_user(
+            notification_recipients = await notification_recipient_service.list_by_user(
                 session=session,
                 user_id=notif.user_id,
                 expo_push_token=None,
                 platform=None,
             )
-            if not devices:
+            if not notification_recipients:
                 log.warning(
                     "notifications.push.devices_not_found", user_id=notif.user_id
                 )
                 return
 
-            for device in devices:
-                if not device.expo_push_token:
+            for notification_recipient in notification_recipients:
+                if not notification_recipient.expo_push_token:
                     log.warning(
-                        "notifications.push.no_push_token", user_id=device.user_id
+                        "notifications.push.no_push_token",
+                        user_id=notification_recipient.user_id,
                     )
                     continue
 
@@ -90,7 +93,7 @@ async def notifications_push(
 
                 try:
                     send_push_message(
-                        token=device.expo_push_token,
+                        token=notification_recipient.expo_push_token,
                         message=subject,
                         extra={"notification_id": str(notification_id)},
                     )
@@ -98,7 +101,7 @@ async def notifications_push(
                     log.error(
                         "notifications.push.send_failed",
                         error=str(e),
-                        user_id=device.user_id,
+                        user_id=notification_recipient.user_id,
                         notification_id=notification_id,
                     )
                     return

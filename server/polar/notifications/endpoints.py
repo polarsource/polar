@@ -4,9 +4,15 @@ from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
 from polar.auth.dependencies import WebUser
-from polar.device import auth
-from polar.device.schemas import DeviceCreate, DevicePlatform, DeviceSchema
-from polar.device.service import device as device_service
+from polar.notification_recipient import auth
+from polar.notification_recipient.schemas import (
+    NotificationRecipientCreate,
+    NotificationRecipientPlatform,
+    NotificationRecipientSchema,
+)
+from polar.notification_recipient.service import (
+    notification_recipient as notification_recipient_service,
+)
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -14,7 +20,9 @@ from polar.routing import APIRouter
 from .schemas import NotificationsList, NotificationsMarkRead
 from .service import notifications
 
-DeviceID = Annotated[UUID4, Path(description="The device ID.")]
+NotificationRecipientID = Annotated[
+    UUID4, Path(description="The notification recipient ID.")
+]
 
 router = APIRouter(tags=["notifications", APITag.private])
 
@@ -48,52 +56,59 @@ async def mark_read(
 
 
 @router.post(
-    "/notifications/subscribe",
-    response_model=DeviceSchema,
+    "/notifications/recipients",
+    response_model=NotificationRecipientSchema,
     status_code=201,
     summary="Subscribes a device to notifications",
     responses={201: {"description": "Device subscribed to notifications."}},
 )
 async def create(
-    device_create: DeviceCreate,
-    auth_subject: auth.DeviceWrite,
+    notification_recipient_create: NotificationRecipientCreate,
+    auth_subject: auth.NotificationRecipientWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> DeviceSchema:
-    """Create a device."""
-    device = await device_service.create(session, device_create, auth_subject)
-    return DeviceSchema.model_validate(device)
+) -> NotificationRecipientSchema:
+    """Create a notification recipient."""
+    notification_recipient = await notification_recipient_service.create(
+        session, notification_recipient_create, auth_subject
+    )
+    return NotificationRecipientSchema.model_validate(notification_recipient)
 
 
 @router.get(
-    "/notifications/subscriptions",
-    response_model=list[DeviceSchema],
+    "/notifications/recipients",
+    response_model=list[NotificationRecipientSchema],
     status_code=200,
-    summary="Lists all devices subscribed to notifications",
+    summary="Lists all notification recipients subscribed to notifications",
 )
 async def list(
-    auth_subject: auth.DeviceRead,
+    auth_subject: auth.NotificationRecipientRead,
     session: AsyncSession = Depends(get_db_session),
     expo_push_token: str | None = Query(None, description="Filter by Expo push token."),
-    platform: DevicePlatform | None = Query(None, description="Filter by platform."),
-) -> list[DeviceSchema]:
+    platform: NotificationRecipientPlatform | None = Query(
+        None, description="Filter by platform."
+    ),
+) -> list[NotificationRecipientSchema]:
     """List all devices subscribed to notifications."""
-    devices = await device_service.list_by_user(
+    notification_recipients = await notification_recipient_service.list_by_user(
         session, auth_subject.subject.id, expo_push_token, platform
     )
-    return [DeviceSchema.model_validate(device) for device in devices]
+    return [
+        NotificationRecipientSchema.model_validate(notification_recipient)
+        for notification_recipient in notification_recipients
+    ]
 
 
 @router.delete(
-    "/notifications/unsubscribe/{id}",
+    "/notifications/recipients/{id}",
     responses={
-        204: {"description": "Device unsubscribed from notifications."},
-        404: {"description": "Device not found."},
+        204: {"description": "Notification recipient unsubscribed from notifications."},
+        404: {"description": "Notification recipient not found."},
     },
 )
 async def delete(
-    id: DeviceID,
-    auth_subject: auth.DeviceWrite,
+    id: NotificationRecipientID,
+    auth_subject: auth.NotificationRecipientWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    """Delete a device."""
-    await device_service.delete(session, auth_subject, id)
+    """Delete a notification recipient."""
+    await notification_recipient_service.delete(session, auth_subject, id)

@@ -64,6 +64,7 @@ class NotificationsService:
         session.add(notification)
         await session.flush()
         enqueue_job("notifications.send", notification_id=notification.id)
+        enqueue_job("notifications.push", notification_id=notification.id)
         return True
 
     async def send_to_org_members(

@@ -75,6 +75,9 @@ class Scope(StrEnum):
     customer_portal_read = "customer_portal:read"
     customer_portal_write = "customer_portal:write"
 
+    devices_read = "devices:read"
+    devices_write = "devices:write"
+
     @classmethod
     def __get_pydantic_json_schema__(
         cls, core_schema: cs.CoreSchema, handler: GetJsonSchemaHandler
@@ -129,6 +132,8 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.webhooks_write: "Create or modify webhooks",
     Scope.customer_portal_read: "Read your orders, subscriptions and benefits",
     Scope.customer_portal_write: "Create or modify your orders, subscriptions and benefits",
+    Scope.devices_read: "Read devices",
+    Scope.devices_write: "Create or modify devices",
 }
 
 

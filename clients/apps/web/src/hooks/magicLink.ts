@@ -23,7 +23,7 @@ export const useSendMagicLink = () => {
       signup?: schemas['UserSignupAttribution'],
     ) => {
       const { error } = await api.POST('/v1/magic_link/request', {
-        body: { email, return_to, signup },
+        body: { email, return_to, attribution: signup },
       })
 
       if (error) {

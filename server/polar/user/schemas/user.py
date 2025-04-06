@@ -87,6 +87,8 @@ class UserSignupAttribution(Schema):
     utm_medium: str | None = None
     utm_campaign: str | None = None
 
+    campaign: str | None = None
+
 
 UserSignupAttributionQueryJSON = str | None
 

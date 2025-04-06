@@ -83,6 +83,12 @@ class Account(RecordModel):
     next_review_threshold: Mapped[int | None] = mapped_column(
         Integer, nullable=True, default=0
     )
+    campaign_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("campaigns.id", ondelete="set null"),
+        default=None,
+        index=True,
+    )
 
     data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 

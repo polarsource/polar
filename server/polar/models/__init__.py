@@ -4,6 +4,7 @@ from .account import Account
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .billing_entry import BillingEntry
+from .campaign import Campaign
 from .checkout import Checkout
 from .checkout_link import CheckoutLink
 from .checkout_link_product import CheckoutLinkProduct
@@ -74,6 +75,7 @@ __all__ = [
     "TimestampedModel",
     "Account",
     "Benefit",
+    "Campaign",
     "BenefitGrant",
     "BillingEntry",
     "Checkout",

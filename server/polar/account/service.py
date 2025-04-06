@@ -7,6 +7,7 @@ import stripe as stripe_lib
 from sqlalchemy import Select, and_, select
 from sqlalchemy.orm import joinedload
 
+from polar.campaign.service import campaign as campaign_service
 from polar.enums import AccountType
 from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
@@ -101,9 +102,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         account_create: AccountCreate,
     ) -> Account:
         if account_create.account_type == AccountType.stripe:
-            account = await self._create_stripe_account(
-                session, admin.id, account_create
-            )
+            account = await self._create_stripe_account(session, admin, account_create)
         elif account_create.account_type == AccountType.open_collective:
             account = await self._create_open_collective_account(
                 session, admin.id, account_create
@@ -160,7 +159,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         return "·".join(associations)
 
     async def _create_stripe_account(
-        self, session: AsyncSession, admin_id: UUID, account_create: AccountCreate
+        self, session: AsyncSession, admin: User, account_create: AccountCreate
     ) -> Account:
         try:
             stripe_account = await stripe.create_account(
@@ -174,7 +173,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
 
         account = Account(
             status=Account.Status.ONBOARDING_STARTED,
-            admin_id=admin_id,
+            admin_id=admin.id,
             account_type=account_create.account_type,
             stripe_id=stripe_account.id,
             email=stripe_account.email,
@@ -188,6 +187,13 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
             users=[],
             organizations=[],
         )
+
+        campaign = await campaign_service.get_eligible(session, admin)
+        if campaign:
+            account.campaign_id = campaign.id
+            account._platform_fee_percent = campaign.fee_percent
+            account._platform_fee_fixed = campaign.fee_fixed
+
         session.add(account)
         return account
 

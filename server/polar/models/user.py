@@ -151,6 +151,10 @@ class User(RecordModel):
     def had_creator_signup_intent(self) -> bool:
         return self.signup_attribution.get("intent") == "creator"
 
+    @property
+    def campaign_code(self) -> str | None:
+        return self.signup_attribution.get("campaign")
+
     def get_oauth_account(self, platform: OAuthPlatform) -> OAuthAccount | None:
         return next(
             (

@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 from uuid import UUID
 
 import structlog
@@ -27,7 +26,7 @@ def send_push_message(token: str, message: str, extra: dict | None = None) -> No
                 title="Polar",
                 sound="default",
                 ttl=60 * 60 * 24,
-                expiration=datetime.now() + timedelta(days=1),
+                expiration=None,
                 priority="high",
                 badge=1,
                 category="default",
@@ -68,10 +67,15 @@ async def notifications_push(
                 return
 
             devices = await device_service.list_by_user(
-                session=session, user_id=notif.user_id, expo_push_token=None
+                session=session,
+                user_id=notif.user_id,
+                expo_push_token=None,
+                platform=None,
             )
             if not devices:
-                log.warning("notifications.push.user_not_found", user_id=notif.user_id)
+                log.warning(
+                    "notifications.push.devices_not_found", user_id=notif.user_id
+                )
                 return
 
             for device in devices:

@@ -2,6 +2,8 @@
 
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
+import { LegacyRecurringProductPrice } from '@polar-sh/sdk/models/components/legacyrecurringproductprice.js'
+import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice.js'
 import {
   RadioGroup,
   RadioGroupItem,
@@ -53,6 +55,16 @@ const CheckoutProductSwitcher = ({
     return null
   }
 
+  const getDescription = (
+    price: ProductPrice | LegacyRecurringProductPrice,
+  ) => {
+    if (price.recurringInterval) {
+      return `Billed ${price.recurringInterval === 'month' ? 'monthly' : 'yearly'}`
+    }
+
+    return `One-time purchase`
+  }
+
   return (
     <RadioGroup
       value={`${selectedProduct.id}:${selectedPrice.id}`}
@@ -67,21 +79,27 @@ const CheckoutProductSwitcher = ({
                 key={price.id}
                 className={cn(
                   themePreset.polar.checkoutProductSwitch,
-                  `flex cursor-pointer flex-row items-center gap-4 border p-6 transition-colors`,
+                  `flex cursor-pointer flex-col border transition-colors`,
                   price.id === selectedProduct.id
                     ? themePreset.polar.checkoutProductSwitchSelected
                     : '',
                 )}
                 htmlFor={`product-${price.id}`}
               >
-                <RadioGroupItem
-                  className="hidden"
-                  value={`${product.id}:${price.id}`}
-                  id={`product-${price.id}`}
-                />
-                <div className="flex grow flex-row items-center justify-between text-sm">
-                  <div>{product.name}</div>
-                  <ProductPriceLabel product={product} price={price} />
+                <div className="flex flex-row items-center gap-4 p-4">
+                  <RadioGroupItem
+                    value={`${product.id}:${price.id}`}
+                    id={`product-${price.id}`}
+                  />
+                  <div className="flex grow flex-row items-center justify-between text-sm">
+                    <div>{product.name}</div>
+                    <ProductPriceLabel product={product} price={price} />
+                  </div>
+                </div>
+                <div className="flex grow flex-row items-center justify-between p-4 text-sm">
+                  <p className="dark:text-polar-500 text-gray-500">
+                    {getDescription(price)}
+                  </p>
                 </div>
               </label>
             ))}
@@ -91,21 +109,30 @@ const CheckoutProductSwitcher = ({
             key={product.id}
             className={cn(
               themePreset.polar.checkoutProductSwitch,
-              `flex cursor-pointer flex-row items-center gap-4 border p-6 transition-colors`,
+              `flex cursor-pointer flex-col border transition-colors`,
               product.id === selectedProduct.id
                 ? themePreset.polar.checkoutProductSwitchSelected
                 : '',
             )}
             htmlFor={`product-${product.id}`}
           >
-            <RadioGroupItem
-              className="hidden"
-              value={`${product.id}:${product.prices[0].id}`}
-              id={`product-${product.id}`}
-            />
-            <div className="flex grow flex-row items-center justify-between text-sm">
-              <div>{product.name}</div>
-              <ProductPriceLabel product={product} price={product.prices[0]} />
+            <div className="flex flex-row items-center gap-4 p-4">
+              <RadioGroupItem
+                value={`${product.id}:${product.prices[0].id}`}
+                id={`product-${product.id}`}
+              />
+              <div className="flex grow flex-row items-center justify-between text-sm">
+                <div>{product.name}</div>
+                <ProductPriceLabel
+                  product={product}
+                  price={product.prices[0]}
+                />
+              </div>
+            </div>
+            <div className="flex grow flex-row items-center justify-between p-4 text-sm">
+              <p className="dark:text-polar-500 text-gray-500">
+                {getDescription(product.prices[0])}
+              </p>
             </div>
           </label>
         ),

@@ -117,8 +117,8 @@ export const useThemePreset = (
           checkoutCardWrapper:
             'dark:bg-polar-800 dark:border-polar-700 rounded-3xl bg-white shadow-xl',
           checkoutProductSwitch:
-            'rounded-2xl hover:bg-blue-100 dark:hover:bg-blue-900',
-          checkoutProductSwitchSelected: 'bg-blue-50 dark:bg-blue-950',
+            'rounded-2xl hover:border-blue-500 dark:hover:border-blue-500 divide-y divide-gray-200 dark:divide-polar-700',
+          checkoutProductSwitchSelected: 'border-blue-500 dark:border-blue-500',
         },
       }
     case 'midday':
@@ -209,8 +209,9 @@ export const useThemePreset = (
           checkoutCardWrapper:
             'dark:bg-[#1d1d1d] bg-[#1d1d1d] border-none !rounded-none text-white',
           checkoutProductSwitch:
-            '!rounded-none bg-[#1d1d1d] hover:bg-[#2c2c2c]',
-          checkoutProductSwitchSelected: 'bg-white text-black',
+            '!rounded-none bg-[#1d1d1d] hover:bg-[#ddd] divide-y divide-gray-500 dark:divide-[#2c2c2c] dark:hover:text-black',
+          checkoutProductSwitchSelected:
+            'bg-white text-black dark:divide-[#ccc]',
         },
       }
   }

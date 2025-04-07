@@ -1,14 +1,18 @@
 import {
+  Check,
   DonutLargeOutlined,
+  DownloadingOutlined,
   Face,
   HiveOutlined,
+  KeyOutlined,
   LanguageOutlined,
   ShieldOutlined,
-  ShoppingBagOutlined,
 } from '@mui/icons-material'
+import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
+import { DiscordIcon } from '../Benefit/utils'
 import GitHubIcon from '../Icons/GitHubIcon'
 
 type FeatureCardProps = {
@@ -17,6 +21,7 @@ type FeatureCardProps = {
   description: string
   linkHref: string
   className?: string
+  children?: React.ReactNode
 }
 
 const FeatureCard = ({
@@ -25,18 +30,27 @@ const FeatureCard = ({
   description,
   linkHref,
   className,
+  children,
 }: FeatureCardProps) => {
   return (
     <Link
       href={linkHref}
+      target="_blank"
       className={twMerge(
-        'border-polar-700 bg-polar-900 flex h-96 flex-col gap-y-6 rounded-2xl border p-6 shadow-lg transition-transform hover:translate-y-[-4px]',
+        'dark:border-polar-700 dark:bg-polar-900 flex flex-col justify-between gap-y-8 rounded-2xl border border-gray-200 bg-white p-8 transition-transform hover:translate-y-[-4px] md:h-96',
         className,
       )}
     >
-      {icon}
-      <h3 className="text-xl text-white">{title}</h3>
-      <p className="dark:text-polar-500 flex-grow">{description}</p>
+      <div className="flex flex-col gap-y-6">
+        {icon}
+        <div className="flex flex-col gap-y-2">
+          <h3 className="text-xl text-black dark:text-white">{title}</h3>
+          <p className="dark:text-polar-500 w-full flex-grow text-gray-500 md:max-w-96">
+            {description}
+          </p>
+        </div>
+      </div>
+      {children}
     </Link>
   )
 }
@@ -48,68 +62,163 @@ type FeaturesProps = {
 const Features = ({ className }: FeaturesProps) => {
   const features = [
     {
-      icon: <HiveOutlined fontSize="small" />,
+      icon: <HiveOutlined fontSize="large" />,
       title: 'Digital Products & SaaS Billing',
       description:
-        'Comprehensive billing solutions for digital products and subscription-based services with flexible pricing models and seamless payment processing.',
-      linkHref: '#billing',
+        'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
+      linkHref: 'https://docs.polar.sh/features/products',
+      children: (
+        <ul className="flex flex-col gap-y-1">
+          <li className="flex flex-row items-center gap-x-2">
+            <Check className="h-4 w-4 text-emerald-500" />
+            <p className="text-pretty leading-relaxed">Subscription Products</p>
+          </li>
+          <li className="flex flex-row items-center gap-x-2">
+            <Check className="h-4 w-4 text-emerald-500" />
+            <p className="text-pretty leading-relaxed">One-time Purchases</p>
+          </li>
+          <li className="flex flex-row items-center gap-x-2">
+            <Check className="h-4 w-4 text-emerald-500" />
+            <p className="text-pretty leading-relaxed">
+              Usage-based billing for metered products
+            </p>
+          </li>
+        </ul>
+      ),
     },
     {
-      icon: <ShieldOutlined fontSize="small" />,
+      icon: <ShieldOutlined fontSize="large" />,
       title: 'Benefits Engine',
       description:
-        'Powerful entitlements engine on steroids that automates access management to various features based on subscription plans and custom rules.',
-      linkHref: '#benefits',
+        'Powerful entitlements engine that automates access to various features.',
+      linkHref: 'https://docs.polar.sh/features/benefits',
+      children: (
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            {
+              icon: <KeyOutlined className="h-5 w-5" />,
+              text: 'License Keys',
+            },
+            {
+              icon: <DownloadingOutlined className="h-5 w-5" />,
+              text: 'Downloadables',
+            },
+            { icon: <GitHubIcon className="h-5 w-5" />, text: 'GitHub Repos' },
+            {
+              icon: <DiscordIcon className="h-5 w-5" />,
+              text: 'Discord Roles',
+            },
+          ].map((item, i) => (
+            <div
+              key={i}
+              className="dark:bg-polar-800 flex items-center gap-x-2 rounded-lg bg-gray-100 p-3"
+            >
+              {item.icon}
+              <span className="dark:text-polar-500 text-sm text-gray-500">
+                {item.text}
+              </span>
+            </div>
+          ))}
+        </div>
+      ),
     },
     {
-      icon: <Face fontSize="small" />,
+      icon: <Face fontSize="large" />,
       title: 'Customer Management',
       description:
-        'Streamlined customer lifecycle management with detailed profiles, segmentation, and analytics to drive better business decisions.',
-      linkHref: '#customers',
+        'Streamlined customer lifecycle management with detailed profiles and analytics.',
+      linkHref: 'https://docs.polar.sh/features/customer-management',
+      children: (
+        <div className="flex flex-col gap-y-4">
+          <div className="dark:bg-polar-800 flex items-center gap-x-4 rounded-lg bg-gray-100 p-4">
+            <div className="h-12 w-12 overflow-hidden rounded-full">
+              <Image
+                src="/assets/landing/testamonials/emil.jpg"
+                alt="Customer avatar"
+                className="h-full w-full object-cover"
+                width={48}
+                height={48}
+              />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-medium text-black dark:text-white">
+                John Doe
+              </span>
+              <span className="dark:text-polar-500 flex flex-row gap-x-2 text-sm text-gray-500">
+                <span>Premium Plan</span>
+                <span>•</span>
+                <span>Monthly</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      ),
     },
     {
-      icon: <DonutLargeOutlined fontSize="small" />,
-      title: 'Usage Based Billing',
+      icon: <DonutLargeOutlined fontSize="large" />,
+      title: 'Usage Based Billing (Alpha)',
       description:
-        'Robust event ingestion API that enables precise usage-based billing, allowing you to charge customers based on their actual consumption.',
-      linkHref: '#usage-billing',
+        'Robust event ingestion API that enables precise usage-based billing.',
+      linkHref: 'https://github.com/polarsource/polar-ingestion',
+      children: (
+        <div className="dark:bg-polar-800 flex items-center gap-x-4 overflow-auto rounded-lg bg-gray-100 p-4">
+          <pre className="font-mono text-xs">
+            {`Ingestion()
+.strategy(new LLM(openai('gpt-4o')))
+.ingest('openai-usage')`}
+          </pre>
+        </div>
+      ),
     },
     {
-      icon: <LanguageOutlined fontSize="small" />,
+      icon: <LanguageOutlined fontSize="large" />,
       title: 'Global Merchant of Record',
       description:
-        'Simplified global commerce with built-in tax compliance, currency conversion, and payment methods tailored to local markets.',
-      linkHref: '#global',
-    },
-    {
-      icon: <GitHubIcon width={24} height={24} />,
-      title: 'Open Source',
-      description:
-        'Transparent, community-driven development ensures you always have access to the source code and can contribute to improving the platform.',
-      linkHref: 'https://github.com/polarsource',
-    },
-    {
-      icon: <ShoppingBagOutlined fontSize="small" />,
-      title: 'Payment Processing',
-      description:
-        'Seamless payment processing with built-in support for credit cards, PayPal, and more.',
-      linkHref: '#payment-processing',
+        'Focus on your passion while we handle all the tax compliance.',
+      linkHref: 'https://docs.polar.sh/merchant-of-record/introduction',
+      children: (
+        <div className="dark:bg-polar-800 flex flex-col gap-y-2 rounded-lg bg-gray-100 p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-black dark:text-white">
+              Tax Report 2025
+            </span>
+            <span className="text-sm text-emerald-500">Submitted</span>
+          </div>
+          <div className="dark:border-polar-700 flex items-center justify-between border-t border-gray-200 pt-2">
+            <span className="dark:text-polar-500 text-sm text-gray-500">
+              VAT (EU)
+            </span>
+            <span className="dark:text-polar-500 text-sm text-gray-500">
+              €2,450.00
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="dark:text-polar-500 text-sm text-gray-500">
+              Sales Tax (US)
+            </span>
+            <span className="dark:text-polar-500 text-sm text-gray-500">
+              $3,120.00
+            </span>
+          </div>
+        </div>
+      ),
     },
   ]
 
   return (
     <section className={className}>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {features.map((feature, index) => (
           <FeatureCard
-            className={index === 0 ? 'col-span-2' : ''}
+            className={index === 0 ? 'md:col-span-2' : ''}
             key={index}
             icon={feature.icon}
             title={feature.title}
             description={feature.description}
             linkHref={feature.linkHref}
-          />
+          >
+            {feature.children}
+          </FeatureCard>
         ))}
       </div>
     </section>

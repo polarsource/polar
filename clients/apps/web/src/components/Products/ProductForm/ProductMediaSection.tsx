@@ -30,6 +30,7 @@ export const ProductMediaSection = ({
       title="Media"
       description="Enhance the product page with medias, giving the customers a better idea of the product"
       className={className}
+      compact={compact}
     >
       <FormField
         control={control}

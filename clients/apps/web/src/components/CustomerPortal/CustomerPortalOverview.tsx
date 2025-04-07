@@ -2,7 +2,6 @@ import revalidate from '@/app/actions'
 import { Client, schemas } from '@polar-sh/client'
 import { useCallback } from 'react'
 import CustomerSubscriptionDetails from '../Subscriptions/CustomerSubscriptionDetails'
-import { CurrentPeriodOverview } from './CurrentPeriodOverview'
 
 interface CustomerPortalOverviewProps {
   organization: schemas['Organization']
@@ -21,9 +20,9 @@ export const CustomerPortalOverview = ({
 }: CustomerPortalOverviewProps) => {
   return (
     <div className="flex flex-col gap-y-8">
-      {subscriptions.map((s) => (
+      {/*  {subscriptions.map((s) => (
         <CurrentPeriodOverview key={s.id} subscription={s} />
-      ))}
+      ))} */}
 
       <SubscriptionsOverview
         customerSessionToken={customerSessionToken}

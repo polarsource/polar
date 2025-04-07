@@ -84,10 +84,12 @@ export const CurrentPeriodOverview = ({
             </span>
           </div>
 
-          <p className="text-xs text-gray-500">
-            Final charges may vary based on usage until the end of the billing
-            period
-          </p>
+          {meteredPrices.length > 0 && (
+            <p className="text-xs text-gray-500">
+              Final charges may vary based on usage until the end of the billing
+              period
+            </p>
+          )}
         </div>
       </div>
     </div>

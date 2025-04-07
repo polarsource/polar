@@ -171,10 +171,15 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     <ShadowBoxOnMd
       className={twMerge(
         themePreset.polar.checkoutInnerWrapper,
-        'md:dark:border-polar-700 dark:divide-polar-700 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 divide-transparent overflow-hidden md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-0 md:gap-y-24 md:divide-x md:border md:border-gray-100 md:p-0',
+        'md:dark:border-polar-700 grid w-full auto-cols-fr grid-flow-row auto-rows-max gap-y-12 md:grid-flow-col md:grid-rows-1 md:items-stretch md:gap-y-24 md:divide-x md:overflow-hidden md:border md:border-gray-100 md:p-0 md:shadow-sm',
       )}
     >
-      <div className="flex flex-col gap-y-8 md:p-12">
+      <div
+        className={twMerge(
+          themePreset.polar.checkoutInfoWrapper,
+          'flex flex-col gap-y-8 md:p-12',
+        )}
+      >
         <CheckoutProductInfo
           organization={checkout.organization}
           product={checkout.product}

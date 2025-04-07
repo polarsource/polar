@@ -9,6 +9,7 @@ export interface PolarThemingPresetProps {
   dropdownItem: string
   checkoutWrapper: string
   checkoutInnerWrapper: string
+  checkoutInfoWrapper: string
   checkoutCardWrapper: string
   checkoutProductSwitch: string
   checkoutProductSwitchSelected: string
@@ -112,12 +113,15 @@ export const useThemePreset = (
           dropdownContent: '',
           dropdownItem: '',
           checkbox: '',
-          checkoutWrapper: 'dark:bg-polar-950 bg-gray-100 dark:text-white',
-          checkoutInnerWrapper: 'rounded-3xl dark:md:bg-polar-900 md:bg-white',
+          checkoutWrapper:
+            'md:dark:bg-polar-950 md:bg-gray-100 dark:bg-polar-900 bg-white dark:text-white',
+          checkoutInnerWrapper:
+            'rounded-3xl dark:md:bg-polar-900 md:bg-white divide-gray-200 dark:divide-transparent',
+          checkoutInfoWrapper: 'md:bg-gray-50 md:dark:bg-polar-950',
           checkoutCardWrapper:
-            'dark:bg-polar-800 dark:border-polar-700 rounded-3xl bg-white shadow-xl',
+            'dark:bg-polar-900 dark:border-polar-700 !rounded-3xl bg-white shadow-sm border border-gray-200',
           checkoutProductSwitch:
-            'rounded-2xl hover:border-blue-500 dark:hover:border-blue-500 divide-y divide-gray-200 dark:divide-polar-700',
+            'rounded-2xl md:shadow-none shadow-sm hover:border-blue-500 dark:hover:border-blue-500 divide-y divide-gray-200 dark:divide-polar-700 md:bg-white dark:md:bg-polar-950',
           checkoutProductSwitchSelected: 'border-blue-500 dark:border-blue-500',
         },
       }
@@ -203,9 +207,11 @@ export const useThemePreset = (
           dropdownContent: 'bg-[#1d1d1d] dark:bg-[#1d1d1d] !rounded-none',
           checkbox: 'rounded-none',
           dropdownItem: '!rounded-none',
-          checkoutWrapper: 'bg-[#0c0c0c] dark:bg-[#0c0c0c] text-white',
+          checkoutWrapper:
+            'bg-[#121212] dark:bg-[#121212] md:bg-[#0c0c0c] md:dark:bg-[#0c0c0c] text-white',
           checkoutInnerWrapper:
             'md:bg-[#121212] dark:md:bg-[#121212] md:!rounded-none',
+          checkoutInfoWrapper: 'dark:md:bg-transparent',
           checkoutCardWrapper:
             'dark:bg-[#1d1d1d] bg-[#1d1d1d] border-none !rounded-none text-white',
           checkoutProductSwitch:

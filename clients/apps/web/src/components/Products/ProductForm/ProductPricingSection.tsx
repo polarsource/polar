@@ -4,6 +4,7 @@ import { usePostHog } from '@/hooks/posthog'
 import { useMeters } from '@/hooks/queries/meters'
 import { isLegacyRecurringPrice, isStaticPrice } from '@/utils/product'
 import { ErrorMessage } from '@hookform/error-message'
+import { CloseOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
@@ -14,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
+import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import {
   FormControl,
   FormDescription,
@@ -23,7 +25,11 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import React, { useCallback, useMemo, useState } from 'react'
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import {
+  useFieldArray,
+  UseFieldArrayRemove,
+  useFormContext,
+} from 'react-hook-form'
 import { Section } from '../../Layout/Section'
 import { ProductFormType } from './ProductForm'
 
@@ -264,11 +270,13 @@ export const ProductPriceMeteredUnitItem: React.FC<
 export interface ProductPriceItemProps {
   organization: schemas['Organization']
   index: number
+  remove: UseFieldArrayRemove
 }
 
 export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   organization,
   index,
+  remove,
 }) => {
   const { register, control, setValue, watch } =
     useFormContext<ProductFormType>()
@@ -322,31 +330,47 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
         render={({ field }) => {
           return (
             <FormItem>
-              <FormControl>
-                <Select
-                  value={field.value}
-                  onValueChange={(v) => {
-                    field.onChange(v)
-                    onAmountTypeChange(v as any)
-                    setValue(`prices.${index}.id`, '')
-                  }}
-                  disabled={staticPriceIndex > -1 && staticPriceIndex !== index}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a price type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="fixed">Fixed price</SelectItem>
-                    <SelectItem value="custom">Pay what you want</SelectItem>
-                    <SelectItem value="free">Free</SelectItem>
-                    {isFeatureEnabled('usage_based_billing') && (
-                      <SelectItem value="metered_unit">
-                        Metered price
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </FormControl>
+              <div className="flex flex-row items-center gap-2">
+                <FormControl>
+                  <Select
+                    value={field.value}
+                    onValueChange={(v) => {
+                      field.onChange(v)
+                      onAmountTypeChange(v as any)
+                      setValue(`prices.${index}.id`, '')
+                    }}
+                    disabled={
+                      staticPriceIndex > -1 && staticPriceIndex !== index
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a price type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fixed">Fixed price</SelectItem>
+                      <SelectItem value="custom">Pay what you want</SelectItem>
+                      <SelectItem value="free">Free</SelectItem>
+                      {isFeatureEnabled('usage_based_billing') && (
+                        <SelectItem value="metered_unit">
+                          Metered price
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                {index > 0 && (
+                  <Button
+                    size="icon"
+                    className="aspect-square h-10 w-10"
+                    variant="secondary"
+                    onClick={() => {
+                      remove(index)
+                    }}
+                  >
+                    <CloseOutlined className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
               <FormMessage />
             </FormItem>
           )
@@ -380,15 +404,18 @@ export const ProductPricingSection = ({
 }: ProductPricingSectionProps) => {
   const {
     control,
-    formState: { errors },
+    formState: { errors, isDirty },
     setValue,
+    watch,
   } = useFormContext<ProductFormType>()
 
   const pricesFieldArray = useFieldArray({
     control,
     name: 'prices',
   })
-  const { fields: prices, replace, append } = pricesFieldArray
+  const { fields: prices, replace, append, remove } = pricesFieldArray
+
+  const recurringInterval = watch('recurring_interval')
 
   const isLegacyRecurringProduct = useMemo(
     () => (prices as schemas['ProductPrice'][]).some(isLegacyRecurringPrice),
@@ -471,11 +498,30 @@ export const ProductPricingSection = ({
             }}
           />
           {prices.map((price, index) => (
-            <div key={price.id} className="rounded-xl border p-4">
-              <ProductPriceItem organization={organization} index={index} />
+            <div
+              key={price.id}
+              className="dark:border-polar-700 rounded-2xl border p-4"
+            >
+              <ProductPriceItem
+                organization={organization}
+                index={index}
+                remove={remove}
+              />
             </div>
           ))}
+
+          {update && recurringInterval && (
+            <ShadowBox className="dark:bg-polar-800 flex flex-col gap-2 !rounded-2xl !border-none p-4">
+              <h3 className="text-sm font-medium">Updating pricing model</h3>
+              <p className="dark:text-polar-500 text-gray-5 00 text-sm">
+                Changing pricing model on subscription products will only affect
+                new customers. Current customers will keep their original
+                pricing model.
+              </p>
+            </ShadowBox>
+          )}
           <Button
+            className="self-start"
             onClick={() =>
               append({
                 amount_type: 'metered_unit',
@@ -485,7 +531,7 @@ export const ProductPricingSection = ({
               })
             }
           >
-            Add price
+            Add Price
           </Button>
           <ErrorMessage
             errors={errors}

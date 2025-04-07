@@ -53,21 +53,25 @@ export const CurrentPeriodOverview = ({
           </span>
         </div>
 
-        <span className="font-medium">Metered Charges</span>
+        {meteredPrices.length > 0 && (
+          <>
+            <span className="font-medium">Metered Charges</span>
 
-        {meteredPrices.map((price) => (
-          <div key={price.id} className="flex items-center justify-between">
-            <span className="text-gray-600 dark:text-gray-400">
-              {price.meter.name}
-            </span>
-            <span className="font-medium">
-              <AmountLabel
-                amount={price.unit_amount}
-                currency={price.price_currency}
-              />
-            </span>
-          </div>
-        ))}
+            {meteredPrices.map((price) => (
+              <div key={price.id} className="flex items-center justify-between">
+                <span className="text-gray-600 dark:text-gray-400">
+                  {price.meter.name}
+                </span>
+                <span className="font-medium">
+                  <AmountLabel
+                    amount={price.unit_amount}
+                    currency={price.price_currency}
+                  />
+                </span>
+              </div>
+            ))}
+          </>
+        )}
 
         <div className="dark:border-polar-700 mt-2 border-t border-gray-200 pt-2">
           <div className="flex items-center justify-between">

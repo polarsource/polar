@@ -109,7 +109,8 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
                   <div className="absolute inset-y-0 right-1 z-10 flex items-center">
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="secondary"
+                      size="sm"
                       onClick={generateDiscountCode}
                     >
                       <AutorenewOutlined fontSize="small" />
@@ -135,10 +136,16 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
           }
         >
           <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-100">
-            <TabsTrigger className="flex-grow" value="percentage">
+            <TabsTrigger
+              className="dark:data-[state=active]:bg-polar-800 flex-grow !rounded-full data-[state=active]:bg-white"
+              value="percentage"
+            >
               Percentage discount
             </TabsTrigger>
-            <TabsTrigger className="flex-grow" value="fixed">
+            <TabsTrigger
+              className="dark:data-[state=active]:bg-polar-800 flex-grow !rounded-full data-[state=active]:bg-white"
+              value="fixed"
+            >
               Fixed amount discount
             </TabsTrigger>
           </TabsList>

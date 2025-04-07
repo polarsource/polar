@@ -7,10 +7,17 @@ description: "Create digital products on Polar in minutes"
 **Everything is a product**
 
 Subscriptions or pay once products are both considered a product in Polar (API & data model). Just with different pricing & billing logic. So both are shown & managed under Products with the ability to filter based on pricing model.
+
 </Note>
 
-<img className="block dark:hidden" src="/assets/features/products/create.light.png" />
-<img className="hidden dark:block" src="/assets/features/products/create.dark.png" />
+<img
+  className="block dark:hidden"
+  src="/assets/features/products/create.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/products/create.dark.png"
+/>
 
 ## Create a product
 
@@ -18,8 +25,8 @@ Subscriptions or pay once products are both considered a product in Polar (API &
 
 Starting off with the basic.
 
-* **Name** The title of your product.
-* **Description** Markdown is supported here too.
+- **Name** The title of your product.
+- **Description** Markdown is supported here too.
 
 ### Pricing
 
@@ -40,6 +47,7 @@ Determine how you want to charge your customers for this product.
     For fixed price products, set the amount you want to charge.
 
     For pay what you want products, you can set a minimum amount and a default amount that will be preset on checkout.
+
   </Step>
 </Steps>
 
@@ -50,31 +58,41 @@ Determine how you want to charge your customers for this product.
 <Note>
   **What if I want both a monthly and yearly pricing?**
 
-  Polar has a unique approach to what the industry typically calls **variants**. Each product has a single pricing model, but you can create multiple products with different pricing models, and showcase them both at checkout.
+Polar has a unique approach to what the industry typically calls **variants**. Each product has a single pricing model, but you can create multiple products with different pricing models, and showcase them both at checkout.
+
 </Note>
 
 ### Product Media
 
-* You can upload public product images to be displayed on product pages
-* They can be up to 10MB each
-* You can remove and re-arrange images
+- You can upload public product images to be displayed on product pages
+- They can be up to 10MB each
+- You can remove and re-arrange images
 
 ### Checkout Fields
 
 You can collect additional information from your customers at checkout. This can be useful for things like phone number, terms of service agreement or specific data you need to collect.
 
-<img className="block dark:hidden" src="/assets/features/products/checkout_fields.light.png" />
-<img className="hidden dark:block" src="/assets/features/products/checkout_fields.dark.png" />
+<img
+  className="block dark:hidden"
+  src="/assets/features/products/checkout_fields.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/products/checkout_fields.dark.png"
+/>
 
 Fields are managed from your organization settings, and you can choose which fields to show on a per-product basis, and set if they are required or not. We support the following field types:
 
-* Text
-* Number
-* Date
-* Checkbox
-* Select
+- Text
+- Number
+- Date
+- Checkbox
+- Select
 
-<Tip>If you make a checkbox **required**, the customer will need to check it before confirming their purchase. Very handy for legal terms!</Tip>
+<Tip>
+  If you make a checkbox **required**, the customer will need to check it before
+  confirming their purchase. Very handy for legal terms!
+</Tip>
 
 The data collected will be available in the order and subscription details.
 
@@ -84,11 +102,11 @@ Finally, you can enable or create new entitlements (what we call Benefits) that 
 
 Read more in our [product benefits guide](/features/benefits/introduction) on how they work and how to customize the built-in ones we offer:
 
-* License Keys
-* Discord Server Role
-* GitHub Repository Access
-* File Downloads
-* Custom Benefit
+- License Keys
+- Discord Server Role
+- GitHub Repository Access
+- File Downloads
+- Custom Benefit
 
 ## Variants
 
@@ -113,3 +131,7 @@ Products on Polar can't be deleted, but they can be **archived**. You can do so 
 Existing customers will keep their access to the product, and subscriptions will continue to renew. However, the product will no longer be available for new purchases.
 
 It's possible to unarchive a product using the [Products Update API](/api-reference/products/update#body-is-archived).
+
+## Subscription Trials
+
+Polar does not have a built-in trial period. However, you can achieve similar functionality by associating a discount with the subscription product.

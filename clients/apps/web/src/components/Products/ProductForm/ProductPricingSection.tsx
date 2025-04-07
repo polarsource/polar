@@ -404,7 +404,7 @@ export const ProductPricingSection = ({
 }: ProductPricingSectionProps) => {
   const {
     control,
-    formState: { errors, isDirty },
+    formState: { errors },
     setValue,
     watch,
   } = useFormContext<ProductFormType>()

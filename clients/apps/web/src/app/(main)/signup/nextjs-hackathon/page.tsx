@@ -333,7 +333,7 @@ export default async function Page() {
                 fullWidth
                 size="lg"
                 text="Get Started"
-                className="bg-black font-medium text-white hover:bg-gray-900 dark:bg-white dark:text-black"
+                className="bg-polar-200 hover:bg-polar-300 rounded-none font-bold text-black hover:text-black"
               />
             </div>
           </div>

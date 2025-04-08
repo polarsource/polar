@@ -1,4 +1,5 @@
 import math
+from decimal import Decimal
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal, cast
 from uuid import UUID
@@ -10,6 +11,7 @@ from sqlalchemy import (
     ColumnElement,
     ForeignKey,
     Integer,
+    Numeric,
     String,
     Uuid,
     case,
@@ -320,8 +322,8 @@ class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.metered_unit]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.metered_unit
     )
-    unit_amount: Mapped[int] = mapped_column(
-        Integer,
+    unit_amount: Mapped[Decimal] = mapped_column(
+        Numeric(17, 12),  # 12 decimal places, 17 digits total
         # Polymorphic columns must be nullable, as they don't apply to other types
         nullable=True,
     )
@@ -344,7 +346,7 @@ class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
 
         label += f") × {format_currency(self.unit_amount / 100, self.price_currency.upper(), locale='en_US')}"
 
-        billable_units = max(0, units)
+        billable_units = Decimal(max(0, units))
         raw_amount = self.unit_amount * billable_units
         amount = (
             math.ceil(raw_amount)

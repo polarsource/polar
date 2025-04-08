@@ -5,6 +5,7 @@ import typing
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Any, Literal, TypeAlias, Unpack
 
 import pytest_asyncio
@@ -601,13 +602,13 @@ PriceFixtureType: TypeAlias = (
     tuple[int]
     | tuple[int | None, int | None, int | None]
     | tuple[None]
-    | tuple[Meter, int, int | None]
+    | tuple[Meter, Decimal, int | None]
 )
 
 
 def _is_metered_price_fixture_type(
     price: PriceFixtureType,
-) -> TypeIs[tuple[Meter, int, int | None]]:
+) -> TypeIs[tuple[Meter, Decimal, int | None]]:
     return isinstance(price[0], Meter)
 
 
@@ -743,7 +744,7 @@ async def create_product_price_metered_unit(
     *,
     product: Product,
     meter: Meter,
-    unit_amount: int = 100,
+    unit_amount: Decimal = Decimal(100),
     cap_amount: int | None = None,
 ) -> ProductPriceMeteredUnit:
     price = ProductPriceMeteredUnit(
@@ -1319,7 +1320,7 @@ async def product_recurring_metered(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(meter, 100, None)],
+        prices=[(meter, Decimal(100), None)],
     )
 
 
@@ -1331,7 +1332,7 @@ async def product_recurring_fixed_and_metered(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(meter, 100, None), (2000,)],
+        prices=[(meter, Decimal(100), None), (2000,)],
     )
 
 

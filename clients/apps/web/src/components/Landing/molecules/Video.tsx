@@ -42,7 +42,7 @@ export const Video = ({ src }: VideoProps) => {
   return (
     <div
       ref={videoContainerRef}
-      className="relative aspect-video w-full overflow-hidden rounded-3xl"
+      className="relative aspect-video w-full overflow-hidden rounded-xl md:rounded-3xl"
     >
       <video
         ref={videoRef}
@@ -50,6 +50,7 @@ export const Video = ({ src }: VideoProps) => {
         className="absolute inset-0 h-full w-full object-cover"
         autoPlay
         loop
+        playsInline
         muted={isMuted}
       />
       <div className="absolute right-8 top-8 hidden cursor-pointer md:block">

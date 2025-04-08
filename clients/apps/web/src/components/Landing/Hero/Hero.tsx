@@ -1,6 +1,7 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import LogoIcon from '@/components/Brand/LogoIcon'
 import { motion } from 'framer-motion'
 import { useCallback, useMemo, useState } from 'react'
 
@@ -48,6 +49,9 @@ export const Hero = () => {
       whileInView="visible"
       viewport={{ once: true }}
     >
+      <motion.span variants={itemVariants}>
+        <LogoIcon size={80} />
+      </motion.span>
       <motion.h1
         className="max-w-2xl text-pretty text-4xl !leading-tight text-gray-950 md:text-6xl dark:text-white"
         variants={itemVariants}

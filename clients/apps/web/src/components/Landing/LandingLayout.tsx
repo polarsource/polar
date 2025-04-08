@@ -35,7 +35,7 @@ const LandingPageTopbar = () => {
       <TopbarNavigation />
       <BrandingMenu
         className="mt-1 hidden md:block"
-        size={80}
+        size={100}
         logoVariant="logotype"
       />
       <BrandingMenu
@@ -44,7 +44,11 @@ const LandingPageTopbar = () => {
         size={80}
       />
       <div className="flex flex-row items-center gap-x-4">
-        <Button onClick={onLoginClick} variant="ghost">
+        <Button
+          onClick={onLoginClick}
+          className="text-black dark:text-white"
+          variant="secondary"
+        >
           Log in
         </Button>
       </div>

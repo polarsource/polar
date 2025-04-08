@@ -36,8 +36,8 @@ export const PageContent = () => {
       <div className="flex w-full flex-col items-center justify-center py-16 md:max-w-[1440px] md:px-8">
         <Video src="/assets/landing/Polar2024.webm" />
       </div>
+      <Testimonials />
       <Section className="flex flex-col gap-y-24">
-        <Testimonials />
         <Tools />
         <Pricing />
       </Section>

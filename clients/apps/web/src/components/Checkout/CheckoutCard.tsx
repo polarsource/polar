@@ -26,7 +26,7 @@ export const CheckoutCard = ({
     <ShadowBox
       className={twMerge(
         themePreset.polar.checkoutCardWrapper,
-        'flex flex-col gap-6',
+        'hidden flex-col gap-6 md:flex',
       )}
     >
       <CheckoutPricing

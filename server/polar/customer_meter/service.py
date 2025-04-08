@@ -68,25 +68,22 @@ class CustomerMeterService:
             event.id for event in events if event.source == EventSource.user
         ]
         usage_units = await meter_service.get_quantity(session, meter, usage_events)
+        customer_meter.consumed_units += Decimal(usage_units)
 
         credit_events = [event for event in events if is_meter_credit_event(event)]
         credited_units = non_negative_running_sum(
             event.user_metadata["units"] for event in credit_events
         )
+        customer_meter.credited_units += credited_units
 
         # 👟
-        new_balance = max(
-            Decimal(0),
-            customer_meter.units_balance + Decimal(usage_units) - credited_units,
+        customer_meter.balance = max(
+            Decimal(0), customer_meter.credited_units - customer_meter.consumed_units
         )
 
-        return await repository.update(
-            customer_meter,
-            update_dict={
-                "units_balance": new_balance,
-                "last_balanced_event": events[-1],
-            },
-        )
+        customer_meter.last_balanced_event = events[-1]
+
+        return await repository.update(customer_meter)
 
 
 customer_meter = CustomerMeterService()

@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import ForeignKey, Numeric, UniqueConstraint, Uuid
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.sql.sqltypes import Integer
 
 from polar.kit.db.models.base import RecordModel
 
@@ -28,7 +29,9 @@ class CustomerMeter(RecordModel):
     last_balanced_event_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("events.id"), nullable=True, index=True, default=None
     )
-    units_balance: Mapped[Decimal] = mapped_column(
+    consumed_units: Mapped[Decimal] = mapped_column(Numeric, nullable=False, default=0)
+    credited_units: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    balance: Mapped[Decimal] = mapped_column(
         Numeric, nullable=False, default=Decimal(0)
     )
 

@@ -238,7 +238,7 @@ class TransactionService(BaseTransactionService):
             statement = statement.where(Transaction.type == type)
 
         result = await session.execute(statement)
-        return result.scalar_one()
+        return int(result.scalar_one())
 
     def _get_readable_transactions_statement(self, user: User) -> Select[Any]:
         PaymentUserOrganization = aliased(UserOrganization)

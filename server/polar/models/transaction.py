@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer, String, Uuid
+from sqlalchemy import BigInteger, ForeignKey, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -193,13 +193,13 @@ class Transaction(RecordModel):
 
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     """Currency of this transaction from Polar's perspective. Should be `usd`."""
-    amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
     """Amount in cents of this transaction from Polar's perspective."""
     account_currency: Mapped[str] = mapped_column(String(3), nullable=False)
     """Currency of this transaction from user's account perspective. Might not be `usd`."""
-    account_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    account_amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
     """Amount in cents of this transaction from user's account perspective."""
-    tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    tax_amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
     """Amount of tax collected by Polar for this payment."""
     tax_country: Mapped[str] = mapped_column(String(2), nullable=True, index=True)
     """Country for which Polar collected the tax."""

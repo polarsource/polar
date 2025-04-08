@@ -52,8 +52,8 @@ export const Hero = () => {
         className="max-w-2xl text-pretty text-4xl !leading-tight text-gray-950 md:text-6xl dark:text-white"
         variants={itemVariants}
       >
-        Payment infrastructure for the{' '}
-        <span className="dark:text-polar-500 text-gray-400">21st century</span>
+        Ship faster,{' '}
+        <span className="dark:text-polar-500 text-gray-400">earn more</span>
       </motion.h1>
       <motion.p
         className="text-pretty text-xl leading-relaxed"

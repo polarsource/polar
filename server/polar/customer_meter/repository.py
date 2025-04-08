@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from polar.kit.repository import (
@@ -15,6 +16,19 @@ class CustomerMeterRepository(
     RepositoryBase[CustomerMeter],
 ):
     model = CustomerMeter
+
+    async def get_all_by_customer(
+        self, customer_id: UUID, *, options: Options = ()
+    ) -> Sequence[CustomerMeter]:
+        statement = (
+            self.get_base_statement()
+            .where(CustomerMeter.customer_id == customer_id)
+            .options(*options)
+            .order_by(
+                CustomerMeter.created_at.asc(),
+            )
+        )
+        return await self.get_all(statement)
 
     async def get_by_customer_and_meter(
         self,

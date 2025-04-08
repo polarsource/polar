@@ -3,14 +3,15 @@
 import { CONFIG } from '@/utils/config'
 import {
   CheckoutForm,
-  CheckoutPricing,
   CheckoutProductSwitcher,
+  CheckoutPWYWForm,
 } from '@polar-sh/checkout/components'
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
+import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
 import ShadowBox, {
   ShadowBoxOnMd,
 } from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -140,19 +141,19 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           'flex flex-col gap-y-12 overflow-hidden',
         )}
       >
-        <ShadowBox
-          className={twMerge(
-            themePreset.polar.checkoutCardWrapper,
-            'flex flex-col gap-6',
-          )}
-        >
-          <CheckoutProductSwitcher
+        <CheckoutProductSwitcher
+          checkout={checkout}
+          update={update}
+          themePreset={themePreset}
+        />
+        {checkout.productPrice.amountType === 'custom' && (
+          <CheckoutPWYWForm
             checkout={checkout}
             update={update}
+            productPrice={checkout.productPrice as ProductPriceCustom}
             themePreset={themePreset}
           />
-          <CheckoutPricing checkout={checkout} update={update} />
-        </ShadowBox>
+        )}
         <CheckoutForm
           form={form}
           checkout={checkout}
@@ -189,6 +190,14 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           update={update}
           themePreset={themePreset}
         />
+        {checkout.productPrice.amountType === 'custom' && (
+          <CheckoutPWYWForm
+            checkout={checkout}
+            update={update}
+            productPrice={checkout.productPrice as ProductPriceCustom}
+            themePreset={themePreset}
+          />
+        )}
         <CheckoutCard
           checkout={checkout}
           update={update}

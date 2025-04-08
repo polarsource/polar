@@ -25,6 +25,7 @@ from polar.kit.tax import TaxID, TaxIDType
 
 if TYPE_CHECKING:
     from .benefit_grant import BenefitGrant
+    from .customer_meter import CustomerMeter
     from .organization import Organization
     from .subscription import Subscription
 
@@ -186,3 +187,11 @@ class Customer(MetadataMixin, RecordModel):
     @granted_benefits.setter
     def granted_benefits(self, value: Sequence["BenefitGrant"]) -> None:
         self._granted_benefits = value
+
+    @property
+    def active_meters(self) -> Sequence["CustomerMeter"] | None:
+        return getattr(self, "_active_meters", None)
+
+    @active_meters.setter
+    def active_meters(self, value: Sequence["CustomerMeter"]) -> None:
+        self._active_meters = value

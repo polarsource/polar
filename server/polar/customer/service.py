@@ -8,6 +8,7 @@ from stripe import Customer as StripeCustomer
 
 from polar.auth.models import AuthSubject
 from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.customer_meter.repository import CustomerMeterRepository
 from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -227,6 +228,11 @@ class CustomerService:
             await benefit_grant_repository.list_granted_by_customer(
                 customer.id, options=(joinedload(BenefitGrant.benefit),)
             )
+        )
+
+        customer_meter_repository = CustomerMeterRepository.from_session(session)
+        customer.active_meters = await customer_meter_repository.get_all_by_customer(
+            customer.id
         )
 
         return CustomerState.model_validate(customer)

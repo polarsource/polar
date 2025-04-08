@@ -10,7 +10,9 @@ from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Customer, CustomerMeter, Event, Meter
 from polar.models.event import EventSource
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
+from polar.worker import enqueue_job
 
 from .repository import CustomerMeterRepository
 
@@ -19,12 +21,22 @@ class CustomerMeterService:
     async def update_customer(self, session: AsyncSession, customer: Customer) -> None:
         repository = MeterRepository.from_session(session)
         statement = repository.get_base_statement().order_by(Meter.created_at.asc())
+
+        updated = False
         async for meter in repository.stream(statement):
-            await self.update_customer_meter(session, customer, meter)
+            _, meter_updated = await self.update_customer_meter(
+                session, customer, meter
+            )
+            updated = updated or meter_updated
+
+        if updated:
+            enqueue_job(
+                "customer.webhook", WebhookEventType.customer_state_changed, customer.id
+            )
 
     async def update_customer_meter(
         self, session: AsyncSession, customer: Customer, meter: Meter
-    ) -> CustomerMeter | None:
+    ) -> tuple[CustomerMeter | None, bool]:
         event_repository = EventRepository.from_session(session)
         statement = (
             event_repository.get_base_statement()
@@ -57,7 +69,7 @@ class CustomerMeterService:
         events = await event_repository.get_all(statement)
 
         if not events:
-            return customer_meter
+            return customer_meter, False
 
         if customer_meter is None:
             customer_meter = await repository.create(
@@ -83,7 +95,7 @@ class CustomerMeterService:
 
         customer_meter.last_balanced_event = events[-1]
 
-        return await repository.update(customer_meter)
+        return await repository.update(customer_meter), True
 
 
 customer_meter = CustomerMeterService()

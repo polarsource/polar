@@ -115,11 +115,12 @@ class TestUpdateCustomerMeter:
     async def test_no_matching_event_not_existing_customer_meter(
         self, session: AsyncSession, customer: Customer, meter: Meter
     ) -> None:
-        customer_meter = await customer_meter_service.update_customer_meter(
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
             session, customer, meter
         )
 
         assert customer_meter is None
+        assert updated is False
 
     async def test_no_matching_event_existing_customer_meter(
         self,
@@ -137,15 +138,18 @@ class TestUpdateCustomerMeter:
         )
         await save_fixture(customer_meter)
 
-        updated_customer_meter = await customer_meter_service.update_customer_meter(
-            session, customer, meter
-        )
+        (
+            updated_customer_meter,
+            updated,
+        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
 
         assert updated_customer_meter is not None
         assert updated_customer_meter == customer_meter
         assert updated_customer_meter.consumed_units == Decimal(0)
         assert updated_customer_meter.credited_units == Decimal(20)
         assert updated_customer_meter.balance == Decimal(20)
+
+        assert updated is False
 
     async def test_new_customer_meter(
         self,
@@ -154,7 +158,7 @@ class TestUpdateCustomerMeter:
         events: list[Event],
         meter: Meter,
     ) -> None:
-        customer_meter = await customer_meter_service.update_customer_meter(
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
             session, customer, meter
         )
 
@@ -165,6 +169,8 @@ class TestUpdateCustomerMeter:
         assert customer_meter.credited_units == Decimal(10)
         assert customer_meter.balance == Decimal(0)
         assert customer_meter.last_balanced_event == events[-3]
+
+        assert updated is True
 
     async def test_existing_customer_meter(
         self,
@@ -184,12 +190,15 @@ class TestUpdateCustomerMeter:
         )
         await save_fixture(customer_meter)
 
-        updated_customer_meter = await customer_meter_service.update_customer_meter(
-            session, customer, meter
-        )
+        (
+            updated_customer_meter,
+            updated,
+        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
 
         assert updated_customer_meter is not None
         assert customer_meter.consumed_units == Decimal(40)
         assert customer_meter.credited_units == Decimal(50)
         assert customer_meter.balance == Decimal(10)
         assert updated_customer_meter.last_balanced_event == events[-3]
+
+        assert updated is True

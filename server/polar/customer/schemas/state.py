@@ -13,6 +13,7 @@ from polar.kit.metadata import (
 from polar.kit.schemas import (
     BENEFIT_GRANT_ID_EXAMPLE,
     BENEFIT_ID_EXAMPLE,
+    METER_ID_EXAMPLE,
     PRICE_ID_EXAMPLE,
     PRODUCT_ID_EXAMPLE,
     SUBSCRIPTION_ID_EXAMPLE,
@@ -118,12 +119,35 @@ class CustomerStateBenefitGrant(TimestampedSchema, IDSchema):
     properties: BenefitGrantProperties
 
 
+class CustomerStateMeter(TimestampedSchema):
+    """An active meter for a customer, with latest consumed and credited units."""
+
+    meter_id: UUID4 = Field(
+        description="The ID of the meter.", examples=[METER_ID_EXAMPLE]
+    )
+    consumed_units: float = Field(
+        description="The number of consumed units.", examples=[25.0]
+    )
+    credited_units: int = Field(
+        description="The number of credited units.", examples=[100]
+    )
+    balance: float = Field(
+        description=(
+            "The balance of the meter, "
+            "i.e. the difference between credited and consumed units. "
+            "Never goes negative."
+        ),
+        examples=[75.0],
+    )
+
+
 class CustomerState(CustomerBase):
     """
     A customer along with additional state information:
 
     * Active subscriptions
-    * Active benefits
+    * Granted benefits
+    * Active meters
     """
 
     active_subscriptions: list[CustomerStateSubscription] = Field(
@@ -131,4 +155,7 @@ class CustomerState(CustomerBase):
     )
     granted_benefits: list[CustomerStateBenefitGrant] = Field(
         description="The customer's active benefit grants."
+    )
+    active_meters: list[CustomerStateMeter] = Field(
+        description="The customer's active meters.",
     )

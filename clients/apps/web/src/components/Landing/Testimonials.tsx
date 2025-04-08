@@ -10,9 +10,7 @@ const testimonials = [
     avatar: '/assets/landing/testamonials/mitchell.jpg',
     text: (
       <>
-        <p className="dark:text-polar-200 text-gray-500">
-          I&apos;ve joined Polar as an advisor!
-        </p>
+        <p>I&apos;ve joined Polar as an advisor!</p>
         <p>
           I think it benefits everyone for devs to have more options to get paid
           to work on their passions, to support upstreams, and for users to have
@@ -23,24 +21,49 @@ const testimonials = [
     ),
   },
   {
-    link: 'https://x.com/awesomekling/status/1794769509305528625',
-    name: 'Andreas Kling',
-    username: 'awesomekling',
+    link: 'https://x.com/steventey/status/1886124389357490670',
+    name: 'Steven Tey',
+    username: 'steventey',
     verified: true,
-    avatar: '/assets/landing/testamonials/andreas.jpg',
+    avatar: '/assets/landing/testamonials/steven.jpg',
     text: (
       <>
-        <p className="dark:text-polar-200 text-gray-500">
-          I just used Polar to sponsor someone to improve Polar in Ladybird
-          Browser!
-        </p>
+        <p>Open source + great DX + responsive support always wins.</p>
         <p>
-          It&apos;s honestly such a comfy way to spread the love and share some
-          of my funding with more of our developers!
+          If you&apos;re selling stuff online and haven&apos;t tried @polar_sh
+          yet — 100% recommend doing so!
         </p>
       </>
     ),
   },
+  {
+    link: 'https://x.com/alexhbass/status/1895688367066747251',
+    name: 'Alex Bass',
+    username: 'alexhbass',
+    verified: true,
+    avatar: '/assets/landing/testamonials/alex.jpg',
+    text: (
+      <p>
+        We switched to @polar_sh because of their killer API, UX, and product.
+        Also love that it&apos;s Open-Source. Their team cares A LOT as well.
+        Worth the minor fee difference.
+      </p>
+    ),
+  },
+  {
+    name: 'Andrea Bizzotto 🇺🇦',
+    username: 'biz84',
+    avatar: '/assets/landing/testamonials/andrea.png',
+    link: 'https://x.com/biz84/status/1883284175459135808',
+    verified: false,
+    text: (
+      <p>
+        I&apos;ve been integrating Polar recently and had a fantastic
+        experience! Great DX and the team responds to support super quickly!
+      </p>
+    ),
+  },
+
   {
     link: 'https://x.com/samuel_colvin/status/1676167205715582978',
     name: 'Samuel Colvin',
@@ -49,9 +72,7 @@ const testimonials = [
     avatar: '/assets/landing/testamonials/samuel.jpg',
     text: (
       <>
-        <p className="dark:text-polar-200 text-gray-500">
-          Amazing! Really excited to seeing how this turns out.
-        </p>
+        <p>Amazing! Really excited to seeing how this turns out.</p>
         <p>
           Polar is the cutting edge of how open source might be financed in the
           future.
@@ -60,21 +81,17 @@ const testimonials = [
     ),
   },
   {
-    link: 'https://x.com/martin_buur/status/1831618586374201843',
-    name: 'Martin Buur',
-    username: 'martin_buur',
+    link: 'https://x.com/rauchg/status/1902002814420767178',
+    name: 'Guillermo Rauch',
+    username: 'rauchg',
     verified: true,
-    avatar: '/assets/landing/testamonials/martin.jpg',
+    avatar: '/assets/landing/testamonials/rauch.jpg',
     text: (
-      <>
-        <p>
-          Wow, less than 10 minutes to get a fully working sales page for
-          private Github repo access, really impressive.
-        </p>
-        <p className="dark:text-polar-200 text-gray-500">
-          Already connected with Stripe for payouts too 🤯
-        </p>
-      </>
+      <ul>
+        <li>I&apos;m a big fan of this pattern:</li>
+        <li>$ cd my-next-app</li>
+        <li>$ npx {`{auth,billing,data,cms…}-init`}</li>
+      </ul>
     ),
   },
   {
@@ -87,6 +104,63 @@ const testimonials = [
       <p>
         I&apos;ve been waiting for this so hard. LFG, congratulations on the
         launch guys!
+      </p>
+    ),
+  },
+  {
+    name: 'kitze',
+    username: 'thekitze',
+    avatar: '/assets/landing/testamonials/kitze.jpg',
+    link: 'https://x.com/thekitze/status/1909217027660595496',
+    verified: true,
+    text: <p>I just saw the plugin and oh my god</p>,
+  },
+  {
+    name: 'Jim Raptis',
+    username: 'd__raptis',
+    avatar: '/assets/landing/testamonials/jim.jpg',
+    link: 'https://x.com/d__raptis/status/1896551633917477156',
+    verified: true,
+    text: (
+      <>
+        <p>
+          I&apos;ve migrated the http://gradients.fm pre-order checkout to
+          @polar_sh 💳
+        </p>
+        <p>Much quicker to load and has a more beautiful checkout page imo.</p>
+      </>
+    ),
+  },
+  {
+    name: 'Jonathan Bloomfield',
+    username: 'Champdebloom',
+    avatar: '/assets/landing/testamonials/bloomfield.jpg',
+    link: 'https://x.com/Champdebloom/status/1908571341915107698',
+    verified: true,
+    text: (
+      <>
+        <p>
+          I spent hours wrestling with Stripe last night and I know it&apos;s a
+          skill issue, but @polar_sh&apos;s DX is so peak this wouldn&apos;t
+          have been a problem.
+        </p>
+        <p>
+          Just waiting on CAD support so I can migrate and it can&apos;t come
+          soon enough!
+        </p>
+      </>
+    ),
+  },
+  {
+    name: 'Dmitry Vlasov',
+    username: 'vlasov',
+    avatar: '/assets/landing/testamonials/dmitry.jpg',
+    link: 'https://x.com/vlasov/status/1908428846371864880',
+    verified: true,
+    text: (
+      <p>
+        Someone here recommended @polar_sh, and I can only say the experience
+        has been very smooth so far.
       </p>
     ),
   },
@@ -111,20 +185,48 @@ const testimonials = [
     ),
   },
   {
-    link: 'https://x.com/arcastrodev/status/1853033088596492409',
-    name: 'arcastro',
-    username: 'arcastrodev',
-    verified: false,
-    avatar: '/assets/landing/testamonials/arcastro.jpg',
-    text: <p>this is an insanely good product</p>,
+    link: 'https://x.com/jonathan_wilke/status/1896551633917477156',
+    name: 'Jonathan Wilke',
+    username: 'jonathan_wilke',
+    verified: true,
+    avatar: '/assets/landing/testamonials/jonathan.jpg',
+    text: (
+      <p>
+        Wow this is just amazing. With @polar_sh I can directly give the
+        customer access to the supastarter repository and invite them to the
+        discord server 🔥🚀
+      </p>
+    ),
   },
   {
-    link: 'https://x.com/thatguyDOR/status/1854800736925696249',
-    name: 'DOR',
-    username: 'thatguyDOR',
+    link: 'https://x.com/b_shulha/status/1894387529299739123',
+    name: 'Bohdan Shulha',
+    username: 'b_shulha',
     verified: true,
-    avatar: '/assets/landing/testamonials/dor.jpg',
-    text: <p>Damn this is super clean!</p>,
+    avatar: '/assets/landing/testamonials/bohdan.jpg',
+    text: (
+      <>
+        <p>I feel like @polar_sh is @vercel of payments.</p>
+        <p>Keep pushing! 💘</p>
+      </>
+    ),
+  },
+  {
+    link: 'https://x.com/dparksdev/status/1902848435318935690',
+    name: 'David Parks',
+    username: 'dparksdev',
+    verified: true,
+    avatar: '/assets/landing/testamonials/david.jpg',
+    text: (
+      <>
+        <p>The @polar_sh plugin for @better_auth is magic.</p>
+        <ul className="list-disc pl-4">
+          <li>Automatically creates customers on signup</li>
+          <li>Maps your databases id to an external id for reference</li>
+          <li>Creates checkout, portal and webhook routes for you</li>
+        </ul>
+      </>
+    ),
   },
 ]
 
@@ -149,13 +251,11 @@ const Testamonial = ({
     <Link
       href={link}
       target="_blank"
-      className="dark:bg-polar-900 dark:hover:bg-polar-800 flex flex-row gap-x-4 rounded-2xl bg-white p-6 transition-colors hover:bg-white"
+      className="dark:bg-polar-900 border-polar-200 dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-row gap-x-4 rounded-2xl border bg-white p-6 transition-colors hover:bg-white"
     >
-      <div className="flex flex-shrink-0">
-        <Avatar className="h-12 w-12" avatar_url={avatar} name={name} />
-      </div>
       <div className="flex flex-col gap-y-4 pt-1.5">
         <div className="flex flex-row items-center gap-x-3">
+          <Avatar className="h-12 w-12" avatar_url={avatar} name={name} />
           <div className="flex flex-col text-sm">
             <div className="flex flex-row items-center gap-x-2">
               <span>{name}</span>
@@ -167,7 +267,9 @@ const Testamonial = ({
           </div>
         </div>
         <div className="flex flex-col gap-y-6">
-          <div className="flex flex-col gap-y-4">{text}</div>
+          <div className="dark:text-polar-100 flex flex-col gap-y-4 text-gray-950">
+            {text}
+          </div>
         </div>
       </div>
     </Link>
@@ -175,25 +277,43 @@ const Testamonial = ({
 }
 
 export const Testimonials = () => {
+  const halfLength = Math.ceil(testimonials.length / 2)
+  const firstRow = testimonials.slice(0, halfLength)
+  const secondRow = testimonials.slice(halfLength)
+
   return (
     <div className="flex flex-col items-center gap-y-24">
       <h3 className="text-center text-2xl leading-snug md:text-5xl">
         Trusted by thousands of developers
       </h3>
-      <div className="flex flex-col gap-4 md:flex-row">
-        <div className="flex flex-1 flex-col gap-y-4">
-          {testimonials
-            .filter((_, index) => index % 2 === 0)
-            .map((testimonial, index) => (
-              <Testamonial {...testimonial} key={index} />
-            ))}
+      <div className="flex flex-col gap-4 md:relative md:w-full md:overflow-hidden">
+        <div className="flex flex-col gap-y-4 md:hidden">
+          {firstRow.map((testimonial, index) => (
+            <Testamonial key={`testimonial-${index}`} {...testimonial} />
+          ))}
         </div>
-        <div className="flex flex-1 flex-col gap-y-4">
-          {testimonials
-            .filter((_, index) => index % 2 === 1)
-            .map((testimonial, index) => (
-              <Testamonial {...testimonial} key={index} />
-            ))}
+        <div className="hidden flex-col gap-y-4 md:flex md:w-screen">
+          {/* First row */}
+          <div className="flex flex-col gap-y-4 md:w-max md:animate-[infinite-scroll_50s_linear_infinite_forwards] md:flex-row md:gap-x-4">
+            {[...firstRow, ...firstRow, ...firstRow].map(
+              (testimonial, index) => (
+                <div key={`row1-${index}`} className="md:w-[400px]">
+                  <Testamonial {...testimonial} />
+                </div>
+              ),
+            )}
+          </div>
+
+          {/* Second row */}
+          <div className="flex flex-col gap-y-4 md:w-max md:animate-[infinite-scroll_50s_linear_infinite_forwards] md:flex-row md:gap-x-4">
+            {[...secondRow, ...secondRow, ...secondRow].map(
+              (testimonial, index) => (
+                <div key={`row2-${index}`} className="md:w-[400px]">
+                  <Testamonial {...testimonial} />
+                </div>
+              ),
+            )}
+          </div>
         </div>
       </div>
     </div>

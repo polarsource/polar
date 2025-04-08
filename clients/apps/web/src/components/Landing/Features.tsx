@@ -55,6 +55,30 @@ const FeatureCard = ({
   )
 }
 
+const CustomerCard = () => {
+  return (
+    <div className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-4 rounded-lg border border-gray-200 bg-gray-100 p-4">
+      <div className="h-12 w-12 overflow-hidden rounded-full">
+        <Image
+          src="/assets/landing/testamonials/emil.jpg"
+          alt="Customer avatar"
+          className="h-full w-full object-cover"
+          width={48}
+          height={48}
+        />
+      </div>
+      <div className="flex flex-col">
+        <span className="font-medium text-black dark:text-white">John Doe</span>
+        <span className="dark:text-polar-500 flex flex-row gap-x-2 text-sm text-gray-500">
+          <span>Premium Plan</span>
+          <span>•</span>
+          <span>Monthly</span>
+        </span>
+      </div>
+    </div>
+  )
+}
+
 type FeaturesProps = {
   className?: string
 }
@@ -111,7 +135,7 @@ const Features = ({ className }: FeaturesProps) => {
           ].map((item, i) => (
             <div
               key={i}
-              className="dark:bg-polar-800 flex items-center gap-x-2 rounded-lg bg-gray-100 p-3"
+              className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-2 rounded-lg border border-gray-200 bg-gray-100 p-3"
             >
               {item.icon}
               <span className="dark:text-polar-500 text-sm text-gray-500">
@@ -129,27 +153,15 @@ const Features = ({ className }: FeaturesProps) => {
         'Streamlined customer lifecycle management with detailed profiles and analytics.',
       linkHref: 'https://docs.polar.sh/features/customer-management',
       children: (
-        <div className="flex flex-col gap-y-4">
-          <div className="dark:bg-polar-800 flex items-center gap-x-4 rounded-lg bg-gray-100 p-4">
-            <div className="h-12 w-12 overflow-hidden rounded-full">
-              <Image
-                src="/assets/landing/testamonials/emil.jpg"
-                alt="Customer avatar"
-                className="h-full w-full object-cover"
-                width={48}
-                height={48}
-              />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-medium text-black dark:text-white">
-                John Doe
-              </span>
-              <span className="dark:text-polar-500 flex flex-row gap-x-2 text-sm text-gray-500">
-                <span>Premium Plan</span>
-                <span>•</span>
-                <span>Monthly</span>
-              </span>
-            </div>
+        <div className="relative h-[120px] md:h-[200px]">
+          <div className="absolute left-0 right-0 top-0 scale-90 transition-transform hover:-translate-y-1">
+            <CustomerCard />
+          </div>
+          <div className="absolute left-0 right-0 top-4 scale-95 transition-transform hover:-translate-y-1">
+            <CustomerCard />
+          </div>
+          <div className="absolute left-0 right-0 top-8 transition-transform hover:-translate-y-1">
+            <CustomerCard />
           </div>
         </div>
       ),
@@ -161,7 +173,7 @@ const Features = ({ className }: FeaturesProps) => {
         'Robust event ingestion API that enables precise usage-based billing.',
       linkHref: 'https://github.com/polarsource/polar-ingestion',
       children: (
-        <div className="dark:bg-polar-800 flex items-center gap-x-4 overflow-auto rounded-lg bg-gray-100 p-4">
+        <div className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-4 overflow-auto rounded-lg border border-gray-200 bg-gray-100 p-4">
           <pre className="font-mono text-xs">
             {`Ingestion()
 .strategy(new LLM(openai('gpt-4o')))
@@ -177,7 +189,7 @@ const Features = ({ className }: FeaturesProps) => {
         'Focus on your passion while we handle all the tax compliance.',
       linkHref: 'https://docs.polar.sh/merchant-of-record/introduction',
       children: (
-        <div className="dark:bg-polar-800 flex flex-col gap-y-2 rounded-lg bg-gray-100 p-4">
+        <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-y-2 rounded-lg border border-gray-200 bg-gray-100 p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm text-black dark:text-white">
               Tax Report 2025

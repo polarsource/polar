@@ -131,7 +131,9 @@ class TestUpdateCustomerMeter:
         customer_meter = CustomerMeter(
             customer=customer,
             meter=meter,
-            units_balance=Decimal(20),
+            consumed_units=Decimal(0),
+            credited_units=20,
+            balance=Decimal(20),
         )
         await save_fixture(customer_meter)
 
@@ -141,7 +143,9 @@ class TestUpdateCustomerMeter:
 
         assert updated_customer_meter is not None
         assert updated_customer_meter == customer_meter
-        assert updated_customer_meter.units_balance == Decimal(20)
+        assert updated_customer_meter.consumed_units == Decimal(0)
+        assert updated_customer_meter.credited_units == Decimal(20)
+        assert updated_customer_meter.balance == Decimal(20)
 
     async def test_new_customer_meter(
         self,
@@ -157,7 +161,9 @@ class TestUpdateCustomerMeter:
         assert customer_meter is not None
         assert customer_meter.customer == customer
         assert customer_meter.meter == meter
-        assert customer_meter.units_balance == Decimal(30)
+        assert customer_meter.consumed_units == Decimal(40)
+        assert customer_meter.credited_units == Decimal(10)
+        assert customer_meter.balance == Decimal(0)
         assert customer_meter.last_balanced_event == events[-3]
 
     async def test_existing_customer_meter(
@@ -172,7 +178,9 @@ class TestUpdateCustomerMeter:
             customer=customer,
             meter=meter,
             last_balanced_event=events[0],
-            units_balance=Decimal(20),
+            consumed_units=Decimal(20),
+            credited_units=40,
+            balance=Decimal(20),
         )
         await save_fixture(customer_meter)
 
@@ -181,5 +189,7 @@ class TestUpdateCustomerMeter:
         )
 
         assert updated_customer_meter is not None
-        assert updated_customer_meter.units_balance == Decimal(30)
+        assert customer_meter.consumed_units == Decimal(40)
+        assert customer_meter.credited_units == Decimal(50)
+        assert customer_meter.balance == Decimal(10)
         assert updated_customer_meter.last_balanced_event == events[-3]

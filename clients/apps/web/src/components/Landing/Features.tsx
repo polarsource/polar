@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  AllInclusiveOutlined,
   Check,
   DonutLargeOutlined,
   DownloadingOutlined,
@@ -8,7 +9,6 @@ import {
   HiveOutlined,
   KeyOutlined,
   LanguageOutlined,
-  ShieldOutlined,
 } from '@mui/icons-material'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
@@ -119,7 +119,7 @@ const Features = ({ className }: FeaturesProps) => {
       ),
     },
     {
-      icon: <ShieldOutlined fontSize="large" />,
+      icon: <AllInclusiveOutlined fontSize="large" />,
       title: 'Benefits Engine',
       description:
         'Powerful entitlements engine that automates access to various features.',
@@ -146,7 +146,7 @@ const Features = ({ className }: FeaturesProps) => {
               className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-2 rounded-lg border border-gray-200 bg-gray-100 p-3"
             >
               {item.icon}
-              <span className="dark:text-polar-500 text-sm text-gray-500">
+              <span className="dark:text-polar-50 text-sm text-gray-950">
                 {item.text}
               </span>
             </div>

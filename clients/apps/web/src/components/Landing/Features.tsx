@@ -1,3 +1,5 @@
+'use client'
+
 import {
   Check,
   DonutLargeOutlined,
@@ -8,6 +10,7 @@ import {
   LanguageOutlined,
   ShieldOutlined,
 } from '@mui/icons-material'
+import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
@@ -33,25 +36,30 @@ const FeatureCard = ({
   children,
 }: FeatureCardProps) => {
   return (
-    <Link
-      href={linkHref}
-      target="_blank"
-      className={twMerge(
-        'dark:border-polar-700 dark:bg-polar-900 flex flex-col justify-between gap-y-8 rounded-2xl border border-gray-200 bg-white p-8 transition-transform hover:translate-y-[-4px] md:h-96',
-        className,
-      )}
+    <motion.div
+      variants={{
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { duration: 2 } },
+      }}
+      className={twMerge('flex flex-col gap-y-6', className)}
     >
-      <div className="flex flex-col gap-y-6">
-        {icon}
-        <div className="flex flex-col gap-y-2">
-          <h3 className="text-xl text-black dark:text-white">{title}</h3>
-          <p className="dark:text-polar-500 w-full flex-grow text-gray-500 md:max-w-96">
-            {description}
-          </p>
+      <Link
+        href={linkHref}
+        target="_blank"
+        className="dark:border-polar-700 dark:bg-polar-900 flex flex-col justify-between gap-y-8 rounded-2xl border border-gray-200 bg-white p-8 transition-transform hover:translate-y-[-4px] md:h-96"
+      >
+        <div className="flex flex-col gap-y-6">
+          {icon}
+          <div className="flex flex-col gap-y-2">
+            <h3 className="text-xl text-black dark:text-white">{title}</h3>
+            <p className="dark:text-polar-500 w-full flex-grow text-gray-500 md:max-w-96">
+              {description}
+            </p>
+          </div>
         </div>
-      </div>
-      {children}
-    </Link>
+        {children}
+      </Link>
+    </motion.div>
   )
 }
 
@@ -219,7 +227,14 @@ const Features = ({ className }: FeaturesProps) => {
 
   return (
     <section className={className}>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        transition={{
+          staggerChildren: 0.1,
+        }}
+        className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
+      >
         {features.map((feature, index) => (
           <FeatureCard
             className={index === 0 ? 'md:col-span-2' : ''}
@@ -232,7 +247,7 @@ const Features = ({ className }: FeaturesProps) => {
             {feature.children}
           </FeatureCard>
         ))}
-      </div>
+      </motion.div>
     </section>
   )
 }

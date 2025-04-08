@@ -1,3 +1,4 @@
+from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import ANY, MagicMock, call
 
@@ -64,7 +65,7 @@ async def product_metered_unit(
         save_fixture,
         organization=organization,
         recurring_interval=SubscriptionRecurringInterval.month,
-        prices=[(meter, 100, None)],
+        prices=[(meter, Decimal(100), None)],
     )
 
 
@@ -268,7 +269,10 @@ class TestCreateOrderItemsFromPending:
         )
 
         old_price = await create_product_price_metered_unit(
-            save_fixture, product=product_metered_unit, meter=meter, unit_amount=250
+            save_fixture,
+            product=product_metered_unit,
+            meter=meter,
+            unit_amount=Decimal(250),
         )
         current_price = product_metered_unit.prices[0]
         assert is_metered_price(current_price)

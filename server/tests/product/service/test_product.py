@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, call
@@ -698,7 +699,7 @@ class TestCreate:
                     ProductPriceMeteredUnitCreate(
                         amount_type=ProductPriceAmountType.metered_unit,
                         price_currency="usd",
-                        unit_amount=100,
+                        unit_amount=Decimal(100),
                         meter_id=METER_ID,
                     )
                 ],
@@ -789,7 +790,7 @@ class TestCreate:
                         ProductPriceMeteredUnitCreate(
                             amount_type=ProductPriceAmountType.metered_unit,
                             price_currency="usd",
-                            unit_amount=100,
+                            unit_amount=Decimal(100),
                             meter_id=uuid.uuid4(),
                         ),
                     ],
@@ -1415,7 +1416,7 @@ class TestUpdate:
                 ProductPriceMeteredUnitCreate(
                     amount_type=ProductPriceAmountType.metered_unit,
                     price_currency="usd",
-                    unit_amount=100,
+                    unit_amount=Decimal(100),
                     meter_id=uuid.uuid4(),
                 ),
             ]

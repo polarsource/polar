@@ -1,4 +1,5 @@
 import builtins
+from decimal import Decimal
 from typing import Annotated, Any, Literal
 
 from pydantic import UUID4, Discriminator, Field, Tag, computed_field
@@ -156,7 +157,12 @@ class ProductPriceMeteredUnitCreate(ProductPriceMeteredCreateBase):
 
     amount_type: Literal[ProductPriceAmountType.metered_unit]
     price_currency: PriceCurrency
-    unit_amount: int = Field(ge=0, description="The price per unit in cents.")
+    unit_amount: Decimal = Field(
+        gt=0,
+        max_digits=17,
+        decimal_places=12,
+        description="The price per unit in cents. Supports up to 12 decimal places.",
+    )
     cap_amount: int | None = Field(
         default=None,
         ge=0,
@@ -453,7 +459,7 @@ class ProductPriceMeteredUnit(ProductPriceBase):
 
     amount_type: Literal[ProductPriceAmountType.metered_unit]
     price_currency: str = Field(description="The currency.")
-    unit_amount: int = Field(description="The price per unit in cents.")
+    unit_amount: Decimal = Field(description="The price per unit in cents.")
     cap_amount: int | None = Field(
         description=(
             "The maximum amount in cents that can be charged, "

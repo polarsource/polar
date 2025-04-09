@@ -44,8 +44,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     name: selectedEventName ? [selectedEventName] : undefined,
   })
 
-  console.log(eventNames)
-
   return (
     <DashboardBody
       title={selectedEventName ? selectedEventName : 'Events'}

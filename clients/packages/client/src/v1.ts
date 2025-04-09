@@ -15132,7 +15132,7 @@ export interface components {
              * Unit Amount
              * @description The price per unit in cents.
              */
-            unit_amount: number;
+            unit_amount: string;
             /**
              * Cap Amount
              * @description The maximum amount in cents that can be charged, regardless of the number of units consumed.
@@ -15171,9 +15171,9 @@ export interface components {
             price_currency: string;
             /**
              * Unit Amount
-             * @description The price per unit in cents.
+             * @description The price per unit in cents. Supports up to 12 decimal places.
              */
-            unit_amount: number;
+            unit_amount: number | string;
             /**
              * Cap Amount
              * @description Optional maximum amount in cents that can be charged, regardless of the number of units consumed.

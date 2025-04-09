@@ -32,6 +32,7 @@ import {
 } from 'react-hook-form'
 import { Section } from '../../Layout/Section'
 import { ProductFormType } from './ProductForm'
+import UnitAmountInput from './UnitAmountInput'
 
 export interface ProductPriceFixedItemProps {
   index: number
@@ -219,15 +220,14 @@ export const ProductPriceMeteredUnitItem: React.FC<
             <FormItem>
               <FormLabel>Amount per unit</FormLabel>
               <FormControl>
-                <MoneyInput
+                <UnitAmountInput
                   {...field}
                   name={field.name}
-                  value={field.value || undefined}
-                  onChange={(v) => {
+                  value={field.value}
+                  onValueChange={(v) => {
                     field.onChange(v)
                     setValue(`prices.${index}.id`, '')
                   }}
-                  placeholder={10}
                 />
               </FormControl>
               <FormMessage />

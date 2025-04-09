@@ -1,22 +1,9 @@
 from pydantic import UUID4
 
-from polar.enums import Platforms, SubscriptionRecurringInterval
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.pledge import PledgeState
 from polar.models.transaction import PlatformFeeType, Processor, TransactionType
-
-
-class TransactionExternalOrganization(IDSchema, TimestampedSchema):
-    platform: Platforms
-    name: str
-    avatar_url: str
-    is_personal: bool
-
-
-class TransactionRepository(IDSchema, TimestampedSchema):
-    platform: Platforms
-    organization_id: UUID4
-    name: str
 
 
 class TransactionUser(IDSchema, Schema):
@@ -24,20 +11,9 @@ class TransactionUser(IDSchema, Schema):
     avatar_url: str
 
 
-class TransactionIssue(IDSchema, TimestampedSchema):
-    platform: Platforms
-    organization_id: UUID4
-    repository_id: UUID4
-    number: int
-    title: str
-
-    organization: TransactionExternalOrganization
-    repository: TransactionRepository
-
-
 class TransactionPledge(IDSchema, TimestampedSchema):
     state: PledgeState
-    issue: TransactionIssue
+    issue_reference: str
 
 
 class TransactionOrganization(IDSchema, TimestampedSchema):
@@ -47,7 +23,7 @@ class TransactionOrganization(IDSchema, TimestampedSchema):
 
 
 class TransactionIssueReward(IDSchema, TimestampedSchema):
-    issue_id: UUID4
+    issue_reference: str
     share_thousands: int
 
 

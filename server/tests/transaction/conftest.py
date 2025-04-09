@@ -8,13 +8,10 @@ from polar.enums import AccountType, SubscriptionRecurringInterval
 from polar.models import (
     Account,
     Customer,
-    ExternalOrganization,
-    Issue,
     IssueReward,
     Order,
     Organization,
     Pledge,
-    Repository,
     Transaction,
     User,
 )
@@ -117,15 +114,10 @@ async def account(
 async def transaction_pledge(
     save_fixture: SaveFixture,
     organization: Organization,
-    external_organization_linked: ExternalOrganization,
-    repository_linked: Repository,
-    issue_linked: Issue,
 ) -> Pledge:
     return await create_pledge(
         save_fixture,
-        external_organization_linked,
-        repository_linked,
-        issue_linked,
+        organization,
         pledging_organization=organization,
         type=PledgeType.pay_on_completion,
     )
@@ -133,10 +125,10 @@ async def transaction_pledge(
 
 @pytest_asyncio.fixture
 async def transaction_issue_reward(
-    save_fixture: SaveFixture, issue: Issue
+    save_fixture: SaveFixture, transaction_pledge: Pledge
 ) -> IssueReward:
     issue_reward = IssueReward(
-        issue_id=issue.id,
+        issue_reference=transaction_pledge.issue_reference,
         share_thousands=100,
     )
     await save_fixture(issue_reward)

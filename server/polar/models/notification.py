@@ -24,8 +24,6 @@ class Notification(RecordModel):
 
     type: Mapped[str] = mapped_column(String, nullable=False)
 
-    issue_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("issues.id"), nullable=True)
-
     pledge_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("pledges.id"), nullable=True
     )

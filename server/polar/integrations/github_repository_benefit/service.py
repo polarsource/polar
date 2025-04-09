@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 import structlog
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.oauth2 import OAuth2Token, RefreshTokenError
@@ -6,7 +8,6 @@ from sqlalchemy.exc import IntegrityError
 import polar.integrations.github.client as github
 from polar.config import settings
 from polar.exceptions import PolarError, ResourceAlreadyExists
-from polar.integrations.github import types
 from polar.integrations.github.service.user import github_user as github_user_service
 from polar.integrations.github_repository_benefit.schemas import (
     GitHubInvitesBenefitOrganization,
@@ -17,6 +18,11 @@ from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
 from polar.redis import Redis
+
+from .types import SimpleUser
+
+if TYPE_CHECKING:
+    from . import types
 
 log: Logger = structlog.get_logger()
 
@@ -165,12 +171,12 @@ class GitHubRepositoryBenefitUserService:
 
     async def list_user_installations(
         self, oauth: OAuthAccount
-    ) -> list[types.Installation]:
+    ) -> list["types.Installation"]:
         client = github.get_client(access_token=oauth.access_token)
 
         def map_installations_func(
-            r: github.Response[types.UserInstallationsGetResponse200],
-        ) -> list[types.Installation]:
+            r: github.Response["types.UserInstallationsGetResponse200"],
+        ) -> list["types.Installation"]:
             return r.parsed_data.installations
 
         installations: list[types.Installation] = []
@@ -186,7 +192,7 @@ class GitHubRepositoryBenefitUserService:
         self,
         redis: Redis,
         oauth: OAuthAccount,
-        installations: list[types.Installation],
+        installations: list["types.Installation"],
     ) -> list[GitHubInvitesBenefitOrganization]:
         res: list[GitHubInvitesBenefitOrganization] = []
 
@@ -197,11 +203,11 @@ class GitHubRepositoryBenefitUserService:
         return res
 
     async def get_billing_plan(
-        self, redis: Redis, oauth: OAuthAccount, installation: types.Installation
+        self, redis: Redis, oauth: OAuthAccount, installation: "types.Installation"
     ) -> GitHubInvitesBenefitOrganization | None:
         if installation.account is None:
             return None
-        if not isinstance(installation.account, types.SimpleUser):
+        if not isinstance(installation.account, SimpleUser):
             return None
 
         plan: (
@@ -250,7 +256,7 @@ class GitHubRepositoryBenefitUserService:
     async def list_repositories(
         self,
         oauth: OAuthAccount,
-        installations: list[types.Installation],
+        installations: list["types.Installation"],
     ) -> list[GitHubInvitesBenefitRepository]:
         client = github.get_client(access_token=oauth.access_token)
 
@@ -263,16 +269,16 @@ class GitHubRepositoryBenefitUserService:
 
         def map_repos_func(
             r: github.Response[
-                types.UserInstallationsInstallationIdRepositoriesGetResponse200
+                "types.UserInstallationsInstallationIdRepositoriesGetResponse200"
             ],
-        ) -> list[types.Repository]:
+        ) -> list["types.Repository"]:
             return r.parsed_data.repositories
 
         # get repos
         for install in installations:
             if install.account is None:
                 continue
-            if not isinstance(install.account, types.SimpleUser):
+            if not isinstance(install.account, SimpleUser):
                 continue
 
             async for repo in client.paginate(
@@ -295,7 +301,7 @@ class GitHubRepositoryBenefitUserService:
         *,
         owner: str,
         name: str,
-    ) -> types.Installation | None:
+    ) -> "types.Installation | None":
         app_client = github.get_app_client(
             redis, app=github.GitHubApp.repository_benefit
         )

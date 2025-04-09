@@ -42,23 +42,6 @@ class Loops:
             },
         )
 
-    async def user_updated_organization(
-        self,
-        user: User,
-        enabled_storefront: bool = False,
-    ) -> None:
-        if enabled_storefront:
-            await self.user_enabled_storefront(user)
-
-    async def user_enabled_storefront(self, user: User) -> None:
-        await self.enqueue_event(
-            user,
-            event="Storefront Enabled",
-            properties={
-                "storefrontEnabled": True,
-            },
-        )
-
     async def user_installed_github_organization(self, user: User) -> None:
         await self.enqueue_event(
             user,

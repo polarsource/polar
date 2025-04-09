@@ -18,7 +18,7 @@ from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.utils import generate_uuid, utc_now
 from polar.locker import Locker
 from polar.logging import Logger
-from polar.models import Account, Issue, Order, Pledge, Transaction
+from polar.models import Account, Order, Transaction
 from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.schemas import PayoutEstimate
@@ -347,12 +347,7 @@ class PayoutTransactionService(BaseTransactionService):
                 # Order
                 selectinload(Transaction.order).joinedload(Order.product),
                 # Pledge
-                selectinload(Transaction.pledge)
-                .joinedload(Pledge.issue)
-                .options(
-                    joinedload(Issue.organization),
-                    joinedload(Issue.repository),
-                ),
+                selectinload(Transaction.pledge),
             )
         )
 
@@ -387,7 +382,7 @@ class PayoutTransactionService(BaseTransactionService):
                             f"Payment processor fee ({transaction.platform_fee_type})"
                         )
                 elif transaction.pledge is not None:
-                    description = f"Pledge to {transaction.pledge.issue.reference_key}"
+                    description = f"Pledge to {transaction.pledge.issue_reference}"
                 elif transaction.order is not None:
                     product = transaction.order.product
                     if transaction.order.subscription_id is not None:

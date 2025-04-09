@@ -1,14 +1,13 @@
 from collections.abc import Sequence
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Any, Literal, Self
+from typing import Annotated, Any, Literal
 
 from pydantic import (
     UUID4,
     AfterValidator,
     EmailStr,
     Field,
-    HttpUrl,
     StringConstraints,
     model_validator,
 )
@@ -124,38 +123,6 @@ class OrganizationSocialLink(Schema):
         return data
 
 
-# Deprecated
-class OrganizationProfileSettings(Schema):
-    enabled: bool | None = Field(
-        None, description="If this organization has a profile enabled"
-    )
-    description: Annotated[
-        str | None,
-        Field(max_length=160, description="A description of the organization"),
-        EmptyStrToNoneValidator,
-    ] = None
-    featured_projects: list[UUID4] | None = Field(
-        None, description="A list of featured projects"
-    )
-    featured_organizations: list[UUID4] | None = Field(
-        None, description="A list of featured organizations"
-    )
-    links: list[HttpUrl] | None = Field(
-        None, description="A list of links associated with the organization"
-    )
-    subscribe: OrganizationSubscribePromoteSettings | None = Field(
-        OrganizationSubscribePromoteSettings(
-            promote=True,
-            show_count=True,
-            count_free=True,
-        ),
-        description="Subscription promotion settings",
-    )
-    accent_color: str | None = Field(
-        None, description="Accent color for the organization"
-    )
-
-
 # Public API
 class Organization(IDSchema, TimestampedSchema):
     id: OrganizationID
@@ -202,22 +169,6 @@ class Organization(IDSchema, TimestampedSchema):
     twitter_username: str | None = Field(
         ...,
         deprecated="Legacy attribute no longer in use. See `socials` instead.",
-    )
-    pledge_minimum_amount: int = Field(
-        ...,
-        deprecated="Legacy attribute no longer in use.",
-    )
-    pledge_badge_show_amount: bool = Field(
-        ...,
-        deprecated="Legacy attribute no longer in use.",
-    )
-    default_upfront_split_to_contributors: int | None = Field(
-        ...,
-        deprecated="Legacy attribute no longer in use.",
-    )
-    profile_settings: OrganizationProfileSettings | None = Field(
-        description="Settings for the organization profile",
-        deprecated="Legacy attribute no longer in use.",
     )
 
 
@@ -272,59 +223,6 @@ class OrganizationUpdate(Schema):
 
     feature_settings: OrganizationFeatureSettings | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
-
-    # Deprecated fields
-    default_upfront_split_to_contributors: int | None = Field(
-        default=None,
-        ge=0.0,
-        le=100.0,
-        deprecated="Legacy attribute no longer in use.",
-    )
-    pledge_badge_show_amount: bool = Field(
-        False, deprecated="Legacy attribute no longer in use."
-    )
-    billing_email: str | None = Field(
-        None, deprecated="Legacy attribute no longer in use."
-    )
-    default_badge_custom_content: str | None = Field(
-        None, deprecated="Legacy attribute no longer in use."
-    )
-    pledge_minimum_amount: int = Field(
-        settings.MINIMUM_ORG_PLEDGE_AMOUNT,
-        deprecated="Legacy attribute no longer in use.",
-    )
-    total_monthly_spending_limit: int | None = Field(
-        None, deprecated="Legacy attribute no longer in use."
-    )
-    per_user_monthly_spending_limit: int | None = Field(
-        None, deprecated="Legacy attribute no longer in use."
-    )
-    profile_settings: OrganizationProfileSettings | None = Field(
-        None, deprecated="Legacy attribute no longer in use."
-    )
-
-    @model_validator(mode="after")
-    def check_spending_limits(self) -> Self:
-        if (
-            self.per_user_monthly_spending_limit is not None
-            and self.total_monthly_spending_limit is None
-        ):
-            raise ValueError(
-                "per_user_monthly_spending_limit requires "
-                "total_monthly_spending_limit to be set"
-            )
-
-        if (
-            self.per_user_monthly_spending_limit is not None
-            and self.total_monthly_spending_limit is not None
-            and self.per_user_monthly_spending_limit > self.total_monthly_spending_limit
-        ):
-            raise ValueError(
-                "per_user_monthly_spending_limit must be less than or equal "
-                "to total_monthly_spending_limit"
-            )
-
-        return self
 
 
 class OrganizationSetAccount(Schema):

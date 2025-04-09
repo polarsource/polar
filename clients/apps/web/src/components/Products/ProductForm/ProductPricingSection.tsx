@@ -402,6 +402,8 @@ export const ProductPricingSection = ({
   update,
   compact,
 }: ProductPricingSectionProps) => {
+  const { isFeatureEnabled } = usePostHog()
+
   const {
     control,
     formState: { errors },
@@ -520,19 +522,21 @@ export const ProductPricingSection = ({
               </p>
             </ShadowBox>
           )}
-          <Button
-            className="self-start"
-            onClick={() =>
-              append({
-                amount_type: 'metered_unit',
-                price_currency: 'usd',
-                meter_id: '',
-                unit_amount: 0,
-              })
-            }
-          >
-            Add Price
-          </Button>
+          {isFeatureEnabled('usage_based_billing') && (
+            <Button
+              className="self-start"
+              onClick={() =>
+                append({
+                  amount_type: 'metered_unit',
+                  price_currency: 'usd',
+                  meter_id: '',
+                  unit_amount: 0,
+                })
+              }
+            >
+              Add Price
+            </Button>
+          )}
           <ErrorMessage
             errors={errors}
             name="prices"

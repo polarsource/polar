@@ -1,4 +1,4 @@
-import { MaintainerOrganizationContextProvider } from '@/providers/maintainerOrganization'
+import { OrganizationContextProvider } from '@/providers/maintainerOrganization'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { getUserOrganizations } from '@/utils/user'
@@ -43,11 +43,11 @@ export default async function Layout({
   }
 
   return (
-    <MaintainerOrganizationContextProvider
+    <OrganizationContextProvider
       organization={organization}
       organizations={userOrganizations}
     >
       {children}
-    </MaintainerOrganizationContextProvider>
+    </OrganizationContextProvider>
   )
 }

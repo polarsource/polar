@@ -33,13 +33,11 @@ const getTransactionMeta = (transaction: schemas['Transaction']) => {
   } else if (transaction.issue_reward) {
     return {
       type: 'Reward',
-      externalOrganization: transaction.pledge?.issue.organization,
       meta: transaction.pledge,
     }
   } else if (transaction.pledge) {
     return {
       type: 'Pledge',
-      externalOrganization: transaction.pledge?.issue.organization,
       meta: transaction.pledge,
     }
   } else if (transaction.type === 'payout') {
@@ -78,15 +76,6 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
           />
         </Link>
       )}
-      {transactionMeta.externalOrganization && (
-        <div className="hidden flex-shrink-0 md:block">
-          <Avatar
-            className="h-6 w-6"
-            name={transactionMeta.externalOrganization.name}
-            avatar_url={transactionMeta.externalOrganization.avatar_url}
-          />
-        </div>
-      )}
 
       <div className="flex flex-row gap-2">
         <div className="text-sm">{transactionMeta.type}</div>
@@ -105,15 +94,8 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
                 </div>
               </>
             )}
-            {'issue' in transactionMeta.meta && (
-              <div>
-                <Link
-                  className="text-blue-500 dark:text-blue-400"
-                  href={`/${transactionMeta.meta.issue.organization?.name}/${transactionMeta.meta.issue.repository.name}/issues/${transactionMeta.meta.issue.number}`}
-                >
-                  {transactionMeta.meta.issue.title}
-                </Link>
-              </div>
+            {'issue_reference' in transactionMeta.meta && (
+              <div>{transactionMeta.meta.issue_reference}</div>
             )}
           </>
         )}

@@ -1,5 +1,4 @@
 import { useMetrics } from '@/hooks/queries/metrics'
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
 import { AddOutlined } from '@mui/icons-material'
@@ -10,7 +9,7 @@ import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardI
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
 import Link from 'next/link'
-import { PropsWithChildren, useCallback, useContext, useState } from 'react'
+import { PropsWithChildren, useCallback, useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import AmountLabel from '../Shared/AmountLabel'
@@ -31,12 +30,14 @@ const CustomerStatBox = ({
 }
 
 interface CustomerContextViewProps {
+  organization: schemas['Organization']
   customer: schemas['Customer']
 }
 
-export const CustomerContextView = ({ customer }: CustomerContextViewProps) => {
-  const { organization } = useContext(MaintainerOrganizationContext)
-
+export const CustomerContextView = ({
+  organization,
+  customer,
+}: CustomerContextViewProps) => {
   const { isShown: isModalShown, show: showModal, hide: hideModal } = useModal()
 
   const [customerSessionLoading, setCustomerSessionLoading] = useState(false)

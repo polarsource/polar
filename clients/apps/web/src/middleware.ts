@@ -9,7 +9,6 @@ const POLAR_AUTH_COOKIE_KEY =
 const AUTHENTICATED_ROUTES = [
   new RegExp('^/start(/.*)?'),
   new RegExp('^/dashboard(/.*)?'),
-  new RegExp('^/funding(/.*)?'),
   new RegExp('^/finance(/.*)?'),
   new RegExp('^/settings(/.*)?'),
   new RegExp('^/backoffice(/.*)?'),

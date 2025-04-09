@@ -421,7 +421,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <CustomerUsageView customer={customer} />
       )}
       <TabsContent value="events">
-        <CustomerEventsView customer={customer} />
+        <CustomerEventsView customer={customer} organization={organization} />
       </TabsContent>
       <InlineModal
         isShown={isEditCustomerModalShown}

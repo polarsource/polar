@@ -78,7 +78,6 @@ dev = [
   "minio>=7.2.9",
   "polar-sdk==0.13.5",
 ]
-backoffice = ["textual", "halo"]
 
 [tool.taskipy.tasks]
 emails = { cmd = "cd emails && pnpm i --frozen-lockfile && pnpm run build", help = "build emails" }
@@ -134,7 +133,7 @@ ignore = [
 
 [tool.mypy]
 ignore_missing_imports = true
-plugins = ["pydantic.mypy", "polar/integrations/github/mypy_plugin.py"]
+plugins = ["pydantic.mypy"]
 warn_redundant_casts = true
 warn_unused_ignores = true
 disallow_any_generics = true

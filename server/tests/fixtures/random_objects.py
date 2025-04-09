@@ -14,7 +14,6 @@ from typing_extensions import TypeIs
 from polar.enums import (
     AccountType,
     PaymentProcessor,
-    Platforms,
     SubscriptionRecurringInterval,
 )
 from polar.kit.address import Address
@@ -37,7 +36,6 @@ from polar.models import (
     Discount,
     DiscountProduct,
     Event,
-    ExternalOrganization,
     IssueReward,
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
@@ -55,7 +53,6 @@ from polar.models import (
     ProductPriceFree,
     ProductPriceMeteredUnit,
     Refund,
-    Repository,
     Subscription,
     SubscriptionProductPrice,
     Transaction,
@@ -87,7 +84,6 @@ from polar.models.discount import (
     DiscountType,
 )
 from polar.models.event import EventSource
-from polar.models.issue import Issue
 from polar.models.notification_recipient import NotificationRecipient
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
@@ -147,131 +143,6 @@ async def organization_blocked(save_fixture: SaveFixture) -> Organization:
 @pytest_asyncio.fixture
 async def pledging_organization(save_fixture: SaveFixture) -> Organization:
     return await create_organization(save_fixture, name_prefix="pledging_org")
-
-
-async def create_external_organization(
-    save_fixture: SaveFixture, *, organization: Organization | None = None
-) -> ExternalOrganization:
-    external_organization = ExternalOrganization(
-        platform=Platforms.github,
-        name=rstr("testorg"),
-        external_id=secrets.randbelow(100000),
-        avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
-        is_personal=False,
-        installation_id=secrets.randbelow(100000),
-        installation_created_at=datetime.now(),
-        installation_updated_at=datetime.now(),
-        installation_suspended_at=None,
-        organization=organization,
-    )
-    await save_fixture(external_organization)
-    return external_organization
-
-
-@pytest_asyncio.fixture
-async def external_organization(save_fixture: SaveFixture) -> ExternalOrganization:
-    return await create_external_organization(save_fixture)
-
-
-@pytest_asyncio.fixture
-async def external_organization_linked(
-    save_fixture: SaveFixture, organization: Organization
-) -> ExternalOrganization:
-    return await create_external_organization(save_fixture, organization=organization)
-
-
-@pytest_asyncio.fixture
-async def repository(
-    save_fixture: SaveFixture, external_organization: ExternalOrganization
-) -> Repository:
-    return await create_repository(save_fixture, external_organization, is_private=True)
-
-
-@pytest_asyncio.fixture
-async def repository_linked(
-    save_fixture: SaveFixture, external_organization_linked: ExternalOrganization
-) -> Repository:
-    return await create_repository(
-        save_fixture, external_organization_linked, is_private=False
-    )
-
-
-@pytest_asyncio.fixture
-async def public_repository(
-    save_fixture: SaveFixture, external_organization: ExternalOrganization
-) -> Repository:
-    return await create_repository(
-        save_fixture, external_organization, is_private=False
-    )
-
-
-@pytest_asyncio.fixture
-async def public_repository_linked(
-    save_fixture: SaveFixture, external_organization_linked: ExternalOrganization
-) -> Repository:
-    return await create_repository(
-        save_fixture, external_organization_linked, is_private=False
-    )
-
-
-async def create_repository(
-    save_fixture: SaveFixture,
-    external_organization: ExternalOrganization,
-    is_private: bool = True,
-) -> Repository:
-    repository = Repository(
-        platform=Platforms.github,
-        name=rstr("testrepo"),
-        organization_id=external_organization.id,
-        external_id=secrets.randbelow(100000),
-        is_private=is_private,
-    )
-    await save_fixture(repository)
-    return repository
-
-
-@pytest_asyncio.fixture
-async def issue(
-    save_fixture: SaveFixture,
-    external_organization: ExternalOrganization,
-    repository: Repository,
-) -> Issue:
-    return await create_issue(save_fixture, external_organization, repository)
-
-
-@pytest_asyncio.fixture
-async def issue_linked(
-    save_fixture: SaveFixture,
-    external_organization_linked: ExternalOrganization,
-    repository_linked: Repository,
-) -> Issue:
-    return await create_issue(
-        save_fixture, external_organization_linked, repository_linked
-    )
-
-
-async def create_issue(
-    save_fixture: SaveFixture,
-    external_organization: ExternalOrganization,
-    repository: Repository,
-) -> Issue:
-    issue = Issue(
-        id=uuid.uuid4(),
-        organization=external_organization,
-        repository=repository,
-        title="issue title",
-        number=secrets.randbelow(100000),
-        platform=Platforms.github,
-        external_id=secrets.randbelow(100000),
-        state="open",
-        issue_created_at=datetime.now(),
-        issue_modified_at=datetime.now(),
-        external_lookup_key=str(uuid.uuid4()),  # not realistic
-        issue_has_in_progress_relationship=False,
-        issue_has_pull_request_relationship=False,
-    )
-    await save_fixture(issue)
-    return issue
 
 
 async def create_oauth_account(
@@ -356,10 +227,9 @@ async def user_blocked(save_fixture: SaveFixture) -> User:
 
 async def create_pledge(
     save_fixture: SaveFixture,
-    external_organization: ExternalOrganization,
-    repository: Repository,
-    issue: Issue,
+    organization: Organization,
     *,
+    issue_reference: str = "polarsource/polar/1",
     pledging_organization: Organization | None = None,
     pledging_user: User | None = None,
     state: PledgeState = PledgeState.created,
@@ -369,12 +239,10 @@ async def create_pledge(
     amount = secrets.randbelow(100000) + 1
     fee = round(amount * 0.05)
     pledge = Pledge(
-        id=uuid.uuid4(),
+        issue_reference=issue_reference,
+        organization=organization,
         by_organization=pledging_organization,
         user=pledging_user,
-        issue=issue,
-        to_repository=repository,
-        to_organization=external_organization,
         amount=amount,
         currency="usd",
         fee=fee,
@@ -387,95 +255,15 @@ async def create_pledge(
     return pledge
 
 
-async def create_user_pledge(
-    save_fixture: SaveFixture,
-    external_organization: ExternalOrganization,
-    repository: Repository,
-    issue: Issue,
-    *,
-    pledging_user: User,
-    state: PledgeState = PledgeState.created,
-    type: PledgeType = PledgeType.pay_upfront,
-    amount: int = secrets.randbelow(100000) + 1,
-) -> Pledge:
-    fee = round(amount * 0.05)
-    pledge = Pledge(
-        id=uuid.uuid4(),
-        user=pledging_user,
-        created_by_user=pledging_user,
-        issue=issue,
-        to_repository=repository,
-        to_organization=external_organization,
-        amount=amount,
-        currency="usd",
-        fee=fee,
-        state=state,
-        type=type,
-        invoice_id="INVOICE_ID" if type == PledgeType.pay_on_completion else None,
-    )
-    await save_fixture(pledge)
-    return pledge
-
-
 @pytest_asyncio.fixture
 async def pledge(
     save_fixture: SaveFixture,
-    external_organization: ExternalOrganization,
-    repository: Repository,
-    issue: Issue,
+    organization: Organization,
     pledging_organization: Organization,
 ) -> Pledge:
     return await create_pledge(
-        save_fixture,
-        external_organization,
-        repository,
-        issue,
-        pledging_organization=pledging_organization,
+        save_fixture, organization, pledging_organization=pledging_organization
     )
-
-
-@pytest_asyncio.fixture
-async def pledge_linked(
-    save_fixture: SaveFixture,
-    external_organization_linked: ExternalOrganization,
-    repository_linked: Repository,
-    issue_linked: Issue,
-    pledging_organization: Organization,
-) -> Pledge:
-    return await create_pledge(
-        save_fixture,
-        external_organization_linked,
-        repository_linked,
-        issue_linked,
-        pledging_organization=pledging_organization,
-    )
-
-
-@pytest_asyncio.fixture
-async def pledge_by_user(
-    save_fixture: SaveFixture,
-    external_organization: ExternalOrganization,
-    repository: Repository,
-    issue: Issue,
-) -> Pledge:
-    user = await create_user(save_fixture)
-
-    amount = secrets.randbelow(100000) + 1
-    fee = round(amount * 0.05)
-    pledge = Pledge(
-        id=uuid.uuid4(),
-        issue=issue,
-        to_repository=repository,
-        to_organization=external_organization,
-        user=user,
-        amount=amount,
-        currency="usd",
-        fee=fee,
-        state=PledgeState.created,
-        type=PledgeType.pay_upfront,
-    )
-    await save_fixture(pledge)
-    return pledge
 
 
 @pytest_asyncio.fixture

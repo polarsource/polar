@@ -1,4 +1,4 @@
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import structlog
 from githubkit import AppInstallationAuthStrategy, GitHub
@@ -6,7 +6,6 @@ from githubkit.exception import RateLimitExceeded, RequestError, RequestTimeout
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.integrations.github import client as github
-from polar.integrations.github import types
 from polar.integrations.github_repository_benefit.service import (
     github_repository_benefit_user_service,
 )
@@ -26,6 +25,9 @@ from .properties import (
     BenefitGitHubRepositoryProperties,
     BenefitGrantGitHubRepositoryProperties,
 )
+
+if TYPE_CHECKING:
+    from githubkit.versions.latest.models import RepositoryInvitation
 
 log: Logger = structlog.get_logger()
 
@@ -311,7 +313,7 @@ class BenefitGitHubRepositoryService(
         repository_owner: str,
         repository_name: str,
         user_id: int,
-    ) -> types.RepositoryInvitation | None:
+    ) -> "RepositoryInvitation | None":
         async for invitation in client.paginate(
             client.rest.repos.async_list_invitations,
             owner=repository_owner,

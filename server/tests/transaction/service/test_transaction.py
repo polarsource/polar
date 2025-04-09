@@ -57,9 +57,6 @@ class TestSearch:
         for result in results:
             assert result.id in readable_user_transactions_id
             # Check that relationships are eagerly loaded
-            result.pledge
-            if result.pledge is not None:
-                result.pledge.issue
             result.issue_reward
             result.order
             if result.order is not None:

@@ -40,8 +40,6 @@ class WebhookEventType(StrEnum):
     benefit_grant_updated = "benefit_grant.updated"
     benefit_grant_revoked = "benefit_grant.revoked"
     organization_updated = "organization.updated"
-    pledge_created = "pledge.created"
-    pledge_updated = "pledge.updated"
 
 
 CustomerWebhookEventType = Literal[

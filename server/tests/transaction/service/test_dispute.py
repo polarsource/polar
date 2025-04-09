@@ -4,7 +4,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.enums import AccountType
-from polar.models import Account, Pledge, Transaction, User
+from polar.models import Account, Transaction, User
 from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.balance import BalanceTransactionService
@@ -79,7 +79,6 @@ class TestCreateDispute:
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
-        pledge: Pledge,
         balance_transaction_service_mock: MagicMock,
         create_dispute_fees_mock: AsyncMock,
         create_dispute_fees_balances_mock: AsyncMock,
@@ -114,7 +113,6 @@ class TestCreateDispute:
             account_amount=charge.amount,
             tax_amount=0,
             charge_id=charge.id,
-            pledge=pledge,
         )
         await save_fixture(payment_transaction)
 
@@ -126,7 +124,6 @@ class TestCreateDispute:
             account_currency=charge.currency,
             account_amount=-charge.amount * 0.75,
             tax_amount=0,
-            pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_1",
@@ -140,7 +137,6 @@ class TestCreateDispute:
             account_currency=charge.currency,
             account_amount=charge.amount * 0.75,
             tax_amount=0,
-            pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_1",
@@ -156,7 +152,6 @@ class TestCreateDispute:
             account_currency=charge.currency,
             account_amount=-charge.amount * 0.25,
             tax_amount=0,
-            pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_2",
@@ -170,7 +165,6 @@ class TestCreateDispute:
             account_currency=charge.currency,
             account_amount=charge.amount * 0.25,
             tax_amount=0,
-            pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_2",
@@ -217,7 +211,6 @@ class TestCreateDispute:
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
-        pledge: Pledge,
         balance_transaction_service_mock: MagicMock,
         create_dispute_fees_mock: AsyncMock,
         create_dispute_fees_balances_mock: AsyncMock,
@@ -257,7 +250,6 @@ class TestCreateDispute:
             account_amount=charge.amount,
             tax_amount=0,
             charge_id=charge.id,
-            pledge=pledge,
         )
         await save_fixture(payment_transaction)
 
@@ -270,7 +262,6 @@ class TestCreateDispute:
             account_currency=charge.currency,
             account_amount=-charge.amount * 0.75,
             tax_amount=0,
-            pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_1",
@@ -284,7 +275,6 @@ class TestCreateDispute:
             account_currency=charge.currency,
             account_amount=charge.amount * 0.75,
             tax_amount=0,
-            pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_1",
@@ -301,7 +291,6 @@ class TestCreateDispute:
             account_currency=charge.currency,
             account_amount=-charge.amount * 0.25,
             tax_amount=0,
-            pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_2",
@@ -315,7 +304,6 @@ class TestCreateDispute:
             account_currency=charge.currency,
             account_amount=charge.amount * 0.25,
             tax_amount=0,
-            pledge=pledge,
             payment_transaction=payment_transaction,
             transfer_id="STRIPE_TRANSFER_ID",
             balance_correlation_key="BALANCE_2",

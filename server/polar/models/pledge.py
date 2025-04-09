@@ -8,7 +8,6 @@ from sqlalchemy import (
     Boolean,
     ColumnElement,
     ForeignKey,
-    Index,
     String,
     Uuid,
     and_,
@@ -21,10 +20,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 from polar.kit.utils import utc_now
 
-from .external_organization import ExternalOrganization
-from .issue import Issue
 from .organization import Organization
-from .repository import Repository
 from .user import User
 
 
@@ -139,22 +135,18 @@ class PledgeType(StrEnum):
 class Pledge(RecordModel):
     __tablename__ = "pledges"
 
-    __table_args__ = (Index("idx_issue_id_state", "issue_id", "state"),)
-
-    issue_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("issues.id"),
-        nullable=False,
-        # Don't create an index for issue_id
-        # as it's covered by the unique constraint, being the leading column of it
-        index=False,
-    )
-    repository_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("repositories.id"), nullable=False
-    )
+    issue_reference: Mapped[str] = mapped_column(String, nullable=False, index=True)
     organization_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("external_organizations.id"), nullable=False
+        Uuid, ForeignKey("organizations.id"), nullable=False, index=True
     )
+
+    @declared_attr
+    def organization(cls) -> Mapped[Organization]:
+        return relationship(
+            Organization,
+            primaryjoin=Organization.id == cls.organization_id,
+            lazy="raise",
+        )
 
     # Stripe Payment Intents (may or may not have been paid)
     payment_id: Mapped[str | None] = mapped_column(
@@ -283,28 +275,10 @@ class Pledge(RecordModel):
         )
 
     @declared_attr
-    def to_repository(cls) -> Mapped[Repository]:
-        return relationship(
-            Repository, primaryjoin=Repository.id == cls.repository_id, lazy="raise"
-        )
-
-    @declared_attr
-    def to_organization(cls) -> Mapped[ExternalOrganization]:
-        return relationship(
-            ExternalOrganization,
-            primaryjoin=ExternalOrganization.id == cls.organization_id,
-            lazy="raise",
-        )
-
-    @declared_attr
     def created_by_user(cls) -> Mapped[User | None]:
         return relationship(
             User, primaryjoin=User.id == cls.created_by_user_id, lazy="raise"
         )
-
-    @declared_attr
-    def issue(cls) -> Mapped[Issue]:
-        return relationship(Issue, primaryjoin=Issue.id == cls.issue_id, lazy="raise")
 
     @hybrid_property
     def ready_for_transfer(self) -> bool:

@@ -6,7 +6,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 
-from polar import receivers, worker  # noqa
+from polar import worker  # noqa
 from polar.api import router
 from polar.checkout import ip_geolocation
 from polar.config import settings

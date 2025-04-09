@@ -4,10 +4,8 @@ from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
-    Boolean,
     ColumnElement,
     ForeignKey,
-    Integer,
     String,
     UniqueConstraint,
     Uuid,
@@ -85,65 +83,11 @@ class Organization(RecordModel):
     def account(cls) -> Mapped[Account | None]:
         return relationship(Account, lazy="raise", back_populates="organizations")
 
-    # Whether to show pledged amount in the badge
-    pledge_badge_show_amount: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True
-    )
-
-    # Minimum amount required to pledge. Default to $20 (2000 cents)
-    pledge_minimum_amount: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=settings.MINIMUM_ORG_PLEDGE_AMOUNT
-    )
-
-    default_badge_custom_content: Mapped[str | None] = mapped_column(
-        String,
-        nullable=True,
-        default=None,
-    )
-
-    default_upfront_split_to_contributors: Mapped[int | None] = mapped_column(
-        Integer,
-        nullable=True,
-        default=None,
-    )
-
     onboarded_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
     # Time of blocking traffic/activity to given organization
     blocked_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True),
-        nullable=True,
-        default=None,
-    )
-
-    # If this organization was created from a GitHub User object, without installing
-    # the Polar GitHub App.
-    created_from_user_maintainer_upgrade: Mapped[bool] = mapped_column(
-        Boolean, default=False, nullable=False
-    )
-
-    #
-    # "Team" fields (org is pledger)
-    #
-
-    is_teams_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
-
-    stripe_customer_id: Mapped[str | None] = mapped_column(
-        String(length=50), nullable=True, unique=True, default=None
-    )
-
-    billing_email: Mapped[str | None] = mapped_column(
-        String(length=120), nullable=True, default=None
-    )
-
-    total_monthly_spending_limit: Mapped[int | None] = mapped_column(
-        Integer,
-        nullable=True,
-        default=None,
-    )
-
-    per_user_monthly_spending_limit: Mapped[int | None] = mapped_column(
-        Integer,
         nullable=True,
         default=None,
     )

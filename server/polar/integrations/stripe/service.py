@@ -7,12 +7,10 @@ import stripe as stripe_lib
 from polar.account.schemas import AccountCreate
 from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
-from polar.exceptions import InternalServerError, PolarError
-from polar.integrations.stripe.schemas import PledgePaymentIntentMetadata
+from polar.exceptions import PolarError
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import utc_now
 from polar.logfire import instrument_httpx
-from polar.models.organization import Organization
 from polar.models.user import User
 from polar.postgres import AsyncSession, sql
 
@@ -66,87 +64,6 @@ class MissingPaymentMethod(StripeError):
 
 
 class StripeService:
-    async def _get_customer(
-        self,
-        session: AsyncSession,
-        customer: User | Organization | None = None,
-    ) -> stripe_lib.Customer | None:
-        if isinstance(customer, User):
-            return await self.get_or_create_user_customer(session, customer)
-        if isinstance(customer, Organization):
-            return await self.get_or_create_org_customer(session, customer)
-        return None
-
-    async def create_pledge_payment_intent(
-        self,
-        session: AsyncSession,
-        *,
-        amount: int,
-        currency: str,
-        metadata: PledgePaymentIntentMetadata | None = None,
-        receipt_email: str,
-        description: str,
-        customer: User | Organization | None = None,
-    ) -> stripe_lib.PaymentIntent:
-        params: stripe_lib.PaymentIntent.CreateParams = {
-            "amount": amount,
-            "currency": currency,
-            "receipt_email": receipt_email,
-            "description": description,
-        }
-
-        if metadata is not None:
-            params["metadata"] = metadata.model_dump(exclude_none=True)
-
-        if customer is not None:
-            stripe_customer = await self._get_customer(session, customer)
-            if not stripe_customer:
-                raise InternalServerError("Failed to create Stripe Customer")
-            params["customer"] = stripe_customer.id
-
-        return await stripe_lib.PaymentIntent.create_async(**params)
-
-    async def modify_payment_intent(
-        self,
-        session: AsyncSession,
-        id: str,
-        *,
-        amount: int,
-        currency: str,
-        metadata: PledgePaymentIntentMetadata | None = None,
-        receipt_email: str | None = None,
-        description: str | None = None,
-        customer: User | Organization | None = None,
-        setup_future_usage: Literal["off_session", "on_session"] | None = None,
-    ) -> stripe_lib.PaymentIntent:
-        params: stripe_lib.PaymentIntent.ModifyParams = {
-            "amount": amount,
-            "currency": currency,
-        }
-
-        if receipt_email is not None:
-            params["receipt_email"] = receipt_email
-
-        if description is not None:
-            params["description"] = description
-
-        if setup_future_usage is not None:
-            params["setup_future_usage"] = setup_future_usage
-
-        if metadata is not None:
-            params["metadata"] = metadata.model_dump(exclude_none=True)
-
-        if customer is not None:
-            stripe_customer = await self._get_customer(session, customer)
-            if not stripe_customer:
-                raise InternalServerError("Failed to create Stripe Customer")
-            params["customer"] = stripe_customer.id
-
-        return await stripe_lib.PaymentIntent.modify_async(
-            id,
-            **params,
-        )
-
     async def retrieve_intent(self, id: str) -> stripe_lib.PaymentIntent:
         return await stripe_lib.PaymentIntent.retrieve_async(id)
 
@@ -267,37 +184,6 @@ class StripeService:
 
         return customer
 
-    async def get_or_create_org_customer(
-        self, session: AsyncSession, org: Organization
-    ) -> stripe_lib.Customer | None:
-        if org.stripe_customer_id:
-            return await self.get_customer(org.stripe_customer_id)
-
-        if org.billing_email is None:
-            raise MissingOrganizationBillingEmail(org.id)
-
-        customer = await stripe_lib.Customer.create_async(
-            name=org.slug,
-            email=org.billing_email,
-            metadata={
-                "org_id": str(org.id),
-            },
-        )
-
-        if not customer:
-            return None
-
-        # Save customer ID
-        stmt = (
-            sql.Update(Organization)
-            .where(Organization.id == org.id)
-            .values(stripe_customer_id=customer.id)
-        )
-        await session.execute(stmt)
-        await session.flush()
-
-        return customer
-
     async def create_user_portal_session(
         self,
         session: AsyncSession,
@@ -310,20 +196,6 @@ class StripeService:
         return await stripe_lib.billing_portal.Session.create_async(
             customer=customer.id,
             return_url=f"{settings.FRONTEND_BASE_URL}/settings",
-        )
-
-    async def create_org_portal_session(
-        self,
-        session: AsyncSession,
-        org: Organization,
-    ) -> stripe_lib.billing_portal.Session | None:
-        customer = await self.get_or_create_org_customer(session, org)
-        if not customer:
-            return None
-
-        return await stripe_lib.billing_portal.Session.create_async(
-            customer=customer.id,
-            return_url=f"{settings.FRONTEND_BASE_URL}/team/{org.slug}/settings",
         )
 
     async def create_product(

@@ -392,13 +392,17 @@ class DiscountPercentageRepeatDuration(
     """
 
 
-def get_discriminator_value(v: Any) -> str:
+def get_discriminator_value(v: Any) -> str | None:
     if isinstance(v, dict):
-        type = v["type"]
-        duration = v["duration"]
+        type = v.get("type")
+        duration = v.get("duration")
     else:
-        type = getattr(v, "type")
-        duration = getattr(v, "duration")
+        type = getattr(v, "type", None)
+        duration = getattr(v, "duration", None)
+
+    if type is None or duration is None:
+        return None
+
     duration_tag = (
         "once_forever"
         if duration in {DiscountDuration.once, DiscountDuration.forever}

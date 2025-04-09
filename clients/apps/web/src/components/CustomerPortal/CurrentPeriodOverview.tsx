@@ -22,7 +22,7 @@ export const CurrentPeriodOverview = ({
   )
 
   const totalAmount = meteredPrices.reduce(
-    (acc, price) => acc + price.unit_amount,
+    (acc, price) => acc + Number.parseFloat(price.unit_amount),
     basePrice?.price_amount || 0,
   )
 
@@ -64,7 +64,7 @@ export const CurrentPeriodOverview = ({
                 </span>
                 <span className="font-medium">
                   <AmountLabel
-                    amount={price.unit_amount}
+                    amount={Number.parseFloat(price.unit_amount)}
                     currency={price.price_currency}
                   />
                 </span>

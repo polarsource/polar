@@ -61,7 +61,11 @@ const priceCreateUpdateToPrice = (
       ...base,
       ...price,
       price_currency: price.price_currency ?? 'usd',
-      unit_amount: price.unit_amount ?? 0,
+      unit_amount: price.unit_amount
+        ? typeof price.unit_amount === 'string'
+          ? price.unit_amount
+          : price.unit_amount.toString()
+        : '0',
       cap_amount: price.cap_amount ?? null,
       meter_id: price.meter_id ?? '',
       meter: meter

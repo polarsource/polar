@@ -2,14 +2,19 @@ export const formatCurrencyNumber = (
   cents: number,
   currency: string = 'usd',
   minimumFractionDigits?: number,
-  notation?: 'standard' | 'scientific' | 'engineering' | 'compact',
+  maximumFractionDigits?: number,
 ): string => {
   const currencyNumberFormat = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
     minimumFractionDigits,
-    notation,
+    maximumFractionDigits,
   })
 
   return currencyNumberFormat.format(cents / 100)
 }
+
+export const formatUnitAmount = (
+  cents: number,
+  currency: string = 'usd',
+): string => formatCurrencyNumber(cents, currency, 2, 14)

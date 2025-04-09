@@ -1,6 +1,5 @@
 'use client'
 
-import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
 import { ProductCard } from '@/components/Products/ProductCard'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import { useRecurringInterval } from '@/hooks/products'
@@ -16,11 +15,9 @@ import { ProductsGrid } from './ProductsGrid'
 export const Storefront = ({
   organization,
   products,
-  issues,
 }: {
   organization: schemas['Organization']
   products: schemas['ProductStorefront'][]
-  issues: schemas['IssueFunding'][]
 }) => {
   const [recurringInterval, setRecurringInterval, hasBothIntervals] =
     useRecurringInterval(products)
@@ -105,16 +102,6 @@ export const Storefront = ({
               ))}
             </ProductsGrid>
           )}
-
-          {organization.feature_settings?.issue_funding_enabled &&
-          issues.length > 0 ? (
-            <div className="flex flex-col">
-              <OrganizationIssueSummaryList
-                issues={issues}
-                organization={organization}
-              />
-            </div>
-          ) : null}
         </div>
       </div>
     </div>

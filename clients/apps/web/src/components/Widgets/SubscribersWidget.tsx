@@ -1,5 +1,5 @@
 import { useMetrics } from '@/hooks/queries'
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { OrganizationContext } from '@/providers/maintainerOrganization'
 import {
   Card,
   CardFooter,
@@ -19,7 +19,7 @@ export interface SubscribersWidgetProps {
 }
 
 export const SubscribersWidget = ({ className }: SubscribersWidgetProps) => {
-  const { organization: org } = useContext(MaintainerOrganizationContext)
+  const { organization: org } = useContext(OrganizationContext)
 
   const startDate = new Date()
   startDate.setFullYear(startDate.getFullYear() - 1)

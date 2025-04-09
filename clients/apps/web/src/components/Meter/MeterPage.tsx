@@ -163,14 +163,14 @@ export const MeterPage = ({
                   Recently received meter events
                 </p>
               </div>
-              <Events events={meterEvents} />
+              <Events events={meterEvents} organization={organization} />
             </div>
           ) : (
             <MeterGetStarted meter={meter} />
           )}
         </TabsContent>
         <TabsContent value="events">
-          <MeterEventsTab meter={meter} />
+          <MeterEventsTab meter={meter} organization={organization} />
         </TabsContent>
         <TabsContent value="customers">
           <MeterCustomersTab meter={meter} organization={organization} />

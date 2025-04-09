@@ -10,7 +10,6 @@ import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
 import { toast } from '@/components/Toast/use-toast'
 import { useProducts, useUpdateProduct } from '@/hooks/queries/products'
 import { useDebouncedCallback } from '@/hooks/utils'
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import {
   DataTablePaginationState,
   DataTableSortingState,
@@ -55,19 +54,20 @@ import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useQueryState } from 'nuqs'
-import { useCallback, useContext, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export default function ClientPage({
+  organization: org,
   pagination,
   sorting,
   query: _query,
 }: {
+  organization: schemas['Organization']
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
   query: string | undefined
 }) {
-  const { organization: org } = useContext(MaintainerOrganizationContext)
   const [query, setQuery] = useState(_query)
 
   const [show, setShow] = useQueryState('show', {
@@ -388,20 +388,6 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
                 >
                   Copy Product ID
                 </DropdownMenuItem>
-                {organization.profile_settings?.enabled && (
-                  <DropdownMenuItem
-                    onClick={handleContextMenuCallback(() => {
-                      if (typeof window !== 'undefined') {
-                        window.open(
-                          `/${organization.slug}/products/${product.id}`,
-                          '_blank',
-                        )
-                      }
-                    })}
-                  >
-                    View Product Page
-                  </DropdownMenuItem>
-                )}
                 <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
                 <DropdownMenuItem
                   onClick={handleContextMenuCallback(showModal)}

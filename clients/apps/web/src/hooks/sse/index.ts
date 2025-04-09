@@ -3,13 +3,11 @@ import { EventSourcePlus } from 'event-source-plus'
 import EventEmitter from 'eventemitter3'
 import { useEffect } from 'react'
 import { onBenefitGranted, onBenefitRevoked } from './benefits'
-import { onIssueUpdated } from './issues'
 import { onOrganizationUpdated } from './organizations'
 
 const ACTIONS: {
   [key: string]: (payload: any) => Promise<void>
 } = {
-  'issue.updated': onIssueUpdated,
   'organization.updated': onOrganizationUpdated,
   'benefit.granted': onBenefitGranted,
   'benefit.revoked': onBenefitRevoked,

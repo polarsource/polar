@@ -320,7 +320,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             </div>
           ) : (
             <>
-              <Events events={events?.items ?? []} />
+              <Events
+                events={events?.items ?? []}
+                organization={organization}
+              />
               <Pagination
                 className="self-end"
                 totalCount={events?.pagination.total_count ?? 0}

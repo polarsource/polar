@@ -1,3 +1,5 @@
+import { getServerSideAPI } from '@/utils/client/serverside'
+import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
 import ClientPage from './ClientPage'
 
@@ -7,6 +9,16 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default function Page() {
-  return <ClientPage />
+export default async function Page({
+  params,
+}: {
+  params: { organization: string }
+}) {
+  const api = getServerSideAPI()
+  const organization = await getOrganizationBySlugOrNotFound(
+    api,
+    params.organization,
+  )
+
+  return <ClientPage organization={organization} />
 }

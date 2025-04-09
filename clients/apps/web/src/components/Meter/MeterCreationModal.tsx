@@ -1,23 +1,22 @@
 import { useCreateMeter } from '@/hooks/queries/meters'
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { setValidationErrors } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { useRouter } from 'next/navigation'
-import { useCallback, useContext } from 'react'
+import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import MeterForm from './MeterForm'
 
 export interface MeterCreationModalProps {
+  organization: schemas['Organization']
   hide: () => void
 }
 
-export const MeterCreationModal = ({ hide }: MeterCreationModalProps) => {
-  const { organization } = useContext(MaintainerOrganizationContext)
-
-  const router = useRouter()
+export const MeterCreationModal = ({
+  organization,
+  hide,
+}: MeterCreationModalProps) => {
   const form = useForm<schemas['MeterCreate']>({
     defaultValues: {
       filter: {
@@ -60,7 +59,7 @@ export const MeterCreationModal = ({ hide }: MeterCreationModalProps) => {
 
       hide()
     },
-    [createMeter, router, organization, toast, setError],
+    [createMeter, setError, hide],
   )
 
   return (

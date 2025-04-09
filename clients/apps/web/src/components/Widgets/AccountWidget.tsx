@@ -1,5 +1,5 @@
 import { useOrganizationAccount, useTransactionsSummary } from '@/hooks/queries'
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { OrganizationContext } from '@/providers/maintainerOrganization'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Card,
@@ -16,7 +16,7 @@ export interface AccountWidgetProps {
 }
 
 export const AccountWidget = ({ className }: AccountWidgetProps) => {
-  const { organization: org } = useContext(MaintainerOrganizationContext)
+  const { organization: org } = useContext(OrganizationContext)
 
   const { data: account } = useOrganizationAccount(org.id)
   const { data: summary } = useTransactionsSummary(account?.id ?? '')

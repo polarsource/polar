@@ -122,7 +122,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
       }
       className="gap-y-8"
       contextView={
-        <CustomerContextView customer={order.customer as schemas['Customer']} />
+        <CustomerContextView
+          organization={organization}
+          customer={order.customer as schemas['Customer']}
+        />
       }
       wide
     >

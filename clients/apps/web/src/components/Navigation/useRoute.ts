@@ -1,9 +1,9 @@
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { useContext } from 'react'
 import { useDashboardRoutes } from '../Dashboard/navigation'
 
 export const useRoute = () => {
-  const orgContext = useContext(MaintainerOrganizationContext)
+  const orgContext = useContext(OrganizationContext)
   const org = orgContext?.organization
 
   const dashboardRoutes = useDashboardRoutes(org, true)

@@ -13,7 +13,6 @@ import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import { RevenueWidget } from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
 import { useMetrics, useProducts } from '@/hooks/queries'
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { computeCumulativeValue, metricDisplayNames } from '@/utils/metrics'
 import { ChevronRight } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
@@ -44,7 +43,7 @@ import {
 import { motion } from 'framer-motion'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
-import React, { useContext, useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface HeroChartProps {
@@ -430,14 +429,18 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
         </motion.div>
       </motion.div>
 
-      {!organization.profile_settings?.enabled &&
-        (products?.items.length ?? 0) > 0 && <IntegrationView />}
+      {(products?.items.length ?? 0) > 0 && (
+        <IntegrationView organization={organization} />
+      )}
     </DashboardBody>
   )
 }
 
-const IntegrationView = () => {
-  const { organization } = useContext(MaintainerOrganizationContext)
+const IntegrationView = ({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) => {
   const [selectedProduct, setSelectedProduct] = React.useState<string>()
 
   const { data: products } = useProducts(organization.id)

@@ -202,7 +202,12 @@ const ClientPage = ({
       <InlineModal
         isShown={isCreateMeterModalShown}
         hide={hideCreateMeterModal}
-        modalContent={<MeterCreationModal hide={hideCreateMeterModal} />}
+        modalContent={
+          <MeterCreationModal
+            hide={hideCreateMeterModal}
+            organization={organization}
+          />
+        }
       />
 
       <InlineModal

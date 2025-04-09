@@ -1,13 +1,11 @@
 'use client'
 
-import { useExternalOrganizations } from '@/hooks/queries/externalOrganizations'
 import { LanguageOutlined, MailOutline } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Link from 'next/link'
 import { PropsWithChildren, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import GitHubIcon from '../Icons/GitHubIcon'
 import { externalURL } from '../Organization'
 import { Gradient } from './GradientMesh'
 import { computeComplementaryColor } from './utils'
@@ -17,13 +15,6 @@ interface StorefrontHeaderProps {
 }
 
 export const StorefrontHeader = ({ organization }: StorefrontHeaderProps) => {
-  const externalGitHubOrganizations = useExternalOrganizations({
-    organization_id: organization.id,
-    platform: 'github',
-    limit: 1,
-    sorting: ['created_at'],
-  })
-
   const gradient = useMemo(
     () => (typeof window !== 'undefined' ? new Gradient() : undefined),
     [],
@@ -36,9 +27,7 @@ export const StorefrontHeader = ({ organization }: StorefrontHeaderProps) => {
 
     const root = document.documentElement
 
-    const [a, b, c, d] = computeComplementaryColor(
-      organization.profile_settings?.accent_color ?? '#121316',
-    )
+    const [a, b, c, d] = computeComplementaryColor('#121316')
 
     root.style.setProperty('--gradient-color-1', `#${a.toHex()}`)
     root.style.setProperty('--gradient-color-2', `#${b.toHex()}`)
@@ -81,22 +70,10 @@ export const StorefrontHeader = ({ organization }: StorefrontHeaderProps) => {
               'dark:text-polar-500 flex w-full flex-col items-center text-center text-lg leading-normal text-gray-500 md:w-2/3',
             )}
           >
-            {organization.profile_settings?.description ??
-              organization.bio ??
-              ''}
+            {organization.bio}
           </p>
 
           <div className="flex flex-row flex-wrap items-center gap-3 text-lg">
-            {externalGitHubOrganizations.data?.items.map(
-              (externalOrganization) => (
-                <SocialLink
-                  key={externalOrganization.id}
-                  href={`https://github.com/${externalOrganization.name}`}
-                >
-                  <GitHubIcon width={20} height={20} />
-                </SocialLink>
-              ),
-            )}
             {organization.twitter_username && (
               <SocialLink
                 href={`https://twitter.com/${organization.twitter_username}`}

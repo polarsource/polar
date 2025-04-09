@@ -1,15 +1,18 @@
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { List } from '@polar-sh/ui/components/atoms/List'
 import Link from 'next/link'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-const EventRow = ({ event }: { event: schemas['Event'] }) => {
+const EventRow = ({
+  event,
+  organization,
+}: {
+  event: schemas['Event']
+  organization: schemas['Organization']
+}) => {
   const [isExpanded, setIsExpanded] = useState(false)
-
-  const { organization } = useContext(MaintainerOrganizationContext)
 
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded)
@@ -91,7 +94,13 @@ const EventRow = ({ event }: { event: schemas['Event'] }) => {
   )
 }
 
-export const Events = ({ events }: { events: schemas['Event'][] }) => {
+export const Events = ({
+  events,
+  organization,
+}: {
+  events: schemas['Event'][]
+  organization: schemas['Organization']
+}) => {
   return (
     <List className="flex flex-col" size="small">
       <table className="w-full">
@@ -113,7 +122,11 @@ export const Events = ({ events }: { events: schemas['Event'][] }) => {
         </thead>
         <tbody className="">
           {events.map((event) => (
-            <EventRow key={event.id} event={event} />
+            <EventRow
+              key={event.id}
+              event={event}
+              organization={organization}
+            />
           ))}
         </tbody>
       </table>

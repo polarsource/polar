@@ -2,10 +2,9 @@
 
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { useAuth } from '@/hooks/auth'
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { setLastVisitedOrg } from '@/utils/cookies'
-import { organizationPageLink } from '@/utils/nav'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { schemas } from '@polar-sh/client'
 import {
   SidebarTrigger,
   useSidebar,
@@ -27,18 +26,21 @@ const DashboardLayout = (
     className?: string
   }>,
 ) => {
-  const { organization } = useContext(MaintainerOrganizationContext)
+  const { organization, organizations } = useContext(OrganizationContext)
 
   useEffect(() => {
-    if (organization) setLastVisitedOrg(organization.slug)
+    setLastVisitedOrg(organization.slug)
   }, [organization])
 
   return (
     <DashboardProvider organization={organization}>
       <div className="relative flex h-full w-full flex-col bg-gray-100 md:flex-row md:p-2 dark:bg-transparent">
-        <MobileNav />
+        <MobileNav organization={organization} organizations={organizations} />
         <div className="hidden md:flex">
-          <DashboardSidebar />
+          <DashboardSidebar
+            organization={organization}
+            organizations={organizations}
+          />
         </div>
         <div
           className={twMerge(
@@ -58,10 +60,15 @@ const DashboardLayout = (
 
 export default DashboardLayout
 
-const MobileNav = () => {
+const MobileNav = ({
+  organization,
+  organizations,
+}: {
+  organization: schemas['Organization']
+  organizations: schemas['Organization'][]
+}) => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const pathname = usePathname()
-  const { organization } = useContext(MaintainerOrganizationContext)
   const { currentUser } = useAuth()
 
   useEffect(() => {
@@ -78,15 +85,6 @@ const MobileNav = () => {
       </a>
 
       <div className="flex flex-row items-center gap-x-6">
-        {organization.profile_settings?.enabled ? (
-          <Link href={organizationPageLink(organization)}>
-            <Button>
-              <div className="flex flex-row items-center gap-x-2">
-                <span className="whitespace-nowrap text-xs">Storefront</span>
-              </div>
-            </Button>
-          </Link>
-        ) : null}
         <TopbarRight authenticatedUser={currentUser} />
         <SidebarTrigger />
       </div>
@@ -99,7 +97,10 @@ const MobileNav = () => {
         <div className="relative flex h-full w-full flex-col">
           {header}
           <div className="dark:bg-polar-900 flex h-full flex-col bg-gray-50 px-4">
-            <DashboardSidebar />
+            <DashboardSidebar
+              organization={organization}
+              organizations={organizations}
+            />
           </div>
         </div>
       ) : (

@@ -1,6 +1,6 @@
 import { usePostHog } from '@/hooks/posthog'
 import { useDeleteBenefit } from '@/hooks/queries'
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import {
   AddOutlined,
@@ -265,7 +265,7 @@ const BenefitsContainer = ({
   })
   const [open, setOpen] = useState(hasEnabledBenefits)
 
-  const { organization } = useContext(MaintainerOrganizationContext)
+  const { organization } = useContext(OrganizationContext)
 
   if (benefits.length === 0 && !onCreateNewBenefit) {
     return null

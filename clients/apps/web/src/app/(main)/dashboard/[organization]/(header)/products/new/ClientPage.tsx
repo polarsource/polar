@@ -1,11 +1,12 @@
 'use client'
 
 import { CreateProductPage } from '@/components/Products/CreateProductPage'
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { useContext } from 'react'
+import { schemas } from '@polar-sh/client'
 
-export default function Page() {
-  const { organization: org } = useContext(MaintainerOrganizationContext)
-
-  return <CreateProductPage organization={org} />
+export default function Page({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) {
+  return <CreateProductPage organization={organization} />
 }

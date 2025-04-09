@@ -5,13 +5,11 @@ import {
   useCustomerBenefitGrants,
   useCustomerOrderInvoice,
 } from '@/hooks/queries'
-import { organizationPageLink } from '@/utils/nav'
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import Link from 'next/link'
 import { useCallback } from 'react'
 
 const CustomerPortalOrder = ({
@@ -21,7 +19,6 @@ const CustomerPortalOrder = ({
   api: Client
   order: schemas['CustomerOrder']
 }) => {
-  const organization = order.product.organization
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     order_id: order.id,
     limit: 100,
@@ -87,20 +84,6 @@ const CustomerPortalOrder = ({
               >
                 Download Invoice
               </Button>
-              {organization &&
-                organization.profile_settings?.enabled &&
-                !order.product.is_archived && (
-                  <Link
-                    href={organizationPageLink(
-                      organization,
-                      `products/${order.product.id}`,
-                    )}
-                  >
-                    <Button size="lg" variant="ghost" fullWidth>
-                      Go to Product
-                    </Button>
-                  </Link>
-                )}
             </div>
           </ShadowBox>
         </div>

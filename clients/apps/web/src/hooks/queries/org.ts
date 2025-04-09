@@ -15,40 +15,6 @@ export const useListOrganizationMembers = (id: string) =>
     retry: defaultRetry,
   })
 
-export const useOrganizationBadgeSettings = (id?: string) =>
-  useQuery({
-    queryKey: ['organizationBadgeSettings', id],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/organizations/{id}/badge_settings', {
-          params: { path: { id: id ?? '' } },
-        }),
-      ),
-    retry: defaultRetry,
-    enabled: !!id,
-  })
-
-export const useUpdateOrganizationBadgeSettings = () =>
-  useMutation({
-    mutationFn: (variables: {
-      id: string
-      settings: schemas['OrganizationBadgeSettingsUpdate']
-    }) => {
-      return api.POST('/v1/organizations/{id}/badge_settings', {
-        params: { path: { id: variables.id } },
-        body: variables.settings,
-      })
-    },
-    onSuccess: (result, variables, _ctx) => {
-      if (result.error) {
-        return
-      }
-      queryClient.invalidateQueries({
-        queryKey: ['organizationBadgeSettings', variables.id],
-      })
-    },
-  })
-
 export const useListOrganizations = (
   params: operations['organizations:list']['parameters']['query'],
   enabled: boolean = true,

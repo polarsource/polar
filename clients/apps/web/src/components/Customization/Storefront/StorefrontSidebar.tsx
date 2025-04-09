@@ -1,9 +1,7 @@
 'use client'
 
-import { computeComplementaryColor } from '@/components/Profile/utils'
 import { toast } from '@/components/Toast/use-toast'
 import { useUpdateOrganization } from '@/hooks/queries'
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { setValidationErrors } from '@/utils/api/errors'
 import { CONFIG } from '@/utils/config'
 import { ErrorMessage } from '@hookform/error-message'
@@ -14,7 +12,6 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import {
   FormControl,
   FormField,
@@ -25,22 +22,11 @@ import {
 import { Label } from '@polar-sh/ui/components/ui/label'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import Link from 'next/link'
-import { PropsWithChildren, useCallback, useContext } from 'react'
+import { PropsWithChildren, useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../../FileUpload'
-
-const colorThemes = [
-  '#121316',
-  '#aaaaaa',
-  '#0062FF',
-  '#e64d4d',
-  '#3fab44',
-  '#3ceeb9',
-  '#FFD700',
-  '#FF69B4',
-]
 
 const StorefrontSidebarContentWrapper = ({
   title,
@@ -76,9 +62,11 @@ const StorefrontSidebarContentWrapper = ({
   )
 }
 
-const StorefrontForm = () => {
-  const { organization } = useContext(MaintainerOrganizationContext)
-
+const StorefrontForm = ({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) => {
   const {
     control,
     formState: { errors },
@@ -185,79 +173,7 @@ const StorefrontForm = () => {
           </FormItem>
         )}
       />
-      <FormField
-        control={control}
-        name="profile_settings.description"
-        rules={{
-          maxLength: 160,
-        }}
-        defaultValue=""
-        render={({ field }) => (
-          <FormItem className="flex flex-col gap-y-1">
-            <div className="flex flex-row items-center justify-between">
-              <FormLabel>Description</FormLabel>
-              <span className="dark:text-polar-400 text-xs text-gray-400">
-                {field.value?.length ?? 0} / 160
-              </span>
-            </div>
-            <FormControl>
-              <TextArea
-                {...field}
-                value={field.value || ''}
-                resizable={false}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
 
-      <FormField
-        control={control}
-        name="profile_settings.accent_color"
-        defaultValue="#000000"
-        render={({ field }) => (
-          <FormItem className="flex flex-col gap-y-1">
-            <div className="flex flex-row items-center justify-between">
-              <FormLabel>Theme</FormLabel>
-            </div>
-            <FormControl>
-              <div className="flex flex-col gap-y-4">
-                <div className="flex flex-row items-center gap-x-6">
-                  <input
-                    className={twMerge(
-                      'dark:border-polar-600 h-8 w-8 flex-shrink-0 cursor-pointer overflow-hidden rounded-full border border-gray-200 [&::-webkit-color-swatch-wrapper]:rounded-none [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none',
-                    )}
-                    type="color"
-                    {...field}
-                    value={field.value || ''}
-                  />
-
-                  <div className="flex flex-grow flex-row justify-between">
-                    {colorThemes.map((color) => (
-                      <div
-                        key={color}
-                        className={twMerge(
-                          'aspect-square h-4 flex-shrink-0 cursor-pointer rounded-full',
-                          field.value === color &&
-                            'ring-2 ring-black/50 dark:ring-white',
-                        )}
-                        style={{
-                          background: `linear-gradient(45deg, ${color}, #${computeComplementaryColor(
-                            color,
-                          )[1].toHex()})`,
-                        }}
-                        onClick={() => field.onChange(color)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
       <ErrorMessage
         errors={errors}
         name="prices"
@@ -269,9 +185,11 @@ const StorefrontForm = () => {
   )
 }
 
-export const StorefrontSidebar = () => {
-  const { organization } = useContext(MaintainerOrganizationContext)
-
+export const StorefrontSidebar = ({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) => {
   const { handleSubmit, setError, formState, reset } =
     useFormContext<schemas['OrganizationUpdate']>()
 
@@ -308,11 +226,7 @@ export const StorefrontSidebar = () => {
     async (enabled: boolean) => {
       const { data: org, error } = await updateOrganization.mutateAsync({
         id: organization.id,
-        body: {
-          profile_settings: { enabled, subscribe: null },
-          pledge_badge_show_amount: organization.pledge_badge_show_amount,
-          pledge_minimum_amount: organization.pledge_minimum_amount,
-        },
+        body: {},
       })
       if (error) {
         toast({
@@ -330,13 +244,13 @@ export const StorefrontSidebar = () => {
     [organization, updateOrganization, reset],
   )
 
-  const storefrontEnabled = organization.profile_settings?.enabled ?? false
+  const storefrontEnabled = false
   const storefrontURL = `${CONFIG.FRONTEND_BASE_URL}/${organization.slug}`
 
   return (
     <StorefrontSidebarContentWrapper
       title="Storefront"
-      enabled={organization.profile_settings?.enabled ?? false}
+      enabled={false}
       organization={organization}
     >
       <div className="flex flex-col gap-y-8">
@@ -344,7 +258,7 @@ export const StorefrontSidebar = () => {
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col gap-y-8"
         >
-          <StorefrontForm />
+          <StorefrontForm organization={organization} />
           <div className="flex flex-row items-center gap-x-4">
             <Button
               className="self-start"

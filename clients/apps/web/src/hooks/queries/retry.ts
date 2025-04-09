@@ -1,4 +1,3 @@
-import { useStore } from '@/store'
 import {
   ClientResponseError,
   NotFoundResponseError,
@@ -15,11 +14,6 @@ export const authenticatingRetry = (
     | NotFoundResponseError,
 ): boolean => {
   if (error instanceof UnauthorizedResponseError) {
-    // Empty Zustand store on unauthenticated errors
-    const state = useStore.getState()
-    if (state.resetState) {
-      state.resetState()
-    }
     return false
   }
 

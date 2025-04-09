@@ -8,8 +8,10 @@ import MeterSelect from '../Meter/MeterSelect'
 
 export const CustomerEventsView = ({
   customer,
+  organization,
 }: {
   customer: schemas['Customer']
+  organization: schemas['Organization']
 }) => {
   const searchParams = useSearchParams()
   const meterId = searchParams.get('meter_id') || 'all'
@@ -45,7 +47,10 @@ export const CustomerEventsView = ({
           }}
         />
       </div>
-      <Events events={events?.pages.flatMap((page) => page.items) ?? []} />
+      <Events
+        events={events?.pages.flatMap((page) => page.items) ?? []}
+        organization={organization}
+      />
       {hasNextPage && (
         <Button
           className="self-start"

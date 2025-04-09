@@ -6,9 +6,15 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import { useMemo } from 'react'
 import { Events } from '../Events/Events'
 
-const MeterEventsTab = ({ meter }: { meter: schemas['Meter'] }) => {
+const MeterEventsTab = ({
+  meter,
+  organization,
+}: {
+  meter: schemas['Meter']
+  organization: schemas['Organization']
+}) => {
   const { data, fetchNextPage, isFetching, hasNextPage } = useInfiniteEvents(
-    meter.organization_id,
+    organization.id,
     { meter_id: meter.id },
   )
   const meterEvents = useMemo(() => {
@@ -18,7 +24,7 @@ const MeterEventsTab = ({ meter }: { meter: schemas['Meter'] }) => {
 
   return (
     <div className="flex flex-col gap-2">
-      <Events events={meterEvents} />
+      <Events events={meterEvents} organization={organization} />
       {hasNextPage && (
         <Button
           className="self-start"

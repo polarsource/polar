@@ -1,6 +1,6 @@
 'use client'
 
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { schemas } from '@polar-sh/client'
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -10,36 +10,26 @@ import {
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
 import Link from 'next/link'
-import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
   SubRouteWithActive,
-  useFundingRoutes,
   useGeneralRoutes,
   useOrganizationRoutes,
 } from '../../Dashboard/navigation'
 
-const MaintainerNavigation = () => {
-  const orgContext = useContext(MaintainerOrganizationContext)
-  const org = orgContext?.organization
-
+const MaintainerNavigation = ({
+  organization: org,
+}: {
+  organization: schemas['Organization']
+}) => {
   const generalRoutesList = useGeneralRoutes(org)
-  const fundingRoutes = useFundingRoutes(org)
   const organizationRoutes = useOrganizationRoutes(org)
 
   const { state } = useSidebar()
 
   const isCollapsed = state === 'collapsed'
 
-  const dashboardRoutes = [
-    ...generalRoutesList,
-    ...fundingRoutes,
-    ...organizationRoutes,
-  ]
-
-  if (!org) {
-    return <></>
-  }
+  const dashboardRoutes = [...generalRoutesList, ...organizationRoutes]
 
   return (
     <SidebarMenu>

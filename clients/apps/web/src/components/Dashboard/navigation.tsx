@@ -3,14 +3,10 @@ import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
   AutoAwesome,
-  BadgeOutlined,
-  CodeOutlined,
   DiscountOutlined,
   DonutLargeOutlined,
   HiveOutlined,
-  HowToVote,
   LinkOutlined,
-  ModeStandby,
   PeopleOutlined,
   ShoppingBagOutlined,
   SpaceDashboardOutlined,
@@ -123,13 +119,6 @@ export const useGeneralRoutes = (
     org,
     allowAll,
   )
-}
-
-export const useFundingRoutes = (
-  org: schemas['Organization'],
-  allowAll?: boolean,
-): RouteWithActive[] => {
-  return useResolveRoutes(fundingRoutesList, org, allowAll)
 }
 
 export const useOrganizationRoutes = (
@@ -262,7 +251,7 @@ const generalRoutesList = (
     title: 'Storefront',
     icon: <Storefront fontSize="inherit" />,
     link: `/dashboard/${org.slug}/storefront`,
-    if: org.profile_settings?.enabled ?? false,
+    if: false,
   },
   {
     id: 'analytics',
@@ -273,59 +262,15 @@ const generalRoutesList = (
   },
 ]
 
-const fundingRoutesList = (org: schemas['Organization']): Route[] => [
-  {
-    id: 'org-issues',
-    title: 'Issues',
-    icon: <ModeStandby fontSize="inherit" />,
-    link: `/dashboard/${org.slug}/issues/overview`,
-    checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/dashboard/${org.slug}/issues`)
-    },
-    if: org.feature_settings?.issue_funding_enabled,
-    subs: [
-      {
-        title: 'Overview',
-        link: `/dashboard/${org.slug}/issues/overview`,
-        icon: <ModeStandby fontSize="inherit" />,
-      },
-      {
-        title: 'Badge',
-        link: `/dashboard/${org.slug}/issues/badge`,
-        icon: <BadgeOutlined fontSize="inherit" />,
-      },
-      {
-        title: 'Embeds',
-        link: `/dashboard/${org.slug}/issues/embed`,
-        icon: <CodeOutlined fontSize="inherit" />,
-      },
-      {
-        title: 'Organizations',
-        link: `/dashboard/${org.slug}/issues/organizations`,
-        icon: <PeopleOutlined fontSize="inherit" />,
-      },
-    ],
-  },
-]
-
 const dashboardRoutesList = (
   org: schemas['Organization'],
   posthog: PolarHog,
 ): Route[] => [
   ...generalRoutesList(org, posthog),
-  ...fundingRoutesList(org),
   ...organizationRoutesList(org),
 ]
 
 const backerRoutesList = (): Route[] => [
-  {
-    id: 'funding',
-    title: 'Funded Issues',
-    link: `/funding`,
-    icon: <HowToVote className="h-5 w-5" fontSize="inherit" />,
-    if: true,
-    subs: undefined,
-  },
   {
     id: 'finance',
     title: 'Finance',
@@ -354,10 +299,6 @@ const personalFinanceSubRoutesList = (): SubRoute[] => [
     link: `/finance/outgoing`,
   },
   {
-    title: 'Issue Rewards',
-    link: `/finance/rewards`,
-  },
-  {
     title: 'Payout Account',
     link: `/finance/account`,
   },
@@ -372,11 +313,6 @@ const orgFinanceSubRoutesList = (org: schemas['Organization']): SubRoute[] => [
     title: 'Outgoing',
     link: `/dashboard/${org.slug}/finance/outgoing`,
   },
-  {
-    title: 'Issue Funding',
-    link: `/dashboard/${org.slug}/finance/issue-funding`,
-  },
-
   {
     title: 'Payout Account',
     link: `/dashboard/${org.slug}/finance/account`,

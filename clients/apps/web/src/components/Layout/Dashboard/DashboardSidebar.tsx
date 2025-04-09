@@ -1,5 +1,4 @@
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
@@ -24,18 +23,19 @@ import {
 import { motion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { BrandingMenu } from '../Public/BrandingMenu'
 import MaintainerNavigation from './DashboardNavigation'
 
-export const DashboardSidebar = () => {
+export const DashboardSidebar = ({
+  organization,
+  organizations,
+}: {
+  organization: schemas['Organization']
+  organizations: schemas['Organization'][]
+}) => {
   const router = useRouter()
   const { state } = useSidebar()
-
-  const { organization, organizations } = useContext(
-    MaintainerOrganizationContext,
-  )
 
   const isCollapsed = state === 'collapsed'
 
@@ -74,7 +74,7 @@ export const DashboardSidebar = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
         >
-          <MaintainerNavigation />
+          <MaintainerNavigation organization={organization} />
         </motion.div>
       </SidebarContent>
       <SidebarFooter>

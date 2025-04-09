@@ -14,3 +14,19 @@ ListSorting = Annotated[
     list[Sorting[EventSortProperty]],
     Depends(SortingGetter(EventSortProperty, ["-timestamp"])),
 ]
+
+
+class EventNamesSortProperty(StrEnum):
+    events_count = "events_count"
+    first_seen = "first_seen"
+    last_seen = "last_seen"
+
+
+EventNamesSorting = Annotated[
+    list[Sorting[EventNamesSortProperty]],
+    Depends(
+        SortingGetter(
+            EventNamesSortProperty, ["-events_count", "-first_seen", "-last_seen"]
+        )
+    ),
+]

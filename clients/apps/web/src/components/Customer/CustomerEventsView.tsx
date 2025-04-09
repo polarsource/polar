@@ -14,7 +14,9 @@ export const CustomerEventsView = ({
     isFetching,
     fetchNextPage,
     hasNextPage,
-  } = useEvents(customer.organization_id, customer.id)
+  } = useEvents(customer.organization_id, {
+    customer_id: customer.id,
+  })
 
   return (
     <TabsContent value="events" className="flex flex-col gap-y-12">

@@ -3433,6 +3433,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/events/names": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Event Names
+         * @description List event names.
+         *
+         *     **Scopes**: `events:read` `events:write`
+         */
+        get: operations["events:list_names"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/events/{id}": {
         parameters: {
             query?: never;
@@ -11229,6 +11251,36 @@ export interface components {
              */
             external_customer_id: string;
         };
+        /** EventName */
+        EventName: {
+            /**
+             * Name
+             * @description The name of the event.
+             */
+            name: string;
+            /**
+             * Events Count
+             * @description Number of times the event has occurred.
+             */
+            events_count: number;
+            /**
+             * First Seen
+             * Format: date-time
+             * @description The first time the event occurred.
+             */
+            first_seen: string;
+            /**
+             * Last Seen
+             * Format: date-time
+             * @description The last time the event occurred.
+             */
+            last_seen: string;
+        };
+        /**
+         * EventNamesSortProperty
+         * @enum {string}
+         */
+        EventNamesSortProperty: "events_count" | "-events_count" | "first_seen" | "-first_seen" | "last_seen" | "-last_seen";
         /**
          * EventSortProperty
          * @enum {string}
@@ -25105,6 +25157,8 @@ export interface operations {
                 customer_id?: string | string[] | null;
                 /** @description Filter by external customer ID. */
                 external_customer_id?: string | string[] | null;
+                /** @description Filter by event name. */
+                name?: string | string[] | null;
                 /** @description Filter by event source. */
                 source?: components["schemas"]["EventSource"] | components["schemas"]["EventSource"][] | null;
                 /** @description Page number, defaults to 1. */
@@ -25129,6 +25183,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListResource_Event_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "events:list_names": {
+        parameters: {
+            query?: {
+                /** @description Filter by organization ID. */
+                organization_id?: string | string[] | null;
+                /** @description Filter by customer ID. */
+                customer_id?: string | string[] | null;
+                /** @description Filter by external customer ID. */
+                external_customer_id?: string | string[] | null;
+                /** @description Page number, defaults to 1. */
+                page?: number;
+                /** @description Size of a page, defaults to 10. Maximum is 100. */
+                limit?: number;
+                /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+                sorting?: components["schemas"]["EventNamesSortProperty"][] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventName"][];
                 };
             };
             /** @description Validation Error */
@@ -26673,6 +26769,7 @@ export const discountSortPropertyValues: ReadonlyArray<components["schemas"]["Di
 export const discountTypeValues: ReadonlyArray<components["schemas"]["DiscountType"]> = ["fixed", "percentage"];
 export const downloadableFileCreateServiceValues: ReadonlyArray<components["schemas"]["DownloadableFileCreate"]["service"]> = ["downloadable"];
 export const downloadableFileReadServiceValues: ReadonlyArray<components["schemas"]["DownloadableFileRead"]["service"]> = ["downloadable"];
+export const eventNamesSortPropertyValues: ReadonlyArray<components["schemas"]["EventNamesSortProperty"]> = ["events_count", "-events_count", "first_seen", "-first_seen", "last_seen", "-last_seen"];
 export const eventSortPropertyValues: ReadonlyArray<components["schemas"]["EventSortProperty"]> = ["timestamp", "-timestamp"];
 export const eventSourceValues: ReadonlyArray<components["schemas"]["EventSource"]> = ["system", "user"];
 export const externalOrganizationSortPropertyValues: ReadonlyArray<components["schemas"]["ExternalOrganizationSortProperty"]> = ["created_at", "-created_at", "name", "-name"];

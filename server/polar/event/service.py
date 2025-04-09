@@ -3,7 +3,7 @@ from collections.abc import Callable, Sequence
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import UnaryExpression, asc, desc, select
+from sqlalchemy import UnaryExpression, asc, desc, func, select
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
@@ -16,7 +16,7 @@ from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 
 from .repository import EventRepository
-from .schemas import EventCreateCustomer, EventsIngest, EventsIngestResponse
+from .schemas import EventCreateCustomer, EventName, EventsIngest, EventsIngestResponse
 from .sorting import EventSortProperty
 
 
@@ -30,6 +30,54 @@ class EventIngestValidationError(EventError):
 
 
 class EventService:
+    async def list_names(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
+    ) -> list[EventName]:
+        repository = EventRepository.from_session(session)
+
+        statement = select(
+            Event.name,
+            func.count().label("events_count"),
+            func.min(Event.timestamp).label("first_seen"),
+            func.max(Event.timestamp).label("last_seen"),
+        ).group_by(Event.name)
+
+        statement = repository.get_auth_statement(auth_subject, statement)
+
+        if organization_id is not None:
+            statement = statement.where(Event.organization_id.in_(organization_id))
+
+        if customer_id is not None:
+            statement = statement.where(
+                repository.get_customer_id_filter_clause(customer_id)
+            )
+
+        if external_customer_id is not None:
+            statement = statement.where(
+                repository.get_external_customer_id_filter_clause(external_customer_id)
+            )
+
+        result = await session.execute(statement.distinct())
+
+        results: list[EventName] = []
+        for row in result.unique().all():
+            name, events_count, first_seen, last_seen = row._tuple()
+            results.append(
+                EventName(
+                    name=name,
+                    events_count=events_count,
+                    first_seen=first_seen,
+                    last_seen=last_seen,
+                )
+            )
+
+        return results
+
     async def list(
         self,
         session: AsyncSession,
@@ -40,6 +88,7 @@ class EventService:
         organization_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
+        name: Sequence[str] | None = None,
         source: Sequence[EventSource] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
@@ -68,6 +117,9 @@ class EventService:
             statement = statement.where(
                 repository.get_external_customer_id_filter_clause(external_customer_id)
             )
+
+        if name is not None:
+            statement = statement.where(Event.name.in_(name))
 
         if source is not None:
             statement = statement.where(Event.source.in_(source))

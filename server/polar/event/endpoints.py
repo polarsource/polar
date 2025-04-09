@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from fastapi import Depends, Query
 from pydantic import AwareDatetime
 
@@ -15,7 +17,7 @@ from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import Event as EventSchema
-from .schemas import EventID, EventsIngest, EventsIngestResponse
+from .schemas import EventID, EventName, EventsIngest, EventsIngestResponse
 from .service import event as event_service
 
 router = APIRouter(
@@ -54,6 +56,9 @@ async def list(
         title="ExternalCustomerID Filter",
         description="Filter by external customer ID.",
     ),
+    name: MultipleQueryFilter[str] | None = Query(
+        None, title="Name Filter", description="Filter by event name."
+    ),
     source: MultipleQueryFilter[EventSource] | None = Query(
         None, title="Source Filter", description="Filter by event source."
     ),
@@ -68,6 +73,7 @@ async def list(
         organization_id=organization_id,
         customer_id=customer_id,
         external_customer_id=external_customer_id,
+        name=name,
         source=source,
         metadata=metadata,
         pagination=pagination,
@@ -77,6 +83,40 @@ async def list(
     return ListResource.from_paginated_results(
         [EventSchema.model_validate(result) for result in results], count, pagination
     )
+
+
+@router.get(
+    "/names",
+    summary="List Event Names",
+    response_model=Sequence[EventName],
+)
+async def list_names(
+    auth_subject: auth.EventRead,
+    pagination: PaginationParamsQuery,
+    sorting: sorting.EventNamesSorting,
+    session: AsyncSession = Depends(get_db_session),
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    ),
+    external_customer_id: MultipleQueryFilter[str] | None = Query(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by external customer ID.",
+    ),
+) -> Sequence[EventName]:
+    """List event names."""
+    results = await event_service.list_names(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+        customer_id=customer_id,
+        external_customer_id=external_customer_id,
+    )
+
+    return results
 
 
 @router.get(

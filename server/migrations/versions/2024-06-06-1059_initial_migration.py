@@ -15,7 +15,7 @@ from sqlalchemy_utils.types.ts_vector import TSVectorType
 
 from polar.enums import Platforms
 from polar.kit.extensions.sqlalchemy import StringEnum
-from polar.models import Account, Issue
+from polar.models import Account
 
 
 # This enum has been removed from the codebase since this migration was created
@@ -1235,7 +1235,7 @@ def upgrade() -> None:
             postgresql.JSONB(none_as_null=True, astext_type=sa.Text()),
             nullable=True,
         ),
-        sa.Column("state", StringEnum(Issue.State), nullable=False),
+        sa.Column("state", sa.String(), nullable=False),
         sa.Column("state_reason", sa.String(), nullable=True),
         sa.Column("issue_closed_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("issue_created_at", sa.TIMESTAMP(timezone=True), nullable=False),
@@ -1508,7 +1508,7 @@ def upgrade() -> None:
             postgresql.JSONB(none_as_null=True, astext_type=sa.Text()),
             nullable=True,
         ),
-        sa.Column("state", StringEnum(Issue.State), nullable=False),
+        sa.Column("state", sa.String(), nullable=False),
         sa.Column("state_reason", sa.String(), nullable=True),
         sa.Column("issue_closed_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("issue_created_at", sa.TIMESTAMP(timezone=True), nullable=False),

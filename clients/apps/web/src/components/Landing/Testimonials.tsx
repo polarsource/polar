@@ -81,17 +81,16 @@ const testimonials = [
     ),
   },
   {
-    link: 'https://x.com/rauchg/status/1902002814420767178',
+    link: 'https://x.com/rauchg/status/1909810055622672851',
     name: 'Guillermo Rauch',
     username: 'rauchg',
     verified: true,
     avatar: '/assets/landing/testamonials/rauch.jpg',
     text: (
-      <ul>
-        <li>I&apos;m a big fan of this pattern:</li>
-        <li>$ cd my-next-app</li>
-        <li>$ npx {`{auth,billing,data,cms…}-init`}</li>
-      </ul>
+      <p>
+        The speed at which Polar is executing on the financial infrastructure
+        primitives the new world needs is very impressive
+      </p>
     ),
   },
   {

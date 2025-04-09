@@ -34,11 +34,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         result = await self.session.execute(statement, events)
         return result.scalars().all()
 
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[Event]]:
-        statement = self.get_base_statement()
-
+    def get_auth_statement(
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        statement: Select,
+    ) -> Select:
         if is_user(auth_subject):
             user = auth_subject.subject
             statement = statement.where(
@@ -49,12 +49,20 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                     )
                 )
             )
+
         elif is_organization(auth_subject):
             statement = statement.where(
                 Event.organization_id == auth_subject.subject.id
             )
 
         return statement
+
+    def get_readable_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[tuple[Event]]:
+        statement = self.get_base_statement()
+
+        return self.get_auth_statement(auth_subject, statement)
 
     def get_customer_id_filter_clause(
         self, customer_id: Sequence[UUID]

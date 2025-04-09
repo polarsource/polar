@@ -13,6 +13,7 @@ import {
   ModeStandby,
   PeopleOutlined,
   ShoppingBagOutlined,
+  ShortTextOutlined,
   SpaceDashboardOutlined,
   Storefront,
   TrendingUp,
@@ -240,6 +241,13 @@ const generalRoutesList = (
         icon: <AllInclusiveOutlined fontSize="inherit" />,
       },
     ],
+  },
+  {
+    id: 'events',
+    title: 'Events',
+    icon: <ShortTextOutlined fontSize="inherit" />,
+    link: `/dashboard/${org.slug}/events`,
+    if: true,
   },
   {
     id: 'storefront',

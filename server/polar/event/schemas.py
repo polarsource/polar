@@ -93,4 +93,13 @@ class Event(IDSchema, MetadataOutputMixin):
     )
 
 
+class EventName(Schema):
+    name: str = Field(..., description="The name of the event.")
+    events_count: int = Field(
+        ..., description="Number of times the event has occurred."
+    )
+    first_seen: datetime = Field(..., description="The first time the event occurred.")
+    last_seen: datetime = Field(..., description="The last time the event occurred.")
+
+
 EventID = Annotated[UUID4, Path(description="The event ID.")]

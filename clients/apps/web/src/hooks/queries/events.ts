@@ -1,16 +1,22 @@
 import { api } from '@/utils/client'
-import { unwrap } from '@polar-sh/client'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { operations, unwrap } from '@polar-sh/client'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useEvents = (organizationId: string, customerId?: string) => {
+export const useEvents = (
+  organizationId: string,
+  parameters?: operations['events:list']['parameters']['query'],
+) => {
   return useInfiniteQuery({
-    queryKey: ['events', { organizationId, customerId }],
+    queryKey: ['events', { organizationId, ...(parameters || {}) }],
     queryFn: () =>
       unwrap(
         api.GET('/v1/events/', {
           params: {
-            query: { organization_id: organizationId, customer_id: customerId },
+            query: {
+              organization_id: organizationId,
+              ...(parameters || {}),
+            },
           },
         }),
       ),
@@ -18,5 +24,22 @@ export const useEvents = (organizationId: string, customerId?: string) => {
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPageParam === lastPage.pagination.max_page ? null : lastPageParam + 1,
     retry: defaultRetry,
+  })
+}
+
+export const useEventNames = (
+  organizationId: string,
+  parameters?: operations['events:list_names']['parameters']['query'],
+) => {
+  return useQuery({
+    queryKey: ['eventNames', { organizationId, ...(parameters || {}) }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/names', {
+          params: {
+            query: { organization_id: organizationId, ...(parameters || {}) },
+          },
+        }),
+      ),
   })
 }

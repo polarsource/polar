@@ -331,7 +331,7 @@ export default function Dither({
     <Canvas
       className="relative h-full w-full"
       camera={{ position: [0, 0, 6] }}
-      dpr={window.devicePixelRatio}
+      dpr={typeof window !== 'undefined' ? window.devicePixelRatio : 1}
       gl={{ antialias: true, preserveDrawingBuffer: true }}
     >
       <DitheredWaves

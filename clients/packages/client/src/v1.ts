@@ -653,6 +653,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/notifications/recipients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lists all notification recipients subscribed to notifications
+         * @description List all devices subscribed to notifications.
+         *
+         *     **Scopes**: `notification_recipients:read` `notification_recipients:write`
+         */
+        get: operations["notifications:list"];
+        put?: never;
+        /**
+         * Subscribes a device to notifications
+         * @description Create a notification recipient.
+         *
+         *     **Scopes**: `notification_recipients:write`
+         */
+        post: operations["notifications:create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/notifications/recipients/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete
+         * @description Delete a notification recipient.
+         *
+         *     **Scopes**: `notification_recipients:write`
+         */
+        delete: operations["notifications:delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/external_organizations/": {
         parameters: {
             query?: never;
@@ -4721,7 +4771,7 @@ export interface components {
          * AvailableScope
          * @enum {string}
          */
-        AvailableScope: "openid" | "profile" | "email" | "user:read" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_sessions:write" | "orders:read" | "refunds:read" | "refunds:write" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write";
+        AvailableScope: "openid" | "profile" | "email" | "user:read" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_sessions:write" | "orders:read" | "refunds:read" | "refunds:write" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notification_recipients:read" | "notification_recipients:write";
         /** BackofficeBadge */
         BackofficeBadge: {
             /** Org Slug */
@@ -9457,7 +9507,8 @@ export interface components {
          * @description A customer along with additional state information:
          *
          *     * Active subscriptions
-         *     * Active benefits
+         *     * Granted benefits
+         *     * Active meters
          */
         CustomerState: {
             /**
@@ -9528,6 +9579,11 @@ export interface components {
              * @description The customer's active benefit grants.
              */
             granted_benefits: components["schemas"]["CustomerStateBenefitGrant"][];
+            /**
+             * Active Meters
+             * @description The customer's active meters.
+             */
+            active_meters: components["schemas"]["CustomerStateMeter"][];
             /** Avatar Url */
             readonly avatar_url: string;
         };
@@ -9569,6 +9625,44 @@ export interface components {
             benefit_type: components["schemas"]["BenefitType"];
             /** Properties */
             properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
+        };
+        /**
+         * CustomerStateMeter
+         * @description An active meter for a customer, with latest consumed and credited units.
+         */
+        CustomerStateMeter: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Meter Id
+             * Format: uuid4
+             * @description The ID of the meter.
+             */
+            meter_id: string;
+            /**
+             * Consumed Units
+             * @description The number of consumed units.
+             */
+            consumed_units: number;
+            /**
+             * Credited Units
+             * @description The number of credited units.
+             */
+            credited_units: number;
+            /**
+             * Balance
+             * @description The balance of the meter, i.e. the difference between credited and consumed units. Never goes negative.
+             */
+            balance: number;
         };
         /**
          * CustomerStateSubscription
@@ -12161,6 +12255,12 @@ export interface components {
             items: components["schemas"]["Meter"][];
             pagination: components["schemas"]["Pagination"];
         };
+        /** ListResource[NotificationRecipientSchema] */
+        ListResource_NotificationRecipientSchema_: {
+            /** Items */
+            items: components["schemas"]["NotificationRecipientSchema"][];
+            pagination: components["schemas"]["Pagination"];
+        };
         /** ListResource[OAuth2Client] */
         ListResource_OAuth2Client_: {
             /** Items */
@@ -12926,6 +13026,53 @@ export interface components {
             /** Detail */
             detail: string;
         };
+        /** NotificationRecipientCreate */
+        NotificationRecipientCreate: {
+            /** @description Platform of the notification recipient. */
+            platform: components["schemas"]["NotificationRecipientPlatform"];
+            /**
+             * Expo Push Token
+             * @description Expo push token for the notification recipient.
+             */
+            expo_push_token: string;
+        };
+        /**
+         * NotificationRecipientPlatform
+         * @enum {string}
+         */
+        NotificationRecipientPlatform: "ios" | "android";
+        /** NotificationRecipientSchema */
+        NotificationRecipientSchema: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * User Id
+             * Format: uuid4
+             * @description ID of the user the notification recipient belongs to.
+             */
+            user_id: string;
+            /** @description Platform of the notification recipient. */
+            platform: components["schemas"]["NotificationRecipientPlatform"];
+            /**
+             * Expo Push Token
+             * @description Expo push token for the notification recipient.
+             */
+            expo_push_token: string;
+        };
         /** NotificationsList */
         NotificationsList: {
             /** Notifications */
@@ -12968,7 +13115,7 @@ export interface components {
             response_types: "code"[];
             /**
              * Scope
-             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write
+             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
              */
             scope: string;
             /** Client Name */
@@ -13028,7 +13175,7 @@ export interface components {
             response_types: "code"[];
             /**
              * Scope
-             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write
+             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
              */
             scope: string;
             /** Client Name */
@@ -13069,7 +13216,7 @@ export interface components {
             response_types: "code"[];
             /**
              * Scope
-             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write
+             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
              */
             scope: string;
             /** Client Name */
@@ -14985,7 +15132,7 @@ export interface components {
              * Unit Amount
              * @description The price per unit in cents.
              */
-            unit_amount: number;
+            unit_amount: string;
             /**
              * Cap Amount
              * @description The maximum amount in cents that can be charged, regardless of the number of units consumed.
@@ -15024,9 +15171,9 @@ export interface components {
             price_currency: string;
             /**
              * Unit Amount
-             * @description The price per unit in cents.
+             * @description The price per unit in cents. Supports up to 12 decimal places.
              */
-            unit_amount: number;
+            unit_amount: number | string;
             /**
              * Cap Amount
              * @description Optional maximum amount in cents that can be charged, regardless of the number of units consumed.
@@ -15608,7 +15755,7 @@ export interface components {
          * Scope
          * @enum {string}
          */
-        Scope: "openid" | "profile" | "email" | "user:read" | "admin" | "web_default" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_sessions:write" | "orders:read" | "refunds:read" | "refunds:write" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write";
+        Scope: "openid" | "profile" | "email" | "user:read" | "admin" | "web_default" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_sessions:write" | "orders:read" | "refunds:read" | "refunds:write" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notification_recipients:read" | "notification_recipients:write";
         /**
          * State
          * @enum {string}
@@ -18409,6 +18556,114 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "notifications:list": {
+        parameters: {
+            query?: {
+                /** @description Filter by Expo push token. */
+                expo_push_token?: string | null;
+                /** @description Filter by platform. */
+                platform?: components["schemas"]["NotificationRecipientPlatform"] | null;
+                /** @description Page number, defaults to 1. */
+                page?: number;
+                /** @description Size of a page, defaults to 10. Maximum is 100. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResource_NotificationRecipientSchema_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "notifications:create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationRecipientCreate"];
+            };
+        };
+        responses: {
+            /** @description Device subscribed to notifications. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationRecipientSchema"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "notifications:delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The notification recipient ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Notification recipient unsubscribed from notifications. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Notification recipient not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -26364,7 +26619,7 @@ export const appPermissionsTypeInteraction_limitsValues: ReadonlyArray<component
 export const appPermissionsTypeStarringValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["starring"]> = ["read", "write"];
 export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseOrganization"]["sub_type"]> = ["organization"];
 export const authorizeResponseUserSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseUser"]["sub_type"]> = ["user"];
-export const availableScopeValues: ReadonlyArray<components["schemas"]["AvailableScope"]> = ["openid", "profile", "email", "user:read", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write"];
+export const availableScopeValues: ReadonlyArray<components["schemas"]["AvailableScope"]> = ["openid", "profile", "email", "user:read", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notification_recipients:read", "notification_recipients:write"];
 export const backofficeBadgeActionValues: ReadonlyArray<components["schemas"]["BackofficeBadge"]["action"]> = ["embed", "remove"];
 export const backofficeBadgeResponseActionValues: ReadonlyArray<components["schemas"]["BackofficeBadgeResponse"]["action"]> = ["embed", "remove"];
 export const benefitCustomCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitCustomCreate"]["type"]> = ["custom"];
@@ -26445,6 +26700,7 @@ export const maintainerPledgedIssueConfirmationPendingNotificationTypeValues: Re
 export const maintainerPledgedIssuePendingNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerPledgedIssuePendingNotification"]["type"]> = ["MaintainerPledgedIssuePendingNotification"];
 export const meterSortPropertyValues: ReadonlyArray<components["schemas"]["MeterSortProperty"]> = ["created_at", "-created_at", "name", "-name"];
 export const metricTypeValues: ReadonlyArray<components["schemas"]["MetricType"]> = ["scalar", "currency"];
+export const notificationRecipientPlatformValues: ReadonlyArray<components["schemas"]["NotificationRecipientPlatform"]> = ["ios", "android"];
 export const oAuth2ClientToken_endpoint_auth_methodValues: ReadonlyArray<components["schemas"]["OAuth2Client"]["token_endpoint_auth_method"]> = ["client_secret_basic", "client_secret_post", "none"];
 export const oAuth2ClientGrant_typesValues: ReadonlyArray<components["schemas"]["OAuth2Client"]["grant_types"]> = ["authorization_code", "refresh_token"];
 export const oAuth2ClientConfigurationToken_endpoint_auth_methodValues: ReadonlyArray<components["schemas"]["OAuth2ClientConfiguration"]["token_endpoint_auth_method"]> = ["client_secret_basic", "client_secret_post", "none"];
@@ -26484,7 +26740,7 @@ export const refundStatusValues: ReadonlyArray<components["schemas"]["RefundStat
 export const repositorySortPropertyValues: ReadonlyArray<components["schemas"]["RepositorySortProperty"]> = ["created_at", "-created_at", "name", "-name", "stars", "-stars"];
 export const rewardPaidNotificationTypeValues: ReadonlyArray<components["schemas"]["RewardPaidNotification"]["type"]> = ["RewardPaidNotification"];
 export const rewardStateValues: ReadonlyArray<components["schemas"]["RewardState"]> = ["pending", "paid"];
-export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "admin", "web_default", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write"];
+export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "admin", "web_default", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notification_recipients:read", "notification_recipients:write"];
 export const stateValues: ReadonlyArray<components["schemas"]["State"]> = ["open", "closed"];
 export const statusValues: ReadonlyArray<components["schemas"]["Status"]> = ["created", "onboarding_started", "under_review", "denied", "active"];
 export const subTypeValues: ReadonlyArray<components["schemas"]["SubType"]> = ["user", "organization"];

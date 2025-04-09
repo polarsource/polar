@@ -7,7 +7,6 @@ from .authorization_code import (
     OpenIDToken,
     ValidateSubAndPrompt,
 )
-from .github_oidc_id_token import GitHubOIDCIDTokenGrant
 from .refresh_token import RefreshTokenGrant
 
 if typing.TYPE_CHECKING:
@@ -25,7 +24,6 @@ def register_grants(server: "AuthorizationServer") -> None:
         ],
     )
     server.register_grant(RefreshTokenGrant)
-    server.register_grant(GitHubOIDCIDTokenGrant)
 
 
 __all__ = ["register_grants", "AuthorizationCodeGrant", "CodeChallenge"]

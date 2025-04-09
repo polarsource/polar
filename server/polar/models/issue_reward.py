@@ -18,14 +18,12 @@ class IssueReward(RecordModel):
     __tablename__ = "issue_rewards"
 
     __table_args__ = (
-        UniqueConstraint("issue_id", "github_username"),
-        UniqueConstraint("issue_id", "organization_id"),
-        UniqueConstraint("issue_id", "user_id"),
+        UniqueConstraint("issue_reference", "github_username"),
+        UniqueConstraint("issue_reference", "organization_id"),
+        UniqueConstraint("issue_reference", "user_id"),
     )
 
-    issue_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("issues.id"), nullable=False
-    )
+    issue_reference: Mapped[str] = mapped_column(String, nullable=False, index=True)
 
     # 10% == 100
     share_thousands: Mapped[int] = mapped_column(BigInteger, nullable=False)

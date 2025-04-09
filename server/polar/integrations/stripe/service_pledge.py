@@ -8,78 +8,16 @@ from polar.integrations.stripe.schemas import (
     PledgePaymentIntentMetadata,
     ProductType,
 )
-from polar.models.external_organization import ExternalOrganization
-from polar.models.issue import Issue
-from polar.models.organization import Organization
 from polar.models.pledge import Pledge
-from polar.models.repository import Repository
 from polar.models.user import User
 from polar.postgres import AsyncSession
 
-from .service import MissingOrganizationBillingEmail
 from .service import stripe as stripe_service
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 
 
 class PledgeStripeService:
-    async def create_anonymous_intent(
-        self,
-        amount: int,
-        currency: str,
-        pledge_issue: Issue,
-        pledge_issue_org: ExternalOrganization,
-        pledge_issue_repo: Repository,
-        anonymous_email: str,
-    ) -> stripe_lib.PaymentIntent:
-        metadata = PledgePaymentIntentMetadata(
-            issue_id=pledge_issue.id,
-            issue_title=pledge_issue.title,
-            anonymous=True,
-            anonymous_email=anonymous_email,
-        )
-        return await stripe_lib.PaymentIntent.create_async(
-            amount=amount,
-            currency=currency,
-            metadata=metadata.model_dump(exclude_none=True),
-            receipt_email=anonymous_email,
-            description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
-        )
-
-    async def create_user_intent(
-        self,
-        session: AsyncSession,
-        amount: int,
-        currency: str,
-        pledge_issue: Issue,
-        pledge_issue_org: ExternalOrganization,
-        pledge_issue_repo: Repository,
-        user: User,
-        on_behalf_of_organization_id: UUID | None = None,
-    ) -> stripe_lib.PaymentIntent:
-        customer = await stripe_service.get_or_create_user_customer(session, user)
-        if not customer:
-            raise Exception("failed to get/create customer")
-
-        metadata = PledgePaymentIntentMetadata(
-            issue_id=pledge_issue.id,
-            issue_title=pledge_issue.title,
-            user_id=user.id,
-            user_email=user.email,
-        )
-
-        if on_behalf_of_organization_id:
-            metadata.on_behalf_of_organization_id = on_behalf_of_organization_id
-
-        return await stripe_lib.PaymentIntent.create_async(
-            amount=amount,
-            currency=currency,
-            customer=customer.id,
-            metadata=metadata.model_dump(exclude_none=True),
-            receipt_email=user.email,
-            description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
-        )
-
     async def modify_intent(
         self,
         id: str,
@@ -103,13 +41,7 @@ class PledgeStripeService:
         )
 
     async def create_user_pledge_invoice(
-        self,
-        session: AsyncSession,
-        user: User,
-        pledge: Pledge,
-        pledge_issue: Issue,
-        pledge_issue_repo: Repository,
-        pledge_issue_external_org: ExternalOrganization,
+        self, session: AsyncSession, user: User, pledge: Pledge
     ) -> stripe_lib.Invoice | None:
         customer = await stripe_service.get_or_create_user_customer(session, user)
         if not customer:
@@ -122,59 +54,15 @@ class PledgeStripeService:
                 email=user.email,
             )
 
-        return await self.create_pledge_invoice(
-            customer,
-            pledge,
-            pledge_issue,
-            pledge_issue_repo,
-            pledge_issue_external_org,
-        )
-
-    async def create_organization_pledge_invoice(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        pledge: Pledge,
-        pledge_issue: Issue,
-        pledge_issue_repo: Repository,
-        pledge_issue_external_org: ExternalOrganization,
-    ) -> stripe_lib.Invoice | None:
-        customer = await stripe_service.get_or_create_org_customer(
-            session, organization
-        )
-        if not customer:
-            return None
-
-        if organization.billing_email is None:
-            raise MissingOrganizationBillingEmail(organization.id)
-
-        # Sync billing email
-        if not customer.email or customer.email != organization.billing_email:
-            await stripe_lib.Customer.modify_async(
-                customer.id,
-                email=organization.billing_email,
-            )
-
-        return await self.create_pledge_invoice(
-            customer,
-            pledge,
-            pledge_issue,
-            pledge_issue_repo,
-            pledge_issue_external_org,
-        )
+        return await self.create_pledge_invoice(customer, pledge)
 
     async def create_pledge_invoice(
-        self,
-        customer: stripe_lib.Customer,
-        pledge: Pledge,
-        pledge_issue: Issue,
-        pledge_issue_repo: Repository,
-        pledge_issue_external_org: ExternalOrganization,
+        self, customer: stripe_lib.Customer, pledge: Pledge
     ) -> stripe_lib.Invoice | None:
         # Create an invoice, then add line items to it
         invoice = await stripe_lib.Invoice.create_async(
             customer=customer.id,
-            description=f"""You pledged to {pledge_issue_external_org.name}/{pledge_issue_repo.name}#{pledge_issue.number} on {pledge.created_at.strftime("%Y-%m-%d")}, which has now been fixed!
+            description=f"""You pledged to {pledge.issue_reference} on {pledge.created_at.strftime("%Y-%m-%d")}, which has now been fixed!
 
 Thank you for your support!
 """,  # noqa: E501
@@ -195,7 +83,7 @@ Thank you for your support!
             invoice=invoice.id,
             customer=customer.id,
             amount=pledge.amount_including_fee,
-            description=f"Pledge to {pledge_issue_external_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
+            description=f"Pledge to {pledge.issue_reference}",  # noqa: E501
             currency="USD",
             metadata={
                 "type": ProductType.pledge,

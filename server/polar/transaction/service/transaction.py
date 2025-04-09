@@ -13,9 +13,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
 from polar.models import (
     Account,
-    Issue,
     Order,
-    Pledge,
     Product,
     Transaction,
     User,
@@ -60,13 +58,7 @@ class TransactionService(BaseTransactionService):
             # Incurred transactions
             subqueryload(Transaction.account_incurred_transactions),
             # Pledge
-            subqueryload(Transaction.pledge).options(
-                # Pledge.issue
-                joinedload(Pledge.issue).options(
-                    joinedload(Issue.repository),
-                    joinedload(Issue.organization),
-                )
-            ),
+            subqueryload(Transaction.pledge),
             # IssueReward
             subqueryload(Transaction.issue_reward),
             # Order
@@ -114,13 +106,7 @@ class TransactionService(BaseTransactionService):
                 # Incurred transactions
                 subqueryload(Transaction.account_incurred_transactions),
                 # Pledge
-                subqueryload(Transaction.pledge).options(
-                    # Pledge.issue
-                    joinedload(Pledge.issue).options(
-                        joinedload(Issue.repository),
-                        joinedload(Issue.organization),
-                    )
-                ),
+                subqueryload(Transaction.pledge),
                 # IssueReward
                 subqueryload(Transaction.issue_reward),
                 # Order
@@ -128,12 +114,8 @@ class TransactionService(BaseTransactionService):
                     joinedload(Order.product).options(joinedload(Product.organization)),
                 ),
                 # Paid transactions (joining on itself)
-                subqueryload(Transaction.paid_transactions)
-                .subqueryload(Transaction.pledge)
-                .joinedload(Pledge.issue)
-                .options(
-                    joinedload(Issue.repository),
-                    joinedload(Issue.organization),
+                subqueryload(Transaction.paid_transactions).subqueryload(
+                    Transaction.pledge
                 ),
                 subqueryload(Transaction.paid_transactions).subqueryload(
                     Transaction.issue_reward

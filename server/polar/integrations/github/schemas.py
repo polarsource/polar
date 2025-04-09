@@ -1,12 +1,9 @@
 import time
 from typing import Any
 
-from pydantic import UUID4, model_validator
+from pydantic import model_validator
 
 from polar.kit.schemas import Schema
-from polar.organization.schemas import OrganizationID
-
-from .types import AppPermissionsType
 
 
 class OAuthAccessToken(Schema):
@@ -23,37 +20,3 @@ class OAuthAccessToken(Schema):
         expires_in = data["refresh_token_expires_in"]
         data["refresh_token_expires_at"] = epoch_now + expires_in
         return data
-
-
-class GitHubIssue(Schema):
-    raw: str
-    owner: str | None = None
-    repo: str | None = None
-    number: int
-
-    @property
-    def canonical(self) -> str:
-        if self.owner and self.repo:
-            return f"{self.owner.lower()}/{self.repo.lower()}#{self.number}"
-        else:
-            return f"#{self.number}"
-
-
-class GithubUser(Schema):
-    username: str
-    avatar_url: str
-
-
-class OrganizationCheckPermissionsInput(Schema):
-    permissions: AppPermissionsType
-
-
-class OrganizationBillingPlan(Schema):
-    organization_id: UUID4
-    is_free: bool
-    plan_name: str
-
-
-class InstallationCreate(Schema):
-    installation_id: int
-    organization_id: OrganizationID

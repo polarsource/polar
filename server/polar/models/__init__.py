@@ -21,10 +21,8 @@ from .downloadable import Downloadable
 from .email_verification import EmailVerification
 from .event import Event
 from .external_event import ExternalEvent
-from .external_organization import ExternalOrganization
 from .file import File
 from .held_balance import HeldBalance
-from .issue import Issue
 from .issue_reward import IssueReward
 from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
@@ -58,7 +56,6 @@ from .product_price import (
     ProductPriceMeteredUnit,
 )
 from .refund import Refund
-from .repository import Repository
 from .subscription import Subscription
 from .subscription_product_price import SubscriptionProductPrice
 from .transaction import Transaction
@@ -94,10 +91,8 @@ __all__ = [
     "EmailVerification",
     "Event",
     "ExternalEvent",
-    "ExternalOrganization",
     "File",
     "HeldBalance",
-    "Issue",
     "IssueReward",
     "LicenseKey",
     "LicenseKeyActivation",
@@ -129,7 +124,6 @@ __all__ = [
     "LegacyRecurringProductPriceFree",
     "LegacyRecurringProductPriceFixed",
     "LegacyRecurringProductPriceCustom",
-    "Repository",
     "Refund",
     "Subscription",
     "SubscriptionProductPrice",

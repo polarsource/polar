@@ -5,7 +5,6 @@ from pydantic import BaseModel, TypeAdapter
 from sqlalchemy import desc
 
 from polar.kit.extensions.sqlalchemy import sql
-from polar.models.issue import Issue
 from polar.models.notification import Notification
 from polar.models.pledge import Pledge
 from polar.models.user_notification import UserNotification
@@ -38,7 +37,6 @@ class NotificationsService:
         stmt = (
             sql.select(Notification)
             .join(Pledge, Pledge.id == Notification.pledge_id, isouter=True)
-            .join(Issue, Issue.id == Notification.issue_id, isouter=True)
             .where(Notification.user_id == user_id)
             .order_by(desc(Notification.created_at))
             .limit(100)

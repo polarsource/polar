@@ -136,12 +136,12 @@ class Pledge(RecordModel):
     __tablename__ = "pledges"
 
     issue_reference: Mapped[str] = mapped_column(String, nullable=False, index=True)
-    organization_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("organizations.id"), nullable=False, index=True
+    organization_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("organizations.id"), nullable=True, index=True
     )
 
     @declared_attr
-    def organization(cls) -> Mapped[Organization]:
+    def organization(cls) -> Mapped[Organization | None]:
         return relationship(
             Organization,
             primaryjoin=Organization.id == cls.organization_id,

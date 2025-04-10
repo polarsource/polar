@@ -155,13 +155,20 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     query,
     sorting: [sorting],
   })
-  const { data: events } = useEvents(organization.id, {
-    name: selectedEventName ? [selectedEventName] : undefined,
-    page: currentPage,
-    limit: PAGE_SIZE,
-    start_timestamp: startDate?.toISOString(),
-    end_timestamp: endDate?.toISOString(),
-  })
+
+  const eventParameters = useMemo(() => {
+    return selectedEventName
+      ? {
+          name: [selectedEventName],
+          page: currentPage,
+          limit: PAGE_SIZE,
+          start_timestamp: startDate.toISOString(),
+          end_timestamp: endDate.toISOString(),
+        }
+      : undefined
+  }, [selectedEventName, currentPage, startDate, endDate])
+
+  const { data: events } = useEvents(organization.id, eventParameters)
 
   const searchParams = useSearchParams()
 

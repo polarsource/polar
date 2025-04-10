@@ -17,7 +17,6 @@ from githubkit.typing import Missing
 from pydantic import BaseModel, Field
 
 from polar.config import settings
-from polar.integrations.github.cache import RedisCache
 from polar.locker import Locker
 from polar.models.user import OAuthAccount, OAuthPlatform, User
 from polar.postgres import AsyncSession
@@ -216,8 +215,8 @@ def get_app_client(
                 private_key=settings.GITHUB_APP_PRIVATE_KEY,
                 client_id=settings.GITHUB_CLIENT_ID,
                 client_secret=settings.GITHUB_CLIENT_SECRET,
-                cache=RedisCache(app, redis),
-            )
+            ),
+            http_cache=False,
         )
     elif app == GitHubApp.repository_benefit:
         return GitHub(
@@ -226,8 +225,8 @@ def get_app_client(
                 private_key=settings.GITHUB_REPOSITORY_BENEFITS_APP_PRIVATE_KEY,
                 client_id=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_ID,
                 client_secret=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET,
-                cache=RedisCache(app, redis),
-            )
+            ),
+            http_cache=False,
         )
 
 
@@ -240,10 +239,6 @@ def get_app_installation_client(
     if not installation_id:
         raise Exception("unable to create github client: no installation_id provided")
 
-    # Using the RedisCache() below to cache generated JWTs
-    # This improves ETag/If-None-Match cache hits over the default in-memory cache, as
-    # they can be reused across restarts of the python process and by multiple workers.
-
     if app == GitHubApp.polar:
         return GitHub(
             AppInstallationAuthStrategy(
@@ -252,8 +247,8 @@ def get_app_installation_client(
                 client_id=settings.GITHUB_CLIENT_ID,
                 client_secret=settings.GITHUB_CLIENT_SECRET,
                 installation_id=installation_id,
-                cache=RedisCache(app, redis),
-            )
+            ),
+            http_cache=False,
         )
     elif app == GitHubApp.repository_benefit:
         return GitHub(
@@ -263,8 +258,8 @@ def get_app_installation_client(
                 client_id=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_ID,
                 client_secret=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET,
                 installation_id=installation_id,
-                cache=RedisCache(app, redis),
-            )
+            ),
+            http_cache=False,
         )
 
 

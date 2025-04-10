@@ -164,6 +164,27 @@ const testimonials = [
     ),
   },
   {
+    name: 'Filip K',
+    username: 'itsfilipk',
+    link: 'https://x.com/itsfilipk/status/1910238399820165140',
+    verified: true,
+    avatar: '/assets/landing/testamonials/filip.jpg',
+    text: (
+      <>
+        <p>
+          In 8 years as a developer I can&apos;t recall having such a smooth
+          onboarding + integration experience as with @polar_sh . Everything
+          from the UI, docs and CLI tool is intuitive and &apos;just
+          works&apos;.
+        </p>
+        <p>
+          If you are looking to integrate international payments into your
+          business, I can&apos;t recommend them enough.
+        </p>
+      </>
+    ),
+  },
+  {
     link: 'https://x.com/Mike_Andreuzza/status/1856338674406875385',
     name: 'Mike Andreuzza',
     username: 'Mike_Andreuzza',

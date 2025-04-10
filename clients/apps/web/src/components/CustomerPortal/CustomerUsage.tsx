@@ -14,7 +14,6 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import { useState } from 'react'
-import { CustomerMeter } from '../Customer/CustomerMeter'
 import DateRangePicker from '../Metrics/DateRangePicker'
 import IntervalPicker from '../Metrics/IntervalPicker'
 
@@ -251,18 +250,13 @@ export const CustomerUsage = ({ organizationId }: CustomerUsageProps) => {
             />
           </div>
 
-          {mockedMeters(organizationId).map((meter) => (
+          {/* {mockedMeters(organizationId).map((meter) => (
             <CustomerMeter
               key={meter.id}
               meter={meter}
-              data={{
-                quantities: mockedEvents(organizationId).map((event) => ({
-                  timestamp: new Date(event.timestamp),
-                  quantity: Number(event.metadata.value),
-                })),
-              }}
+              data={{ quantities: [], total: 0 }}
             />
-          ))}
+          ))} */}
         </TabsContent>
         <TabsContent value="alerts" className="flex flex-col gap-y-12">
           <DataTable

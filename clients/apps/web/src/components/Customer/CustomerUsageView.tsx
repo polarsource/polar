@@ -1,4 +1,5 @@
-import { useMeterQuantities, useMetersInfinite } from '@/hooks/queries/meters'
+import { useCustomerMeters } from '@/hooks/queries/customerMeters'
+import { useMeterQuantities } from '@/hooks/queries/meters'
 import { schemas } from '@polar-sh/client'
 import { TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
 import { useMemo } from 'react'
@@ -9,54 +10,62 @@ export const CustomerUsageView = ({
 }: {
   customer: schemas['Customer']
 }) => {
-  const { data } = useMetersInfinite(customer.organization_id)
-
-  const meters = data?.pages.flatMap((page) => page.items) ?? []
+  const { data, isLoading } = useCustomerMeters(customer.organization_id, {
+    customer_id: customer.id,
+    sorting: ['meter_name'],
+  })
+  const customerMeters = useMemo(() => data?.items || [], [data])
 
   const startDate = useMemo(
     () => new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
     [],
   )
-
   const endDate = useMemo(() => new Date(), [])
 
   return (
     <TabsContent value="usage" className="flex flex-col gap-y-12">
       <div className="flex flex-col gap-y-8">
-        {meters.map((meter) => (
+        {customerMeters.map((customerMeter) => (
           <CustomerMeterItem
-            key={meter.id}
-            meter={meter}
+            key={customerMeter.id}
+            customerMeter={customerMeter}
             startDate={startDate}
             endDate={endDate}
-            customer={customer}
           />
         ))}
+        {!isLoading && customerMeters.length === 0 && (
+          <div className="flex flex-col items-center gap-y-6">
+            <div className="flex flex-col items-center gap-y-2">
+              <h3 className="text-lg font-medium">No active meter</h3>
+              <p className="dark:text-polar-500 text-gray-500">
+                This customer has no active meters.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </TabsContent>
   )
 }
 
 const CustomerMeterItem = ({
-  meter,
+  customerMeter,
   startDate,
   endDate,
-  customer,
 }: {
-  meter: schemas['Meter']
+  customerMeter: schemas['CustomerMeter']
   startDate: Date
   endDate: Date
-  customer: schemas['Customer']
 }) => {
   const { data } = useMeterQuantities(
-    meter.id,
+    customerMeter.meter_id,
     startDate,
     endDate,
     'day',
-    customer.id,
+    { customer_id: customerMeter.customer_id },
   )
 
   if (!data) return null
 
-  return <CustomerMeter key={meter.id} meter={meter} data={data} />
+  return <CustomerMeter customerMeter={customerMeter} data={data} />
 }

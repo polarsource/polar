@@ -1,14 +1,15 @@
 'use client'
 
-import { useMeterEvents } from '@/hooks/queries/meters'
+import { useInfiniteEvents } from '@/hooks/queries/events'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { useMemo } from 'react'
 import { Events } from '../Events/Events'
 
 const MeterEventsTab = ({ meter }: { meter: schemas['Meter'] }) => {
-  const { data, fetchNextPage, isFetching, hasNextPage } = useMeterEvents(
-    meter.id,
+  const { data, fetchNextPage, isFetching, hasNextPage } = useInfiniteEvents(
+    meter.organization_id,
+    { meter_id: meter.id },
   )
   const meterEvents = useMemo(() => {
     if (!data) return []

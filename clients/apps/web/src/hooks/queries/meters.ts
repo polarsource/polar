@@ -65,37 +65,21 @@ export const useMeter = (id: string, initialData?: schemas['Meter']) =>
     initialData,
   })
 
-export interface ParsedMeterQuantities {
+export type ParsedMeterQuantities = schemas['MeterQuantities'] & {
   quantities: {
     timestamp: Date
     quantity: number
   }[]
 }
 
-export const useMeterEvents = (id: string) =>
-  useInfiniteQuery({
-    queryKey: ['meters', 'events', { id }],
-    queryFn: async ({ pageParam }) =>
-      unwrap(
-        api.GET('/v1/meters/{id}/events', {
-          params: { path: { id }, query: { page: pageParam, limit: 10 } },
-        }),
-      ),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
-      lastPageParam === lastPage.pagination.max_page ? null : lastPageParam + 1,
-    retry: defaultRetry,
-  })
-
 export const useMeterQuantities = (
   id: string,
   startTimestamp: Date,
   endTimestamp: Date,
   interval: schemas['TimeInterval'],
-  customerId?: string,
   parameters?: Omit<
     NonNullable<operations['meters:quantities']['parameters']['query']>,
-    'id' | 'startTimestamp' | 'endTimestamp' | 'interval' | 'customer_id'
+    'id' | 'start_timestamp' | 'end_timestamp' | 'interval'
   >,
 ): UseQueryResult<ParsedMeterQuantities, Error> =>
   useQuery({
@@ -107,7 +91,6 @@ export const useMeterQuantities = (
         startTimestamp,
         endTimestamp,
         interval,
-        customerId,
         ...(parameters || {}),
       },
     ],
@@ -126,6 +109,7 @@ export const useMeterQuantities = (
         }),
       )
       return {
+        ...result,
         quantities: result.quantities.map((quantity) => ({
           ...quantity,
           timestamp: new Date(quantity.timestamp),

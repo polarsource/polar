@@ -5,11 +5,8 @@ import { MeterChart } from '@/components/Meter/MeterChart'
 import MeterEventsTab from '@/components/Meter/MeterEventsTab'
 import { MeterGetStarted } from '@/components/Meter/MeterGetStarted'
 import Spinner from '@/components/Shared/Spinner'
-import {
-  useMeter,
-  useMeterEvents,
-  useMeterQuantities,
-} from '@/hooks/queries/meters'
+import { useEvents } from '@/hooks/queries/events'
+import { useMeterQuantities } from '@/hooks/queries/meters'
 import { UTCDate } from '@date-fns/utc'
 import { schemas } from '@polar-sh/client'
 import {
@@ -26,21 +23,20 @@ import {
 } from '@polar-sh/ui/components/atoms/Tabs'
 import { endOfMonth, startOfMonth, subDays, subMonths } from 'date-fns'
 import { useMemo } from 'react'
+import FormattedUnits from './FormattedUnits'
 import MeterCustomersTab from './MeterCustomersTab'
 
 export const MeterPage = ({
-  meter: _meter,
+  meter,
   organization,
 }: {
   meter: schemas['Meter']
   organization: schemas['Organization']
 }) => {
-  const { data: meter } = useMeter(_meter.id, _meter)
-
   const startChart = useMemo(() => subDays(new UTCDate(), 7), [])
   const endChart = useMemo(() => new UTCDate(), [])
   const { data: chartQuantities, isLoading: chartLoading } = useMeterQuantities(
-    _meter.id,
+    meter.id,
     startChart,
     endChart,
     'day',
@@ -57,20 +53,18 @@ export const MeterPage = ({
   const currentMonthStart = useMemo(() => startOfMonth(new UTCDate()), [])
   const currentMonthEnd = useMemo(() => endOfMonth(new UTCDate()), [])
   const { data: figuresQuantities } = useMeterQuantities(
-    _meter.id,
+    meter.id,
     lastMonthStart,
     currentMonthEnd,
     'month',
   )
 
-  const { data } = useMeterEvents(_meter.id)
+  const { data } = useEvents(meter.organization_id, { meter_id: meter.id })
 
   const meterEvents = useMemo(() => {
     if (!data) return []
-    return data.pages[0].items
+    return data.items
   }, [data])
-
-  if (!meter) return null
 
   return (
     <>
@@ -106,11 +100,13 @@ export const MeterPage = ({
                 </CardHeader>
                 <CardContent>
                   <span className="text-4xl">
-                    {figuresQuantities
-                      ? Intl.NumberFormat('en-US', {
-                          notation: 'standard',
-                        }).format(figuresQuantities.quantities[0].quantity)
-                      : '—'}
+                    {figuresQuantities ? (
+                      <FormattedUnits
+                        value={figuresQuantities.quantities[0].quantity}
+                      />
+                    ) : (
+                      '—'
+                    )}
                   </span>
                 </CardContent>
                 <CardFooter>
@@ -135,11 +131,13 @@ export const MeterPage = ({
                 </CardHeader>
                 <CardContent>
                   <span className="text-4xl">
-                    {figuresQuantities
-                      ? Intl.NumberFormat('en-US', {
-                          notation: 'standard',
-                        }).format(figuresQuantities.quantities[1].quantity)
-                      : '—'}
+                    {figuresQuantities ? (
+                      <FormattedUnits
+                        value={figuresQuantities.quantities[1].quantity}
+                      />
+                    ) : (
+                      '—'
+                    )}
                   </span>
                 </CardContent>
                 <CardFooter>

@@ -1,7 +1,12 @@
 'use client'
 
+import { EventCreationGuideModal } from '@/components/Events/EventCreationGuideModal'
 import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import DateRangePicker from '@/components/Metrics/DateRangePicker'
+import { Modal } from '@/components/Modal'
+import { useModal } from '@/components/Modal/useModal'
+import Pagination from '@/components/Pagination/Pagination'
 import { useEventNames, useEvents } from '@/hooks/queries/events'
 
 import {
@@ -13,9 +18,98 @@ import {
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
-import React from 'react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@polar-sh/ui/components/atoms/Select'
+import {
+  endOfMonth,
+  endOfToday,
+  endOfYesterday,
+  startOfMonth,
+  startOfToday,
+  startOfYesterday,
+  subMonths,
+} from 'date-fns'
+import { useSearchParams } from 'next/navigation'
+import {
+  parseAsInteger,
+  parseAsIsoDateTime,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryState,
+} from 'nuqs'
+import React, { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+
+interface DatePresetDropdownProps {
+  organization: schemas['Organization']
+  setDateRange: (dateRange: { from: Date; to: Date }) => void
+}
+
+const DatePresetDropdown = ({
+  organization,
+  setDateRange,
+}: DatePresetDropdownProps) => {
+  const datePresets = {
+    today: {
+      from: startOfToday(),
+      to: endOfToday(),
+    },
+    yesterday: {
+      from: startOfYesterday(),
+      to: endOfYesterday(),
+    },
+    this_month: {
+      from: startOfMonth(new Date()),
+      to: endOfMonth(new Date()),
+    },
+    last_month: {
+      from: startOfMonth(subMonths(new Date(), 1)),
+      to: endOfMonth(subMonths(new Date(), 1)),
+    },
+    last_3_months: {
+      from: subMonths(new Date(), 3),
+      to: new Date(),
+    },
+    since_organization_creation: {
+      from: new Date(organization.created_at),
+      to: new Date(),
+    },
+  } as const
+
+  const datePresetDisplayNames = {
+    today: 'Today',
+    yesterday: 'Yesterday',
+    this_month: 'This Month',
+    last_month: 'Last Month',
+    last_3_months: 'Last 3 Months',
+    since_organization_creation: 'Since Organization Creation',
+  } as const
+
+  return (
+    <Select
+      defaultValue="since_organization_creation"
+      onValueChange={(value) => {
+        setDateRange(datePresets[value as keyof typeof datePresets])
+      }}
+    >
+      <SelectTrigger className="w-fit min-w-64">
+        <SelectValue placeholder="Date Range Preset" />
+      </SelectTrigger>
+      <SelectContent>
+        {Object.keys(datePresets).map((key) => (
+          <SelectItem key={key} value={key}>
+            {datePresetDisplayNames[key as keyof typeof datePresetDisplayNames]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -25,24 +119,70 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const [sorting, setSorting] = useQueryState(
     'sorting',
     parseAsStringLiteral([
-      '-created_at',
-      'email',
-      'created_at',
-      '-email',
-      'name',
-      '-name',
-    ] as const).withDefault('-created_at'),
+      'last_seen',
+      '-last_seen',
+      'events_count',
+      '-events_count',
+    ] as const).withDefault('-last_seen'),
   )
   const [query, setQuery] = useQueryState('query', parseAsString)
   const [selectedEventName, setSelectedEventName] = useQueryState(
     'eventName',
     parseAsString,
   )
+  const [startDate, setStartDate] = useQueryState(
+    'startDate',
+    parseAsIsoDateTime.withDefault(new Date(organization.created_at)),
+  )
+  const [endDate, setEndDate] = useQueryState(
+    'endDate',
+    parseAsIsoDateTime.withDefault(new Date()),
+  )
 
-  const { data: eventNames } = useEventNames(organization.id)
+  const {
+    isShown: isEventCreationGuideShown,
+    show: showEventCreationGuide,
+    hide: hideEventCreationGuide,
+  } = useModal()
+
+  const PAGE_SIZE = 100
+  const [currentPage, setCurrentPage] = useQueryState(
+    'page',
+    parseAsInteger.withDefault(1),
+  )
+
+  const { data: eventNames } = useEventNames(organization.id, {
+    query,
+    sorting: [sorting],
+  })
   const { data: events } = useEvents(organization.id, {
     name: selectedEventName ? [selectedEventName] : undefined,
+    page: currentPage,
+    limit: PAGE_SIZE,
+    start_timestamp: startDate?.toISOString(),
+    end_timestamp: endDate?.toISOString(),
   })
+
+  const flatEvents = useMemo(() => {
+    return events?.pages.flatMap((page) => page.items) ?? []
+  }, [events])
+
+  const searchParams = useSearchParams()
+
+  const onDateRangeChange = useCallback(
+    (dateRange: { from: Date; to: Date }) => {
+      setStartDate(dateRange.from)
+      setEndDate(dateRange.to)
+    },
+    [setStartDate, setEndDate],
+  )
+
+  const dateRange = useMemo(() => {
+    return {
+      from: startDate,
+      to: endDate,
+    }
+  }, [startDate, endDate])
 
   return (
     <DashboardBody
@@ -60,17 +200,21 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 className="h-6 w-6"
                 onClick={() =>
                   setSorting(
-                    sorting === '-created_at' ? 'created_at' : '-created_at',
+                    sorting === '-last_seen' ? 'last_seen' : '-last_seen',
                   )
                 }
               >
-                {sorting === 'created_at' ? (
+                {sorting === 'last_seen' ? (
                   <ArrowUpward fontSize="small" />
                 ) : (
                   <ArrowDownward fontSize="small" />
                 )}
               </Button>
-              <Button size="icon" className="h-6 w-6" onClick={() => {}}>
+              <Button
+                size="icon"
+                className="h-6 w-6"
+                onClick={showEventCreationGuide}
+              >
                 <AddOutlined fontSize="small" />
               </Button>
             </div>
@@ -104,19 +248,61 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                   <div className="flex flex-col">
                     <div>{eventName.name}</div>
                     <div className="dark:text-polar-500 text-sm text-gray-500">
-                      {eventName.events_count} Ingested Events
+                      {new Intl.NumberFormat('en-US', {
+                        notation: 'compact',
+                      }).format(eventName.events_count)}{' '}
+                      Ingested Events
                     </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
+          <Modal
+            isShown={isEventCreationGuideShown}
+            hide={hideEventCreationGuide}
+            modalContent={
+              <EventCreationGuideModal hide={hideEventCreationGuide} />
+            }
+          />
         </div>
       }
       wide
     >
       {selectedEventName ? (
-        <Events events={events?.pages.flatMap((page) => page.items) ?? []} />
+        <div className="flex flex-col gap-y-8">
+          <div className="flex flex-row items-center gap-4">
+            <DatePresetDropdown
+              organization={organization}
+              setDateRange={onDateRangeChange}
+            />
+            <DateRangePicker
+              date={dateRange}
+              onDateChange={onDateRangeChange}
+            />
+          </div>
+
+          {flatEvents.length === 0 ? (
+            <div className="rounded-4xl dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 border border-gray-200 p-24">
+              <h1 className="text-2xl font-normal">No Events Found</h1>
+              <p className="dark:text-polar-500 text-gray-500">
+                There are no events matching your current filters
+              </p>
+            </div>
+          ) : (
+            <>
+              <Events events={flatEvents} />
+              <Pagination
+                className="self-end"
+                totalCount={events?.pages[0].pagination.total_count ?? 0}
+                pageSize={PAGE_SIZE}
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
+                currentURL={searchParams}
+              />
+            </>
+          )}
+        </div>
       ) : (
         <div className="mt-96 flex w-full flex-col items-center justify-center gap-4">
           <h1 className="text-2xl font-normal">No Event Entity Selected</h1>

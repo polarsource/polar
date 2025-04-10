@@ -3,7 +3,7 @@ from collections.abc import Callable, Sequence
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import UnaryExpression, asc, desc, func, select
+from sqlalchemy import UnaryExpression, asc, desc, func, select, text
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
@@ -17,7 +17,7 @@ from polar.worker import enqueue_job
 
 from .repository import EventRepository
 from .schemas import EventCreateCustomer, EventName, EventsIngest, EventsIngestResponse
-from .sorting import EventSortProperty
+from .sorting import EventNamesSortProperty, EventSortProperty
 
 
 class EventError(PolarError): ...
@@ -37,6 +37,10 @@ class EventService:
         organization_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
+        query: str | None = None,
+        sorting: list[Sorting[EventNamesSortProperty]] = [
+            (EventNamesSortProperty.last_seen, True)
+        ],
     ) -> list[EventName]:
         repository = EventRepository.from_session(session)
 
@@ -61,6 +65,20 @@ class EventService:
             statement = statement.where(
                 repository.get_external_customer_id_filter_clause(external_customer_id)
             )
+
+        if query is not None:
+            statement = statement.where(Event.name.ilike(f"%{query}%"))
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == EventNamesSortProperty.first_seen:
+                order_by_clauses.append(clause_function(text("first_seen")))
+            elif criterion == EventNamesSortProperty.last_seen:
+                order_by_clauses.append(clause_function(text("last_seen")))
+            elif criterion == EventNamesSortProperty.events_count:
+                order_by_clauses.append(clause_function(text("events_count")))
+        statement = statement.order_by(*order_by_clauses)
 
         result = await session.execute(statement.distinct())
 

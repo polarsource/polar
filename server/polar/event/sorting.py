@@ -26,7 +26,8 @@ EventNamesSorting = Annotated[
     list[Sorting[EventNamesSortProperty]],
     Depends(
         SortingGetter(
-            EventNamesSortProperty, ["-events_count", "-first_seen", "-last_seen"]
+            EventNamesSortProperty,
+            ["-last_seen"],
         )
     ),
 ]

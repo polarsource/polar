@@ -778,9 +778,37 @@ class TestCreate:
         organization: Organization,
         user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
-        meter: Meter,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
+            await product_service.create(
+                session,
+                ProductCreate(
+                    name="Product",
+                    recurring_interval=SubscriptionRecurringInterval.month,
+                    prices=[
+                        ProductPriceMeteredUnitCreate(
+                            amount_type=ProductPriceAmountType.metered_unit,
+                            price_currency="usd",
+                            unit_amount=Decimal(100),
+                            meter_id=uuid.uuid4(),
+                        ),
+                    ],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_invalid_metered_one_time_product(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        stripe_service_mock: MagicMock,
+        meter: Meter,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError) as e:
             await product_service.create(
                 session,
                 ProductCreate(
@@ -791,7 +819,7 @@ class TestCreate:
                             amount_type=ProductPriceAmountType.metered_unit,
                             price_currency="usd",
                             unit_amount=Decimal(100),
-                            meter_id=uuid.uuid4(),
+                            meter_id=meter.id,
                         ),
                     ],
                     organization_id=organization.id,

@@ -37,8 +37,8 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
     def get_auth_statement(
         self,
         auth_subject: AuthSubject[User | Organization],
-        statement: Select,
-    ) -> Select:
+        statement: Select[Any],
+    ) -> Select[Any]:
         if is_user(auth_subject):
             user = auth_subject.subject
             statement = statement.where(

@@ -4,13 +4,21 @@ from fastapi import Path
 from pydantic import UUID4, Field
 
 from polar.customer.schemas.customer import Customer
-from polar.kit.schemas import METER_ID_EXAMPLE, IDSchema, TimestampedSchema
+from polar.kit.schemas import (
+    CUSTOMER_ID_EXAMPLE,
+    METER_ID_EXAMPLE,
+    IDSchema,
+    TimestampedSchema,
+)
 from polar.meter.schemas import Meter
 
 CustomerMeterID = Annotated[UUID4, Path(description="The customer meter ID.")]
 
 
 class CustomerMeterBase(TimestampedSchema, IDSchema):
+    customer_id: UUID4 = Field(
+        description="The ID of the customer.", examples=[CUSTOMER_ID_EXAMPLE]
+    )
     meter_id: UUID4 = Field(
         description="The ID of the meter.", examples=[METER_ID_EXAMPLE]
     )

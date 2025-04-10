@@ -3555,28 +3555,6 @@ export interface paths {
         patch: operations["meters:update"];
         trace?: never;
     };
-    "/v1/meters/{id}/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Meter Events
-         * @description Get events matching the filter of a meter.
-         *
-         *     **Scopes**: `meters:read` `meters:write`
-         */
-        get: operations["meters:events"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/meters/{id}/quantities": {
         parameters: {
             query?: never;
@@ -12991,6 +12969,11 @@ export interface components {
         MeterQuantities: {
             /** Quantities */
             quantities: components["schemas"]["MeterQuantity"][];
+            /**
+             * Total
+             * @description The total quantity for the period.
+             */
+            total: number;
         };
         /** MeterQuantity */
         MeterQuantity: {
@@ -25266,6 +25249,8 @@ export interface operations {
                 customer_id?: string | string[] | null;
                 /** @description Filter by external customer ID. */
                 external_customer_id?: string | string[] | null;
+                /** @description Filter by a meter filter clause. */
+                meter_id?: string | null;
                 /** @description Filter by event name. */
                 name?: string | string[] | null;
                 /** @description Filter by event source. */
@@ -25562,52 +25547,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Meter"];
-                };
-            };
-            /** @description Meter not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceNotFound"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "meters:events": {
-        parameters: {
-            query?: {
-                /** @description Page number, defaults to 1. */
-                page?: number;
-                /** @description Size of a page, defaults to 10. Maximum is 100. */
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                /** @description The meter ID. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListResource_Event_"];
                 };
             };
             /** @description Meter not found. */

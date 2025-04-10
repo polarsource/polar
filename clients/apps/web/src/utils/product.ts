@@ -36,6 +36,11 @@ export const isStaticPrice = (
   | schemas['ProductPriceFree'] =>
   ['fixed', 'custom', 'free'].includes(price.amount_type)
 
+export const isMeteredPrice = (
+  price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice'],
+): price is schemas['ProductPriceMeteredUnit'] =>
+  price.amount_type === 'metered_unit'
+
 const _getProductById = async (
   api: Client,
   id: string,

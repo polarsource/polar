@@ -2,7 +2,11 @@
 
 import { usePostHog } from '@/hooks/posthog'
 import { useMeters } from '@/hooks/queries/meters'
-import { isLegacyRecurringPrice, isStaticPrice } from '@/utils/product'
+import {
+  isLegacyRecurringPrice,
+  isMeteredPrice,
+  isStaticPrice,
+} from '@/utils/product'
 import { ErrorMessage } from '@hookform/error-message'
 import { CloseOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
@@ -24,7 +28,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   useFieldArray,
   UseFieldArrayRemove,
@@ -267,13 +271,30 @@ export const ProductPriceMeteredUnitItem: React.FC<
   )
 }
 
-export interface ProductPriceItemProps {
+const ProductPriceItemWrapper = ({
+  prices,
+  children,
+}: {
+  prices: schemas['ProductPrice'][]
+  children: React.ReactNode
+}) => {
+  if (!prices || prices.length < 2) {
+    return children
+  }
+  return (
+    <div className="dark:border-polar-700 rounded-2xl border p-4">
+      {children}
+    </div>
+  )
+}
+
+interface ProductPriceItemProps {
   organization: schemas['Organization']
   index: number
   remove: UseFieldArrayRemove
 }
 
-export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
+const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   organization,
   index,
   remove,
@@ -281,6 +302,7 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   const { register, control, setValue, watch } =
     useFormContext<ProductFormType>()
   const amountType = watch(`prices.${index}.amount_type`)
+  const recurringInterval = watch('recurring_interval')
 
   const { isFeatureEnabled } = usePostHog()
 
@@ -350,11 +372,12 @@ export const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                       <SelectItem value="fixed">Fixed price</SelectItem>
                       <SelectItem value="custom">Pay what you want</SelectItem>
                       <SelectItem value="free">Free</SelectItem>
-                      {isFeatureEnabled('usage_based_billing') && (
-                        <SelectItem value="metered_unit">
-                          Metered price
-                        </SelectItem>
-                      )}
+                      {isFeatureEnabled('usage_based_billing') &&
+                        recurringInterval !== null && (
+                          <SelectItem value="metered_unit">
+                            Metered price
+                          </SelectItem>
+                        )}
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -440,6 +463,17 @@ export const ProductPricingSection = ({
     ])
   }, [prices, replace, setValue])
 
+  useEffect(() => {
+    if (recurringInterval !== null) {
+      return
+    }
+    prices.forEach((price, index) => {
+      if (isMeteredPrice(price as schemas['ProductPrice'])) {
+        remove(index)
+      }
+    })
+  }, [recurringInterval, prices, remove])
+
   return (
     <Section
       title="Pricing"
@@ -500,16 +534,16 @@ export const ProductPricingSection = ({
             }}
           />
           {prices.map((price, index) => (
-            <div
+            <ProductPriceItemWrapper
+              prices={prices as schemas['ProductPrice'][]}
               key={price.id}
-              className="dark:border-polar-700 rounded-2xl border p-4"
             >
               <ProductPriceItem
                 organization={organization}
                 index={index}
                 remove={remove}
               />
-            </div>
+            </ProductPriceItemWrapper>
           ))}
 
           {update && recurringInterval && (
@@ -522,21 +556,22 @@ export const ProductPricingSection = ({
               </p>
             </ShadowBox>
           )}
-          {isFeatureEnabled('usage_based_billing') && (
-            <Button
-              className="self-start"
-              onClick={() =>
-                append({
-                  amount_type: 'metered_unit',
-                  price_currency: 'usd',
-                  meter_id: '',
-                  unit_amount: 0,
-                })
-              }
-            >
-              Add Price
-            </Button>
-          )}
+          {isFeatureEnabled('usage_based_billing') &&
+            recurringInterval !== null && (
+              <Button
+                className="self-start"
+                onClick={() =>
+                  append({
+                    amount_type: 'metered_unit',
+                    price_currency: 'usd',
+                    meter_id: '',
+                    unit_amount: 0,
+                  })
+                }
+              >
+                Add Price
+              </Button>
+            )}
           <ErrorMessage
             errors={errors}
             name="prices"

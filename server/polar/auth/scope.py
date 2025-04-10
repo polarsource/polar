@@ -50,6 +50,8 @@ class Scope(StrEnum):
     customers_read = "customers:read"
     customers_write = "customers:write"
 
+    customer_meters_read = "customer_meters:read"
+
     customer_sessions_write = "customer_sessions:write"
 
     orders_read = "orders:read"

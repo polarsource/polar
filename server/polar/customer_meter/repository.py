@@ -1,16 +1,25 @@
 from collections.abc import Sequence
 from uuid import UUID
 
+from sqlalchemy import Select, select
+from sqlalchemy.orm import contains_eager
+
+from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
+    RepositorySortingMixin,
+    SortingClause,
 )
 from polar.kit.repository.base import Options
-from polar.models import CustomerMeter
+from polar.models import Customer, CustomerMeter, Meter, UserOrganization
+
+from .sorting import CustomerMeterSortProperty
 
 
 class CustomerMeterRepository(
+    RepositorySortingMixin[CustomerMeter, CustomerMeterSortProperty],
     RepositorySoftDeletionIDMixin[CustomerMeter, UUID],
     RepositorySoftDeletionMixin[CustomerMeter],
     RepositoryBase[CustomerMeter],
@@ -46,3 +55,52 @@ class CustomerMeterRepository(
             .options(*options)
         )
         return await self.get_one_or_none(statement)
+
+    def get_readable_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[tuple[CustomerMeter]]:
+        statement = (
+            self.get_base_statement()
+            .join(CustomerMeter.customer)
+            .options(
+                contains_eager(CustomerMeter.customer),
+            )
+        )
+
+        if is_user(auth_subject):
+            user = auth_subject.subject
+            statement = statement.where(
+                Customer.organization_id.in_(
+                    select(UserOrganization.organization_id).where(
+                        UserOrganization.user_id == user.id,
+                        UserOrganization.deleted_at.is_(None),
+                    )
+                )
+            )
+        elif is_organization(auth_subject):
+            statement = statement.where(
+                Customer.organization_id == auth_subject.subject.id,
+            )
+
+        return statement
+
+    def get_sorting_clause(self, property: CustomerMeterSortProperty) -> SortingClause:
+        match property:
+            case CustomerMeterSortProperty.created_at:
+                return self.model.created_at
+            case CustomerMeterSortProperty.modified_at:
+                return self.model.modified_at
+            case CustomerMeterSortProperty.customer_id:
+                return self.model.customer_id
+            case CustomerMeterSortProperty.customer_name:
+                return Customer.name
+            case CustomerMeterSortProperty.meter_id:
+                return self.model.meter_id
+            case CustomerMeterSortProperty.meter_name:
+                return Meter.name
+            case CustomerMeterSortProperty.consumed_units:
+                return self.model.consumed_units
+            case CustomerMeterSortProperty.credited_units:
+                return self.model.credited_units
+            case CustomerMeterSortProperty.balance:
+                return self.model.balance

@@ -18,6 +18,7 @@ import {
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
+import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -85,7 +86,27 @@ const ClientPage = ({
 
   return (
     <DashboardBody
-      title={selectedMeter?.name ?? 'Meters'}
+      title={
+        selectedMeter ? (
+          <div className="flex flex-col gap-y-4">
+            <h2 className="text-lg">{selectedMeter.name}</h2>
+            <div className="flex flex-row items-center gap-x-2">
+              <Status
+                className="bg-emerald-50 capitalize text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500"
+                status={`${selectedMeter.aggregation.func} Aggregation`}
+              />
+              {'property' in selectedMeter.aggregation && (
+                <Status
+                  className="dark:bg-polar-700 dark:text-polar-500 bg-gray-200 text-gray-500"
+                  status={selectedMeter.aggregation.property}
+                />
+              )}
+            </div>
+          </div>
+        ) : (
+          'Meters'
+        )
+      }
       header={
         selectedMeter && (
           <Button

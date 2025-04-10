@@ -19,7 +19,11 @@ export const MeterUpdateModal = ({
 }: MeterUpdateModalProps) => {
   const { data: meter } = useMeter(_meter.id, _meter)
   const form = useForm<schemas['MeterUpdate']>({
-    defaultValues: meter,
+    defaultValues: {
+      ...meter,
+      aggregation: undefined,
+      filter: undefined,
+    },
   })
 
   const { handleSubmit, setError } = form
@@ -61,7 +65,7 @@ export const MeterUpdateModal = ({
             onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-y-6"
           >
-            <MeterForm />
+            <MeterForm update={true} />
             <div className="flex flex-row items-center gap-4">
               <Button type="submit">Update Meter</Button>
               <Button variant="secondary" onClick={hide}>

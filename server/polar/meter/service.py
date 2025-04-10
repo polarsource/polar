@@ -194,8 +194,6 @@ class MeterService:
 
         event_clauses: list[ColumnExpressionArgument[bool]] = [
             Event.organization_id == meter.organization_id,
-            interval.sql_date_trunc(Event.timestamp)
-            == interval.sql_date_trunc(timestamp_column),
         ]
         event_repository = EventRepository.from_session(session)
         if customer_id is not None:
@@ -208,29 +206,41 @@ class MeterService:
                     external_customer_id
                 )
             )
-        event_clauses += [
-            meter.filter.get_sql_clause(Event),
-            # Additional clauses to make sure we work on rows with the right type for aggregation
-            meter.aggregation.get_sql_clause(Event),
-        ]
+        event_clauses.append(event_repository.get_meter_clause(meter))
 
         statement = (
             select(
                 timestamp_column.label("timestamp"),
-                func.coalesce(meter.aggregation.get_sql_column(Event), 0),
+                func.coalesce(
+                    meter.aggregation.get_sql_column(Event).filter(
+                        interval.sql_date_trunc(Event.timestamp)
+                        == interval.sql_date_trunc(timestamp_column),
+                    ),
+                    0,
+                ),
+                func.coalesce(
+                    meter.aggregation.get_sql_column(Event).filter(
+                        interval.sql_date_trunc(Event.timestamp)
+                        >= interval.sql_date_trunc(start_timestamp),
+                        interval.sql_date_trunc(Event.timestamp)
+                        <= interval.sql_date_trunc(end_timestamp),
+                    ),
+                    0,
+                ),
             )
             .join(Event, onclause=and_(*event_clauses), isouter=True)
             .group_by(timestamp_column)
             .order_by(timestamp_column.asc())
         )
 
+        total = 0.0
+        quantities: list[MeterQuantity] = []
         result = await session.stream(statement)
-        return MeterQuantities(
-            quantities=[
-                MeterQuantity(timestamp=row.timestamp, quantity=row[1])
-                async for row in result
-            ]
-        )
+        async for row in result:
+            quantities.append(MeterQuantity(timestamp=row.timestamp, quantity=row[1]))
+            total = row[2]
+
+        return MeterQuantities(quantities=quantities, total=total)
 
     async def enqueue_billing(self, session: AsyncSession) -> None:
         repository = MeterRepository.from_session(session)

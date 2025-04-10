@@ -24,7 +24,7 @@ class TimeInterval(StrEnum):
         return text(f"'1 {self.value}'::interval")
 
     def sql_date_trunc(
-        self, column: SQLColumnExpression[datetime]
+        self, column: SQLColumnExpression[datetime] | datetime
     ) -> Function[datetime]:
         return func.date_trunc(self.value, column)
 

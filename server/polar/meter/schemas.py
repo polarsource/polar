@@ -57,8 +57,13 @@ MeterID = Annotated[UUID4, Path(description="The meter ID.")]
 
 class MeterQuantity(Schema):
     timestamp: datetime = Field(description="The timestamp for the current period.")
-    quantity: float = Field(description="The quantity for the current period.")
+    quantity: float = Field(
+        description="The quantity for the current period.", examples=[10.0]
+    )
 
 
 class MeterQuantities(Schema):
     quantities: list[MeterQuantity]
+    total: float = Field(
+        description="The total quantity for the period.", examples=[100.0]
+    )

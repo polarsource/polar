@@ -245,6 +245,7 @@ class TestGetQuantities:
         assert len(result.quantities) == 1
         quantity = result.quantities[0]
         assert quantity.quantity == 0
+        assert result.total == 0
 
     @pytest.mark.parametrize(
         "aggregation,expected_value",
@@ -330,6 +331,7 @@ class TestGetQuantities:
         assert len(result.quantities) == 1
         quantity = result.quantities[0]
         assert quantity.quantity == expected_value
+        assert result.total == expected_value
 
     async def test_interval(
         self,
@@ -402,6 +404,8 @@ class TestGetQuantities:
         assert tomorrow_quantity.timestamp.date() == future_timestamp.date()
         assert tomorrow_quantity.quantity == 500
 
+        assert result.total == 600
+
     @pytest.mark.parametrize(
         "property",
         [
@@ -454,6 +458,7 @@ class TestGetQuantities:
         assert len(result.quantities) == 1
         quantity = result.quantities[0]
         assert quantity.quantity == 0
+        assert result.total == 0
 
     @pytest.mark.parametrize(
         "filter_clause",
@@ -515,6 +520,7 @@ class TestGetQuantities:
         assert len(result.quantities) == 1
         quantity = result.quantities[0]
         assert quantity.quantity == 0
+        assert result.total == 0
 
 
 @pytest_asyncio.fixture

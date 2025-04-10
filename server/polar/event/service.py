@@ -10,6 +10,7 @@ from polar.exceptions import PolarError, PolarRequestValidationError, Validation
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
+from polar.meter.repository import MeterRepository
 from polar.models import Customer, Event, Organization, User, UserOrganization
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
@@ -106,6 +107,7 @@ class EventService:
         organization_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
+        meter_id: uuid.UUID | None = None,
         name: Sequence[str] | None = None,
         source: Sequence[EventSource] | None = None,
         metadata: MetadataQuery | None = None,
@@ -135,6 +137,22 @@ class EventService:
             statement = statement.where(
                 repository.get_external_customer_id_filter_clause(external_customer_id)
             )
+
+        if meter_id is not None:
+            meter_repository = MeterRepository.from_session(session)
+            meter = await meter_repository.get_readable_by_id(meter_id, auth_subject)
+            if meter is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "meter_id",
+                            "msg": "Meter not found.",
+                            "loc": ("query", "meter_id"),
+                            "input": meter_id,
+                        }
+                    ]
+                )
+            statement = statement.where(repository.get_meter_clause(meter))
 
         if name is not None:
             statement = statement.where(Event.name.in_(name))

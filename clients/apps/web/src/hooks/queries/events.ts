@@ -5,17 +5,21 @@ import { defaultRetry } from './retry'
 
 export const useEvents = (
   organizationId: string,
-  parameters?: operations['events:list']['parameters']['query'],
+  parameters?: Omit<
+    NonNullable<operations['events:list']['parameters']['query']>,
+    'organization_id' | 'page'
+  >,
 ) => {
   return useInfiniteQuery({
     queryKey: ['events', { organizationId, ...(parameters || {}) }],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       unwrap(
         api.GET('/v1/events/', {
           params: {
             query: {
               organization_id: organizationId,
               ...(parameters || {}),
+              page: pageParam,
             },
           },
         }),

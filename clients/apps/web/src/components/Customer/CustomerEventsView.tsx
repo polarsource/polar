@@ -16,6 +16,7 @@ export const CustomerEventsView = ({
     hasNextPage,
   } = useEvents(customer.organization_id, {
     customer_id: customer.id,
+    limit: 50,
   })
 
   return (

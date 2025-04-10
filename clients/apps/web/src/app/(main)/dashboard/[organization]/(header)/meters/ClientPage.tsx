@@ -174,7 +174,9 @@ const ClientPage = ({
       }
       wide
     >
-      {selectedMeter && <MeterPage meter={selectedMeter} />}
+      {selectedMeter && (
+        <MeterPage meter={selectedMeter} organization={organization} />
+      )}
 
       <InlineModal
         isShown={isCreateMeterModalShown}

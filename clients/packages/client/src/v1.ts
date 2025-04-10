@@ -9078,6 +9078,12 @@ export interface components {
              */
             modified_at: string | null;
             /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer.
+             */
+            customer_id: string;
+            /**
              * Meter Id
              * Format: uuid4
              * @description The ID of the meter.

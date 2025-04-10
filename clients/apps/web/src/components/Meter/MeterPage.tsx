@@ -26,8 +26,15 @@ import {
 } from '@polar-sh/ui/components/atoms/Tabs'
 import { endOfMonth, startOfMonth, subDays, subMonths } from 'date-fns'
 import { useMemo } from 'react'
+import MeterCustomersTab from './MeterCustomersTab'
 
-export const MeterPage = ({ meter: _meter }: { meter: schemas['Meter'] }) => {
+export const MeterPage = ({
+  meter: _meter,
+  organization,
+}: {
+  meter: schemas['Meter']
+  organization: schemas['Organization']
+}) => {
   const { data: meter } = useMeter(_meter.id, _meter)
 
   const startChart = useMemo(() => subDays(new UTCDate(), 7), [])
@@ -71,7 +78,7 @@ export const MeterPage = ({ meter: _meter }: { meter: schemas['Meter'] }) => {
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
-          <TabsTrigger value="products">Customers</TabsTrigger>
+          <TabsTrigger value="customers">Customers</TabsTrigger>
           <TabsTrigger value="alerts">Alerts</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="flex flex-col gap-y-12">
@@ -167,6 +174,9 @@ export const MeterPage = ({ meter: _meter }: { meter: schemas['Meter'] }) => {
         </TabsContent>
         <TabsContent value="events">
           <MeterEventsTab meter={meter} />
+        </TabsContent>
+        <TabsContent value="customers">
+          <MeterCustomersTab meter={meter} organization={organization} />
         </TabsContent>
       </Tabs>
     </>

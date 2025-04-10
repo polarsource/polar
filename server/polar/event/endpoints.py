@@ -106,6 +106,9 @@ async def list_names(
         title="ExternalCustomerID Filter",
         description="Filter by external customer ID.",
     ),
+    query: str | None = Query(
+        None, title="Query", description="Query to filter event names."
+    ),
 ) -> Sequence[EventName]:
     """List event names."""
     results = await event_service.list_names(
@@ -114,6 +117,8 @@ async def list_names(
         organization_id=organization_id,
         customer_id=customer_id,
         external_customer_id=external_customer_id,
+        query=query,
+        sorting=sorting,
     )
 
     return results

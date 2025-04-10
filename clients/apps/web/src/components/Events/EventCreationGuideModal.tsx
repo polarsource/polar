@@ -1,0 +1,49 @@
+import Button from '@polar-sh/ui/components/atoms/Button'
+import { Well } from '../Shared/Well'
+import {
+  SyntaxHighlighterClient,
+  SyntaxHighlighterProvider,
+} from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
+
+export interface EventCreationGuideModalProps {
+  hide: () => void
+}
+
+export const EventCreationGuideModal = ({
+  hide,
+}: EventCreationGuideModalProps) => {
+  return (
+    <SyntaxHighlighterProvider>
+      <div className="flex flex-col gap-4 p-8">
+        <h1 className="text-2xl">Event Ingestion</h1>
+        <p>Events can only be created through the Polar Ingestion API.</p>
+        <Well className="dark:border-polar-700 rounded-lg border border-gray-200 p-4 text-sm">
+          <SyntaxHighlighterClient
+            lang="typescript"
+            code={`import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+});
+
+const result = await polar.events.ingest({
+  events: [
+    {
+      name: "<value>",
+      organizationId: "1dbfc517-0bbf-4301-9ba8-555ca42b9737",
+      customerId: "<value>",
+      metadata: {
+        myCustomProperty: "value",
+      },
+    },
+  ],
+});`}
+          />
+        </Well>
+        <Button className="self-start" onClick={hide} variant="secondary">
+          Close
+        </Button>
+      </div>
+    </SyntaxHighlighterProvider>
+  )
+}

@@ -14759,7 +14759,7 @@ export interface components {
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * ProductPriceCreateList
-             * @description List of available prices for this product. Currently, only a single price is supported.
+             * @description List of available prices for this product. It should contain at most one static price (fixed, custom or free), and any number of metered prices. Metered prices are not supported on one-time purchase products.
              */
             prices: (components["schemas"]["ProductPriceFixedCreate"] | components["schemas"]["ProductPriceCustomCreate"] | components["schemas"]["ProductPriceFreeCreate"] | components["schemas"]["ProductPriceMeteredUnitCreate"])[];
             /**
@@ -25205,6 +25205,8 @@ export interface operations {
                 customer_id?: string | string[] | null;
                 /** @description Filter by external customer ID. */
                 external_customer_id?: string | string[] | null;
+                /** @description Query to filter event names. */
+                query?: string | null;
                 /** @description Page number, defaults to 1. */
                 page?: number;
                 /** @description Size of a page, defaults to 10. Maximum is 100. */

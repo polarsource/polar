@@ -13,9 +13,9 @@ import {
   ModeStandby,
   PeopleOutlined,
   ShoppingBagOutlined,
-  ShortTextOutlined,
   SpaceDashboardOutlined,
   Storefront,
+  StreamOutlined,
   TrendingUp,
   TuneOutlined,
 } from '@mui/icons-material'
@@ -211,6 +211,13 @@ const generalRoutesList = (
     if: posthog?.isFeatureEnabled('usage_based_billing'),
   },
   {
+    id: 'events',
+    title: 'Events',
+    icon: <StreamOutlined fontSize="inherit" />,
+    link: `/dashboard/${org.slug}/events`,
+    if: posthog?.isFeatureEnabled('usage_based_billing'),
+  },
+  {
     id: 'customers',
     title: 'Customers',
     icon: <PeopleOutlined fontSize="inherit" />,
@@ -241,13 +248,6 @@ const generalRoutesList = (
         icon: <AllInclusiveOutlined fontSize="inherit" />,
       },
     ],
-  },
-  {
-    id: 'events',
-    title: 'Events',
-    icon: <ShortTextOutlined fontSize="inherit" />,
-    link: `/dashboard/${org.slug}/events`,
-    if: true,
   },
   {
     id: 'storefront',

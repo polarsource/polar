@@ -1,4 +1,4 @@
-import { useEvents } from '@/hooks/queries/events'
+import { useInfiniteEvents } from '@/hooks/queries/events'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
@@ -14,7 +14,7 @@ export const CustomerEventsView = ({
     isFetching,
     fetchNextPage,
     hasNextPage,
-  } = useEvents(customer.organization_id, {
+  } = useInfiniteEvents(customer.organization_id, {
     customer_id: customer.id,
     limit: 50,
   })

@@ -111,6 +111,8 @@ const DatePresetDropdown = ({
   )
 }
 
+const PAGE_SIZE = 50
+
 interface ClientPageProps {
   organization: schemas['Organization']
 }
@@ -138,18 +140,16 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     'endDate',
     parseAsIsoDateTime.withDefault(new Date()),
   )
+  const [currentPage, setCurrentPage] = useQueryState(
+    'page',
+    parseAsInteger.withDefault(1),
+  )
 
   const {
     isShown: isEventCreationGuideShown,
     show: showEventCreationGuide,
     hide: hideEventCreationGuide,
   } = useModal()
-
-  const PAGE_SIZE = 100
-  const [currentPage, setCurrentPage] = useQueryState(
-    'page',
-    parseAsInteger.withDefault(1),
-  )
 
   const { data: eventNames } = useEventNames(organization.id, {
     query,
@@ -162,10 +162,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     start_timestamp: startDate?.toISOString(),
     end_timestamp: endDate?.toISOString(),
   })
-
-  const flatEvents = useMemo(() => {
-    return events?.pages.flatMap((page) => page.items) ?? []
-  }, [events])
 
   const searchParams = useSearchParams()
 
@@ -282,7 +278,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             />
           </div>
 
-          {flatEvents.length === 0 ? (
+          {events?.items.length === 0 ? (
             <div className="rounded-4xl dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 border border-gray-200 p-24">
               <h1 className="text-2xl font-normal">No Events Found</h1>
               <p className="dark:text-polar-500 text-gray-500">
@@ -291,10 +287,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             </div>
           ) : (
             <>
-              <Events events={flatEvents} />
+              <Events events={events?.items ?? []} />
               <Pagination
                 className="self-end"
-                totalCount={events?.pages[0].pagination.total_count ?? 0}
+                totalCount={events?.pagination.total_count ?? 0}
                 pageSize={PAGE_SIZE}
                 currentPage={currentPage}
                 onPageChange={setCurrentPage}

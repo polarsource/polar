@@ -3,7 +3,7 @@ import { operations, unwrap } from '@polar-sh/client'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useEvents = (
+export const useInfiniteEvents = (
   organizationId: string,
   parameters?: Omit<
     NonNullable<operations['events:list']['parameters']['query']>,
@@ -11,7 +11,7 @@ export const useEvents = (
   >,
 ) => {
   return useInfiniteQuery({
-    queryKey: ['events', { organizationId, ...(parameters || {}) }],
+    queryKey: ['events', 'infinite', { organizationId, ...(parameters || {}) }],
     queryFn: ({ pageParam }) =>
       unwrap(
         api.GET('/v1/events/', {
@@ -31,6 +31,26 @@ export const useEvents = (
   })
 }
 
+export const useEvents = (
+  organizationId: string,
+  parameters?: Omit<
+    NonNullable<operations['events:list']['parameters']['query']>,
+    'organization_id'
+  >,
+) => {
+  return useQuery({
+    queryKey: ['events', { organizationId, ...(parameters || {}) }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/', {
+          params: {
+            query: { organization_id: organizationId, ...(parameters || {}) },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+}
 export const useEventNames = (
   organizationId: string,
   parameters?: operations['events:list_names']['parameters']['query'],

@@ -8,6 +8,7 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.meter.schemas import MeterID
 from polar.models import Event
 from polar.models.event import EventSource
 from polar.openapi import APITag
@@ -56,6 +57,9 @@ async def list(
         title="ExternalCustomerID Filter",
         description="Filter by external customer ID.",
     ),
+    meter_id: MeterID | None = Query(
+        None, title="MeterID Filter", description="Filter by a meter filter clause."
+    ),
     name: MultipleQueryFilter[str] | None = Query(
         None, title="Name Filter", description="Filter by event name."
     ),
@@ -73,6 +77,7 @@ async def list(
         organization_id=organization_id,
         customer_id=customer_id,
         external_customer_id=external_customer_id,
+        meter_id=meter_id,
         name=name,
         source=source,
         metadata=metadata,

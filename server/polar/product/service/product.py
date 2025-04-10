@@ -12,6 +12,7 @@ from polar.authz.service import AccessType, Authz
 from polar.benefit.service import benefit as benefit_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
+from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
     NotPermitted,
     PolarError,
@@ -268,7 +269,11 @@ class ProductService(ResourceServiceReader[Product]):
         errors: list[ValidationError] = []
 
         prices, _, _, prices_errors = await self._get_validated_prices(
-            session, create_schema.prices, None, auth_subject
+            session,
+            create_schema.prices,
+            create_schema.recurring_interval,
+            None,
+            auth_subject,
         )
         errors.extend(prices_errors)
 
@@ -466,7 +471,11 @@ class ProductService(ResourceServiceReader[Product]):
                 added_prices,
                 prices_errors,
             ) = await self._get_validated_prices(
-                session, update_schema.prices, product, auth_subject
+                session,
+                update_schema.prices,
+                product.recurring_interval,
+                product,
+                auth_subject,
             )
             errors.extend(prices_errors)
 
@@ -619,6 +628,7 @@ class ProductService(ResourceServiceReader[Product]):
         self,
         session: AsyncSession,
         prices_schema: Sequence[ExistingProductPrice | ProductPriceCreate],
+        recurring_interval: SubscriptionRecurringInterval | None,
         product: Product | None,
         auth_subject: AuthSubject[User | Organization],
     ) -> tuple[
@@ -653,6 +663,16 @@ class ProductService(ResourceServiceReader[Product]):
                 if is_metered_price(price) and isinstance(
                     price_schema, ProductPriceMeteredCreateBase
                 ):
+                    if recurring_interval is None:
+                        errors.append(
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "prices", index),
+                                "msg": "Metered pricing is not supported on one-time products.",
+                                "input": price_schema,
+                            }
+                        )
+                        continue
                     if not posthog_service.has_feature_flag(
                         auth_subject, "usage_based_billing"
                     ):

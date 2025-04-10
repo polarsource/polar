@@ -216,7 +216,9 @@ class ProductCreate(MetadataInputMixin, Schema):
     prices: ProductPriceCreateList = Field(
         ...,
         description="List of available prices for this product. "
-        "Currently, only a single price is supported.",
+        "It should contain at most one static price (fixed, custom or free), and "
+        "any number of metered prices. "
+        "Metered prices are not supported on one-time purchase products.",
     )
     medias: list[UUID4] | None = Field(
         default=None,

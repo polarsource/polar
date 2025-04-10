@@ -8,6 +8,7 @@ from polar.checkout.endpoints import router as checkout_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.custom_field.endpoints import router as custom_field_router
 from polar.customer.endpoints import router as customer_router
+from polar.customer_meter.endpoints import router as customer_meter_router
 from polar.customer_portal.endpoints import router as customer_portal_router
 from polar.customer_session.endpoints import router as customer_session_router
 from polar.dashboard.endpoints import router as dashboard_router
@@ -146,3 +147,5 @@ router.include_router(event_router)
 router.include_router(meter_router)
 # /organization-access-tokens
 router.include_router(organization_access_token_router)
+# /customer-meters
+router.include_router(customer_meter_router)

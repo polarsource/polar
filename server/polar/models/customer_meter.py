@@ -29,10 +29,14 @@ class CustomerMeter(RecordModel):
     last_balanced_event_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("events.id"), nullable=True, index=True, default=None
     )
-    consumed_units: Mapped[Decimal] = mapped_column(Numeric, nullable=False, default=0)
-    credited_units: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    consumed_units: Mapped[Decimal] = mapped_column(
+        Numeric, nullable=False, default=0, index=True
+    )
+    credited_units: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, index=True
+    )
     balance: Mapped[Decimal] = mapped_column(
-        Numeric, nullable=False, default=Decimal(0)
+        Numeric, nullable=False, default=Decimal(0), index=True
     )
 
     @declared_attr

@@ -1,11 +1,17 @@
+import uuid
+from collections.abc import Sequence
 from decimal import Decimal
 
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
+from sqlalchemy.orm.strategy_options import contains_eager
 
+from polar.auth.models import AuthSubject, Organization, User
 from polar.event.repository import EventRepository
 from polar.event.system import is_meter_credit_event
 from polar.kit.math import non_negative_running_sum
+from polar.kit.pagination import PaginationParams
+from polar.kit.sorting import Sorting
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Customer, CustomerMeter, Event, Meter
@@ -15,9 +21,63 @@ from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 
 from .repository import CustomerMeterRepository
+from .sorting import CustomerMeterSortProperty
 
 
 class CustomerMeterService:
+    async def list(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
+        meter_id: Sequence[uuid.UUID] | None = None,
+        pagination: PaginationParams,
+        sorting: list[Sorting[CustomerMeterSortProperty]] = [
+            (CustomerMeterSortProperty.modified_at, True)
+        ],
+    ) -> tuple[Sequence[CustomerMeter], int]:
+        repository = CustomerMeterRepository.from_session(session)
+        statement = (
+            repository.get_readable_statement(auth_subject)
+            .join(CustomerMeter.meter)
+            .options(contains_eager(CustomerMeter.meter))
+        )
+
+        if organization_id is not None:
+            statement = statement.where(Customer.organization_id.in_(organization_id))
+
+        if customer_id is not None:
+            statement = statement.where(Customer.id.in_(customer_id))
+
+        if external_customer_id is not None:
+            statement = statement.where(Customer.external_id.in_(external_customer_id))
+
+        if meter_id is not None:
+            statement = statement.where(Meter.id.in_(meter_id))
+
+        statement = repository.apply_sorting(statement, sorting)
+
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
+
+    async def get(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+    ) -> CustomerMeter | None:
+        repository = CustomerMeterRepository.from_session(session)
+        statement = (
+            repository.get_readable_statement(auth_subject)
+            .where(CustomerMeter.id == id)
+            .options(joinedload(CustomerMeter.meter))
+        )
+        return await repository.get_one_or_none(statement)
+
     async def update_customer(self, session: AsyncSession, customer: Customer) -> None:
         repository = MeterRepository.from_session(session)
         statement = repository.get_base_statement().order_by(Meter.created_at.asc())

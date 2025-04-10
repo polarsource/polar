@@ -642,6 +642,7 @@ class ProductService(ResourceServiceReader[Product]):
         existing_prices: set[ProductPrice] = set()
         added_prices: list[ProductPrice] = []
         errors: list[ValidationError] = []
+        meters: set[uuid.UUID] = set()
         for index, price_schema in enumerate(prices_schema):
             if isinstance(price_schema, ExistingProductPrice):
                 assert product is not None
@@ -673,6 +674,18 @@ class ProductService(ResourceServiceReader[Product]):
                             }
                         )
                         continue
+
+                    if price_schema.meter_id in meters:
+                        errors.append(
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "prices", index, "meter_id"),
+                                "msg": "Meter is already used for another price.",
+                                "input": price_schema.meter_id,
+                            }
+                        )
+                        continue
+
                     if not posthog_service.has_feature_flag(
                         auth_subject, "usage_based_billing"
                     ):
@@ -699,6 +712,7 @@ class ProductService(ResourceServiceReader[Product]):
                             }
                         )
                         continue
+                    meters.add(price_schema.meter_id)
                 added_prices.append(price)
             prices.append(price)
 

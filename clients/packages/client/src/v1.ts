@@ -3638,6 +3638,50 @@ export interface paths {
         patch: operations["organization_access_token:update"];
         trace?: never;
     };
+    "/v1/customer-meters/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Customer Meters
+         * @description List customer meters.
+         *
+         *     **Scopes**: `customer_meters:read`
+         */
+        get: operations["customer_meters:list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/customer-meters/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Customer Meter
+         * @description Get a customer meter by ID.
+         *
+         *     **Scopes**: `customer_meters:read`
+         */
+        get: operations["customer_meters:get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export interface webhooks {
     "checkout.created": {
@@ -4793,7 +4837,7 @@ export interface components {
          * AvailableScope
          * @enum {string}
          */
-        AvailableScope: "openid" | "profile" | "email" | "user:read" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_sessions:write" | "orders:read" | "refunds:read" | "refunds:write" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notification_recipients:read" | "notification_recipients:write";
+        AvailableScope: "openid" | "profile" | "email" | "user:read" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "refunds:read" | "refunds:write" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notification_recipients:read" | "notification_recipients:write";
         /** BackofficeBadge */
         BackofficeBadge: {
             /** Org Slug */
@@ -9012,6 +9056,59 @@ export interface components {
             organization_id?: string | null;
         };
         /**
+         * CustomerMeter
+         * @description An active customer meter, with current consumed and credited units.
+         */
+        CustomerMeter: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Meter Id
+             * Format: uuid4
+             * @description The ID of the meter.
+             */
+            meter_id: string;
+            /**
+             * Consumed Units
+             * @description The number of consumed units.
+             */
+            consumed_units: number;
+            /**
+             * Credited Units
+             * @description The number of credited units.
+             */
+            credited_units: number;
+            /**
+             * Balance
+             * @description The balance of the meter, i.e. the difference between credited and consumed units. Never goes negative.
+             */
+            balance: number;
+            /** @description The customer associated with this meter. */
+            customer: components["schemas"]["Customer"];
+            /** @description The meter associated with this customer. */
+            meter: components["schemas"]["Meter"];
+        };
+        /**
+         * CustomerMeterSortProperty
+         * @enum {string}
+         */
+        CustomerMeterSortProperty: "created_at" | "-created_at" | "modified_at" | "-modified_at" | "customer_id" | "-customer_id" | "customer_name" | "-customer_name" | "meter_id" | "-meter_id" | "meter_name" | "-meter_name" | "consumed_units" | "-consumed_units" | "credited_units" | "-credited_units" | "balance" | "-balance";
+        /**
          * CustomerOAuthPlatform
          * @enum {string}
          */
@@ -12235,6 +12332,12 @@ export interface components {
             items: components["schemas"]["CustomerBenefitGrant"][];
             pagination: components["schemas"]["Pagination"];
         };
+        /** ListResource[CustomerMeter] */
+        ListResource_CustomerMeter_: {
+            /** Items */
+            items: components["schemas"]["CustomerMeter"][];
+            pagination: components["schemas"]["Pagination"];
+        };
         /** ListResource[CustomerOrder] */
         ListResource_CustomerOrder_: {
             /** Items */
@@ -13167,7 +13270,7 @@ export interface components {
             response_types: "code"[];
             /**
              * Scope
-             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
+             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
              */
             scope: string;
             /** Client Name */
@@ -13227,7 +13330,7 @@ export interface components {
             response_types: "code"[];
             /**
              * Scope
-             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
+             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
              */
             scope: string;
             /** Client Name */
@@ -13268,7 +13371,7 @@ export interface components {
             response_types: "code"[];
             /**
              * Scope
-             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
+             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
              */
             scope: string;
             /** Client Name */
@@ -15807,7 +15910,7 @@ export interface components {
          * Scope
          * @enum {string}
          */
-        Scope: "openid" | "profile" | "email" | "user:read" | "admin" | "web_default" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_sessions:write" | "orders:read" | "refunds:read" | "refunds:write" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notification_recipients:read" | "notification_recipients:write";
+        Scope: "openid" | "profile" | "email" | "user:read" | "admin" | "web_default" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "refunds:read" | "refunds:write" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notification_recipients:read" | "notification_recipients:write";
         /**
          * State
          * @enum {string}
@@ -25708,6 +25811,91 @@ export interface operations {
             };
         };
     };
+    "customer_meters:list": {
+        parameters: {
+            query?: {
+                /** @description Filter by organization ID. */
+                organization_id?: string | string[] | null;
+                /** @description Filter by customer ID. */
+                customer_id?: string | string[] | null;
+                /** @description Filter by external customer ID. */
+                external_customer_id?: string | string[] | null;
+                /** @description Filter by meter ID. */
+                meter_id?: string | string[] | null;
+                /** @description Page number, defaults to 1. */
+                page?: number;
+                /** @description Size of a page, defaults to 10. Maximum is 100. */
+                limit?: number;
+                /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+                sorting?: components["schemas"]["CustomerMeterSortProperty"][] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResource_CustomerMeter_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "customer_meters:get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The customer meter ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerMeter"];
+                };
+            };
+            /** @description Customer meter not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     _endpointcheckout_created_post: {
         parameters: {
             query?: never;
@@ -26717,7 +26905,7 @@ export const appPermissionsTypeInteraction_limitsValues: ReadonlyArray<component
 export const appPermissionsTypeStarringValues: ReadonlyArray<components["schemas"]["AppPermissionsType"]["starring"]> = ["read", "write"];
 export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseOrganization"]["sub_type"]> = ["organization"];
 export const authorizeResponseUserSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseUser"]["sub_type"]> = ["user"];
-export const availableScopeValues: ReadonlyArray<components["schemas"]["AvailableScope"]> = ["openid", "profile", "email", "user:read", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notification_recipients:read", "notification_recipients:write"];
+export const availableScopeValues: ReadonlyArray<components["schemas"]["AvailableScope"]> = ["openid", "profile", "email", "user:read", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notification_recipients:read", "notification_recipients:write"];
 export const backofficeBadgeActionValues: ReadonlyArray<components["schemas"]["BackofficeBadge"]["action"]> = ["embed", "remove"];
 export const backofficeBadgeResponseActionValues: ReadonlyArray<components["schemas"]["BackofficeBadgeResponse"]["action"]> = ["embed", "remove"];
 export const benefitCustomCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitCustomCreate"]["type"]> = ["custom"];
@@ -26762,6 +26950,7 @@ export const customerBenefitGrantLicenseKeysUpdateBenefit_typeValues: ReadonlyAr
 export const customerBenefitGrantMeterCreditUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantMeterCreditUpdate"]["benefit_type"]> = ["meter_credit"];
 export const customerBenefitGrantSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantSortProperty"]> = ["granted_at", "-granted_at", "type", "-type", "organization", "-organization"];
 export const customerCancellationReasonValues: ReadonlyArray<components["schemas"]["CustomerCancellationReason"]> = ["customer_service", "low_quality", "missing_features", "switched_service", "too_complex", "too_expensive", "unused", "other"];
+export const customerMeterSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerMeterSortProperty"]> = ["created_at", "-created_at", "modified_at", "-modified_at", "customer_id", "-customer_id", "customer_name", "-customer_name", "meter_id", "-meter_id", "meter_name", "-meter_name", "consumed_units", "-consumed_units", "credited_units", "-credited_units", "balance", "-balance"];
 export const customerOAuthPlatformValues: ReadonlyArray<components["schemas"]["CustomerOAuthPlatform"]> = ["github", "discord"];
 export const customerOrderSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerOrderSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "net_amount", "-net_amount", "product", "-product", "subscription", "-subscription"];
 export const customerSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerSortProperty"]> = ["created_at", "-created_at", "email", "-email", "name", "-name"];
@@ -26839,7 +27028,7 @@ export const refundStatusValues: ReadonlyArray<components["schemas"]["RefundStat
 export const repositorySortPropertyValues: ReadonlyArray<components["schemas"]["RepositorySortProperty"]> = ["created_at", "-created_at", "name", "-name", "stars", "-stars"];
 export const rewardPaidNotificationTypeValues: ReadonlyArray<components["schemas"]["RewardPaidNotification"]["type"]> = ["RewardPaidNotification"];
 export const rewardStateValues: ReadonlyArray<components["schemas"]["RewardState"]> = ["pending", "paid"];
-export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "admin", "web_default", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notification_recipients:read", "notification_recipients:write"];
+export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "admin", "web_default", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notification_recipients:read", "notification_recipients:write"];
 export const stateValues: ReadonlyArray<components["schemas"]["State"]> = ["open", "closed"];
 export const statusValues: ReadonlyArray<components["schemas"]["Status"]> = ["created", "onboarding_started", "under_review", "denied", "active"];
 export const subTypeValues: ReadonlyArray<components["schemas"]["SubType"]> = ["user", "organization"];

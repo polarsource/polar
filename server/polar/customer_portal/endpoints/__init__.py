@@ -2,6 +2,7 @@ from polar.routing import APIRouter
 
 from .benefit_grant import router as benefit_grant_router
 from .customer import router as customer_router
+from .customer_meter import router as customer_meter_router
 from .customer_session import router as customer_session_router
 from .downloadables import router as downloadables_router
 from .license_keys import router as license_keys_router
@@ -14,6 +15,7 @@ router = APIRouter(prefix="/customer-portal", tags=["customer_portal"])
 
 router.include_router(benefit_grant_router)
 router.include_router(customer_router)
+router.include_router(customer_meter_router)
 router.include_router(customer_session_router)
 router.include_router(downloadables_router)
 router.include_router(license_keys_router)

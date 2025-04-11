@@ -3,12 +3,12 @@ from collections.abc import Callable, Sequence
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import UnaryExpression, asc, desc, func, select, text
+from sqlalchemy import UnaryExpression, asc, desc, select, text
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
-from polar.kit.pagination import PaginationParams
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
 from polar.meter.repository import MeterRepository
 from polar.models import Customer, Event, Organization, User, UserOrganization
@@ -31,72 +31,6 @@ class EventIngestValidationError(EventError):
 
 
 class EventService:
-    async def list_names(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        organization_id: Sequence[uuid.UUID] | None = None,
-        customer_id: Sequence[uuid.UUID] | None = None,
-        external_customer_id: Sequence[str] | None = None,
-        query: str | None = None,
-        sorting: list[Sorting[EventNamesSortProperty]] = [
-            (EventNamesSortProperty.last_seen, True)
-        ],
-    ) -> list[EventName]:
-        repository = EventRepository.from_session(session)
-
-        statement = select(
-            Event.name,
-            func.count().label("events_count"),
-            func.min(Event.timestamp).label("first_seen"),
-            func.max(Event.timestamp).label("last_seen"),
-        ).group_by(Event.name)
-
-        statement = repository.get_auth_statement(auth_subject, statement)
-
-        if organization_id is not None:
-            statement = statement.where(Event.organization_id.in_(organization_id))
-
-        if customer_id is not None:
-            statement = statement.where(
-                repository.get_customer_id_filter_clause(customer_id)
-            )
-
-        if external_customer_id is not None:
-            statement = statement.where(
-                repository.get_external_customer_id_filter_clause(external_customer_id)
-            )
-
-        if query is not None:
-            statement = statement.where(Event.name.ilike(f"%{query}%"))
-
-        order_by_clauses: list[UnaryExpression[Any]] = []
-        for criterion, is_desc in sorting:
-            clause_function = desc if is_desc else asc
-            if criterion == EventNamesSortProperty.first_seen:
-                order_by_clauses.append(clause_function(text("first_seen")))
-            elif criterion == EventNamesSortProperty.last_seen:
-                order_by_clauses.append(clause_function(text("last_seen")))
-            elif criterion == EventNamesSortProperty.events_count:
-                order_by_clauses.append(clause_function(text("events_count")))
-        statement = statement.order_by(*order_by_clauses)
-
-        result = await session.execute(statement.distinct())
-
-        results: list[EventName] = []
-        for row in result.unique().all():
-            name, events_count, first_seen, last_seen = row._tuple()
-            results.append(
-                EventName(
-                    name=name,
-                    events_count=events_count,
-                    first_seen=first_seen,
-                    last_seen=last_seen,
-                )
-            )
-
-        return results
-
     async def list(
         self,
         session: AsyncSession,
@@ -185,6 +119,72 @@ class EventService:
             Event.id == id
         )
         return await repository.get_one_or_none(statement)
+
+    async def list_names(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
+        source: Sequence[EventSource] | None = None,
+        query: str | None = None,
+        pagination: PaginationParams,
+        sorting: Sequence[Sorting[EventNamesSortProperty]] = [
+            (EventNamesSortProperty.last_seen, True)
+        ],
+    ) -> tuple[Sequence[EventName], int]:
+        repository = EventRepository.from_session(session)
+        statement = repository.get_event_names_statement(auth_subject)
+
+        if organization_id is not None:
+            statement = statement.where(Event.organization_id.in_(organization_id))
+
+        if customer_id is not None:
+            statement = statement.where(
+                repository.get_customer_id_filter_clause(customer_id)
+            )
+
+        if external_customer_id is not None:
+            statement = statement.where(
+                repository.get_external_customer_id_filter_clause(external_customer_id)
+            )
+
+        if source is not None:
+            statement = statement.where(Event.source.in_(source))
+
+        if query is not None:
+            statement = statement.where(Event.name.ilike(f"%{query}%"))
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == EventNamesSortProperty.event_name:
+                order_by_clauses.append(clause_function(Event.name))
+            elif criterion == EventNamesSortProperty.first_seen:
+                order_by_clauses.append(clause_function(text("first_seen")))
+            elif criterion == EventNamesSortProperty.last_seen:
+                order_by_clauses.append(clause_function(text("last_seen")))
+            elif criterion == EventNamesSortProperty.occurrences:
+                order_by_clauses.append(clause_function(text("occurrences")))
+        statement = statement.order_by(*order_by_clauses)
+
+        results, count = await paginate(session, statement, pagination=pagination)
+
+        event_names: list[EventName] = []
+        for result in results:
+            name, occurrences, first_seen, last_seen = result
+            event_names.append(
+                EventName(
+                    name=name,
+                    occurrences=occurrences,
+                    first_seen=first_seen,
+                    last_seen=last_seen,
+                )
+            )
+
+        return event_names, count
 
     async def ingest(
         self,

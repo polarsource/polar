@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -7,6 +8,7 @@ from sqlalchemy import (
     ColumnExpressionArgument,
     Select,
     and_,
+    func,
     insert,
     or_,
     select,
@@ -34,11 +36,25 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         result = await self.session.execute(statement, events)
         return result.scalars().all()
 
-    def get_auth_statement(
-        self,
-        auth_subject: AuthSubject[User | Organization],
-        statement: Select[Any],
-    ) -> Select[Any]:
+    def get_event_names_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[tuple[str, int, datetime, datetime]]:
+        return (
+            self.get_readable_statement(auth_subject)
+            .with_only_columns(
+                Event.name,
+                func.count(Event.id).label("occurrences"),
+                func.min(Event.timestamp).label("first_seen"),
+                func.max(Event.timestamp).label("last_seen"),
+            )
+            .group_by(Event.name)
+        )
+
+    def get_readable_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[tuple[Event]]:
+        statement = self.get_base_statement()
+
         if is_user(auth_subject):
             user = auth_subject.subject
             statement = statement.where(
@@ -56,13 +72,6 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             )
 
         return statement
-
-    def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[Event]]:
-        statement = self.get_base_statement()
-
-        return self.get_auth_statement(auth_subject, statement)
 
     def get_customer_id_filter_clause(
         self, customer_id: Sequence[UUID]

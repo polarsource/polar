@@ -17,7 +17,8 @@ ListSorting = Annotated[
 
 
 class EventNamesSortProperty(StrEnum):
-    events_count = "events_count"
+    event_name = "name"  # `name` is a reserved word, so we use `event_name`
+    occurrences = "occurrences"
     first_seen = "first_seen"
     last_seen = "last_seen"
 

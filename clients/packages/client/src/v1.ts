@@ -3000,6 +3000,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/customer-portal/meters/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Meters
+         * @description List meters of the authenticated customer.
+         *
+         *     **Scopes**: `customer_portal:read` `customer_portal:write`
+         */
+        get: operations["customer_portal:customer_meters:list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/customer-portal/meters/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Customer Meter
+         * @description Get a meter by ID for the authenticated customer.
+         *
+         *     **Scopes**: `customer_portal:read` `customer_portal:write`
+         */
+        get: operations["customer_portal:customer_meters:get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/customer-portal/customer-session/request": {
         parameters: {
             query?: never;
@@ -9033,6 +9077,84 @@ export interface components {
              */
             organization_id?: string | null;
         };
+        /** CustomerCustomerMeter */
+        CustomerCustomerMeter: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Customer Id
+             * Format: uuid4
+             * @description The ID of the customer.
+             */
+            customer_id: string;
+            /**
+             * Meter Id
+             * Format: uuid4
+             * @description The ID of the meter.
+             */
+            meter_id: string;
+            /**
+             * Consumed Units
+             * @description The number of consumed units.
+             */
+            consumed_units: number;
+            /**
+             * Credited Units
+             * @description The number of credited units.
+             */
+            credited_units: number;
+            /**
+             * Balance
+             * @description The balance of the meter, i.e. the difference between credited and consumed units. Never goes negative.
+             */
+            balance: number;
+            meter: components["schemas"]["CustomerCustomerMeterMeter"];
+        };
+        /** CustomerCustomerMeterMeter */
+        CustomerCustomerMeterMeter: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the meter. Will be shown on customer's invoices and usage.
+             */
+            name: string;
+        };
+        /**
+         * CustomerCustomerMeterSortProperty
+         * @enum {string}
+         */
+        CustomerCustomerMeterSortProperty: "created_at" | "-created_at" | "modified_at" | "-modified_at" | "meter_id" | "-meter_id" | "meter_name" | "-meter_name" | "consumed_units" | "-consumed_units" | "credited_units" | "-credited_units" | "balance" | "-balance";
         /**
          * CustomerMeter
          * @description An active customer meter, with current consumed and credited units.
@@ -12314,6 +12436,12 @@ export interface components {
         ListResource_CustomerBenefitGrant_: {
             /** Items */
             items: components["schemas"]["CustomerBenefitGrant"][];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** ListResource[CustomerCustomerMeter] */
+        ListResource_CustomerCustomerMeter_: {
+            /** Items */
+            items: components["schemas"]["CustomerCustomerMeter"][];
             pagination: components["schemas"]["Pagination"];
         };
         /** ListResource[CustomerMeter] */
@@ -24323,6 +24451,87 @@ export interface operations {
             };
         };
     };
+    "customer_portal:customer_meters:list": {
+        parameters: {
+            query?: {
+                /** @description Filter by meter ID. */
+                meter_id?: string | string[] | null;
+                /** @description Filter by meter name. */
+                query?: string | null;
+                /** @description Page number, defaults to 1. */
+                page?: number;
+                /** @description Size of a page, defaults to 10. Maximum is 100. */
+                limit?: number;
+                /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+                sorting?: components["schemas"]["CustomerCustomerMeterSortProperty"][] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResource_CustomerCustomerMeter_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "customer_portal:customer_meters:get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The customer meter ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerCustomerMeter"];
+                };
+            };
+            /** @description Customer meter not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "customer_portal:customer-session:customer_portal.customer_session.request": {
         parameters: {
             query?: never;
@@ -26901,6 +27110,7 @@ export const customerBenefitGrantLicenseKeysUpdateBenefit_typeValues: ReadonlyAr
 export const customerBenefitGrantMeterCreditUpdateBenefit_typeValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantMeterCreditUpdate"]["benefit_type"]> = ["meter_credit"];
 export const customerBenefitGrantSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerBenefitGrantSortProperty"]> = ["granted_at", "-granted_at", "type", "-type", "organization", "-organization"];
 export const customerCancellationReasonValues: ReadonlyArray<components["schemas"]["CustomerCancellationReason"]> = ["customer_service", "low_quality", "missing_features", "switched_service", "too_complex", "too_expensive", "unused", "other"];
+export const customerCustomerMeterSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerCustomerMeterSortProperty"]> = ["created_at", "-created_at", "modified_at", "-modified_at", "meter_id", "-meter_id", "meter_name", "-meter_name", "consumed_units", "-consumed_units", "credited_units", "-credited_units", "balance", "-balance"];
 export const customerMeterSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerMeterSortProperty"]> = ["created_at", "-created_at", "modified_at", "-modified_at", "customer_id", "-customer_id", "customer_name", "-customer_name", "meter_id", "-meter_id", "meter_name", "-meter_name", "consumed_units", "-consumed_units", "credited_units", "-credited_units", "balance", "-balance"];
 export const customerOAuthPlatformValues: ReadonlyArray<components["schemas"]["CustomerOAuthPlatform"]> = ["github", "discord"];
 export const customerOrderSortPropertyValues: ReadonlyArray<components["schemas"]["CustomerOrderSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "net_amount", "-net_amount", "product", "-product", "subscription", "-subscription"];

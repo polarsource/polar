@@ -8,20 +8,23 @@ import {
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import { useAuth } from '@/hooks'
 import { useProduct } from '@/hooks/queries'
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { ArrowBack } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useContext, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { CheckoutCustomization } from './Checkout/CheckoutCustomization'
 import { StorefrontCustomization } from './Storefront/StorefrontCustomization'
 import { StorefrontSidebar } from './Storefront/StorefrontSidebar'
 
-export const CustomizationPage = () => {
+export const CustomizationPage = ({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) => {
   const search = useSearchParams()
 
   return (
@@ -30,13 +33,16 @@ export const CustomizationPage = () => {
         (search.get('mode') as CustomizationContextMode) ?? undefined
       }
     >
-      <Customization />
+      <Customization organization={organization} />
     </CustomizationProvider>
   )
 }
 
-const Customization = () => {
-  const { organization } = useContext(MaintainerOrganizationContext)
+const Customization = ({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) => {
   const { setCustomizationMode, customizationMode } = useCustomizationContext()
 
   const router = useRouter()
@@ -49,12 +55,17 @@ const Customization = () => {
   const customizationContent = useMemo(() => {
     switch (customizationMode) {
       case 'checkout':
-        return isLoading ? null : <CheckoutCustomization product={product} />
+        return isLoading ? null : (
+          <CheckoutCustomization
+            organization={organization}
+            product={product}
+          />
+        )
       case 'storefront':
       default:
-        return <StorefrontCustomization />
+        return <StorefrontCustomization organization={organization} />
     }
-  }, [customizationMode, product, isLoading])
+  }, [customizationMode, product, isLoading, organization])
 
   const form = useForm<schemas['OrganizationUpdate']>({
     defaultValues: {
@@ -109,7 +120,9 @@ const Customization = () => {
       <Form {...form}>
         <div className="flex min-h-0 flex-grow flex-row gap-x-6 pb-8">
           {customizationContent}
-          {customizationMode === 'storefront' && <StorefrontSidebar />}
+          {customizationMode === 'storefront' && (
+            <StorefrontSidebar organization={organization} />
+          )}
         </div>
       </Form>
     </div>

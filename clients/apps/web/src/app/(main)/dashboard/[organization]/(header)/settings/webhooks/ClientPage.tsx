@@ -1,16 +1,17 @@
-"use client";
+'use client'
 
-import { DashboardBody } from "@/components/Layout/DashboardLayout";
-import WebhookSettings from "@/components/Settings/Webhook/WebhookSettings";
-import { MaintainerOrganizationContext } from "@/providers/maintainerOrganization";
-import { useContext } from "react";
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import WebhookSettings from '@/components/Settings/Webhook/WebhookSettings'
+import { schemas } from '@polar-sh/client'
 
-export default function ClientPage() {
-	const { organization: org } = useContext(MaintainerOrganizationContext);
-
-	return (
-		<DashboardBody wide>
-			<WebhookSettings org={org} />
-		</DashboardBody>
-	);
+export default function ClientPage({
+  organization: org,
+}: {
+  organization: schemas['Organization']
+}) {
+  return (
+    <DashboardBody wide>
+      <WebhookSettings org={org} />
+    </DashboardBody>
+  )
 }

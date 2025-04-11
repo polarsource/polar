@@ -35,7 +35,6 @@ from polar.models import (
     Customer,
     Order,
     Organization,
-    Pledge,
     Product,
     Refund,
     Subscription,
@@ -46,7 +45,6 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.order.schemas import Order as OrderSchema
 from polar.organization.schemas import Organization as OrganizationSchema
-from polar.pledge.schemas import Pledge as PledgeSchema
 from polar.product.schemas import Product as ProductSchema
 from polar.refund.schemas import Refund as RefundSchema
 from polar.subscription.schemas import Subscription as SubscriptionSchema
@@ -73,8 +71,6 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.refund_updated], Refund]
     | tuple[Literal[WebhookEventType.product_created], Product]
     | tuple[Literal[WebhookEventType.product_updated], Product]
-    | tuple[Literal[WebhookEventType.pledge_created], Pledge]
-    | tuple[Literal[WebhookEventType.pledge_updated], Pledge]
     | tuple[Literal[WebhookEventType.organization_updated], Organization]
     | tuple[Literal[WebhookEventType.benefit_created], Benefit]
     | tuple[Literal[WebhookEventType.benefit_updated], Benefit]
@@ -1023,81 +1019,6 @@ class WebhookProductUpdatedPayload(BaseWebhookPayload):
     data: ProductSchema
 
 
-class WebhookPledgeCreatedPayload(BaseWebhookPayload):
-    """
-    Sent when a new pledge is created. Note that this does mean that the pledge has been paid yet.
-
-    **Discord & Slack support:** Full
-    """
-
-    type: Literal[WebhookEventType.pledge_created]
-    data: PledgeSchema
-
-    def get_discord_payload(self, target: User | Organization) -> str:
-        if isinstance(target, User):
-            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
-
-        amount = self.data.amount / 100
-        url = f"https://polar.sh/{target.slug}/{self.data.issue.repository.name}/issues/{self.data.issue.number}"
-        fields: list[DiscordEmbedField] = [
-            {"name": "Issue", "value": f"[{self.data.issue.title}]({url})"},
-            {"name": "Amount", "value": f"${amount}"},
-        ]
-        payload: DiscordPayload = {
-            "content": "New Pledge Received",
-            "embeds": [
-                get_branded_discord_embed(
-                    {
-                        "title": "New Pledge Received",
-                        "description": f"A ${amount} pledge has been made towards {self.data.issue.repository.name}#{self.data.issue.number}",
-                        "fields": fields,
-                    }
-                )
-            ],
-        }
-
-        return json.dumps(payload)
-
-    def get_slack_payload(self, target: User | Organization) -> str:
-        if isinstance(target, User):
-            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
-
-        amount = self.data.amount / 100
-        url = f"https://polar.sh/{target.slug}/{self.data.issue.repository.name}/issues/{self.data.issue.number}"
-        fields: list[SlackText] = [
-            {"type": "mrkdwn", "text": f"*Issue*\n<{url}|{self.data.issue.title}>"},
-            {"type": "mrkdwn", "text": f"*Amount*\n${amount}"},
-        ]
-        payload: SlackPayload = get_branded_slack_payload(
-            {
-                "text": "New Pledge Received",
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": f"A ${amount} pledge has been made towards {self.data.issue.repository.name}#{self.data.issue.number}",
-                        },
-                        "fields": fields,
-                    }
-                ],
-            }
-        )
-
-        return json.dumps(payload)
-
-
-class WebhookPledgeUpdatedPayload(BaseWebhookPayload):
-    """
-    Sent when a pledge is updated.
-
-    **Discord & Slack support:** Basic
-    """
-
-    type: Literal[WebhookEventType.pledge_updated]
-    data: PledgeSchema
-
-
 class WebhookOrganizationUpdatedPayload(BaseWebhookPayload):
     """
     Sent when a organization is updated.
@@ -1197,8 +1118,6 @@ WebhookPayload = Annotated[
     | WebhookRefundUpdatedPayload
     | WebhookProductCreatedPayload
     | WebhookProductUpdatedPayload
-    | WebhookPledgeCreatedPayload
-    | WebhookPledgeUpdatedPayload
     | WebhookOrganizationUpdatedPayload
     | WebhookBenefitCreatedPayload
     | WebhookBenefitUpdatedPayload

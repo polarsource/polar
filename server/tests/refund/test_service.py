@@ -10,13 +10,10 @@ from pytest_mock import MockerFixture
 from polar.integrations.stripe.service import StripeService
 from polar.models import (
     Customer,
-    ExternalOrganization,
-    Issue,
     Order,
-    Pledge,
+    Organization,
     Product,
     Refund,
-    Repository,
     Transaction,
 )
 from polar.models.order import OrderStatus
@@ -288,19 +285,14 @@ class TestCreatedWebhooks(StripeRefund):
         session: AsyncSession,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
-        external_organization_linked: ExternalOrganization,
-        repository_linked: Repository,
-        issue_linked: Issue,
-        pledge_by_user: Pledge,
+        organization: Organization,
         refund_hooks: Hooks,
     ) -> None:
         user = await create_user(save_fixture)
         payment_intent = "pi_pledge_payment_1337"
         pledge = await create_pledge(
             save_fixture,
-            external_organization_linked,
-            repository_linked,
-            issue_linked,
+            organization,
             pledging_user=user,
             payment_id=payment_intent,
         )

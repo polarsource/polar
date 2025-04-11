@@ -1,14 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getStorefrontOrNotFound } from '@/utils/storefront'
-import { unwrap } from '@polar-sh/client'
 import type { Metadata } from 'next'
 import ClientPage from './ClientPage'
-
-const cacheConfig = {
-  next: {
-    revalidate: 600,
-  },
-}
 
 export async function generateMetadata({
   params,
@@ -63,31 +56,6 @@ export default async function Page({
     api,
     params.organization,
   )
-  const listIssueFunding = await unwrap(
-    api.GET('/v1/funding/search', {
-      params: {
-        query: {
-          organization_id: organization.id,
-          limit: 10,
-          page: 1,
-          closed: false,
-          sorting: [
-            'most_funded',
-            'most_recently_funded',
-            'most_engagement',
-            'newest',
-          ],
-        },
-      },
-      ...cacheConfig,
-    }),
-  )
 
-  return (
-    <ClientPage
-      organization={organization}
-      products={products}
-      issues={listIssueFunding?.items ?? []}
-    />
-  )
+  return <ClientPage organization={organization} products={products} />
 }

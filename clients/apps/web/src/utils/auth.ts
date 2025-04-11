@@ -34,21 +34,6 @@ export const getGoogleAuthorizeURL = (
   return `${getServerURL()}/v1/integrations/google/authorize?${searchParams}`
 }
 
-export const getGitHubOrganizationInstallationURL = (
-  organizationId: string,
-  params: NonNullable<
-    operations['integrations_github:redirect_to_organization_installation']['parameters']['query']
-  >,
-): string => {
-  const searchParams = new URLSearchParams()
-  if (params.return_to) {
-    searchParams.set('return_to', params.return_to)
-  }
-  return `${getServerURL()}/v1/integrations/github/organizations/${
-    organizationId
-  }/installation?${searchParams}`
-}
-
 export const getBotDiscordAuthorizeURL = (
   params: NonNullable<
     operations['integrations_discord:integrations.discord.bot_authorize']['parameters']['query']

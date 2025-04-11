@@ -1,5 +1,5 @@
 import { useOrders } from '@/hooks/queries/orders'
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { ShoppingCartOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
@@ -22,7 +22,7 @@ interface OrderCardProps {
 const OrderCard = ({ className, order }: OrderCardProps) => {
   const createdAtDate = new Date(order.created_at)
 
-  const { organization: org } = useContext(MaintainerOrganizationContext)
+  const { organization: org } = useContext(OrganizationContext)
 
   const displayDate = createdAtDate.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -73,7 +73,7 @@ export interface OrdersWidgetProps {
 }
 
 export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
-  const { organization: org } = useContext(MaintainerOrganizationContext)
+  const { organization: org } = useContext(OrganizationContext)
 
   const orders = useOrders(org.id, { limit: 3, sorting: ['-created_at'] })
 

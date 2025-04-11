@@ -7,18 +7,14 @@ from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import (
-    InternalServerError,
     NotPermitted,
     ResourceNotFound,
     Unauthorized,
 )
-from polar.integrations.github.badge import GithubBadge
-from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
-from polar.repository.service import repository as repository_service
 from polar.routing import APIRouter
 from polar.user_organization.schemas import OrganizationMember
 from polar.user_organization.service import (
@@ -30,14 +26,10 @@ from .schemas import (
     Organization as OrganizationSchema,
 )
 from .schemas import (
-    OrganizationBadgeSettingsRead,
-    OrganizationBadgeSettingsUpdate,
     OrganizationCreate,
     OrganizationID,
     OrganizationSetAccount,
-    OrganizationStripePortalSession,
     OrganizationUpdate,
-    RepositoryBadgeSettingsRead,
 )
 from .service import organization as organization_service
 
@@ -147,24 +139,6 @@ async def update(
 
     if not await authz.can(auth_subject.subject, AccessType.write, organization):
         raise NotPermitted()
-
-    # validate featured organizations and featured projects
-    # TODO: put this in the service method
-    if organization_update.profile_settings is not None:
-        if organization_update.profile_settings.featured_organizations is not None:
-            for org_id in organization_update.profile_settings.featured_organizations:
-                if not await organization_service.get(session, id=org_id):
-                    raise ResourceNotFound()
-
-        if organization_update.profile_settings.featured_projects is not None:
-            for repo_id in organization_update.profile_settings.featured_projects:
-                if not await repository_service.get(session, id=repo_id):
-                    raise ResourceNotFound()
-
-        # validate accent color as hexcode
-        if organization_update.profile_settings.accent_color is not None:
-            if not organization_update.profile_settings.accent_color.startswith("#"):
-                raise ValueError("Accent color must be hexadecimal.")
 
     return await organization_service.update(
         session, authz, organization, organization_update, auth_subject
@@ -283,155 +257,3 @@ async def members(
         items=[OrganizationMember.model_validate(m) for m in members],
         pagination=Pagination(total_count=len(members), max_page=1),
     )
-
-
-@router.post(
-    "/{id}/stripe_customer_portal",
-    response_model=OrganizationStripePortalSession,
-    tags=[APITag.private],
-)
-async def create_stripe_customer_portal(
-    id: UUID,
-    auth_subject: auth.OrganizationsWrite,
-    session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
-) -> OrganizationStripePortalSession:
-    """Create a new Stripe Customer session for a organization."""
-    org = await organization_service.get(session, id)
-    if not org:
-        raise ResourceNotFound()
-
-    if not await authz.can(auth_subject.subject, AccessType.write, org):
-        raise Unauthorized()
-
-    portal = await stripe_service.create_org_portal_session(session, org)
-    if not portal:
-        raise InternalServerError()
-
-    return OrganizationStripePortalSession(url=portal.url)
-
-
-@router.get(
-    "/{id}/badge_settings",
-    response_model=OrganizationBadgeSettingsRead,
-    tags=[APITag.private],
-)
-async def get_badge_settings(
-    id: UUID,
-    auth_subject: auth.OrganizationsWrite,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> OrganizationBadgeSettingsRead:
-    """Get badge settings for an organization."""
-    org = await organization_service.get(session, id)
-    if not org:
-        raise ResourceNotFound()
-    if not await authz.can(auth_subject.subject, AccessType.write, org):
-        raise Unauthorized()
-
-    repositories = await repository_service.list_by(
-        session, organization_id=[org.id], order_by_open_source=True
-    )
-
-    synced = await repository_service.get_repositories_synced_count(session, org)
-
-    repos = []
-    for repo in repositories:
-        open_issues = repo.open_issues or 0
-        synced_data = synced.get(
-            repo.id,
-            {
-                "synced_issues": 0,
-                "auto_embedded_issues": 0,
-                "label_embedded_issues": 0,
-            },
-        )
-        synced_issues = synced_data["synced_issues"]
-        if synced_issues > open_issues:
-            open_issues = synced_issues
-
-        is_sync_completed = synced_issues == open_issues
-
-        repos.append(
-            RepositoryBadgeSettingsRead(
-                id=repo.id,
-                avatar_url=org.avatar_url,
-                badge_auto_embed=repo.pledge_badge_auto_embed,
-                badge_label=repo.pledge_badge_label,
-                name=repo.name,
-                synced_issues=synced_issues,
-                auto_embedded_issues=synced_data["auto_embedded_issues"],
-                label_embedded_issues=synced_data["label_embedded_issues"],
-                open_issues=open_issues,
-                is_private=repo.is_private,
-                is_sync_completed=is_sync_completed,
-            )
-        )
-
-    message = org.default_badge_custom_content
-    if not message:
-        message = GithubBadge.generate_default_promotion_message(org)
-
-    return OrganizationBadgeSettingsRead(
-        show_amount=org.pledge_badge_show_amount,
-        minimum_amount=org.pledge_minimum_amount,
-        message=message,
-        repositories=repos,
-    )
-
-
-@router.post(
-    "/{id}/badge_settings", response_model=OrganizationSchema, tags=[APITag.private]
-)
-async def update_badge_settings(
-    id: UUID,
-    settings: OrganizationBadgeSettingsUpdate,
-    auth_subject: auth.OrganizationsWrite,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> Organization:
-    """Update badge settings for an organization."""
-    org = await organization_service.get(session, id)
-    if not org:
-        raise ResourceNotFound()
-    if not await authz.can(auth_subject.subject, AccessType.write, org):
-        raise Unauthorized()
-
-    # convert payload into OrganizationUpdate format
-    org_update = OrganizationUpdate()
-    if settings.show_amount is not None:
-        org_update.pledge_badge_show_amount = settings.show_amount
-
-    if settings.minimum_amount is not None:
-        org_update.pledge_minimum_amount = settings.minimum_amount
-
-    if settings.message:
-        org_update.default_badge_custom_content = settings.message
-
-    org = await organization_service.update(
-        session, authz, org, org_update, auth_subject
-    )
-    # save repositories settings
-    repositories = await repository_service.list_by_ids_and_organization(
-        session, [r.id for r in settings.repositories], org.id
-    )
-    for repository_settings in settings.repositories:
-        if repository := next(
-            (r for r in repositories if r.id == repository_settings.id), None
-        ):
-            await repository_service.update_badge_settings(
-                session, org, repository, repository_settings
-            )
-
-    log.info(
-        "organization.update_badge_settings",
-        organization_id=org.id,
-        settings=settings.model_dump(mode="json"),
-    )
-
-    # get for return
-    org = await organization_service.get(session, id)
-    if not org:
-        raise ResourceNotFound()
-
-    return org

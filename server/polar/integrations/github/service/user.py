@@ -1,4 +1,4 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 import structlog
 
@@ -14,16 +14,17 @@ from polar.user.schemas.user import UserSignupAttribution
 from polar.user.service.user import UserService
 from polar.worker import enqueue_job
 
+if TYPE_CHECKING:
+    from githubkit.versions.latest.models import PrivateUser, PublicUser
+
 from .. import client as github
-from .. import types
 from ..schemas import OAuthAccessToken
 
 log = structlog.get_logger()
 
 
-GithubUser = types.PrivateUser | types.PublicUser
-
-GithubEmail = tuple[str, bool]
+GithubUser: TypeAlias = "PrivateUser | PublicUser"
+GithubEmail: TypeAlias = tuple[str, bool]
 
 
 class GithubUserServiceError(PolarError): ...
@@ -347,29 +348,6 @@ class GithubUserService(UserService):
                 return email.email, email.verified
 
         raise NoPrimaryEmailError()
-
-    def map_installations_func(
-        self,
-        r: github.Response[types.UserInstallationsGetResponse200],
-    ) -> list[types.Installation]:
-        return r.parsed_data.installations
-
-    async def fetch_user_accessible_installations(
-        self, session: AsyncSession, locker: Locker, user: User
-    ) -> list[types.Installation]:
-        """
-        Load user accessible installations from GitHub API
-        Finds the union between app installations and the users user-to-server token.
-        """
-
-        client = await github.get_user_client(session, locker, user)
-        res = []
-        async for install in client.paginate(
-            client.rest.apps.async_list_installations_for_authenticated_user,
-            map_func=self.map_installations_func,
-        ):
-            res.append(install)
-        return res
 
 
 github_user = GithubUserService(User)

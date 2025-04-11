@@ -185,7 +185,7 @@ export const GitHubRepositoryBenefitForm = ({
     const searchParams = new URLSearchParams()
     if (!update) {
       searchParams.set('create_benefit', 'true')
-      searchParams.set('type', 'github_repository_benefit')
+      searchParams.set('type', 'github_repository')
       searchParams.set('description', description)
     }
     const returnTo = `${pathname}?${searchParams}`
@@ -319,7 +319,8 @@ export const GitHubRepositoryBenefitForm = ({
 
       {selectedRepository ? (
         <>
-          {selectedRepository?.org?.plan_name && !selectedRepository?.org?.is_free ? (
+          {selectedRepository?.org?.plan_name &&
+          !selectedRepository?.org?.is_free ? (
             <div className="rounded-2xl bg-yellow-50 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
               This organization is currently on the{' '}
               <span className="capitalize">

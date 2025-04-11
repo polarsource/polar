@@ -150,12 +150,8 @@ const ORGANIZATION: schemas['Organization'] = {
   company: null,
   location: null,
   email: null,
-  default_upfront_split_to_contributors: null,
   feature_settings: null,
   twitter_username: null,
-  pledge_minimum_amount: 2000,
-  pledge_badge_show_amount: false,
-  profile_settings: null,
   subscription_settings: {
     allow_multiple_subscriptions: true,
     allow_customer_updates: true,
@@ -222,7 +218,14 @@ export const createCheckoutPreview = (
     url: '/checkout/CLIENT_SECRET',
     success_url: '/checkout/CLIENT_SECRET/confirmation',
     embed_origin: null,
-    organization,
+    organization: {
+      ...organization,
+      // FIXME: removed field to please outdated SDK, we can remove that later
+      default_upfront_split_to_contributors: null,
+      pledge_minimum_amount: 2000,
+      pledge_badge_show_amount: false,
+      profile_settings: null,
+    },
     attached_custom_fields: [],
     discount: null,
     discount_id: null,

@@ -40,8 +40,8 @@ const issue_reward: schemas['TransactionIssueReward'] = {
   created_at: '',
   modified_at: null,
   id: '',
-  issue_id: '',
   share_thousands: 800,
+  issue_reference: 'polarsource/polar/1',
 }
 
 const organization: schemas['TransactionOrganization'] = {
@@ -53,44 +53,12 @@ const organization: schemas['TransactionOrganization'] = {
   avatar_url: 'https://avatars.githubusercontent.com/u/1144727?s=60&v=4',
 }
 
-const externalOrganization: schemas['TransactionExternalOrganization'] = {
-  id: '',
-  created_at: '',
-  modified_at: null,
-  name: 'OrgName',
-  platform: 'github',
-  avatar_url: 'https://avatars.githubusercontent.com/u/1144727?s=60&v=4',
-  is_personal: false,
-}
-
-const repository: schemas['TransactionRepository'] = {
-  created_at: '',
-  modified_at: null,
-  id: '',
-  platform: 'github',
-  organization_id: '',
-  name: 'reponame',
-}
-
-const issue: schemas['TransactionIssue'] = {
-  created_at: '',
-  modified_at: null,
-  id: '',
-  platform: 'github',
-  organization_id: '',
-  repository_id: '',
-  number: 0,
-  title: '',
-  organization: externalOrganization,
-  repository,
-}
-
 const pledge: schemas['TransactionPledge'] = {
   created_at: '',
   modified_at: null,
   id: '',
   state: 'initiated',
-  issue,
+  issue_reference: 'polarsource/polar/1',
 }
 
 const txIssueReward: schemas['Transaction'] = {

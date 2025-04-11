@@ -3,17 +3,18 @@
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import TopbarRight from '@/components/Layout/Public/TopbarRight'
 import { useAuth } from '@/hooks'
-import { useProducts, useSearchFunding } from '@/hooks/queries'
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { useProducts } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { useContext } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { Storefront } from '../../Profile/Storefront'
 import { StorefrontHeader } from '../../Profile/StorefrontHeader'
 
-export const StorefrontPreview = () => {
-  const { organization: org } = useContext(MaintainerOrganizationContext)
+export const StorefrontPreview = ({
+  organization: org,
+}: {
+  organization: schemas['Organization']
+}) => {
   const { watch } = useFormContext<schemas['OrganizationUpdate']>()
   const { currentUser } = useAuth()
   const organizationUpdate = watch()
@@ -22,20 +23,6 @@ export const StorefrontPreview = () => {
 
   const products =
     useProducts(organization.id, { is_archived: false }).data?.items ?? []
-
-  const issues =
-    useSearchFunding({
-      organizationId: org.id,
-      limit: 10,
-      page: 1,
-      closed: false,
-      sort: [
-        'most_funded',
-        'most_recently_funded',
-        'most_engagement',
-        'newest',
-      ],
-    }).data?.items ?? []
 
   return (
     <ShadowBox className="dark:bg-polar-950 flex h-full w-full flex-col items-center overflow-y-auto bg-white">
@@ -48,11 +35,6 @@ export const StorefrontPreview = () => {
 
           <TopbarRight authenticatedUser={currentUser} />
         </div>
-        {!organization.profile_settings?.enabled && (
-          <div className="flex flex-row items-center justify-center rounded-full bg-red-100 px-8 py-2 text-sm text-red-500 dark:bg-red-950">
-            Storefront is not enabled
-          </div>
-        )}
         <div className="flex flex-grow flex-col items-center">
           <StorefrontHeader
             organization={organization as schemas['Organization']}
@@ -62,7 +44,6 @@ export const StorefrontPreview = () => {
           <Storefront
             organization={organization as schemas['Organization']}
             products={products}
-            issues={issues}
           />
         </div>
       </div>

@@ -139,19 +139,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(UTC)
 
-        enabled_storefront = False
-        if update_schema.profile_settings is not None:
-            storefront_enabled_before = organization.storefront_enabled
-            organization.profile_settings = {
-                **organization.profile_settings,
-                **update_schema.profile_settings.model_dump(
-                    mode="json", exclude_unset=True
-                ),
-            }
-            enabled_storefront = (
-                organization.storefront_enabled and not storefront_enabled_before
-            )
-
         if update_schema.feature_settings is not None:
             organization.feature_settings = {
                 **organization.feature_settings,
@@ -188,10 +175,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
         if not is_user(auth_subject):
             return organization
-
-        await loops_service.user_updated_organization(
-            auth_subject.subject, enabled_storefront=enabled_storefront
-        )
 
         return organization
 
@@ -314,24 +297,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
         await self._after_update(session, organization)
 
         return organization
-
-    async def set_default_issue_badge_custom_message(
-        self, session: AsyncSession, org: Organization, message: str
-    ) -> Organization:
-        stmt = (
-            sql.update(Organization)
-            .where(Organization.id == org.id)
-            .values(default_badge_custom_content=message)
-        )
-        await session.execute(stmt)
-        await session.commit()
-
-        # update the in memory version as well
-        org.default_badge_custom_content = message
-
-        await self._after_update(session, org)
-
-        return org
 
     async def _after_update(
         self,

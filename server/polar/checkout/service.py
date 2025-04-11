@@ -810,6 +810,7 @@ class CheckoutService:
                             "statement_descriptor_suffix": checkout.organization.name[
                                 : settings.stripe_descriptor_suffix_max_length
                             ],
+                            "description": f"{checkout.organization.name} — {checkout.product.name}",
                             "metadata": intent_metadata,
                             "return_url": settings.generate_frontend_url(
                                 f"/checkout/{checkout.client_secret}/confirmation"
@@ -826,6 +827,7 @@ class CheckoutService:
                             "confirm": True,
                             "confirmation_token": checkout_confirm.confirmation_token_id,
                             "customer": stripe_customer_id,
+                            "description": f"{checkout.organization.name} — {checkout.product.name}",
                             "metadata": intent_metadata,
                             "return_url": settings.generate_frontend_url(
                                 f"/checkout/{checkout.client_secret}/confirmation"

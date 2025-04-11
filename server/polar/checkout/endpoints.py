@@ -32,7 +32,12 @@ from .schemas import (
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
-from .service import AlreadyActiveSubscriptionError, NotOpenCheckout, PaymentError
+from .service import (
+    AlreadyActiveSubscriptionError,
+    ExpiredCheckoutError,
+    NotOpenCheckout,
+    PaymentError,
+)
 from .service import checkout as checkout_service
 
 inner_router = APIRouter(tags=["checkouts", APITag.documented, APITag.featured])
@@ -45,6 +50,10 @@ CheckoutClientSecret = Annotated[
 CheckoutNotFound = {
     "description": "Checkout session not found.",
     "model": ResourceNotFound.schema(),
+}
+CheckoutExpired = {
+    "description": "The checkout session is expired.",
+    "model": ExpiredCheckoutError.schema(),
 }
 CheckoutPaymentError = {
     "description": "The payment failed.",
@@ -163,19 +172,14 @@ async def update(
     "/client/{client_secret}",
     summary="Get Checkout Session from Client",
     response_model=CheckoutPublic,
-    responses={404: CheckoutNotFound},
+    responses={404: CheckoutNotFound, 410: CheckoutExpired},
 )
 async def client_get(
     client_secret: CheckoutClientSecret,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """Get a checkout session by client secret."""
-    checkout = await checkout_service.get_by_client_secret(session, client_secret)
-
-    if checkout is None:
-        raise ResourceNotFound()
-
-    return checkout
+    return await checkout_service.get_by_client_secret(session, client_secret)
 
 
 @inner_router.post(
@@ -207,6 +211,7 @@ async def client_create(
         200: {"description": "Checkout session updated."},
         404: CheckoutNotFound,
         403: CheckoutForbiddenError,
+        410: CheckoutExpired,
     },
 )
 async def client_update(
@@ -218,9 +223,6 @@ async def client_update(
 ) -> Checkout:
     """Update a checkout session by client secret."""
     checkout = await checkout_service.get_by_client_secret(session, client_secret)
-
-    if checkout is None:
-        raise ResourceNotFound()
 
     return await checkout_service.update(
         session, locker, checkout, checkout_update, ip_geolocation_client
@@ -236,6 +238,7 @@ async def client_update(
         400: CheckoutPaymentError,
         404: CheckoutNotFound,
         403: CheckoutForbiddenError,
+        410: CheckoutExpired,
     },
 )
 async def client_confirm(
@@ -252,9 +255,6 @@ async def client_confirm(
     """
     checkout = await checkout_service.get_by_client_secret(session, client_secret)
 
-    if checkout is None:
-        raise ResourceNotFound()
-
     return await checkout_service.confirm(
         session, locker, auth_subject, checkout, checkout_confirm
     )
@@ -268,9 +268,6 @@ async def client_stream(
     redis: Redis = Depends(get_redis),
 ) -> EventSourceResponse:
     checkout = await checkout_service.get_by_client_secret(session, client_secret)
-
-    if checkout is None:
-        raise ResourceNotFound()
 
     receivers = Receivers(checkout_client_secret=checkout.client_secret)
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))

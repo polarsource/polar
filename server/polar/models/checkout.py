@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
+    ColumnElement,
     Connection,
     ForeignKey,
     Integer,
@@ -176,6 +177,15 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
             lazy="joined",
             foreign_keys=[cls.subscription_id],  # type: ignore
         )
+
+    @hybrid_property
+    def is_expired(self) -> bool:
+        return self.expires_at < utc_now()
+
+    @is_expired.inplace.expression
+    @classmethod
+    def _is_expired_expression(cls) -> ColumnElement[bool]:
+        return cls.expires_at < utc_now()
 
     @hybrid_property
     def customer_ip_address(self) -> str | None:

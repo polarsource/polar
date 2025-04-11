@@ -27,10 +27,7 @@ class CheckoutRepository(
     ) -> Checkout | None:
         statement = (
             self.get_base_statement()
-            .where(
-                Checkout.expires_at > utc_now(),
-                Checkout.client_secret == client_secret,
-            )
+            .where(Checkout.client_secret == client_secret)
             .options(*options)
         )
         return await self.get_one_or_none(statement)

@@ -1,5 +1,3 @@
-from collections.abc import Sequence
-
 from fastapi import Depends, Query
 from pydantic import AwareDatetime
 
@@ -86,9 +84,7 @@ async def list(
 
 
 @router.get(
-    "/names",
-    summary="List Event Names",
-    response_model=Sequence[EventName],
+    "/names", summary="List Event Names", response_model=ListResource[EventName]
 )
 async def list_names(
     auth_subject: auth.EventRead,
@@ -109,19 +105,19 @@ async def list_names(
     query: str | None = Query(
         None, title="Query", description="Query to filter event names."
     ),
-) -> Sequence[EventName]:
+) -> ListResource[EventName]:
     """List event names."""
-    results = await event_service.list_names(
+    results, count = await event_service.list_names(
         session,
         auth_subject,
         organization_id=organization_id,
         customer_id=customer_id,
         external_customer_id=external_customer_id,
         query=query,
+        pagination=pagination,
         sorting=sorting,
     )
-
-    return results
+    return ListResource.from_paginated_results(results, count, pagination)
 
 
 @router.get(

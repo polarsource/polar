@@ -53,6 +53,13 @@
                   "features/checkout/session"
                 ]
               },
+              {
+                "group": "Usage Based Billing",
+                "pages": [
+                  "features/usage-based-billing/introduction",
+                  "features/usage-based-billing/event-ingestion"
+                ]
+              },
               "features/discounts",
               "features/orders",
               "features/refunds",
@@ -245,6 +252,24 @@
                   "api-reference/products/create",
                   "api-reference/products/update",
                   "api-reference/products/update-benefits"
+                ]
+              },
+              {
+                "group": "Events",
+                "pages": [
+                  "api-reference/events/ingest",
+                  "api-reference/events/get",
+                  "api-reference/events/list"
+                ]
+              },
+              {
+                "group": "Meters",
+                "pages": [
+                  "api-reference/meters/create",
+                  "api-reference/meters/get",
+                  "api-reference/meters/list",
+                  "api-reference/meters/update",
+                  "api-reference/meters/get-quantities"
                 ]
               },
               {

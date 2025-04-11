@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
@@ -17,6 +18,7 @@ from polar.integrations.stripe.service import StripeService
 from polar.kit.tax import calculate_tax
 from polar.kit.utils import utc_now
 from polar.models import Checkout, Product, User, UserOrganization
+from polar.models.checkout import CheckoutStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -353,6 +355,24 @@ class TestClientGet:
         response = await client.get(f"{api_prefix}/client/123")
 
         assert response.status_code == 404
+
+    async def test_expired(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.expired,
+            expires_at=utc_now() - timedelta(days=1),
+        )
+
+        response = await client.get(f"{api_prefix}/client/{checkout.client_secret}")
+
+        assert response.status_code == 410
 
     async def test_valid(
         self, api_prefix: str, client: AsyncClient, checkout_open: Checkout

@@ -34,6 +34,7 @@ from polar.exceptions import (
     NotPermitted,
     PolarError,
     PolarRequestValidationError,
+    ResourceNotFound,
     ValidationError,
 )
 from polar.integrations.stripe.schemas import ProductType
@@ -90,6 +91,12 @@ log: Logger = structlog.get_logger()
 
 
 class CheckoutError(PolarError): ...
+
+
+class ExpiredCheckoutError(CheckoutError):
+    def __init__(self) -> None:
+        message = "This checkout session has expired."
+        super().__init__(message, 410)
 
 
 class AlreadyActiveSubscriptionError(CheckoutError):
@@ -976,11 +983,16 @@ class CheckoutService:
 
     async def get_by_client_secret(
         self, session: AsyncSession, client_secret: str
-    ) -> Checkout | None:
+    ) -> Checkout:
         repository = CheckoutRepository.from_session(session)
-        return await repository.get_by_client_secret(
+        checkout = await repository.get_by_client_secret(
             client_secret, options=repository.get_eager_options()
         )
+        if checkout is None:
+            raise ResourceNotFound()
+        if checkout.is_expired:
+            raise ExpiredCheckoutError()
+        return checkout
 
     async def _get_validated_price(
         self,

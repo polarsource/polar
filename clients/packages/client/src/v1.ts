@@ -11523,6 +11523,16 @@ export interface components {
              */
             id: string;
         };
+        /** ExpiredCheckoutError */
+        ExpiredCheckoutError: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "ExpiredCheckoutError";
+            /** Detail */
+            detail: string;
+        };
         /** ExternalOrganization */
         ExternalOrganization: {
             /**
@@ -22348,6 +22358,15 @@ export interface operations {
                     "application/json": components["schemas"]["ResourceNotFound"];
                 };
             };
+            /** @description The checkout session is expired. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpiredCheckoutError"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -22400,6 +22419,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description The checkout session is expired. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpiredCheckoutError"];
                 };
             };
             /** @description Validation Error */
@@ -22496,6 +22524,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description The checkout session is expired. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpiredCheckoutError"];
                 };
             };
             /** @description Validation Error */

@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@polar-sh/checkout": "workspace:^",
-    "@polar-sh/sdk": "^0.32.5",
+    "@polar-sh/sdk": "^0.32.7",
     "@stripe/react-stripe-js": "^3.1.1",
     "@stripe/stripe-js": "^5.7.0",
     "next": "^14.2.25",

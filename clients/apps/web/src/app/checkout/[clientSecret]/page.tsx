@@ -6,6 +6,7 @@ import {
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
+import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
 import { notFound, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -31,6 +32,8 @@ export default async function Page({
   if (!ok) {
     if (error instanceof ResourceNotFound) {
       notFound()
+    } else if (error instanceof ExpiredCheckoutError) {
+      notFound() // TODO: show expired checkout page
     } else {
       throw error
     }

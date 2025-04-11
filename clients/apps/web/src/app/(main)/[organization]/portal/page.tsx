@@ -22,7 +22,5 @@ export default async function Page({
     ),
   )
 
-  console.log(sp.toString())
-
   redirect(`/${params.organization}/portal/overview?${sp.toString()}`)
 }

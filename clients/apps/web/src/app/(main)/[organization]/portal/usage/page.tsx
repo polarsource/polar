@@ -1,7 +1,7 @@
-import { CustomerUsage } from '@/components/CustomerPortal/CustomerUsage'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import type { Metadata } from 'next'
+import ClientPage from './ClientPage'
 
 export async function generateMetadata({
   params,
@@ -53,10 +53,9 @@ export default async function Page({
   searchParams: { customer_session_token?: string }
 }) {
   const api = getServerSideAPI(searchParams.customer_session_token)
-  const { organization } = await getOrganizationOrNotFound(
-    api,
-    params.organization,
-  )
+  await getOrganizationOrNotFound(api, params.organization)
 
-  return <CustomerUsage organizationId={organization.id} />
+  return (
+    <ClientPage customerSessionToken={searchParams.customer_session_token} />
+  )
 }

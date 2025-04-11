@@ -1,140 +1,27 @@
 'use client'
 
-import { computeCumulativeValue } from '@/utils/metrics'
+import { useCustomerCustomerMeters } from '@/hooks/queries'
 import { Search } from '@mui/icons-material'
-import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { Client } from '@polar-sh/client'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
-import { useState } from 'react'
-import DateRangePicker from '../Metrics/DateRangePicker'
-import IntervalPicker from '../Metrics/IntervalPicker'
-
-const mockedMeters = (organizationId: string): schemas['Meter'][] => [
-  {
-    id: '1',
-    name: 'CPU',
-    filter: {
-      conjunction: 'and',
-      clauses: [],
-    },
-    aggregation: {
-      func: 'sum',
-      property: 'value',
-    },
-    metadata: {},
-    created_at: '2021-01-01',
-    modified_at: '2021-01-01',
-    organization_id: organizationId,
-  },
-  {
-    id: '2',
-    name: 'Memory',
-    filter: {
-      conjunction: 'and',
-      clauses: [],
-    },
-    aggregation: {
-      func: 'sum',
-      property: 'value',
-    },
-    metadata: {},
-    created_at: '2021-01-01',
-    modified_at: '2021-01-01',
-    organization_id: organizationId,
-  },
-  {
-    id: '3',
-    name: 'Storage',
-    filter: {
-      conjunction: 'and',
-      clauses: [],
-    },
-    aggregation: {
-      func: 'sum',
-      property: 'value',
-    },
-    metadata: {},
-    created_at: '2021-01-01',
-    modified_at: '2021-01-01',
-    organization_id: organizationId,
-  },
-]
-
-const mockedEvents = (organizationId: string): schemas['Event'][] => [
-  {
-    id: '1',
-    organization_id: organizationId,
-    timestamp: '2021-01-01',
-    metadata: {
-      value: 100,
-    },
-    name: 'CPU',
-    source: 'system',
-    customer_id: null,
-    customer: null,
-    external_customer_id: null,
-  },
-  {
-    id: '2',
-    organization_id: organizationId,
-    timestamp: '2021-01-02',
-    metadata: {
-      value: 200,
-    },
-    name: 'CPU',
-    source: 'system',
-    customer_id: null,
-    customer: null,
-    external_customer_id: null,
-  },
-  {
-    id: '3',
-    organization_id: organizationId,
-    timestamp: '2021-01-03',
-    metadata: { value: 130 },
-    name: 'CPU',
-    source: 'system',
-    customer_id: null,
-    customer: null,
-    external_customer_id: null,
-  },
-]
-
-const mockedAlerts = (organizationId: string) => [
-  {
-    id: '1',
-    organization_id: organizationId,
-    meter: mockedMeters(organizationId)[0],
-    threshold: 100,
-  },
-  {
-    id: '2',
-    organization_id: organizationId,
-    meter: mockedMeters(organizationId)[1],
-    threshold: 200,
-  },
-]
+import { useMemo, useState } from 'react'
+import FormattedUnits from '../Meter/FormattedUnits'
 
 export interface CustomerUsageProps {
-  organizationId: string
+  api: Client
 }
 
-export const CustomerUsage = ({ organizationId }: CustomerUsageProps) => {
-  const [interval, setInterval] = useState<
-    'hour' | 'day' | 'week' | 'month' | 'year'
-  >('week')
-  const [dateRange, setDateRange] = useState({
-    from: new Date(),
-    to: new Date(),
-  })
+export const CustomerUsage = ({ api }: CustomerUsageProps) => {
+  const [query, setQuery] = useState<string | null>(null)
+  const { data, isLoading } = useCustomerCustomerMeters(api, { query })
+  const customerMeters = useMemo(() => data?.items ?? [], [data])
 
   return (
     <div className="flex flex-col">
@@ -143,26 +30,18 @@ export const CustomerUsage = ({ organizationId }: CustomerUsageProps) => {
           <h3 className="text-2xl">Usage</h3>
           <TabsList>
             <TabsTrigger value="meters">Meters</TabsTrigger>
-            <TabsTrigger value="alerts">Alerts</TabsTrigger>
+            {/* <TabsTrigger value="alerts">Alerts</TabsTrigger> */}
           </TabsList>
         </div>
         <TabsContent className="flex flex-col gap-y-12 pt-8" value="meters">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col items-center gap-4 lg:flex-row">
-              <div className="w-full">
+              <div className="w-full lg:w-1/3">
                 <Input
                   preSlot={<Search fontSize="inherit" />}
                   placeholder="Search Usage Meter"
-                />
-              </div>
-              <div className="w-full lg:w-auto">
-                <IntervalPicker interval={interval} onChange={setInterval} />
-              </div>
-              <div className="w-full lg:w-auto">
-                <DateRangePicker
-                  date={dateRange}
-                  onDateChange={setDateRange}
-                  className="w-full"
+                  value={query || ''}
+                  onChange={(e) => setQuery(e.target.value)}
                 />
               </div>
             </div>
@@ -171,12 +50,16 @@ export const CustomerUsage = ({ organizationId }: CustomerUsageProps) => {
           <div className="flex flex-col gap-6">
             <h3 className="text-xl">Overview</h3>
             <DataTable
-              isLoading={false}
+              isLoading={isLoading}
               columns={[
                 {
                   header: 'Name',
-                  accessorKey: 'name',
-                  cell: ({ row }) => {
+                  accessorKey: 'meter_name',
+                  cell: ({
+                    row: {
+                      original: { meter },
+                    },
+                  }) => {
                     return (
                       <div className="flex items-center gap-2">
                         <div className="relative h-3 w-3">
@@ -191,74 +74,58 @@ export const CustomerUsage = ({ organizationId }: CustomerUsageProps) => {
                             }}
                           />
                         </div>
-                        <span>{row.original.name}</span>
+                        <span>{meter.name}</span>
                       </div>
                     )
                   },
                 },
                 {
-                  header: 'Value',
-                  accessorKey: 'value',
-                  cell: () => {
-                    return (
-                      <span>
-                        {computeCumulativeValue(
-                          {
-                            slug: 'quantity',
-                            display_name: 'Quantity',
-                            type: 'scalar',
-                          },
-                          mockedEvents(organizationId).map((e) =>
-                            Number(e.metadata.value),
-                          ) ?? [],
-                        )}
-                      </span>
-                    )
+                  header: 'Consumed',
+                  accessorKey: 'consumed_units',
+                  cell: ({
+                    row: {
+                      original: { consumed_units },
+                    },
+                  }) => {
+                    return <FormattedUnits value={consumed_units} />
                   },
                 },
                 {
-                  header: 'Included',
-                  accessorKey: 'included',
-                  cell: () => {
-                    return (
-                      <span>
-                        {' '}
-                        {computeCumulativeValue(
-                          {
-                            slug: 'quantity',
-                            display_name: 'Quantity',
-                            type: 'scalar',
-                          },
-                          mockedEvents(organizationId).map((e) =>
-                            Number(e.metadata.value),
-                          ) ?? [],
-                        )}{' '}
-                        / 20K
-                      </span>
-                    )
+                  header: 'Credited',
+                  accessorKey: 'credited_units',
+                  cell: ({
+                    row: {
+                      original: { credited_units },
+                    },
+                  }) => {
+                    return <FormattedUnits value={credited_units} />
                   },
                 },
                 {
-                  header: 'Overage',
-                  accessorKey: 'overage',
-                  cell: () => {
-                    return <span>$0.00</span>
+                  header: 'Balance',
+                  accessorKey: 'balance',
+                  cell: ({
+                    row: {
+                      original: { balance },
+                    },
+                  }) => {
+                    return <FormattedUnits value={balance} />
                   },
                 },
               ]}
-              data={mockedMeters(organizationId)}
+              data={customerMeters}
             />
           </div>
 
-          {/* {mockedMeters(organizationId).map((meter) => (
+          {/* {customerMeters.map((customerMeter) => (
             <CustomerMeter
-              key={meter.id}
-              meter={meter}
+              key={customerMeter.id}
+              customerMeter={customerMeter}
               data={{ quantities: [], total: 0 }}
             />
           ))} */}
         </TabsContent>
-        <TabsContent value="alerts" className="flex flex-col gap-y-12">
+        {/* <TabsContent value="alerts" className="flex flex-col gap-y-12">
           <DataTable
             isLoading={false}
             columns={[
@@ -314,7 +181,7 @@ export const CustomerUsage = ({ organizationId }: CustomerUsageProps) => {
             data={mockedAlerts(organizationId)}
           />
           <Button className="self-start">Create Alert</Button>
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
     </div>
   )

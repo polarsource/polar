@@ -7,7 +7,9 @@ import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import Pagination from '@/components/Pagination/Pagination'
+import Spinner from '@/components/Shared/Spinner'
 import { useEventNames, useEvents } from '@/hooks/queries/events'
+import { useInViewport } from '@/hooks/utils'
 
 import {
   AddOutlined,
@@ -42,7 +44,7 @@ import {
   parseAsStringLiteral,
   useQueryState,
 } from 'nuqs'
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface DatePresetDropdownProps {
@@ -123,8 +125,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     parseAsStringLiteral([
       'last_seen',
       '-last_seen',
-      'events_count',
-      '-events_count',
+      'occurrences',
+      '-occurrences',
     ] as const).withDefault('-last_seen'),
   )
   const [query, setQuery] = useQueryState('query', parseAsString)
@@ -151,10 +153,15 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     hide: hideEventCreationGuide,
   } = useModal()
 
-  const { data: eventNames } = useEventNames(organization.id, {
+  const { data, fetchNextPage, hasNextPage } = useEventNames(organization.id, {
     query,
     sorting: [sorting],
   })
+
+  const eventNames = useMemo(
+    () => data?.pages.flatMap((page) => page.items) ?? [],
+    [data],
+  )
 
   const eventParameters = useMemo(() => {
     return selectedEventName
@@ -186,6 +193,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       to: endDate,
     }
   }, [startDate, endDate])
+
+  const { ref: loadingRef, inViewport } = useInViewport<HTMLDivElement>()
+
+  useEffect(() => {
+    if (inViewport && hasNextPage) {
+      fetchNextPage()
+    }
+  }, [inViewport, hasNextPage, fetchNextPage])
 
   return (
     <DashboardBody
@@ -237,7 +252,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             />
           </div>
           <div className="dark:divide-polar-800 flex h-full flex-grow flex-col divide-y divide-gray-50 overflow-y-auto">
-            {eventNames?.map((eventName) => (
+            {eventNames.map((eventName) => (
               <div
                 key={eventName.name}
                 onClick={() => setSelectedEventName(eventName.name)}
@@ -253,13 +268,21 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                     <div className="dark:text-polar-500 text-sm text-gray-500">
                       {new Intl.NumberFormat('en-US', {
                         notation: 'compact',
-                      }).format(eventName.events_count)}{' '}
+                      }).format(eventName.occurrences)}{' '}
                       Ingested Events
                     </div>
                   </div>
                 </div>
               </div>
             ))}
+            {hasNextPage && (
+              <div
+                ref={loadingRef}
+                className="flex w-full items-center justify-center py-8"
+              >
+                <Spinner />
+              </div>
+            )}
           </div>
           <Modal
             isShown={isEventCreationGuideShown}

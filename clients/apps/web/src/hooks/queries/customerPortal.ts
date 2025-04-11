@@ -286,3 +286,20 @@ export const useCustomerUncancelSubscription = (api: Client) =>
       })
     },
   })
+
+export const useCustomerCustomerMeters = (
+  api: Client,
+  parameters?: operations['customer_portal:customer_meters:list']['parameters']['query'],
+) =>
+  useQuery({
+    queryKey: ['customer_customer_meters', { parameters }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/meters/', {
+          params: {
+            query: parameters || {},
+          },
+        }),
+      ),
+    retry: defaultRetry,
+  })

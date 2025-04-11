@@ -55,7 +55,7 @@ export const useEventNames = (
   organizationId: string,
   parameters?: operations['events:list_names']['parameters']['query'],
 ) => {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['eventNames', { organizationId, ...(parameters || {}) }],
     queryFn: () =>
       unwrap(
@@ -65,5 +65,17 @@ export const useEventNames = (
           },
         }),
       ),
+    retry: defaultRetry,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+      if (
+        lastPageParam === lastPage.pagination.max_page ||
+        lastPage.items.length === 0
+      ) {
+        return null
+      }
+
+      return lastPageParam + 1
+    },
   })
 }

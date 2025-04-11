@@ -11356,10 +11356,10 @@ export interface components {
              */
             name: string;
             /**
-             * Events Count
+             * Occurrences
              * @description Number of times the event has occurred.
              */
-            events_count: number;
+            occurrences: number;
             /**
              * First Seen
              * Format: date-time
@@ -11377,7 +11377,7 @@ export interface components {
          * EventNamesSortProperty
          * @enum {string}
          */
-        EventNamesSortProperty: "events_count" | "-events_count" | "first_seen" | "-first_seen" | "last_seen" | "-last_seen";
+        EventNamesSortProperty: "name" | "-name" | "occurrences" | "-occurrences" | "first_seen" | "-first_seen" | "last_seen" | "-last_seen";
         /**
          * EventSortProperty
          * @enum {string}
@@ -12366,6 +12366,12 @@ export interface components {
         ListResource_DownloadableRead_: {
             /** Items */
             items: components["schemas"]["DownloadableRead"][];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** ListResource[EventName] */
+        ListResource_EventName_: {
+            /** Items */
+            items: components["schemas"]["EventName"][];
             pagination: components["schemas"]["Pagination"];
         };
         /** ListResource[Event] */
@@ -25329,7 +25335,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EventName"][];
+                    "application/json": components["schemas"]["ListResource_EventName_"];
                 };
             };
             /** @description Validation Error */
@@ -26960,7 +26966,7 @@ export const discountSortPropertyValues: ReadonlyArray<components["schemas"]["Di
 export const discountTypeValues: ReadonlyArray<components["schemas"]["DiscountType"]> = ["fixed", "percentage"];
 export const downloadableFileCreateServiceValues: ReadonlyArray<components["schemas"]["DownloadableFileCreate"]["service"]> = ["downloadable"];
 export const downloadableFileReadServiceValues: ReadonlyArray<components["schemas"]["DownloadableFileRead"]["service"]> = ["downloadable"];
-export const eventNamesSortPropertyValues: ReadonlyArray<components["schemas"]["EventNamesSortProperty"]> = ["events_count", "-events_count", "first_seen", "-first_seen", "last_seen", "-last_seen"];
+export const eventNamesSortPropertyValues: ReadonlyArray<components["schemas"]["EventNamesSortProperty"]> = ["name", "-name", "occurrences", "-occurrences", "first_seen", "-first_seen", "last_seen", "-last_seen"];
 export const eventSortPropertyValues: ReadonlyArray<components["schemas"]["EventSortProperty"]> = ["timestamp", "-timestamp"];
 export const eventSourceValues: ReadonlyArray<components["schemas"]["EventSource"]> = ["system", "user"];
 export const externalOrganizationSortPropertyValues: ReadonlyArray<components["schemas"]["ExternalOrganizationSortProperty"]> = ["created_at", "-created_at", "name", "-name"];

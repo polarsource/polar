@@ -3,10 +3,55 @@ title: "Event Ingestion"
 description: "Ingest events from your application"
 ---
 
-## Overview
+## Event Ingestion
 
-Polar has a powerful Usage Based Billing system that allows you to charge your customers based on the usage of your application.
+Polar's event ingestion service can be used to track events from your application.
+Combined with our usage based billing system, you can create powerful usage based billing models, with the underlying events as the source of truth.
 
-This is done by ingesting events from your application and then creating Meters that represent the usage of your application.
+## Ingest events using the Polar SDK
 
-## API
+To ingest events, you can use the Polar SDKs.
+
+### TypeScript Example
+
+```typescript
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+});
+
+async function run() {
+  const result = await polar.events.ingest({
+    events: [
+      {
+        name: "<value>",
+        organizationId: "1dbfc517-0bbf-4301-9ba8-555ca42b9737",
+        customerId: "<value>",
+        metadata: {
+          key: "value",
+        },
+      },
+      {
+        name: "<value>",
+        organizationId: "1dbfc517-0bbf-4301-9ba8-555ca42b9737",
+        externalCustomerId: "<id>",
+        metadata: {
+          key: "value",
+        },
+      },
+    ],
+  });
+
+  // Handle the result
+  console.log(result);
+}
+
+run();
+```
+
+## Ingestion Strategies
+
+To make it easier to ingest events, we have created a set of ingestion strategies for common event sources.
+
+Learn more about our [Ingestion Strategies](/features/usage-based-billing/ingestion-strategies).

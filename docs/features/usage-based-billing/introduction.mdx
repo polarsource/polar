@@ -1,0 +1,39 @@
+---
+title: "Introduction"
+description: "Usage based billing using ingested events"
+---
+
+## Overview
+
+Polar has a powerful Usage Based Billing infrastructure that allows you to charge your customers based on the usage of your application.
+
+This is done by ingesting events from your application and then creating Meters that represent the usage of your application.
+
+## Event Ingestion
+
+To ingest events from your application, you can use our [Event Ingestion API](/api-reference/events/ingest).
+
+## Meters
+
+Meters are the core of the Usage Based Billing system. They represent a specific unit of usage of your application.
+
+### Creating a Meter
+
+To create a Meter, you can use the [Create Meter API](/docs/api/meters#create-meter).
+
+## Usage Based Pricing
+
+Usage based pricing is a pricing model where you charge your customers based on the usage of your application.
+
+There are 4 different pricing models:
+
+- Unit Pricing
+- Volume Pricing
+
+### Unit Pricing
+
+Unit pricing is a simple pricing model where you charge a fixed amount for each unit of usage.
+
+### Volume Pricing
+
+Volume pricing is a pricing model where you charge a fixed amount for a certain volume of usage.

@@ -3,12 +3,9 @@ title: "Ingestion Strategies"
 description: "Ingestion strategies for Usage Based Billing"
 ---
 
-# @polar-sh/ingestion
+# Ingestion Strategies
 
 Polar offers an ingestion framework to work with Polar's event ingestion API.
-
-> [!WARNING]  
-> This SDK is still under development, and should not be used unless for development reasons. Polar's ingestion feature does still not have a UI.
 
 ## Strategies
 
@@ -18,7 +15,7 @@ Want to report events regarding Large Language Model usage, S3 file uploads or s
 
 Wrap any LLM model from the `@ai-sdk/*` library, to automatically fire prompt- & completion tokens used by every model call.
 
-```
+```bash
 pnpm add @polar-sh/ingestion ai @ai-sdk/openai
 ```
 
@@ -54,7 +51,7 @@ export async function POST(req: Request) {
 
 Wrap the official AWS S3 Client with our S3 Ingestion Strategy to automatically ingest bytes uploaded.
 
-```
+```bash
 pnpm add @polar-sh/ingestion @aws-sdk/client-s3
 ```
 
@@ -108,7 +105,7 @@ export async function POST(request: Request) {
 
 Wrap any Readable or Writable stream of choice to automatically ingest the bytes consumed.
 
-```
+```bash
 pnpm add @polar-sh/ingestion
 ```
 
@@ -141,7 +138,3 @@ export async function GET(request: Request) {
   }
 }
 ```
-
-## Usage Based Billing with Polar Ingestion
-
-Documentation coming soon.

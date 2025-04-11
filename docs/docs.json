@@ -35,6 +35,17 @@
             "pages": [
               "features/products",
               {
+                "group": "Usage Based Billing",
+                "pages": [
+                  "features/usage-based-billing/introduction",
+                  "features/usage-based-billing/event-ingestion",
+                  "features/usage-based-billing/ingestion-strategies",
+                  "features/usage-based-billing/meters",
+                  "features/usage-based-billing/credits",
+                  "features/usage-based-billing/billing"
+                ]
+              },
+              {
                 "group": "Benefits",
                 "pages": [
                   "features/benefits/introduction",
@@ -51,13 +62,6 @@
                   "features/checkout/links",
                   "features/checkout/embed",
                   "features/checkout/session"
-                ]
-              },
-              {
-                "group": "Usage Based Billing",
-                "pages": [
-                  "features/usage-based-billing/introduction",
-                  "features/usage-based-billing/event-ingestion"
                 ]
               },
               "features/discounts",

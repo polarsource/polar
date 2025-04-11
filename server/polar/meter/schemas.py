@@ -13,7 +13,7 @@ from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
 from polar.organization.schemas import OrganizationID
 
-_name_description = (
+NAME_DESCRIPTION = (
     "The name of the meter. Will be shown on customer's invoices and usage."
 )
 _filter_description = (
@@ -25,7 +25,7 @@ _aggregation_description = (
 
 
 class MeterCreate(Schema, MetadataInputMixin):
-    name: str = Field(..., description=_name_description, min_length=3)
+    name: str = Field(..., description=NAME_DESCRIPTION, min_length=3)
     filter: Filter = Field(..., description=_filter_description)
     aggregation: Aggregation = Field(..., description=_aggregation_description)
     organization_id: OrganizationID | None = Field(
@@ -38,13 +38,13 @@ class MeterCreate(Schema, MetadataInputMixin):
 
 
 class MeterUpdate(Schema, MetadataInputMixin):
-    name: str | None = Field(None, description=_name_description, min_length=3)
+    name: str | None = Field(None, description=NAME_DESCRIPTION, min_length=3)
     filter: Filter | None = Field(None, description=_filter_description)
     aggregation: Aggregation | None = Field(None, description=_aggregation_description)
 
 
 class Meter(IDSchema, TimestampedSchema, MetadataOutputMixin):
-    name: str = Field(..., description=_name_description)
+    name: str = Field(..., description=NAME_DESCRIPTION)
     filter: Filter = Field(..., description=_filter_description)
     aggregation: Aggregation = Field(..., description=_aggregation_description)
     organization_id: UUID4 = Field(

@@ -5,13 +5,11 @@ import {
   useCustomerBenefitGrants,
   useCustomerOrderInvoice,
 } from '@/hooks/queries'
-import { organizationPageLink } from '@/utils/nav'
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import Link from 'next/link'
 import { useCallback } from 'react'
 
 const CustomerPortalOrder = ({
@@ -68,25 +66,6 @@ const CustomerPortalOrder = ({
               >
                 Download Invoice
               </Button>
-              {organization &&
-                organization.profile_settings?.enabled &&
-                !order.product.is_archived && (
-                  <Link
-                    href={organizationPageLink(
-                      organization,
-                      `products/${order.product.id}`,
-                    )}
-                  >
-                    <Button
-                      size="lg"
-                      variant="ghost"
-                      fullWidth
-                      className={themingPreset.polar.buttonSecondary}
-                    >
-                      Go to Product
-                    </Button>
-                  </Link>
-                )}
             </div>
           </div>
 

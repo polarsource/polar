@@ -100,26 +100,14 @@ export const useDashboardRoutes = (
   org: schemas['Organization'],
   allowAll?: boolean,
 ): RouteWithActive[] => {
-  const posthog = usePostHog()
-
-  return useResolveRoutes(
-    (org) => dashboardRoutesList(org, posthog),
-    org,
-    allowAll,
-  )
+  return useResolveRoutes((org) => dashboardRoutesList(org), org, allowAll)
 }
 
 export const useGeneralRoutes = (
   org: schemas['Organization'],
   allowAll?: boolean,
 ): RouteWithActive[] => {
-  const posthog = usePostHog()
-
-  return useResolveRoutes(
-    (org) => generalRoutesList(org, posthog),
-    org,
-    allowAll,
-  )
+  return useResolveRoutes((org) => generalRoutesList(org), org, allowAll)
 }
 
 export const useOrganizationRoutes = (
@@ -143,10 +131,7 @@ export const usePersonalFinanceSubRoutes = (): SubRouteWithActive[] => {
 
 // internals below
 
-const generalRoutesList = (
-  org: schemas['Organization'],
-  posthog: PolarHog,
-): Route[] => [
+const generalRoutesList = (org: schemas['Organization']): Route[] => [
   {
     id: 'home',
     title: 'Home',
@@ -188,7 +173,7 @@ const generalRoutesList = (
     title: 'Usage Billing',
     icon: <DonutLargeOutlined fontSize="inherit" />,
     link: `/dashboard/${org.slug}/usage-billing`,
-    if: posthog?.isFeatureEnabled('usage_based_billing'),
+    if: org.feature_settings?.usage_based_billing_enabled,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org.slug}/usage-billing`)
     },
@@ -263,11 +248,8 @@ const generalRoutesList = (
   },
 ]
 
-const dashboardRoutesList = (
-  org: schemas['Organization'],
-  posthog: PolarHog,
-): Route[] => [
-  ...generalRoutesList(org, posthog),
+const dashboardRoutesList = (org: schemas['Organization']): Route[] => [
+  ...generalRoutesList(org),
   ...organizationRoutesList(org),
 ]
 

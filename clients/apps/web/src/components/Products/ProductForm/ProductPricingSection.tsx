@@ -1,6 +1,5 @@
 'use client'
 
-import { usePostHog } from '@/hooks/posthog'
 import { useMeters } from '@/hooks/queries/meters'
 import {
   isLegacyRecurringPrice,
@@ -304,8 +303,6 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   const amountType = watch(`prices.${index}.amount_type`)
   const recurringInterval = watch('recurring_interval')
 
-  const { isFeatureEnabled } = usePostHog()
-
   const prices = watch('prices')
   const staticPriceIndex = prices
     ? (prices as schemas['ProductPrice'][]).findIndex(isStaticPrice)
@@ -372,7 +369,8 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                       <SelectItem value="fixed">Fixed price</SelectItem>
                       <SelectItem value="custom">Pay what you want</SelectItem>
                       <SelectItem value="free">Free</SelectItem>
-                      {isFeatureEnabled('usage_based_billing') &&
+                      {organization.feature_settings
+                        ?.usage_based_billing_enabled &&
                         recurringInterval !== null && (
                           <SelectItem value="metered_unit">
                             Metered price
@@ -425,8 +423,6 @@ export const ProductPricingSection = ({
   update,
   compact,
 }: ProductPricingSectionProps) => {
-  const { isFeatureEnabled } = usePostHog()
-
   const {
     control,
     formState: { errors },
@@ -556,7 +552,7 @@ export const ProductPricingSection = ({
               </p>
             </ShadowBox>
           )}
-          {isFeatureEnabled('usage_based_billing') &&
+          {organization.feature_settings?.usage_based_billing_enabled &&
             recurringInterval !== null && (
               <Button
                 className="self-start"

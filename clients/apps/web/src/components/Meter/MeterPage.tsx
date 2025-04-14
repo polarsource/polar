@@ -73,7 +73,6 @@ export const MeterPage = ({
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
           <TabsTrigger value="customers">Customers</TabsTrigger>
-          <TabsTrigger value="alerts">Alerts</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="flex flex-col gap-y-12">
           {chartLoading ? (

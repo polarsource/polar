@@ -53,7 +53,7 @@ const MeterFilterInput: React.FC<{
     name: `${prefix}.clauses`,
   })
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-4">
       {/* To make the UI more digest, we don't allow to add single clause at the root level */}
       {prefix !== 'filter' && (
         <div className="flex justify-end gap-2">
@@ -234,7 +234,7 @@ const MeterFilterInput: React.FC<{
               })
             }
           >
-            Add condition group
+            Add Condition Group
           </Button>
         </div>
       )}

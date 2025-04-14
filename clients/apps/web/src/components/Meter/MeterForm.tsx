@@ -75,10 +75,17 @@ const MeterForm = () => {
 
       <FormItem>
         <FormLabel>Filters</FormLabel>
+        <FormDescription>
+          Specify how events are filtered before they are aggregated.
+        </FormDescription>
         <MeterFilterInput prefix="filter" />
       </FormItem>
       <FormItem>
         <FormLabel>Aggregation</FormLabel>
+        <FormDescription>
+          The function that will turn the filtered events into a single unit
+          value.
+        </FormDescription>
         <div className="flex flex-row items-center gap-x-4">
           <FormField
             control={control}

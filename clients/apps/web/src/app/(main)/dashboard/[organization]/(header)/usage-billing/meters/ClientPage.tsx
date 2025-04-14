@@ -1,7 +1,6 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { MeterCreationModal } from '@/components/Meter/MeterCreationModal'
 import { MeterPage } from '@/components/Meter/MeterPage'
 import { MeterUpdateModal } from '@/components/Meter/MeterUpdateModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
@@ -19,6 +18,7 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
+import Link from 'next/link'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -51,12 +51,6 @@ const ClientPage = ({
       query,
     },
   )
-
-  const {
-    isShown: isCreateMeterModalShown,
-    hide: hideCreateMeterModal,
-    show: showCreateMeterModal,
-  } = useModal()
 
   const {
     isShown: isEditMeterModalShown,
@@ -143,13 +137,13 @@ const ClientPage = ({
                   <ArrowDownward fontSize="small" />
                 )}
               </Button>
-              <Button
-                size="icon"
-                className="h-6 w-6"
-                onClick={showCreateMeterModal}
+              <Link
+                href={`/dashboard/${organization.slug}/usage-billing/meters/create`}
               >
-                <AddOutlined fontSize="small" />
-              </Button>
+                <Button size="icon" className="h-6 w-6">
+                  <AddOutlined fontSize="small" />
+                </Button>
+              </Link>
             </div>
           </div>
           <div className="flex flex-row items-center gap-3 px-4 py-2">
@@ -201,17 +195,6 @@ const ClientPage = ({
       {selectedMeter && (
         <MeterPage meter={selectedMeter} organization={organization} />
       )}
-
-      <InlineModal
-        isShown={isCreateMeterModalShown}
-        hide={hideCreateMeterModal}
-        modalContent={
-          <MeterCreationModal
-            hide={hideCreateMeterModal}
-            organization={organization}
-          />
-        }
-      />
 
       <InlineModal
         isShown={isEditMeterModalShown}

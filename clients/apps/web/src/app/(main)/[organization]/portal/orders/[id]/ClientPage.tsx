@@ -24,7 +24,6 @@ const ClientPage = ({
       api={api}
       order={order}
       themingPreset={themingPreset}
-      organization={organization}
     />
   )
 }

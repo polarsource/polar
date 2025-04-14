@@ -18,7 +18,7 @@ import {
   sortingStateToQueryParam,
 } from '@/utils/datatable'
 import { markdownOptionsJustText } from '@/utils/markdown'
-import { hasLegacyRecurringPrices } from '@/utils/product'
+import { hasLegacyRecurringPrices, isMeteredPrice } from '@/utils/product'
 import {
   AddOutlined,
   HiveOutlined,
@@ -29,6 +29,7 @@ import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import Pill from '@polar-sh/ui/components/atoms/Pill'
 import {
   Select,
   SelectContent,
@@ -273,6 +274,10 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
     }
   }, [updateProduct, product])
 
+  const isUsageBasedProduct = product.prices.some((price) =>
+    isMeteredPrice(price),
+  )
+
   return (
     <ListItem
       className="flex flex-row items-center justify-between gap-x-6"
@@ -313,6 +318,11 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
           </Tooltip>
         ) : (
           <>
+            {isUsageBasedProduct && (
+              <Pill color="green" className="px-3 py-1 text-xs">
+                Metered Pricing
+              </Pill>
+            )}
             <span className="text-sm leading-snug">
               {hasLegacyRecurringPrices(product) ? (
                 <LegacyRecurringProductPrices product={product} />

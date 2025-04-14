@@ -12671,6 +12671,12 @@ export interface components {
              * @default false
              */
             issue_funding_enabled: boolean;
+            /**
+             * Usage Based Billing Enabled
+             * @description If this organization has usage-based billing enabled
+             * @default false
+             */
+            usage_based_billing_enabled: boolean;
         };
         /** OrganizationMember */
         OrganizationMember: {
@@ -21728,6 +21734,8 @@ export interface operations {
                 customer_id?: string | string[] | null;
                 /** @description Filter by external customer ID. */
                 external_customer_id?: string | string[] | null;
+                /** @description Filter by event source. */
+                source?: components["schemas"]["EventSource"] | components["schemas"]["EventSource"][] | null;
                 /** @description Query to filter event names. */
                 query?: string | null;
                 /** @description Page number, defaults to 1. */

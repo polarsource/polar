@@ -21492,6 +21492,8 @@ export interface operations {
     "events:list": {
         parameters: {
             query?: {
+                /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause.  */
+                filter?: string | null;
                 /** @description Filter events after this timestamp. */
                 start_timestamp?: string | null;
                 /** @description Filter events before this timestamp. */

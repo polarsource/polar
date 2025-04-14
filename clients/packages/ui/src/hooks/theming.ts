@@ -3,16 +3,28 @@ export type ThemePreset = 'polar' | 'midday'
 export interface PolarThemingPresetProps {
   input: string
   button: string
+  buttonSecondary: string
   checkbox: string
   dropdown: string
   dropdownContent: string
   dropdownItem: string
+  list: string
+  listItem: string
+  well: string
+  wellSecondary: string
+  table: string
+  tableHeader: string
   checkoutWrapper: string
   checkoutInnerWrapper: string
   checkoutInfoWrapper: string
   checkoutCardWrapper: string
   checkoutProductSwitch: string
   checkoutProductSwitchSelected: string
+  customerPortalWrapper: string
+  customerPortalHeader: string
+  customerPortalNavigationItem: string
+  customerPortalNavigationItemActive: string
+  customerPortalSubscriptionCard: string
 }
 
 export type StripeThemingPresetProps = Record<string, unknown>
@@ -109,10 +121,17 @@ export const useThemePreset = (
         polar: {
           input: 'bg-white shadow-sm',
           button: '',
+          buttonSecondary: '',
           dropdown: '',
           dropdownContent: '',
           dropdownItem: '',
           checkbox: '',
+          list: '',
+          listItem: '',
+          well: '',
+          wellSecondary: '',
+          table: '',
+          tableHeader: '',
           checkoutWrapper:
             'md:dark:bg-polar-950 md:bg-gray-100 dark:bg-polar-900 bg-white dark:text-white',
           checkoutInnerWrapper:
@@ -123,6 +142,12 @@ export const useThemePreset = (
           checkoutProductSwitch:
             'rounded-2xl md:shadow-none shadow-sm hover:border-blue-500 dark:hover:border-blue-500 divide-y divide-gray-200 dark:divide-polar-700 md:bg-white dark:md:bg-polar-950',
           checkoutProductSwitchSelected: 'border-blue-500 dark:border-blue-500',
+          customerPortalWrapper: '',
+          customerPortalHeader: 'dark:bg-polar-900 bg-gray-50',
+          customerPortalNavigationItem: 'rounded-xl',
+          customerPortalNavigationItemActive:
+            'dark:bg-polar-800 dark:border-polar-700 bg-gray-100 text-black dark:text-white',
+          customerPortalSubscriptionCard: '',
         },
       }
     case 'midday':
@@ -202,11 +227,20 @@ export const useThemePreset = (
           input: 'rounded-none bg-[#1d1d1d] dark:bg-[#1d1d1d] border-none',
           button:
             'rounded-none bg-white dark:bg-white text-black dark:text-black',
+          buttonSecondary:
+            'rounded-none dark:bg-[#2C2C2C] dark:text-white dark:hover:bg-[#2C2C2C]',
           dropdown:
             'bg-[#1d1d1d] dark:bg-[#1d1d1d] border-none rounded-none hover:bg-[rgba(255,255,255,.1)] dark:hover:bg-[rgba(255,255,255,.1)]',
           dropdownContent: 'bg-[#1d1d1d] dark:bg-[#1d1d1d] !rounded-none',
           checkbox: 'rounded-none',
           dropdownItem: '!rounded-none',
+          list: '!rounded-none',
+          listItem: '!rounded-none',
+          well: '!rounded-none dark:!bg-[#1d1d1d]',
+          wellSecondary:
+            'border !rounded-none dark:border-[#2c2c2c] dark:!bg-transparent',
+          table: '!rounded-none dark:border-[#2c2c2c]',
+          tableHeader: 'dark:bg-[#1d1d1d] dark:!text-[#878787]',
           checkoutWrapper:
             'bg-[#121212] dark:bg-[#121212] md:bg-[#0c0c0c] md:dark:bg-[#0c0c0c] text-white',
           checkoutInnerWrapper:
@@ -218,6 +252,13 @@ export const useThemePreset = (
             '!rounded-none bg-[#1d1d1d] hover:bg-[#ddd] divide-y divide-gray-500 dark:divide-[#2c2c2c] dark:hover:text-black',
           checkoutProductSwitchSelected:
             'bg-white text-black dark:divide-[#ccc]',
+          customerPortalWrapper: 'dark:bg-[#121212]',
+          customerPortalHeader: 'dark:bg-[#0c0c0c]',
+          customerPortalNavigationItem:
+            'hover:!bg-transparent hover:!text-white',
+          customerPortalNavigationItemActive:
+            'dark:!bg-[#2c2c2c] dark:!text-white',
+          customerPortalSubscriptionCard: '',
         },
       }
   }

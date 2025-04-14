@@ -65,7 +65,7 @@ export const MeterUpdateModal = ({
             onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-y-6"
           >
-            <MeterForm update={true} />
+            <MeterForm />
             <div className="flex flex-row items-center gap-4">
               <Button type="submit">Update Meter</Button>
               <Button variant="secondary" onClick={hide}>

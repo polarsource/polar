@@ -89,7 +89,7 @@ const ClientPage = ({
       title={
         selectedMeter ? (
           <div className="flex flex-col gap-y-4">
-            <h2 className="text-lg">{selectedMeter.name}</h2>
+            <h2 className="text-2xl">{selectedMeter.name}</h2>
             <div className="flex flex-row items-center gap-x-2">
               <Status
                 className="bg-emerald-50 capitalize text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500"

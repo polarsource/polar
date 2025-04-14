@@ -204,18 +204,26 @@ const generalRoutesList = (
     if: true,
   },
   {
-    id: 'meters',
-    title: 'Meters',
+    id: 'usage-billing',
+    title: 'Usage Billing',
     icon: <DonutLargeOutlined fontSize="inherit" />,
-    link: `/dashboard/${org.slug}/meters`,
+    link: `/dashboard/${org.slug}/usage-billing/meters`,
     if: posthog?.isFeatureEnabled('usage_based_billing'),
-  },
-  {
-    id: 'events',
-    title: 'Events',
-    icon: <StreamOutlined fontSize="inherit" />,
-    link: `/dashboard/${org.slug}/events`,
-    if: posthog?.isFeatureEnabled('usage_based_billing'),
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/dashboard/${org.slug}/usage-billing`)
+    },
+    subs: [
+      {
+        title: 'Meters',
+        link: `/dashboard/${org.slug}/usage-billing/meters`,
+        icon: <DonutLargeOutlined fontSize="inherit" />,
+      },
+      {
+        title: 'Events',
+        link: `/dashboard/${org.slug}/usage-billing/events`,
+        icon: <StreamOutlined fontSize="inherit" />,
+      },
+    ],
   },
   {
     id: 'customers',

@@ -163,6 +163,26 @@ const MeterFilterInput: React.FC<{
                               {...field}
                               value={field.value || ''}
                               autoComplete="off"
+                              onChange={(e) => {
+                                const val = e.target.value
+                                // Try parsing as float
+                                const floatVal = parseFloat(val)
+                                if (!isNaN(floatVal)) {
+                                  field.onChange(floatVal)
+                                  return
+                                }
+                                // Try parsing as boolean
+                                if (val.toLowerCase() === 'true') {
+                                  field.onChange(true)
+                                  return
+                                }
+                                if (val.toLowerCase() === 'false') {
+                                  field.onChange(false)
+                                  return
+                                }
+                                // Fallback to string
+                                field.onChange(val)
+                              }}
                             />
                           </FormControl>
                           <FormMessage />

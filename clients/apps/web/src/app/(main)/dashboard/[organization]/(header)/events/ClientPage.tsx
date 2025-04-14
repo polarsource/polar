@@ -17,7 +17,7 @@ import {
   ArrowUpward,
   Search,
 } from '@mui/icons-material'
-import { schemas } from '@polar-sh/client'
+import { operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
@@ -163,7 +163,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     [data],
   )
 
-  const eventParameters = useMemo(() => {
+  const eventParameters = useMemo(():
+    | operations['events:list']['parameters']['query']
+    | undefined => {
     return selectedEventName
       ? {
           name: [selectedEventName],
@@ -171,6 +173,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           limit: PAGE_SIZE,
           start_timestamp: startDate.toISOString(),
           end_timestamp: endDate.toISOString(),
+          source: 'user',
         }
       : undefined
   }, [selectedEventName, currentPage, startDate, endDate])

@@ -69,7 +69,7 @@ services:
       - fromGroup: stripe-production
       - fromGroup: logfire-server
 
-  # Workers
+  # Worker
   - type: web # Use a web service to allow health checks
     name: worker
     runtime: image
@@ -80,7 +80,7 @@ services:
           name: Registry Credentials (by fvoron)
     plan: standard
     dockerCommand: uv run supervisord -c supervisord.worker.conf
-    healthCheckPath: /main/healthz
+    healthCheckPath: /healthz
     region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions
@@ -122,58 +122,6 @@ services:
       - fromGroup: backend-production
       - fromGroup: stripe-production
       - fromGroup: logfire-worker
-
-  - type: web # Use a web service to allow health checks
-    name: worker-github
-    runtime: image
-    image:
-      url: ghcr.io/polarsource/polar:latest
-      creds:
-        fromRegistryCreds:
-          name: Registry Credentials (by fvoron)
-    plan: standard
-    dockerCommand: uv run supervisord -c supervisord.worker_github.conf
-    healthCheckPath: /github/healthz
-    region: ohio
-    numInstances: 1
-    autoDeploy: false # deploys are triggered by github actions
-    envVars:
-      - key: POLAR_POSTGRES_DATABASE
-        fromDatabase:
-          name: db
-          property: database
-      - key: POLAR_POSTGRES_HOST
-        fromDatabase:
-          name: db
-          property: host
-      - key: POLAR_POSTGRES_PORT
-        fromDatabase:
-          name: db
-          property: port
-      - key: POLAR_POSTGRES_PWD
-        fromDatabase:
-          name: db
-          property: password
-      - key: POLAR_POSTGRES_USER
-        fromDatabase:
-          name: db
-          property: user
-      - key: POLAR_REDIS_HOST
-        fromService:
-          type: redis
-          name: redis
-          property: host
-      - key: POLAR_REDIS_PORT
-        fromService:
-          type: redis
-          name: redis
-          property: port
-      - key: POLAR_REDIS_DB
-        value: 0
-      - fromGroup: google-production
-      - fromGroup: github-production
-      - fromGroup: backend-production
-      - fromGroup: stripe-production
 
   - type: redis
     name: redis
@@ -248,7 +196,7 @@ services:
       - fromGroup: backend-sandbox
       - fromGroup: stripe-sandbox
 
-  # Workers
+  # Worker
   - type: web # Use a web service to allow health checks
     name: worker-sandbox
     runtime: image
@@ -259,57 +207,7 @@ services:
           name: Registry Credentials (by fvoron)
     plan: standard
     dockerCommand: uv run supervisord -c supervisord.worker.conf
-    healthCheckPath: /main/healthz
-    region: ohio
-    numInstances: 1
-    autoDeploy: false # deploys are triggered by github actions
-    envVars:
-      - key: POLAR_POSTGRES_DATABASE
-        value: polar_sandbox
-      - key: POLAR_POSTGRES_HOST
-        fromDatabase:
-          name: db
-          property: host
-      - key: POLAR_POSTGRES_PORT
-        fromDatabase:
-          name: db
-          property: port
-      - key: POLAR_POSTGRES_PWD
-        fromDatabase:
-          name: db
-          property: password
-      - key: POLAR_POSTGRES_USER
-        fromDatabase:
-          name: db
-          property: user
-      - key: POLAR_REDIS_HOST
-        fromService:
-          type: redis
-          name: redis
-          property: host
-      - key: POLAR_REDIS_PORT
-        fromService:
-          type: redis
-          name: redis
-          property: port
-      - key: POLAR_REDIS_DB
-        value: 1
-      - fromGroup: google-sandbox
-      - fromGroup: github-sandbox
-      - fromGroup: backend-sandbox
-      - fromGroup: stripe-sandbox
-
-  - type: web # Use a web service to allow health checks
-    name: worker-github-sandbox
-    runtime: image
-    image:
-      url: ghcr.io/polarsource/polar:latest
-      creds:
-        fromRegistryCreds:
-          name: Registry Credentials (by fvoron)
-    plan: standard
-    dockerCommand: uv run supervisord -c supervisord.worker_github.conf
-    healthCheckPath: /github/healthz
+    healthCheckPath: /healthz
     region: ohio
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions
@@ -398,12 +296,6 @@ envVarGroups:
         value: https://polar.sh
       - key: POLAR_CHECKOUT_BASE_URL
         value: https://buy.polar.sh/{client_secret}
-      - key: POLAR_GITHUB_APP_NAMESPACE
-        value: polar-sh
-      - key: POLAR_GITHUB_BADGE_EMBED
-        value: 1
-      - key: POLAR_GITHUB_POLAR_USER_ACCESS_TOKEN
-        sync: false
       - key: POLAR_JWKS
         value: /etc/secrets/jwks.json
       - key: POLAR_LOG_LEVEL
@@ -448,12 +340,6 @@ envVarGroups:
 
   - name: github-production
     envVars:
-      - key: POLAR_GITHUB_APP_IDENTIFIER
-        sync: false
-      - key: POLAR_GITHUB_APP_PRIVATE_KEY
-        sync: false
-      - key: POLAR_GITHUB_APP_WEBHOOK_SECRET
-        sync: false
       - key: POLAR_GITHUB_CLIENT_ID
         sync: false
       - key: POLAR_GITHUB_CLIENT_SECRET
@@ -517,12 +403,6 @@ envVarGroups:
         value: https://sandbox.polar.sh
       - key: POLAR_CHECKOUT_BASE_URL
         value: https://sandbox-api.polar.sh/v1/checkout-links/{client_secret}/redirect
-      - key: POLAR_GITHUB_APP_NAMESPACE
-        value: polar-sandbox
-      - key: POLAR_GITHUB_BADGE_EMBED
-        value: 1
-      - key: POLAR_GITHUB_POLAR_USER_ACCESS_TOKEN
-        sync: false
       - key: POLAR_JWKS
         value: /etc/secrets/jwks.json
       - key: POLAR_LOG_LEVEL
@@ -563,12 +443,6 @@ envVarGroups:
 
   - name: github-sandbox
     envVars:
-      - key: POLAR_GITHUB_APP_IDENTIFIER
-        sync: false
-      - key: POLAR_GITHUB_APP_PRIVATE_KEY
-        sync: false
-      - key: POLAR_GITHUB_APP_WEBHOOK_SECRET
-        sync: false
       - key: POLAR_GITHUB_CLIENT_ID
         sync: false
       - key: POLAR_GITHUB_CLIENT_SECRET

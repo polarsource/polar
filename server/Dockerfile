@@ -44,10 +44,10 @@ ENV UV_NO_SYNC=1
 WORKDIR /app/server
 
 RUN --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    apt-get update && apt-get install -y build-essential redis libpq-dev curl \
-    && uv sync --no-group dev --no-group backoffice --frozen \
-    && apt-get autoremove -y build-essential
+  --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+  apt-get update && apt-get install -y build-essential redis libpq-dev curl \
+  && uv sync --no-group dev --frozen \
+  && apt-get autoremove -y build-essential
 
 ADD . /app/server/
 

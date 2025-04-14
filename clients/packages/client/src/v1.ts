@@ -10156,6 +10156,8 @@ export interface components {
              * @description The name of the event.
              */
             name: string;
+            /** @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API. */
+            source: components["schemas"]["EventSource"];
             /**
              * Occurrences
              * @description Number of times the event has occurred.

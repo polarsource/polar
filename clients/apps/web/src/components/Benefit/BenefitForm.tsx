@@ -1,4 +1,3 @@
-import { usePostHog } from '@/hooks/posthog'
 import { useDiscordGuild } from '@/hooks/queries'
 import { getBotDiscordAuthorizeURL } from '@/utils/auth'
 import { enums, schemas } from '@polar-sh/client'
@@ -102,7 +101,7 @@ export const BenefitForm = ({
         }}
       />
 
-      {!update ? <BenefitTypeSelect /> : null}
+      {!update ? <BenefitTypeSelect organization={organization} /> : null}
       {type === 'custom' && <CustomBenefitForm update={update} />}
       {type === 'discord' && <DiscordBenefitForm />}
       {type === 'github_repository' && (
@@ -281,10 +280,12 @@ export const DiscordBenefitForm = () => {
   )
 }
 
-const BenefitTypeSelect = ({}) => {
+const BenefitTypeSelect = ({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) => {
   const { control } = useFormContext<schemas['BenefitCustomCreate']>()
-
-  const { isFeatureEnabled } = usePostHog()
 
   return (
     <FormField
@@ -307,7 +308,8 @@ const BenefitTypeSelect = ({}) => {
                     .filter(
                       (type) =>
                         type !== 'meter_credit' ||
-                        isFeatureEnabled('usage_based_billing'),
+                        organization.feature_settings
+                          ?.usage_based_billing_enabled,
                     )
                     .map((value) => (
                       <SelectItem key={value} value={value}>

@@ -1,6 +1,5 @@
 'use client'
 
-import { usePostHog } from '@/hooks/posthog'
 import { schemas } from '@polar-sh/client'
 import {
   Select,
@@ -42,14 +41,15 @@ export const Navigation = ({
   const router = useRouter()
   const currentPath = usePathname()
   const searchParams = useSearchParams()
-  const { isFeatureEnabled } = usePostHog()
 
   const buildPath = (path: string) => {
     return `${path}?${searchParams.toString()}`
   }
 
   const filteredLinks = links(organization).filter(({ label }) =>
-    label === 'Usage' ? isFeatureEnabled('usage_based_billing') : true,
+    label === 'Usage'
+      ? organization.feature_settings?.usage_based_billing_enabled
+      : true,
   )
 
   return (

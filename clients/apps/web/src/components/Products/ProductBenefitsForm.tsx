@@ -1,4 +1,3 @@
-import { usePostHog } from '@/hooks/posthog'
 import { useDeleteBenefit } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
@@ -177,8 +176,6 @@ const ProductBenefitsForm = ({
     searchParams?.get('create_benefit') === 'true',
   )
 
-  const { isFeatureEnabled } = usePostHog()
-
   const handleCheckedChange = useCallback(
     (benefit: schemas['Benefit']) => (checked: boolean) => {
       if (checked) {
@@ -203,7 +200,7 @@ const ProductBenefitsForm = ({
           .filter(
             (type) =>
               type !== 'meter_credit' ||
-              isFeatureEnabled('usage_based_billing'),
+              organization.feature_settings?.usage_based_billing_enabled,
           )
           .map((type) => (
             <BenefitsContainer

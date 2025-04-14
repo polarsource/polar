@@ -6,7 +6,6 @@ import MetricChart from '@/components/Metrics/MetricChart'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import Spinner from '@/components/Shared/Spinner'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
-import { usePostHog } from '@/hooks/posthog'
 import {
   ParsedMetricPeriod,
   useListSubscriptions,
@@ -141,16 +140,14 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     hide: hideEditCustomerModal,
   } = useModal()
 
-  const { isFeatureEnabled } = usePostHog()
-
   return (
     <Tabs defaultValue="overview" className="flex flex-col">
       <TabsList className="mb-8">
         <TabsTrigger value="overview">Overview</TabsTrigger>
-        {isFeatureEnabled('usage_based_billing') && (
+        {organization.feature_settings?.usage_based_billing_enabled && (
           <TabsTrigger value="usage">Usage</TabsTrigger>
         )}
-        {isFeatureEnabled('usage_based_billing') && (
+        {organization.feature_settings?.usage_based_billing_enabled && (
           <TabsTrigger value="events">Events</TabsTrigger>
         )}
       </TabsList>
@@ -417,7 +414,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           </ShadowBox>
         </div>
       </TabsContent>
-      {isFeatureEnabled('usage_based_billing') && (
+      {organization.feature_settings?.usage_based_billing_enabled && (
         <CustomerUsageView customer={customer} />
       )}
       <TabsContent value="events">

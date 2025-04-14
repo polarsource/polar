@@ -18,6 +18,7 @@ from polar.event.sorting import EventNamesSortProperty
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
+from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Customer, Organization, User, UserOrganization
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
@@ -70,6 +71,51 @@ class TestList:
 
         assert len(events) == 1
         assert count == 1
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_filter(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        event1 = await create_event(
+            save_fixture,
+            organization=organization,
+            timestamp=utc_now() - timedelta(days=1),
+            metadata={"tokens": 10},
+        )
+        event2 = await create_event(
+            save_fixture,
+            organization=organization,
+            timestamp=utc_now() + timedelta(days=1),
+            metadata={"tokens": 100},
+        )
+
+        events, count = await event_service.list(
+            session,
+            auth_subject,
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="tokens",
+                        operator=FilterOperator.gt,
+                        value=50,
+                    )
+                ],
+            ),
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert len(events) == 1
+        assert count == 1
+        assert events[0].id == event2.id
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

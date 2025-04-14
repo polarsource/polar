@@ -10,6 +10,7 @@ from polar.exceptions import PolarError, PolarRequestValidationError, Validation
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
+from polar.meter.filter import Filter
 from polar.meter.repository import MeterRepository
 from polar.models import Customer, Event, Organization, User, UserOrganization
 from polar.models.event import EventSource
@@ -36,6 +37,7 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
+        filter: Filter | None = None,
         start_timestamp: datetime | None = None,
         end_timestamp: datetime | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -52,6 +54,9 @@ class EventService:
     ) -> tuple[Sequence[Event], int]:
         repository = EventRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject)
+
+        if filter is not None:
+            statement = statement.where(filter.get_sql_clause(Event))
 
         if start_timestamp is not None:
             statement = statement.where(Event.timestamp > start_timestamp)

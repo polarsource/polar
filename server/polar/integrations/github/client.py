@@ -42,7 +42,6 @@ class ValidationFailed(UnexpectedStatusCode): ...
 
 
 class GitHubApp(StrEnum):
-    polar = "polar"
     repository_benefit = "repository_benefit"
 
 
@@ -195,72 +194,39 @@ def get_client(access_token: str) -> GitHub[TokenAuthStrategy]:
     return GitHub(access_token)
 
 
-def get_polar_client() -> GitHub[TokenAuthStrategy]:
-    """Instead of making anonymous requests, use the polar user's access token,
-    so we're at least allowed 5000 reqs/s
-    """
-    if not settings.GITHUB_POLAR_USER_ACCESS_TOKEN:
-        raise Exception("GITHUB_POLAR_USER_ACCESS_TOKEN is not configured")
-
-    return get_client(settings.GITHUB_POLAR_USER_ACCESS_TOKEN)
-
-
 def get_app_client(
-    redis: Redis, app: GitHubApp = GitHubApp.polar
+    redis: Redis, app: GitHubApp = GitHubApp.repository_benefit
 ) -> GitHub[AppAuthStrategy]:
-    if app == GitHubApp.polar:
-        return GitHub(
-            AppAuthStrategy(
-                app_id=settings.GITHUB_APP_IDENTIFIER,
-                private_key=settings.GITHUB_APP_PRIVATE_KEY,
-                client_id=settings.GITHUB_CLIENT_ID,
-                client_secret=settings.GITHUB_CLIENT_SECRET,
-            ),
-            http_cache=False,
-        )
-    elif app == GitHubApp.repository_benefit:
-        return GitHub(
-            AppAuthStrategy(
-                app_id=settings.GITHUB_REPOSITORY_BENEFITS_APP_IDENTIFIER,
-                private_key=settings.GITHUB_REPOSITORY_BENEFITS_APP_PRIVATE_KEY,
-                client_id=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_ID,
-                client_secret=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET,
-            ),
-            http_cache=False,
-        )
+    return GitHub(
+        AppAuthStrategy(
+            app_id=settings.GITHUB_REPOSITORY_BENEFITS_APP_IDENTIFIER,
+            private_key=settings.GITHUB_REPOSITORY_BENEFITS_APP_PRIVATE_KEY,
+            client_id=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_ID,
+            client_secret=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET,
+        ),
+        http_cache=False,
+    )
 
 
 def get_app_installation_client(
     installation_id: int,
     *,
     redis: Redis,
-    app: GitHubApp = GitHubApp.polar,
+    app: GitHubApp = GitHubApp.repository_benefit,
 ) -> GitHub[AppInstallationAuthStrategy]:
     if not installation_id:
         raise Exception("unable to create github client: no installation_id provided")
 
-    if app == GitHubApp.polar:
-        return GitHub(
-            AppInstallationAuthStrategy(
-                app_id=settings.GITHUB_APP_IDENTIFIER,
-                private_key=settings.GITHUB_APP_PRIVATE_KEY,
-                client_id=settings.GITHUB_CLIENT_ID,
-                client_secret=settings.GITHUB_CLIENT_SECRET,
-                installation_id=installation_id,
-            ),
-            http_cache=False,
-        )
-    elif app == GitHubApp.repository_benefit:
-        return GitHub(
-            AppInstallationAuthStrategy(
-                app_id=settings.GITHUB_REPOSITORY_BENEFITS_APP_IDENTIFIER,
-                private_key=settings.GITHUB_REPOSITORY_BENEFITS_APP_PRIVATE_KEY,
-                client_id=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_ID,
-                client_secret=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET,
-                installation_id=installation_id,
-            ),
-            http_cache=False,
-        )
+    return GitHub(
+        AppInstallationAuthStrategy(
+            app_id=settings.GITHUB_REPOSITORY_BENEFITS_APP_IDENTIFIER,
+            private_key=settings.GITHUB_REPOSITORY_BENEFITS_APP_PRIVATE_KEY,
+            client_id=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_ID,
+            client_secret=settings.GITHUB_REPOSITORY_BENEFITS_CLIENT_SECRET,
+            installation_id=installation_id,
+        ),
+        http_cache=False,
+    )
 
 
 __all__ = [

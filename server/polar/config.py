@@ -127,13 +127,8 @@ class Settings(BaseSettings):
     EMAIL_FROM_EMAIL_ADDRESS: str = "noreply@notifications.polar.sh"
 
     # Github App
-    GITHUB_APP_NAMESPACE: str = ""  # Unused
-    GITHUB_APP_IDENTIFIER: str = ""
-    GITHUB_APP_WEBHOOK_SECRET: str = ""
-    GITHUB_APP_PRIVATE_KEY: str = ""
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""
-    GITHUB_POLAR_USER_ACCESS_TOKEN: str | None = None
 
     # GitHub App for repository benefits
     GITHUB_REPOSITORY_BENEFITS_APP_NAMESPACE: str = ""
@@ -207,17 +202,11 @@ class Settings(BaseSettings):
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100
 
-    GITHUB_BADGE_EMBED: bool = False
-    GITHUB_BADGE_EMBED_DEFAULT_LABEL: str = "Fund"
-
     ACCOUNT_PAYOUT_DELAY: timedelta = timedelta(days=1)
     ACCOUNT_PAYOUT_MINIMUM_BALANCE: int = 1000
 
     PLATFORM_FEE_BASIS_POINTS: int = 400
     PLATFORM_FEE_FIXED: int = 40
-
-    # Default organization setting for minimum pledge amount ($20)
-    MINIMUM_ORG_PLEDGE_AMOUNT: int = 2000
 
     ORGANIZATION_SLUG_RESERVED_KEYWORDS: list[str] = [
         # Landing pages

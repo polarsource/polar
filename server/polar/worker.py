@@ -6,7 +6,7 @@ import random
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any, ParamSpec, TypeAlias, TypedDict, TypeVar, cast
 
 import logfire
@@ -72,9 +72,8 @@ class PolarWorkerContext(BaseModel):
         return ExecutionContext(is_during_installation=self.is_during_installation)
 
 
-class QueueName(Enum):
+class QueueName(StrEnum):
     default = "arq:queue"
-    github_crawl = "arq:queue:github_crawl"
 
 
 def get_redis_settings() -> RedisSettings:
@@ -87,7 +86,7 @@ def get_redis_settings() -> RedisSettings:
 class WorkerSettings:
     functions: list[Function] = []
     cron_jobs: list[CronJob] = []
-    queue_name: str = QueueName.default.value
+    queue_name: str = QueueName.default
     health_check_interval = settings.WORKER_HEALTH_CHECK_INTERVAL
     redis_settings = get_redis_settings()
 
@@ -155,30 +154,6 @@ class WorkerSettings:
         """
         job_exit_stack = ctx["job_exit_stack"]
         job_exit_stack.close()
-
-
-class WorkerSettingsGitHubCrawl(WorkerSettings):
-    queue_name: str = QueueName.github_crawl.value
-    functions: list[Function] = []
-    cron_jobs: list[CronJob] = []
-    health_check_interval = settings.WORKER_HEALTH_CHECK_INTERVAL
-    redis_settings = get_redis_settings()
-
-    @staticmethod
-    async def on_startup(ctx: WorkerContext) -> None:
-        return await WorkerSettings.on_startup(ctx)
-
-    @staticmethod
-    async def on_shutdown(ctx: WorkerContext) -> None:
-        return await WorkerSettings.on_shutdown(ctx)
-
-    @staticmethod
-    async def on_job_start(ctx: JobContext) -> None:
-        return await WorkerSettings.on_job_start(ctx)
-
-    @staticmethod
-    async def on_job_end(ctx: JobContext) -> None:
-        return await WorkerSettings.on_job_end(ctx)
 
 
 class CronTasksScheduler:
@@ -347,9 +322,7 @@ def task(
             max_tries=max_tries,
         )
 
-        # all tasks are registered on both workers
         WorkerSettings.functions.append(new_task)
-        WorkerSettingsGitHubCrawl.functions.append(new_task)
 
         if cron_trigger is not None:
             CronTasksScheduler.add_task(name, cron_trigger, cron_trigger_queue)
@@ -403,7 +376,6 @@ def compute_backoff(
 
 __all__ = [
     "WorkerSettings",
-    "WorkerSettingsGitHubCrawl",
     "task",
     "lifespan",
     "enqueue_job",

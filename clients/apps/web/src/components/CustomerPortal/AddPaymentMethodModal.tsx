@@ -14,7 +14,6 @@ import {
   type StripeElements,
   type StripeError,
 } from '@stripe/stripe-js'
-import { useTheme } from 'next-themes'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -31,22 +30,12 @@ export const AddPaymentMethodModal = ({
   hide,
   themingPreset,
 }: AddPaymentMethodModalProps) => {
-  const { resolvedTheme: theme } = useTheme()
   const stripePromise = useMemo(
     () => loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || ''),
     [],
   )
   const addPaymentMethod = useAddCustomerPaymentMethod(api)
   const [error, setError] = useState<string | null>(null)
-
-  const inputBoxShadow =
-    theme === 'dark'
-      ? 'none'
-      : 'rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px'
-  const focusBoxShadow =
-    theme === 'dark'
-      ? 'rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 71, 184, 0.4) 0px 0px 0px 3px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px'
-      : 'rgb(255, 255, 255) 0px 0px 0px 0px, rgb(204, 224, 255) 0px 0px 0px 3px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px'
 
   const [loading, setLoading] = useState(false)
   const handleSubmit = async (

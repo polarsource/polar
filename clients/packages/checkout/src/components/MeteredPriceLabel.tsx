@@ -7,9 +7,12 @@ interface MeteredPriceLabelProps {
 
 const MeteredPriceLabel: React.FC<MeteredPriceLabelProps> = ({ price }) => {
   return (
-    <div className="flex flex-row items-baseline">
-      {formatUnitAmount(Number.parseFloat(price.unitAmount), price.priceCurrency)}{' '}
-      <span className="text-[0.5em] text-gray-500"> / unit</span>
+    <div className="flex flex-row items-baseline gap-x-[.5em]">
+      {formatUnitAmount(
+        Number.parseFloat(price.unitAmount),
+        price.priceCurrency,
+      )}{' '}
+      <span className="text-[.75em] text-gray-500">/unit</span>
     </div>
   )
 }

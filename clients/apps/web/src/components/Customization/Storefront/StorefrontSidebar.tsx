@@ -222,28 +222,6 @@ export const StorefrontSidebar = ({
     [organization, setError, updateOrganization, reset],
   )
 
-  const toggleProfilePage = useCallback(
-    async (enabled: boolean) => {
-      const { data: org, error } = await updateOrganization.mutateAsync({
-        id: organization.id,
-        body: {},
-      })
-      if (error) {
-        toast({
-          title: 'Storefront Update Failed',
-          description: `Error updating storefront: ${error.detail}`,
-        })
-        return
-      }
-      toast({
-        title: 'Storefront Updated',
-        description: `Storefront is now ${enabled ? 'enabled' : 'disabled'}`,
-      })
-      reset(org)
-    },
-    [organization, updateOrganization, reset],
-  )
-
   const storefrontEnabled = false
   const storefrontURL = `${CONFIG.FRONTEND_BASE_URL}/${organization.slug}`
 
@@ -301,30 +279,6 @@ export const StorefrontSidebar = ({
           </>
         )}
       </div>
-      <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-6 p-6 lg:rounded-3xl">
-        <div className="flex flex-col gap-y-2">
-          <h3 className="text-sm">
-            {storefrontEnabled
-              ? 'Deactivate Storefront'
-              : 'Activate Storefront'}
-          </h3>
-          <p className="dark:text-polar-500 text-sm text-gray-500">
-            {storefrontEnabled
-              ? 'Disables the storefront and only allows checkouts via API and Checkout Links'
-              : 'Publish your very own Polar Storefront and drive traffic to your products'}
-          </p>
-        </div>
-        <Button
-          className="self-start"
-          onClick={() => toggleProfilePage(!storefrontEnabled)}
-          variant={storefrontEnabled ? 'destructive' : 'default'}
-          size="sm"
-          loading={updateOrganization.isPending}
-          disabled={updateOrganization.isPending}
-        >
-          {storefrontEnabled ? 'Deactivate Storefront' : 'Activate Storefront'}
-        </Button>
-      </ShadowBox>
     </StorefrontSidebarContentWrapper>
   )
 }

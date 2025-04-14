@@ -1,6 +1,5 @@
 from arq.worker import async_check_health
 from starlette.applications import Starlette
-from starlette.convertors import StringConvertor, register_url_convertor
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.routing import Route
@@ -11,24 +10,12 @@ from polar.worker import WorkerSettings
 configure_logging()
 
 
-async def arq_health_check(settings_cls: type[WorkerSettings]) -> bool:
-    exit_code = await async_check_health(settings_cls.redis_settings)
-    return exit_code == 0
-
-
-class WorkerParamConvertor(StringConvertor):
-    regex = "main"
-
-
-register_url_convertor("worker", WorkerParamConvertor())
-
-
 async def healthz(request: Request) -> Response:
-    worker = request.path_params["worker"]
-    if await arq_health_check(WorkerSettings):
+    exit_code = await async_check_health(WorkerSettings.redis_settings)
+    if exit_code == 0:
         return Response(status_code=200)
     else:
         return Response(status_code=503)
 
 
-app = Starlette(routes=[Route("/{worker:worker}/healthz", endpoint=healthz)])
+app = Starlette(routes=[Route("/healthz", endpoint=healthz)])

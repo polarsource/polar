@@ -18,7 +18,6 @@ from polar.worker import enqueue_job
 
 
 class PartialNotification(BaseModel):
-    issue_id: UUID | None = None
     pledge_id: UUID | None = None
     type: NotificationType
     payload: NotificationPayload
@@ -54,7 +53,6 @@ class NotificationsService:
         notification = Notification(
             user_id=user_id,
             type=notif.type,
-            issue_id=notif.issue_id,
             pledge_id=notif.pledge_id,
             payload=notif.payload.model_dump(mode="json"),
         )
@@ -88,7 +86,6 @@ class NotificationsService:
         notification = Notification(
             email_addr=email_addr,
             type=notif.type,
-            issue_id=notif.issue_id,
             pledge_id=notif.pledge_id,
             payload=notif.payload.model_dump(mode="json"),
         )

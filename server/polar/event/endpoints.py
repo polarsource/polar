@@ -1,11 +1,13 @@
 from fastapi import Depends, Query
-from pydantic import AwareDatetime
+from fastapi.exceptions import RequestValidationError
+from pydantic import AwareDatetime, ValidationError
 
 from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.meter.filter import Filter
 from polar.meter.schemas import MeterID
 from polar.models import Event
 from polar.models.event import EventSource
@@ -38,6 +40,13 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     metadata: MetadataQuery,
+    filter: str | None = Query(
+        None,
+        description=(
+            "Filter events following filter clauses. "
+            "JSON string following the same schema a meter filter clause. "
+        ),
+    ),
     start_timestamp: AwareDatetime | None = Query(
         None, description="Filter events after this timestamp."
     ),
@@ -67,9 +76,20 @@ async def list(
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[EventSchema]:
     """List events."""
+
+    # Manually parse the filter string to a Filter object as FastAPI does not
+    # support complex schemas in query parameters.
+    parsed_filter: Filter | None = None
+    if filter is not None:
+        try:
+            parsed_filter = Filter.parse_raw(filter)
+        except ValidationError as e:
+            raise RequestValidationError(e.errors()) from e
+
     results, count = await event_service.list(
         session,
         auth_subject,
+        filter=parsed_filter,
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
         organization_id=organization_id,

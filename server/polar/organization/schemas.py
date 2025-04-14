@@ -11,6 +11,8 @@ from pydantic import (
     StringConstraints,
     model_validator,
 )
+from pydantic.json_schema import SkipJsonSchema
+from pydantic.networks import HttpUrl
 
 from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
@@ -123,6 +125,38 @@ class OrganizationSocialLink(Schema):
         return data
 
 
+# Deprecated
+class OrganizationProfileSettings(Schema):
+    enabled: bool | None = Field(
+        None, description="If this organization has a profile enabled"
+    )
+    description: Annotated[
+        str | None,
+        Field(max_length=160, description="A description of the organization"),
+        EmptyStrToNoneValidator,
+    ] = None
+    featured_projects: list[UUID4] | None = Field(
+        None, description="A list of featured projects"
+    )
+    featured_organizations: list[UUID4] | None = Field(
+        None, description="A list of featured organizations"
+    )
+    links: list[HttpUrl] | None = Field(
+        None, description="A list of links associated with the organization"
+    )
+    subscribe: OrganizationSubscribePromoteSettings | None = Field(
+        OrganizationSubscribePromoteSettings(
+            promote=True,
+            show_count=True,
+            count_free=True,
+        ),
+        description="Subscription promotion settings",
+    )
+    accent_color: str | None = Field(
+        None, description="Accent color for the organization"
+    )
+
+
 # Public API
 class Organization(IDSchema, TimestampedSchema):
     id: OrganizationID
@@ -169,6 +203,15 @@ class Organization(IDSchema, TimestampedSchema):
     twitter_username: str | None = Field(
         ...,
         deprecated="Legacy attribute no longer in use. See `socials` instead.",
+    )
+
+    pledge_minimum_amount: SkipJsonSchema[int] = Field(0, deprecated=True)
+    pledge_badge_show_amount: SkipJsonSchema[bool] = Field(False, deprecated=True)
+    default_upfront_split_to_contributors: SkipJsonSchema[int | None] = Field(
+        None, deprecated=True
+    )
+    profile_settings: SkipJsonSchema[OrganizationProfileSettings | None] = Field(
+        None, deprecated=True
     )
 
 

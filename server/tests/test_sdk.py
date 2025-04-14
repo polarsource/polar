@@ -8,7 +8,7 @@ from polar_sdk import Polar
 
 from polar.auth.scope import Scope
 from polar.kit.utils import utc_now
-from polar.models import Benefit, Customer, Product, UserOrganization
+from polar.models import Benefit, Customer, Organization, Product, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_order, create_subscription
@@ -28,6 +28,15 @@ class TestSDK:
 
     Basically, we just run queries against our ASGI app to see if the SDK is able to parse the response without errors.
     """
+
+    async def test_get_organization(
+        self,
+        polar: Polar,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await polar.organizations.get_async(id=str(organization.id))
+        assert response is not None
 
     async def test_list_products(
         self,

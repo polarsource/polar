@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3000 --turbopack",
-    "build": "next build --turbopack",
-    "start": "next start --turbopack",
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start",
     "lint": "next lint",
     "storybook": "storybook dev -p 6006 --no-open",
     "build-storybook": "storybook build",

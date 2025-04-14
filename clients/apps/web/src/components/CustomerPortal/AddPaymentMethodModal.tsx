@@ -1,6 +1,7 @@
 import { useAddCustomerPaymentMethod } from '@/hooks/queries'
 import { type Client } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import {
   Elements,
   ElementsConsumer,
@@ -15,17 +16,20 @@ import {
 } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
 import { useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 export interface AddPaymentMethodModalProps {
   api: Client
   onPaymentMethodAdded: () => void
   hide: () => void
+  themingPreset: ThemingPresetProps
 }
 
 export const AddPaymentMethodModal = ({
   api,
   onPaymentMethodAdded,
   hide,
+  themingPreset,
 }: AddPaymentMethodModalProps) => {
   const { resolvedTheme: theme } = useTheme()
   const stripePromise = useMemo(
@@ -131,76 +135,7 @@ export const AddPaymentMethodModal = ({
           paymentMethodCreation: 'manual',
           setupFutureUsage: 'off_session',
           currency: 'usd',
-          appearance: {
-            theme: theme === 'dark' ? 'night' : 'stripe',
-            rules: {
-              '.Label': {
-                color: theme === 'dark' ? 'white' : 'black',
-                fontWeight: '500',
-                fontSize: '14px',
-                marginBottom: '8px',
-              },
-              '.PickerItem': {
-                padding: '12px',
-                backgroundColor: theme === 'dark' ? 'rgb(28 28 34)' : 'white',
-                color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
-                borderRadius: '9999px',
-                boxShadow: inputBoxShadow,
-                borderColor: 'transparent',
-              },
-              '.PickerItem--selected': {
-                backgroundColor: theme === 'dark' ? 'rgb(28 28 34)' : 'white',
-                borderColor: '#0062FF',
-                borderWidth: '2px',
-              },
-              '.PickerItem--selected:hover': {
-                backgroundColor: theme === 'dark' ? 'rgb(28 28 34)' : 'white',
-              },
-              '.Input': {
-                padding: '12px',
-                backgroundColor:
-                  theme === 'dark' ? 'rgb(26.4, 26.8, 29.7)' : 'white',
-                color: theme === 'dark' ? '#E5E5E1' : '#181A1F',
-                borderRadius: '9999px',
-                borderColor: theme === 'dark' ? 'rgb(36, 36.5, 40.5)' : '#EEE',
-                boxShadow: inputBoxShadow,
-              },
-              '.Input:focus': {
-                borderColor:
-                  theme === 'dark' ? 'rgb(0, 84, 219)' : 'rgb(102, 161, 255)',
-                boxShadow: focusBoxShadow,
-              },
-              '.Tab': {
-                backgroundColor:
-                  theme === 'dark' ? 'rgb(26.4, 26.8, 29.7)' : 'white',
-                borderColor: theme === 'dark' ? 'rgb(36, 36.5, 40.5)' : '#EEE',
-              },
-              '.Tab--selected': {
-                backgroundColor: 'rgb(51, 129, 255)',
-                boxShadow: focusBoxShadow,
-                border: 'none',
-              },
-              '.Tab:focus': {
-                boxShadow: focusBoxShadow,
-              },
-              '.TabLabel--selected': {
-                color: 'white',
-              },
-              '.TabIcon--selected': {
-                fill: 'white',
-              },
-              '.Block': {
-                backgroundColor: 'transparent',
-                borderColor: theme === 'dark' ? '#353641' : '#EEE',
-              },
-            },
-            variables: {
-              borderRadius: '8px',
-              fontSizeBase: '0.875rem',
-              spacingGridRow: '18px',
-              colorDanger: theme === 'dark' ? '#F17878' : '#E64D4D',
-            },
-          },
+          appearance: themingPreset.stripe,
         }}
       >
         <ElementsConsumer>
@@ -225,13 +160,17 @@ export const AddPaymentMethodModal = ({
               <div className="flex flex-row items-center gap-2">
                 <Button
                   type="submit"
-                  className="self-start"
+                  className={twMerge('self-start', themingPreset.polar.button)}
                   disabled={!stripe || loading}
                   loading={loading}
                 >
                   Add payment method
                 </Button>
-                <Button variant="ghost" onClick={hide}>
+                <Button
+                  variant="ghost"
+                  onClick={hide}
+                  className={themingPreset.polar.buttonSecondary}
+                >
                   Cancel
                 </Button>
               </div>

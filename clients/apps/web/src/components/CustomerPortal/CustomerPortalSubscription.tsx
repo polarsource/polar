@@ -12,6 +12,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useCallback } from 'react'
 import { useModal } from '../Modal/useModal'
@@ -23,9 +24,11 @@ import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 const CustomerPortalSubscription = ({
   api,
   subscription,
+  themingPreset,
 }: {
   api: Client
   subscription: schemas['CustomerSubscription']
+  themingPreset: ThemingPresetProps
 }) => {
   const {
     show: showCancelModal,
@@ -142,6 +145,7 @@ const CustomerPortalSubscription = ({
           fullWidth
           onClick={showCancelModal}
           aria-label="Cancel subscription"
+          className={themingPreset.polar.buttonSecondary}
         >
           Cancel Subscription
         </Button>
@@ -151,7 +155,7 @@ const CustomerPortalSubscription = ({
         <h3 className="text-lg">Benefit Grants</h3>
         {(benefitGrants?.items.length ?? 0) > 0 ? (
           <div className="flex flex-col gap-4">
-            <List>
+            <List className={themingPreset.polar.list}>
               {benefitGrants?.items.map((benefitGrant) => (
                 <ListItem
                   key={benefitGrant.id}
@@ -176,6 +180,8 @@ const CustomerPortalSubscription = ({
           <div className="flex flex-col gap-y-4">
             <h3 className="text-lg">Invoices</h3>
             <DataTable
+              wrapperClassName={themingPreset.polar.table}
+              headerClassName={themingPreset.polar.tableHeader}
               data={orders.items ?? []}
               isLoading={false}
               columns={[
@@ -213,6 +219,7 @@ const CustomerPortalSubscription = ({
                         onClick={() => openInvoice(row.original)}
                         loading={orderInvoiceMutation.isPending}
                         disabled={orderInvoiceMutation.isPending}
+                        className={themingPreset.polar.buttonSecondary}
                       >
                         <span className="">View Invoice</span>
                       </Button>
@@ -230,6 +237,7 @@ const CustomerPortalSubscription = ({
         isShown={cancelModalIsShown}
         hide={hideCancelModal}
         cancelSubscription={cancelSubscription}
+        themingPreset={themingPreset}
       />
     </div>
   )

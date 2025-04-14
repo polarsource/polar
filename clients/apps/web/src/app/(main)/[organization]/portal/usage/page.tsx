@@ -53,9 +53,15 @@ export default async function Page({
   searchParams: { customer_session_token?: string }
 }) {
   const api = getServerSideAPI(searchParams.customer_session_token)
-  await getOrganizationOrNotFound(api, params.organization)
+  const { organization } = await getOrganizationOrNotFound(
+    api,
+    params.organization,
+  )
 
   return (
-    <ClientPage customerSessionToken={searchParams.customer_session_token} />
+    <ClientPage
+      organization={organization}
+      customerSessionToken={searchParams.customer_session_token}
+    />
   )
 }

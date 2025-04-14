@@ -83,9 +83,10 @@ export function PolarThemeProvider({
   const searchParams = useSearchParams()
   const theme = searchParams.get('theme')
 
-  const PAGES_WITH_FORCED_DARK_THEME: string[] = []
-
-  const forcedTheme = PAGES_WITH_FORCED_DARK_THEME.includes(pathname)
+  const PAGES_WITH_FORCED_DARK_THEME: string[] = ['/midday/portal']
+  const forcedTheme = PAGES_WITH_FORCED_DARK_THEME.some((path) =>
+    pathname.includes(path),
+  )
     ? 'dark'
     : forceTheme
 

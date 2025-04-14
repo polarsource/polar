@@ -44,6 +44,8 @@ interface DataTableProps<TData, TValue> {
   onSortingChange?: OnChangeFn<SortingState>
   getSubRows?: (row: TData) => TData[] | undefined
   className?: string
+  wrapperClassName?: string
+  headerClassName?: string
   isLoading: boolean | ReactQueryLoading
   getCellColSpan?: (cell: Cell<TData, unknown>) => number
   getRowId?: (originalRow: TData, index: number, parent?: Row<TData>) => string
@@ -77,6 +79,8 @@ export function DataTable<TData, TValue>({
   onSortingChange,
   getSubRows,
   className,
+  wrapperClassName,
+  headerClassName,
   isLoading,
   getCellColSpan,
   getRowId,
@@ -114,13 +118,21 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className={twMerge('flex flex-col gap-6', className)}>
-      <div className="dark:border-polar-700 overflow-hidden rounded-2xl border border-gray-200">
+      <div
+        className={twMerge(
+          'dark:border-polar-700 overflow-hidden rounded-2xl border border-gray-200',
+          wrapperClassName,
+        )}
+      >
         <Table className="table-fixed">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
                 key={headerGroup.id}
-                className="dark:bg-polar-800 bg-gray-50"
+                className={twMerge(
+                  'dark:bg-polar-800 bg-gray-50',
+                  headerClassName,
+                )}
               >
                 {headerGroup.headers.map((header) => {
                   return (

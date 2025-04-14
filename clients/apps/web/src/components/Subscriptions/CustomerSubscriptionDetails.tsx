@@ -10,8 +10,10 @@ import {
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import CustomerPortalSubscription from '../CustomerPortal/CustomerPortalSubscription'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
@@ -35,6 +37,10 @@ const CustomerSubscriptionDetails = ({
 }) => {
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
+
+  const themePreset = useThemePreset(
+    subscription.product.organization.slug === 'midday' ? 'midday' : 'polar',
+  )
 
   const {
     isShown: isBenefitGrantsModalOpen,
@@ -91,7 +97,12 @@ const CustomerSubscriptionDetails = ({
   }
 
   return (
-    <ShadowBox className="flex w-full flex-col gap-y-6 dark:border-transparent">
+    <ShadowBox
+      className={twMerge(
+        'flex w-full flex-col gap-y-6 dark:border-transparent',
+        themePreset.polar.well,
+      )}
+    >
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-col gap-y-4">
           <h3 className="truncate text-2xl">{subscription.product.name}</h3>
@@ -167,13 +178,17 @@ const CustomerSubscriptionDetails = ({
             size="lg"
             onClick={primaryAction.onClick}
             loading={primaryAction.loading}
+            className={themePreset.polar.button}
           >
             {primaryAction.label}
           </Button>
         )}
         <Button
           size="lg"
-          className="hidden md:flex"
+          className={twMerge(
+            'hidden md:flex',
+            themePreset.polar.buttonSecondary,
+          )}
           variant="secondary"
           onClick={showBenefitGrantsModal}
         >
@@ -183,7 +198,11 @@ const CustomerSubscriptionDetails = ({
           className="md:hidden"
           href={`/${organization.slug}/portal/subscriptions/${subscription.id}?customer_session_token=${customerSessionToken}`}
         >
-          <Button size="lg" variant="secondary">
+          <Button
+            size="lg"
+            variant="secondary"
+            className={themePreset.polar.buttonSecondary}
+          >
             View Subscription
           </Button>
         </Link>
@@ -192,6 +211,7 @@ const CustomerSubscriptionDetails = ({
           hide={() => setShowCancelModal(false)}
           subscription={subscription}
           cancelSubscription={cancelSubscription}
+          themingPreset={themePreset}
         />
       </div>
 
@@ -206,6 +226,7 @@ const CustomerSubscriptionDetails = ({
             subscription={subscription}
             hide={() => setShowChangePlanModal(false)}
             onUserSubscriptionUpdate={onUserSubscriptionUpdate}
+            themingPreset={themePreset}
           />
         }
       />
@@ -215,7 +236,11 @@ const CustomerSubscriptionDetails = ({
         hide={hideBenefitGrantsModal}
         modalContent={
           <div className="flex flex-col overflow-y-auto p-8">
-            <CustomerPortalSubscription api={api} subscription={subscription} />
+            <CustomerPortalSubscription
+              api={api}
+              subscription={subscription}
+              themingPreset={themePreset}
+            />
           </div>
         }
       />

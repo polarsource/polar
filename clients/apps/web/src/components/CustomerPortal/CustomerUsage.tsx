@@ -2,42 +2,44 @@
 
 import { useCustomerCustomerMeters } from '@/hooks/queries'
 import { Search } from '@mui/icons-material'
-import { Client } from '@polar-sh/client'
+import { Client, schemas } from '@polar-sh/client'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@polar-sh/ui/components/atoms/Tabs'
+import { Tabs, TabsContent } from '@polar-sh/ui/components/atoms/Tabs'
+import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import FormattedUnits from '../Meter/FormattedUnits'
-
 export interface CustomerUsageProps {
   api: Client
+  organization: schemas['Organization']
 }
 
-export const CustomerUsage = ({ api }: CustomerUsageProps) => {
+export const CustomerUsage = ({ api, organization }: CustomerUsageProps) => {
   const [query, setQuery] = useState<string | null>(null)
   const { data, isLoading } = useCustomerCustomerMeters(api, { query })
   const customerMeters = useMemo(() => data?.items ?? [], [data])
+
+  const themingPreset = useThemePreset(
+    organization.slug === 'midday' ? 'midday' : 'polar',
+  )
 
   return (
     <div className="flex flex-col">
       <Tabs defaultValue="meters">
         <div className="flex flex-row items-center justify-between gap-x-12">
           <h3 className="text-2xl">Usage</h3>
-          <TabsList>
+          {/* <TabsList>
             <TabsTrigger value="meters">Meters</TabsTrigger>
-            {/* <TabsTrigger value="alerts">Alerts</TabsTrigger> */}
-          </TabsList>
+            {<TabsTrigger value="alerts">Alerts</TabsTrigger>}
+          </TabsList> */}
         </div>
         <TabsContent className="flex flex-col gap-y-12 pt-8" value="meters">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col items-center gap-4 lg:flex-row">
               <div className="w-full lg:w-1/3">
                 <Input
+                  className={twMerge('w-full', themingPreset.polar.input)}
                   preSlot={<Search fontSize="inherit" />}
                   placeholder="Search Usage Meter"
                   value={query || ''}
@@ -51,6 +53,8 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
             <h3 className="text-xl">Overview</h3>
             <DataTable
               isLoading={isLoading}
+              wrapperClassName={themingPreset.polar.table}
+              headerClassName={themingPreset.polar.tableHeader}
               columns={[
                 {
                   header: 'Name',

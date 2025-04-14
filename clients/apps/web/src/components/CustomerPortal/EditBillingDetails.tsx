@@ -13,17 +13,21 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { useCallback, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
+import { twMerge } from 'tailwind-merge'
 
 const EditBillingDetails = ({
   api,
   customer,
   onSuccess,
+  themingPreset,
 }: {
   api: Client
   customer: schemas['CustomerPortalCustomer']
   onSuccess: () => void
+  themingPreset: ThemingPresetProps
 }) => {
   const form = useForm<schemas['CustomerPortalCustomerUpdate']>({
     defaultValues: {
@@ -89,6 +93,7 @@ const EditBillingDetails = ({
                   autoComplete="email"
                   {...field}
                   value={field.value || ''}
+                  className={themingPreset.polar.input}
                 />
               </FormControl>
               <FormMessage />
@@ -110,6 +115,7 @@ const EditBillingDetails = ({
                   autoComplete="name"
                   {...field}
                   value={field.value || ''}
+                  className={themingPreset.polar.input}
                 />
               </FormControl>
               <FormMessage />
@@ -131,7 +137,7 @@ const EditBillingDetails = ({
                     type="text"
                     autoComplete="billing address-line1"
                     placeholder="Line 1"
-                    className="bg-white shadow-sm"
+                    className={themingPreset.polar.input}
                     {...field}
                     value={field.value || ''}
                   />
@@ -150,7 +156,7 @@ const EditBillingDetails = ({
                     type="text"
                     autoComplete="billing address-line2"
                     placeholder="Line 2"
-                    className="bg-white shadow-sm"
+                    className={themingPreset.polar.input}
                     {...field}
                     value={field.value || ''}
                   />
@@ -174,7 +180,7 @@ const EditBillingDetails = ({
                       type="text"
                       autoComplete="billing postal-code"
                       placeholder="Postal code"
-                      className="bg-white shadow-sm"
+                      className={themingPreset.polar.input}
                       {...field}
                       value={field.value || ''}
                     />
@@ -196,7 +202,7 @@ const EditBillingDetails = ({
                       type="text"
                       autoComplete="billing address-level2"
                       placeholder="City"
-                      className="bg-white shadow-sm"
+                      className={themingPreset.polar.input}
                       {...field}
                       value={field.value || ''}
                     />
@@ -219,6 +225,8 @@ const EditBillingDetails = ({
                     autoComplete="billing country"
                     value={field.value || undefined}
                     onChange={field.onChange}
+                    className={themingPreset.polar.dropdown}
+                    itemClassName={themingPreset.polar.dropdownItem}
                   />
                   <FormMessage />
                 </div>
@@ -240,6 +248,8 @@ const EditBillingDetails = ({
                       country={country}
                       value={field.value || undefined}
                       onChange={field.onChange}
+                      className={themingPreset.polar.dropdown}
+                      itemClassName={themingPreset.polar.dropdownItem}
                     />
                     <FormMessage />
                   </div>
@@ -266,6 +276,7 @@ const EditBillingDetails = ({
                   autoComplete="off"
                   {...field}
                   value={field.value || ''}
+                  className={themingPreset.polar.input}
                 />
               </FormControl>
               <FormMessage />
@@ -274,9 +285,9 @@ const EditBillingDetails = ({
         />
         <Button
           type="submit"
-          className="self-start"
           loading={updateCustomer.isPending}
           disabled={updateCustomer.isPending || !isDirty}
+          className={twMerge('self-start', themingPreset.polar.button)}
         >
           Update Billing Details
         </Button>

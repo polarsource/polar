@@ -212,7 +212,12 @@ class TestListNames:
         for i in range(5):
             await create_event(save_fixture, organization=organization, name="event_1")
         for i in range(3):
-            await create_event(save_fixture, organization=organization, name="event_2")
+            await create_event(
+                save_fixture,
+                organization=organization,
+                name="event_2",
+                source=EventSource.system,
+            )
 
         event_names, count = await event_service.list_names(
             session,
@@ -225,10 +230,12 @@ class TestListNames:
         event_1_name = event_names[0]
         assert event_1_name.name == "event_1"
         assert event_1_name.occurrences == 5
+        assert event_1_name.source == EventSource.user
 
         event_2_name = event_names[1]
         assert event_2_name.name == "event_2"
         assert event_2_name.occurrences == 3
+        assert event_2_name.source == EventSource.system
 
         assert count == 2
 

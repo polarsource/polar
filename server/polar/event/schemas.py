@@ -10,6 +10,12 @@ from polar.kit.schemas import IDSchema, Schema
 from polar.models.event import EventSource
 from polar.organization.schemas import OrganizationID
 
+_SOURCE_DESCRIPTION = (
+    "The source of the event. "
+    "`system` events are created by Polar. "
+    "`user` events are the one you create through our ingestion API."
+)
+
 
 def default_timestamp_factory() -> datetime:
     return datetime.now(UTC)
@@ -69,14 +75,7 @@ class EventsIngestResponse(Schema):
 class Event(IDSchema, MetadataOutputMixin):
     timestamp: datetime = Field(description="The timestamp of the event.")
     name: str = Field(..., description="The name of the event.")
-    source: EventSource = Field(
-        ...,
-        description=(
-            "The source of the event. "
-            "`system` events are created by Polar. "
-            "`user` events are the one you create through our ingestion API."
-        ),
-    )
+    source: EventSource = Field(..., description=_SOURCE_DESCRIPTION)
     organization_id: OrganizationID = Field(
         description="The ID of the organization owning the event."
     )
@@ -95,6 +94,7 @@ class Event(IDSchema, MetadataOutputMixin):
 
 class EventName(Schema):
     name: str = Field(description="The name of the event.")
+    source: EventSource = Field(description=_SOURCE_DESCRIPTION)
     occurrences: int = Field(description="Number of times the event has occurred.")
     first_seen: datetime = Field(description="The first time the event occurred.")
     last_seen: datetime = Field(description="The last time the event occurred.")

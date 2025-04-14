@@ -38,16 +38,17 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
     def get_event_names_statement(
         self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[str, int, datetime, datetime]]:
+    ) -> Select[tuple[str, EventSource, int, datetime, datetime]]:
         return (
             self.get_readable_statement(auth_subject)
             .with_only_columns(
                 Event.name,
+                Event.source,
                 func.count(Event.id).label("occurrences"),
                 func.min(Event.timestamp).label("first_seen"),
                 func.max(Event.timestamp).label("last_seen"),
             )
-            .group_by(Event.name)
+            .group_by(Event.name, Event.source)
         )
 
     def get_readable_statement(

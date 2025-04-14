@@ -174,10 +174,11 @@ class EventService:
 
         event_names: list[EventName] = []
         for result in results:
-            name, occurrences, first_seen, last_seen = result
+            event_name, event_source, occurrences, first_seen, last_seen = result
             event_names.append(
                 EventName(
-                    name=name,
+                    name=event_name,
+                    source=event_source,
                     occurrences=occurrences,
                     first_seen=first_seen,
                     last_seen=last_seen,

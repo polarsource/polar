@@ -13,7 +13,7 @@ export const useMetersInfinite = (
   organizationId: string,
   parameters?: Omit<
     NonNullable<operations['meters:list']['parameters']['query']>,
-    'organization_id'
+    'organization_id' | 'page'
   >,
 ) =>
   useInfiniteQuery({
@@ -31,9 +31,17 @@ export const useMetersInfinite = (
         }),
       ),
     retry: defaultRetry,
-    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
-      lastPageParam === lastPage.pagination.max_page ? null : lastPageParam + 1,
     initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+      if (
+        lastPageParam === lastPage.pagination.max_page ||
+        lastPage.items.length === 0
+      ) {
+        return null
+      }
+
+      return lastPageParam + 1
+    },
   })
 
 export const useMeters = (

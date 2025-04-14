@@ -45,7 +45,7 @@ const ClientPage = ({
   })
 
   const { data, hasNextPage, fetchNextPage } = useMetersInfinite(
-    organization?.id,
+    organization.id,
     {
       sorting: [sorting],
       query,
@@ -64,7 +64,10 @@ const ClientPage = ({
     hide: hideEditMeterModal,
   } = useModal()
 
-  const meters = data?.pages.flatMap((page) => page.items) ?? []
+  const meters = useMemo(
+    () => data?.pages.flatMap((page) => page.items) ?? [],
+    [data],
+  )
 
   const selectedMeter = useMemo(() => {
     return meters?.find((meter) => meter.id === selectedMeterId)

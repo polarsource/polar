@@ -25,8 +25,16 @@ export const useInfiniteEvents = (
         }),
       ),
     initialPageParam: 1,
-    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
-      lastPageParam === lastPage.pagination.max_page ? null : lastPageParam + 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+      if (
+        lastPageParam === lastPage.pagination.max_page ||
+        lastPage.items.length === 0
+      ) {
+        return null
+      }
+
+      return lastPageParam + 1
+    },
     retry: defaultRetry,
   })
 }

@@ -16,12 +16,10 @@ const CustomerPortalOrder = ({
   api,
   order,
   themingPreset,
-  organization,
 }: {
   api: Client
   order: schemas['CustomerOrder']
   themingPreset: ThemingPresetProps
-  organization: schemas['Organization']
 }) => {
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     order_id: order.id,

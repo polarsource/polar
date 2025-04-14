@@ -1,9 +1,10 @@
+import { useEvents } from '@/hooks/queries/events'
 import { useCreateMeter } from '@/hooks/queries/meters'
 import { setValidationErrors } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import MeterForm from './MeterForm'
@@ -39,8 +40,23 @@ export const MeterCreationModal = ({
       },
     },
   })
-  const { handleSubmit, setError } = form
+  const { handleSubmit, setError, getValues } = form
   const createMeter = useCreateMeter(organization.id)
+
+  const [previewFilter, setPreviewFilter] = useState<string | null>(null)
+  const { data: events } = useEvents(
+    organization.id,
+    {
+      filter: previewFilter,
+    },
+    previewFilter !== null,
+  )
+  console.log(events) // TODO: show those events in the preview
+
+  const updatePreview = useCallback(() => {
+    const filter = getValues('filter')
+    setPreviewFilter(filter ? JSON.stringify(filter) : null)
+  }, [getValues])
 
   const onSubmit = useCallback(
     async (body: schemas['MeterCreate']) => {
@@ -77,6 +93,9 @@ export const MeterCreationModal = ({
           >
             <MeterForm />
             <Button type="submit">Create Meter</Button>
+            <Button type="button" variant="secondary" onClick={updatePreview}>
+              Preview
+            </Button>
           </form>
         </Form>
       </div>

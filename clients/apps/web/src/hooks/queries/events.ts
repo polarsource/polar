@@ -45,6 +45,7 @@ export const useEvents = (
     NonNullable<operations['events:list']['parameters']['query']>,
     'organization_id'
   >,
+  enabled: boolean = true,
 ) => {
   return useQuery({
     queryKey: ['events', { organizationId, ...(parameters || {}) }],
@@ -57,6 +58,7 @@ export const useEvents = (
         }),
       ),
     retry: defaultRetry,
+    enabled,
   })
 }
 export const useEventNames = (

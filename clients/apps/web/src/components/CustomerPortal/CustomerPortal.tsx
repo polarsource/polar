@@ -125,7 +125,6 @@ export const CustomerPortal = ({
                   api={api}
                   order={selectedOrder}
                   themingPreset={themingPreset}
-                  organization={organization}
                 />
               </div>
             ) : (

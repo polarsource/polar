@@ -184,16 +184,6 @@ const generalRoutesList = (
     ],
   },
   {
-    id: 'benefits',
-    title: 'Benefits',
-    icon: <AutoAwesome fontSize="inherit" />,
-    link: `/dashboard/${org.slug}/benefits`,
-    checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/dashboard/${org.slug}/benefits`)
-    },
-    if: true,
-  },
-  {
     id: 'usage-billing',
     title: 'Usage Billing',
     icon: <DonutLargeOutlined fontSize="inherit" />,
@@ -214,6 +204,16 @@ const generalRoutesList = (
         icon: <StreamOutlined fontSize="inherit" />,
       },
     ],
+  },
+  {
+    id: 'benefits',
+    title: 'Benefits',
+    icon: <AutoAwesome fontSize="inherit" />,
+    link: `/dashboard/${org.slug}/benefits`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/dashboard/${org.slug}/benefits`)
+    },
+    if: true,
   },
   {
     id: 'customers',

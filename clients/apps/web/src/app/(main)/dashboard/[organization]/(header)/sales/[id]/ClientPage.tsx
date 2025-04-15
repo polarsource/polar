@@ -177,6 +177,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
             <Separator className="dark:bg-polar-700 my-4 h-[1px] bg-gray-300" />
 
+            {order.items.map((item) => (
+              <DetailRow key={item.id} title={item.label}>
+                <span>{formatCurrencyAndAmount(item.amount)}</span>
+              </DetailRow>
+            ))}
+
             <DetailRow title="Subtotal">
               <span>{formatCurrencyAndAmount(order.subtotal_amount)}</span>
             </DetailRow>

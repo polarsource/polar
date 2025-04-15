@@ -11,6 +11,10 @@ interface CurrentPeriodOverviewProps {
 export const CurrentPeriodOverview = ({
   subscription,
 }: CurrentPeriodOverviewProps) => {
+  const themePreset = useThemePreset(
+    subscription.product.organization.slug === 'midday' ? 'midday' : 'polar',
+  )
+
   if (subscription.status !== 'active') {
     return null
   }
@@ -22,10 +26,6 @@ export const CurrentPeriodOverview = ({
   const totalAmount = subscription.meters.reduce(
     (acc, meter) => acc + meter.amount,
     basePrice?.price_amount || 0,
-  )
-
-  const themePreset = useThemePreset(
-    subscription.product.organization.slug === 'midday' ? 'midday' : 'polar',
   )
 
   return (

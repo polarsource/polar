@@ -3,20 +3,13 @@
 import { Events } from '@/components/Events/Events'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MeterForm from '@/components/Meter/MeterForm'
-import {
-  Well,
-  WellContent,
-  WellFooter,
-  WellHeader,
-} from '@/components/Shared/Well'
 import { toast } from '@/components/Toast/use-toast'
-import { useEvents } from '@/hooks/queries/events'
+import { useEventNames, useEvents } from '@/hooks/queries/events'
 import { useCreateMeter } from '@/hooks/queries/meters'
 import { setValidationErrors } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -67,6 +60,12 @@ export default function ClientPage({ organization }: ClientPageProps) {
     setPreviewFilter(filter ? JSON.stringify(filter) : null)
   }, [getValues])
 
+  const { data: eventNames } = useEventNames(organization.id, {
+    limit: 1,
+    sorting: ['-occurrences'],
+  })
+  const flatEventNames = eventNames?.pages.flatMap((page) => page.items) ?? []
+
   const onSubmit = useCallback(
     async (body: schemas['MeterCreate']) => {
       const { data: meter, error } = await createMeter.mutateAsync(body)
@@ -93,47 +92,39 @@ export default function ClientPage({ organization }: ClientPageProps) {
     <DashboardBody
       title="Create Meter"
       header={
-        <div className="flex flex-row gap-x-4">
-          <Button type="button" variant="secondary" onClick={updatePreview}>
+        <div className="hidden flex-row gap-x-4 md:flex">
+          <Button onClick={updatePreview} variant="secondary">
             Preview
           </Button>
           <Button onClick={handleSubmit(onSubmit)}>Create Meter</Button>
         </div>
       }
-      className="flex flex-col gap-y-12"
-      wrapperClassName="!max-w-screen-md"
+      className="flex h-full flex-col gap-y-12"
+      wrapperClassName="!w-full !h-full !max-w-full"
     >
-      <Well>
-        <WellHeader className="text-lg leading-none">Product Meters</WellHeader>
-        <WellContent>
-          <p className="dark:text-polar-500 text-gray-500">
-            Meters are aggregations of events that match a filter. Meters can be
-            attached to subscription products with an associated unit price.
-          </p>
-        </WellContent>
-        <WellFooter>
-          <Link href="https://docs.polar.sh/features/usage-billing">
-            <Button size="sm">Read the documentation</Button>
-          </Link>
-        </WellFooter>
-      </Well>
-      <div className="flex flex-col gap-y-6">
-        <Form {...form}>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-y-6"
-          >
-            <MeterForm />
-          </form>
-        </Form>
-      </div>
-      <div className="flex flex-col gap-y-6">
-        <h2 className="text-xl">Preview</h2>
-        <p className="dark:text-polar-500 text-gray-500">
-          Preview the meter with the filter you created.
-        </p>
-        <Events events={events?.items ?? []} organization={organization} />
-      </div>
+      <Form {...form}>
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="dark:divide-polar-700 grid h-full w-full grid-cols-1 gap-y-6 divide-gray-200 md:grid-cols-2 md:divide-x"
+        >
+          <div className="flex h-full flex-col gap-y-6 pb-8 md:pr-12">
+            <MeterForm eventNames={flatEventNames} />
+          </div>
+          <div className="flex h-full flex-col gap-y-6 pb-8 md:pl-12">
+            <div className="flex flex-col gap-y-4">
+              <h2 className="text-xl">Preview</h2>
+              <p className="dark:text-polar-500 text-gray-500">
+                Preview the meter with the filter you created. Showing the
+                latest 10 events.
+              </p>
+            </div>
+            <Events events={events?.items ?? []} organization={organization} />
+          </div>
+          <div className="flex flex-row gap-x-4 md:hidden">
+            <Button onClick={handleSubmit(onSubmit)}>Create Meter</Button>
+          </div>
+        </form>
+      </Form>
     </DashboardBody>
   )
 }

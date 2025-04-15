@@ -105,22 +105,22 @@ export const Events = ({
     <List className="flex flex-col" size="small">
       <table className="w-full">
         <thead>
-          <tr>
-            <th className="px-4 py-2 text-left">
+          <tr className="dark:bg-polar-800 bg-gray-50">
+            <th className="px-4 py-2 text-left font-normal">
               <span className="font-mono text-xs capitalize">Timestamp</span>
             </th>
-            <th className="px-4 py-2 text-left">
+            <th className="px-4 py-2 text-left font-normal">
               <span className="font-mono text-xs capitalize">Event</span>
             </th>
-            <th className="px-4 py-2 text-left">
+            <th className="px-4 py-2 text-left font-normal">
               <span className="font-mono text-xs capitalize">Customer</span>
             </th>
-            <th className="px-4 py-2 text-left">
+            <th className="px-4 py-2 text-left font-normal">
               <span className="font-mono text-xs capitalize">Metadata</span>
             </th>
           </tr>
         </thead>
-        <tbody className="">
+        <tbody>
           {events.map((event) => (
             <EventRow
               key={event.id}
@@ -128,6 +128,13 @@ export const Events = ({
               organization={organization}
             />
           ))}
+          {events.length === 0 && (
+            <tr>
+              <td colSpan={4} className="py-6 text-center text-sm">
+                No events found
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </List>

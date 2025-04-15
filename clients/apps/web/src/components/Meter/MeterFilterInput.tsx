@@ -41,7 +41,8 @@ const isFilterClause = (
 const MeterFilterInput: React.FC<{
   prefix: string
   removeParent?: () => void
-}> = ({ prefix, removeParent }) => {
+  eventNames?: schemas['EventName'][]
+}> = ({ prefix, removeParent, eventNames }) => {
   const { control, watch } = useFormContext()
   const conjunction = watch(`${prefix}.conjunction`) as string
   const {
@@ -52,6 +53,7 @@ const MeterFilterInput: React.FC<{
     control,
     name: `${prefix}.clauses`,
   })
+
   return (
     <div className="flex flex-col gap-4">
       {/* To make the UI more digest, we don't allow to add single clause at the root level */}
@@ -84,6 +86,8 @@ const MeterFilterInput: React.FC<{
         </div>
       )}
       {clauses.map((clause, index) => {
+        const property = watch(`${prefix}.clauses.${index}.property`)
+
         return (
           <div key={index}>
             {isFilterClause(
@@ -156,13 +160,20 @@ const MeterFilterInput: React.FC<{
                       required: 'This field is required',
                     }}
                     render={({ field }) => {
+                      const mostCommonEventName = eventNames?.[0]?.name
+
                       return (
-                        <FormItem className="grow">
+                        <FormItem className="flex grow flex-row items-center gap-x-2 space-y-0">
                           <FormControl>
                             <Input
                               {...field}
                               value={field.value || ''}
                               autoComplete="off"
+                              placeholder={
+                                property === 'name'
+                                  ? mostCommonEventName
+                                  : undefined
+                              }
                               onChange={(e) => {
                                 const val = e.target.value
                                 // Try parsing as float
@@ -214,6 +225,7 @@ const MeterFilterInput: React.FC<{
                     removeParent={
                       clauses.length > 1 ? () => remove(index) : undefined
                     }
+                    eventNames={eventNames}
                   />
                 </ShadowBox>
               </div>

@@ -1136,6 +1136,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             # so make sure we can still fetch them for the purpose of sending
             # customer emails.
             allow_blocked=True,
+            allow_deleted=True,
         )
         assert featured_organization is not None
 

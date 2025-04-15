@@ -36,7 +36,7 @@ const AGGREGATION_FUNCTION_DISPLAY_NAMES: Record<
   max: 'Maximum',
 }
 
-const MeterForm = () => {
+const MeterForm = ({ eventNames }: { eventNames?: schemas['EventName'][] }) => {
   const form = useFormContext<schemas['MeterCreate']>()
   const { control, watch } = form
   const aggregationFunction = watch('aggregation.func')
@@ -57,6 +57,9 @@ const MeterForm = () => {
           return (
             <FormItem>
               <FormLabel>Name</FormLabel>
+              <FormDescription>
+                Will be shown on customer&apos;s invoices and usage.
+              </FormDescription>
               <FormControl>
                 <Input
                   {...field}
@@ -65,9 +68,6 @@ const MeterForm = () => {
                 />
               </FormControl>
               <FormMessage />
-              <FormDescription>
-                Will be shown on customer&apos;s invoices and usage.
-              </FormDescription>
             </FormItem>
           )
         }}
@@ -78,13 +78,12 @@ const MeterForm = () => {
         <FormDescription>
           Specify how events are filtered before they are aggregated.
         </FormDescription>
-        <MeterFilterInput prefix="filter" />
+        <MeterFilterInput eventNames={eventNames} prefix="filter" />
       </FormItem>
       <FormItem>
         <FormLabel>Aggregation</FormLabel>
         <FormDescription>
-          The function that will turn the filtered events into a single unit
-          value.
+          The function that will turn the filtered events into a unit values.
         </FormDescription>
         <div className="flex flex-row items-center gap-x-4">
           <FormField

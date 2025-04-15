@@ -48,7 +48,7 @@ export const useEvents = (
   enabled: boolean = true,
 ) => {
   return useQuery({
-    queryKey: ['events', { organizationId, ...(parameters || {}) }],
+    queryKey: ['events', organizationId, { ...(parameters || {}) }],
     queryFn: () =>
       unwrap(
         api.GET('/v1/events/', {
@@ -61,12 +61,13 @@ export const useEvents = (
     enabled,
   })
 }
+
 export const useEventNames = (
   organizationId: string,
   parameters?: operations['events:list_names']['parameters']['query'],
 ) => {
   return useInfiniteQuery({
-    queryKey: ['eventNames', { organizationId, ...(parameters || {}) }],
+    queryKey: ['eventNames', organizationId, { ...(parameters || {}) }],
     queryFn: () =>
       unwrap(
         api.GET('/v1/events/names', {

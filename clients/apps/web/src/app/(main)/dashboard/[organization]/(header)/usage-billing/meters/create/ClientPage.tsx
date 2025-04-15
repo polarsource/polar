@@ -47,7 +47,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
   const router = useRouter()
 
   const [previewFilter, setPreviewFilter] = useState<string | null>(null)
-  const { data: events } = useEvents(
+  const { data: events, isLoading: isPreviewLoading } = useEvents(
     organization.id,
     {
       filter: previewFilter,
@@ -93,9 +93,6 @@ export default function ClientPage({ organization }: ClientPageProps) {
       title="Create Meter"
       header={
         <div className="hidden flex-row gap-x-4 md:flex">
-          <Button onClick={updatePreview} variant="secondary">
-            Preview
-          </Button>
           <Button onClick={handleSubmit(onSubmit)}>Create Meter</Button>
         </div>
       }
@@ -105,12 +102,19 @@ export default function ClientPage({ organization }: ClientPageProps) {
       <Form {...form}>
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="dark:divide-polar-700 grid h-full w-full grid-cols-1 gap-y-6 divide-gray-200 md:grid-cols-2 md:divide-x"
+          className="dark:divide-polar-700 flex h-full w-full flex-col gap-y-6 divide-gray-200 md:flex-row md:divide-x"
         >
-          <div className="flex h-full flex-col gap-y-6 pb-8 md:pr-12">
+          <div className="flex h-full max-w-xl flex-col gap-y-6 pb-8 md:pr-12">
             <MeterForm eventNames={flatEventNames} />
+            <Button
+              className="self-start"
+              onClick={updatePreview}
+              loading={isPreviewLoading}
+            >
+              Preview
+            </Button>
           </div>
-          <div className="flex h-full flex-col gap-y-6 pb-8 md:pl-12">
+          <div className="flex h-full w-full flex-col gap-y-6 pb-8 md:pl-12">
             <div className="flex flex-col gap-y-4">
               <h2 className="text-xl">Preview</h2>
               <p className="dark:text-polar-500 text-gray-500">
@@ -121,7 +125,12 @@ export default function ClientPage({ organization }: ClientPageProps) {
             <Events events={events?.items ?? []} organization={organization} />
           </div>
           <div className="flex flex-row gap-x-4 md:hidden">
-            <Button onClick={handleSubmit(onSubmit)}>Create Meter</Button>
+            <Button
+              onClick={handleSubmit(onSubmit)}
+              loading={createMeter.isPending}
+            >
+              Create Meter
+            </Button>
           </div>
         </form>
       </Form>

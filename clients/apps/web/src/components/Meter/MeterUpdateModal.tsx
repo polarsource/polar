@@ -5,24 +5,25 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
+import { Well, WellContent, WellHeader } from '../Shared/Well'
 import { useToast } from '../Toast/use-toast'
 import MeterForm from './MeterForm'
 
 export interface MeterUpdateModalProps {
   meter: schemas['Meter']
   hide: () => void
+  hasProcessedEvents: boolean
 }
 
 export const MeterUpdateModal = ({
   meter: _meter,
   hide,
+  hasProcessedEvents,
 }: MeterUpdateModalProps) => {
   const { data: meter } = useMeter(_meter.id, _meter)
   const form = useForm<schemas['MeterUpdate']>({
     defaultValues: {
       ...meter,
-      aggregation: undefined,
-      filter: undefined,
     },
   })
 
@@ -37,6 +38,8 @@ export const MeterUpdateModal = ({
       if (error) {
         if (isValidationError(error.detail)) {
           setValidationErrors(error.detail, setError)
+        } else {
+          setError('root', { message: error.detail })
         }
         return
       }
@@ -63,11 +66,29 @@ export const MeterUpdateModal = ({
         <Form {...form}>
           <form
             onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-y-6"
+            className="flex flex-col gap-y-8"
           >
             <MeterForm />
+            {hasProcessedEvents && (
+              <Well className="gap-y-2 rounded-2xl p-6">
+                <WellHeader>Updating Meter</WellHeader>
+                <WellContent>
+                  <p className="dark:text-polar-500 text-sm text-gray-500">
+                    Once a meter has processed events, its filters or
+                    aggregation function cannot be changed.
+                  </p>
+                </WellContent>
+              </Well>
+            )}
+
             <div className="flex flex-row items-center gap-4">
-              <Button type="submit">Update Meter</Button>
+              <Button
+                type="submit"
+                loading={updateMeter.isPending}
+                disabled={hasProcessedEvents}
+              >
+                Update Meter
+              </Button>
               <Button variant="secondary" onClick={hide}>
                 Cancel
               </Button>

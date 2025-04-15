@@ -52,6 +52,7 @@ const applySubRouteIsActive = (
     const isActive =
       r.link === path ||
       (parentRoute?.link !== r.link && path.startsWith(r.link))
+
     return {
       ...r,
       isActive,
@@ -196,7 +197,7 @@ const generalRoutesList = (
     id: 'usage-billing',
     title: 'Usage Billing',
     icon: <DonutLargeOutlined fontSize="inherit" />,
-    link: `/dashboard/${org.slug}/usage-billing/meters`,
+    link: `/dashboard/${org.slug}/usage-billing`,
     if: posthog?.isFeatureEnabled('usage_based_billing'),
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org.slug}/usage-billing`)

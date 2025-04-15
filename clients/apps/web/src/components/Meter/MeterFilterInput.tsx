@@ -58,7 +58,8 @@ const MeterFilterInput: React.FC<{
     <div className="flex flex-col gap-4">
       {/* To make the UI more digest, we don't allow to add single clause at the root level */}
       {prefix !== 'filter' && (
-        <div className="flex justify-end gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <h3>Filter</h3>
           <div className="flex flex-row items-center gap-x-2">
             <Button
               type="button"

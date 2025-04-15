@@ -8695,6 +8695,55 @@ export interface components {
              * @deprecated
              */
             price_id: string;
+            /**
+             * Meters
+             * @description List of meters associated with the subscription.
+             */
+            meters: components["schemas"]["CustomerStateSubscriptionMeter"][];
+        };
+        /**
+         * CustomerStateSubscriptionMeter
+         * @description Current consumption and spending for a subscription meter.
+         */
+        CustomerStateSubscriptionMeter: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Consumed Units
+             * @description The number of consumed units so far in this billing period.
+             */
+            consumed_units: number;
+            /**
+             * Credited Units
+             * @description The number of credited units so far in this billing period.
+             */
+            credited_units: number;
+            /**
+             * Amount
+             * @description The amount due in cents so far in this billing period.
+             */
+            amount: number;
+            /**
+             * Meter Id
+             * Format: uuid4
+             * @description The ID of the meter.
+             */
+            meter_id: string;
         };
         /** CustomerSubscription */
         CustomerSubscription: {
@@ -8810,6 +8859,11 @@ export interface components {
              * @description List of enabled prices for the subscription.
              */
             prices: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"])[];
+            /**
+             * Meters
+             * @description List of meters associated with the subscription.
+             */
+            meters: components["schemas"]["CustomerSubscriptionMeter"][];
         };
         /** CustomerSubscriptionCancel */
         CustomerSubscriptionCancel: {
@@ -8836,6 +8890,73 @@ export interface components {
              * @description Customer feedback and why they decided to cancel.
              */
             cancellation_comment?: string | null;
+        };
+        /** CustomerSubscriptionMeter */
+        CustomerSubscriptionMeter: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Consumed Units
+             * @description The number of consumed units so far in this billing period.
+             */
+            consumed_units: number;
+            /**
+             * Credited Units
+             * @description The number of credited units so far in this billing period.
+             */
+            credited_units: number;
+            /**
+             * Amount
+             * @description The amount due in cents so far in this billing period.
+             */
+            amount: number;
+            /**
+             * Meter Id
+             * Format: uuid4
+             * @description The ID of the meter.
+             */
+            meter_id: string;
+            meter: components["schemas"]["CustomerSubscriptionMeterMeter"];
+        };
+        /** CustomerSubscriptionMeterMeter */
+        CustomerSubscriptionMeterMeter: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the meter. Will be shown on customer's invoices and usage.
+             */
+            name: string;
         };
         /** CustomerSubscriptionProduct */
         CustomerSubscriptionProduct: {
@@ -13938,6 +14059,11 @@ export interface components {
              * @description List of enabled prices for the subscription.
              */
             prices: (components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"])[];
+            /**
+             * Meters
+             * @description List of meters associated with the subscription.
+             */
+            meters: components["schemas"]["SubscriptionMeter"][];
         };
         /** SubscriptionCancel */
         SubscriptionCancel: {
@@ -14047,6 +14173,52 @@ export interface components {
             deleted_at: string | null;
             /** Avatar Url */
             readonly avatar_url: string;
+        };
+        /**
+         * SubscriptionMeter
+         * @description Current consumption and spending for a subscription meter.
+         */
+        SubscriptionMeter: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Consumed Units
+             * @description The number of consumed units so far in this billing period.
+             */
+            consumed_units: number;
+            /**
+             * Credited Units
+             * @description The number of credited units so far in this billing period.
+             */
+            credited_units: number;
+            /**
+             * Amount
+             * @description The amount due in cents so far in this billing period.
+             */
+            amount: number;
+            /**
+             * Meter Id
+             * Format: uuid4
+             * @description The ID of the meter.
+             */
+            meter_id: string;
+            /** @description The meter associated with this subscription. */
+            meter: components["schemas"]["Meter"];
         };
         /**
          * SubscriptionProrationBehavior

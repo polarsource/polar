@@ -2,7 +2,8 @@ from typing import TypeAlias
 
 from typing_extensions import TypeIs
 
-from polar.models import (
+from polar.models.product_price import (
+    HasPriceCurrency,
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
     LegacyRecurringProductPriceFree,
@@ -12,7 +13,6 @@ from polar.models import (
     ProductPriceFree,
     ProductPriceMeteredUnit,
 )
-from polar.models.product_price import HasPriceCurrency
 
 StaticPrice: TypeAlias = (
     ProductPriceFixed
@@ -71,3 +71,9 @@ def is_static_price(price: ProductPrice) -> TypeIs[StaticPrice]:
 
 def is_metered_price(price: ProductPrice) -> TypeIs[MeteredPrice]:
     return price.is_metered
+
+
+def is_discount_applicable(
+    price: ProductPrice,
+) -> TypeIs[FixedPrice | CustomPrice | MeteredPrice]:
+    return is_fixed_price(price) or is_custom_price(price) or is_metered_price(price)

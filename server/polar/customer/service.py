@@ -13,7 +13,12 @@ from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import BenefitGrant, Customer, Organization, User
+from polar.models import (
+    BenefitGrant,
+    Customer,
+    Organization,
+    User,
+)
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession

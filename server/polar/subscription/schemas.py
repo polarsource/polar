@@ -124,9 +124,7 @@ SubscriptionDiscount = Annotated[
 ]
 
 
-class SubscriptionMeter(IDSchema, TimestampedSchema):
-    """Current consumption and spending for a subscription meter."""
-
+class SubscriptionMeterBase(IDSchema, TimestampedSchema):
     consumed_units: float = Field(
         description="The number of consumed units so far in this billing period.",
         examples=[25.0],
@@ -142,6 +140,11 @@ class SubscriptionMeter(IDSchema, TimestampedSchema):
     meter_id: UUID4 = Field(
         description="The ID of the meter.", examples=[METER_ID_EXAMPLE]
     )
+
+
+class SubscriptionMeter(SubscriptionMeterBase):
+    """Current consumption and spending for a subscription meter."""
+
     meter: Meter = Field(
         description="The meter associated with this subscription.",
     )

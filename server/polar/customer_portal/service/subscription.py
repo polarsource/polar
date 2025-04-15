@@ -17,6 +17,7 @@ from polar.models import (
     Organization,
     Product,
     Subscription,
+    SubscriptionMeter,
 )
 from polar.models.subscription import CustomerCancellationReason
 from polar.subscription.service import subscription as subscription_service
@@ -71,6 +72,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                     selectinload(Product.product_medias),
                     contains_eager(Product.organization),
                 ),
+                selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
             )
         )
 
@@ -126,6 +128,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                     selectinload(Product.product_medias),
                     joinedload(Product.organization),
                 ),
+                selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
             )
         )
 

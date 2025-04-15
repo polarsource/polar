@@ -1,6 +1,6 @@
 from arq import Retry
 
-from polar.worker import JobContext, PolarWorkerContext, compute_backoff, task
+from polar.worker import JobContext, compute_backoff, task
 
 from .sender import SendEmailError, get_email_sender
 
@@ -16,7 +16,6 @@ async def email_send(
     email_headers: dict[str, str],
     reply_to_name: str | None,
     reply_to_email_addr: str | None,
-    polar_context: PolarWorkerContext,
 ) -> None:
     email_sender = get_email_sender()
 

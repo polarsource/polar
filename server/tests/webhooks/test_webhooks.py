@@ -23,7 +23,7 @@ from polar.webhook.tasks import (
     allowed_url,
     webhook_event_send,
 )
-from polar.worker import JobContext, PolarWorkerContext
+from polar.worker import JobContext
 from tests.fixtures.database import SaveFixture
 
 
@@ -120,11 +120,7 @@ async def test_webhook_delivery(
     event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
     await save_fixture(event)
 
-    await webhook_event_send(
-        job_context,
-        webhook_event_id=event.id,
-        polar_context=PolarWorkerContext(),
-    )
+    await webhook_event_send(job_context, webhook_event_id=event.id)
 
 
 @pytest.mark.asyncio

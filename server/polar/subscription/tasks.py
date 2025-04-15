@@ -4,7 +4,7 @@ import structlog
 
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
-from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
+from polar.worker import AsyncSessionMaker, JobContext, task
 
 from ..product.service.product import product as product_service
 from .service import subscription as subscription_service
@@ -33,7 +33,7 @@ class SubscriptionTierDoesNotExist(SubscriptionTaskError):
 
 @task("subscription.subscription.update_product_benefits_grants")
 async def subscription_update_product_benefits_grants(
-    ctx: JobContext, subscription_tier_id: uuid.UUID, polar_context: PolarWorkerContext
+    ctx: JobContext, subscription_tier_id: uuid.UUID
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
         subscription_tier = await product_service.get(session, subscription_tier_id)
@@ -46,8 +46,6 @@ async def subscription_update_product_benefits_grants(
 
 
 @task("subscription.cancel_customer")
-async def subscription_cancel_customer(
-    ctx: JobContext, customer_id: uuid.UUID, polar_context: PolarWorkerContext
-) -> None:
+async def subscription_cancel_customer(ctx: JobContext, customer_id: uuid.UUID) -> None:
     async with AsyncSessionMaker(ctx) as session:
         await subscription_service.cancel_customer(session, customer_id)

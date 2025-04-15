@@ -17,12 +17,8 @@ export const CurrentPeriodOverview = ({
     (price) => price.amount_type === 'fixed',
   )
 
-  const meteredPrices = subscription.prices.filter(
-    (price) => price.amount_type === 'metered_unit',
-  )
-
-  const totalAmount = meteredPrices.reduce(
-    (acc, price) => acc + Number.parseFloat(price.unit_amount),
+  const totalAmount = subscription.meters.reduce(
+    (acc, meter) => acc + meter.amount,
     basePrice?.price_amount || 0,
   )
 
@@ -53,19 +49,19 @@ export const CurrentPeriodOverview = ({
           </span>
         </div>
 
-        {meteredPrices.length > 0 && (
+        {subscription.meters.length > 0 && (
           <>
             <span className="font-medium">Metered Charges</span>
 
-            {meteredPrices.map((price) => (
-              <div key={price.id} className="flex items-center justify-between">
+            {subscription.meters.map((meter) => (
+              <div key={meter.id} className="flex items-center justify-between">
                 <span className="text-gray-600 dark:text-gray-400">
-                  {price.meter.name}
+                  {meter.meter.name}
                 </span>
                 <span className="font-medium">
                   <AmountLabel
-                    amount={Number.parseFloat(price.unit_amount)}
-                    currency={price.price_currency}
+                    amount={meter.amount}
+                    currency={subscription.currency}
                   />
                 </span>
               </div>
@@ -84,7 +80,7 @@ export const CurrentPeriodOverview = ({
             </span>
           </div>
 
-          {meteredPrices.length > 0 && (
+          {subscription.meters.length > 0 && (
             <p className="text-xs text-gray-500">
               Final charges may vary based on usage until the end of the billing
               period

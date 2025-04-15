@@ -160,15 +160,14 @@ const CustomerSubscriptionDetails = ({
           </div>
         )}
         {subscription.meters.length > 0 && (
-          <div className="flex flex-row items-center justify-between">
-            <span className="dark:text-polar-500 text-gray-500">Usage</span>
-            <span>
+          <div className="flex flex-col gap-y-4 py-2">
+            <span className="text-lg">Metered Usage</span>
+            <div className="flex flex-col gap-y-2">
               {subscription.meters.map((subscriptionMeter) => (
-                <div
-                  key={subscriptionMeter.id}
-                  className="flex flex-row gap-x-2"
-                >
-                  <span>{subscriptionMeter.meter.name}</span>
+                <div className="flex flex-row items-center justify-between">
+                  <span className="dark:text-polar-500 text-gray-500">
+                    {subscriptionMeter.meter.name}
+                  </span>
                   <span>
                     {formatCurrencyAndAmount(
                       subscriptionMeter.amount,
@@ -177,7 +176,7 @@ const CustomerSubscriptionDetails = ({
                   </span>
                 </div>
               ))}
-            </span>
+            </div>
           </div>
         )}
         {subscription.ended_at && (

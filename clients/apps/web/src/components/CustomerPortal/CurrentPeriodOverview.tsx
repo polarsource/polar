@@ -1,4 +1,6 @@
 import { schemas } from '@polar-sh/client'
+import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { twMerge } from 'tailwind-merge'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import AmountLabel from '../Shared/AmountLabel'
 
@@ -22,8 +24,17 @@ export const CurrentPeriodOverview = ({
     basePrice?.price_amount || 0,
   )
 
+  const themePreset = useThemePreset(
+    subscription.product.organization.slug === 'midday' ? 'midday' : 'polar',
+  )
+
   return (
-    <div className="dark:border-polar-700 flex flex-col gap-4 rounded-3xl border border-gray-200 p-6">
+    <div
+      className={twMerge(
+        'dark:border-polar-700 flex flex-col gap-4 rounded-3xl border border-gray-200 p-8',
+        themePreset.polar.wellSecondary,
+      )}
+    >
       <div className="flex items-center justify-between">
         <h4 className="text-lg font-medium">Current Period Overview</h4>
         <span className="text-sm text-gray-500">
@@ -62,6 +73,7 @@ export const CurrentPeriodOverview = ({
                   <AmountLabel
                     amount={meter.amount}
                     currency={subscription.currency}
+                    minimumFractionDigits={2}
                   />
                 </span>
               </div>

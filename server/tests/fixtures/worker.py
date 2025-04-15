@@ -3,7 +3,6 @@ from collections.abc import AsyncIterator
 from typing import cast
 from unittest.mock import MagicMock
 
-import pytest
 import pytest_asyncio
 from arq import ArqRedis
 
@@ -11,7 +10,7 @@ from polar.kit.db.postgres import AsyncSession, AsyncSessionMaker
 from polar.kit.utils import utc_now
 from polar.postgres import create_async_engine
 from polar.redis import Redis
-from polar.worker import JobContext, PolarWorkerContext
+from polar.worker import JobContext
 
 
 @pytest_asyncio.fixture
@@ -37,8 +36,3 @@ async def job_context(session: AsyncSession, redis: Redis) -> AsyncIterator[JobC
     }
 
     await engine.dispose()
-
-
-@pytest.fixture
-def polar_worker_context() -> PolarWorkerContext:
-    return PolarWorkerContext()

@@ -13,7 +13,7 @@ from polar.notification_recipient.service import (
     notification_recipient as notification_recipient_service,
 )
 from polar.notifications.service import notifications
-from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
+from polar.worker import AsyncSessionMaker, JobContext, task
 
 log = structlog.get_logger()
 
@@ -63,52 +63,45 @@ def send_push_message(
 
 
 @task("notifications.push")
-async def notifications_push(
-    ctx: JobContext,
-    notification_id: UUID,
-    polar_context: PolarWorkerContext,
-) -> None:
-    with polar_context.to_execution_context():
-        async with AsyncSessionMaker(ctx) as session:
-            notif = await notifications.get(session, notification_id)
-            if not notif:
-                log.warning("notifications.push.not_found")
-                return
+async def notifications_push(ctx: JobContext, notification_id: UUID) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        notif = await notifications.get(session, notification_id)
+        if not notif:
+            log.warning("notifications.push.not_found")
+            return
 
-            notification_recipients = await notification_recipient_service.list_by_user(
-                session=session,
-                user_id=notif.user_id,
-                expo_push_token=None,
-                platform=None,
-            )
-            if not notification_recipients:
+        notification_recipients = await notification_recipient_service.list_by_user(
+            session=session,
+            user_id=notif.user_id,
+            expo_push_token=None,
+            platform=None,
+        )
+        if not notification_recipients:
+            log.warning("notifications.push.devices_not_found", user_id=notif.user_id)
+            return
+
+        for notification_recipient in notification_recipients:
+            if not notification_recipient.expo_push_token:
                 log.warning(
-                    "notifications.push.devices_not_found", user_id=notif.user_id
+                    "notifications.push.no_push_token",
+                    user_id=notification_recipient.user_id,
+                )
+                continue
+
+            notification_type = notifications.parse_payload(notif)
+            subject = notification_type.subject()
+
+            try:
+                send_push_message(
+                    token=notification_recipient.expo_push_token,
+                    message=subject,
+                    extra={"notification_id": str(notification_id)},
+                )
+            except Exception as e:
+                log.error(
+                    "notifications.push.send_failed",
+                    error=str(e),
+                    user_id=notification_recipient.user_id,
+                    notification_id=notification_id,
                 )
                 return
-
-            for notification_recipient in notification_recipients:
-                if not notification_recipient.expo_push_token:
-                    log.warning(
-                        "notifications.push.no_push_token",
-                        user_id=notification_recipient.user_id,
-                    )
-                    continue
-
-                notification_type = notifications.parse_payload(notif)
-                subject = notification_type.subject()
-
-                try:
-                    send_push_message(
-                        token=notification_recipient.expo_push_token,
-                        message=subject,
-                        extra={"notification_id": str(notification_id)},
-                    )
-                except Exception as e:
-                    log.error(
-                        "notifications.push.send_failed",
-                        error=str(e),
-                        user_id=notification_recipient.user_id,
-                        notification_id=notification_id,
-                    )
-                    return

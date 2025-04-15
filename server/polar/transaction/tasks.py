@@ -8,13 +8,7 @@ from polar.integrations.discord.internal_webhook import (
     send_internal_webhook,
 )
 from polar.kit.money import get_cents_in_dollar_string
-from polar.worker import (
-    AsyncSessionMaker,
-    CronTrigger,
-    JobContext,
-    PolarWorkerContext,
-    task,
-)
+from polar.worker import AsyncSessionMaker, CronTrigger, JobContext, task
 
 from .service.payout import payout_transaction as payout_transaction_service
 from .service.processor_fee import (
@@ -39,9 +33,7 @@ async def sync_stripe_fees(ctx: JobContext) -> None:
 
 
 @task("payout.created")
-async def payout_created(
-    ctx: JobContext, payout_id: uuid.UUID, polar_context: PolarWorkerContext
-) -> None:
+async def payout_created(ctx: JobContext, payout_id: uuid.UUID) -> None:
     async with AsyncSessionMaker(ctx) as session:
         payout = await payout_transaction_service.get(session, payout_id)
         if payout is None:
@@ -88,9 +80,7 @@ async def trigger_stripe_payouts(ctx: JobContext) -> None:
 
 
 @task("payout.trigger_stripe_payout")
-async def trigger_payout(
-    ctx: JobContext, payout_id: uuid.UUID, polar_context: PolarWorkerContext
-) -> None:
+async def trigger_payout(ctx: JobContext, payout_id: uuid.UUID) -> None:
     async with AsyncSessionMaker(ctx) as session:
         payout = await payout_transaction_service.get(session, payout_id)
         if payout is None:

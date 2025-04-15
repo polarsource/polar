@@ -7,7 +7,7 @@ from polar.exceptions import PolarTaskError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Meter
-from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
+from polar.worker import AsyncSessionMaker, JobContext, task
 
 
 class MeterTaskError(PolarTaskError): ...
@@ -27,9 +27,7 @@ async def meter_enqueue_billing(ctx: JobContext) -> None:
 
 
 @task("meter.billing_entries")
-async def meter_billing_entries(
-    ctx: JobContext, meter_id: uuid.UUID, polar_context: PolarWorkerContext
-) -> None:
+async def meter_billing_entries(ctx: JobContext, meter_id: uuid.UUID) -> None:
     async with AsyncSessionMaker(ctx) as session:
         repository = MeterRepository.from_session(session)
         meter = await repository.get_by_id(

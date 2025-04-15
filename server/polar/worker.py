@@ -19,18 +19,10 @@ from arq.connections import create_pool as arq_create_pool
 from arq.cron import CronJob
 from arq.typing import SecondsTimedelta
 from arq.worker import Function
-from pydantic import BaseModel
 
 from polar.config import settings
-from polar.context import ExecutionContext
-from polar.kit.db.postgres import (
-    AsyncEngine,
-    AsyncSession,
-    create_async_sessionmaker,
-)
-from polar.kit.db.postgres import (
-    AsyncSessionMaker as AsyncSessionMakerType,
-)
+from polar.kit.db.postgres import AsyncEngine, AsyncSession, create_async_sessionmaker
+from polar.kit.db.postgres import AsyncSessionMaker as AsyncSessionMakerType
 from polar.logfire import instrument_httpx, instrument_sqlalchemy
 from polar.logging import generate_correlation_id
 from polar.postgres import create_async_engine
@@ -63,13 +55,6 @@ class JobContext(WorkerContext):
 
 def get_worker_redis(ctx: WorkerContext) -> Redis:
     return cast(Redis, ctx["raw_redis"])
-
-
-class PolarWorkerContext(BaseModel):
-    is_during_installation: bool = False
-
-    def to_execution_context(self) -> ExecutionContext:
-        return ExecutionContext(is_during_installation=self.is_during_installation)
 
 
 class QueueName(StrEnum):
@@ -214,11 +199,6 @@ def enqueue_job(
     queue_name: QueueName = QueueName.default,
     **kwargs: Any,
 ) -> None:
-    ctx = ExecutionContext.current()
-    polar_context = PolarWorkerContext(
-        is_during_installation=ctx.is_during_installation,
-    )
-
     request_correlation_id = structlog.contextvars.get_contextvars().get(
         "correlation_id"
     )
@@ -228,7 +208,6 @@ def enqueue_job(
 
     kwargs = {
         "request_correlation_id": request_correlation_id,
-        "polar_context": polar_context,
         **kwargs,
         "_job_id": _job_id,
         "_queue_name": queue_name.value,

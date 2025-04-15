@@ -18,7 +18,6 @@ from polar.models.webhook_delivery import WebhookDelivery
 from polar.worker import (
     AsyncSessionMaker,
     JobContext,
-    PolarWorkerContext,
     compute_backoff,
     enqueue_job,
     task,
@@ -32,11 +31,7 @@ MAX_RETRIES = 10
 
 
 @task("webhook_event.send", max_tries=MAX_RETRIES)
-async def webhook_event_send(
-    ctx: JobContext,
-    webhook_event_id: UUID,
-    polar_context: PolarWorkerContext,
-) -> None:
+async def webhook_event_send(ctx: JobContext, webhook_event_id: UUID) -> None:
     async with AsyncSessionMaker(ctx) as session:
         return await _webhook_event_send(
             session, ctx=ctx, webhook_event_id=webhook_event_id
@@ -155,10 +150,6 @@ async def _webhook_event_send(
 
 
 @task("webhook_event.success")
-async def webhook_event_success(
-    ctx: JobContext,
-    webhook_event_id: UUID,
-    polar_context: PolarWorkerContext,
-) -> None:
+async def webhook_event_success(ctx: JobContext, webhook_event_id: UUID) -> None:
     async with AsyncSessionMaker(ctx) as session:
         return await webhook_service.on_event_success(session, webhook_event_id)

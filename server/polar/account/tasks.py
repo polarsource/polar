@@ -15,7 +15,7 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notification_service
-from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
+from polar.worker import AsyncSessionMaker, JobContext, task
 
 from .service import account as account_service
 
@@ -50,9 +50,7 @@ async def send_account_under_review_discord_notification(account: Account) -> No
 
 
 @task("account.under_review")
-async def account_under_review(
-    ctx: JobContext, account_id: uuid.UUID, polar_context: PolarWorkerContext
-) -> None:
+async def account_under_review(ctx: JobContext, account_id: uuid.UUID) -> None:
     async with AsyncSessionMaker(ctx) as session:
         account = await account_service.get_by_id(session, account_id)
         if account is None:
@@ -73,9 +71,7 @@ async def account_under_review(
 
 
 @task("account.reviewed")
-async def account_reviewed(
-    ctx: JobContext, account_id: uuid.UUID, polar_context: PolarWorkerContext
-) -> None:
+async def account_reviewed(ctx: JobContext, account_id: uuid.UUID) -> None:
     async with AsyncSessionMaker(ctx) as session:
         account = await account_service.get_by_id(session, account_id)
         if account is None:

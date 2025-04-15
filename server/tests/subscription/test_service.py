@@ -1,30 +1,41 @@
 from collections import namedtuple
 from datetime import datetime
+from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, call
 
 import pytest
+import pytest_asyncio
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
+from sqlalchemy.util.typing import TypeAlias
 
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent
+from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import BadRequest, ResourceUnavailable
 from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
+from polar.meter.aggregation import AggregationFunction, PropertyAggregation
+from polar.meter.filter import Filter, FilterConjunction
 from polar.models import (
     Benefit,
+    BillingEntry,
     Customer,
     Discount,
+    Meter,
     Organization,
     Product,
+    ProductPrice,
     Subscription,
     User,
     UserOrganization,
 )
+from polar.models.billing_entry import BillingEntryDirection
 from polar.models.checkout import CheckoutStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
+from polar.product.guard import MeteredPrice, is_metered_price
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
     MissingCheckoutCustomer,
@@ -41,6 +52,9 @@ from tests.fixtures.random_objects import (
     create_canceled_subscription,
     create_checkout,
     create_customer,
+    create_event,
+    create_meter,
+    create_product,
     create_subscription,
     set_product_benefits,
 )
@@ -802,6 +816,148 @@ class TestUpdateSubscriptionFromStripe:
             ]
         )
         assert_hooks_called_once(subscription_hooks, {"updated", "canceled", "revoked"})
+
+
+async def create_event_billing_entry(
+    save_fixture: SaveFixture,
+    *,
+    customer: Customer,
+    product: Product,
+    price: ProductPrice,
+    subscription: Subscription,
+    tokens: int,
+) -> BillingEntry:
+    event = await create_event(
+        save_fixture,
+        organization=customer.organization,
+        customer=customer,
+        metadata={"tokens": tokens},
+    )
+    billing_entry = BillingEntry(
+        start_timestamp=event.timestamp,
+        end_timestamp=event.timestamp,
+        direction=BillingEntryDirection.debit,
+        customer=customer,
+        product_price=price,
+        subscription=subscription,
+        event=event,
+    )
+    await save_fixture(billing_entry)
+    return billing_entry
+
+
+UpdateMetersFixture: TypeAlias = tuple[Meter, Product, MeteredPrice, Subscription]
+
+
+@pytest_asyncio.fixture
+async def update_meters_fixtures(
+    mocker: MockerFixture,
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    customer: Customer,
+    organization: Organization,
+) -> UpdateMetersFixture:
+    meter = await create_meter(
+        save_fixture,
+        filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+        aggregation=PropertyAggregation(
+            func=AggregationFunction.sum, property="tokens"
+        ),
+        organization=organization,
+    )
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[(meter, Decimal(100), None)],
+    )
+    price = product.prices[0]
+    assert is_metered_price(price)
+    subscription = await create_active_subscription(
+        save_fixture, product=product, customer=customer
+    )
+
+    return meter, product, price, subscription
+
+
+@pytest.mark.asyncio
+class TestUpdateMeters:
+    async def test_no_entries(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        update_meters_fixtures: UpdateMetersFixture,
+    ) -> None:
+        meter, product, price, subscription = update_meters_fixtures
+        subscription_meter = subscription.meters[0]
+        subscription_meter.consumed_units = Decimal(100)
+        subscription_meter.credited_units = 0
+        subscription_meter.amount = 10000
+        await save_fixture(subscription_meter)
+
+        updated_subscription = await subscription_service.update_meters(
+            session, subscription
+        )
+
+        assert len(updated_subscription.meters) == 1
+        updated_subscription_meter = updated_subscription.meters[0]
+        assert subscription_meter.id == updated_subscription_meter.id
+        assert updated_subscription_meter.meter == meter
+        assert updated_subscription_meter.consumed_units == 0
+        assert updated_subscription_meter.credited_units == 0
+        assert updated_subscription_meter.amount == 0
+
+    async def test_basic(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        update_meters_fixtures: UpdateMetersFixture,
+    ) -> None:
+        meter, product, price, subscription = update_meters_fixtures
+        subscription_meter = subscription.meters[0]
+        entries = [
+            await create_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                product=product,
+                price=price,
+                subscription=subscription,
+                tokens=10,
+            ),
+            await create_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                product=product,
+                price=price,
+                subscription=subscription,
+                tokens=20,
+            ),
+            await create_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                product=product,
+                price=price,
+                subscription=subscription,
+                tokens=30,
+            ),
+        ]
+
+        updated_subscription = await subscription_service.update_meters(
+            session, subscription
+        )
+
+        assert len(updated_subscription.meters) == 1
+        updated_subscription_meter = updated_subscription.meters[0]
+
+        assert subscription_meter.id == updated_subscription_meter.id
+        assert updated_subscription_meter.meter == meter
+        assert updated_subscription_meter.consumed_units == 60
+        assert updated_subscription_meter.credited_units == 0
+        assert updated_subscription_meter.amount == 6000
 
 
 @pytest.mark.asyncio

@@ -148,11 +148,9 @@ class CustomerMeterService:
         )
         customer_meter.credited_units += credited_units
 
-        # 👟
         customer_meter.balance = max(
             Decimal(0), customer_meter.credited_units - customer_meter.consumed_units
         )
-
         customer_meter.last_balanced_event = events[-1]
 
         return await repository.update(customer_meter), True

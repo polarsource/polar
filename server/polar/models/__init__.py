@@ -57,6 +57,7 @@ from .product_price import (
 )
 from .refund import Refund
 from .subscription import Subscription
+from .subscription_meter import SubscriptionMeter
 from .subscription_product_price import SubscriptionProductPrice
 from .transaction import Transaction
 from .user import OAuthAccount, User
@@ -126,6 +127,7 @@ __all__ = [
     "LegacyRecurringProductPriceCustom",
     "Refund",
     "Subscription",
+    "SubscriptionMeter",
     "SubscriptionProductPrice",
     "Transaction",
     "User",

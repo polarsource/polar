@@ -12,6 +12,7 @@ from polar.discount.schemas import DiscountMinimal
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import (
+    METER_ID_EXAMPLE,
     EmailStrDNS,
     IDSchema,
     MergeJSONSchema,
@@ -19,6 +20,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.meter.schemas import Meter
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.product.schemas import Product, ProductPrice
 
@@ -122,6 +124,29 @@ SubscriptionDiscount = Annotated[
 ]
 
 
+class SubscriptionMeter(IDSchema, TimestampedSchema):
+    """Current consumption and spending for a subscription meter."""
+
+    consumed_units: float = Field(
+        description="The number of consumed units so far in this billing period.",
+        examples=[25.0],
+    )
+    credited_units: int = Field(
+        description="The number of credited units so far in this billing period.",
+        examples=[100],
+    )
+    amount: int = Field(
+        description="The amount due in cents so far in this billing period.",
+        examples=[0],
+    )
+    meter_id: UUID4 = Field(
+        description="The ID of the meter.", examples=[METER_ID_EXAMPLE]
+    )
+    meter: Meter = Field(
+        description="The meter associated with this subscription.",
+    )
+
+
 class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, SubscriptionBase):
     customer: SubscriptionCustomer
     user_id: UUID4 = Field(
@@ -157,6 +182,9 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
 
     prices: list[ProductPrice] = Field(
         description="List of enabled prices for the subscription."
+    )
+    meters: list[SubscriptionMeter] = Field(
+        description="List of meters associated with the subscription."
     )
 
 

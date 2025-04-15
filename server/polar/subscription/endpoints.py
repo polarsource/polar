@@ -7,9 +7,7 @@ from fastapi.responses import StreamingResponse
 
 from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import ResourceNotFound
-from polar.kit.csv import (
-    IterableCSVWriter,
-)
+from polar.kit.csv import IterableCSVWriter
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter

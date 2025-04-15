@@ -25,15 +25,18 @@ from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
+from polar.product.guard import is_metered_price
 
 from .product_price import HasPriceCurrency
+from .subscription_meter import SubscriptionMeter
 
 if TYPE_CHECKING:
-    from polar.models import (
+    from . import (
         BenefitGrant,
         Checkout,
         Customer,
         Discount,
+        Meter,
         Organization,
         Product,
         ProductPrice,
@@ -171,6 +174,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def discount(cls) -> Mapped["Discount | None"]:
         return relationship("Discount", lazy="joined")
 
+    meters: Mapped[list[SubscriptionMeter]] = relationship(
+        SubscriptionMeter,
+        order_by="SubscriptionMeter.created_at",
+        back_populates="subscription",
+        cascade="all, delete-orphan",
+        # Eager load
+        lazy="selectin",
+    )
+
     organization: AssociationProxy["Organization"] = association_proxy(
         "product", "organization"
     )
@@ -284,6 +296,32 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         else:
             raise ValueError("Multiple currencies in subscription prices")
 
+    def update_meters(self, prices: Sequence["SubscriptionProductPrice"]) -> None:
+        subscription_meters = self.meters or []
+
+        # Add new ones
+        price_meters = [
+            price.product_price.meter
+            for price in prices
+            if is_metered_price(price.product_price)
+        ]
+        for price_meter in price_meters:
+            if self.get_meter(price_meter) is None:
+                subscription_meters.append(SubscriptionMeter(meter=price_meter))
+
+        # Remove old ones
+        for subscription_meter in subscription_meters:
+            if subscription_meter.meter not in price_meters:
+                subscription_meters.remove(subscription_meter)
+
+        self.meters = subscription_meters
+
+    def get_meter(self, meter: "Meter") -> SubscriptionMeter | None:
+        for subscription_meter in self.meters:
+            if subscription_meter.meter_id == meter.id:
+                return subscription_meter
+        return None
+
 
 @event.listens_for(Subscription.subscription_product_prices, "append")
 def _price_appended(
@@ -292,6 +330,7 @@ def _price_appended(
     target.update_amount_and_currency(
         [*target.subscription_product_prices, value], target.discount
     )
+    target.update_meters([*target.subscription_product_prices, value])
 
 
 @event.listens_for(Subscription.discount, "set")

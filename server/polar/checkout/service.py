@@ -72,6 +72,7 @@ from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_currency_price,
     is_custom_price,
+    is_discount_applicable,
     is_fixed_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
@@ -1168,16 +1169,13 @@ class CheckoutService:
     ) -> Discount:
         loc_field = "discount_id" if discount_id is not None else "discount_code"
 
-        if price.amount_type not in {
-            ProductPriceAmountType.fixed,
-            ProductPriceAmountType.custom,
-        }:
+        if not any(is_discount_applicable(price) for price in product.prices):
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
                         "loc": ("body", loc_field),
-                        "msg": "Discounts are only applicable to fixed and custom prices.",
+                        "msg": "Discounts are not applicable to this product.",
                         "input": discount_id,
                     }
                 ]

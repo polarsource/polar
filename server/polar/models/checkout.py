@@ -29,21 +29,13 @@ from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataColumn, MetadataMixin
 from polar.kit.tax import TaxID, TaxIDType
 from polar.kit.utils import utc_now
+from polar.product.guard import is_discount_applicable, is_free_price, is_metered_price
 
 from .customer import Customer
 from .discount import Discount
 from .organization import Organization
 from .product import Product
-from .product_price import (
-    LegacyRecurringProductPriceCustom,
-    LegacyRecurringProductPriceFixed,
-    LegacyRecurringProductPriceFree,
-    ProductPrice,
-    ProductPriceCustom,
-    ProductPriceFixed,
-    ProductPriceFree,
-    ProductPriceMeteredUnit,
-)
+from .product_price import ProductPrice
 from .subscription import Subscription
 
 if TYPE_CHECKING:
@@ -228,20 +220,15 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @property
     def is_discount_applicable(self) -> bool:
-        return isinstance(
-            self.product_price,
-            ProductPriceFixed
-            | ProductPriceCustom
-            | LegacyRecurringProductPriceFixed
-            | LegacyRecurringProductPriceCustom
-            | ProductPriceMeteredUnit,
-        )
+        return any(is_discount_applicable(price) for price in self.product.prices)
 
     @property
     def is_free_product_price(self) -> bool:
-        return isinstance(
-            self.product_price, ProductPriceFree | LegacyRecurringProductPriceFree
-        )
+        return all(is_free_price(price) for price in self.product.prices)
+
+    @property
+    def has_metered_prices(self) -> bool:
+        return any(is_metered_price(price) for price in self.product.prices)
 
     @property
     def is_payment_required(self) -> bool:

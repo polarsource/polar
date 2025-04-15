@@ -1,9 +1,11 @@
 import uuid
 from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
+from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
@@ -39,6 +41,11 @@ from tests.fixtures.random_objects import (
     create_meter,
     create_product,
 )
+
+
+@pytest.fixture
+def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch("polar.meter.service.enqueue_job")
 
 
 @pytest.mark.asyncio
@@ -629,6 +636,7 @@ async def metered_subscription(
 class TestCreateBillingEntries:
     async def test_no_subscription(
         self,
+        enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         customer: Customer,
@@ -641,8 +649,11 @@ class TestCreateBillingEntries:
         assert len(entries) == 0
         assert meter.last_billed_event == events[-3]
 
+        enqueue_job_mock.assert_not_called()
+
     async def test_no_last_billed_event(
         self,
+        enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         customer: Customer,
@@ -660,12 +671,18 @@ class TestCreateBillingEntries:
             assert entry.end_timestamp == entry.event.timestamp
             assert entry.direction == BillingEntryDirection.debit
             assert entry.customer == customer
+            assert entry.subscription == metered_subscription
             assert entry.product_price == product_metered_unit.prices[0]
 
         assert meter.last_billed_event == events[-3]
 
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.update_meters", metered_subscription.id
+        )
+
     async def test_last_billed_event(
         self,
+        enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         customer: Customer,
@@ -684,6 +701,11 @@ class TestCreateBillingEntries:
             assert entry.end_timestamp == entry.event.timestamp
             assert entry.direction == BillingEntryDirection.debit
             assert entry.customer == customer
+            assert entry.subscription == metered_subscription
             assert entry.product_price == product_metered_unit.prices[0]
 
         assert meter.last_billed_event == events[-3]
+
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.update_meters", metered_subscription.id
+        )

@@ -950,6 +950,7 @@ async def create_subscription(
         discount=discount,
     )
     await save_fixture(subscription)
+
     return subscription
 
 

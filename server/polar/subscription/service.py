@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from decimal import Decimal
 from enum import StrEnum
 from typing import Any, Literal, overload
 
@@ -14,6 +15,7 @@ from polar.auth.models import (
     is_organization,
     is_user,
 )
+from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.config import settings
 from polar.customer_session.service import customer_session as customer_session_service
@@ -46,6 +48,7 @@ from polar.models import (
     Product,
     ProductBenefit,
     Subscription,
+    SubscriptionMeter,
     SubscriptionProductPrice,
     User,
     UserOrganization,
@@ -60,7 +63,11 @@ from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import sql
-from polar.product.guard import is_custom_price, is_free_price, is_static_price
+from polar.product.guard import (
+    is_custom_price,
+    is_free_price,
+    is_static_price,
+)
 from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
@@ -298,6 +305,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             ),
             contains_eager(Subscription.discount),
             contains_eager(Subscription.customer),
+            selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
         )
 
         results, count = await paginate(session, statement, pagination=pagination)
@@ -905,6 +913,37 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if canceled_at and not subscription.canceled_at:
             subscription.canceled_at = canceled_at
 
+    async def update_meters(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> Subscription:
+        # First reset all meters, since we're computing from every entry
+        for subscription_meter in subscription.meters:
+            subscription_meter.reset()
+
+        for (
+            line_item,
+            _,
+        ) in await billing_entry_service.compute_pending_subscription_line_items(
+            session, subscription
+        ):
+            subscription_meter_line = subscription.get_meter(line_item.price.meter)
+            if subscription_meter_line is not None:
+                subscription_meter_line.consumed_units += Decimal(
+                    line_item.consumed_units
+                )
+                subscription_meter_line.credited_units += line_item.credited_units
+                subscription_meter_line.amount += line_item.amount
+
+        session.add(subscription)
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=subscription.status,
+            previous_ends_at=subscription.ends_at,
+        )
+
+        return subscription
+
     async def _after_subscription_updated(
         self,
         session: AsyncSession,
@@ -1184,6 +1223,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     selectinload(Product.product_medias),
                     selectinload(Product.attached_custom_fields),
                 ),
+                selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
             )
 
         res = await session.execute(query)

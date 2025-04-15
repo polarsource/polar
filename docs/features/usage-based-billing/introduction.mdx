@@ -3,21 +3,28 @@ title: "Introduction"
 description: "Usage based billing using ingested events"
 ---
 
+<Warning>
+  Usage Based Billing is currently in Alpha & subject to change.
+</Warning>
+
 ## Overview
 
 Polar has a powerful Usage Based Billing infrastructure that allows you to charge your customers based on the usage of your application.
 
-This is done by ingesting events from your application and then creating Meters that represent the usage of your application.
+This is done by ingesting events from your application, creating Meters to represent that usage, and then adding metered prices to Products to charge for it.
 
 ## Quickstart
 
 Get up and running in 5 minutes
 
 <Steps>
-  <Step title="Create a Meter">
+  <Step title="Enable Usage Based Billing">
+    Usage Based Billing is currently in Alpha. Enable it by navigating to the Organization Settings and toggling the "Usage Based Billing" switch.
 
+  </Step>
+  <Step title="Create a Meter">
     Meters consist of filters and an aggregation function.
-    The filter is used to select the events that should be included in the meter and the aggregation function is used to compute the usage.
+    The filter is used to filter the events that should be included in the meter and the aggregation function is used to compute the usage.
 
     <img className="block dark:hidden" src="/assets/features/usage/create-meter.light.png" />
     <img className="hidden dark:block" src="/assets/features/usage/create-meter.dark.png" />
@@ -46,37 +53,3 @@ Get up and running in 5 minutes
 
   </Step>
 </Steps>
-
-## Event Ingestion
-
-To ingest events from your application, you can use our [Event Ingestion API](/api-reference/events/ingest).
-
-## Meters
-
-Meters are the core of the Usage Based Billing system. They represent a specific unit of usage of your application.
-
-## Usage Based Pricing
-
-Usage based pricing is a pricing model where you charge your customers based on the usage of your application.
-
-There are 2 different pricing models:
-
-- Unit Pricing
-- Volume Pricing (Coming soon)
-
-### Unit Pricing
-
-Unit pricing is a simple pricing model where you charge a fixed amount for each unit of usage.
-
-For example:
-
-| Product Meter       | Price per unit |
-| ------------------- | -------------- |
-| `prompt-tokens`     | $0.10          |
-| `completion-tokens` | $0.18          |
-
-This means that every unit of `prompt-tokens` will be charged at $0.10 and every unit of `completion-tokens` will be charged at $0.18.
-
-### Volume Pricing (Coming soon)
-
-Volume pricing is a pricing model where you charge a fixed amount for a certain volume of usage. Volume pricing is not yet available, but will be coming soon.

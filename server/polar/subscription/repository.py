@@ -26,11 +26,15 @@ class SubscriptionRepository(
     model = Subscription
 
     async def list_active_by_customer(
-        self, customer_id: UUID
+        self, customer_id: UUID, *, options: Options = ()
     ) -> Sequence[Subscription]:
-        statement = self.get_base_statement().where(
-            Subscription.customer_id == customer_id,
-            Subscription.active.is_(True),
+        statement = (
+            self.get_base_statement()
+            .where(
+                Subscription.customer_id == customer_id,
+                Subscription.active.is_(True),
+            )
+            .options(*options)
         )
         return await self.get_all(statement)
 

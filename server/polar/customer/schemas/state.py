@@ -22,8 +22,13 @@ from polar.kit.schemas import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.subscription import SubscriptionStatus
+from polar.subscription.schemas import SubscriptionMeterBase
 
 from .customer import CustomerBase
+
+
+class CustomerStateSubscriptionMeter(SubscriptionMeterBase):
+    """Current consumption and spending for a subscription meter."""
 
 
 class CustomerStateSubscription(
@@ -89,6 +94,9 @@ class CustomerStateSubscription(
             # Validate from ORM model
             AliasPath("prices", 0, "id"),
         ),
+    )
+    meters: list[CustomerStateSubscriptionMeter] = Field(
+        description="List of meters associated with the subscription."
     )
 
 

@@ -326,4 +326,5 @@ export const SUBSCRIPTION_ORDER_PREVIEW: schemas['CustomerSubscription'] = {
   discount_id: null,
   customer_cancellation_comment: null,
   customer_cancellation_reason: null,
+  meters: [],
 }

@@ -11,6 +11,7 @@ import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -155,6 +156,27 @@ const CustomerSubscriptionDetails = ({
                   day: 'numeric',
                 },
               )}
+            </span>
+          </div>
+        )}
+        {subscription.meters.length > 0 && (
+          <div className="flex flex-row items-center justify-between">
+            <span className="dark:text-polar-500 text-gray-500">Usage</span>
+            <span>
+              {subscription.meters.map((subscriptionMeter) => (
+                <div
+                  key={subscriptionMeter.id}
+                  className="flex flex-row gap-x-2"
+                >
+                  <span>{subscriptionMeter.meter.name}</span>
+                  <span>
+                    {formatCurrencyAndAmount(
+                      subscriptionMeter.amount,
+                      subscription.currency,
+                    )}
+                  </span>
+                </div>
+              ))}
             </span>
           </div>
         )}

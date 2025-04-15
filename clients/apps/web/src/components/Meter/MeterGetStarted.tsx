@@ -9,12 +9,27 @@ export interface MeterGetStartedProps {
 }
 
 export const MeterGetStarted = ({ meter }: MeterGetStartedProps) => {
-  const nameClause = meter.filter.clauses.find(
-    (clause) =>
-      'property' in clause &&
-      clause.property === 'name' &&
-      clause.operator === 'eq',
-  )
+  const findNameClause = (
+    clauses: schemas['Filter']['clauses'],
+  ): schemas['FilterClause'] | null => {
+    for (const clause of clauses) {
+      if (
+        'property' in clause &&
+        clause.property === 'name' &&
+        clause.operator === 'eq'
+      ) {
+        return clause
+      }
+
+      if ('clauses' in clause) {
+        const found = findNameClause(clause.clauses)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  const nameClause = findNameClause(meter.filter.clauses)
 
   const nameClauseValue = nameClause
     ? (nameClause as { value: string }).value

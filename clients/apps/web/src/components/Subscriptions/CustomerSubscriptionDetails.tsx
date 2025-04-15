@@ -164,7 +164,10 @@ const CustomerSubscriptionDetails = ({
             <span className="text-lg">Metered Usage</span>
             <div className="flex flex-col gap-y-2">
               {subscription.meters.map((subscriptionMeter) => (
-                <div className="flex flex-row items-center justify-between">
+                <div
+                  key={subscriptionMeter.meter.id}
+                  className="flex flex-row items-center justify-between"
+                >
                   <span className="dark:text-polar-500 text-gray-500">
                     {subscriptionMeter.meter.name}
                   </span>

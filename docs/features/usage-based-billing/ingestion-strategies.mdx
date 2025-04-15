@@ -3,8 +3,6 @@ title: "Ingestion Strategies"
 description: "Ingestion strategies for Usage Based Billing"
 ---
 
-# Ingestion Strategies
-
 Polar offers an ingestion framework to work with Polar's event ingestion API.
 
 ## Strategies
@@ -44,6 +42,19 @@ export async function POST(req: Request) {
   });
 
   return Response.json({ text });
+}
+```
+
+#### Ingestion Payload
+
+```json
+{
+  "customerId": "123",
+  "name": "openai-usage",
+  "metadata": {
+    "promptTokens": 100,
+    "completionTokens": 200
+  }
 }
 ```
 
@@ -101,6 +112,21 @@ export async function POST(request: Request) {
 }
 ```
 
+#### Ingestion Payload
+
+```json
+{
+  "customerId": "123",
+  "name": "s3-uploads",
+  "metadata": {
+    "bytes": 100,
+    "bucket": "my-bucket",
+    "key": "my-key",
+    "contentType": "application/text"
+  }
+}
+```
+
 ### Stream Strategy
 
 Wrap any Readable or Writable stream of choice to automatically ingest the bytes consumed.
@@ -138,3 +164,19 @@ export async function GET(request: Request) {
   }
 }
 ```
+
+#### Ingestion Payload
+
+```json
+{
+  "customerId": "123",
+  "name": "my-stream",
+  "metadata": {
+    "bytes": 100
+  }
+}
+```
+
+## Help us improve
+
+We're always looking for ways to improve our ingestion strategies. Feel free to contribute — [Polar Ingestion SDK](https://github.com/polarsource/polar-ingestion).

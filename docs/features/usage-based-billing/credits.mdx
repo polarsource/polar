@@ -1,10 +1,46 @@
 ---
 title: "Credits"
-description: "Credits for Usage Based Billing"
+description: "Crediting customers for Usage Based Billing"
 ---
 
-## Credits Benefit
+## Basics
 
-The Credits Benefit is a benefit that allows you to credit your customers for usage based billing.
+Credits are the perfect way to give your customers a "spending limit" on their Usage Meter balance.
 
-This means that customers can be credited for usage based billing, without having to pay for it upfront. Credits are used to pay for future usage.
+## How Credits Work
+
+When you ingest events into a Usage Meter, customers will be charged for the usage based on the product's pricing model.
+
+However, sometimes you may want to give your customers the ability to pre-pay for usage instead of risk getting a hefty bill at the end of the month.
+
+When you issue Credits to a customer, we first deduct the Credits from their Usage Meter balance. If the Usage Meter balance reaches 0, the customer will be charged for the overage.
+
+### Credits-only spending
+
+To avoid any overage charges, you can set the `Cap Amount` on the Metered Product Pricing model to $0. This will prevent any overage charges.
+
+You can then implement a check against the Customer's Meter to see if the user has a balance or is at risk of "over-spending".
+
+<img className="block dark:hidden" src="/assets/features/usage/cap.light.png" />
+<img className="hidden dark:block" src="/assets/features/usage/cap.dark.png" />
+
+## Issuing Credits with the Credits Benefit
+
+<img
+  className="block dark:hidden"
+  src="/assets/features/benefits/credits/credits.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/benefits/credits/credits.dark.png"
+/>
+
+The Credits benefit will credit a customer's Usage Meter balance at different points in time depending on the type of product the benefit is attached to.
+
+### Subscription Products
+
+The customer will be credited the amount of units specified in the benefit at the beginning of every subscription cycle period — monthly or yearly.
+
+### One-Time Products
+
+The customer will be credited the amount of units specified in the benefit once at the time of purchase.

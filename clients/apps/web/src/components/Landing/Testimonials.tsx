@@ -63,7 +63,20 @@ const testimonials = [
       </p>
     ),
   },
-
+  {
+    name: 'enjie',
+    username: 'im_enjie',
+    avatar: '/assets/landing/testamonials/enjie.jpg',
+    link: 'https://x.com/im_enjie/status/1911490599980519690',
+    verified: true,
+    text: (
+      <p>
+        I finally tried @polar_sh after all the hype, and it&apos;s hands down
+        the smoothest, most developer-friendly, and straightforward payment
+        integration out there.
+      </p>
+    ),
+  },
   {
     link: 'https://x.com/samuel_colvin/status/1676167205715582978',
     name: 'Samuel Colvin',

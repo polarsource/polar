@@ -15,7 +15,7 @@ class MeterCreditedMetadata(TypedDict):
 
 
 class SystemEvent(StrEnum):
-    meter_credited = "meter_credited"
+    meter_credited = "meter.credited"
 
 
 class MeterCreditedEvent(Event):

@@ -15,7 +15,7 @@ class MetadataSchema(MetadataInputMixin): ...
         pytest.param({f"key{i}": "value" for i in range(51)}, id="too many keys"),
     ],
 )
-def test_invalid_input(metadata: dict[str, str | int | bool]) -> None:
+def test_invalid_input(metadata: dict[str, str | int | bool | float]) -> None:
     with pytest.raises(ValidationError):
         MetadataSchema(metadata=metadata)
 

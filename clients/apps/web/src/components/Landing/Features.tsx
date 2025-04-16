@@ -49,7 +49,7 @@ const FeatureCard = ({
         className="dark:border-polar-700 dark:bg-polar-900 flex flex-col justify-between gap-y-8 rounded-2xl border border-gray-200 bg-white p-8 transition-transform hover:translate-y-[-4px] md:h-96"
       >
         <div className="flex flex-col gap-y-6">
-          {icon}
+          <span className="text-blue-500">{icon}</span>
           <div className="flex flex-col gap-y-2">
             <h3 className="text-xl text-black dark:text-white">{title}</h3>
             <p className="dark:text-polar-500 w-full flex-grow text-gray-500 md:max-w-96">
@@ -94,7 +94,7 @@ type FeaturesProps = {
 const Features = ({ className }: FeaturesProps) => {
   const features = [
     {
-      icon: <HiveOutlined fontSize="large" />,
+      icon: <HiveOutlined fontSize="medium" />,
       title: 'Digital Products & SaaS Billing',
       description:
         'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
@@ -119,7 +119,7 @@ const Features = ({ className }: FeaturesProps) => {
       ),
     },
     {
-      icon: <AllInclusiveOutlined fontSize="large" />,
+      icon: <AllInclusiveOutlined fontSize="medium" />,
       title: 'Benefits Engine',
       description:
         'Powerful entitlements engine that automates access to various features.',
@@ -155,7 +155,7 @@ const Features = ({ className }: FeaturesProps) => {
       ),
     },
     {
-      icon: <Face fontSize="large" />,
+      icon: <Face fontSize="medium" />,
       title: 'Customer Management',
       description:
         'Streamlined customer lifecycle management with detailed profiles and analytics.',
@@ -175,11 +175,12 @@ const Features = ({ className }: FeaturesProps) => {
       ),
     },
     {
-      icon: <DonutLargeOutlined fontSize="large" />,
-      title: 'Usage Based Billing (Alpha)',
+      icon: <DonutLargeOutlined fontSize="medium" />,
+      title: 'Usage Based Billing',
       description:
         'Robust event ingestion API that enables precise usage-based billing.',
-      linkHref: 'https://github.com/polarsource/polar-ingestion',
+      linkHref:
+        'https://docs.polar.sh/features/usage-based-billing/introduction',
       children: (
         <div className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-4 overflow-auto rounded-lg border border-gray-200 bg-gray-100 p-4">
           <pre className="font-mono text-xs">
@@ -191,7 +192,7 @@ const Features = ({ className }: FeaturesProps) => {
       ),
     },
     {
-      icon: <LanguageOutlined fontSize="large" />,
+      icon: <LanguageOutlined fontSize="medium" />,
       title: 'Global Merchant of Record',
       description:
         'Focus on your passion while we handle all the tax compliance.',

@@ -38,7 +38,7 @@ export const Hero = ({ className }: { className?: string }) => {
         Payment infrastructure for the 21st century
       </motion.h1>
       <motion.p
-        className="text-pretty text-2xl leading-relaxed"
+        className="text-pretty px-8 text-2xl leading-relaxed md:px-0"
         variants={itemVariants}
       >
         The modern way to sell your SaaS and digital products

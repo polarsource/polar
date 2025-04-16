@@ -8,7 +8,7 @@ import stripe as stripe_lib
 import structlog
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import UnaryExpression, asc, desc, func, select
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import (
     Anonymous,
@@ -1006,7 +1006,10 @@ class CheckoutService:
             product_price_id,
             auth_subject,
             options=(
-                contains_eager(ProductPrice.product).joinedload(Product.organization),
+                contains_eager(ProductPrice.product).options(
+                    joinedload(Product.organization),
+                    selectinload(Product.prices),
+                ),
             ),
         )
 

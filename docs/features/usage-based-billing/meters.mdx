@@ -47,41 +47,41 @@ If you want to match on a metadata field, you can use the metadata key directly.
 
 Operators are the operators that you want to use to filter the events.
 
-- `Equal to` - Equal to
-- `Not equal to` - Not equal to
-- `Greater than` - Greater than
-- `Greater than or equal to` - Greater than or equal to
-- `Less than` - Less than
-- `Less than or equal to` - Less than or equal to
-- `Contains substring` - Contains substring
-- `Not Like` - Does not contain substring
+- **Equals**
+- **Not equals**
+- **Greater Than**
+- **Greater Than or Equals**
+- **Less Than**
+- **Less Than or Equals**
+- **Contains**
+- **Does Not Contain**
 
 #### Value
 
 Values are automatically parsed in the filter builder. They're parsed in the following order:
 
-1. Number - Checks if value is not NaN
-2. Boolean - Checks if value is "true" or "false"
-3. String - Treats value as string as fallback
+1. Number — Tries to parse the value as number
+2. Boolean — Checks if value is "true" or "false"
+3. String — Treats value as string as fallback
 
 ### Conjunctions
 
 A conjunction is a logical operator that combines two or more clauses.
 
-- `AND` - All clauses must be true for the event to be included.
-- `OR` - At least one clause must be true for the event to be included.
+- **and** — All clauses must be true for the event to be included.
+- **or** — At least one clause must be true for the event to be included.
 
 ## Aggregation
 
 The aggregation is the function that is used to aggregate the events that match the filter.
 
-For example, if you want to count the number of events that match the filter, you can use the `Count` aggregation. If you want to sum the value of a metadata field, you can use the `Sum` aggregation.
+For example, if you want to count the number of events that match the filter, you can use the **Count** aggregation. If you want to sum the value of a metadata field, you can use the **Sum** aggregation.
 
-- `Count` - Counts the number of events that match the filter.
-- `Sum` - Sums the value of a property.
-- `Average` - Finds the average value of a property.
-- `Minimum` - Finds the minimum value of a property.
-- `Maximum` - Finds the maximum value of a property.
+- **Count** — Counts the number of events that match the filter.
+- **Sum** — Sums the value of a property.
+- **Average** — Computes the average value of a property.
+- **Minimum** — Computes the minimum value of a property.
+- **Maximum** — Computes the maximum value of a property.
 
 If you want to use a metadata property in the aggregation, you can use the metadata property directly. No need to include a `metadata.` prefix.
 
@@ -97,6 +97,10 @@ The following Meter Filter & Aggregation will match events that have the name `o
   className="hidden dark:block"
   src="/assets/features/usage/meter.dark.png"
 />
+
+<Tip>
+  You can **Preview** the events matched by the meter while creating it.
+</Tip>
 
 ## Good to know
 

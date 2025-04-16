@@ -17,12 +17,7 @@ When you issue Credits to a customer, we first deduct the Credits from their Usa
 
 ### Credits-only spending
 
-To avoid any overage charges, you can set the `Cap Amount` on the Metered Product Pricing model to $0. This will prevent any overage charges.
-
-You can then implement a check against the Customer's Meter to see if the user has a balance or is at risk of "over-spending".
-
-<img className="block dark:hidden" src="/assets/features/usage/cap.light.png" />
-<img className="hidden dark:block" src="/assets/features/usage/cap.dark.png" />
+To avoid any overage charges, don't create any Metered price on your product. This way, billing won't be triggered at all for the meter
 
 ## Issuing Credits with the Credits Benefit
 

@@ -10,7 +10,7 @@ Metered Pricing is a pricing model where you charge your customers based on the 
 There are a few different pricing models unique to Usage Based Billing:
 
 - Unit Pricing
-- Volume Pricing (Coming soon)
+- Volume Pricing _(coming soon)_
 
 ### Unit Pricing
 
@@ -27,13 +27,22 @@ This means that every unit of `prompt-tokens` consumed by a customer will be cha
 
 It's a linear pricing model, where the price per unit is fixed.
 
-### Volume Pricing (Coming soon)
+### Volume Pricing _(coming soon)_
 
 Volume pricing is a pricing model where you charge a fixed amount for a certain volume of usage. Volume pricing is not yet available, but will be coming soon.
 
 ## Invoicing Customers for Usage
 
 Our Usage Based Billing infrastructure is built to work with Subscription products out of the box.
+
+### Add a metered price to your product
+
+To charge your customers for usage, you need to add a metered price to your product. You'll need the select the **Meter** and the **amount per unit**.
+
+<img className="block dark:hidden" src="/assets/features/usage/cap.light.png" />
+<img className="hidden dark:block" src="/assets/features/usage/cap.dark.png" />
+
+Optionally, you can set a **cap**. The customer will be charged the cap amount if they exceed it, regardless of the usage.
 
 ### Monthly Invoicing
 
@@ -42,6 +51,11 @@ If a customer has a subscription with a monthly billing period, usage is aggrega
 ### Yearly Invoicing
 
 If a customer has a subscription with a yearly billing period, usage is aggregated yearly and invoiced at the end of the year with the rest of the subscription.
+
+<Warning>
+  If a [discount](/features/discounts) is applied on the subscription, it'll be
+  applied on the **whole invoice**, including metered usage.
+</Warning>
 
 ## Customer Portal
 

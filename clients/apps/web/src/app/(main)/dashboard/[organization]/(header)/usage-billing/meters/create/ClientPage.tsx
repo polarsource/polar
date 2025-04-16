@@ -104,7 +104,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
           onSubmit={handleSubmit(onSubmit)}
           className="dark:divide-polar-700 flex h-full w-full flex-col gap-y-6 divide-gray-200 md:flex-row md:divide-x"
         >
-          <div className="flex h-full max-w-xl flex-col gap-y-6 pb-8 md:pr-12">
+          <div className="flex h-full flex-1 flex-col gap-y-6 pb-8 md:w-1/2 md:pr-12">
             <MeterForm eventNames={flatEventNames} />
             <Button
               className="self-start"
@@ -114,7 +114,7 @@ export default function ClientPage({ organization }: ClientPageProps) {
               Preview
             </Button>
           </div>
-          <div className="flex h-full w-full flex-col gap-y-6 pb-8 md:pl-12">
+          <div className="flex h-full flex-1 flex-col gap-y-6 pb-8 md:w-1/2 md:pl-12">
             <div className="flex flex-col gap-y-4">
               <h2 className="text-xl">Preview</h2>
               <p className="dark:text-polar-500 text-gray-500">

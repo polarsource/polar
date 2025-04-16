@@ -46,7 +46,7 @@ const EventRow = ({
           </div>
         </td>
         <td className="px-4 py-2">
-          <div className="w-[120px] flex-shrink-0 font-mono text-sm">
+          <div className="w-[120px] flex-shrink-0 font-mono text-xs">
             <span>{event.name}</span>
           </div>
         </td>
@@ -76,7 +76,7 @@ const EventRow = ({
           </Link>
         </td>
         <td className="px-4 py-2">
-          <pre className="w-full min-w-0 truncate font-mono text-xs">
+          <pre className="min-w-0 truncate font-mono text-xs">
             {JSON.stringify(event.metadata, null, 2)}
           </pre>
         </td>

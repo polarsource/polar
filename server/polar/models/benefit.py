@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
+from polar.kit.metadata import MetadataMixin
 
 if TYPE_CHECKING:
     from polar.benefit.strategies import BenefitProperties
@@ -44,7 +45,7 @@ class BenefitType(StrEnum):
             raise TaxApplicationMustBeSpecified(self) from e
 
 
-class Benefit(RecordModel):
+class Benefit(MetadataMixin, RecordModel):
     __tablename__ = "benefits"
 
     type: Mapped[BenefitType] = mapped_column(String, nullable=False, index=True)

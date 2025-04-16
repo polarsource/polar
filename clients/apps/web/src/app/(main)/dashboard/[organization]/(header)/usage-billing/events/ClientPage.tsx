@@ -156,6 +156,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const { data, fetchNextPage, hasNextPage } = useEventNames(organization.id, {
     query,
     sorting: [sorting],
+    source: 'user',
   })
 
   const eventNames = useMemo(

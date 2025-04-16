@@ -5,6 +5,7 @@ from pydantic import (
     Field,
 )
 
+from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
     IDSchema,
     Schema,
@@ -20,7 +21,7 @@ BENEFIT_DESCRIPTION_MAX_LENGTH = 42
 class BenefitProperties(Schema): ...
 
 
-class BenefitCreateBase(Schema):
+class BenefitCreateBase(MetadataInputMixin, Schema):
     type: BenefitType
     description: str = Field(
         ...,
@@ -40,7 +41,7 @@ class BenefitCreateBase(Schema):
     )
 
 
-class BenefitUpdateBase(Schema):
+class BenefitUpdateBase(MetadataInputMixin, Schema):
     description: str | None = Field(
         None,
         min_length=BENEFIT_DESCRIPTION_MIN_LENGTH,
@@ -52,7 +53,7 @@ class BenefitUpdateBase(Schema):
     )
 
 
-class BenefitBase(IDSchema, TimestampedSchema):
+class BenefitBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
     id: UUID4 = Field(..., description="The ID of the benefit.")
     type: BenefitType = Field(..., description="The type of the benefit.")
     description: str = Field(..., description="The description of the benefit.")

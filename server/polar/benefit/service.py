@@ -8,6 +8,7 @@ from sqlalchemy import UnaryExpression, asc, delete, desc
 from polar.auth.models import AuthSubject
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Benefit, Organization, ProductBenefit, User
@@ -36,6 +37,7 @@ class BenefitService:
         *,
         type: Sequence[BenefitType] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
+        metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[BenefitSortProperty]] = [
             (BenefitSortProperty.created_at, True)
@@ -53,6 +55,9 @@ class BenefitService:
 
         if query is not None:
             statement = statement.where(Benefit.description.ilike(f"%{query}%"))
+
+        if metadata is not None:
+            statement = apply_metadata_clause(Benefit, statement, metadata)
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

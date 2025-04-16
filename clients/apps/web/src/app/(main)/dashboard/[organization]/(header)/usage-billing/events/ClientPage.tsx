@@ -75,11 +75,11 @@ const DatePresetDropdown = ({
     },
     last_3_months: {
       from: subMonths(new Date(), 3),
-      to: new Date(),
+      to: endOfToday(),
     },
     since_organization_creation: {
       from: new Date(organization.created_at),
-      to: new Date(),
+      to: endOfToday(),
     },
   } as const
 
@@ -140,7 +140,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   )
   const [endDate, setEndDate] = useQueryState(
     'endDate',
-    parseAsIsoDateTime.withDefault(new Date()),
+    parseAsIsoDateTime.withDefault(endOfToday()),
   )
   const [currentPage, setCurrentPage] = useQueryState(
     'page',
@@ -191,12 +191,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     [setStartDate, setEndDate],
   )
 
-  const dateRange = useMemo(() => {
-    return {
-      from: startDate,
-      to: endDate,
-    }
-  }, [startDate, endDate])
+  const dateRange = {
+    from: startDate,
+    to: endDate,
+  }
 
   const { ref: loadingRef, inViewport } = useInViewport<HTMLDivElement>()
 

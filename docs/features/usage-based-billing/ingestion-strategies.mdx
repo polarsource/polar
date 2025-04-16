@@ -5,9 +5,9 @@ description: "Ingestion strategies for Usage Based Billing"
 
 Polar offers an ingestion framework to work with Polar's event ingestion API.
 
-## Strategies
-
 Want to report events regarding Large Language Model usage, S3 file uploads or something else? Our Ingestion strategies are customized to make it as seamless as possible to fire ingestion events for complex needs.
+
+## Javascript SDK
 
 ### LLM Strategy
 
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
           age: 30,
         }),
         ContentType: "application/json",
-      })
+      }),
     );
 
     return Response.json({});
@@ -236,6 +236,89 @@ export async function GET(request: Request) {
 }
 ```
 
-## Help us improve
+### Help us improve
 
 We're always looking for ways to improve our ingestion strategies. Feel free to contribute — [Polar Ingestion SDK](https://github.com/polarsource/polar-ingestion).
+
+## Python SDK
+
+Our Python SDK includes an ingestion helper and strategies for common use cases. It's installed as part of the Polar SDK.
+
+<CodeGroup>
+
+```bash pip
+pip install polar-sdk
+```
+
+```bash uv
+uv add polar-sdk
+```
+
+</CodeGroup>
+
+### Ingestion helper
+
+The ingestion helper is a simple wrapper around the Polar events ingestion API. It takes care of batching and sending events to Polar in the background, without blocking your main thread.
+
+```python
+import os
+from polar_sdk.ingestion import Ingestion
+
+ingestion = Ingestion(os.getenv("POLAR_ACCESS_TOKEN"))
+
+ingestion.ingest({
+    "name": "my-event",
+    "external_customer_id": "CUSTOMER_ID",
+    "metadata": {
+        "usage": 13.37,
+    }
+})
+```
+
+### PydanticAI Strategy
+
+[PydanticAI](https://ai.pydantic.dev) is an AI agent framework for Python. A common use-case with AI applications is to track the usage of LLMs, like the number of input and output tokens, and bill the customer accordingly.
+
+With our PydanticAI strategy, you can easily track the usage of LLMs and send the data to Polar for billing.
+
+```python
+import os
+from polar_sdk.ingestion import Ingestion
+from polar_sdk.ingestion.strategies import PydanticAIStrategy
+from pydantic import BaseModel
+from pydantic_ai import Agent
+
+
+ingestion = Ingestion(os.getenv("POLAR_ACCESS_TOKEN"))
+strategy = ingestion.strategy(PydanticAIStrategy, "ai_usage")
+
+
+class MyModel(BaseModel):
+    city: str
+    country: str
+
+
+agent = Agent("gpt-4.1-nano", output_type=MyModel)
+
+if __name__ == '__main__':
+    result = agent.run_sync("The windy city in the US of A.")
+    print(result.output)
+    strategy.ingest("CUSTOMER_ID", result)
+```
+
+_This example is inspired from the [Pydantic Model example](https://ai.pydantic.dev/examples/pydantic-model/) of PydanticAI documentation._
+
+#### Ingestion Payload
+
+```json
+{
+  "name": "ai_usage",
+  "external_customer_id": "CUSTOMER_ID",
+  "metadata": {
+    "requests": 1,
+    "total_tokens": 78,
+    "request_tokens": 58,
+    "response_tokens": 20
+  }
+}
+```

@@ -3,6 +3,7 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
 import Spinner from '@/components/Shared/Spinner'
+import { Well, WellContent, WellHeader } from '@/components/Shared/Well'
 import {
   SyntaxHighlighterClient,
   SyntaxHighlighterProvider,
@@ -12,9 +13,10 @@ import { ActivityWidget } from '@/components/Widgets/ActivityWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import { RevenueWidget } from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
-import { useMetrics, useProducts } from '@/hooks/queries'
+import { useMetrics, useProducts, useUpdateOrganization } from '@/hooks/queries'
+import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { computeCumulativeValue, metricDisplayNames } from '@/utils/metrics'
-import { ChevronRight } from '@mui/icons-material'
+import { ChevronRight, DonutLargeOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -43,7 +45,7 @@ import {
 import { motion } from 'framer-motion'
 import { useTheme } from 'next-themes'
 import Link from 'next/link'
-import React, { useMemo } from 'react'
+import React, { useContext, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface HeroChartProps {
@@ -401,6 +403,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
 
   return (
     <DashboardBody className="gap-y-16 pb-16">
+      <UsageBasedBillingBanner />
       <HeroChart organization={organization} />
       <motion.div
         className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-10"
@@ -545,5 +548,67 @@ redirect(checkout.url)
         </Link>
       </div>
     </ShadowBox>
+  )
+}
+
+const UsageBasedBillingBanner = () => {
+  const { organization } = useContext(OrganizationContext)
+
+  const updateOrganization = useUpdateOrganization()
+
+  const handleEnableUsageBasedBilling = async () => {
+    await updateOrganization.mutate({
+      id: organization.id,
+      body: {
+        feature_settings: {
+          usage_based_billing_enabled: true,
+          issue_funding_enabled:
+            organization.feature_settings?.issue_funding_enabled ?? false,
+        },
+      },
+    })
+  }
+
+  return (
+    <Well className="shadow-3xl flex flex-row items-center justify-between gap-x-6 bg-white p-6">
+      <div className="flex flex-col gap-y-2">
+        <WellHeader className="flex flex-row items-center gap-x-2">
+          <DonutLargeOutlined fontSize="small" className="text-blue-500" />
+          <h3 className="text-lg font-medium">
+            Introducing Usage Based Billing
+          </h3>
+        </WellHeader>
+        <WellContent>
+          <p className="dark:text-polar-500 text-gray-500">
+            Unlock new revenue streams based on the usage of your application.
+            Now in Alpha.
+          </p>
+        </WellContent>
+      </div>
+      <div className="flex flex-row items-center gap-x-4">
+        <Link
+          href="https://docs.polar.sh/features/usage-based-billing/introduction"
+          target="_blank"
+        >
+          <Button
+            variant={
+              organization.feature_settings?.usage_based_billing_enabled
+                ? 'default'
+                : 'secondary'
+            }
+          >
+            Learn More
+          </Button>
+        </Link>
+        {!organization.feature_settings?.usage_based_billing_enabled && (
+          <Button
+            loading={updateOrganization.isPending}
+            onClick={handleEnableUsageBasedBilling}
+          >
+            Enable
+          </Button>
+        )}
+      </div>
+    </Well>
   )
 }

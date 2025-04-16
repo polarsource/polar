@@ -32,7 +32,7 @@ _MetadataValueString = Annotated[
         min_length=_MINIMUM_VALUE_LENGTH, max_length=_MAXIMUM_VALUE_LENGTH
     ),
 ]
-_MetadataValue = _MetadataValueString | int | bool
+_MetadataValue = _MetadataValueString | int | float | bool
 
 METADATA_DESCRIPTION = inspect.cleandoc(
     f"""
@@ -43,6 +43,7 @@ METADATA_DESCRIPTION = inspect.cleandoc(
 
     * A string with a maximum length of **{_MAXIMUM_VALUE_LENGTH} characters**
     * An integer
+    * A floating-point number
     * A boolean
 
     You can store up to **{_MAXIMUM_KEYS} key-value pairs**.
@@ -66,7 +67,7 @@ class MetadataInputMixin(BaseModel):
 
 
 class MetadataOutputMixin(BaseModel):
-    metadata: dict[str, str | int | bool] = Field(
+    metadata: dict[str, str | int | float | bool] = Field(
         validation_alias=AliasChoices("user_metadata", "metadata")
     )
 

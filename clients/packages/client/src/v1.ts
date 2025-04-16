@@ -3730,6 +3730,12 @@ export interface components {
         /** BenefitBase */
         BenefitBase: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -3740,12 +3746,10 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /** @description The type of the benefit. */
             type: components["schemas"]["BenefitType"];
             /**
@@ -3779,6 +3783,12 @@ export interface components {
          */
         BenefitCustom: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -3789,12 +3799,10 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Type
              * @constant
@@ -3834,6 +3842,23 @@ export interface components {
          */
         BenefitCustomCreate: {
             /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
+            /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
@@ -3869,6 +3894,12 @@ export interface components {
         /** BenefitCustomSubscriber */
         BenefitCustomSubscriber: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -3879,12 +3910,10 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Type
              * @constant
@@ -3925,6 +3954,23 @@ export interface components {
         /** BenefitCustomUpdate */
         BenefitCustomUpdate: {
             /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
+            /**
              * Description
              * @description The description of the benefit. Will be displayed on products having this benefit.
              */
@@ -3944,6 +3990,12 @@ export interface components {
          */
         BenefitDiscord: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -3954,12 +4006,10 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Type
              * @constant
@@ -3990,6 +4040,23 @@ export interface components {
         };
         /** BenefitDiscordCreate */
         BenefitDiscordCreate: {
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -4041,6 +4108,12 @@ export interface components {
         /** BenefitDiscordSubscriber */
         BenefitDiscordSubscriber: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -4051,12 +4124,10 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Type
              * @constant
@@ -4100,6 +4171,23 @@ export interface components {
         /** BenefitDiscordUpdate */
         BenefitDiscordUpdate: {
             /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
+            /**
              * Description
              * @description The description of the benefit. Will be displayed on products having this benefit.
              */
@@ -4114,6 +4202,12 @@ export interface components {
         /** BenefitDownloadables */
         BenefitDownloadables: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -4124,12 +4218,10 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Type
              * @constant
@@ -4160,6 +4252,23 @@ export interface components {
         };
         /** BenefitDownloadablesCreate */
         BenefitDownloadablesCreate: {
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -4201,6 +4310,12 @@ export interface components {
         /** BenefitDownloadablesSubscriber */
         BenefitDownloadablesSubscriber: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -4211,12 +4326,10 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Type
              * @constant
@@ -4254,6 +4367,23 @@ export interface components {
         /** BenefitDownloadablesUpdate */
         BenefitDownloadablesUpdate: {
             /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
+            /**
              * Description
              * @description The description of the benefit. Will be displayed on products having this benefit.
              */
@@ -4273,6 +4403,12 @@ export interface components {
          */
         BenefitGitHubRepository: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -4283,12 +4419,10 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Type
              * @constant
@@ -4319,6 +4453,23 @@ export interface components {
         };
         /** BenefitGitHubRepositoryCreate */
         BenefitGitHubRepositoryCreate: {
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -4388,6 +4539,12 @@ export interface components {
         /** BenefitGitHubRepositorySubscriber */
         BenefitGitHubRepositorySubscriber: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -4398,12 +4555,10 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Type
              * @constant
@@ -4451,6 +4606,23 @@ export interface components {
         };
         /** BenefitGitHubRepositoryUpdate */
         BenefitGitHubRepositoryUpdate: {
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Description
              * @description The description of the benefit. Will be displayed on products having this benefit.
@@ -4682,6 +4854,12 @@ export interface components {
         /** BenefitLicenseKeys */
         BenefitLicenseKeys: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -4692,12 +4870,10 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Type
              * @constant
@@ -4728,6 +4904,23 @@ export interface components {
         };
         /** BenefitLicenseKeysCreate */
         BenefitLicenseKeysCreate: {
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -4766,6 +4959,12 @@ export interface components {
         /** BenefitLicenseKeysSubscriber */
         BenefitLicenseKeysSubscriber: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -4776,12 +4975,10 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Type
              * @constant
@@ -4823,6 +5020,23 @@ export interface components {
         /** BenefitLicenseKeysUpdate */
         BenefitLicenseKeysUpdate: {
             /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
+            /**
              * Description
              * @description The description of the benefit. Will be displayed on products having this benefit.
              */
@@ -4842,6 +5056,12 @@ export interface components {
          */
         BenefitMeterCredit: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -4852,12 +5072,10 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Type
              * @constant
@@ -4891,6 +5109,23 @@ export interface components {
          * @description Schema to create a benefit of type `meter_unit`.
          */
         BenefitMeterCreditCreate: {
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -4937,6 +5172,12 @@ export interface components {
         /** BenefitMeterCreditSubscriber */
         BenefitMeterCreditSubscriber: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -4947,12 +5188,10 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Type
              * @constant
@@ -4997,6 +5236,23 @@ export interface components {
         };
         /** BenefitMeterCreditUpdate */
         BenefitMeterCreditUpdate: {
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Description
              * @description The description of the benefit. Will be displayed on products having this benefit.
@@ -5481,6 +5737,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -5537,6 +5794,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -5591,6 +5849,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -5716,6 +5975,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -5765,6 +6025,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -5820,6 +6081,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -5934,6 +6196,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -5989,6 +6252,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -6036,6 +6300,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -6091,6 +6356,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -6538,6 +6804,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -6566,6 +6833,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -6704,6 +6972,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -6747,6 +7016,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -6790,6 +7060,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -6833,6 +7104,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -6876,6 +7148,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -7185,6 +7458,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -7217,6 +7491,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -7249,6 +7524,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -7281,6 +7557,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -7313,6 +7590,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -7750,6 +8028,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -9048,6 +9327,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -9272,6 +9552,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -9491,6 +9772,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -9689,6 +9971,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -9901,6 +10184,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -10016,6 +10300,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -10200,6 +10485,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -10241,6 +10527,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -11434,6 +11721,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -11499,6 +11787,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -13049,6 +13338,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -13633,6 +13923,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.
@@ -13749,6 +14040,7 @@ export interface components {
              *
              *     * A string with a maximum length of **500 characters**
              *     * An integer
+             *     * A floating-point number
              *     * A boolean
              *
              *     You can store up to **50 key-value pairs**.

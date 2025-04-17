@@ -30,7 +30,6 @@ export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<
       selectable: false,
       deletable: false,
       organization_id: '123',
-      metadata: {},
     },
     {
       id: '789',
@@ -41,7 +40,6 @@ export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<
       selectable: false,
       deletable: false,
       organization_id: '123',
-      metadata: {},
     },
     {
       id: '852',
@@ -52,7 +50,6 @@ export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<
       selectable: false,
       deletable: false,
       organization_id: '123',
-      metadata: {},
     },
     {
       id: '123',
@@ -63,7 +60,6 @@ export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<
       selectable: false,
       deletable: false,
       organization_id: '123',
-      metadata: {},
     },
   ],
   created_at: new Date().toDateString(),

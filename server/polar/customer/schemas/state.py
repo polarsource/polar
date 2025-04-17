@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import UUID4, AliasChoices, Field
 from pydantic.aliases import AliasPath
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.benefit.strategies import BenefitGrantProperties
 from polar.custom_field.data import CustomFieldDataOutputMixin
@@ -85,7 +86,7 @@ class CustomerStateSubscription(
         description="The ID of the applied discount, if any.", examples=[None]
     )
 
-    price_id: UUID4 = Field(
+    price_id: SkipJsonSchema[UUID4] = Field(
         deprecated=True,
         examples=[PRICE_ID_EXAMPLE],
         validation_alias=AliasChoices(

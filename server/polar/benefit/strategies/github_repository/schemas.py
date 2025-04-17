@@ -1,6 +1,7 @@
 from typing import Annotated, Literal
 
 from pydantic import UUID4, Field
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import Schema
 from polar.models.benefit import BenefitType
@@ -56,7 +57,7 @@ class BenefitGitHubRepositoryProperties(Schema):
     repository_owner: RepositoryOwner
     repository_name: RepositoryName
     permission: Permission
-    repository_id: UUID4 | None = Field(None, deprecated=True)
+    repository_id: SkipJsonSchema[UUID4 | None] = Field(None, deprecated=True)
 
 
 class BenefitGitHubRepositorySubscriberProperties(Schema):

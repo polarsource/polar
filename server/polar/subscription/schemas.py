@@ -5,6 +5,7 @@ from typing import Annotated, Literal
 from babel.numbers import format_currency
 from fastapi import Path
 from pydantic import UUID4, AliasChoices, AliasPath, Field
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase
@@ -97,7 +98,7 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     customer_cancellation_reason: CustomerCancellationReason | None
     customer_cancellation_comment: str | None
 
-    price_id: UUID4 = Field(
+    price_id: SkipJsonSchema[UUID4] = Field(
         deprecated="Use `prices` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -152,7 +153,7 @@ class SubscriptionMeter(SubscriptionMeterBase):
 
 class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, SubscriptionBase):
     customer: SubscriptionCustomer
-    user_id: UUID4 = Field(
+    user_id: SkipJsonSchema[UUID4] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -161,7 +162,7 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
         ),
         deprecated="Use `customer_id`.",
     )
-    user: SubscriptionUser = Field(
+    user: SkipJsonSchema[SubscriptionUser] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user",
@@ -173,7 +174,7 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
     product: Product
     discount: SubscriptionDiscount | None
 
-    price: ProductPrice = Field(
+    price: SkipJsonSchema[ProductPrice] = Field(
         deprecated="Use `prices` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload

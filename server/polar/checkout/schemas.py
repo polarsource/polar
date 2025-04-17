@@ -11,6 +11,7 @@ from pydantic import (
     IPvAnyAddress,
     Tag,
 )
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.custom_field.attachment import AttachedCustomField
 from polar.custom_field.data import (
@@ -217,7 +218,9 @@ class CheckoutProductsCreate(CheckoutCreateBase):
 
 
 CheckoutCreate = Annotated[
-    CheckoutProductsCreate | CheckoutProductCreate | CheckoutPriceCreate,
+    CheckoutProductsCreate
+    | SkipJsonSchema[CheckoutProductCreate]
+    | SkipJsonSchema[CheckoutPriceCreate],
     SetSchemaReference("CheckoutCreate"),
 ]
 
@@ -389,7 +392,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
 
     payment_processor_metadata: dict[str, str]
 
-    subtotal_amount: int | None = Field(
+    subtotal_amount: SkipJsonSchema[int | None] = Field(
         deprecated="Use `net_amount`.", validation_alias="net_amount"
     )
 

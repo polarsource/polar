@@ -1,4 +1,5 @@
 from pydantic import UUID4, AliasChoices, AliasPath, Field
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.order import OrderStatus
@@ -27,7 +28,7 @@ class CustomerOrderBase(TimestampedSchema):
     net_amount: int = Field(
         description="Amount in cents, after discounts but before taxes."
     )
-    amount: int = Field(
+    amount: SkipJsonSchema[int] = Field(
         description="Amount in cents, after discounts but before taxes.",
         deprecated=(
             "Use `net_amount`. "
@@ -43,7 +44,7 @@ class CustomerOrderBase(TimestampedSchema):
 
     customer_id: UUID4
     product_id: UUID4
-    product_price_id: UUID4 = Field(
+    product_price_id: SkipJsonSchema[UUID4] = Field(
         deprecated="Use `items` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -76,7 +77,7 @@ class CustomerOrder(CustomerOrderBase):
         deprecated="Use `customer_id`.",
     )
     product: CustomerOrderProduct
-    product_price: ProductPrice = Field(
+    product_price: SkipJsonSchema[ProductPrice] = Field(
         deprecated="Use `items` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload

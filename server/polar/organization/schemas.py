@@ -190,20 +190,20 @@ class Organization(IDSchema, TimestampedSchema):
     )
 
     # Deprecated attributes
-    bio: str | None = Field(..., deprecated="")
-    company: str | None = Field(
+    bio: SkipJsonSchema[str | None] = Field(..., deprecated="")
+    company: SkipJsonSchema[str | None] = Field(
         ...,
         deprecated="Legacy attribute no longer in use.",
     )
-    blog: str | None = Field(
+    blog: SkipJsonSchema[str | None] = Field(
         ...,
         deprecated="Legacy attribute no longer in use. See `socials` instead.",
     )
-    location: str | None = Field(
+    location: SkipJsonSchema[str | None] = Field(
         ...,
         deprecated="Legacy attribute no longer in use.",
     )
-    twitter_username: str | None = Field(
+    twitter_username: SkipJsonSchema[str | None] = Field(
         ...,
         deprecated="Legacy attribute no longer in use. See `socials` instead.",
     )

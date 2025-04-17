@@ -2,6 +2,7 @@ import inspect
 from typing import Annotated
 
 from pydantic import UUID4, AliasChoices, AliasPath, Field
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import IDSchema, Schema, SetSchemaReference, TimestampedSchema
 from polar.meter.schemas import NAME_DESCRIPTION as METER_NAME_DESCRIPTION
@@ -33,7 +34,7 @@ class CustomerSubscriptionMeter(SubscriptionMeterBase):
 
 
 class CustomerSubscription(SubscriptionBase):
-    user_id: UUID4 = Field(
+    user_id: SkipJsonSchema[UUID4] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -44,7 +45,7 @@ class CustomerSubscription(SubscriptionBase):
     )
     product: CustomerSubscriptionProduct
 
-    price: ProductPrice = Field(
+    price: SkipJsonSchema[ProductPrice] = Field(
         deprecated="Use `prices` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload

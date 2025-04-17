@@ -4,6 +4,7 @@ from pydantic import (
     UUID4,
     Field,
 )
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
@@ -100,7 +101,7 @@ class BenefitGrantBase(IDSchema, TimestampedSchema):
     customer_id: UUID4 = Field(
         description="The ID of the customer concerned by this grant."
     )
-    user_id: UUID4 = Field(
+    user_id: SkipJsonSchema[UUID4] = Field(
         validation_alias="customer_id", deprecated="Use `customer_id`."
     )
     benefit_id: UUID4 = Field(

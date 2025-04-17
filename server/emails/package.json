@@ -12,23 +12,23 @@
   },
   "packageManager": "pnpm@10.5.2",
   "dependencies": {
-    "@react-email/components": "^0.0.33",
-    "@react-email/render": "^1.0.5",
+    "@react-email/components": "^0.0.36",
+    "@react-email/render": "^1.0.6",
     "commander": "^13.1.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "@types/node": "^22.13.5",
-    "@types/react": "^19.0.10",
-    "@types/react-dom": "^19.0.4",
-    "@yao-pkg/pkg": "^6.3.1",
-    "prettier": "^3.5.2",
+    "@types/node": "^22.14.1",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@yao-pkg/pkg": "^6.4.0",
+    "prettier": "^3.5.3",
     "prettier-plugin-organize-imports": "^4.1.0",
     "prettier-plugin-tailwindcss": "^0.6.11",
-    "react-email": "^3.0.7",
+    "react-email": "^4.0.7",
     "tsup": "^8.4.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.8.3"
   },
   "pkg": {
     "targets": [

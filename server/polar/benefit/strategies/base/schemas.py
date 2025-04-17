@@ -53,7 +53,7 @@ class BenefitUpdateBase(MetadataInputMixin, Schema):
     )
 
 
-class BenefitBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
+class BenefitPublicBase(TimestampedSchema, IDSchema):
     id: UUID4 = Field(..., description="The ID of the benefit.")
     type: BenefitType = Field(..., description="The type of the benefit.")
     description: str = Field(..., description="The description of the benefit.")
@@ -64,6 +64,9 @@ class BenefitBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
     organization_id: UUID4 = Field(
         ..., description="The ID of the organization owning the benefit."
     )
+
+
+class BenefitBase(MetadataOutputMixin, BenefitPublicBase): ...
 
 
 class BenefitGrantBase(IDSchema, TimestampedSchema):

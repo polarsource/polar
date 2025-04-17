@@ -1,6 +1,7 @@
 from typing import Annotated, Literal
 
 from pydantic import UUID4, AliasPath, Field, HttpUrl, computed_field
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.config import settings
 from polar.discount.schemas import DiscountMinimal
@@ -160,19 +161,19 @@ class CheckoutLink(CheckoutLinkBase):
     discount: CheckoutLinkDiscount | None
 
     # Deprecated fields for backward compatibility
-    product_id: UUID4 = Field(
+    product_id: SkipJsonSchema[UUID4] = Field(
         validation_alias=AliasPath("products", 0, "id"),
         deprecated="Use `products` instead.",
     )
-    product_price_id: UUID4 = Field(
+    product_price_id: SkipJsonSchema[UUID4] = Field(
         validation_alias=AliasPath("products", 0, "prices", 0, "id"),
         deprecated="Use `products` instead.",
     )
-    product: CheckoutLinkProduct = Field(
+    product: SkipJsonSchema[CheckoutLinkProduct] = Field(
         validation_alias=AliasPath("products", 0),
         deprecated="Use `products` instead.",
     )
-    product_price: ProductPrice = Field(
+    product_price: SkipJsonSchema[ProductPrice] = Field(
         validation_alias=AliasPath("products", 0, "prices", 0),
         deprecated="Use `products` instead.",
     )

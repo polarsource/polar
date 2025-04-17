@@ -3,6 +3,7 @@ from typing import Annotated
 from babel.numbers import format_currency
 from fastapi import Path
 from pydantic import UUID4, AliasChoices, AliasPath, Field
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase
@@ -55,7 +56,7 @@ class OrderBase(
 
     customer_id: UUID4
     product_id: UUID4
-    product_price_id: UUID4 = Field(
+    product_price_id: SkipJsonSchema[UUID4] = Field(
         deprecated="Use `items` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -119,7 +120,7 @@ OrderDiscount = Annotated[DiscountMinimal, MergeJSONSchema({"title": "OrderDisco
 
 
 class OrderSubscription(SubscriptionBase, MetadataOutputMixin):
-    user_id: UUID4 = Field(
+    user_id: SkipJsonSchema[UUID4] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -153,7 +154,7 @@ class Order(OrderBase):
         ),
         deprecated="Use `customer_id`.",
     )
-    user: OrderUser = Field(
+    user: SkipJsonSchema[OrderUser] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user",
@@ -163,7 +164,7 @@ class Order(OrderBase):
         deprecated="Use `customer`.",
     )
     product: OrderProduct
-    product_price: ProductPrice = Field(
+    product_price: SkipJsonSchema[ProductPrice] = Field(
         deprecated="Use `items` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload

@@ -1,4 +1,4 @@
-from typing import Annotated, cast
+from typing import Annotated
 
 from fastapi import Depends, Query
 
@@ -9,7 +9,6 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Order
 from polar.models.product import ProductBillingType
-from polar.models.product_price import ProductPriceType
 from polar.openapi import APITag
 from polar.order.schemas import OrderID
 from polar.organization.schemas import OrganizationID
@@ -54,9 +53,6 @@ async def list(
             "`one_time` will filter data corresponding to one-time purchases."
         ),
     ),
-    product_price_type: MultipleQueryFilter[ProductPriceType] | None = Query(
-        None, title="ProductPriceType Filter", deprecated="Use `product_billing_type"
-    ),
     subscription_id: MultipleQueryFilter[SubscriptionID] | None = Query(
         None, title="SubscriptionID Filter", description="Filter by subscription ID."
     ),
@@ -71,8 +67,7 @@ async def list(
         auth_subject,
         organization_id=organization_id,
         product_id=product_id,
-        product_billing_type=product_billing_type
-        or cast(MultipleQueryFilter[ProductBillingType] | None, product_price_type),
+        product_billing_type=product_billing_type,
         subscription_id=subscription_id,
         query=query,
         pagination=pagination,

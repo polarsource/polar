@@ -1,5 +1,3 @@
-from typing import cast
-
 from fastapi import Depends, Query
 from pydantic import UUID4
 
@@ -9,7 +7,6 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Order
 from polar.models.product import ProductBillingType
-from polar.models.product_price import ProductPriceType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
@@ -45,9 +42,6 @@ async def list(
             "`one_time` will filter data corresponding to one-time purchases."
         ),
     ),
-    product_price_type: MultipleQueryFilter[ProductPriceType] | None = Query(
-        None, title="ProductPriceType Filter", deprecated="Use `product_billing_type"
-    ),
     discount_id: MultipleQueryFilter[UUID4] | None = Query(
         None, title="DiscountID Filter", description="Filter by discount ID."
     ),
@@ -65,8 +59,7 @@ async def list(
         auth_subject,
         organization_id=organization_id,
         product_id=product_id,
-        product_billing_type=product_billing_type
-        or cast(MultipleQueryFilter[ProductBillingType] | None, product_price_type),
+        product_billing_type=product_billing_type,
         discount_id=discount_id,
         customer_id=customer_id,
         checkout_id=checkout_id,

@@ -3,6 +3,7 @@ from typing import Any, Literal, Self
 
 from dateutil.relativedelta import relativedelta
 from pydantic import UUID4, AliasChoices, AliasPath, Field
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.benefit.schemas import BenefitID
 from polar.benefit.strategies.license_keys.properties import (
@@ -86,7 +87,7 @@ class LicenseKeyUser(Schema):
 class LicenseKeyRead(Schema):
     id: UUID4
     organization_id: UUID4
-    user_id: UUID4 = Field(
+    user_id: SkipJsonSchema[UUID4] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -96,7 +97,7 @@ class LicenseKeyRead(Schema):
         deprecated="Use `customer_id`.",
     )
     customer_id: UUID4
-    user: LicenseKeyUser = Field(
+    user: SkipJsonSchema[LicenseKeyUser] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user",

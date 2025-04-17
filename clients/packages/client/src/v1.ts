@@ -3727,53 +3727,6 @@ export interface components {
          */
         AvailableScope: "openid" | "profile" | "email" | "user:read" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "refunds:read" | "refunds:write" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notification_recipients:read" | "notification_recipients:write";
         Benefit: components["schemas"]["BenefitCustom"] | components["schemas"]["BenefitDiscord"] | components["schemas"]["BenefitGitHubRepository"] | components["schemas"]["BenefitDownloadables"] | components["schemas"]["BenefitLicenseKeys"] | components["schemas"]["BenefitMeterCredit"];
-        /** BenefitBase */
-        BenefitBase: {
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the benefit.
-             */
-            id: string;
-            /**
-             * Created At
-             * Format: date-time
-             * @description Creation timestamp of the object.
-             */
-            created_at: string;
-            /**
-             * Modified At
-             * @description Last modification timestamp of the object.
-             */
-            modified_at: string | null;
-            /** Metadata */
-            metadata: {
-                [key: string]: string | number | boolean;
-            };
-            /** @description The type of the benefit. */
-            type: components["schemas"]["BenefitType"];
-            /**
-             * Description
-             * @description The description of the benefit.
-             */
-            description: string;
-            /**
-             * Selectable
-             * @description Whether the benefit is selectable when creating a product.
-             */
-            selectable: boolean;
-            /**
-             * Deletable
-             * @description Whether the benefit is deletable.
-             */
-            deletable: boolean;
-            /**
-             * Organization Id
-             * Format: uuid4
-             * @description The ID of the organization owning the benefit.
-             */
-            organization_id: string;
-        };
         BenefitCreate: components["schemas"]["BenefitCustomCreate"] | components["schemas"]["BenefitDiscordCreate"] | components["schemas"]["BenefitGitHubRepositoryCreate"] | components["schemas"]["BenefitDownloadablesCreate"] | components["schemas"]["BenefitLicenseKeysCreate"] | components["schemas"]["BenefitMeterCreditCreate"];
         /**
          * BenefitCustom
@@ -3799,10 +3752,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /** Metadata */
-            metadata: {
-                [key: string]: string | number | boolean;
-            };
             /**
              * Type
              * @constant
@@ -3829,6 +3778,10 @@ export interface components {
              * @description The ID of the organization owning the benefit.
              */
             organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             properties: components["schemas"]["BenefitCustomProperties"];
             /**
              * Is Tax Applicable
@@ -3910,10 +3863,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /** Metadata */
-            metadata: {
-                [key: string]: string | number | boolean;
-            };
             /**
              * Type
              * @constant
@@ -3940,6 +3889,10 @@ export interface components {
              * @description The ID of the organization owning the benefit.
              */
             organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             organization: components["schemas"]["Organization"];
             properties: components["schemas"]["BenefitCustomSubscriberProperties"];
         };
@@ -4006,10 +3959,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /** Metadata */
-            metadata: {
-                [key: string]: string | number | boolean;
-            };
             /**
              * Type
              * @constant
@@ -4036,6 +3985,10 @@ export interface components {
              * @description The ID of the organization owning the benefit.
              */
             organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             properties: components["schemas"]["BenefitDiscordProperties"];
         };
         /** BenefitDiscordCreate */
@@ -4124,10 +4077,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /** Metadata */
-            metadata: {
-                [key: string]: string | number | boolean;
-            };
             /**
              * Type
              * @constant
@@ -4154,6 +4103,10 @@ export interface components {
              * @description The ID of the organization owning the benefit.
              */
             organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             organization: components["schemas"]["Organization"];
             properties: components["schemas"]["BenefitDiscordSubscriberProperties"];
         };
@@ -4218,10 +4171,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /** Metadata */
-            metadata: {
-                [key: string]: string | number | boolean;
-            };
             /**
              * Type
              * @constant
@@ -4248,6 +4197,10 @@ export interface components {
              * @description The ID of the organization owning the benefit.
              */
             organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             properties: components["schemas"]["BenefitDownloadablesProperties"];
         };
         /** BenefitDownloadablesCreate */
@@ -4326,10 +4279,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /** Metadata */
-            metadata: {
-                [key: string]: string | number | boolean;
-            };
             /**
              * Type
              * @constant
@@ -4356,6 +4305,10 @@ export interface components {
              * @description The ID of the organization owning the benefit.
              */
             organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             organization: components["schemas"]["Organization"];
             properties: components["schemas"]["BenefitDownloadablesSubscriberProperties"];
         };
@@ -4419,10 +4372,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /** Metadata */
-            metadata: {
-                [key: string]: string | number | boolean;
-            };
             /**
              * Type
              * @constant
@@ -4449,6 +4398,10 @@ export interface components {
              * @description The ID of the organization owning the benefit.
              */
             organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             properties: components["schemas"]["BenefitGitHubRepositoryProperties"];
         };
         /** BenefitGitHubRepositoryCreate */
@@ -4555,10 +4508,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /** Metadata */
-            metadata: {
-                [key: string]: string | number | boolean;
-            };
             /**
              * Type
              * @constant
@@ -4585,6 +4534,10 @@ export interface components {
              * @description The ID of the organization owning the benefit.
              */
             organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             organization: components["schemas"]["Organization"];
             properties: components["schemas"]["BenefitGitHubRepositorySubscriberProperties"];
         };
@@ -4870,10 +4823,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /** Metadata */
-            metadata: {
-                [key: string]: string | number | boolean;
-            };
             /**
              * Type
              * @constant
@@ -4900,6 +4849,10 @@ export interface components {
              * @description The ID of the organization owning the benefit.
              */
             organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             properties: components["schemas"]["BenefitLicenseKeysProperties"];
         };
         /** BenefitLicenseKeysCreate */
@@ -4975,10 +4928,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /** Metadata */
-            metadata: {
-                [key: string]: string | number | boolean;
-            };
             /**
              * Type
              * @constant
@@ -5005,6 +4954,10 @@ export interface components {
              * @description The ID of the organization owning the benefit.
              */
             organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             organization: components["schemas"]["Organization"];
             properties: components["schemas"]["BenefitLicenseKeysSubscriberProperties"];
         };
@@ -5072,10 +5025,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /** Metadata */
-            metadata: {
-                [key: string]: string | number | boolean;
-            };
             /**
              * Type
              * @constant
@@ -5102,6 +5051,10 @@ export interface components {
              * @description The ID of the organization owning the benefit.
              */
             organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             properties: components["schemas"]["BenefitMeterCreditProperties"];
         };
         /**
@@ -5188,10 +5141,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /** Metadata */
-            metadata: {
-                [key: string]: string | number | boolean;
-            };
             /**
              * Type
              * @constant
@@ -5218,6 +5167,10 @@ export interface components {
              * @description The ID of the organization owning the benefit.
              */
             organization_id: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             organization: components["schemas"]["Organization"];
             properties: components["schemas"]["BenefitMeterCreditSubscriberProperties"];
         };
@@ -5264,6 +5217,49 @@ export interface components {
              */
             type: "meter_credit";
             properties?: components["schemas"]["BenefitMeterCreditCreateProperties"] | null;
+        };
+        /** BenefitPublic */
+        BenefitPublic: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the benefit.
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /** @description The type of the benefit. */
+            type: components["schemas"]["BenefitType"];
+            /**
+             * Description
+             * @description The description of the benefit.
+             */
+            description: string;
+            /**
+             * Selectable
+             * @description Whether the benefit is selectable when creating a product.
+             */
+            selectable: boolean;
+            /**
+             * Deletable
+             * @description Whether the benefit is deletable.
+             */
+            deletable: boolean;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the benefit.
+             */
+            organization_id: string;
         };
         /**
          * BenefitSortProperty
@@ -5895,6 +5891,10 @@ export interface components {
          * @description Product data for a checkout link.
          */
         CheckoutLinkProduct: {
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Created At
              * Format: date-time
@@ -5949,7 +5949,7 @@ export interface components {
              * BenefitPublic
              * @description List of benefits granted by the product.
              */
-            benefits: components["schemas"]["BenefitBase"][];
+            benefits: components["schemas"]["BenefitPublic"][];
             /**
              * Medias
              * @description List of medias associated to the product.
@@ -6170,7 +6170,7 @@ export interface components {
              * BenefitPublic
              * @description List of benefits granted by the product.
              */
-            benefits: components["schemas"]["BenefitBase"][];
+            benefits: components["schemas"]["BenefitPublic"][];
             /**
              * Medias
              * @description List of medias associated to the product.
@@ -8377,7 +8377,7 @@ export interface components {
              * BenefitPublic
              * @description List of benefits granted by the product.
              */
-            benefits: components["schemas"]["BenefitBase"][];
+            benefits: components["schemas"]["BenefitPublic"][];
             /**
              * Medias
              * @description List of medias associated to the product.
@@ -8618,7 +8618,7 @@ export interface components {
              * BenefitPublic
              * @description The benefits granted by the product.
              */
-            benefits: components["schemas"]["BenefitBase"][];
+            benefits: components["schemas"]["BenefitPublic"][];
             /**
              * Medias
              * @description The medias associated to the product.
@@ -9293,7 +9293,7 @@ export interface components {
              * BenefitPublic
              * @description List of benefits granted by the product.
              */
-            benefits: components["schemas"]["BenefitBase"][];
+            benefits: components["schemas"]["BenefitPublic"][];
             /**
              * Medias
              * @description List of medias associated to the product.
@@ -10230,6 +10230,10 @@ export interface components {
          * @description A product that a discount can be applied to.
          */
         DiscountProduct: {
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Created At
              * Format: date-time
@@ -12467,6 +12471,10 @@ export interface components {
         };
         /** OrderProduct */
         OrderProduct: {
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Created At
              * Format: date-time
@@ -13902,7 +13910,7 @@ export interface components {
              * BenefitPublic
              * @description The benefits granted by the product.
              */
-            benefits: components["schemas"]["BenefitBase"][];
+            benefits: components["schemas"]["BenefitPublic"][];
             /**
              * Medias
              * @description The medias associated to the product.

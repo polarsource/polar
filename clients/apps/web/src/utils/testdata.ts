@@ -26,12 +26,7 @@ export const org: schemas['Organization'] = {
     issue_funding_enabled: false,
     usage_based_billing_enabled: false,
   },
-  bio: null,
-  company: null,
-  blog: null,
-  location: null,
   email: null,
-  twitter_username: null,
   subscription_settings: {
     allow_multiple_subscriptions: true,
     allow_customer_updates: true,

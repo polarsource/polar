@@ -1,7 +1,7 @@
 from enum import StrEnum
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import AfterValidator, BaseModel, ConfigDict
 from sqlalchemy import (
     ColumnExpressionArgument,
     Dialect,
@@ -27,8 +27,13 @@ class FilterOperator(StrEnum):
     not_like = "not_like"
 
 
+def _strip_metadata_prefix(value: str) -> str:
+    prefix = "metadata."
+    return value[len(prefix) :] if value.startswith(prefix) else value
+
+
 class FilterClause(BaseModel):
-    property: str
+    property: Annotated[str, AfterValidator(_strip_metadata_prefix)]
     operator: FilterOperator
     value: str | int | bool
 

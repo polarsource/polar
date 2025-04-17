@@ -1,4 +1,6 @@
 packages:
-  - "apps/*"
-  - "packages/*"
-  - "examples/*"
+  - apps/*
+  - packages/*
+  - examples/*
+onlyBuiltDependencies:
+  - '@sentry/cli'

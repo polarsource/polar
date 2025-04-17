@@ -129,7 +129,7 @@ const BaseCheckoutForm = ({
   const country = watch('customerBillingAddress.country')
   const watcher: WatchObserver<CheckoutUpdatePublic> = useCallback(
     async (value, { name, type }) => {
-      if (type !== 'change' || !name) {
+      if (!name) {
         return
       }
 
@@ -797,6 +797,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             {checkout.isPaymentFormRequired && (
               <PaymentElement
                 options={{
+                  layout: 'tabs',
                   fields: {
                     billingDetails: {
                       name: 'never',

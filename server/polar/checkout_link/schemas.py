@@ -140,7 +140,7 @@ class CheckoutLinkBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
         return settings.CHECKOUT_BASE_URL.format(client_secret=self.client_secret)
 
 
-class CheckoutLinkProduct(ProductBase):
+class CheckoutLinkProduct(ProductBase, MetadataOutputMixin):
     """Product data for a checkout link."""
 
     prices: ProductPriceList

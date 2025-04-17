@@ -3783,11 +3783,6 @@ export interface components {
                 [key: string]: string | number | boolean;
             };
             properties: components["schemas"]["BenefitCustomProperties"];
-            /**
-             * Is Tax Applicable
-             * @deprecated
-             */
-            is_tax_applicable: boolean;
         };
         /**
          * BenefitCustomCreate
@@ -4483,11 +4478,6 @@ export interface components {
              * @enum {string}
              */
             permission: "pull" | "triage" | "push" | "maintain" | "admin";
-            /**
-             * Repository Id
-             * @deprecated
-             */
-            repository_id?: string | null;
         };
         /** BenefitGitHubRepositorySubscriber */
         BenefitGitHubRepositorySubscriber: {
@@ -4644,12 +4634,6 @@ export interface components {
              */
             customer_id: string;
             /**
-             * User Id
-             * Format: uuid4
-             * @deprecated
-             */
-            user_id: string;
-            /**
              * Benefit Id
              * Format: uuid4
              * @description The ID of the benefit concerned by this grant.
@@ -4760,12 +4744,6 @@ export interface components {
              * @description The ID of the customer concerned by this grant.
              */
             customer_id: string;
-            /**
-             * User Id
-             * Format: uuid4
-             * @deprecated
-             */
-            user_id: string;
             /**
              * Benefit Id
              * Format: uuid4
@@ -5441,11 +5419,6 @@ export interface components {
             payment_processor_metadata: {
                 [key: string]: string;
             };
-            /**
-             * Subtotal Amount
-             * @deprecated
-             */
-            subtotal_amount: number | null;
             /** Metadata */
             metadata: {
                 [key: string]: string | number | boolean;
@@ -5521,7 +5494,7 @@ export interface components {
              */
             confirmation_token_id?: string | null;
         };
-        CheckoutCreate: components["schemas"]["CheckoutProductsCreate"] | components["schemas"]["CheckoutProductCreate"] | components["schemas"]["CheckoutPriceCreate"];
+        CheckoutCreate: components["schemas"]["CheckoutProductsCreate"];
         /**
          * CheckoutCreatePublic
          * @description Create a new checkout session from a client.
@@ -5695,25 +5668,6 @@ export interface components {
             products: components["schemas"]["CheckoutLinkProduct"][];
             /** Discount */
             discount: (components["schemas"]["DiscountFixedOnceForeverDurationBase"] | components["schemas"]["DiscountFixedRepeatDurationBase"] | components["schemas"]["DiscountPercentageOnceForeverDurationBase"] | components["schemas"]["DiscountPercentageRepeatDurationBase"]) | null;
-            /**
-             * Product Id
-             * Format: uuid4
-             * @deprecated
-             */
-            product_id: string;
-            /**
-             * Product Price Id
-             * Format: uuid4
-             * @deprecated
-             */
-            product_price_id: string;
-            /** @deprecated */
-            product: components["schemas"]["CheckoutLinkProduct"];
-            /**
-             * Product Price
-             * @deprecated
-             */
-            product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /** Url */
             readonly url: string;
         };
@@ -6543,11 +6497,6 @@ export interface components {
                 [key: string]: string;
             };
             /**
-             * Subtotal Amount
-             * @deprecated
-             */
-            subtotal_amount: number | null;
-            /**
              * Products
              * @description List of products available to select.
              */
@@ -6728,11 +6677,6 @@ export interface components {
             payment_processor_metadata: {
                 [key: string]: string;
             };
-            /**
-             * Subtotal Amount
-             * @deprecated
-             */
-            subtotal_amount: number | null;
             /**
              * Products
              * @description List of products available to select.
@@ -8246,12 +8190,6 @@ export interface components {
              */
             net_amount: number;
             /**
-             * Amount
-             * @deprecated
-             * @description Amount in cents, after discounts but before taxes.
-             */
-            amount: number;
-            /**
              * Tax Amount
              * @description Sales tax amount in cents.
              */
@@ -8283,12 +8221,6 @@ export interface components {
              * Format: uuid4
              */
             product_id: string;
-            /**
-             * Product Price Id
-             * Format: uuid4
-             * @deprecated
-             */
-            product_price_id: string;
             /** Subscription Id */
             subscription_id: string | null;
             /**
@@ -8298,11 +8230,6 @@ export interface components {
              */
             user_id: string;
             product: components["schemas"]["CustomerOrderProduct"];
-            /**
-             * Product Price
-             * @deprecated
-             */
-            product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             subscription: components["schemas"]["CustomerOrderSubscription"] | null;
             /**
              * Items
@@ -8481,12 +8408,6 @@ export interface components {
             customer_cancellation_reason: components["schemas"]["CustomerCancellationReason"] | null;
             /** Customer Cancellation Comment */
             customer_cancellation_comment: string | null;
-            /**
-             * Price Id
-             * Format: uuid4
-             * @deprecated
-             */
-            price_id: string;
         };
         /**
          * CustomerOrganization
@@ -8969,12 +8890,6 @@ export interface components {
              */
             discount_id: string | null;
             /**
-             * Price Id
-             * Format: uuid4
-             * @deprecated
-             */
-            price_id: string;
-            /**
              * Meters
              * @description List of meters associated with the subscription.
              */
@@ -9115,24 +9030,7 @@ export interface components {
             customer_cancellation_reason: components["schemas"]["CustomerCancellationReason"] | null;
             /** Customer Cancellation Comment */
             customer_cancellation_comment: string | null;
-            /**
-             * Price Id
-             * Format: uuid4
-             * @deprecated
-             */
-            price_id: string;
-            /**
-             * User Id
-             * Format: uuid4
-             * @deprecated
-             */
-            user_id: string;
             product: components["schemas"]["CustomerSubscriptionProduct"];
-            /**
-             * Price
-             * @deprecated
-             */
-            price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /**
              * Prices
              * @description List of enabled prices for the subscription.
@@ -11181,18 +11079,10 @@ export interface components {
              */
             organization_id: string;
             /**
-             * User Id
-             * Format: uuid4
-             * @deprecated
-             */
-            user_id: string;
-            /**
              * Customer Id
              * Format: uuid4
              */
             customer_id: string;
-            /** @deprecated */
-            user: components["schemas"]["LicenseKeyUser"];
             customer: components["schemas"]["LicenseKeyCustomer"];
             /**
              * Benefit Id
@@ -11288,18 +11178,10 @@ export interface components {
              */
             organization_id: string;
             /**
-             * User Id
-             * Format: uuid4
-             * @deprecated
-             */
-            user_id: string;
-            /**
              * Customer Id
              * Format: uuid4
              */
             customer_id: string;
-            /** @deprecated */
-            user: components["schemas"]["LicenseKeyUser"];
             customer: components["schemas"]["LicenseKeyCustomer"];
             /**
              * Benefit Id
@@ -12306,12 +12188,6 @@ export interface components {
              * Format: uuid4
              */
             product_id: string;
-            /**
-             * Product Price Id
-             * Format: uuid4
-             * @deprecated
-             */
-            product_price_id: string;
             /** Discount Id */
             discount_id: string | null;
             /** Subscription Id */
@@ -12325,14 +12201,7 @@ export interface components {
              * @deprecated
              */
             user_id: string;
-            /** @deprecated */
-            user: components["schemas"]["OrderUser"];
             product: components["schemas"]["OrderProduct"];
-            /**
-             * Product Price
-             * @deprecated
-             */
-            product_price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /** Discount */
             discount: (components["schemas"]["DiscountFixedOnceForeverDurationBase"] | components["schemas"]["DiscountFixedRepeatDurationBase"] | components["schemas"]["DiscountPercentageOnceForeverDurationBase"] | components["schemas"]["DiscountPercentageRepeatDurationBase"]) | null;
             subscription: components["schemas"]["OrderSubscription"] | null;
@@ -12626,18 +12495,6 @@ export interface components {
             customer_cancellation_reason: components["schemas"]["CustomerCancellationReason"] | null;
             /** Customer Cancellation Comment */
             customer_cancellation_comment: string | null;
-            /**
-             * Price Id
-             * Format: uuid4
-             * @deprecated
-             */
-            price_id: string;
-            /**
-             * User Id
-             * Format: uuid4
-             * @deprecated
-             */
-            user_id: string;
         };
         /** OrderUser */
         OrderUser: {
@@ -12713,31 +12570,6 @@ export interface components {
             feature_settings: components["schemas"]["OrganizationFeatureSettings"] | null;
             /** @description Settings related to subscriptions management */
             subscription_settings: components["schemas"]["OrganizationSubscriptionSettings"];
-            /**
-             * Bio
-             * @deprecated
-             */
-            bio: string | null;
-            /**
-             * Company
-             * @deprecated
-             */
-            company: string | null;
-            /**
-             * Blog
-             * @deprecated
-             */
-            blog: string | null;
-            /**
-             * Location
-             * @deprecated
-             */
-            location: string | null;
-            /**
-             * Twitter Username
-             * @deprecated
-             */
-            twitter_username: string | null;
         };
         /** OrganizationAccessToken */
         OrganizationAccessToken: {
@@ -14326,12 +14158,6 @@ export interface components {
             customer_cancellation_reason: components["schemas"]["CustomerCancellationReason"] | null;
             /** Customer Cancellation Comment */
             customer_cancellation_comment: string | null;
-            /**
-             * Price Id
-             * Format: uuid4
-             * @deprecated
-             */
-            price_id: string;
             /** Metadata */
             metadata: {
                 [key: string]: string | number | boolean;
@@ -14344,22 +14170,9 @@ export interface components {
                 [key: string]: string | number | boolean | null;
             };
             customer: components["schemas"]["SubscriptionCustomer"];
-            /**
-             * User Id
-             * Format: uuid4
-             * @deprecated
-             */
-            user_id: string;
-            /** @deprecated */
-            user: components["schemas"]["SubscriptionUser"];
             product: components["schemas"]["Product"];
             /** Discount */
             discount: (components["schemas"]["DiscountFixedOnceForeverDurationBase"] | components["schemas"]["DiscountFixedRepeatDurationBase"] | components["schemas"]["DiscountPercentageOnceForeverDurationBase"] | components["schemas"]["DiscountPercentageRepeatDurationBase"]) | null;
-            /**
-             * Price
-             * @deprecated
-             */
-            price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             /**
              * Prices
              * @description List of enabled prices for the subscription.
@@ -15029,18 +14842,10 @@ export interface components {
              */
             organization_id: string;
             /**
-             * User Id
-             * Format: uuid4
-             * @deprecated
-             */
-            user_id: string;
-            /**
              * Customer Id
              * Format: uuid4
              */
             customer_id: string;
-            /** @deprecated */
-            user: components["schemas"]["LicenseKeyUser"];
             customer: components["schemas"]["LicenseKeyCustomer"];
             /**
              * Benefit Id
@@ -18412,8 +18217,6 @@ export interface operations {
                 product_id?: string | string[] | null;
                 /** @description Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
                 product_billing_type?: components["schemas"]["ProductBillingType"] | components["schemas"]["ProductBillingType"][] | null;
-                /** @deprecated */
-                product_price_type?: components["schemas"]["ProductPriceType"] | components["schemas"]["ProductPriceType"][] | null;
                 /** @description Filter by discount ID. */
                 discount_id?: string | string[] | null;
                 /** @description Filter by customer ID. */
@@ -21517,8 +21320,6 @@ export interface operations {
                 product_id?: string | string[] | null;
                 /** @description Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
                 product_billing_type?: components["schemas"]["ProductBillingType"] | components["schemas"]["ProductBillingType"][] | null;
-                /** @deprecated */
-                product_price_type?: components["schemas"]["ProductPriceType"] | components["schemas"]["ProductPriceType"][] | null;
                 /** @description Filter by subscription ID. */
                 subscription_id?: string | string[] | null;
                 /** @description Search by product or organization name. */

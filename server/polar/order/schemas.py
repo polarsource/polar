@@ -112,7 +112,7 @@ class OrderUser(Schema):
     github_username: str | None = Field(None)
 
 
-class OrderProduct(ProductBase): ...
+class OrderProduct(ProductBase, MetadataOutputMixin): ...
 
 
 OrderDiscount = Annotated[DiscountMinimal, MergeJSONSchema({"title": "OrderDiscount"})]

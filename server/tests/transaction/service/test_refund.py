@@ -445,6 +445,7 @@ class TestRevert:
             .options(
                 joinedload(Transaction.balance_reversal_transaction),
                 joinedload(Transaction.account),
+                joinedload(Transaction.payment_transaction),
             )
         )
         assert len(balance_transactions) == 6
@@ -456,20 +457,26 @@ class TestRevert:
 
         reverse_balance_account = balance_transactions[4]  # From Polar...
         assert reverse_balance_account.account is None
+        assert reverse_balance_account.balance_reversal_transaction is not None
+        assert reverse_balance_account.balance_reversal_transaction == incoming_balance
         assert (
-            reverse_balance_account.balance_reversal_transaction
-            == refund_incoming_balance
+            reverse_balance_account.balance_reversal_transaction.amount
+            == -reverse_balance_account.amount
         )
         assert reverse_balance_account.amount < 0
         assert reverse_balance_account.amount == -refund_incoming_balance.amount
+        assert reverse_balance_account.payment_transaction is None
 
         reverse_balance_polar = balance_transactions[5]  # ... to Account
         assert reverse_balance_polar.account is not None
+        assert reverse_balance_polar.balance_reversal_transaction is not None
+        assert reverse_balance_polar.balance_reversal_transaction == outgoing_balance
         assert (
-            reverse_balance_polar.balance_reversal_transaction
-            == refund_outgoing_balance
+            reverse_balance_polar.balance_reversal_transaction.amount
+            == -reverse_balance_polar.amount
         )
         assert reverse_balance_polar.amount == -refund_outgoing_balance.amount
+        assert reverse_balance_polar.payment_transaction is None
 
 
 @pytest.mark.asyncio

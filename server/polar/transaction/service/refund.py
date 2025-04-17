@@ -234,16 +234,8 @@ class RefundTransactionService(BaseTransactionService):
                 order=outgoing.order,
                 issue_reward=outgoing.issue_reward,
             )
-
-            # Tie the reversal to the original transactions, not the refunds
-            # This way, it'll get picked up when transferring the payment
-            # Basically, it'll do (+100 - 100 + 100)
-            outgoing_reversal.balance_reversal_transaction = (
-                outgoing.balance_reversal_transaction
-            )
-            incoming_reversal.balance_reversal_transaction = (
-                incoming.balance_reversal_transaction
-            )
+            outgoing_reversal.balance_reversal_transaction = incoming
+            incoming_reversal.balance_reversal_transaction = outgoing
             session.add(outgoing_reversal)
             session.add(incoming_reversal)
             revert_reversal_balances.append((outgoing_reversal, incoming_reversal))
@@ -281,7 +273,6 @@ class RefundTransactionService(BaseTransactionService):
                 joinedload(Transaction.pledge),
                 joinedload(Transaction.order),
                 joinedload(Transaction.issue_reward),
-                joinedload(Transaction.balance_reversal_transaction),
             )
         )
 

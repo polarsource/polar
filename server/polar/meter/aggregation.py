@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Discriminator, TypeAdapter
+from pydantic import AfterValidator, BaseModel, Discriminator, TypeAdapter
 from sqlalchemy import ColumnExpressionArgument, Dialect, TypeDecorator, func, true
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -24,6 +24,11 @@ class CountAggregation(BaseModel):
         return true()
 
 
+def _strip_metadata_prefix(value: str) -> str:
+    prefix = "metadata."
+    return value[len(prefix) :] if value.startswith(prefix) else value
+
+
 class PropertyAggregation(BaseModel):
     func: Literal[
         AggregationFunction.sum,
@@ -31,7 +36,7 @@ class PropertyAggregation(BaseModel):
         AggregationFunction.min,
         AggregationFunction.avg,
     ]
-    property: str
+    property: Annotated[str, AfterValidator(_strip_metadata_prefix)]
 
     def get_sql_column(self, model: type[Any]) -> Any:
         try:

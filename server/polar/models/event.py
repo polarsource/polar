@@ -5,14 +5,19 @@ from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
+    BigInteger,
     ColumnElement,
     ForeignKey,
     String,
     Uuid,
     and_,
     exists,
+    extract,
     or_,
     select,
+)
+from sqlalchemy import (
+    cast as sqla_cast,
 )
 from sqlalchemy.orm import (
     Mapped,
@@ -137,3 +142,9 @@ class Event(Model, MetadataMixin):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
+
+    _filterable_fields: dict[str, tuple[type[str | int | bool], Any]] = {
+        "timestamp": (int, sqla_cast(extract("epoch", timestamp), BigInteger)),
+        "name": (str, name),
+        "source": (str, source),
+    }

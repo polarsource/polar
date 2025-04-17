@@ -3544,30 +3544,6 @@
             "description": "Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases."
           },
           {
-            "name": "product_price_type",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/ProductPriceType"
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ProductPriceType"
-                  }
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "ProductPriceType Filter",
-              "deprecated": true
-            },
-            "deprecated": true
-          },
-          {
             "name": "discount_id",
             "in": "query",
             "required": false,
@@ -4637,22 +4613,22 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Create(ctx, components.CreateCheckoutCreateCheckoutProductCreate(\n        components.CheckoutProductCreate{\n            CustomerBillingAddress: &components.Address{\n                Country: \"SE\",\n            },\n            ProductID: \"<value>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Create(ctx, components.CheckoutCreate{\n        CustomerBillingAddress: &components.Address{\n            Country: \"SE\",\n        },\n        Products: []string{\n            \"<value>\",\n            \"<value>\",\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkouts.create(request={\n        \"allow_discount_codes\": True,\n        \"customer_billing_address\": {\n            \"country\": \"SE\",\n        },\n        \"product_id\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkouts.create(request={\n        \"customer_billing_address\": {\n            \"country\": \"SE\",\n        },\n        \"products\": [\n            \"<value>\",\n            \"<value>\",\n        ],\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.create({\n    allowDiscountCodes: true,\n    customerBillingAddress: {\n      country: \"SE\",\n    },\n    productId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.create({\n    customerBillingAddress: {\n      country: \"SE\",\n    },\n    products: [\n      \"<value>\",\n      \"<value>\",\n    ],\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CheckoutProductCreate(\n    customerBillingAddress: new Components\\Address(\n        country: 'SE',\n    ),\n    productId: '<value>',\n);\n\n$response = $sdk->checkouts->create(\n    request: $request\n);\n\nif ($response->checkout !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CheckoutCreate(\n    customerBillingAddress: new Components\\Address(\n        country: 'SE',\n    ),\n    products: [\n        '<value>',\n    ],\n);\n\n$response = $sdk->checkouts->create(\n    request: $request\n);\n\nif ($response->checkout !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -11475,30 +11451,6 @@
             "description": "Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases."
           },
           {
-            "name": "product_price_type",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/ProductPriceType"
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ProductPriceType"
-                  }
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "ProductPriceType Filter",
-              "deprecated": true
-            },
-            "deprecated": true
-          },
-          {
             "name": "subscription_id",
             "in": "query",
             "required": false,
@@ -15737,93 +15689,6 @@
           }
         ]
       },
-      "BenefitBase": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the benefit."
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object."
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Metadata"
-          },
-          "type": {
-            "$ref": "#/components/schemas/BenefitType",
-            "description": "The type of the benefit."
-          },
-          "description": {
-            "type": "string",
-            "title": "Description",
-            "description": "The description of the benefit."
-          },
-          "selectable": {
-            "type": "boolean",
-            "title": "Selectable",
-            "description": "Whether the benefit is selectable when creating a product."
-          },
-          "deletable": {
-            "type": "boolean",
-            "title": "Deletable",
-            "description": "Whether the benefit is deletable."
-          },
-          "organization_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Organization Id",
-            "description": "The ID of the organization owning the benefit."
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "created_at",
-          "modified_at",
-          "metadata",
-          "type",
-          "description",
-          "selectable",
-          "deletable",
-          "organization_id"
-        ],
-        "title": "BenefitBase"
-      },
       "BenefitCreate": {
         "oneOf": [
           {
@@ -15884,26 +15749,6 @@
             "title": "Modified At",
             "description": "Last modification timestamp of the object."
           },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Metadata"
-          },
           "type": {
             "type": "string",
             "const": "custom",
@@ -15930,13 +15775,28 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitCustomProperties"
-          },
-          "is_tax_applicable": {
-            "type": "boolean",
-            "title": "Is Tax Applicable",
-            "deprecated": true
           }
         },
         "type": "object",
@@ -15944,14 +15804,13 @@
           "id",
           "created_at",
           "modified_at",
-          "metadata",
           "type",
           "description",
           "selectable",
           "deletable",
           "organization_id",
-          "properties",
-          "is_tax_applicable"
+          "metadata",
+          "properties"
         ],
         "title": "BenefitCustom",
         "description": "A benefit of type `custom`.\n\nUse it to grant any kind of benefit that doesn't fit in the other types."
@@ -16115,26 +15974,6 @@
             "title": "Modified At",
             "description": "Last modification timestamp of the object."
           },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Metadata"
-          },
           "type": {
             "type": "string",
             "const": "custom",
@@ -16161,6 +16000,26 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
           "organization": {
             "$ref": "#/components/schemas/Organization"
           },
@@ -16173,12 +16032,12 @@
           "id",
           "created_at",
           "modified_at",
-          "metadata",
           "type",
           "description",
           "selectable",
           "deletable",
           "organization_id",
+          "metadata",
           "organization",
           "properties"
         ],
@@ -16306,26 +16165,6 @@
             "title": "Modified At",
             "description": "Last modification timestamp of the object."
           },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Metadata"
-          },
           "type": {
             "type": "string",
             "const": "discord",
@@ -16352,6 +16191,26 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitDiscordProperties"
           }
@@ -16361,12 +16220,12 @@
           "id",
           "created_at",
           "modified_at",
-          "metadata",
           "type",
           "description",
           "selectable",
           "deletable",
           "organization_id",
+          "metadata",
           "properties"
         ],
         "title": "BenefitDiscord",
@@ -16521,26 +16380,6 @@
             "title": "Modified At",
             "description": "Last modification timestamp of the object."
           },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Metadata"
-          },
           "type": {
             "type": "string",
             "const": "discord",
@@ -16567,6 +16406,26 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
           "organization": {
             "$ref": "#/components/schemas/Organization"
           },
@@ -16579,12 +16438,12 @@
           "id",
           "created_at",
           "modified_at",
-          "metadata",
           "type",
           "description",
           "selectable",
           "deletable",
           "organization_id",
+          "metadata",
           "organization",
           "properties"
         ],
@@ -16698,26 +16557,6 @@
             "title": "Modified At",
             "description": "Last modification timestamp of the object."
           },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Metadata"
-          },
           "type": {
             "type": "string",
             "const": "downloadables",
@@ -16744,6 +16583,26 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitDownloadablesProperties"
           }
@@ -16753,12 +16612,12 @@
           "id",
           "created_at",
           "modified_at",
-          "metadata",
           "type",
           "description",
           "selectable",
           "deletable",
           "organization_id",
+          "metadata",
           "properties"
         ],
         "title": "BenefitDownloadables"
@@ -16923,26 +16782,6 @@
             "title": "Modified At",
             "description": "Last modification timestamp of the object."
           },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Metadata"
-          },
           "type": {
             "type": "string",
             "const": "downloadables",
@@ -16969,6 +16808,26 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
           "organization": {
             "$ref": "#/components/schemas/Organization"
           },
@@ -16981,12 +16840,12 @@
           "id",
           "created_at",
           "modified_at",
-          "metadata",
           "type",
           "description",
           "selectable",
           "deletable",
           "organization_id",
+          "metadata",
           "organization",
           "properties"
         ],
@@ -17102,26 +16961,6 @@
             "title": "Modified At",
             "description": "Last modification timestamp of the object."
           },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Metadata"
-          },
           "type": {
             "type": "string",
             "const": "github_repository",
@@ -17148,6 +16987,26 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitGitHubRepositoryProperties"
           }
@@ -17157,12 +17016,12 @@
           "id",
           "created_at",
           "modified_at",
-          "metadata",
           "type",
           "description",
           "selectable",
           "deletable",
           "organization_id",
+          "metadata",
           "properties"
         ],
         "title": "BenefitGitHubRepository",
@@ -17313,19 +17172,6 @@
             ],
             "title": "Permission",
             "description": "The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role)."
-          },
-          "repository_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Repository Id",
-            "deprecated": true
           }
         },
         "type": "object",
@@ -17364,26 +17210,6 @@
             "title": "Modified At",
             "description": "Last modification timestamp of the object."
           },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Metadata"
-          },
           "type": {
             "type": "string",
             "const": "github_repository",
@@ -17410,6 +17236,26 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
           "organization": {
             "$ref": "#/components/schemas/Organization"
           },
@@ -17422,12 +17268,12 @@
           "id",
           "created_at",
           "modified_at",
-          "metadata",
           "type",
           "description",
           "selectable",
           "deletable",
           "organization_id",
+          "metadata",
           "organization",
           "properties"
         ],
@@ -17621,12 +17467,6 @@
             "title": "Customer Id",
             "description": "The ID of the customer concerned by this grant."
           },
-          "user_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "User Id",
-            "deprecated": true
-          },
           "benefit_id": {
             "type": "string",
             "format": "uuid4",
@@ -17667,7 +17507,6 @@
           "subscription_id",
           "order_id",
           "customer_id",
-          "user_id",
           "benefit_id",
           "customer",
           "properties"
@@ -17871,12 +17710,6 @@
             "title": "Customer Id",
             "description": "The ID of the customer concerned by this grant."
           },
-          "user_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "User Id",
-            "deprecated": true
-          },
           "benefit_id": {
             "type": "string",
             "format": "uuid4",
@@ -17944,7 +17777,6 @@
           "subscription_id",
           "order_id",
           "customer_id",
-          "user_id",
           "benefit_id",
           "customer",
           "properties",
@@ -18041,26 +17873,6 @@
             "title": "Modified At",
             "description": "Last modification timestamp of the object."
           },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Metadata"
-          },
           "type": {
             "type": "string",
             "const": "license_keys",
@@ -18087,6 +17899,26 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitLicenseKeysProperties"
           }
@@ -18096,12 +17928,12 @@
           "id",
           "created_at",
           "modified_at",
-          "metadata",
           "type",
           "description",
           "selectable",
           "deletable",
           "organization_id",
+          "metadata",
           "properties"
         ],
         "title": "BenefitLicenseKeys"
@@ -18312,26 +18144,6 @@
             "title": "Modified At",
             "description": "Last modification timestamp of the object."
           },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Metadata"
-          },
           "type": {
             "type": "string",
             "const": "license_keys",
@@ -18358,6 +18170,26 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
           "organization": {
             "$ref": "#/components/schemas/Organization"
           },
@@ -18370,12 +18202,12 @@
           "id",
           "created_at",
           "modified_at",
-          "metadata",
           "type",
           "description",
           "selectable",
           "deletable",
           "organization_id",
+          "metadata",
           "organization",
           "properties"
         ],
@@ -18528,26 +18360,6 @@
             "title": "Modified At",
             "description": "Last modification timestamp of the object."
           },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Metadata"
-          },
           "type": {
             "type": "string",
             "const": "meter_credit",
@@ -18574,6 +18386,26 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitMeterCreditProperties"
           }
@@ -18583,12 +18415,12 @@
           "id",
           "created_at",
           "modified_at",
-          "metadata",
           "type",
           "description",
           "selectable",
           "deletable",
           "organization_id",
+          "metadata",
           "properties"
         ],
         "title": "BenefitMeterCredit",
@@ -18739,26 +18571,6 @@
             "title": "Modified At",
             "description": "Last modification timestamp of the object."
           },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Metadata"
-          },
           "type": {
             "type": "string",
             "const": "meter_credit",
@@ -18785,6 +18597,26 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the benefit."
           },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
           "organization": {
             "$ref": "#/components/schemas/Organization"
           },
@@ -18797,12 +18629,12 @@
           "id",
           "created_at",
           "modified_at",
-          "metadata",
           "type",
           "description",
           "selectable",
           "deletable",
           "organization_id",
+          "metadata",
           "organization",
           "properties"
         ],
@@ -18893,6 +18725,72 @@
           "type"
         ],
         "title": "BenefitMeterCreditUpdate"
+      },
+      "BenefitPublic": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the benefit."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "type": {
+            "$ref": "#/components/schemas/BenefitType",
+            "description": "The type of the benefit."
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "The description of the benefit."
+          },
+          "selectable": {
+            "type": "boolean",
+            "title": "Selectable",
+            "description": "Whether the benefit is selectable when creating a product."
+          },
+          "deletable": {
+            "type": "boolean",
+            "title": "Deletable",
+            "description": "Whether the benefit is deletable."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the benefit."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "modified_at",
+          "type",
+          "description",
+          "selectable",
+          "deletable",
+          "organization_id"
+        ],
+        "title": "BenefitPublic"
       },
       "BenefitSortProperty": {
         "type": "string",
@@ -19178,18 +19076,6 @@
             "type": "object",
             "title": "Payment Processor Metadata"
           },
-          "subtotal_amount": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subtotal Amount",
-            "deprecated": true
-          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -19341,7 +19227,6 @@
           "customer_billing_address",
           "customer_tax_id",
           "payment_processor_metadata",
-          "subtotal_amount",
           "metadata",
           "customer_external_id",
           "products",
@@ -19500,17 +19385,7 @@
         "description": "Confirm a checkout session using a Stripe confirmation token."
       },
       "CheckoutCreate": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/CheckoutProductsCreate"
-          },
-          {
-            "$ref": "#/components/schemas/CheckoutProductCreate"
-          },
-          {
-            "$ref": "#/components/schemas/CheckoutPriceCreate"
-          }
-        ]
+        "$ref": "#/components/schemas/CheckoutProductsCreate"
       },
       "CheckoutDiscountFixedOnceForeverDuration": {
         "properties": {
@@ -19870,34 +19745,6 @@
             ],
             "title": "Discount"
           },
-          "product_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Id",
-            "deprecated": true
-          },
-          "product_price_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Price Id",
-            "deprecated": true
-          },
-          "product": {
-            "$ref": "#/components/schemas/CheckoutLinkProduct",
-            "deprecated": true
-          },
-          "product_price": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-              },
-              {
-                "$ref": "#/components/schemas/ProductPrice"
-              }
-            ],
-            "title": "Product Price",
-            "deprecated": true
-          },
           "url": {
             "type": "string",
             "title": "Url"
@@ -19918,10 +19765,6 @@
           "organization_id",
           "products",
           "discount",
-          "product_id",
-          "product_price_id",
-          "product",
-          "product_price",
           "url"
         ],
         "title": "CheckoutLink",
@@ -20222,6 +20065,26 @@
       },
       "CheckoutLinkProduct": {
         "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -20308,7 +20171,7 @@
           },
           "benefits": {
             "items": {
-              "$ref": "#/components/schemas/BenefitBase"
+              "$ref": "#/components/schemas/BenefitPublic"
             },
             "type": "array",
             "title": "BenefitPublic",
@@ -20325,6 +20188,7 @@
         },
         "type": "object",
         "required": [
+          "metadata",
           "created_at",
           "modified_at",
           "id",
@@ -20800,7 +20664,7 @@
           },
           "benefits": {
             "items": {
-              "$ref": "#/components/schemas/BenefitBase"
+              "$ref": "#/components/schemas/BenefitPublic"
             },
             "type": "array",
             "title": "BenefitPublic",
@@ -21607,18 +21471,6 @@
             "type": "object",
             "title": "Payment Processor Metadata"
           },
-          "subtotal_amount": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subtotal Amount",
-            "deprecated": true
-          },
           "products": {
             "items": {
               "$ref": "#/components/schemas/CheckoutProduct"
@@ -21712,7 +21564,6 @@
           "customer_billing_address",
           "customer_tax_id",
           "payment_processor_metadata",
-          "subtotal_amount",
           "products",
           "product",
           "product_price",
@@ -21986,18 +21837,6 @@
             "type": "object",
             "title": "Payment Processor Metadata"
           },
-          "subtotal_amount": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subtotal Amount",
-            "deprecated": true
-          },
           "products": {
             "items": {
               "$ref": "#/components/schemas/CheckoutProduct"
@@ -22095,7 +21934,6 @@
           "customer_billing_address",
           "customer_tax_id",
           "payment_processor_metadata",
-          "subtotal_amount",
           "products",
           "product",
           "product_price",
@@ -25670,12 +25508,6 @@
             "title": "Net Amount",
             "description": "Amount in cents, after discounts but before taxes."
           },
-          "amount": {
-            "type": "integer",
-            "title": "Amount",
-            "description": "Amount in cents, after discounts but before taxes.",
-            "deprecated": true
-          },
           "tax_amount": {
             "type": "integer",
             "title": "Tax Amount",
@@ -25710,12 +25542,6 @@
             "format": "uuid4",
             "title": "Product Id"
           },
-          "product_price_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Price Id",
-            "deprecated": true
-          },
           "subscription_id": {
             "anyOf": [
               {
@@ -25736,18 +25562,6 @@
           },
           "product": {
             "$ref": "#/components/schemas/CustomerOrderProduct"
-          },
-          "product_price": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-              },
-              {
-                "$ref": "#/components/schemas/ProductPrice"
-              }
-            ],
-            "title": "Product Price",
-            "deprecated": true
           },
           "subscription": {
             "anyOf": [
@@ -25778,7 +25592,6 @@
           "subtotal_amount",
           "discount_amount",
           "net_amount",
-          "amount",
           "tax_amount",
           "total_amount",
           "refunded_amount",
@@ -25786,11 +25599,9 @@
           "currency",
           "customer_id",
           "product_id",
-          "product_price_id",
           "subscription_id",
           "user_id",
           "product",
-          "product_price",
           "subscription",
           "items"
         ],
@@ -25899,7 +25710,7 @@
           },
           "benefits": {
             "items": {
-              "$ref": "#/components/schemas/BenefitBase"
+              "$ref": "#/components/schemas/BenefitPublic"
             },
             "type": "array",
             "title": "BenefitPublic",
@@ -26129,12 +25940,6 @@
               }
             ],
             "title": "Customer Cancellation Comment"
-          },
-          "price_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Price Id",
-            "deprecated": true
           }
         },
         "type": "object",
@@ -26158,8 +25963,7 @@
           "discount_id",
           "checkout_id",
           "customer_cancellation_reason",
-          "customer_cancellation_comment",
-          "price_id"
+          "customer_cancellation_comment"
         ],
         "title": "CustomerOrderSubscription"
       },
@@ -26479,7 +26283,7 @@
           },
           "benefits": {
             "items": {
-              "$ref": "#/components/schemas/BenefitBase"
+              "$ref": "#/components/schemas/BenefitPublic"
             },
             "type": "array",
             "title": "BenefitPublic",
@@ -27196,15 +27000,6 @@
               null
             ]
           },
-          "price_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Price Id",
-            "deprecated": true,
-            "examples": [
-              "196ca717-4d84-4d28-a1b8-777255797dbc"
-            ]
-          },
           "meters": {
             "items": {
               "$ref": "#/components/schemas/CustomerStateSubscriptionMeter"
@@ -27232,7 +27027,6 @@
           "ends_at",
           "product_id",
           "discount_id",
-          "price_id",
           "meters"
         ],
         "title": "CustomerStateSubscription",
@@ -27491,32 +27285,8 @@
             ],
             "title": "Customer Cancellation Comment"
           },
-          "price_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Price Id",
-            "deprecated": true
-          },
-          "user_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "User Id",
-            "deprecated": true
-          },
           "product": {
             "$ref": "#/components/schemas/CustomerSubscriptionProduct"
-          },
-          "price": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-              },
-              {
-                "$ref": "#/components/schemas/ProductPrice"
-              }
-            ],
-            "title": "Price",
-            "deprecated": true
           },
           "prices": {
             "items": {
@@ -27564,10 +27334,7 @@
           "checkout_id",
           "customer_cancellation_reason",
           "customer_cancellation_comment",
-          "price_id",
-          "user_id",
           "product",
-          "price",
           "prices",
           "meters"
         ],
@@ -27821,7 +27588,7 @@
           },
           "benefits": {
             "items": {
-              "$ref": "#/components/schemas/BenefitBase"
+              "$ref": "#/components/schemas/BenefitPublic"
             },
             "type": "array",
             "title": "BenefitPublic",
@@ -29972,6 +29739,26 @@
       },
       "DiscountProduct": {
         "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -30044,6 +29831,7 @@
         },
         "type": "object",
         "required": [
+          "metadata",
           "created_at",
           "modified_at",
           "id",
@@ -32100,20 +31888,10 @@
             "format": "uuid4",
             "title": "Organization Id"
           },
-          "user_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "User Id",
-            "deprecated": true
-          },
           "customer_id": {
             "type": "string",
             "format": "uuid4",
             "title": "Customer Id"
-          },
-          "user": {
-            "$ref": "#/components/schemas/LicenseKeyUser",
-            "deprecated": true
           },
           "customer": {
             "$ref": "#/components/schemas/LicenseKeyCustomer"
@@ -32199,9 +31977,7 @@
         "required": [
           "id",
           "organization_id",
-          "user_id",
           "customer_id",
-          "user",
           "customer",
           "benefit_id",
           "key",
@@ -32407,20 +32183,10 @@
             "format": "uuid4",
             "title": "Organization Id"
           },
-          "user_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "User Id",
-            "deprecated": true
-          },
           "customer_id": {
             "type": "string",
             "format": "uuid4",
             "title": "Customer Id"
-          },
-          "user": {
-            "$ref": "#/components/schemas/LicenseKeyUser",
-            "deprecated": true
           },
           "customer": {
             "$ref": "#/components/schemas/LicenseKeyCustomer"
@@ -32513,9 +32279,7 @@
         "required": [
           "id",
           "organization_id",
-          "user_id",
           "customer_id",
-          "user",
           "customer",
           "benefit_id",
           "key",
@@ -34345,12 +34109,6 @@
             "format": "uuid4",
             "title": "Product Id"
           },
-          "product_price_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Price Id",
-            "deprecated": true
-          },
           "discount_id": {
             "anyOf": [
               {
@@ -34396,24 +34154,8 @@
             "title": "User Id",
             "deprecated": true
           },
-          "user": {
-            "$ref": "#/components/schemas/OrderUser",
-            "deprecated": true
-          },
           "product": {
             "$ref": "#/components/schemas/OrderProduct"
-          },
-          "product_price": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-              },
-              {
-                "$ref": "#/components/schemas/ProductPrice"
-              }
-            ],
-            "title": "Product Price",
-            "deprecated": true
           },
           "discount": {
             "anyOf": [
@@ -34480,15 +34222,12 @@
           "billing_address",
           "customer_id",
           "product_id",
-          "product_price_id",
           "discount_id",
           "subscription_id",
           "checkout_id",
           "customer",
           "user_id",
-          "user",
           "product",
-          "product_price",
           "discount",
           "subscription",
           "items"
@@ -34782,6 +34521,26 @@
       },
       "OrderProduct": {
         "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -34854,6 +34613,7 @@
         },
         "type": "object",
         "required": [
+          "metadata",
           "created_at",
           "modified_at",
           "id",
@@ -35094,18 +34854,6 @@
               }
             ],
             "title": "Customer Cancellation Comment"
-          },
-          "price_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Price Id",
-            "deprecated": true
-          },
-          "user_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "User Id",
-            "deprecated": true
           }
         },
         "type": "object",
@@ -35130,9 +34878,7 @@
           "discount_id",
           "checkout_id",
           "customer_cancellation_reason",
-          "customer_cancellation_comment",
-          "price_id",
-          "user_id"
+          "customer_cancellation_comment"
         ],
         "title": "OrderSubscription"
       },
@@ -35298,66 +35044,6 @@
           "subscription_settings": {
             "$ref": "#/components/schemas/OrganizationSubscriptionSettings",
             "description": "Settings related to subscriptions management"
-          },
-          "bio": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bio",
-            "deprecated": true
-          },
-          "company": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company",
-            "deprecated": true
-          },
-          "blog": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Blog",
-            "deprecated": true
-          },
-          "location": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Location",
-            "deprecated": true
-          },
-          "twitter_username": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Twitter Username",
-            "deprecated": true
           }
         },
         "type": "object",
@@ -35373,12 +35059,7 @@
           "socials",
           "details_submitted_at",
           "feature_settings",
-          "subscription_settings",
-          "bio",
-          "company",
-          "blog",
-          "location",
-          "twitter_username"
+          "subscription_settings"
         ],
         "title": "Organization"
       },
@@ -38346,12 +38027,6 @@
             ],
             "title": "Customer Cancellation Comment"
           },
-          "price_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Price Id",
-            "deprecated": true
-          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -38400,16 +38075,6 @@
           "customer": {
             "$ref": "#/components/schemas/SubscriptionCustomer"
           },
-          "user_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "User Id",
-            "deprecated": true
-          },
-          "user": {
-            "$ref": "#/components/schemas/SubscriptionUser",
-            "deprecated": true
-          },
           "product": {
             "$ref": "#/components/schemas/Product"
           },
@@ -38437,18 +38102,6 @@
               }
             ],
             "title": "Discount"
-          },
-          "price": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-              },
-              {
-                "$ref": "#/components/schemas/ProductPrice"
-              }
-            ],
-            "title": "Price",
-            "deprecated": true
           },
           "prices": {
             "items": {
@@ -38496,14 +38149,10 @@
           "checkout_id",
           "customer_cancellation_reason",
           "customer_cancellation_comment",
-          "price_id",
           "metadata",
           "customer",
-          "user_id",
-          "user",
           "product",
           "discount",
-          "price",
           "prices",
           "meters"
         ],
@@ -39200,20 +38849,10 @@
             "format": "uuid4",
             "title": "Organization Id"
           },
-          "user_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "User Id",
-            "deprecated": true
-          },
           "customer_id": {
             "type": "string",
             "format": "uuid4",
             "title": "Customer Id"
-          },
-          "user": {
-            "$ref": "#/components/schemas/LicenseKeyUser",
-            "deprecated": true
           },
           "customer": {
             "$ref": "#/components/schemas/LicenseKeyCustomer"
@@ -39309,9 +38948,7 @@
         "required": [
           "id",
           "organization_id",
-          "user_id",
           "customer_id",
-          "user",
           "customer",
           "benefit_id",
           "key",

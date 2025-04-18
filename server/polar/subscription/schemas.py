@@ -212,21 +212,7 @@ class SubscriptionUpdateProduct(Schema):
     )
 
 
-class SubscriptionCancel(Schema):
-    cancel_at_period_end: bool | None = Field(
-        None,
-        description=inspect.cleandoc(
-            """
-        Cancel an active subscription once the current period ends.
-
-        Or uncancel a subscription currently set to be revoked at period end.
-        """
-        ),
-    )
-    revoke: Literal[True] | None = Field(
-        None,
-        description="Cancel and revoke an active subscription immediately",
-    )
+class SubscriptionCancelBase(Schema):
     customer_cancellation_reason: CustomerCancellationReason | None = Field(
         None,
         description=inspect.cleandoc(
@@ -269,7 +255,25 @@ class SubscriptionCancel(Schema):
     )
 
 
+class SubscriptionCancel(SubscriptionCancelBase):
+    cancel_at_period_end: bool = Field(
+        description=inspect.cleandoc(
+            """
+        Cancel an active subscription once the current period ends.
+
+        Or uncancel a subscription currently set to be revoked at period end.
+        """
+        ),
+    )
+
+
+class SubscriptionRevoke(SubscriptionCancelBase):
+    revoke: Literal[True] = Field(
+        description="Cancel and revoke an active subscription immediately"
+    )
+
+
 SubscriptionUpdate = Annotated[
-    SubscriptionUpdateProduct | SubscriptionCancel,
+    SubscriptionUpdateProduct | SubscriptionCancel | SubscriptionRevoke,
     SetSchemaReference("SubscriptionUpdate"),
 ]

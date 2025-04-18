@@ -56,12 +56,14 @@ class BenefitMeterCreditService(
     ) -> BenefitGrantMeterCreditProperties:
         properties = self._get_properties(benefit)
 
-        meter_id = uuid.UUID(
-            grant_properties.get("last_credited_meter_id", properties["meter_id"])
-        )
+        # Skip if not granted before
+        meter_id = grant_properties.get("last_credited_meter_id")
+        if meter_id is None:
+            return grant_properties
+
         units = -grant_properties.get("last_credited_units", properties["units"])
         return await self._create_event(
-            customer, benefit.organization, meter_id=meter_id, units=units
+            customer, benefit.organization, meter_id=uuid.UUID(meter_id), units=units
         )
 
     async def requires_update(

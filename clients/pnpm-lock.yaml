@@ -93,8 +93,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/mdx
       '@polar-sh/sdk':
-        specifier: ^0.32.7
-        version: 0.32.7(zod@3.24.2)
+        specifier: ^0.32.11
+        version: 0.32.11(zod@3.24.2)
       '@polar-sh/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -427,8 +427,8 @@ importers:
         specifier: workspace:^
         version: link:../../packages/checkout
       '@polar-sh/sdk':
-        specifier: ^0.32.7
-        version: 0.32.7(zod@3.24.2)
+        specifier: ^0.32.11
+        version: 0.32.11(zod@3.24.2)
       '@stripe/react-stripe-js':
         specifier: ^3.6.0
         version: 3.6.0(@stripe/stripe-js@7.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -485,8 +485,8 @@ importers:
   packages/checkout:
     dependencies:
       '@polar-sh/sdk':
-        specifier: ^0.32.7
-        version: 0.32.7(zod@3.24.2)
+        specifier: ^0.32.11
+        version: 0.32.11(zod@3.24.2)
       '@polar-sh/ui':
         specifier: workspace:^
         version: link:../ui
@@ -2541,11 +2541,11 @@ packages:
     resolution: {integrity: sha512-c83qWb22rNRuB0UaVCI0uRPNRr8Z0FWnEIvT47jiHAmOIUHbBOg5XvV7pM5x+rKn9HRpjxquDbXYSXr3fAKFcw==}
     engines: {node: '>=12'}
 
-  '@polar-sh/sdk@0.32.7':
-    resolution: {integrity: sha512-F8O0F0nbELSr7xbwvo7DzY8TlDLteOxC4WPUqyI6XDtuSg3tkf1i135GDDYs8InfaxkHrcVd2Gx4lCE3+GghXw==}
+  '@polar-sh/sdk@0.32.11':
+    resolution: {integrity: sha512-GmMDrWyJJnM45rByMRkY8U8DYbL2ggJNohhTc/9naMlGHnP3+RRgIG9IG6yxuXfQ1wljKyoViHAWCAGCvS3DPA==}
     hasBin: true
     peerDependencies:
-      '@modelcontextprotocol/sdk': ^1.5.0
+      '@modelcontextprotocol/sdk': '>=1.5.0 <1.10.0'
       zod: '>= 3'
     peerDependenciesMeta:
       '@modelcontextprotocol/sdk':
@@ -11988,7 +11988,7 @@ snapshots:
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
 
-  '@polar-sh/sdk@0.32.7(zod@3.24.2)':
+  '@polar-sh/sdk@0.32.11(zod@3.24.2)':
     dependencies:
       standardwebhooks: 1.0.0
       zod: 3.24.2

@@ -1,10 +1,8 @@
 import { markdownOptions } from '@/utils/markdown'
-import { organizationPageLink } from '@/utils/nav'
 import type { CheckoutProduct } from '@polar-sh/sdk/models/components/checkoutproduct'
 import type { Organization } from '@polar-sh/sdk/models/components/organization'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Markdown from 'markdown-to-jsx'
-import Link from 'next/link'
 import { Slideshow } from '../Products/Slideshow'
 
 interface CheckoutProductInfoProps {
@@ -19,21 +17,11 @@ const CheckoutProductInfo = ({
   return (
     <>
       <div className="flex flex-col gap-y-6 md:gap-y-8">
-        {organization.profileSettings?.enabled ? (
-          <Link href={organizationPageLink(organization)}>
-            <Avatar
-              className="h-12 w-12 md:h-16 md:w-16"
-              avatar_url={organization.avatarUrl}
-              name={organization.name}
-            />
-          </Link>
-        ) : (
-          <Avatar
-            className="h-12 w-12 md:h-16 md:w-16"
-            avatar_url={organization.avatarUrl}
-            name={organization.name}
-          />
-        )}
+        <Avatar
+          className="h-12 w-12 md:h-16 md:w-16"
+          avatar_url={organization.avatarUrl}
+          name={organization.name}
+        />
         <h1 className="text-3xl">{product.name}</h1>
       </div>
       {product.medias.length > 0 && (

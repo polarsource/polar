@@ -213,23 +213,20 @@ export const createCheckoutPreview = (
     url: '/checkout/CLIENT_SECRET',
     success_url: '/checkout/CLIENT_SECRET/confirmation',
     embed_origin: null,
-    organization: {
-      ...organization,
-      // FIXME: removed field to please outdated SDK, we can remove that later
-      default_upfront_split_to_contributors: null,
-      pledge_minimum_amount: 2000,
-      pledge_badge_show_amount: false,
-      profile_settings: null,
-      bio: null,
-      company: null,
-      blog: null,
-      location: null,
-      twitter_username: null,
-    },
+    organization: organization,
     attached_custom_fields: [],
     discount: null,
     discount_id: null,
     allow_discount_codes: true,
+    require_billing_address: false,
+    customer_billing_address_fields: {
+      country: true,
+      state: false,
+      city: false,
+      postal_code: false,
+      line1: false,
+      line2: false,
+    },
   })
 
   return {

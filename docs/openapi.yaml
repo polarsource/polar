@@ -1058,7 +1058,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Subscriptions.Update(ctx, \"<value>\", components.CreateSubscriptionUpdateSubscriptionCancel(\n        components.SubscriptionCancel{},\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Subscription != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Subscriptions.Update(ctx, \"<value>\", components.CreateSubscriptionUpdateSubscriptionCancel(\n        components.SubscriptionCancel{\n            CancelAtPeriodEnd: false,\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Subscription != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -1073,7 +1073,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->subscriptions->update(\n    id: '<value>',\n    subscriptionUpdate: new Components\\SubscriptionCancel()\n\n);\n\nif ($response->subscription !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->subscriptions->update(\n    id: '<value>',\n    subscriptionUpdate: new Components\\SubscriptionRevoke()\n\n);\n\nif ($response->subscription !== null) {\n    // handle response\n}"
           }
         ]
       },
@@ -6832,12 +6832,12 @@
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkout_links.create(request={\n        \"payment_processor\": \"stripe\",\n        \"allow_discount_codes\": True,\n        \"product_id\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.checkout_links.create(request={\n        \"payment_processor\": \"stripe\",\n        \"allow_discount_codes\": True,\n        \"require_billing_address\": False,\n        \"product_id\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.create({\n    allowDiscountCodes: true,\n    productId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.create({\n    allowDiscountCodes: true,\n    requireBillingAddress: false,\n    productId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -13605,22 +13605,22 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Meters.Create(ctx, components.MeterCreate{\n        Name: \"<value>\",\n        Filter: components.Filter{\n            Conjunction: components.FilterConjunctionAnd,\n            Clauses: []components.Clauses{\n\n            },\n        },\n        Aggregation: components.CreateMeterCreateAggregationAvg(\n            components.PropertyAggregation{\n                Func: components.FuncSum,\n                Property: \"<value>\",\n            },\n        ),\n        OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Meter != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Meters.Create(ctx, components.MeterCreate{\n        Name: \"<value>\",\n        Filter: components.Filter{\n            Conjunction: components.FilterConjunctionAnd,\n            Clauses: []components.Clauses{},\n        },\n        Aggregation: components.CreateMeterCreateAggregationAvg(\n            components.PropertyAggregation{\n                Func: components.FuncSum,\n                Property: \"<value>\",\n            },\n        ),\n        OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Meter != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.meters.create(request={\n        \"name\": \"<value>\",\n        \"filter_\": {\n            \"conjunction\": polar_sdk.FilterConjunction.AND,\n            \"clauses\": [\n\n            ],\n        },\n        \"aggregation\": {\n            \"func\": polar_sdk.Func.SUM,\n            \"property\": \"<value>\",\n        },\n        \"organization_id\": \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.meters.create(request={\n        \"name\": \"<value>\",\n        \"filter_\": {\n            \"conjunction\": polar_sdk.FilterConjunction.AND,\n            \"clauses\": [],\n        },\n        \"aggregation\": {\n            \"func\": polar_sdk.Func.SUM,\n            \"property\": \"<value>\",\n        },\n        \"organization_id\": \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.meters.create({\n    name: \"<value>\",\n    filter: {\n      conjunction: \"and\",\n      clauses: [\n\n      ],\n    },\n    aggregation: {\n      func: \"sum\",\n      property: \"<value>\",\n    },\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.meters.create({\n    name: \"<value>\",\n    filter: {\n      conjunction: \"and\",\n      clauses: [],\n    },\n    aggregation: {\n      func: \"sum\",\n      property: \"<value>\",\n    },\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\MeterCreate(\n    name: '<value>',\n    filter: new Components\\Filter(\n        conjunction: Components\\FilterConjunction::And,\n        clauses: [\n\n        ],\n    ),\n    aggregation: new Components\\PropertyAggregation(\n        func: Components\\Func::Max,\n        property: '<value>',\n    ),\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->meters->create(\n    request: $request\n);\n\nif ($response->meter !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\MeterCreate(\n    name: '<value>',\n    filter: new Components\\Filter(\n        conjunction: Components\\FilterConjunction::And,\n        clauses: [],\n    ),\n    aggregation: new Components\\PropertyAggregation(\n        func: Components\\Func::Max,\n        property: '<value>',\n    ),\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->meters->create(\n    request: $request\n);\n\nif ($response->meter !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -18974,6 +18974,11 @@
             "title": "Allow Discount Codes",
             "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it."
           },
+          "require_billing_address": {
+            "type": "boolean",
+            "title": "Require Billing Address",
+            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`."
+          },
           "is_discount_applicable": {
             "type": "boolean",
             "title": "Is Discount Applicable",
@@ -19191,6 +19196,10 @@
             },
             "type": "object",
             "title": "Customer Metadata"
+          },
+          "customer_billing_address_fields": {
+            "$ref": "#/components/schemas/CheckoutCustomerBillingAddressFields",
+            "description": "Determine which billing address fields should be shown in the checkout form."
           }
         },
         "type": "object",
@@ -19215,6 +19224,7 @@
           "product_price_id",
           "discount_id",
           "allow_discount_codes",
+          "require_billing_address",
           "is_discount_applicable",
           "is_free_product_price",
           "is_payment_required",
@@ -19235,7 +19245,8 @@
           "discount",
           "subscription_id",
           "attached_custom_fields",
-          "customer_metadata"
+          "customer_metadata",
+          "customer_billing_address_fields"
         ],
         "title": "Checkout",
         "description": "Checkout session data retrieved using an access token."
@@ -19386,6 +19397,44 @@
       },
       "CheckoutCreate": {
         "$ref": "#/components/schemas/CheckoutProductsCreate"
+      },
+      "CheckoutCustomerBillingAddressFields": {
+        "properties": {
+          "country": {
+            "type": "boolean",
+            "title": "Country"
+          },
+          "state": {
+            "type": "boolean",
+            "title": "State"
+          },
+          "city": {
+            "type": "boolean",
+            "title": "City"
+          },
+          "postal_code": {
+            "type": "boolean",
+            "title": "Postal Code"
+          },
+          "line1": {
+            "type": "boolean",
+            "title": "Line1"
+          },
+          "line2": {
+            "type": "boolean",
+            "title": "Line2"
+          }
+        },
+        "type": "object",
+        "required": [
+          "country",
+          "state",
+          "city",
+          "postal_code",
+          "line1",
+          "line2"
+        ],
+        "title": "CheckoutCustomerBillingAddressFields"
       },
       "CheckoutDiscountFixedOnceForeverDuration": {
         "properties": {
@@ -19686,6 +19735,11 @@
             "title": "Allow Discount Codes",
             "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it."
           },
+          "require_billing_address": {
+            "type": "boolean",
+            "title": "Require Billing Address",
+            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting."
+          },
           "discount_id": {
             "anyOf": [
               {
@@ -19761,6 +19815,7 @@
           "success_url",
           "label",
           "allow_discount_codes",
+          "require_billing_address",
           "discount_id",
           "organization_id",
           "products",
@@ -19823,6 +19878,12 @@
             "title": "Allow Discount Codes",
             "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
             "default": true
+          },
+          "require_billing_address": {
+            "type": "boolean",
+            "title": "Require Billing Address",
+            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.",
+            "default": false
           },
           "discount_id": {
             "anyOf": [
@@ -19920,6 +19981,12 @@
             "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
             "default": true
           },
+          "require_billing_address": {
+            "type": "boolean",
+            "title": "Require Billing Address",
+            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.",
+            "default": false
+          },
           "discount_id": {
             "anyOf": [
               {
@@ -20015,6 +20082,12 @@
             "title": "Allow Discount Codes",
             "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
             "default": true
+          },
+          "require_billing_address": {
+            "type": "boolean",
+            "title": "Require Billing Address",
+            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.",
+            "default": false
           },
           "discount_id": {
             "anyOf": [
@@ -20289,6 +20362,18 @@
             "title": "Allow Discount Codes",
             "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it."
           },
+          "require_billing_address": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Require Billing Address",
+            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting."
+          },
           "discount_id": {
             "anyOf": [
               {
@@ -20395,6 +20480,12 @@
             "title": "Allow Discount Codes",
             "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
             "default": true
+          },
+          "require_billing_address": {
+            "type": "boolean",
+            "title": "Require Billing Address",
+            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.",
+            "default": false
           },
           "amount": {
             "anyOf": [
@@ -20771,6 +20862,12 @@
             "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
             "default": true
           },
+          "require_billing_address": {
+            "type": "boolean",
+            "title": "Require Billing Address",
+            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.",
+            "default": false
+          },
           "amount": {
             "anyOf": [
               {
@@ -21024,6 +21121,12 @@
             "title": "Allow Discount Codes",
             "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
             "default": true
+          },
+          "require_billing_address": {
+            "type": "boolean",
+            "title": "Require Billing Address",
+            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.",
+            "default": false
           },
           "amount": {
             "anyOf": [
@@ -21369,6 +21472,11 @@
             "title": "Allow Discount Codes",
             "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it."
           },
+          "require_billing_address": {
+            "type": "boolean",
+            "title": "Require Billing Address",
+            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`."
+          },
           "is_discount_applicable": {
             "type": "boolean",
             "title": "Is Discount Applicable",
@@ -21528,6 +21636,10 @@
             },
             "type": "array",
             "title": "Attached Custom Fields"
+          },
+          "customer_billing_address_fields": {
+            "$ref": "#/components/schemas/CheckoutCustomerBillingAddressFields",
+            "description": "Determine which billing address fields should be shown in the checkout form."
           }
         },
         "type": "object",
@@ -21552,6 +21664,7 @@
           "product_price_id",
           "discount_id",
           "allow_discount_codes",
+          "require_billing_address",
           "is_discount_applicable",
           "is_free_product_price",
           "is_payment_required",
@@ -21569,7 +21682,8 @@
           "product_price",
           "discount",
           "organization",
-          "attached_custom_fields"
+          "attached_custom_fields",
+          "customer_billing_address_fields"
         ],
         "title": "CheckoutPublic",
         "description": "Checkout session data retrieved using the client secret."
@@ -21735,6 +21849,11 @@
             "title": "Allow Discount Codes",
             "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it."
           },
+          "require_billing_address": {
+            "type": "boolean",
+            "title": "Require Billing Address",
+            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`."
+          },
           "is_discount_applicable": {
             "type": "boolean",
             "title": "Is Discount Applicable",
@@ -21898,6 +22017,10 @@
           "customer_session_token": {
             "type": "string",
             "title": "Customer Session Token"
+          },
+          "customer_billing_address_fields": {
+            "$ref": "#/components/schemas/CheckoutCustomerBillingAddressFields",
+            "description": "Determine which billing address fields should be shown in the checkout form."
           }
         },
         "type": "object",
@@ -21922,6 +22045,7 @@
           "product_price_id",
           "discount_id",
           "allow_discount_codes",
+          "require_billing_address",
           "is_discount_applicable",
           "is_free_product_price",
           "is_payment_required",
@@ -21940,7 +22064,8 @@
           "discount",
           "organization",
           "attached_custom_fields",
-          "customer_session_token"
+          "customer_session_token",
+          "customer_billing_address_fields"
         ],
         "title": "CheckoutPublicConfirmed",
         "description": "Checkout session data retrieved using the client secret after confirmation.\n\nIt contains a customer session token to retrieve order information\nright after the checkout."
@@ -22133,6 +22258,18 @@
             ],
             "title": "Allow Discount Codes",
             "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it."
+          },
+          "require_billing_address": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Require Billing Address",
+            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`."
           },
           "customer_ip_address": {
             "anyOf": [
@@ -38160,31 +38297,6 @@
       },
       "SubscriptionCancel": {
         "properties": {
-          "cancel_at_period_end": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cancel At Period End",
-            "description": "Cancel an active subscription once the current period ends.\n\nOr uncancel a subscription currently set to be revoked at period end."
-          },
-          "revoke": {
-            "anyOf": [
-              {
-                "type": "boolean",
-                "const": true
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Revoke",
-            "description": "Cancel and revoke an active subscription immediately"
-          },
           "customer_cancellation_reason": {
             "anyOf": [
               {
@@ -38207,9 +38319,17 @@
             ],
             "title": "Customer Cancellation Comment",
             "description": "Customer feedback and why they decided to cancel.\n\n**IMPORTANT:**\nDo not use this to store internal notes! It's intended to be input\nfrom the customer and is therefore also available in their Polar\npurchases library.\n\nOnly set this in case your own service is requesting the reason from the\ncustomer. Or you copy a message directly from a customer\nconversation, i.e support."
+          },
+          "cancel_at_period_end": {
+            "type": "boolean",
+            "title": "Cancel At Period End",
+            "description": "Cancel an active subscription once the current period ends.\n\nOr uncancel a subscription currently set to be revoked at period end."
           }
         },
         "type": "object",
+        "required": [
+          "cancel_at_period_end"
+        ],
         "title": "SubscriptionCancel"
       },
       "SubscriptionCustomer": {
@@ -38492,6 +38612,44 @@
         ],
         "title": "SubscriptionRecurringInterval"
       },
+      "SubscriptionRevoke": {
+        "properties": {
+          "customer_cancellation_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerCancellationReason"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Customer reason for cancellation.\n\nHelpful to monitor reasons behind churn for future improvements.\n\nOnly set this in case your own service is requesting the reason from the\ncustomer. Or you know based on direct conversations, i.e support, with\nthe customer.\n\n* `too_expensive`: Too expensive for the customer.\n* `missing_features`: Customer is missing certain features.\n* `switched_service`: Customer switched to another service.\n* `unused`: Customer is not using it enough.\n* `customer_service`: Customer is not satisfied with the customer service.\n* `low_quality`: Customer is unhappy with the quality.\n* `too_complex`: Customer considers the service too complicated.\n* `other`: Other reason(s)."
+          },
+          "customer_cancellation_comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Cancellation Comment",
+            "description": "Customer feedback and why they decided to cancel.\n\n**IMPORTANT:**\nDo not use this to store internal notes! It's intended to be input\nfrom the customer and is therefore also available in their Polar\npurchases library.\n\nOnly set this in case your own service is requesting the reason from the\ncustomer. Or you copy a message directly from a customer\nconversation, i.e support."
+          },
+          "revoke": {
+            "type": "boolean",
+            "const": true,
+            "title": "Revoke",
+            "description": "Cancel and revoke an active subscription immediately"
+          }
+        },
+        "type": "object",
+        "required": [
+          "revoke"
+        ],
+        "title": "SubscriptionRevoke"
+      },
       "SubscriptionSortProperty": {
         "type": "string",
         "enum": [
@@ -38532,6 +38690,9 @@
           },
           {
             "$ref": "#/components/schemas/SubscriptionCancel"
+          },
+          {
+            "$ref": "#/components/schemas/SubscriptionRevoke"
           }
         ]
       },

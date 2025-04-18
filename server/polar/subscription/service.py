@@ -75,6 +75,8 @@ from polar.worker import enqueue_job
 from ..product.service.product import product as product_service
 from .repository import SubscriptionRepository
 from .schemas import (
+    SubscriptionCancel,
+    SubscriptionRevoke,
     SubscriptionUpdate,
     SubscriptionUpdateProduct,
 )
@@ -541,31 +543,21 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     proration_behavior=update.proration_behavior,
                 )
 
-            cancel = update.cancel_at_period_end is True
-            uncancel = update.cancel_at_period_end is False
-            # Exit early unless we're asked to revoke, cancel or uncancel
-            if not any((update.revoke, cancel, uncancel)):
-                return subscription
+            if isinstance(update, SubscriptionCancel):
+                cancel = update.cancel_at_period_end is True
+                uncancel = update.cancel_at_period_end is False
 
-            if update.revoke and (cancel or uncancel):
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "revoke"),
-                            "msg": (
-                                "Use either `revoke` for immediate cancellation "
-                                "and revokation or `cancel_at_period_end`."
-                            ),
-                            "input": update.revoke,
-                        }
-                    ]
+                if uncancel:
+                    return await self.uncancel(session, subscription)
+
+                return await self.cancel(
+                    session,
+                    subscription,
+                    customer_reason=update.customer_cancellation_reason,
+                    customer_comment=update.customer_cancellation_comment,
                 )
 
-            if uncancel:
-                return await self.uncancel(session, subscription)
-
-            if update.revoke:
+            if isinstance(update, SubscriptionRevoke):
                 return await self._perform_cancellation(
                     session,
                     subscription,
@@ -573,13 +565,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     customer_comment=update.customer_cancellation_comment,
                     immediately=True,
                 )
-
-            return await self.cancel(
-                session,
-                subscription,
-                customer_reason=update.customer_cancellation_reason,
-                customer_comment=update.customer_cancellation_comment,
-            )
 
     async def update_product(
         self,

@@ -66,6 +66,7 @@ export const CheckoutLinkForm = ({
         ),
         products: checkoutLink.products.map(({ id }) => id),
         allow_discount_codes: checkoutLink.allow_discount_codes ?? true,
+        require_billing_address: checkoutLink.require_billing_address ?? false,
         success_url: checkoutLink.success_url ?? '',
         discount_id: checkoutLink.discount_id ?? '',
       }
@@ -76,6 +77,7 @@ export const CheckoutLinkForm = ({
       metadata: [],
       products: [],
       allow_discount_codes: true,
+      require_billing_address: false,
       success_url: '',
       discount_id: '',
     }
@@ -314,8 +316,33 @@ export const CheckoutLinkForm = ({
                   <FormMessage />
                   <FormDescription>
                     {field.value
-                      ? 'Customers will be able to apply discount codes during checkout.'
-                      : "Customers won't be able to apply discount codes during checkout."}
+                      ? 'Customers will be able to apply discount codes at checkout.'
+                      : "Customers won't be able to apply discount codes at checkout."}
+                  </FormDescription>
+                </FormItem>
+              )
+            }}
+          />
+          <FormField
+            control={control}
+            name="require_billing_address"
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <div className="flex flex-row items-center justify-between space-x-2 space-y-0">
+                    <FormLabel>Require billing address</FormLabel>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                  <FormDescription>
+                    {field.value
+                      ? 'Customers will need to provide their full billing address at checkout.'
+                      : 'Customers will just need to provide their country at checkout.'}
                   </FormDescription>
                 </FormItem>
               )

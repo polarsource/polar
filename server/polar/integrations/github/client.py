@@ -20,7 +20,6 @@ from polar.config import settings
 from polar.locker import Locker
 from polar.models.user import OAuthAccount, OAuthPlatform, User
 from polar.postgres import AsyncSession
-from polar.redis import Redis
 from polar.user.oauth_service import oauth_account_service
 
 log = structlog.get_logger()
@@ -191,11 +190,11 @@ async def get_refreshed_oauth_client(
 
 
 def get_client(access_token: str) -> GitHub[TokenAuthStrategy]:
-    return GitHub(access_token)
+    return GitHub(access_token, http_cache=False)
 
 
 def get_app_client(
-    redis: Redis, app: GitHubApp = GitHubApp.repository_benefit
+    app: GitHubApp = GitHubApp.repository_benefit,
 ) -> GitHub[AppAuthStrategy]:
     return GitHub(
         AppAuthStrategy(
@@ -211,7 +210,6 @@ def get_app_client(
 def get_app_installation_client(
     installation_id: int,
     *,
-    redis: Redis,
     app: GitHubApp = GitHubApp.repository_benefit,
 ) -> GitHub[AppInstallationAuthStrategy]:
     if not installation_id:

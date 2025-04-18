@@ -225,11 +225,7 @@ class GitHubRepositoryBenefitUserService:
 
         elif installation.target_type == "Organization":
             try:
-                org_client = github.get_app_installation_client(
-                    installation.id,
-                    redis=redis,
-                    app=github.GitHubApp.repository_benefit,
-                )
+                org_client = github.get_app_installation_client(installation.id)
                 org_response = await org_client.rest.orgs.async_get(
                     installation.account.login
                 )
@@ -296,15 +292,9 @@ class GitHubRepositoryBenefitUserService:
         return res
 
     async def get_repository_installation(
-        self,
-        redis: Redis,
-        *,
-        owner: str,
-        name: str,
+        self, *, owner: str, name: str
     ) -> "types.Installation | None":
-        app_client = github.get_app_client(
-            redis, app=github.GitHubApp.repository_benefit
-        )
+        app_client = github.get_app_client()
 
         repo_install = await app_client.rest.apps.async_get_repo_installation(
             owner, name
@@ -314,16 +304,9 @@ class GitHubRepositoryBenefitUserService:
         return None
 
     async def user_has_access_to_repository(
-        self,
-        oauth: OAuthAccount,
-        redis: Redis,
-        *,
-        owner: str,
-        name: str,
+        self, oauth: OAuthAccount, *, owner: str, name: str
     ) -> bool:
-        installation = await self.get_repository_installation(
-            redis, owner=owner, name=name
-        )
+        installation = await self.get_repository_installation(owner=owner, name=name)
         if not installation:
             raise GitHubRepositoryBenefitNoAccess()
 

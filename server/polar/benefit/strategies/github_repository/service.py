@@ -242,10 +242,7 @@ class BenefitGitHubRepositoryService(
         # check that use has access to the app installed on this repository
         has_access = (
             await github_repository_benefit_user_service.user_has_access_to_repository(
-                oauth,
-                self.redis,
-                owner=repository_owner,
-                name=repository_name,
+                oauth, owner=repository_owner, name=repository_name
             )
         )
 
@@ -263,9 +260,7 @@ class BenefitGitHubRepositoryService(
 
         installation = (
             await github_repository_benefit_user_service.get_repository_installation(
-                self.redis,
-                owner=repository_owner,
-                name=repository_name,
+                owner=repository_owner, name=repository_name
             )
         )
         if not installation:
@@ -332,10 +327,8 @@ class BenefitGitHubRepositoryService(
         repository_name = properties["repository_name"]
         installation = (
             await github_repository_benefit_user_service.get_repository_installation(
-                self.redis, owner=repository_owner, name=repository_name
+                owner=repository_owner, name=repository_name
             )
         )
         assert installation is not None
-        return github.get_app_installation_client(
-            installation.id, redis=self.redis, app=github.GitHubApp.repository_benefit
-        )
+        return github.get_app_installation_client(installation.id)

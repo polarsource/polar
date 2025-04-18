@@ -118,7 +118,7 @@ class Discount(MetadataMixin, RecordModel):
 
     def get_stripe_coupon_params(self) -> stripe_lib.Coupon.CreateParams:
         params: stripe_lib.Coupon.CreateParams = {
-            "name": self.name,
+            "name": self.name[:40],
             "duration": cast(Literal["once", "forever", "repeating"], self.duration),
             "metadata": {
                 "discount_id": str(self.id),

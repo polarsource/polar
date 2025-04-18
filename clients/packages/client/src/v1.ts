@@ -5374,6 +5374,11 @@ export interface components {
              */
             allow_discount_codes: boolean;
             /**
+             * Require Billing Address
+             * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
+             */
+            require_billing_address: boolean;
+            /**
              * Is Discount Applicable
              * @description Whether the discount is applicable to the checkout. Typically, free and custom prices are not discountable.
              */
@@ -5450,6 +5455,8 @@ export interface components {
             customer_metadata: {
                 [key: string]: string | number | boolean;
             };
+            /** @description Determine which billing address fields should be shown in the checkout form. */
+            readonly customer_billing_address_fields: components["schemas"]["CheckoutCustomerBillingAddressFields"];
         };
         /**
          * CheckoutConfirmStripe
@@ -5513,6 +5520,21 @@ export interface components {
              * @description ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
              */
             subscription_id?: string | null;
+        };
+        /** CheckoutCustomerBillingAddressFields */
+        CheckoutCustomerBillingAddressFields: {
+            /** Country */
+            country: boolean;
+            /** State */
+            state: boolean;
+            /** City */
+            city: boolean;
+            /** Postal Code */
+            postal_code: boolean;
+            /** Line1 */
+            line1: boolean;
+            /** Line2 */
+            line2: boolean;
         };
         /**
          * CheckoutDiscountFixedOnceForeverDuration
@@ -5654,6 +5676,11 @@ export interface components {
              */
             allow_discount_codes: boolean;
             /**
+             * Require Billing Address
+             * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
+             */
+            require_billing_address: boolean;
+            /**
              * Discount Id
              * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
              */
@@ -5713,6 +5740,12 @@ export interface components {
              */
             allow_discount_codes: boolean;
             /**
+             * Require Billing Address
+             * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
+             * @default false
+             */
+            require_billing_address: boolean;
+            /**
              * Discount Id
              * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
              */
@@ -5770,6 +5803,12 @@ export interface components {
              */
             allow_discount_codes: boolean;
             /**
+             * Require Billing Address
+             * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
+             * @default false
+             */
+            require_billing_address: boolean;
+            /**
              * Discount Id
              * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
              */
@@ -5824,6 +5863,12 @@ export interface components {
              * @default true
              */
             allow_discount_codes: boolean;
+            /**
+             * Require Billing Address
+             * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
+             * @default false
+             */
+            require_billing_address: boolean;
             /**
              * Discount Id
              * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
@@ -5950,6 +5995,11 @@ export interface components {
              */
             allow_discount_codes?: boolean | null;
             /**
+             * Require Billing Address
+             * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
+             */
+            require_billing_address?: boolean | null;
+            /**
              * Discount Id
              * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
              */
@@ -6005,6 +6055,12 @@ export interface components {
              * @default true
              */
             allow_discount_codes: boolean;
+            /**
+             * Require Billing Address
+             * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
+             * @default false
+             */
+            require_billing_address: boolean;
             /** Amount */
             amount?: number | null;
             /**
@@ -6176,6 +6232,12 @@ export interface components {
              * @default true
              */
             allow_discount_codes: boolean;
+            /**
+             * Require Billing Address
+             * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
+             * @default false
+             */
+            require_billing_address: boolean;
             /** Amount */
             amount?: number | null;
             /**
@@ -6280,6 +6342,12 @@ export interface components {
              * @default true
              */
             allow_discount_codes: boolean;
+            /**
+             * Require Billing Address
+             * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
+             * @default false
+             */
+            require_billing_address: boolean;
             /** Amount */
             amount?: number | null;
             /**
@@ -6451,6 +6519,11 @@ export interface components {
              */
             allow_discount_codes: boolean;
             /**
+             * Require Billing Address
+             * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
+             */
+            require_billing_address: boolean;
+            /**
              * Is Discount Applicable
              * @description Whether the discount is applicable to the checkout. Typically, free and custom prices are not discountable.
              */
@@ -6513,6 +6586,8 @@ export interface components {
             organization: components["schemas"]["Organization"];
             /** Attached Custom Fields */
             attached_custom_fields: components["schemas"]["AttachedCustomField"][];
+            /** @description Determine which billing address fields should be shown in the checkout form. */
+            readonly customer_billing_address_fields: components["schemas"]["CheckoutCustomerBillingAddressFields"];
         };
         /**
          * CheckoutPublicConfirmed
@@ -6632,6 +6707,11 @@ export interface components {
              */
             allow_discount_codes: boolean;
             /**
+             * Require Billing Address
+             * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
+             */
+            require_billing_address: boolean;
+            /**
              * Is Discount Applicable
              * @description Whether the discount is applicable to the checkout. Typically, free and custom prices are not discountable.
              */
@@ -6696,6 +6776,8 @@ export interface components {
             attached_custom_fields: components["schemas"]["AttachedCustomField"][];
             /** Customer Session Token */
             customer_session_token: string;
+            /** @description Determine which billing address fields should be shown in the checkout form. */
+            readonly customer_billing_address_fields: components["schemas"]["CheckoutCustomerBillingAddressFields"];
         };
         /**
          * CheckoutSortProperty
@@ -6766,6 +6848,11 @@ export interface components {
              * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
              */
             allow_discount_codes?: boolean | null;
+            /**
+             * Require Billing Address
+             * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
+             */
+            require_billing_address?: boolean | null;
             /** Customer Ip Address */
             customer_ip_address?: string | null;
             /**

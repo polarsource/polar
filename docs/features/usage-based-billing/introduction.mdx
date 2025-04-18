@@ -3,6 +3,11 @@ title: "Introduction"
 description: "Usage based billing using ingested events"
 ---
 
+import Events from "/snippets/usage/events.mdx";
+import Meters from "/snippets/usage/meters.mdx";
+import MeteredPrice from "/snippets/usage/metered-price.mdx";
+import MeterCredits from "/snippets/usage/meter-credits.mdx";
+
 <Warning>
   Usage Based Billing is currently in Alpha & subject to change.
 </Warning>
@@ -12,6 +17,58 @@ description: "Usage based billing using ingested events"
 Polar has a powerful Usage Based Billing infrastructure that allows you to charge your customers based on the usage of your application.
 
 This is done by ingesting events from your application, creating Meters to represent that usage, and then adding metered prices to Products to charge for it.
+
+## Concepts
+
+### Events
+
+<Events />
+
+### Meters
+
+<Meters />
+
+### Metered Price
+
+<MeteredPrice />
+
+### Meter Credits benefit
+
+<MeterCredits />
+
+### Diagram
+
+Here is a diagram of how the different components of Usage Based Billing work together:
+
+```mermaid
+flowchart TD
+App[Your Application]
+User[User]
+
+    subgraph Polar["Polar"]
+        API[Events Ingestion API]
+        DB[(Events database)]
+        Meters[Meters]
+        Products[Products]
+        Benefit[Meter Credits Benefit]
+
+        subgraph MeteredPrice["Metered Prices"]
+            Unit[Unit Pricing]
+        end
+    end
+
+
+    User -->|Uses| App
+    App -->|Sends events| API
+    API -->|Stores events| DB
+    Benefit -->|Stores credit events| DB
+
+    DB -->|Filtered & aggregated by| Meters
+    Meters -->|Associated with| Products
+    Benefit -->|Associated with| Meters
+
+    Products -.->|Apply| MeteredPrice
+```
 
 ## Quickstart
 

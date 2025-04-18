@@ -3,9 +3,7 @@ title: "Credits"
 description: "Crediting customers for Usage Based Billing"
 ---
 
-## Basics
-
-Credits are the perfect way to give your customers a "spending limit" on their Usage Meter balance.
+Credits is the way to pre-pay for usage in Polar. It allows you to give your customers the ability to pre-pay for usage instead of risk getting a hefty bill at the end of the month.
 
 ## How Credits Work
 
@@ -39,3 +37,15 @@ The customer will be credited the amount of units specified in the benefit at th
 ### One-Time Products
 
 The customer will be credited the amount of units specified in the benefit once at the time of purchase.
+
+## Tracking customer's balance
+
+In your application, you'll likely need to track the customer's balance for a given meter. The easiest way to do this is to use the [Customer State](/integrate/customer-state), which will give you the overview of the customer, including the balance for each of their active meters.
+
+You can also specifically query the meters balance using the [Customer Meters API](/api-reference/customer-meters/list).
+
+<Warning>
+  Polar doesn't block usage if the customer exceeds their balance. You're
+  responsible for implementing the logic you need to prevent usage if they
+  exceed it.
+</Warning>

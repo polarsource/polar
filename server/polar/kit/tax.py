@@ -248,7 +248,7 @@ class TaxIDType(TypeDecorator[Any]):
 
     def process_bind_param(self, value: Any, dialect: Dialect) -> Any:
         if value is not None:
-            if not isinstance(value, tuple) or len(value) != 2:
+            if not isinstance(value, tuple | list) or len(value) != 2:
                 raise TypeError("Invalid tax ID value.")
             return json.dumps(value)
         return value

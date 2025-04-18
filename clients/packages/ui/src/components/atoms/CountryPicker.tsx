@@ -75,10 +75,7 @@ const CountryPicker = ({
             textValue={country.name}
             className={itemClassName}
           >
-            <div className="flex flex-row gap-2">
-              <div>{emoji}</div>
-              <div>{country.name}</div>
-            </div>
+            {emoji} {country.name}
           </SelectItem>
         ))}
       </SelectContent>

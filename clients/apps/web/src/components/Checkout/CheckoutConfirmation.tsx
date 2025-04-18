@@ -2,7 +2,6 @@
 
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { getServerURL } from '@/utils/api'
-import { organizationPageLink } from '@/utils/nav'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
@@ -12,7 +11,6 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
 import { Stripe, loadStripe } from '@stripe/stripe-js'
-import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import LogoType from '../Brand/LogoType'
 import { SpinnerNoMargin } from '../Shared/Spinner'
@@ -115,24 +113,11 @@ export const CheckoutConfirmation = ({
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
       <div className="flex w-full max-w-md flex-col gap-y-8">
-        {organization.profileSettings?.enabled ? (
-          <Link
-            href={organizationPageLink(organization)}
-            className="flex self-start"
-          >
-            <Avatar
-              className="h-16 w-16"
-              avatar_url={organization.avatarUrl}
-              name={organization.name}
-            />
-          </Link>
-        ) : (
-          <Avatar
-            className="h-16 w-16"
-            avatar_url={organization.avatarUrl}
-            name={organization.name}
-          />
-        )}
+        <Avatar
+          className="h-16 w-16"
+          avatar_url={organization.avatarUrl}
+          name={organization.name}
+        />
         <h1 className="text-2xl font-medium">
           {status === 'confirmed' && 'We are processing your order'}
           {status === 'succeeded' && 'Your order was successful!'}

@@ -128,7 +128,7 @@ const BaseCheckoutForm = ({
 
   const country = watch('customerBillingAddress.country')
   const watcher: WatchObserver<CheckoutUpdatePublic> = useCallback(
-    async (value, { name, type }) => {
+    async (value, { name }) => {
       if (!name) {
         return
       }
@@ -325,45 +325,18 @@ const BaseCheckoutForm = ({
 
                   <FormItem>
                     <FormLabel>Billing address</FormLabel>
-                    <FormControl>
-                      <FormField
-                        control={control}
-                        name="customerBillingAddress.country"
-                        rules={{
-                          required: 'This field is required',
-                        }}
-                        render={({ field }) => (
-                          <>
-                            <CountryPicker
-                              autoComplete="billing country"
-                              value={field.value || undefined}
-                              onChange={field.onChange}
-                              className={themePresetProps.polar.dropdown}
-                              itemClassName={
-                                themePresetProps.polar.dropdownItem
-                              }
-                              contentClassName={
-                                themePresetProps.polar.dropdownContent
-                              }
-                            />
-                            <FormMessage />
-                          </>
-                        )}
-                      />
-                    </FormControl>
-                    {(country === 'US' || country === 'CA') && (
+                    {checkout.customerBillingAddressFields.country && (
                       <FormControl>
                         <FormField
                           control={control}
-                          name="customerBillingAddress.state"
+                          name="customerBillingAddress.country"
                           rules={{
                             required: 'This field is required',
                           }}
                           render={({ field }) => (
                             <>
-                              <CountryStatePicker
-                                autoComplete="billing address-level1"
-                                country={country}
+                              <CountryPicker
+                                autoComplete="billing country"
                                 value={field.value || undefined}
                                 onChange={field.onChange}
                                 className={themePresetProps.polar.dropdown}
@@ -380,97 +353,133 @@ const BaseCheckoutForm = ({
                         />
                       </FormControl>
                     )}
-                    {country === 'US' && (
-                      <>
+                    {checkout.customerBillingAddressFields.state && (
+                      <FormControl>
+                        <FormField
+                          control={control}
+                          name="customerBillingAddress.state"
+                          rules={{
+                            required:
+                              country === 'US' || country === 'CA'
+                                ? 'This field is required'
+                                : false,
+                          }}
+                          render={({ field }) => (
+                            <>
+                              <CountryStatePicker
+                                autoComplete="billing address-level1"
+                                country={country}
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                className={themePresetProps.polar.dropdown}
+                                itemClassName={
+                                  themePresetProps.polar.dropdownItem
+                                }
+                                contentClassName={
+                                  themePresetProps.polar.dropdownContent
+                                }
+                              />
+                              <FormMessage />
+                            </>
+                          )}
+                        />
+                      </FormControl>
+                    )}
+                    {checkout.customerBillingAddressFields.line1 && (
+                      <FormControl>
+                        <FormField
+                          control={control}
+                          name="customerBillingAddress.line1"
+                          rules={{
+                            required: 'This field is required',
+                          }}
+                          render={({ field }) => (
+                            <>
+                              <Input
+                                type="text"
+                                autoComplete="billing address-line1"
+                                placeholder="Line 1"
+                                className={themePresetProps.polar.input}
+                                {...field}
+                                value={field.value || ''}
+                              />
+                              <FormMessage />
+                            </>
+                          )}
+                        />
+                      </FormControl>
+                    )}
+                    {checkout.customerBillingAddressFields.line2 && (
+                      <FormControl>
+                        <FormField
+                          control={control}
+                          name="customerBillingAddress.line2"
+                          render={({ field }) => (
+                            <>
+                              <Input
+                                type="text"
+                                autoComplete="billing address-line2"
+                                placeholder="Line 2"
+                                className={themePresetProps.polar.input}
+                                {...field}
+                                value={field.value || ''}
+                              />
+                              <FormMessage />
+                            </>
+                          )}
+                        />
+                      </FormControl>
+                    )}
+                    <div className="grid grid-cols-2 gap-x-2">
+                      {checkout.customerBillingAddressFields.postalCode && (
                         <FormControl>
                           <FormField
                             control={control}
-                            name="customerBillingAddress.line1"
+                            name="customerBillingAddress.postalCode"
                             rules={{
                               required: 'This field is required',
                             }}
                             render={({ field }) => (
-                              <>
+                              <div>
                                 <Input
                                   type="text"
-                                  autoComplete="billing address-line1"
-                                  placeholder="Line 1"
+                                  autoComplete="billing postal-code"
+                                  placeholder="Postal code"
                                   className={themePresetProps.polar.input}
                                   {...field}
                                   value={field.value || ''}
                                 />
                                 <FormMessage />
-                              </>
+                              </div>
                             )}
                           />
                         </FormControl>
+                      )}
+                      {checkout.customerBillingAddressFields.city && (
                         <FormControl>
                           <FormField
                             control={control}
-                            name="customerBillingAddress.line2"
+                            name="customerBillingAddress.city"
+                            rules={{
+                              required: 'This field is required',
+                            }}
                             render={({ field }) => (
-                              <>
+                              <div>
                                 <Input
                                   type="text"
-                                  autoComplete="billing address-line2"
-                                  placeholder="Line 2"
+                                  autoComplete="billing address-level2"
+                                  placeholder="City"
                                   className={themePresetProps.polar.input}
                                   {...field}
                                   value={field.value || ''}
                                 />
                                 <FormMessage />
-                              </>
+                              </div>
                             )}
                           />
                         </FormControl>
-                        <div className="grid grid-cols-2 gap-x-2">
-                          <FormControl>
-                            <FormField
-                              control={control}
-                              name="customerBillingAddress.postalCode"
-                              rules={{
-                                required: 'This field is required',
-                              }}
-                              render={({ field }) => (
-                                <>
-                                  <Input
-                                    type="text"
-                                    autoComplete="billing postal-code"
-                                    placeholder="Postal code"
-                                    className={themePresetProps.polar.input}
-                                    {...field}
-                                    value={field.value || ''}
-                                  />
-                                  <FormMessage />
-                                </>
-                              )}
-                            />
-                          </FormControl>
-                          <FormControl>
-                            <FormField
-                              control={control}
-                              name="customerBillingAddress.city"
-                              rules={{
-                                required: 'This field is required',
-                              }}
-                              render={({ field }) => (
-                                <>
-                                  <Input
-                                    type="text"
-                                    autoComplete="billing address-level2"
-                                    placeholder="City"
-                                    className={themePresetProps.polar.input}
-                                    {...field}
-                                    value={field.value || ''}
-                                  />
-                                  <FormMessage />
-                                </>
-                              )}
-                            />
-                          </FormControl>
-                        </div>
-                      </>
-                    )}
+                      )}
+                    </div>
                     {errors.customerBillingAddress?.message && (
                       <p className="text-destructive-foreground text-sm">
                         {errors.customerBillingAddress.message}

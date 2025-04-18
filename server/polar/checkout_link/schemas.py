@@ -41,6 +41,12 @@ _allow_discount_codes_description = (
     "If you apply a discount through `discount_id`, it'll still be applied, "
     "but the customer won't be able to change it."
 )
+_require_billing_address_description = (
+    "Whether to require the customer to fill their full billing address, instead of "
+    "just the country. "
+    "Customers in the US will always be required to fill their full address, "
+    "regardless of this setting."
+)
 _discount_id_description = (
     "ID of the discount to apply to the checkout. "
     "If the discount is not applicable anymore when opening the checkout link, "
@@ -57,6 +63,9 @@ class CheckoutLinkCreateBase(MetadataInputMixin, Schema):
     )
     allow_discount_codes: bool = Field(
         default=True, description=_allow_discount_codes_description
+    )
+    require_billing_address: bool = Field(
+        default=False, description=_require_billing_address_description
     )
     discount_id: UUID4 | None = Field(
         default=None, description=_discount_id_description
@@ -112,6 +121,9 @@ class CheckoutLinkUpdate(MetadataInputMixin):
     allow_discount_codes: bool | None = Field(
         default=None, description=_allow_discount_codes_description
     )
+    require_billing_address: bool | None = Field(
+        default=None, description=_require_billing_address_description
+    )
     discount_id: UUID4 | None = Field(
         default=None, description=_discount_id_description
     )
@@ -132,6 +144,9 @@ class CheckoutLinkBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
         description="Optional label to distinguish links internally"
     )
     allow_discount_codes: bool = Field(description=_allow_discount_codes_description)
+    require_billing_address: bool = Field(
+        description=_require_billing_address_description
+    )
     discount_id: UUID4 | None = Field(description=_discount_id_description)
     organization_id: OrganizationID
 

@@ -1246,6 +1246,44 @@ class TestCreate:
         assert checkout.customer is None
         assert checkout.customer_external_id == "EXTERNAL_ID"
 
+    @pytest.mark.parametrize(
+        "address,require_billing_address",
+        [
+            (None, False),
+            (Address.model_validate({"country": "FR"}), False),
+            (Address.model_validate({"country": "FR", "city": "Lyon"}), True),
+            (Address.model_validate({"country": "CA", "state": "CA-QC"}), False),
+            (
+                Address.model_validate(
+                    {"country": "CA", "state": "CA-QC", "city": "Quebec"}
+                ),
+                True,
+            ),
+        ],
+    )
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_implicit_require_billing_address(
+        self,
+        address: Address | None,
+        require_billing_address: bool,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[product_one_time.id], customer_billing_address=address
+            ),
+            auth_subject,
+        )
+
+        assert checkout.require_billing_address == require_billing_address
+
 
 @pytest.mark.asyncio
 class TestClientCreate:

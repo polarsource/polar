@@ -122,6 +122,17 @@ class Address(BaseModel):
             return self.state.split("-")[1]
         return self.state
 
+    def has_state(self) -> bool:
+        return self.state is not None
+
+    def has_address(self) -> bool:
+        return (
+            self.line1 is not None
+            or self.line2 is not None
+            or self.city is not None
+            or self.postal_code is not None
+        )
+
 
 class AddressType(TypeDecorator[Any]):
     impl = JSONB

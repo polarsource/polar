@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
 from annotated_types import Ge, Le
 from pydantic import (
@@ -10,6 +10,7 @@ from pydantic import (
     HttpUrl,
     IPvAnyAddress,
     Tag,
+    computed_field,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -115,6 +116,14 @@ _allow_discount_codes_description = (
     "If you apply a discount through `discount_id`, it'll still be applied, "
     "but the customer won't be able to change it."
 )
+_require_billing_address_description = (
+    "Whether to require the customer to fill their full billing address, instead of "
+    "just the country. "
+    "Customers in the US will always be required to fill their full address, "
+    "regardless of this setting. "
+    "If you preset the billing address, this setting will be automatically set to "
+    "`true`."
+)
 _customer_metadata_description = METADATA_DESCRIPTION.format(
     heading=(
         "Key-value object allowing you to store additional information "
@@ -136,6 +145,9 @@ class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
     )
     allow_discount_codes: bool = Field(
         default=True, description=_allow_discount_codes_description
+    )
+    require_billing_address: bool = Field(
+        default=False, description=_require_billing_address_description
     )
     amount: Amount | None = None
     customer_id: UUID4 | None = Field(
@@ -275,6 +287,9 @@ class CheckoutUpdate(MetadataInputMixin, CheckoutUpdateBase):
     allow_discount_codes: bool | None = Field(
         default=None, description=_allow_discount_codes_description
     )
+    require_billing_address: bool | None = Field(
+        default=None, description=_require_billing_address_description
+    )
     customer_ip_address: CustomerIPAddress | None = None
     customer_metadata: MetadataField | None = Field(
         default=None, description=_customer_metadata_description
@@ -307,6 +322,30 @@ class CheckoutConfirmStripe(CheckoutConfirmBase):
 
 
 CheckoutConfirm = CheckoutConfirmStripe
+
+
+class CheckoutCustomerBillingAddressFields(Schema):
+    country: bool
+    state: bool
+    city: bool
+    postal_code: bool
+    line1: bool
+    line2: bool
+
+    @classmethod
+    def from_checkout(cls, checkout: "CheckoutBase") -> Self:
+        address = checkout.customer_billing_address
+        country = address.country if address else None
+        is_us = country == "US"
+        require_billing_address = checkout.require_billing_address or is_us
+        return cls(
+            country=True,
+            state=require_billing_address or country in {"US", "CA"},
+            line1=require_billing_address,
+            line2=require_billing_address,
+            city=require_billing_address,
+            postal_code=require_billing_address,
+        )
 
 
 class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
@@ -353,6 +392,9 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
         description="ID of the discount applied to the checkout."
     )
     allow_discount_codes: bool = Field(description=_allow_discount_codes_description)
+    require_billing_address: bool = Field(
+        description=_require_billing_address_description
+    )
     is_discount_applicable: bool = Field(
         description=(
             "Whether the discount is applicable to the checkout. "
@@ -395,6 +437,11 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     subtotal_amount: SkipJsonSchema[int | None] = Field(
         deprecated="Use `net_amount`.", validation_alias="net_amount"
     )
+
+    @computed_field
+    def customer_billing_address_fields(self) -> CheckoutCustomerBillingAddressFields:
+        """Determine which billing address fields should be shown in the checkout form."""
+        return CheckoutCustomerBillingAddressFields.from_checkout(self)
 
 
 class CheckoutProduct(ProductBase):

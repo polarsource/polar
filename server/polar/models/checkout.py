@@ -79,6 +79,9 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     allow_discount_codes: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
     )
+    require_billing_address: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)

@@ -392,6 +392,17 @@ class CheckoutService:
             for i, product in enumerate(products)
         ]
 
+        require_billing_address = checkout_create.require_billing_address
+        customer_billing_address = checkout_create.customer_billing_address
+        if customer_billing_address is not None and any(
+            (
+                customer_billing_address.has_address(),
+                customer_billing_address.has_state()
+                and customer_billing_address.country not in {"US", "CA"},
+            )
+        ):
+            require_billing_address = True
+
         checkout = Checkout(
             payment_processor=PaymentProcessor.stripe,
             client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
@@ -401,7 +412,8 @@ class CheckoutService:
             product=product,
             product_price=price,
             discount=discount,
-            customer_billing_address=checkout_create.customer_billing_address,
+            customer_billing_address=customer_billing_address,
+            require_billing_address=require_billing_address,
             customer_tax_id=customer_tax_id,
             subscription=subscription,
             customer=customer,
@@ -412,6 +424,7 @@ class CheckoutService:
                     "product_id",
                     "products",
                     "amount",
+                    "require_billing_address",
                     "customer_billing_address",
                     "customer_tax_id",
                     "subscription_id",
@@ -621,6 +634,7 @@ class CheckoutService:
             amount=amount,
             currency=currency,
             allow_discount_codes=checkout_link.allow_discount_codes,
+            require_billing_address=checkout_link.require_billing_address,
             checkout_products=[
                 CheckoutProduct(product=p, order=i) for i, p in enumerate(products)
             ],

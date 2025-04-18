@@ -7,16 +7,27 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.auth.models import AuthSubject, User
 from polar.checkout.schemas import CheckoutUpdatePublic
 from polar.checkout.service import checkout as checkout_service
-from polar.discount.schemas import DiscountUpdate
+from polar.discount.schemas import (
+    DiscountFixedOnceForeverDurationCreate,
+    DiscountUpdate,
+)
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
 from polar.locker import Locker
-from polar.models import Checkout, Discount, DiscountRedemption, Organization, Product
+from polar.models import (
+    Checkout,
+    Discount,
+    DiscountRedemption,
+    Organization,
+    Product,
+    UserOrganization,
+)
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -36,6 +47,42 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.discount.service.stripe_service", new=mock)
     return mock
+
+
+@pytest.mark.asyncio
+class TestCreate:
+    @pytest.mark.auth
+    async def test_long_name(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        discount = await discount_service.create(
+            session,
+            DiscountFixedOnceForeverDurationCreate(
+                duration=DiscountDuration.once,
+                type=DiscountType.fixed,
+                amount=1000,
+                currency="usd",
+                name="A" * 256,
+                code=None,
+                starts_at=None,
+                ends_at=None,
+                max_redemptions=None,
+                products=[product.id],
+                organization_id=organization.id,
+            ),
+            auth_subject,
+        )
+
+        assert discount.name == "A" * 256
+        stripe_service_mock.create_coupon.assert_called_once()
+        name_params = stripe_service_mock.create_coupon.call_args[1]["name"]
+        assert name_params == "A" * 40
 
 
 @pytest.mark.asyncio

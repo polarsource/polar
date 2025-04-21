@@ -72,7 +72,7 @@ class RepositoryBase(Generic[M]):
 
     async def get_one_or_none(self, statement: Select[tuple[M]]) -> M | None:
         result = await self.session.execute(statement)
-        return result.scalar_one_or_none()
+        return result.unique().scalar_one_or_none()
 
     async def get_all(self, statement: Select[tuple[M]]) -> Sequence[M]:
         result = await self.session.execute(statement)

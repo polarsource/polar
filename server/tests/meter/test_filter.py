@@ -73,3 +73,46 @@ class TestFilter:
 
         assert len(matching_events) == 1
         assert matching_events[0].id == events[0].id
+
+    @pytest.mark.parametrize("value", [1, True])
+    async def test_like_clause_non_string_value(
+        self,
+        value: int | bool,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        events = [
+            await create_event(
+                save_fixture,
+                organization=organization,
+                external_customer_id="customer_1",
+                metadata={"value": value},
+            ),
+            await create_event(
+                save_fixture,
+                organization=organization,
+                external_customer_id="customer_1",
+                metadata={"value": str(value)},
+            ),
+            await create_event(
+                save_fixture,
+                organization=organization,
+                external_customer_id="customer_1",
+                metadata={"value": "other_value"},
+            ),
+        ]
+        filter = Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(
+                    property="value", operator=FilterOperator.like, value=value
+                )
+            ],
+        )
+
+        repository = EventRepository.from_session(session)
+        statement = repository.get_base_statement().where(filter.get_sql_clause(Event))
+        matching_events = await repository.get_all(statement)
+
+        assert len(matching_events) == 2

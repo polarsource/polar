@@ -45,11 +45,16 @@ class FilterClause(BaseModel):
             return self._get_comparison_clause(attr, self.value)
 
         attr = model.user_metadata[self.property]
+
+        # The operator is LIKE OR NOT LIKE, treat everything as a string
+        if self.operator in (FilterOperator.like, FilterOperator.not_like):
+            return self._get_comparison_clause(attr.as_string(), self._get_str_value())
+
         return case(
             # The property is a string, compare it with the value as a string
             (
                 func.jsonb_typeof(attr) == "string",
-                self._get_comparison_clause(attr.as_string(), str(self.value)),
+                self._get_comparison_clause(attr.as_string(), self._get_str_value()),
             ),
             # The property is a number
             (
@@ -89,6 +94,11 @@ class FilterClause(BaseModel):
         elif self.operator == FilterOperator.not_like:
             return attr.notlike(f"%{value}%")
         raise ValueError(f"Unsupported operator: {self.operator}")
+
+    def _get_str_value(self) -> str:
+        if isinstance(self.value, bool):
+            return "t" if self.value else "f"
+        return str(self.value)
 
 
 class FilterConjunction(StrEnum):

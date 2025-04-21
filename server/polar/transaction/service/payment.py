@@ -117,7 +117,7 @@ class PaymentTransactionService(BaseTransactionService):
             account_amount=charge.amount - tax_amount,
             tax_amount=tax_amount,
             tax_country=tax_country,
-            tax_state=tax_state,
+            tax_state=tax_state if tax_country in {"US", "CA"} else None,
             customer_id=get_expandable_id(charge.customer) if charge.customer else None,
             payment_organization=payment_organization,
             payment_user=payment_user,

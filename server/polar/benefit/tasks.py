@@ -264,7 +264,9 @@ async def benefit_revoke_customer(ctx: JobContext, customer_id: uuid.UUID) -> No
 @task("benefit.delete_grant")
 async def benefit_delete_grant(ctx: JobContext, benefit_grant_id: uuid.UUID) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        benefit_grant = await benefit_grant_service.get(session, benefit_grant_id)
+        benefit_grant = await benefit_grant_service.get(
+            session, benefit_grant_id, loaded=True
+        )
         if benefit_grant is None:
             raise BenefitGrantDoesNotExist(benefit_grant_id)
 

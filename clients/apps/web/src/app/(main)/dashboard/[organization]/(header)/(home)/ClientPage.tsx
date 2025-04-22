@@ -449,7 +449,7 @@ const IntegrationView = ({
   const { data: products } = useProducts(organization.id)
 
   return (
-    <ShadowBox className="dark:bg-polar-800 flex w-full flex-col gap-y-16 p-12">
+    <ShadowBox className="flex w-full flex-col gap-y-16 bg-transparent border-gray-200 p-12 dark:bg-transparent">
       <div className="flex flex-col gap-y-2">
         <h3 className="text-3xl font-medium">Integrate Polar using the API</h3>
         <p className="dark:text-polar-400 text-lg text-gray-500">
@@ -459,7 +459,7 @@ const IntegrationView = ({
 
       <div className="flex flex-col gap-y-6">
         <h4 className="text-xl font-medium">Install the SDK</h4>
-        <pre className="dark:border-polar-700 dark:bg-polar-900 rounded-xl border border-transparent bg-white px-5 py-3 text-sm shadow-sm">
+        <pre className="dark:border-polar-700 dark:bg-polar-800 rounded-xl border border-transparent bg-gray-100 px-5 py-3 text-sm shadow-sm">
           pnpm install @polar-sh/sdk
         </pre>
       </div>
@@ -507,7 +507,7 @@ const IntegrationView = ({
         </div>
 
         <div className="flex flex-col">
-          <pre className="dark:border-polar-700 dark:bg-polar-900 rounded-3xl border border-transparent bg-white p-8 text-sm shadow-sm">
+          <pre className="dark:border-polar-700 dark:bg-polar-900 rounded-2xl border border-gray-200 p-6 text-sm shadow-sm">
             <SyntaxHighlighterProvider>
               <SyntaxHighlighterClient
                 lang="javascript"
@@ -518,7 +518,7 @@ const polar = new Polar({
 });
 
 const checkout = await polar.checkouts.create({
-  productId: "${selectedProduct ?? '<PRODUCT_ID>'}",
+  products: ["${selectedProduct ?? '<PRODUCT_ID>'}"],
 });
 
 redirect(checkout.url)

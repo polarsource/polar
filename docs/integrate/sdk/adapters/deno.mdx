@@ -17,12 +17,12 @@ Deno.serve(Checkout({ accessToken: "xxx" }));
 
 Pass query params to this route.
 
-- productId (or productPriceId) `?productId=xxx`
-- productPriceId (or productId) `?productPriceId=xxx`
-- customerId (optional) `?productId=xxx&customerId=xxx`
-- customerExternalId (optional) `?productId=xxx&customerExternalId=xxx`
-- customerEmail (optional) `?productId=xxx&customerEmail=xxx`
-- customerName (optional) `?productId=xxx&customerName=Jane`
+- products `?products=123`
+- customerId (optional) `?products=123&customerId=xxx`
+- customerExternalId (optional) `?products=123&customerExternalId=xxx`
+- customerEmail (optional) `?products=123&customerEmail=janedoe@gmail.com`
+- customerName (optional) `?products=123&customerName=Jane`
+- metadata (optional) `URL-Encoded JSON string`
 
 ## Customer Portal
 

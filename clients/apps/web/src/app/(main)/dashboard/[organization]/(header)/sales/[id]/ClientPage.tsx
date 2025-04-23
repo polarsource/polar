@@ -264,83 +264,82 @@ const ClientPage: React.FC<ClientPageProps> = ({
             </div>
           </div>
         )}
+      </ShadowBox>
 
-        <div className="flex flex-col gap-6 p-8">
-          <div className="flex flex-row items-center justify-between gap-x-8">
-            <div className="flex flex-row items-center justify-between gap-x-6">
-              <h3 className="text-lg">Refunds</h3>
-              {order.status != 'paid' && (
-                <Status
-                  status={OrderStatusDisplayName[order.status]}
-                  className={OrderStatusDisplayColor[order.status]}
-                />
-              )}
-            </div>
-            {canRefund && (
-              <Button onClick={showRefundModal}>Refund Order</Button>
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-row items-center justify-between gap-x-8">
+          <div className="flex flex-row items-center justify-between gap-x-6">
+            <h3 className="text-lg">Refunds</h3>
+            {order.status != 'paid' && (
+              <Status
+                status={OrderStatusDisplayName[order.status]}
+                className={OrderStatusDisplayColor[order.status]}
+              />
             )}
           </div>
-
-          <DataTable
-            isLoading={refundsLoading}
-            columns={[
-              {
-                accessorKey: 'created_at',
-                header: 'Created At',
-                cell: ({ row }) => (
-                  <FormattedDateTime
-                    dateStyle="long"
-                    datetime={row.original.created_at}
-                  />
-                ),
-              },
-              {
-                accessorKey: 'amount',
-                header: 'Amount',
-                cell: ({ row }) =>
-                  formatCurrencyAndAmount(
-                    row.original.amount,
-                    row.original.currency,
-                  ),
-              },
-              {
-                accessorKey: 'status',
-                header: 'Status',
-                cell: ({ row }) => (
-                  <Status
-                    className={twMerge(
-                      RefundStatusDisplayColor[row.original.status],
-                      'w-fit',
-                    )}
-                    status={RefundStatusDisplayTitle[row.original.status]}
-                  />
-                ),
-              },
-              {
-                accessorKey: 'reason',
-                header: 'Reason',
-                cell: ({ row }) => RefundReasonDisplay[row.original.reason],
-              },
-              {
-                accessorKey: 'revoke_benefits',
-                header: 'Revoke Benefits',
-                cell: ({ row }) => (
-                  <Status
-                    status={row.original.revoke_benefits ? 'True' : 'False'}
-                    className={twMerge(
-                      'w-fit',
-                      row.original.revoke_benefits
-                        ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
-                        : 'bg-red-100 text-red-500 dark:bg-red-950',
-                    )}
-                  />
-                ),
-              },
-            ]}
-            data={refunds?.items ?? []}
-          />
+          {canRefund && <Button onClick={showRefundModal}>Refund Order</Button>}
         </div>
-      </ShadowBox>
+
+        <DataTable
+          isLoading={refundsLoading}
+          columns={[
+            {
+              accessorKey: 'created_at',
+              header: 'Created At',
+              cell: ({ row }) => (
+                <FormattedDateTime
+                  dateStyle="long"
+                  datetime={row.original.created_at}
+                />
+              ),
+            },
+            {
+              accessorKey: 'amount',
+              header: 'Amount',
+              cell: ({ row }) =>
+                formatCurrencyAndAmount(
+                  row.original.amount,
+                  row.original.currency,
+                ),
+            },
+            {
+              accessorKey: 'status',
+              header: 'Status',
+              cell: ({ row }) => (
+                <Status
+                  className={twMerge(
+                    RefundStatusDisplayColor[row.original.status],
+                    'w-fit',
+                  )}
+                  status={RefundStatusDisplayTitle[row.original.status]}
+                />
+              ),
+            },
+            {
+              accessorKey: 'reason',
+              header: 'Reason',
+              cell: ({ row }) => RefundReasonDisplay[row.original.reason],
+            },
+            {
+              accessorKey: 'revoke_benefits',
+              header: 'Revoke Benefits',
+              cell: ({ row }) => (
+                <Status
+                  status={row.original.revoke_benefits ? 'True' : 'False'}
+                  className={twMerge(
+                    'w-fit',
+                    row.original.revoke_benefits
+                      ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
+                      : 'bg-red-100 text-red-500 dark:bg-red-950',
+                  )}
+                />
+              ),
+            },
+          ]}
+          data={refunds?.items ?? []}
+        />
+      </div>
+
       <InlineModal
         isShown={isRefundModalShown}
         hide={hideRefundModal}

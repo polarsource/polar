@@ -98,13 +98,16 @@ const OrganizationSocialLinks = () => {
   }
 
   const handleAddSocial = () => {
-    setValue('socials', [...socials, { platform: 'other', url: '' }])
+    setValue('socials', [...socials, { platform: 'other', url: '' }], {
+      shouldDirty: true,
+    })
   }
 
   const handleRemoveSocial = (index: number) => {
     setValue(
       'socials',
       socials.filter((_, i) => i !== index),
+      { shouldDirty: true },
     )
   }
 
@@ -129,7 +132,7 @@ const OrganizationSocialLinks = () => {
         platform: newPlatform,
         url: value,
       }
-      setValue('socials', updatedSocials)
+      setValue('socials', updatedSocials, { shouldDirty: true })
     } catch {}
   }
 

@@ -49,7 +49,7 @@ const FeatureCard = ({
         className="dark:border-polar-700 dark:bg-polar-900 flex flex-col justify-between gap-y-8 rounded-2xl border border-gray-200 bg-white p-8 transition-transform hover:translate-y-[-4px] md:h-96"
       >
         <div className="flex flex-col gap-y-6">
-          <span className="text-blue-500">{icon}</span>
+          <span>{icon}</span>
           <div className="flex flex-col gap-y-2">
             <h3 className="text-xl text-black dark:text-white">{title}</h3>
             <p className="dark:text-polar-500 w-full flex-grow text-gray-500 md:max-w-96">
@@ -102,15 +102,15 @@ const Features = ({ className }: FeaturesProps) => {
       children: (
         <ul className="flex flex-col gap-y-1">
           <li className="flex flex-row items-center gap-x-2">
-            <Check className="h-4 w-4 text-emerald-500" />
+            <Check className="text-emerald-500" fontSize="small" />
             <p className="text-pretty leading-relaxed">Subscription Products</p>
           </li>
           <li className="flex flex-row items-center gap-x-2">
-            <Check className="h-4 w-4 text-emerald-500" />
+            <Check className="text-emerald-500" fontSize="small" />
             <p className="text-pretty leading-relaxed">One-time Purchases</p>
           </li>
           <li className="flex flex-row items-center gap-x-2">
-            <Check className="h-4 w-4 text-emerald-500" />
+            <Check className="text-emerald-500" fontSize="small" />
             <p className="text-pretty leading-relaxed">
               Usage-based billing for metered products
             </p>

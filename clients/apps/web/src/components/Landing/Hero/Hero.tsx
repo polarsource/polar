@@ -1,7 +1,9 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import Dither from '@/src/components/Dither/Dither'
 import { motion } from 'framer-motion'
+import { useTheme } from 'next-themes'
 import { twMerge } from 'tailwind-merge'
 
 export const Hero = ({ className }: { className?: string }) => {
@@ -20,10 +22,12 @@ export const Hero = ({ className }: { className?: string }) => {
     visible: { opacity: 1, transition: { duration: 1 } },
   }
 
+  const { resolvedTheme } = useTheme()
+
   return (
     <motion.div
       className={twMerge(
-        'flex w-full flex-col items-center justify-center gap-12 text-center',
+        'relative flex flex-col items-center justify-center gap-12 overflow-hidden rounded-3xl px-8 py-16 text-center md:py-24',
         className,
       )}
       variants={containerVariants}
@@ -31,6 +35,18 @@ export const Hero = ({ className }: { className?: string }) => {
       whileInView="visible"
       viewport={{ once: true }}
     >
+      <div className="absolute inset-0 -z-10">
+        <Dither
+          waveAmplitude={0}
+          waveFrequency={0}
+          waveColor={
+            resolvedTheme === 'dark' ? [0.35, 0.35, 0.35] : [0.8, 0.8, 0.8]
+          }
+          enableMouseInteraction={false}
+          invert={resolvedTheme === 'light'}
+        />
+        <div className="absolute inset-0 bg-white/70 dark:bg-black/30" />
+      </div>
       <motion.h1
         className="max-w-4xl text-balance px-8 text-5xl !leading-tight tracking-tight text-gray-950 md:px-0 md:text-7xl dark:text-white"
         variants={itemVariants}

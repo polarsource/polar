@@ -36,7 +36,16 @@
                 "pages": [
                   "features/usage-based-billing/introduction",
                   "features/usage-based-billing/event-ingestion",
-                  "features/usage-based-billing/ingestion-strategies",
+                  {
+                    "group": "Ingestion Strategies",
+                    "pages": [
+                      "features/usage-based-billing/ingestion-strategies/ingestion-strategy",
+                      "features/usage-based-billing/ingestion-strategies/llm-strategy",
+                      "features/usage-based-billing/ingestion-strategies/s3-strategy",
+                      "features/usage-based-billing/ingestion-strategies/stream-strategy",
+                      "features/usage-based-billing/ingestion-strategies/delta-time-strategy"
+                    ]
+                  },
                   "features/usage-based-billing/meters",
                   "features/usage-based-billing/credits",
                   "features/usage-based-billing/billing"

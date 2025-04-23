@@ -298,6 +298,52 @@ export const CheckoutLinkForm = ({
             )}
           />
 
+          {(discounts?.items.length ?? 0) > 0 && (
+            <FormField
+              control={control}
+              name="discount_id"
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Preset discount</FormLabel>
+                    <div className="flex flex-row items-center gap-2">
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || ''}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a discount" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {discounts?.items.map((discount) => (
+                            <SelectItem
+                              key={discount.id}
+                              value={discount.id}
+                              textValue={discount.name}
+                            >
+                              {discount.name} ({getDiscountDisplay(discount)})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {field.value && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          type="button"
+                          onClick={() => field.onChange(null)}
+                        >
+                          <ClearOutlined className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+          )}
+
           <FormField
             control={control}
             name="allow_discount_codes"
@@ -344,49 +390,6 @@ export const CheckoutLinkForm = ({
                       ? 'Customers will need to provide their full billing address at checkout.'
                       : 'Customers will just need to provide their country at checkout.'}
                   </FormDescription>
-                </FormItem>
-              )
-            }}
-          />
-          <FormField
-            control={control}
-            name="discount_id"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormLabel>Preset discount</FormLabel>
-                  <div className="flex flex-row items-center gap-2">
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ''}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a discount" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {discounts?.items.map((discount) => (
-                          <SelectItem
-                            key={discount.id}
-                            value={discount.id}
-                            textValue={discount.name}
-                          >
-                            {discount.name} ({getDiscountDisplay(discount)})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {field.value && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        type="button"
-                        onClick={() => field.onChange(null)}
-                      >
-                        <ClearOutlined className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                  <FormMessage />
                 </FormItem>
               )
             }}

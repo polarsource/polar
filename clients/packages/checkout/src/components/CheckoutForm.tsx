@@ -639,7 +639,7 @@ const BaseCheckoutForm = ({
                       </DetailRow>
                     )}
                     {checkout.taxAmount !== null && (
-                      <DetailRow title="VAT / Sales Tax">
+                      <DetailRow title="Taxes">
                         {formatCurrencyNumber(
                           checkout.taxAmount,
                           checkout.currency,
@@ -654,10 +654,7 @@ const BaseCheckoutForm = ({
                       />
                     </DetailRow>
                     {meteredPrices.length > 0 && (
-                      <DetailRow
-                        title="Additional metered usage"
-                        emphasis
-                      ></DetailRow>
+                      <DetailRow title="Additional metered usage" emphasis />
                     )}
                     {meteredPrices.map((meteredPrice) => (
                       <DetailRow

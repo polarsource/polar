@@ -1,0 +1,61 @@
+---
+title: "Delta Time Strategy"
+description: "Ingest delta time of arbitrary execution"
+---
+
+## Javascript SDK
+
+Ingest delta time of arbitrary execution. Bring your own now-resolver.
+
+```
+pnpm add @polar-sh/ingestion
+```
+
+```typescript
+import { Ingestion } from "@polar-sh/ingestion";
+import { DeltaTimeStrategy } from "@polar-sh/ingestion/strategies/DeltaTime";
+
+const nowResolver = () => performance.now();
+// const nowResolver = () => Number(hrtime.bigint())
+// const nowResolver = () => Date.now()
+
+// Setup the Delta Time Ingestion Strategy
+const deltaTimeIngestion = Ingestion({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+})
+  .strategy(new DeltaTimeStrategy(nowResolver))
+  .ingest("execution-time");
+
+export async function GET(request: Request) {
+  try {
+    // Get the wrapped start clock function
+    // Pass Customer Id to properly annotate the ingestion events with a specific customer
+    const start = deltaTimeIngestion.client({
+      customerId: request.headers.get("X-Polar-Customer-Id") ?? "",
+    });
+
+    const stop = start();
+
+    await sleep(1000);
+
+    // { deltaTime: xxx } is automatically ingested to Polar
+    const delta = stop();
+
+    return Response.json({ delta });
+  } catch (error) {
+    return Response.json({ error: error.message });
+  }
+}
+```
+
+#### Ingestion Payload
+
+```json
+{
+  "customerId": "123",
+  "name": "execution-time",
+  "metadata": {
+    "deltaTime": 1000
+  }
+}
+```

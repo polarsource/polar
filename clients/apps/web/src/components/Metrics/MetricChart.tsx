@@ -1,5 +1,4 @@
 import { ParsedMetricPeriod } from '@/hooks/queries'
-import { MetricMarksResolver } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import {
   CartesianGrid,
@@ -20,9 +19,7 @@ interface MetricChartProps {
   interval: schemas['TimeInterval']
   metric: schemas['Metric']
   height?: number
-  maxTicks?: number
   onDataIndexHover?: (index: number | undefined) => void
-  marks?: MetricMarksResolver
 }
 
 const MetricChart: React.FC<MetricChartProps> = ({
@@ -30,7 +27,7 @@ const MetricChart: React.FC<MetricChartProps> = ({
   interval,
   metric,
   height: _height,
-  maxTicks: _maxTicks,
+  onDataIndexHover,
 }) => {
   const { resolvedTheme } = useTheme()
 
@@ -38,7 +35,7 @@ const MetricChart: React.FC<MetricChartProps> = ({
 
   return (
     <ChartContainer
-      className="h-[300px]"
+      style={{ height: _height }}
       config={{
         current: {
           label: 'Current',
@@ -59,6 +56,11 @@ const MetricChart: React.FC<MetricChartProps> = ({
         margin={{
           left: 0,
           right: 12,
+        }}
+        onMouseMove={(state) => {
+          if (onDataIndexHover) {
+            onDataIndexHover(state.activeTooltipIndex)
+          }
         }}
       >
         <CartesianGrid vertical={false} />

@@ -58,8 +58,13 @@ const MetricChart: React.FC<MetricChartProps> = ({
           right: 12,
         }}
         onMouseMove={(state) => {
-          if (onDataIndexHover && state.activeTooltipIndex !== null) {
+          if (onDataIndexHover) {
             onDataIndexHover(state.activeTooltipIndex)
+          }
+        }}
+        onMouseLeave={() => {
+          if (onDataIndexHover) {
+            onDataIndexHover(undefined)
           }
         }}
       >

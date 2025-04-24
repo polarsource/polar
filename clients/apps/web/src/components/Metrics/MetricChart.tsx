@@ -1,12 +1,19 @@
 import { ParsedMetricPeriod } from '@/hooks/queries'
-import {
-  defaultMetricMarks,
-  getTicks,
-  MetricMarksResolver,
-} from '@/utils/metrics'
-import * as Plot from '@observablehq/plot'
+import { MetricMarksResolver } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  CartesianGrid,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  Line,
+  LineChart,
+  XAxis,
+  YAxis,
+} from '@polar-sh/ui/components/ui/chart'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+import { useTheme } from 'next-themes'
+import { twMerge } from 'tailwind-merge'
 
 interface MetricChartProps {
   data: ParsedMetricPeriod[]
@@ -24,91 +31,139 @@ const MetricChart: React.FC<MetricChartProps> = ({
   metric,
   height: _height,
   maxTicks: _maxTicks,
-  onDataIndexHover,
-  marks = defaultMetricMarks,
 }) => {
-  const [width, setWidth] = useState(0)
-  const height = useMemo(() => _height || 150, [_height])
-  const maxTicks = useMemo(() => _maxTicks || 10, [_maxTicks])
+  const { resolvedTheme } = useTheme()
 
-  const timestamps = useMemo(
-    () => data.map(({ timestamp }) => timestamp),
-    [data],
-  )
-  const ticks = useMemo(
-    () => getTicks(timestamps, maxTicks),
-    [timestamps, maxTicks],
-  )
-
-  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    const resizeObserver = new ResizeObserver((_entries) => {
-      if (containerRef) {
-        setWidth(containerRef.clientWidth ?? 0)
-      }
-    })
-
-    if (containerRef) {
-      resizeObserver.observe(containerRef)
-    }
-
-    return () => {
-      if (containerRef) {
-        resizeObserver.unobserve(containerRef)
-      }
-    }
-  }, [containerRef])
-
-  const onMouseLeave = useCallback(() => {
-    if (onDataIndexHover) {
-      onDataIndexHover(undefined)
-    }
-  }, [onDataIndexHover])
-
-  useEffect(() => {
-    if (!containerRef) {
-      return
-    }
-
-    const plot = Plot.plot({
-      style: {
-        background: 'none',
-      },
-      width,
-      height,
-      y: {
-        grid: true,
-      },
-      marks: marks({
-        data,
-        metric,
-        interval,
-        onDataIndexHover,
-        ticks,
-      }),
-    })
-    containerRef.append(plot)
-
-    return () => plot.remove()
-  }, [
-    data,
-    metric,
-    containerRef,
-    interval,
-    ticks,
-    width,
-    height,
-    onDataIndexHover,
-    marks,
-  ])
+  const isDark = resolvedTheme === 'dark'
 
   return (
-    <div
-      className="dark:text-polar-500 w-full text-gray-500"
-      ref={setContainerRef}
-      onMouseLeave={onMouseLeave}
-    />
+    <ChartContainer
+      className="h-[300px]"
+      config={{
+        current: {
+          label: 'Current',
+          color: '#2563eb',
+        },
+        previous: {
+          label: 'Previous',
+          color: isDark ? '#383942' : '#ccc',
+        },
+        metric: {
+          label: metric.display_name,
+        },
+      }}
+    >
+      <LineChart
+        accessibilityLayer
+        data={data}
+        margin={{
+          left: 0,
+          right: 12,
+        }}
+      >
+        <CartesianGrid vertical={false} />
+        <XAxis
+          dataKey="timestamp"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tickFormatter={(value) => {
+            switch (interval) {
+              case 'hour':
+                return value.toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                })
+              case 'day':
+              case 'week':
+                return value.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: '2-digit',
+                })
+              case 'month':
+                return value.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: '2-digit',
+                  year: '2-digit',
+                })
+              case 'year':
+                return value.toLocaleDateString('en-US', {
+                  month: 'short',
+                  year: 'numeric',
+                })
+              default:
+                return value.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: '2-digit',
+                })
+            }
+          }}
+        />
+        <YAxis
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tickFormatter={(value) => {
+            if (metric?.type === 'currency') {
+              return formatCurrencyAndAmount(value, 'USD', 0, 'compact')
+            } else {
+              return Intl.NumberFormat('en-US', {
+                notation: 'compact',
+                maximumFractionDigits: 2,
+              }).format(value)
+            }
+          }}
+        />
+        <ChartTooltip
+          cursor={false}
+          content={
+            <ChartTooltipContent
+              className="text-black dark:text-white"
+              indicator="dot"
+              labelKey="metric"
+              formatter={(value, name) => {
+                const formattedValue =
+                  metric?.type === 'currency'
+                    ? formatCurrencyAndAmount(
+                        value as number,
+                        'USD',
+                        0,
+                        'compact',
+                      )
+                    : Intl.NumberFormat('en-US', {
+                        notation: 'compact',
+                        maximumFractionDigits: 2,
+                      }).format(value as number)
+
+                return (
+                  <div className="flex flex-row justify-between gap-x-8">
+                    <div className="flex flex-row items-center gap-x-2">
+                      <span
+                        className={twMerge(
+                          'bg-primary dark:bg-primary h-2 w-2 rounded-full',
+                        )}
+                      />
+                      <span className="capitalize">
+                        {name.toString().split('_').join(' ')}
+                      </span>
+                    </div>
+                    <span>{formattedValue}</span>
+                  </div>
+                )
+              }}
+            />
+          }
+        />
+        <Line
+          dataKey={metric.slug}
+          stroke="var(--color-current)"
+          type="linear"
+          dot={false}
+          strokeWidth={1.5}
+        />
+      </LineChart>
+    </ChartContainer>
   )
 }
 

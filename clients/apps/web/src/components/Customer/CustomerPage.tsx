@@ -15,7 +15,6 @@ import { useOrders } from '@/hooks/queries/orders'
 import {
   computeCumulativeValue,
   dateToInterval,
-  defaultMetricMarks,
   metricDisplayNames,
 } from '@/utils/metrics'
 import { AddOutlined } from '@mui/icons-material'
@@ -221,13 +220,12 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 height={300}
                 data={metricsData.periods}
                 interval={interval}
-                marks={defaultMetricMarks}
                 metric={metricsData.metrics[selectedMetric]}
-                onDataIndexHover={(period) =>
+                onDataIndexHover={(period) => {
                   setHoveredMetricPeriod(
                     metricsData.periods[period as number] ?? null,
                   )
-                }
+                }}
               />
             ) : (
               <div className="flex h-[300px] flex-col items-center justify-center">

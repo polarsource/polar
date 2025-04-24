@@ -9,8 +9,10 @@ import {
   HiveOutlined,
   KeyOutlined,
   LanguageOutlined,
+  ShortTextOutlined,
 } from '@mui/icons-material'
 import { motion } from 'framer-motion'
+import { CircleGauge } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
@@ -46,7 +48,7 @@ const FeatureCard = ({
       <Link
         href={linkHref}
         target="_blank"
-        className="dark:border-polar-700 dark:bg-polar-900 flex flex-col justify-between gap-y-8 rounded-2xl border border-gray-200 bg-white p-8 transition-transform hover:translate-y-[-4px] md:h-96"
+        className="dark:border-polar-700 dark:bg-polar-900 flex flex-col justify-between gap-y-8 rounded-2xl border border-gray-200 bg-white p-8 transition-transform hover:translate-y-[-4px] md:h-[400px]"
       >
         <div className="flex flex-col gap-y-6">
           <span>{icon}</span>
@@ -77,6 +79,7 @@ const CustomerCard = () => {
       </div>
       <div className="flex flex-col">
         <span className="font-medium text-black dark:text-white">John Doe</span>
+
         <span className="dark:text-polar-500 flex flex-row gap-x-2 text-sm text-gray-500">
           <span>Premium Plan</span>
           <span>•</span>
@@ -119,6 +122,48 @@ const Features = ({ className }: FeaturesProps) => {
       ),
     },
     {
+      icon: <DonutLargeOutlined fontSize="medium" />,
+      title: 'Usage Based Billing',
+      description:
+        'Robust event ingestion API that enables precise usage-based billing.',
+      linkHref:
+        'https://docs.polar.sh/features/usage-based-billing/introduction',
+      children: (
+        <div className="flex flex-col gap-y-2">
+          <div className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-4 overflow-auto rounded-lg border border-gray-200 bg-gray-100 p-4">
+            <pre className="font-mono text-xs">
+              {`Ingestion()
+  .strategy(new LLM(openai('gpt-4o')))
+  .ingest('openai-usage')`}
+            </pre>
+          </div>
+          <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-x-4 gap-y-2 rounded-lg border border-gray-200 bg-gray-100 p-4">
+            <div className="flex flex-row items-center gap-x-2">
+              <div className="h-6 w-6 overflow-hidden rounded-full">
+                <Image
+                  src="/assets/landing/testamonials/emil.jpg"
+                  alt="Customer avatar"
+                  className="h-full w-full object-cover"
+                  width={48}
+                  height={48}
+                />
+              </div>
+              <span className="text-sm font-medium text-black dark:text-white">
+                John Doe
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="dark:text-polar-500 flex flex-row gap-x-2 text-sm text-gray-500">
+                <span>3,529 Completions</span>
+                <span>•</span>
+                <span>$57.63</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
       icon: <AllInclusiveOutlined fontSize="medium" />,
       title: 'Benefits Engine',
       description:
@@ -128,25 +173,35 @@ const Features = ({ className }: FeaturesProps) => {
         <div className="grid grid-cols-2 gap-2">
           {[
             {
-              icon: <KeyOutlined className="h-5 w-5" />,
+              icon: <KeyOutlined className="h-4 w-4" fontSize="small" />,
               text: 'License Keys',
             },
             {
-              icon: <DownloadingOutlined className="h-5 w-5" />,
+              icon: <CircleGauge className="h-4 w-4" />,
+              text: 'Credits',
+            },
+            {
+              icon: (
+                <DownloadingOutlined className="h-4 w-4" fontSize="small" />
+              ),
               text: 'Downloadables',
             },
-            { icon: <GitHubIcon className="h-5 w-5" />, text: 'GitHub Repos' },
+            { icon: <GitHubIcon className="h-4 w-4" />, text: 'GitHub Repos' },
             {
-              icon: <DiscordIcon className="h-5 w-5" />,
+              icon: <DiscordIcon className="h-4 w-4" />,
               text: 'Discord Roles',
+            },
+            {
+              icon: <ShortTextOutlined className="h-4 w-4" fontSize="small" />,
+              text: 'Custom',
             },
           ].map((item, i) => (
             <div
               key={i}
-              className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-2 rounded-lg border border-gray-200 bg-gray-100 p-3"
+              className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-2 rounded-lg border border-gray-200 bg-gray-100 px-3 py-2"
             >
               {item.icon}
-              <span className="dark:text-polar-50 text-sm text-gray-950">
+              <span className="dark:text-polar-50 text-xs text-gray-950">
                 {item.text}
               </span>
             </div>
@@ -162,32 +217,15 @@ const Features = ({ className }: FeaturesProps) => {
       linkHref: 'https://docs.polar.sh/features/customer-management',
       children: (
         <div className="relative h-[120px] md:h-[200px]">
-          <div className="absolute left-0 right-0 top-0 scale-90 transition-transform hover:-translate-y-1">
+          <div className="absolute bottom-8 left-0 right-0 scale-90 transition-transform hover:-translate-y-1">
             <CustomerCard />
           </div>
-          <div className="absolute left-0 right-0 top-4 scale-95 transition-transform hover:-translate-y-1">
+          <div className="absolute bottom-4 left-0 right-0 scale-95 transition-transform hover:-translate-y-1">
             <CustomerCard />
           </div>
-          <div className="absolute left-0 right-0 top-8 transition-transform hover:-translate-y-1">
+          <div className="absolute bottom-0 left-0 right-0 transition-transform hover:-translate-y-1">
             <CustomerCard />
           </div>
-        </div>
-      ),
-    },
-    {
-      icon: <DonutLargeOutlined fontSize="medium" />,
-      title: 'Usage Based Billing',
-      description:
-        'Robust event ingestion API that enables precise usage-based billing.',
-      linkHref:
-        'https://docs.polar.sh/features/usage-based-billing/introduction',
-      children: (
-        <div className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-4 overflow-auto rounded-lg border border-gray-200 bg-gray-100 p-4">
-          <pre className="font-mono text-xs">
-            {`Ingestion()
-.strategy(new LLM(openai('gpt-4o')))
-.ingest('openai-usage')`}
-          </pre>
         </div>
       ),
     },

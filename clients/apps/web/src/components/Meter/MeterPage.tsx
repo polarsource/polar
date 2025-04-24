@@ -1,11 +1,11 @@
 'use client'
 
 import { Events } from '@/components/Events/Events'
-import { MeterChart } from '@/components/Meter/MeterChart'
 import MeterEventsTab from '@/components/Meter/MeterEventsTab'
 import Spinner from '@/components/Shared/Spinner'
 import { useEvents } from '@/hooks/queries/events'
 import { useMeterQuantities } from '@/hooks/queries/meters'
+import { ParsedMetricPeriod } from '@/hooks/queries/metrics'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { UTCDate } from '@date-fns/utc'
 import { schemas } from '@polar-sh/client'
@@ -22,6 +22,7 @@ import {
 } from '@polar-sh/ui/components/atoms/Tabs'
 import { endOfMonth, startOfMonth, subDays, subMonths } from 'date-fns'
 import { useContext, useMemo } from 'react'
+import MetricChart from '../Metrics/MetricChart'
 import { InlineModal } from '../Modal/InlineModal'
 import FormattedUnits from './FormattedUnits'
 import MeterCustomersTab from './MeterCustomersTab'
@@ -69,7 +70,17 @@ export const MeterPage = ({
               <Spinner />
             </div>
           ) : chartQuantities ? (
-            <MeterChart data={chartQuantities.quantities} interval="day" />
+            <MetricChart
+              data={
+                chartQuantities.quantities as unknown as ParsedMetricPeriod[]
+              }
+              interval="day"
+              metric={{
+                slug: 'quantity',
+                display_name: 'Quantity',
+                type: 'scalar',
+              }}
+            />
           ) : (
             <div className="flex h-[300px] flex-col items-center justify-center">
               <span className="text-lg">No data available</span>

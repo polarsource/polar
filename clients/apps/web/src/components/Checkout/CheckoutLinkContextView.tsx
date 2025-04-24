@@ -39,7 +39,7 @@ export const CheckoutLinkContextView = ({
   const showDarkmodeToggle = embedType === 'svg' || embedType === 'checkout'
 
   const triggerClassName =
-    'dark:data-[state=active]:bg-polar-900 data-[state=active]:bg-white w-full'
+    'dark:data-[state=active]:bg-polar-900 data-[state=active]:bg-white w-full rounded-full'
 
   return (
     <div className="flex flex-col gap-y-8 px-8 py-12">

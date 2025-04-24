@@ -55,8 +55,7 @@ const ProductsCommandGroup = ({
         return (
           <CommandItem
             className={twMerge(
-              'flex flex-row items-center justify-between',
-              isSelected ? 'text-black dark:text-white' : '',
+              'flex flex-row items-center justify-between text-black dark:text-white',
             )}
             key={product.id}
             value={product.id}

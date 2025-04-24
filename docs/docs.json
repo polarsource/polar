@@ -120,6 +120,7 @@
                   "integrate/sdk/adapters/nuxt",
                   "integrate/sdk/adapters/astro",
                   "integrate/sdk/adapters/remix",
+                  "integrate/sdk/adapters/tanstack-start",
                   "integrate/sdk/adapters/sveltekit",
                   "integrate/sdk/adapters/deno",
                   "integrate/sdk/adapters/elysia",

@@ -21,6 +21,19 @@ const testimonials = [
     ),
   },
   {
+    link: 'https://x.com/rauchg/status/1909810055622672851',
+    name: 'Guillermo Rauch',
+    username: 'rauchg',
+    verified: true,
+    avatar: '/assets/landing/testamonials/rauch.jpg',
+    text: (
+      <p>
+        The speed at which Polar is executing on the financial infrastructure
+        primitives the new world needs is very impressive
+      </p>
+    ),
+  },
+  {
     link: 'https://x.com/steventey/status/1886124389357490670',
     name: 'Steven Tey',
     username: 'steventey',
@@ -91,19 +104,6 @@ const testimonials = [
           future.
         </p>
       </>
-    ),
-  },
-  {
-    link: 'https://x.com/rauchg/status/1909810055622672851',
-    name: 'Guillermo Rauch',
-    username: 'rauchg',
-    verified: true,
-    avatar: '/assets/landing/testamonials/rauch.jpg',
-    text: (
-      <p>
-        The speed at which Polar is executing on the financial infrastructure
-        primitives the new world needs is very impressive
-      </p>
     ),
   },
   {
@@ -317,7 +317,7 @@ export const Testimonials = () => {
   return (
     <div className="flex flex-col items-center gap-y-12 px-4 md:gap-y-24 md:px-0 md:py-24">
       <h3 className="text-center text-3xl leading-snug md:text-5xl">
-        Trusted by thousands of developers
+        Loved by thousands of developers
       </h3>
       <div className="flex flex-col gap-4 md:relative md:w-full md:overflow-hidden">
         <div className="flex flex-col gap-y-4 md:hidden">

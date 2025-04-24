@@ -13,6 +13,7 @@ import SDKs from './SDKs'
 import { Section } from './Section'
 import { Tools } from './Tools'
 import { Upsell } from './Upsell'
+import { Usage } from './Usage'
 
 export default function Page() {
   return (
@@ -30,6 +31,7 @@ export const PageContent = () => {
         <Features />
         <Intro />
         <SDKs />
+        <Usage />
       </Section>
       <Testimonials />
       <Section className="flex flex-col gap-y-24">

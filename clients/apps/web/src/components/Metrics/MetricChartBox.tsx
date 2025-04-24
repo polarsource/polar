@@ -2,11 +2,7 @@
 
 import Spinner from '@/components/Shared/Spinner'
 import { ParsedMetricPeriod } from '@/hooks/queries'
-import {
-  computeCumulativeValue,
-  metricDisplayNames,
-  MetricMarksResolver,
-} from '@/utils/metrics'
+import { computeCumulativeValue, metricDisplayNames } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
@@ -28,8 +24,6 @@ interface MetricChartBoxProps {
   interval: schemas['TimeInterval']
   metric?: schemas['Metric']
   height?: number
-  maxTicks?: number
-  marks?: MetricMarksResolver
   loading?: boolean
   defaultMetric?: keyof schemas['Metrics']
   compact?: boolean
@@ -41,8 +35,6 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
   interval,
   metric,
   height = 300,
-  maxTicks,
-  marks,
   loading,
   compact = false,
   defaultMetric,
@@ -176,8 +168,6 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
             height={height}
             data={data}
             interval={interval}
-            marks={marks}
-            maxTicks={maxTicks}
             metric={
               isMetricObject
                 ? metric

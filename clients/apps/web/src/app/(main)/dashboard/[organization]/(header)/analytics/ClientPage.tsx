@@ -202,7 +202,6 @@ const MetricGroup = ({
               interval={interval}
               metric={metrics[metricKey as keyof schemas['Metrics']]}
               height={200}
-              maxTicks={5}
               className={twMerge(
                 '!rounded-none bg-transparent dark:bg-transparent',
                 index === 0 && 'lg:col-span-2',

@@ -48,7 +48,7 @@ export const Hero = ({ className }: { className?: string }) => {
         <div className="absolute inset-0 bg-white/70 dark:bg-black/30" />
       </div>
       <motion.h1
-        className="max-w-4xl text-balance px-8 text-5xl !leading-tight tracking-tight text-gray-950 md:px-0 md:text-7xl dark:text-white"
+        className="text-balance px-8 text-5xl !leading-tight tracking-tight text-gray-950 md:px-0 md:text-7xl dark:text-white"
         variants={itemVariants}
       >
         Payment infrastructure for the 21st century

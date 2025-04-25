@@ -312,7 +312,6 @@ const Testamonial = ({
 export const Testimonials = () => {
   const halfLength = Math.ceil(testimonials.length / 2)
   const firstRow = testimonials.slice(0, halfLength)
-  const secondRow = testimonials.slice(halfLength)
 
   return (
     <div className="flex flex-col items-center gap-y-12 px-4 md:gap-y-24 md:px-0 md:py-24">
@@ -325,28 +324,10 @@ export const Testimonials = () => {
             <Testamonial key={`testimonial-${index}`} {...testimonial} />
           ))}
         </div>
-        <div className="hidden flex-col gap-y-4 md:flex md:w-screen">
-          {/* First row */}
-          <div className="flex flex-col gap-y-4 md:w-max md:animate-[infinite-scroll_50s_linear_infinite_forwards] md:flex-row md:gap-x-4">
-            {[...firstRow, ...firstRow, ...firstRow].map(
-              (testimonial, index) => (
-                <div key={`row1-${index}`} className="md:w-[400px]">
-                  <Testamonial {...testimonial} />
-                </div>
-              ),
-            )}
-          </div>
-
-          {/* Second row */}
-          <div className="flex flex-col gap-y-4 md:w-max md:animate-[infinite-scroll_50s_linear_infinite_forwards] md:flex-row md:gap-x-4">
-            {[...secondRow, ...secondRow, ...secondRow].map(
-              (testimonial, index) => (
-                <div key={`row2-${index}`} className="md:w-[400px]">
-                  <Testamonial {...testimonial} />
-                </div>
-              ),
-            )}
-          </div>
+        <div className="hidden flex-col gap-4 md:grid md:w-screen md:grid-cols-3">
+          {testimonials.map((testimonial, index) => (
+            <Testamonial key={testimonial.username} {...testimonial} />
+          ))}
         </div>
       </div>
     </div>

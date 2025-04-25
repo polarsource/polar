@@ -78,10 +78,10 @@ export default async function RootLayout({
         ></link>
       </head>
       <body
-        className={twMerge(
-          `antialiased [font-feature-settings:'ss03','zero']`,
-          GeistSans.className,
-        )}
+        className={twMerge(`antialiased`, GeistSans.className)}
+        style={{
+          textRendering: 'optimizeLegibility',
+        }}
       >
         <UserContextProvider
           user={authenticatedUser}

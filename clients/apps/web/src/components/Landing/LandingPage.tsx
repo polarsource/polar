@@ -7,7 +7,6 @@ import { Benefits } from './Benefits'
 import { Checkout } from './Checkout'
 import Features from './Features'
 import { Intro } from './Intro'
-import { Video } from './molecules/Video'
 import { Pricing } from './Pricing'
 import SDKs from './SDKs'
 import { Section } from './Section'
@@ -17,7 +16,7 @@ import { Usage } from './Usage'
 
 export default function Page() {
   return (
-    <div className="flex w-full flex-col items-center">
+    <div className="flex flex-col">
       <PageContent />
     </div>
   )
@@ -26,8 +25,8 @@ export default function Page() {
 export const PageContent = () => {
   return (
     <>
+      <Hero className="relative z-10" />
       <Section className="flex flex-col gap-y-24">
-        <Hero className="relative z-10" />
         <Features />
         <Intro />
         <SDKs />
@@ -40,9 +39,6 @@ export const PageContent = () => {
         <Checkout />
         <Upsell />
       </Section>
-      <div className="flex w-full flex-col items-center justify-center px-4 py-16 md:max-w-[1440px] md:px-8">
-        <Video src="/assets/landing/Polar2024.webm" />
-      </div>
       <Section className="flex flex-col gap-y-24">
         <Tools />
         <Pricing />

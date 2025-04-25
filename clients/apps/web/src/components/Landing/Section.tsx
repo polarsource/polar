@@ -17,13 +17,13 @@ export const Section = ({
     <div
       id={id}
       className={twMerge(
-        'relative flex w-full flex-col items-center justify-stretch',
+        'relative flex flex-col items-center justify-stretch',
         wrapperClassName,
       )}
     >
       <div
         className={twMerge(
-          'flex w-full max-w-[100vw] flex-col px-4 py-12 md:max-w-7xl md:px-12 md:py-16',
+          'flex flex-col px-4 py-12 md:px-0 md:py-16',
           className,
         )}
       >

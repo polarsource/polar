@@ -98,7 +98,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
     hide: hideRefundModal,
   } = useModal()
 
-  const canRefund = (order?.refunded_amount ?? 0) < (order?.net_amount ?? 0)
+  const canRefund =
+    order?.paid && (order?.refunded_amount ?? 0) < (order?.net_amount ?? 0)
 
   if (!order || !product) {
     return null
@@ -177,11 +178,17 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
             <Separator className="dark:bg-polar-700 my-4 h-[1px] bg-gray-300" />
 
-            {order.items.map((item) => (
-              <DetailRow key={item.id} title={item.label}>
-                <span>{formatCurrencyAndAmount(item.amount)}</span>
-              </DetailRow>
-            ))}
+            <div className="flex flex-col gap-y-6 pb-4">
+              {order.items.map((item) => (
+                <DetailRow
+                  key={item.id}
+                  title={item.label}
+                  titleClassName="text-black dark:text-white"
+                >
+                  <span>{formatCurrencyAndAmount(item.amount)}</span>
+                </DetailRow>
+              ))}
+            </div>
 
             <DetailRow title="Subtotal">
               <span>{formatCurrencyAndAmount(order.subtotal_amount)}</span>
@@ -266,79 +273,77 @@ const ClientPage: React.FC<ClientPageProps> = ({
         )}
       </ShadowBox>
 
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-row items-center justify-between gap-x-8">
-          <div className="flex flex-row items-center justify-between gap-x-6">
-            <h3 className="text-lg">Refunds</h3>
-            {order.status != 'paid' && (
-              <Status
-                status={OrderStatusDisplayName[order.status]}
-                className={OrderStatusDisplayColor[order.status]}
-              />
+      {order.paid && (
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-row items-center justify-between gap-x-8">
+            <div className="flex flex-row items-center justify-between gap-x-6">
+              <h3 className="text-lg">Refunds</h3>
+            </div>
+            {canRefund && (
+              <Button onClick={showRefundModal}>Refund Order</Button>
             )}
           </div>
-          {canRefund && <Button onClick={showRefundModal}>Refund Order</Button>}
-        </div>
 
-        <DataTable
-          isLoading={refundsLoading}
-          columns={[
-            {
-              accessorKey: 'created_at',
-              header: 'Created At',
-              cell: ({ row }) => (
-                <FormattedDateTime
-                  dateStyle="long"
-                  datetime={row.original.created_at}
-                />
-              ),
-            },
-            {
-              accessorKey: 'amount',
-              header: 'Amount',
-              cell: ({ row }) =>
-                formatCurrencyAndAmount(
-                  row.original.amount,
-                  row.original.currency,
+          <DataTable
+            isLoading={refundsLoading}
+            columns={[
+              {
+                accessorKey: 'created_at',
+                header: 'Created At',
+                cell: ({ row }) => (
+                  <FormattedDateTime
+                    dateStyle="long"
+                    datetime={row.original.created_at}
+                  />
                 ),
-            },
-            {
-              accessorKey: 'status',
-              header: 'Status',
-              cell: ({ row }) => (
-                <Status
-                  className={twMerge(
-                    RefundStatusDisplayColor[row.original.status],
-                    'w-fit',
-                  )}
-                  status={RefundStatusDisplayTitle[row.original.status]}
-                />
-              ),
-            },
-            {
-              accessorKey: 'reason',
-              header: 'Reason',
-              cell: ({ row }) => RefundReasonDisplay[row.original.reason],
-            },
-            {
-              accessorKey: 'revoke_benefits',
-              header: 'Revoke Benefits',
-              cell: ({ row }) => (
-                <Status
-                  status={row.original.revoke_benefits ? 'True' : 'False'}
-                  className={twMerge(
-                    'w-fit',
-                    row.original.revoke_benefits
-                      ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
-                      : 'bg-red-100 text-red-500 dark:bg-red-950',
-                  )}
-                />
-              ),
-            },
-          ]}
-          data={refunds?.items ?? []}
-        />
-      </div>
+              },
+              {
+                accessorKey: 'amount',
+                header: 'Amount',
+                cell: ({ row }) =>
+                  formatCurrencyAndAmount(
+                    row.original.amount,
+                    row.original.currency,
+                  ),
+              },
+              {
+                accessorKey: 'status',
+                header: 'Status',
+                cell: ({ row }) => (
+                  <Status
+                    className={twMerge(
+                      RefundStatusDisplayColor[row.original.status],
+                      'w-fit',
+                    )}
+                    status={RefundStatusDisplayTitle[row.original.status]}
+                  />
+                ),
+              },
+              {
+                accessorKey: 'reason',
+                header: 'Reason',
+                cell: ({ row }) => RefundReasonDisplay[row.original.reason],
+              },
+              {
+                accessorKey: 'revoke_benefits',
+                header: 'Revoke Benefits',
+                cell: ({ row }) => (
+                  <Status
+                    status={row.original.revoke_benefits ? 'True' : 'False'}
+                    className={twMerge(
+                      'w-fit',
+                      row.original.revoke_benefits
+                        ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
+                        : 'bg-red-100 text-red-500 dark:bg-red-950',
+                    )}
+                  />
+                ),
+              },
+            ]}
+            data={refunds?.items ?? []}
+          />
+        </div>
+      )}
 
       <InlineModal
         isShown={isRefundModalShown}
@@ -352,10 +357,20 @@ const ClientPage: React.FC<ClientPageProps> = ({
 const DetailRow = ({
   title,
   children,
-}: PropsWithChildren<{ title: string }>) => {
+  className,
+  titleClassName,
+}: PropsWithChildren<{
+  title: string
+  className?: string
+  titleClassName?: string
+}>) => {
   return (
-    <div className="flex flex-row justify-between gap-8">
-      <span className="dark:text-polar-500 text-gray-500">{title}</span>
+    <div className={twMerge('flex flex-row justify-between gap-8', className)}>
+      <span
+        className={twMerge('dark:text-polar-500 text-gray-500', titleClassName)}
+      >
+        {title}
+      </span>
       {children}
     </div>
   )

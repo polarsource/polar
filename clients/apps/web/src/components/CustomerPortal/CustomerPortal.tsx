@@ -12,12 +12,12 @@ import { twMerge } from 'tailwind-merge'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import CustomerPortalOrder from './CustomerPortalOrder'
-import { CustomerPortalOverview } from './CustomerPortalOverview'
+import { CustomerPortalSubscriptions } from './CustomerPortalSubscriptions'
 export interface CustomerPortalProps {
   organization: schemas['Organization']
   products: schemas['CustomerProduct'][]
   subscriptions: schemas['CustomerSubscription'][]
-  oneTimePurchases: schemas['CustomerOrder'][]
+  orders: schemas['CustomerOrder'][]
   customerSessionToken?: string
 }
 
@@ -25,7 +25,7 @@ export const CustomerPortal = ({
   organization,
   products,
   subscriptions,
-  oneTimePurchases,
+  orders,
   customerSessionToken,
 }: CustomerPortalProps) => {
   const api = createClientSideAPI(customerSessionToken)
@@ -45,27 +45,37 @@ export const CustomerPortal = ({
 
   return (
     <div className="flex flex-col gap-y-16">
-      <CustomerPortalOverview
+      <CustomerPortalSubscriptions
         api={api}
         organization={organization}
         products={products}
         subscriptions={subscriptions}
         customerSessionToken={customerSessionToken}
       />
+
       <div className="flex flex-col gap-y-4">
         <div className="flex flex-row items-center justify-between">
-          <h3 className="text-2xl">Product Purchases</h3>
+          <h3 className="text-2xl">Order History</h3>
         </div>
         <DataTable
           wrapperClassName={themingPreset.polar.table}
           headerClassName={themingPreset.polar.tableHeader}
-          data={oneTimePurchases ?? []}
+          data={orders ?? []}
           isLoading={false}
           columns={[
             {
               accessorKey: 'product.name',
               header: 'Product',
               cell: ({ row }) => row.original.product.name,
+            },
+            {
+              accessorKey: 'status',
+              header: 'Status',
+              cell: ({ row }) => (
+                <span className="capitalize">
+                  {row.original.status.split('_').join(' ')}
+                </span>
+              ),
             },
             {
               accessorKey: 'created_at',
@@ -93,8 +103,9 @@ export const CustomerPortal = ({
                       'hidden md:flex',
                       themingPreset.polar.buttonSecondary,
                     )}
+                    size="sm"
                   >
-                    View Purchase
+                    View Order
                   </Button>
                   <Link
                     className="md:hidden"
@@ -102,12 +113,13 @@ export const CustomerPortal = ({
                   >
                     <Button
                       variant="secondary"
+                      size="sm"
                       className={twMerge(
                         'hidden md:flex',
                         themingPreset.polar.buttonSecondary,
                       )}
                     >
-                      View Purchase
+                      View Order
                     </Button>
                   </Link>
                 </span>

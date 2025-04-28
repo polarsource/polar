@@ -48,7 +48,7 @@ const FeatureCard = ({
       <Link
         href={linkHref}
         target="_blank"
-        className="dark:border-polar-700 dark:bg-polar-900 flex flex-col justify-between gap-y-8 rounded-2xl border border-gray-200 bg-white p-8 transition-transform hover:translate-y-[-4px] md:h-[400px]"
+        className="dark:border-polar-700 dark:bg-polar-900 flex h-full flex-col justify-between gap-y-8 rounded-2xl border border-gray-200 bg-white p-8 transition-transform hover:translate-y-[-4px]"
       >
         <div className="flex flex-col gap-y-6">
           <span>{icon}</span>
@@ -137,7 +137,7 @@ const Features = ({ className }: FeaturesProps) => {
   .ingest('openai-usage')`}
             </pre>
           </div>
-          <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-x-4 gap-y-2 rounded-lg border border-gray-200 bg-gray-100 p-4">
+          <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-x-4 gap-y-4 rounded-lg border border-gray-200 bg-gray-100 p-4">
             <div className="flex flex-row items-center gap-x-2">
               <div className="h-6 w-6 overflow-hidden rounded-full">
                 <Image
@@ -153,10 +153,13 @@ const Features = ({ className }: FeaturesProps) => {
               </span>
             </div>
             <div className="flex flex-col">
-              <span className="dark:text-polar-500 flex flex-row gap-x-2 text-sm text-gray-500">
-                <span>3,529 Completions</span>
-                <span>•</span>
+              <span className="dark:text-polar-500 flex flex-row justify-between gap-x-2 text-sm text-gray-500">
+                <span>63,529 Prompt Tokens</span>
                 <span>$57.63</span>
+              </span>
+              <span className="dark:text-polar-500 flex flex-row justify-between gap-x-2 text-sm text-gray-500">
+                <span>75,348 Completion Tokens</span>
+                <span>$75.12</span>
               </span>
             </div>
           </div>

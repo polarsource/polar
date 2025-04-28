@@ -66,40 +66,35 @@ export default async function Page({
     params.organization,
   )
 
-  const {
-    data: subscriptions,
-    error: subscriptionsError,
-    response: subscriptionsResponse,
-  } = await api.GET('/v1/customer-portal/subscriptions/', {
-    params: {
-      query: {
-        organization_id: organization.id,
-        active: true,
-        limit: 100,
-      },
+  const [
+    {
+      data: subscriptions,
+      error: subscriptionsError,
+      response: subscriptionsResponse,
     },
-    ...cacheConfig,
-  })
-
-  const {
-    data: oneTimePurchases,
-    error: oneTimePurchasesError,
-    response: oneTimePurchasesResponse,
-  } = await api.GET('/v1/customer-portal/orders/', {
-    params: {
-      query: {
-        organization_id: organization.id,
-        product_billing_type: 'one_time',
-        limit: 100,
+    { data: orders, error: ordersError, response: ordersResponse },
+  ] = await Promise.all([
+    api.GET('/v1/customer-portal/subscriptions/', {
+      params: {
+        query: {
+          organization_id: organization.id,
+          limit: 200,
+        },
       },
-    },
-    ...cacheConfig,
-  })
+      ...cacheConfig,
+    }),
+    api.GET('/v1/customer-portal/orders/', {
+      params: {
+        query: {
+          organization_id: organization.id,
+          limit: 200,
+        },
+      },
+      ...cacheConfig,
+    }),
+  ])
 
-  if (
-    subscriptionsResponse.status === 401 ||
-    oneTimePurchasesResponse.status === 401
-  ) {
+  if (subscriptionsResponse.status === 401 || ordersResponse.status === 401) {
     redirect(`/${organization.slug}/portal/request`)
   }
 
@@ -107,8 +102,8 @@ export default async function Page({
     throw subscriptionsError
   }
 
-  if (oneTimePurchasesError) {
-    throw oneTimePurchasesError
+  if (ordersError) {
+    throw ordersError
   }
 
   return (
@@ -116,7 +111,7 @@ export default async function Page({
       organization={organization}
       products={products}
       subscriptions={subscriptions}
-      oneTimePurchases={oneTimePurchases}
+      orders={orders}
       customerSessionToken={searchParams.customer_session_token}
     />
   )

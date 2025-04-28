@@ -102,7 +102,7 @@ const SubscriptionDetails = ({ subscription }: SubscriptionDetailsProps) => {
             {subscription.discount ? subscription.discount.code : '—'}
           </span>
         </div>
-        {subscription.amount && subscription.currency && (
+        {subscription.amount && subscription.currency ? (
           <div className="flex justify-between">
             <span className="dark:text-polar-500 text-gray-500">Amount</span>
             <AmountLabel
@@ -111,7 +111,7 @@ const SubscriptionDetails = ({ subscription }: SubscriptionDetailsProps) => {
               interval={subscription.recurring_interval}
             />
           </div>
-        )}
+        ) : null}
       </div>
 
       {cancellationDate && (

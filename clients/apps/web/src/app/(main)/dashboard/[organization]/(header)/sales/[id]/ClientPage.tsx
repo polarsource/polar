@@ -169,11 +169,16 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 />
               </span>
             </DetailRow>
-            <DetailRow title="Billing Reason">
+            <DetailRow title="Status">
               <Status
-                status={order.billing_reason.split('_').join(' ')}
-                className="bg-emerald-100 capitalize text-emerald-500 dark:bg-emerald-950"
+                status={OrderStatusDisplayName[order.status]}
+                className={OrderStatusDisplayColor[order.status]}
               />
+            </DetailRow>
+            <DetailRow title="Billing Reason">
+              <span className="capitalize">
+                {order.billing_reason.split('_').join(' ')}
+              </span>
             </DetailRow>
 
             <Separator className="dark:bg-polar-700 my-4 h-[1px] bg-gray-300" />

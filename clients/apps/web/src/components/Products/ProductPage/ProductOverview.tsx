@@ -1,5 +1,5 @@
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
-import { OrderAmountWithRefund } from '@/components/Refunds/OrderAmountWithRefund'
+import { OrderStatus } from '@/components/Orders/OrderStatus'
 import { useDiscounts } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { getDiscountDisplay } from '@/utils/discount'
@@ -11,6 +11,7 @@ import {
   DataTableColumnHeader,
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 
 export interface ProductOverviewProps {
@@ -113,7 +114,21 @@ export const ProductOverview = ({
                 <DataTableColumnHeader column={column} title="Amount" />
               ),
               cell: ({ row: { original: order } }) => (
-                <OrderAmountWithRefund order={order} />
+                <span>
+                  {formatCurrencyAndAmount(order.net_amount, order.currency)}
+                </span>
+              ),
+            },
+            {
+              accessorKey: 'status',
+              enableSorting: true,
+              header: ({ column }) => (
+                <DataTableColumnHeader column={column} title="Status" />
+              ),
+              cell: ({ row: { original: order } }) => (
+                <span className="flex flex-shrink">
+                  <OrderStatus status={order.status} />
+                </span>
               ),
             },
             {

@@ -394,9 +394,9 @@ class StripeService:
         return details
 
     async def update_invoice(
-        self, id: str, *, metadata: dict[str, str] | None = None
+        self, id: str, **params: Unpack[stripe_lib.Invoice.ModifyParams]
     ) -> stripe_lib.Invoice:
-        return await stripe_lib.Invoice.modify_async(id, metadata=metadata or {})
+        return await stripe_lib.Invoice.modify_async(id, **params)
 
     async def get_balance_transaction(self, id: str) -> stripe_lib.BalanceTransaction:
         return await stripe_lib.BalanceTransaction.retrieve_async(id)

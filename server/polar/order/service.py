@@ -426,7 +426,7 @@ class OrderService:
         subscription = await subscription_repository.get_by_stripe_subscription_id(
             stripe_subscription_id,
             options=(
-                joinedload(Subscription.product),
+                joinedload(Subscription.product).joinedload(Product.organization),
                 joinedload(Subscription.customer),
             ),
         )
@@ -522,6 +522,17 @@ class OrderService:
         # Reload the invoice to get totals with added pending items
         if len(pending_items) > 0:
             invoice = await stripe_service.get_invoice(invoice.id)
+
+        # Update statement descriptor
+        # Stripe doesn't allow to set statement descriptor on the subscription itself,
+        # so we need to set it manually on each new invoice.
+        assert invoice.id is not None
+        await stripe_service.update_invoice(
+            invoice.id,
+            statement_descriptor=subscription.organization.name[
+                : settings.stripe_descriptor_suffix_max_length
+            ],
+        )
 
         # Determine billing reason
         billing_reason = OrderBillingReason.subscription_cycle

@@ -44,8 +44,6 @@ from polar.redis import Redis, create_redis
 from polar.sentry import configure_sentry
 from polar.web_backoffice import app as backoffice_app
 from polar.webhook.webhooks import document_webhooks
-from polar.worker import ArqRedis
-from polar.worker import lifespan as worker_lifespan
 
 log: Logger = structlog.get_logger()
 
@@ -91,7 +89,7 @@ class State(TypedDict):
     async_sessionmaker: AsyncSessionMaker
     sync_engine: Engine
     sync_sessionmaker: SyncSessionMaker
-    arq_pool: ArqRedis
+
     redis: Redis
     ip_geolocation_client: ip_geolocation.IPGeolocationClient | None
 
@@ -100,43 +98,41 @@ class State(TypedDict):
 async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     log.info("Starting Polar API")
 
-    async with worker_lifespan() as arq_pool:
-        async with create_redis() as redis:
-            async_engine = create_async_engine("app")
-            async_sessionmaker = create_async_sessionmaker(async_engine)
-            instrument_sqlalchemy(async_engine.sync_engine)
+    async with create_redis() as redis:
+        async_engine = create_async_engine("app")
+        async_sessionmaker = create_async_sessionmaker(async_engine)
+        instrument_sqlalchemy(async_engine.sync_engine)
 
-            sync_engine = create_sync_engine("app")
-            sync_sessionmaker = create_sync_sessionmaker(sync_engine)
-            instrument_sqlalchemy(sync_engine)
+        sync_engine = create_sync_engine("app")
+        sync_sessionmaker = create_sync_sessionmaker(sync_engine)
+        instrument_sqlalchemy(sync_engine)
 
-            try:
-                ip_geolocation_client = ip_geolocation.get_client()
-            except FileNotFoundError:
-                log.info(
-                    "IP geolocation database not found. "
-                    "Checkout won't automatically geolocate IPs."
-                )
-                ip_geolocation_client = None
+        try:
+            ip_geolocation_client = ip_geolocation.get_client()
+        except FileNotFoundError:
+            log.info(
+                "IP geolocation database not found. "
+                "Checkout won't automatically geolocate IPs."
+            )
+            ip_geolocation_client = None
 
-            log.info("Polar API started")
+        log.info("Polar API started")
 
-            yield {
-                "async_engine": async_engine,
-                "async_sessionmaker": async_sessionmaker,
-                "sync_engine": sync_engine,
-                "sync_sessionmaker": sync_sessionmaker,
-                "arq_pool": arq_pool,
-                "redis": redis,
-                "ip_geolocation_client": ip_geolocation_client,
-            }
+        yield {
+            "async_engine": async_engine,
+            "async_sessionmaker": async_sessionmaker,
+            "sync_engine": sync_engine,
+            "sync_sessionmaker": sync_sessionmaker,
+            "redis": redis,
+            "ip_geolocation_client": ip_geolocation_client,
+        }
 
-            await async_engine.dispose()
-            sync_engine.dispose()
-            if ip_geolocation_client is not None:
-                ip_geolocation_client.close()
+        await async_engine.dispose()
+        sync_engine.dispose()
+        if ip_geolocation_client is not None:
+            ip_geolocation_client.close()
 
-            log.info("Polar API stopped")
+        log.info("Polar API stopped")
 
 
 def create_app() -> FastAPI:

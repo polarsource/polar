@@ -13,7 +13,7 @@ from polar.notification_recipient.service import (
     notification_recipient as notification_recipient_service,
 )
 from polar.notifications.service import notifications
-from polar.worker import AsyncSessionMaker, JobContext, task
+from polar.worker import AsyncSessionMaker, actor
 
 log = structlog.get_logger()
 
@@ -62,9 +62,9 @@ def send_push_message(
         raise
 
 
-@task("notifications.push")
-async def notifications_push(ctx: JobContext, notification_id: UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="notifications.push")
+async def notifications_push(notification_id: UUID) -> None:
+    async with AsyncSessionMaker() as session:
         notif = await notifications.get(session, notification_id)
         if not notif:
             log.warning("notifications.push.not_found")

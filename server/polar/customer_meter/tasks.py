@@ -2,7 +2,7 @@ import uuid
 
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
-from polar.worker import AsyncSessionMaker, JobContext, task
+from polar.worker import AsyncSessionMaker, actor
 
 from .service import customer_meter as customer_meter_service
 
@@ -17,9 +17,9 @@ class CustomerDoesNotExist(CustomerMeterTaskError):
         super().__init__(message)
 
 
-@task("customer_meter.update_customer")
-async def update_customer(ctx: JobContext, customer_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="customer_meter.update_customer")
+async def update_customer(customer_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)
         customer = await repository.get_by_id(customer_id)
         if customer is None:

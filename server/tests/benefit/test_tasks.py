@@ -1,7 +1,7 @@
 import uuid
 
 import pytest
-from arq import Retry
+from dramatiq import Retry
 from pytest_mock import MockerFixture
 
 from polar.benefit.grant.service import BenefitGrantService
@@ -19,7 +19,6 @@ from polar.benefit.tasks import (  # type: ignore[attr-defined]
 )
 from polar.models import Benefit, BenefitGrant, Customer, Subscription
 from polar.postgres import AsyncSession
-from polar.worker import JobContext
 from tests.fixtures.database import SaveFixture
 
 
@@ -27,7 +26,6 @@ from tests.fixtures.database import SaveFixture
 class TestBenefitGrant:
     async def test_not_existing_customer(
         self,
-        job_context: JobContext,
         subscription: Subscription,
         benefit_organization: Benefit,
         session: AsyncSession,
@@ -37,7 +35,6 @@ class TestBenefitGrant:
 
         with pytest.raises(CustomerDoesNotExist):
             await benefit_grant(
-                job_context,
                 uuid.uuid4(),
                 benefit_organization.id,
                 subscription_id=subscription.id,
@@ -45,7 +42,6 @@ class TestBenefitGrant:
 
     async def test_not_existing_benefit(
         self,
-        job_context: JobContext,
         subscription: Subscription,
         customer: Customer,
         session: AsyncSession,
@@ -55,13 +51,12 @@ class TestBenefitGrant:
 
         with pytest.raises(BenefitDoesNotExist):
             await benefit_grant(
-                job_context, customer.id, uuid.uuid4(), subscription_id=subscription.id
+                customer.id, uuid.uuid4(), subscription_id=subscription.id
             )
 
     async def test_existing_benefit(
         self,
         mocker: MockerFixture,
-        job_context: JobContext,
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
@@ -77,7 +72,6 @@ class TestBenefitGrant:
         session.expunge_all()
 
         await benefit_grant(
-            job_context,
             customer.id,
             benefit_organization.id,
             subscription_id=subscription.id,
@@ -88,7 +82,6 @@ class TestBenefitGrant:
     async def test_retry(
         self,
         mocker: MockerFixture,
-        job_context: JobContext,
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
@@ -106,7 +99,6 @@ class TestBenefitGrant:
 
         with pytest.raises(Retry):
             await benefit_grant(
-                job_context,
                 customer.id,
                 benefit_organization.id,
                 subscription_id=subscription.id,
@@ -117,7 +109,6 @@ class TestBenefitGrant:
 class TestBenefitRevoke:
     async def test_not_existing_customer(
         self,
-        job_context: JobContext,
         subscription: Subscription,
         benefit_organization: Benefit,
         session: AsyncSession,
@@ -127,7 +118,6 @@ class TestBenefitRevoke:
 
         with pytest.raises(CustomerDoesNotExist):
             await benefit_revoke(
-                job_context,
                 uuid.uuid4(),
                 benefit_organization.id,
                 subscription_id=subscription.id,
@@ -135,7 +125,6 @@ class TestBenefitRevoke:
 
     async def test_not_existing_benefit(
         self,
-        job_context: JobContext,
         subscription: Subscription,
         customer: Customer,
         session: AsyncSession,
@@ -145,13 +134,12 @@ class TestBenefitRevoke:
 
         with pytest.raises(BenefitDoesNotExist):
             await benefit_revoke(
-                job_context, customer.id, uuid.uuid4(), subscription_id=subscription.id
+                customer.id, uuid.uuid4(), subscription_id=subscription.id
             )
 
     async def test_existing_benefit(
         self,
         mocker: MockerFixture,
-        job_context: JobContext,
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
@@ -167,7 +155,6 @@ class TestBenefitRevoke:
         session.expunge_all()
 
         await benefit_revoke(
-            job_context,
             customer.id,
             benefit_organization.id,
             subscription_id=subscription.id,
@@ -178,7 +165,6 @@ class TestBenefitRevoke:
     async def test_retry(
         self,
         mocker: MockerFixture,
-        job_context: JobContext,
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
@@ -196,7 +182,6 @@ class TestBenefitRevoke:
 
         with pytest.raises(Retry):
             await benefit_revoke(
-                job_context,
                 customer.id,
                 benefit_organization.id,
                 subscription_id=subscription.id,
@@ -207,7 +192,6 @@ class TestBenefitRevoke:
 class TestBenefitUpdate:
     async def test_not_existing_grant(
         self,
-        job_context: JobContext,
         benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
@@ -215,14 +199,13 @@ class TestBenefitUpdate:
         session.expunge_all()
 
         with pytest.raises(BenefitGrantDoesNotExist):
-            await benefit_update(job_context, uuid.uuid4())
+            await benefit_update(uuid.uuid4())
 
     async def test_existing_grant(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
-        job_context: JobContext,
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
@@ -242,7 +225,7 @@ class TestBenefitUpdate:
         # then
         session.expunge_all()
 
-        await benefit_update(job_context, grant.id)
+        await benefit_update(grant.id)
 
         update_benefit_grant_mock.assert_called_once()
 
@@ -251,7 +234,6 @@ class TestBenefitUpdate:
         session: AsyncSession,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
-        job_context: JobContext,
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
@@ -273,7 +255,7 @@ class TestBenefitUpdate:
         session.expunge_all()
 
         with pytest.raises(Retry):
-            await benefit_update(job_context, grant.id)
+            await benefit_update(grant.id)
 
 
 @pytest.mark.asyncio
@@ -282,7 +264,6 @@ class TestBenefitDelete:
         self,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
-        job_context: JobContext,
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
@@ -299,7 +280,7 @@ class TestBenefitDelete:
         benefit_organization.set_deleted_at()
         await save_fixture(benefit_organization)
 
-        await benefit_delete(job_context, benefit_organization.id)
+        await benefit_delete(benefit_organization.id)
 
         enqueue_job_mock.assert_called_once()
 
@@ -308,7 +289,6 @@ class TestBenefitDelete:
 class TestBenefitDeleteGrant:
     async def test_not_existing_grant(
         self,
-        job_context: JobContext,
         benefit_organization: Benefit,
         session: AsyncSession,
     ) -> None:
@@ -316,14 +296,13 @@ class TestBenefitDeleteGrant:
         session.expunge_all()
 
         with pytest.raises(BenefitGrantDoesNotExist):
-            await benefit_delete_grant(job_context, uuid.uuid4())
+            await benefit_delete_grant(uuid.uuid4())
 
     async def test_existing_grant(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
-        job_context: JobContext,
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
@@ -343,7 +322,7 @@ class TestBenefitDeleteGrant:
         # then
         session.expunge_all()
 
-        await benefit_delete_grant(job_context, grant.id)
+        await benefit_delete_grant(grant.id)
 
         delete_benefit_grant_mock.assert_called_once()
 
@@ -352,7 +331,6 @@ class TestBenefitDeleteGrant:
         session: AsyncSession,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
-        job_context: JobContext,
         subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
@@ -374,4 +352,4 @@ class TestBenefitDeleteGrant:
         session.expunge_all()
 
         with pytest.raises(Retry):
-            await benefit_delete_grant(job_context, grant.id)
+            await benefit_delete_grant(grant.id)

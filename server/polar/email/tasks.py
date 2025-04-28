@@ -1,13 +1,10 @@
-from arq import Retry
+from polar.worker import actor
 
-from polar.worker import JobContext, compute_backoff, task
-
-from .sender import SendEmailError, get_email_sender
+from .sender import get_email_sender
 
 
-@task("email.send", max_tries=10)
+@actor(actor_name="email.send")
 async def email_send(
-    ctx: JobContext,
     to_email_addr: str,
     subject: str,
     html_content: str,
@@ -18,17 +15,13 @@ async def email_send(
     reply_to_email_addr: str | None,
 ) -> None:
     email_sender = get_email_sender()
-
-    try:
-        await email_sender.send(
-            to_email_addr=to_email_addr,
-            subject=subject,
-            html_content=html_content,
-            from_name=from_name,
-            from_email_addr=from_email_addr,
-            email_headers=email_headers,
-            reply_to_name=reply_to_name,
-            reply_to_email_addr=reply_to_email_addr,
-        )
-    except SendEmailError as e:
-        raise Retry(compute_backoff(ctx["job_try"])) from e
+    await email_sender.send(
+        to_email_addr=to_email_addr,
+        subject=subject,
+        html_content=html_content,
+        from_name=from_name,
+        from_email_addr=from_email_addr,
+        email_headers=email_headers,
+        reply_to_name=reply_to_name,
+        reply_to_email_addr=reply_to_email_addr,
+    )

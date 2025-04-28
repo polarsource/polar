@@ -14,7 +14,6 @@ dependencies = [
   "githubkit==0.12.9",
   "redis>=5.0.4",
   "sse-starlette>=2.0.0",
-  "arq>=0.25.0",
   "stripe>=10.12.0",
   "pyjwt>=2.6.0",
   "pydantic>=2.10",
@@ -47,10 +46,10 @@ dependencies = [
   "taskipy>=1.10.3",
   "psycopg2-binary>=2.9.5",
   "apscheduler>=3.10.4",
-  "supervisor>=4.2.5",
   "plain-client>=0.0.1",
   "tagflow>=0.7.0",
   "exponent-server-sdk>=2.1.0",
+  "dramatiq[redis,watch]>=1.17.1",
 ]
 
 [dependency-groups]
@@ -83,7 +82,7 @@ dev = [
 emails = { cmd = "cd emails && pnpm i --frozen-lockfile && pnpm run build", help = "build emails" }
 backoffice = { cmd = "pnpm -C polar/web_backoffice install && pnpm -C polar/web_backoffice build", help = "build backoffice CSS and JS" }
 api = { cmd = "env AUTHLIB_INSECURE_TRANSPORT=true uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }
-worker = { cmd = "PORT=8888 watchfiles 'supervisord -c supervisord.worker.conf' --sigint-timeout 10 --grace-period 10 --sigkill-timeout 10 polar", help = "run worker" }
+worker = { cmd = "dramatiq -p 1 -t 1 --watch polar run_worker", help = "run worker" }
 test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
 test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
 watch_email = { cmd = "POLAR_TEST_WATCH=1 pytest -s -m", help = "preview emails" }

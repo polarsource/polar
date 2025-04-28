@@ -1,7 +1,7 @@
 import uuid
 
 from polar.exceptions import PolarTaskError
-from polar.worker import AsyncSessionMaker, JobContext, task
+from polar.worker import AsyncSessionMaker, actor
 
 from .service.user import user as user_service
 
@@ -16,9 +16,9 @@ class UserDoesNotExist(UserTaskError):
         super().__init__(message)
 
 
-@task("user.on_after_signup")
-async def user_on_after_signup(ctx: JobContext, user_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="user.on_after_signup")
+async def user_on_after_signup(user_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
         user = await user_service.get(session, user_id)
 
         if user is None:

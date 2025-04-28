@@ -8,7 +8,7 @@ from polar.integrations.discord.internal_webhook import (
     send_internal_webhook,
 )
 from polar.kit.money import get_cents_in_dollar_string
-from polar.worker import AsyncSessionMaker, CronTrigger, JobContext, task
+from polar.worker import AsyncSessionMaker, CronTrigger, actor
 
 from .service.payout import payout_transaction as payout_transaction_service
 from .service.processor_fee import (
@@ -26,15 +26,18 @@ class PayoutDoesNotExist(TransactionTaskError):
         super().__init__(message)
 
 
-@task("processor_fee.sync_stripe_fees", cron_trigger=CronTrigger(hour=0, minute=0))
-async def sync_stripe_fees(ctx: JobContext) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(
+    actor_name="processor_fee.sync_stripe_fees",
+    cron_trigger=CronTrigger(hour=0, minute=0),
+)
+async def sync_stripe_fees() -> None:
+    async with AsyncSessionMaker() as session:
         await processor_fee_transaction_service.sync_stripe_fees(session)
 
 
-@task("payout.created")
-async def payout_created(ctx: JobContext, payout_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="payout.created")
+async def payout_created(payout_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
         payout = await payout_transaction_service.get(session, payout_id)
         if payout is None:
             raise PayoutDoesNotExist(payout_id)
@@ -73,15 +76,15 @@ async def payout_created(ctx: JobContext, payout_id: uuid.UUID) -> None:
         )
 
 
-@task("payout.trigger_stripe_payouts", cron_trigger=CronTrigger(minute=15))
-async def trigger_stripe_payouts(ctx: JobContext) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="payout.trigger_stripe_payouts", cron_trigger=CronTrigger(minute=15))
+async def trigger_stripe_payouts() -> None:
+    async with AsyncSessionMaker() as session:
         await payout_transaction_service.trigger_stripe_payouts(session)
 
 
-@task("payout.trigger_stripe_payout")
-async def trigger_payout(ctx: JobContext, payout_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="payout.trigger_stripe_payout")
+async def trigger_payout(payout_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
         payout = await payout_transaction_service.get(session, payout_id)
         if payout is None:
             raise PayoutDoesNotExist(payout_id)

@@ -50,6 +50,8 @@ class Settings(BaseSettings):
     TESTING: bool = False
 
     WORKER_HEALTH_CHECK_INTERVAL: timedelta = timedelta(seconds=30)
+    WORKER_MAX_RETRIES: int = 20
+    WEBHOOK_MAX_RETRIES: int = 10
 
     SECRET: str = "super secret jwt secret"
     JWKS: JWKSFile = Field(default="./.jwks.json")

@@ -3,7 +3,7 @@ import uuid
 from polar.account.service import account as account_service
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
-from polar.worker import AsyncSessionMaker, JobContext, task
+from polar.worker import AsyncSessionMaker, actor
 
 from .service import organization as organization_service
 
@@ -34,17 +34,17 @@ class AccountDoesNotExist(OrganizationTaskError):
         super().__init__(message)
 
 
-@task("organization.created")
-async def organization_created(ctx: JobContext, organization_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="organization.created")
+async def organization_created(organization_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
         organization = await organization_service.get(session, organization_id)
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
 
 
-@task("organization.account_set")
-async def organization_account_set(ctx: JobContext, organization_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="organization.account_set")
+async def organization_account_set(organization_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
         organization = await organization_service.get(session, organization_id)
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)

@@ -1,8 +1,8 @@
 import uuid
 
 import structlog
-from arq import Retry
 from babel.numbers import format_currency
+from dramatiq import Retry
 from sqlalchemy.orm import joinedload
 
 from polar.config import settings
@@ -16,7 +16,7 @@ from polar.models import Customer, Order
 from polar.models.order import OrderBillingReason
 from polar.product.service.product import product as product_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
-from polar.worker import AsyncSessionMaker, JobContext, compute_backoff, task
+from polar.worker import AsyncSessionMaker, actor, can_retry
 
 from .repository import OrderRepository
 from .service import order as order_service
@@ -43,11 +43,9 @@ class OrderDoesNotExist(OrderTaskError):
         super().__init__(message)
 
 
-@task("order.balance")
-async def create_order_balance(
-    ctx: JobContext, order_id: uuid.UUID, charge_id: str
-) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="order.balance")
+async def create_order_balance(order_id: uuid.UUID, charge_id: str) -> None:
+    async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
         order = await repository.get_by_id(
             order_id,
@@ -62,18 +60,16 @@ async def create_order_balance(
             # Retry because Stripe webhooks order is not guaranteed,
             # so we might not have been able to handle subscription.created
             # or charge.succeeded yet!
-            if ctx["job_try"] <= MAX_RETRIES:
-                raise Retry(compute_backoff(ctx["job_try"])) from e
+            if can_retry():
+                raise Retry() from e
             # Raise the exception to be notified about it
             else:
                 raise
 
 
-@task("order.update_product_benefits_grants")
-async def update_product_benefits_grants(
-    ctx: JobContext, product_id: uuid.UUID
-) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="order.update_product_benefits_grants")
+async def update_product_benefits_grants(product_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
         product = await product_service.get(session, product_id)
         if product is None:
             raise ProductDoesNotExist(product_id)
@@ -81,9 +77,9 @@ async def update_product_benefits_grants(
         await order_service.update_product_benefits_grants(session, product)
 
 
-@task("order.discord_notification")
-async def order_discord_notification(ctx: JobContext, order_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="order.discord_notification")
+async def order_discord_notification(order_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
         order_repository = OrderRepository.from_session(session)
         order = await order_repository.get_by_id(
             order_id,

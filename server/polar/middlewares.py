@@ -1,6 +1,7 @@
 import functools
 import re
 
+import dramatiq
 import structlog
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -37,7 +38,7 @@ class FlushEnqueuedWorkerJobsMiddleware:
         await self.app(scope, receive, send)
 
         if not settings.is_testing():
-            await flush_enqueued_jobs(scope["state"]["arq_pool"])
+            await flush_enqueued_jobs(dramatiq.get_broker(), scope["state"]["redis"])
 
 
 class PathRewriteMiddleware:

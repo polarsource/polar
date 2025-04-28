@@ -7,35 +7,26 @@ from uuid import UUID
 
 import httpx
 import structlog
-from arq import Retry
+from dramatiq import Retry
 from netaddr import IPAddress
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
+from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
-from polar.worker import (
-    AsyncSessionMaker,
-    JobContext,
-    compute_backoff,
-    enqueue_job,
-    task,
-)
+from polar.worker import AsyncSessionMaker, actor, can_retry, enqueue_job
 
 from .service import webhook as webhook_service
 
 log: Logger = structlog.get_logger()
 
-MAX_RETRIES = 10
 
-
-@task("webhook_event.send", max_tries=MAX_RETRIES)
-async def webhook_event_send(ctx: JobContext, webhook_event_id: UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
-        return await _webhook_event_send(
-            session, ctx=ctx, webhook_event_id=webhook_event_id
-        )
+@actor(actor_name="webhook_event.send", max_retries=settings.WEBHOOK_MAX_RETRIES)
+async def webhook_event_send(webhook_event_id: UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        return await _webhook_event_send(session, webhook_event_id=webhook_event_id)
 
 
 def allowed_url(url: str) -> bool:
@@ -78,12 +69,7 @@ def allowed_url(url: str) -> bool:
     return True
 
 
-async def _webhook_event_send(
-    session: AsyncSession,
-    *,
-    ctx: JobContext,
-    webhook_event_id: UUID,
-) -> None:
+async def _webhook_event_send(session: AsyncSession, *, webhook_event_id: UUID) -> None:
     event = await webhook_service.get_event_by_id(session, webhook_event_id)
     if not event:
         raise Exception(f"webhook event not found id={webhook_event_id}")
@@ -131,11 +117,11 @@ async def _webhook_event_send(
         log.debug("An errror occurred while sending a webhook", error=e)
         delivery.succeeded = False
         # Permanent failure
-        if ctx["job_try"] >= MAX_RETRIES:
+        if not can_retry():
             event.succeeded = False
         # Retry
         else:
-            raise Retry(compute_backoff(ctx["job_try"])) from e
+            raise Retry() from e
     # Success
     else:
         delivery.succeeded = True
@@ -149,7 +135,7 @@ async def _webhook_event_send(
         await session.commit()
 
 
-@task("webhook_event.success")
-async def webhook_event_success(ctx: JobContext, webhook_event_id: UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="webhook_event.success")
+async def webhook_event_success(webhook_event_id: UUID) -> None:
+    async with AsyncSessionMaker() as session:
         return await webhook_service.on_event_success(session, webhook_event_id)

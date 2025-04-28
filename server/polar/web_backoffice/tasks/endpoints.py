@@ -1,11 +1,7 @@
-import builtins
+from collections.abc import Sequence
 from operator import attrgetter
 from typing import Any
 
-from arq import ArqRedis
-from arq.constants import result_key_prefix
-from arq.jobs import DeserializationError, JobResult, deserialize_result
-from babel.numbers import format_decimal
 from fastapi import APIRouter, Query, Request
 from pydantic import ValidationError
 from tagflow import tag, text
@@ -20,13 +16,13 @@ from .forms import build_enqueue_task_form_class
 router = APIRouter()
 
 
-class ExecutionTimeColumn(datatable.DatatableColumn[JobResult]):
-    def render(self, request: Request, item: JobResult) -> None:
-        execution_time = item.finish_time - item.start_time
-        formatted_execution_time = format_decimal(
-            execution_time.total_seconds(), locale="en_US"
-        )
-        text(formatted_execution_time)
+# class ExecutionTimeColumn(datatable.DatatableColumn[JobResult]):
+#     def render(self, request: Request, item: JobResult) -> None:
+#         execution_time = item.finish_time - item.start_time
+#         formatted_execution_time = format_decimal(
+#             execution_time.total_seconds(), locale="en_US"
+#         )
+#         text(formatted_execution_time)
 
 
 @router.get("/", name="tasks:list")
@@ -34,27 +30,26 @@ async def list(
     request: Request,
     query: str | None = Query(None),
 ) -> None:
-    arq_pool: ArqRedis = request.state.arq_pool
-    items: builtins.list[JobResult] = []
+    items: Sequence[Any] = []
     if query:
         cursor = 0
-        while True:
-            cursor, keys = await arq_pool.scan(
-                cursor, f"{result_key_prefix}{query}*", count=500
-            )
-            for value in await arq_pool.mget(keys):
-                if value is not None:
-                    try:
-                        items.append(
-                            deserialize_result(
-                                value, deserializer=arq_pool.job_deserializer
-                            )
-                        )
-                    except DeserializationError:
-                        pass
+        # while True:
+        #     cursor, keys = await arq_pool.scan(
+        #         cursor, f"{result_key_prefix}{query}*", count=500
+        #     )
+        #     for value in await arq_pool.mget(keys):
+        #         if value is not None:
+        #             try:
+        #                 items.append(
+        #                     deserialize_result(
+        #                         value, deserializer=arq_pool.job_deserializer
+        #                     )
+        #                 )
+        #             except DeserializationError:
+        #                 pass
 
-            if cursor == 0:
-                break
+        #     if cursor == 0:
+        #         break
 
         items = sorted(items, key=attrgetter("enqueue_time"), reverse=True)
 
@@ -79,10 +74,10 @@ async def list(
                 ):
                     text("Enqueue Task")
 
-            with datatable.Datatable[JobResult, Any](
+            with datatable.Datatable[Any, Any](
                 datatable.DatatableDateTimeColumn("enqueue_time", "Enqueue Time"),
                 datatable.DatatableDateTimeColumn("start_time", "Start Time"),
-                ExecutionTimeColumn("Execution Time"),
+                # ExecutionTimeColumn("Execution Time"),
                 datatable.DatatableAttrColumn("function", "Name", clipboard=True),
                 datatable.DatatableAttrColumn("job_try", "Try"),
                 datatable.DatatableBooleanColumn("success", "Success"),

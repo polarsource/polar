@@ -1,38 +1,33 @@
-import contextlib
 from collections.abc import AsyncIterator
-from typing import cast
-from unittest.mock import MagicMock
+from typing import Any
 
+import dramatiq
 import pytest_asyncio
-from arq import ArqRedis
+from dramatiq.middleware.current_message import CurrentMessage
 
-from polar.kit.db.postgres import AsyncSession, AsyncSessionMaker
-from polar.kit.utils import utc_now
-from polar.postgres import create_async_engine
+from polar.config import settings
+from polar.kit.db.postgres import AsyncSession
 from polar.redis import Redis
-from polar.worker import JobContext
+from polar.worker import RedisMiddleware, SQLAlchemyMiddleware
 
 
-@pytest_asyncio.fixture
-async def job_context(session: AsyncSession, redis: Redis) -> AsyncIterator[JobContext]:
-    engine = create_async_engine("worker")
+@pytest_asyncio.fixture(autouse=True)
+async def set_middleware_context(session: AsyncSession, redis: Redis) -> None:
+    SQLAlchemyMiddleware._get_async_sessionmaker_context.set(
+        lambda: session,  # type: ignore[arg-type]
+    )
+    RedisMiddleware._redis_context.set(redis)
 
-    @contextlib.asynccontextmanager
-    async def sessionmaker() -> AsyncIterator[AsyncSession]:
-        yield session
 
-    yield {
-        "redis": ArqRedis(redis.connection_pool),
-        "raw_redis": redis,
-        "async_engine": engine,
-        "async_sessionmaker": cast(AsyncSessionMaker, sessionmaker),
-        "exit_stack": contextlib.AsyncExitStack(),
-        "job_id": "fake_job_id",
-        "job_try": 1,
-        "enqueue_time": utc_now(),
-        "score": 0,
-        "job_exit_stack": contextlib.ExitStack(),
-        "logfire_span": MagicMock(),
-    }
-
-    await engine.dispose()
+@pytest_asyncio.fixture(autouse=True)
+async def current_message() -> AsyncIterator[dramatiq.Message[Any]]:
+    message = dramatiq.Message[Any](
+        queue_name="default",
+        actor_name="actor",
+        args=(),
+        kwargs={},
+        options={"retries": 0, "max_retries": settings.WORKER_MAX_RETRIES},
+    )
+    CurrentMessage._MESSAGE.set(message)
+    yield message
+    CurrentMessage._MESSAGE.set(None)

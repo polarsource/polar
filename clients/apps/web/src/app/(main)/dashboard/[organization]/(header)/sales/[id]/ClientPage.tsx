@@ -128,6 +128,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           customer={order.customer as schemas['Customer']}
         />
       }
+      contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none"
       wide
     >
       <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0">

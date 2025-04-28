@@ -10,6 +10,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { PropsWithChildren } from 'react'
 import { AuthModal } from '../Auth/AuthModal'
+import GetStartedButton from '../Auth/GetStartedButton'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 
@@ -29,72 +30,54 @@ export default function Layout({ children }: PropsWithChildren) {
 }
 
 const LandingPageDesktopNavigation = () => {
-  const posthog = usePostHog()
-  const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
-
-  const onLoginClick = () => {
-    posthog.capture('global:user:login:click')
-    showModal()
-  }
-
   return (
-    <div className="dark:text-polar-50 sticky top-16 hidden h-fit w-fit flex-shrink-0 flex-col gap-y-8 text-lg font-medium leading-tight tracking-[-0.01em] md:flex">
-      <BrandingMenu logoVariant="logotype" size={100} />
+    <div className="dark:text-polar-50 sticky top-16 hidden h-full w-fit flex-shrink-0 flex-col justify-between gap-y-12 md:flex">
+      <div className="flex flex-col gap-y-8 text-[1.05rem] font-medium leading-tight tracking-[-0.01em]">
+        <BrandingMenu logoVariant="logotype" size={100} />
 
-      <ul className="flex flex-col gap-y-2">
-        <li>
-          <Link href="/pricing">Billing</Link>
-        </li>
-        <li>
-          <Link href="/pricing">Usage Billing</Link>
-        </li>
-        <li>
-          <Link href="/pricing">Entitlements</Link>
-        </li>
-        <li>
-          <Link href="/pricing">Merchant of Record</Link>
-        </li>
-        <li>
-          <Link href="/pricing">Pricing</Link>
-        </li>
-      </ul>
+        <ul className="flex flex-col gap-y-2">
+          <li>
+            <Link href="/pricing">Billing</Link>
+          </li>
+          <li>
+            <Link href="/pricing">Usage Billing</Link>
+          </li>
+          <li>
+            <Link href="/pricing">Entitlements</Link>
+          </li>
+          <li>
+            <Link href="/pricing">Integrate</Link>
+          </li>
+        </ul>
 
-      <ul className="flex flex-col gap-y-2">
-        <li className="flex items-baseline gap-x-2">
-          <Link href="/pricing">Docs</Link>
-          <span className="text-[.9rem]">
-            <ArrowOutward fontSize="inherit" />
-          </span>
-        </li>
-        <li>
-          <Link href="/pricing">GitHub</Link>
-        </li>
-        <li>
-          <Link href="/pricing">Blog</Link>
-        </li>
-        <li>
-          <Link href="/pricing">Careers</Link>
-        </li>
-        <li>
-          <Link href="/pricing">Company</Link>
-        </li>
-      </ul>
+        <ul className="flex flex-col gap-y-2">
+          <li className="flex items-baseline gap-x-2">
+            <Link href="https://docs.polar.sh" target="_blank">
+              Docs
+            </Link>
+            <span>
+              <ArrowOutward fontSize="inherit" />
+            </span>
+          </li>
+          <li>
+            <Link href="/pricing">Merchant of Record</Link>
+          </li>
+          <li>
+            <Link href="#pricing">Pricing</Link>
+          </li>
+          <li>
+            <Link href="/pricing">GitHub</Link>
+          </li>
+          <li>
+            <Link href="/careers">Careers</Link>
+          </li>
+          <li>
+            <Link href="/company">Company</Link>
+          </li>
+        </ul>
+      </div>
 
-      <ul className="flex flex-col gap-y-2">
-        <li>
-          <Link href="/pricing">Sign in</Link>
-        </li>
-        <li>
-          <Link href="/pricing">Sign up</Link>
-        </li>
-      </ul>
-
-      <Modal
-        isShown={isModalShown}
-        hide={hideModal}
-        modalContent={<AuthModal />}
-        className="lg:w-full lg:max-w-[480px]"
-      />
+      <GetStartedButton className="w-fit rounded-full bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-50" />
     </div>
   )
 }
@@ -145,7 +128,7 @@ const LandingPageFooter = () => {
       whileInView="animate"
       viewport={{ once: true }}
     >
-      <Footer />
+      <Footer wide />
     </motion.div>
   )
 }

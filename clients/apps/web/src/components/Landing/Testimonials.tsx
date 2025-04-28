@@ -284,11 +284,11 @@ const Testamonial = ({
     <Link
       href={link}
       target="_blank"
-      className="dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-row gap-x-4 rounded-2xl border border-gray-200 bg-white p-6 transition-colors hover:bg-white"
+      className="dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex flex-row gap-x-4 rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-white"
     >
       <div className="flex flex-col gap-y-4 pt-1.5">
         <div className="flex flex-row items-center gap-x-3">
-          <Avatar className="h-12 w-12" avatar_url={avatar} name={name} />
+          <Avatar className="h-10 w-10" avatar_url={avatar} name={name} />
           <div className="flex flex-col text-sm">
             <div className="flex flex-row items-center gap-x-2">
               <span>{name}</span>
@@ -310,8 +310,10 @@ const Testamonial = ({
 }
 
 export const Testimonials = () => {
-  const halfLength = Math.ceil(testimonials.length / 2)
-  const firstRow = testimonials.slice(0, halfLength)
+  const thirdLength = Math.ceil(testimonials.length / 3)
+  const firstRow = testimonials.slice(0, thirdLength)
+  const secondRow = testimonials.slice(thirdLength, thirdLength * 2)
+  const thirdRow = testimonials.slice(thirdLength * 2)
 
   return (
     <div className="flex flex-col items-center gap-y-12 px-4 md:gap-y-24 md:px-0 md:py-24">
@@ -324,10 +326,22 @@ export const Testimonials = () => {
             <Testamonial key={`testimonial-${index}`} {...testimonial} />
           ))}
         </div>
-        <div className="hidden flex-col gap-4 md:grid md:w-screen md:grid-cols-3">
-          {testimonials.map((testimonial, index) => (
-            <Testamonial key={testimonial.username} {...testimonial} />
-          ))}
+        <div className="hidden flex-col flex-wrap gap-4 md:grid md:grid-cols-3">
+          <div className="flex flex-col gap-y-4">
+            {firstRow.map((testimonial, index) => (
+              <Testamonial key={`testimonial-${index}`} {...testimonial} />
+            ))}
+          </div>
+          <div className="flex flex-col gap-y-4">
+            {secondRow.map((testimonial, index) => (
+              <Testamonial key={`testimonial-${index}`} {...testimonial} />
+            ))}
+          </div>
+          <div className="flex flex-col gap-y-4">
+            {thirdRow.map((testimonial, index) => (
+              <Testamonial key={`testimonial-${index}`} {...testimonial} />
+            ))}
+          </div>
         </div>
       </div>
     </div>

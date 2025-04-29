@@ -41,6 +41,7 @@ type CheckoutLinkCreateForm = Omit<
 export interface CheckoutLinkFormProps {
   organization: schemas['Organization']
   checkoutLink?: schemas['CheckoutLink']
+  productIds?: string[]
   onClose: (checkoutLink: schemas['CheckoutLink']) => void
 }
 
@@ -48,6 +49,7 @@ export const CheckoutLinkForm = ({
   organization,
   checkoutLink,
   onClose,
+  productIds,
 }: CheckoutLinkFormProps) => {
   const { data: discounts } = useDiscounts(organization.id, {
     limit: 100,
@@ -72,7 +74,7 @@ export const CheckoutLinkForm = ({
     return {
       label: null,
       metadata: [],
-      products: [],
+      products: productIds ?? [],
       allow_discount_codes: true,
       require_billing_address: false,
       success_url: '',

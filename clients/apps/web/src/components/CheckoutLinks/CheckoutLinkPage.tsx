@@ -65,7 +65,7 @@ export const CheckoutLinkPage = ({ checkoutLink }: CheckoutLinkPageProps) => {
         </TabsList>
 
         <TabsContent value="link">
-          <div className="flex flex-row gap-x-2">
+          <div className="flex flex-row items-center gap-x-4">
             <CopyToClipboardInput
               value={checkoutLink.url}
               buttonLabel="Copy"
@@ -79,6 +79,7 @@ export const CheckoutLinkPage = ({ checkoutLink }: CheckoutLinkPageProps) => {
             />
             <Button variant="secondary" onClick={showQRCodeModal}>
               <QrCode />
+              <span className="ml-2">QR Code</span>
             </Button>
           </div>
         </TabsContent>
@@ -118,6 +119,7 @@ export const CheckoutLinkPage = ({ checkoutLink }: CheckoutLinkPageProps) => {
         organization={organization}
         onClose={() => {}}
       />
+
       <Modal
         isShown={isQRCodeModalOpen}
         hide={hideQRCodeModal}

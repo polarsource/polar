@@ -1,6 +1,3 @@
-import { CheckoutLinkManagementModal } from '@/components/CheckoutLinks/CheckoutLinkManagementModal'
-import { InlineModal } from '@/components/Modal/InlineModal'
-import { useModal } from '@/components/Modal/useModal'
 import ProductSelect from '@/components/Products/ProductSelect'
 import Spinner from '@/components/Shared/Spinner'
 import { useCheckoutLinks } from '@/hooks/queries'
@@ -13,24 +10,25 @@ import {
   LinkOutlined,
 } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import {
-  parseAsArrayOf,
-  parseAsString,
-  parseAsStringLiteral,
-  useQueryState,
-} from 'nuqs'
+import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useContext, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { toast } from '../Toast/use-toast'
 
 export interface CheckoutLinkListProps {
+  productIds: string[] | null
+  setProductIds: (productIds: string[]) => void
   selectedCheckoutLinkId: string | null
   setSelectedCheckoutLinkId: (id: string) => void
+  showCreateCheckoutLinkModal: () => void
 }
 
 export const CheckoutLinkList = ({
+  productIds,
+  setProductIds,
   selectedCheckoutLinkId,
   setSelectedCheckoutLinkId,
+  showCreateCheckoutLinkModal,
 }: CheckoutLinkListProps) => {
   const { organization } = useContext(OrganizationContext)
 
@@ -42,10 +40,6 @@ export const CheckoutLinkList = ({
       'label',
       '-label',
     ] as const).withDefault('-created_at'),
-  )
-  const [productIds, setProductIds] = useQueryState(
-    'productId',
-    parseAsArrayOf(parseAsString),
   )
 
   const { data, fetchNextPage, hasNextPage } = useCheckoutLinks(
@@ -61,12 +55,6 @@ export const CheckoutLinkList = ({
     [data],
   )
 
-  const {
-    show: showCreateCheckoutLinkModal,
-    hide: hideCreateCheckoutLinkModal,
-    isShown: isCreateCheckoutLinkModalOpen,
-  } = useModal()
-
   const { ref: loadingRef, inViewport } = useInViewport<HTMLDivElement>()
 
   useEffect(() => {
@@ -74,12 +62,6 @@ export const CheckoutLinkList = ({
       fetchNextPage()
     }
   }, [inViewport, hasNextPage, fetchNextPage])
-
-  useEffect(() => {
-    if (checkoutLinks.length > 0 && !selectedCheckoutLinkId) {
-      setSelectedCheckoutLinkId(checkoutLinks[0].id)
-    }
-  }, [checkoutLinks, setSelectedCheckoutLinkId, selectedCheckoutLinkId])
 
   return (
     <div className="dark:divide-polar-800 flex h-full flex-col divide-y divide-gray-200">
@@ -177,20 +159,6 @@ export const CheckoutLinkList = ({
           </div>
         )}
       </div>
-      <InlineModal
-        isShown={isCreateCheckoutLinkModalOpen}
-        hide={hideCreateCheckoutLinkModal}
-        modalContent={
-          <CheckoutLinkManagementModal
-            organization={organization}
-            onClose={(checkoutLink) => {
-              setSelectedCheckoutLinkId(checkoutLink.id)
-              setProductIds([])
-              hideCreateCheckoutLinkModal()
-            }}
-          />
-        }
-      />
     </div>
   )
 }

@@ -86,36 +86,13 @@ export const useUpdateCheckoutLink = () =>
       })
     },
     onSuccess: (result, _variables, _ctx) => {
-      const { data, error } = result
-      if (error) {
+      if (result.error) {
         return
       }
-      queryClient.setQueriesData<schemas['ListResource_CheckoutLink_']>(
-        {
-          queryKey: [
-            'checkout_links',
-            { organizationId: data.organization_id },
-          ],
-        },
-        (old) => {
-          if (!old) {
-            return {
-              items: [data],
-              pagination: {
-                total_count: 1,
-                max_page: 1,
-              },
-            }
-          } else {
-            return {
-              items: old.items.map((item) =>
-                item.id === data.id ? data : item,
-              ),
-              pagination: old.pagination,
-            }
-          }
-        },
-      )
+
+      queryClient.invalidateQueries({
+        queryKey: ['checkout_links'],
+      })
     },
   })
 

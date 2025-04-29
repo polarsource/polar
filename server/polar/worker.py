@@ -3,7 +3,7 @@ import contextvars
 import json
 import threading
 import uuid
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 from typing import Any, ParamSpec, TypeAlias, TypeVar
 
 import dramatiq
@@ -141,7 +141,19 @@ class RedisMiddleware(dramatiq.Middleware):
         await self._stack.aclose()
 
 
-JobToEnqueue: TypeAlias = tuple[str, tuple[Any], dict[str, Any]]
+JSONSerializable: TypeAlias = (
+    Mapping[str, "JSONSerializable"]
+    | Sequence["JSONSerializable"]
+    | str
+    | int
+    | float
+    | bool
+    | uuid.UUID
+    | None
+)
+JobToEnqueue: TypeAlias = tuple[
+    str, tuple[JSONSerializable, ...], dict[str, JSONSerializable]
+]
 
 
 class EnqueuedJobsMiddleware(dramatiq.Middleware):
@@ -165,6 +177,14 @@ class EnqueuedJobsMiddleware(dramatiq.Middleware):
     ) -> None:
         self._enqueued_jobs.set([])
 
+    def before_process_message(
+        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
+    ) -> None:
+        enqueued_jobs = self._enqueued_jobs.get()
+        assert enqueued_jobs == [], (
+            "Enqueued jobs should be empty before processing a message"
+        )
+
     def after_process_message(
         self,
         broker: dramatiq.Broker,
@@ -179,9 +199,12 @@ class EnqueuedJobsMiddleware(dramatiq.Middleware):
             event_loop_thread = get_event_loop_thread()
             assert event_loop_thread is not None
             event_loop_thread.run_coroutine(flush_enqueued_jobs(broker, redis))
+        self._enqueued_jobs.set([])
 
 
-def enqueue_job(actor: str, *args: Any, **kwargs: Any) -> None:
+def enqueue_job(
+    actor: str, *args: JSONSerializable, **kwargs: JSONSerializable
+) -> None:
     """Enqueue a job by actor name."""
     enqueued_jobs_context = EnqueuedJobsMiddleware.get_enqueued_jobs_context()
     enqueued_jobs_list = enqueued_jobs_context.get([])
@@ -195,8 +218,8 @@ async def flush_enqueued_jobs(broker: dramatiq.Broker, redis: Redis) -> None:
     enqueued_jobs_context = EnqueuedJobsMiddleware.get_enqueued_jobs_context()
 
     for actor_name, args, kwargs in enqueued_jobs_context.get([]):
-        fn = broker.get_actor(actor_name)
-        message = fn.message_with_options(args=tuple(args), kwargs=kwargs)
+        fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
+        message = fn.message_with_options(args=args, kwargs=kwargs)
         redis_message_id = str(uuid.uuid4())
         message = message.copy(options={"redis_message_id": redis_message_id})
         await redis.hset(

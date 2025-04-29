@@ -2919,16 +2919,31 @@ class TestHandleStripeFailure:
                 build_stripe_payment_intent(),
             )
 
-    async def test_not_confirmed_checkout(
-        self, session: AsyncSession, checkout_one_time_fixed: Checkout
+    @pytest.mark.parametrize(
+        "status",
+        (
+            CheckoutStatus.expired,
+            CheckoutStatus.succeeded,
+            CheckoutStatus.failed,
+        ),
+    )
+    async def test_unrecoverable_status(
+        self,
+        status: CheckoutStatus,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
     ) -> None:
+        checkout_one_time_fixed.status = status
+        await save_fixture(checkout_one_time_fixed)
+
         checkout = await checkout_service.handle_stripe_failure(
             session,
             checkout_one_time_fixed.id,
             build_stripe_payment_intent(),
         )
 
-        assert checkout.status == CheckoutStatus.open
+        assert checkout.status == status
 
     async def test_valid(
         self, session: AsyncSession, checkout_confirmed_one_time: Checkout
@@ -2939,7 +2954,7 @@ class TestHandleStripeFailure:
             build_stripe_payment_intent(),
         )
 
-        assert checkout.status == CheckoutStatus.failed
+        assert checkout.status == CheckoutStatus.open
 
     async def test_valid_with_redemption(
         self,
@@ -2960,7 +2975,7 @@ class TestHandleStripeFailure:
             build_stripe_payment_intent(),
         )
 
-        assert checkout.status == CheckoutStatus.failed
+        assert checkout.status == CheckoutStatus.open
 
         discount_redemption_repository = DiscountRedemptionRepository.from_session(
             session

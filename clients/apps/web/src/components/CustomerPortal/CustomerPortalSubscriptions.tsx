@@ -8,51 +8,7 @@ import { useCallback, useState } from 'react'
 import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import CustomerSubscriptionDetails from '../Subscriptions/CustomerSubscriptionDetails'
-import { CurrentPeriodOverview } from './CurrentPeriodOverview'
 import CustomerPortalSubscription from './CustomerPortalSubscription'
-
-interface CustomerPortalSubscriptionsProps {
-  organization: schemas['Organization']
-  subscriptions: schemas['CustomerSubscription'][]
-  products: schemas['CustomerProduct'][]
-  api: Client
-  customerSessionToken?: string
-}
-
-export const CustomerPortalSubscriptions = ({
-  organization,
-  subscriptions,
-  products,
-  api,
-  customerSessionToken,
-}: CustomerPortalSubscriptionsProps) => {
-  const activeSubscriptions = subscriptions.filter((s) => s.status === 'active')
-  const pastSubscriptions = subscriptions.filter((s) => s.status !== 'active')
-
-  return (
-    <div className="flex flex-col gap-y-8">
-      {activeSubscriptions.map((s) => (
-        <CurrentPeriodOverview key={s.id} subscription={s} />
-      ))}
-
-      <ActiveSubscriptionsOverview
-        customerSessionToken={customerSessionToken}
-        api={api}
-        organization={organization}
-        subscriptions={activeSubscriptions}
-        products={products}
-      />
-
-      <InactiveSubscriptionsOverview
-        customerSessionToken={customerSessionToken}
-        api={api}
-        organization={organization}
-        subscriptions={pastSubscriptions}
-        products={products}
-      />
-    </div>
-  )
-}
 
 interface SubscriptionsOverviewProps {
   organization: schemas['Organization']
@@ -62,7 +18,7 @@ interface SubscriptionsOverviewProps {
   customerSessionToken?: string
 }
 
-const ActiveSubscriptionsOverview = ({
+export const ActiveSubscriptionsOverview = ({
   subscriptions,
   products,
   api,
@@ -74,7 +30,7 @@ const ActiveSubscriptionsOverview = ({
 
   return (
     <div className="flex flex-col gap-y-4">
-      <h3 className="text-2xl">Subscriptions</h3>
+      <h3 className="text-xl">Subscriptions</h3>
       <div className="flex flex-col gap-y-4">
         {subscriptions.length > 0 ? (
           subscriptions.map((s) => (
@@ -102,7 +58,7 @@ interface SubscriptionsOverviewProps {
   subscriptions: schemas['CustomerSubscription'][]
 }
 
-const InactiveSubscriptionsOverview = ({
+export const InactiveSubscriptionsOverview = ({
   organization,
   subscriptions,
   api,
@@ -137,7 +93,7 @@ const InactiveSubscriptionsOverview = ({
   return (
     <div className="flex flex-col gap-y-4">
       <div className="flex flex-row items-center justify-between">
-        <h3 className="text-2xl">Inactive Subscriptions</h3>
+        <h3 className="text-xl">Inactive Subscriptions</h3>
       </div>
       <DataTable
         wrapperClassName={themingPreset.polar.table}

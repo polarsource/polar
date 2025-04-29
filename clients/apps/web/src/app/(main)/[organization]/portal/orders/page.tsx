@@ -4,13 +4,6 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
-const cacheConfig = {
-  cache: 'no-store' as RequestCache,
-  next: {
-    tags: ['customer_portal'],
-  },
-}
-
 export async function generateMetadata({
   params,
 }: {
@@ -57,69 +50,44 @@ export default async function Page({
   params,
   searchParams,
 }: {
-  params: { organization: string }
+  params: { organization: string; id: string }
   searchParams: { customer_session_token?: string }
 }) {
   const api = getServerSideAPI(searchParams.customer_session_token)
-  const { organization, products } = await getOrganizationOrNotFound(
+  const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,
   )
 
-  const [
-    {
-      data: subscriptions,
-      error: subscriptionsError,
-      response: subscriptionsResponse,
-    },
-    {
-      data: benefitGrants,
-      error: benefitGrantsError,
-      response: benefitGrantsResponse,
-    },
-  ] = await Promise.all([
-    api.GET('/v1/customer-portal/subscriptions/', {
-      params: {
-        query: {
-          organization_id: organization.id,
-          limit: 200,
-        },
+  const {
+    data: orders,
+    error,
+    response,
+  } = await api.GET('/v1/customer-portal/orders/', {
+    params: {
+      query: {
+        organization_id: organization.id,
+        limit: 200,
       },
-      ...cacheConfig,
-    }),
+    },
+    cache: 'no-cache',
+    next: {
+      tags: [`customer_portal`],
+    },
+  })
 
-    api.GET('/v1/customer-portal/benefit-grants/', {
-      params: {
-        query: {
-          organization_id: organization.id,
-          limit: 200,
-        },
-      },
-      ...cacheConfig,
-    }),
-  ])
-
-  if (
-    subscriptionsResponse.status === 401 ||
-    benefitGrantsResponse.status === 401
-  ) {
+  if (response.status === 401) {
     redirect(`/${organization.slug}/portal/request`)
   }
 
-  if (subscriptionsError) {
-    throw subscriptionsError
-  }
-
-  if (benefitGrantsError) {
-    throw benefitGrantsError
+  if (error) {
+    throw error
   }
 
   return (
     <ClientPage
       organization={organization}
-      products={products}
-      subscriptions={subscriptions}
-      benefitGrants={benefitGrants}
+      orders={orders}
       customerSessionToken={searchParams.customer_session_token}
     />
   )

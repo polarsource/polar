@@ -7,6 +7,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequenc
 from typing import Any, ParamSpec, TypeAlias, TypeVar
 
 import dramatiq
+import logfire
 import structlog
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -18,6 +19,7 @@ from dramatiq.brokers.redis import RedisBroker
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSessionMaker as AsyncSessionMakerType
 from polar.kit.db.postgres import create_async_sessionmaker
+from polar.logfire import instrument_sqlalchemy
 from polar.logging import Logger
 from polar.postgres import AsyncSession, create_async_engine
 from polar.redis import Redis, create_redis
@@ -48,6 +50,7 @@ class SQLAlchemyMiddleware(dramatiq.Middleware):
     ) -> None:
         self.engine = create_async_engine("worker")
         self.async_sessionmaker = create_async_sessionmaker(self.engine)
+        instrument_sqlalchemy(self.engine.sync_engine)
         self.logger.info("Created database engine")
 
     def after_worker_shutdown(
@@ -294,6 +297,36 @@ def _start_scheduler() -> None:
         scheduler.shutdown()
 
 
+class LogfireMiddleware(dramatiq.Middleware):
+    """Middleware to manage a Logfire span when handling a message."""
+
+    _logfire_span_stack: contextvars.ContextVar[contextlib.ExitStack] = (
+        contextvars.ContextVar(
+            "polar.logfire_span_stack", default=contextlib.ExitStack()
+        )
+    )
+
+    def before_process_message(
+        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
+    ) -> None:
+        logfire_span_stack = self._logfire_span_stack.get()
+        logfire_span = logfire_span_stack.enter_context(
+            logfire.span("TASK {actor}", actor=message.actor_name)
+        )
+
+    def after_process_message(
+        self,
+        broker: dramatiq.Broker,
+        message: dramatiq.Message[Any],
+        *,
+        result: Any | None = None,
+        exception: Exception | None = None,
+    ) -> None:
+        logfire_span_stack = self._logfire_span_stack.get()
+        logfire_span_stack.close()
+        self._logfire_span_stack.set(contextlib.ExitStack())
+
+
 class JSONEncoder(dramatiq.JSONEncoder):
     def encode(self, data: dict[str, Any]) -> bytes:
         def default(obj: Any) -> Any:
@@ -333,6 +366,7 @@ broker.add_middleware(SQLAlchemyMiddleware())
 broker.add_middleware(RedisMiddleware())
 broker.add_middleware(EnqueuedJobsMiddleware())
 broker.add_middleware(scheduler_middleware)
+broker.add_middleware(LogfireMiddleware())
 dramatiq.set_broker(broker)
 dramatiq.set_encoder(JSONEncoder())
 

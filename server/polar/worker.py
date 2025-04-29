@@ -304,7 +304,7 @@ class JSONEncoder(dramatiq.JSONEncoder):
         return json.dumps(data, separators=(",", ":"), default=default).encode("utf-8")
 
 
-redis_broker = RedisBroker(
+broker = RedisBroker(
     url=settings.redis_url,
     # Override default middlewares
     middleware=[
@@ -320,15 +320,20 @@ redis_broker = RedisBroker(
     ],
 )
 
-redis_broker.add_middleware(middleware.Retries(max_retries=settings.WORKER_MAX_RETRIES))
-redis_broker.add_middleware(middleware.AsyncIO())
-redis_broker.add_middleware(middleware.CurrentMessage())
-redis_broker.add_middleware(MaxRetriesMiddleware())
-redis_broker.add_middleware(SQLAlchemyMiddleware())
-redis_broker.add_middleware(RedisMiddleware())
-redis_broker.add_middleware(EnqueuedJobsMiddleware())
-redis_broker.add_middleware(scheduler_middleware)
-dramatiq.set_broker(redis_broker)
+broker.add_middleware(
+    middleware.Retries(
+        max_retries=settings.WORKER_MAX_RETRIES,
+        min_backoff=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
+    )
+)
+broker.add_middleware(middleware.AsyncIO())
+broker.add_middleware(middleware.CurrentMessage())
+broker.add_middleware(MaxRetriesMiddleware())
+broker.add_middleware(SQLAlchemyMiddleware())
+broker.add_middleware(RedisMiddleware())
+broker.add_middleware(EnqueuedJobsMiddleware())
+broker.add_middleware(scheduler_middleware)
+dramatiq.set_broker(broker)
 dramatiq.set_encoder(JSONEncoder())
 
 P = ParamSpec("P")
@@ -352,7 +357,7 @@ def actor(
             actor_name=actor_name,
             queue_name=queue_name,
             priority=priority,
-            broker=broker or redis_broker,
+            broker=broker,
             **options,
         )
 

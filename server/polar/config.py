@@ -51,6 +51,7 @@ class Settings(BaseSettings):
 
     WORKER_HEALTH_CHECK_INTERVAL: timedelta = timedelta(seconds=30)
     WORKER_MAX_RETRIES: int = 20
+    WORKER_MIN_BACKOFF_MILLISECONDS: int = 2_000
     WEBHOOK_MAX_RETRIES: int = 10
 
     SECRET: str = "super secret jwt secret"

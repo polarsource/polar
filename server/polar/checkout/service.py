@@ -945,13 +945,16 @@ class CheckoutService:
         if checkout is None:
             raise CheckoutDoesNotExist(checkout_id)
 
-        # Checkout is not confirmed: do nothing
-        # This is the case of an immediate failure, e.g. card declined
-        # In this case, the checkout is still open and the user can retry
-        if checkout.status != CheckoutStatus.confirmed:
+        # Checkout is in an unrecoverable status: do nothing
+        if checkout.status in {
+            CheckoutStatus.expired,
+            CheckoutStatus.succeeded,
+            CheckoutStatus.failed,
+        }:
             return checkout
 
-        checkout.status = CheckoutStatus.failed
+        # Put back checkout in open state so the customer can try another payment method
+        checkout.status = CheckoutStatus.open
         session.add(checkout)
 
         # Make sure to remove the Discount Redemptions

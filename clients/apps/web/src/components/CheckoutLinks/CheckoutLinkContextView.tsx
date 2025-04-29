@@ -10,8 +10,8 @@ import {
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import { Label } from '@polar-sh/ui/components/ui/label'
 import { useMemo, useState } from 'react'
+import { CheckoutLinkForm } from '../Checkout/CheckoutLinkForm'
 import { toast } from '../Toast/use-toast'
-import { CheckoutLinkForm } from './CheckoutLinkForm'
 
 export interface CheckoutLinkContextViewProps {
   organization: schemas['Organization']

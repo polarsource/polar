@@ -10,7 +10,7 @@ export const Status = ({
   return (
     <div
       className={twMerge(
-        'flex flex-row items-center justify-center rounded-md px-2 py-1 text-sm',
+        'flex flex-row items-center justify-center rounded-[0.5em] px-[0.7em] py-[0.3em] text-sm',
         className,
       )}
     >

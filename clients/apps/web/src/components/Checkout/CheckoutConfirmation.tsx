@@ -6,11 +6,13 @@ import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 
+import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { PolarCore } from '@polar-sh/sdk/core'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
 import { Stripe, loadStripe } from '@stripe/stripe-js'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import LogoType from '../Brand/LogoType'
 import { SpinnerNoMargin } from '../Shared/Spinner'
@@ -77,15 +79,20 @@ const StripeRequiresAction = ({
 
 export interface CheckoutConfirmationProps {
   checkout: CheckoutPublic
+  embed: boolean
+  theme?: 'light' | 'dark'
   customerSessionToken?: string
   disabled?: boolean
 }
 
 export const CheckoutConfirmation = ({
   checkout: _checkout,
+  embed,
+  theme,
   customerSessionToken,
   disabled,
 }: CheckoutConfirmationProps) => {
+  const router = useRouter()
   const client = useMemo(() => new PolarCore({ serverURL: getServerURL() }), [])
   const [checkout, setCheckout] = useState(_checkout)
   const { product, status, organization } = checkout
@@ -98,17 +105,39 @@ export const CheckoutConfirmation = ({
       setCheckout(value)
     }
   }, [client, checkout])
+  const checkoutConfirmedRedirect = useCheckoutConfirmedRedirect(embed, theme)
 
   const checkoutEvents = useCheckoutClientSSE(checkout.clientSecret)
   useEffect(() => {
-    if (disabled || status !== 'confirmed') {
+    if (disabled) {
       return
     }
+
+    // Checkout is back in open state, redirect to the checkout page
+    if (status === 'open') {
+      router.push(checkout.url)
+      return
+    }
+
+    if (status === 'succeeded') {
+      checkoutConfirmedRedirect(checkout, customerSessionToken)
+      return
+    }
+
     checkoutEvents.on('checkout.updated', updateCheckout)
     return () => {
       checkoutEvents.off('checkout.updated', updateCheckout)
     }
-  }, [disabled, checkout, status, checkoutEvents, updateCheckout])
+  }, [
+    disabled,
+    router,
+    checkout,
+    status,
+    checkoutEvents,
+    updateCheckout,
+    checkoutConfirmedRedirect,
+    customerSessionToken,
+  ])
 
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">

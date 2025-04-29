@@ -3,8 +3,8 @@ import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
 import { getServerURL } from '@/utils/api'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
-import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
 import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
+import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
 import { notFound, redirect } from 'next/navigation'
 
 export default async function Page({
@@ -43,6 +43,8 @@ export default async function Page({
     <CheckoutLayout checkout={checkout} embed={embed === 'true'} theme={theme}>
       <CheckoutConfirmation
         checkout={checkout}
+        embed={embed === 'true'}
+        theme={theme}
         customerSessionToken={customer_session_token}
       />
     </CheckoutLayout>

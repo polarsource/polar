@@ -139,7 +139,7 @@ services:
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions
     envVars:
-      - key: DRAMATIQ_PROM_PORT
+      - key: dramatiq_prom_port
         value: 10000
       - key: POLAR_POSTGRES_DATABASE
         fromDatabase:
@@ -319,7 +319,7 @@ services:
     numInstances: 1
     autoDeploy: false # deploys are triggered by github actions
     envVars:
-      - key: DRAMATIQ_PROM_PORT
+      - key: dramatiq_prom_port
         value: 10000
       - key: POLAR_POSTGRES_DATABASE
         value: polar_sandbox

@@ -1,6 +1,5 @@
 import {
   useCreateCheckoutLink,
-  useDeleteCheckoutLink,
   useDiscounts,
   useUpdateCheckoutLink,
 } from '@/hooks/queries'
@@ -29,8 +28,6 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useEffect, useMemo } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
-import { ConfirmModal } from '../Modal/ConfirmModal'
-import { useModal } from '../Modal/useModal'
 import ProductSelect from '../Products/ProductSelect'
 import { toast } from '../Toast/use-toast'
 
@@ -105,34 +102,6 @@ export const CheckoutLinkForm = ({
     useCreateCheckoutLink()
   const { mutateAsync: updateCheckoutLink, isPending: isUpdatePending } =
     useUpdateCheckoutLink()
-  const { mutateAsync: deleteCheckoutLink, isPending: isDeletePending } =
-    useDeleteCheckoutLink()
-
-  const onDelete = async () => {
-    if (checkoutLink) {
-      await deleteCheckoutLink(checkoutLink).then(({ error }) => {
-        if (error) {
-          toast({
-            title: 'Checkout Link Deletion Failed',
-            description: `Error deleting checkout link: ${error.detail}`,
-          })
-          return
-        }
-        toast({
-          title: 'Checkout Link Deleted',
-          description: `${
-            checkoutLink?.label ? checkoutLink.label : 'Unlabeled'
-          } Checkout Link  was deleted successfully`,
-        })
-      })
-    }
-  }
-
-  const {
-    isShown: isDeleteModalShown,
-    show: showDeleteModal,
-    hide: hideDeleteModal,
-  } = useModal()
 
   const handleValidationError = useCallback(
     (data: CheckoutLinkCreateForm, errors: schemas['ValidationError'][]) => {
@@ -470,30 +439,11 @@ export const CheckoutLinkForm = ({
               type="submit"
               loading={isCreatePending || isUpdatePending}
             >
-              {checkoutLink ? 'Save' : 'Create'}
+              {checkoutLink ? 'Save Link' : 'Create Link'}
             </Button>
-            {checkoutLink && (
-              <Button
-                variant="secondary"
-                onClick={showDeleteModal}
-                disabled={isDeletePending}
-                type="button"
-              >
-                Delete
-              </Button>
-            )}
           </div>
         </form>
       </Form>
-      <ConfirmModal
-        title="Confirm Deletion of Checkout Link"
-        description="It will cause 404 responses in case the link is still in use anywhere."
-        onConfirm={onDelete}
-        isShown={isDeleteModalShown}
-        hide={hideDeleteModal}
-        destructiveText="Delete"
-        destructive
-      />
     </>
   )
 }

@@ -330,20 +330,16 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
                 <ProductPriceLabel product={product} />
               )}
             </span>
-            <Button
-              size="sm"
-              variant="secondary"
+            <Link
+              href={`/dashboard/${organization.slug}/products/checkout-links?productId=${product.id}`}
               onClick={(e) => {
                 e.stopPropagation()
-                e.preventDefault()
-
-                router.push(
-                  `/dashboard/${organization.slug}/products/checkout-links?product_id=${product.id}`,
-                )
               }}
             >
-              Share
-            </Button>
+              <Button size="sm" variant="secondary">
+                Share
+              </Button>
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger className="focus:outline-none" asChild>
                 <Button

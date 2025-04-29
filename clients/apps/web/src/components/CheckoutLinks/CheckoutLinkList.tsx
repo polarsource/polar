@@ -1,11 +1,10 @@
-import Spinner from '@/components/Shared/Spinner'
-import { useInViewport } from '@/hooks/utils'
-
 import { CheckoutLinkManagementModal } from '@/components/CheckoutLinks/CheckoutLinkManagementModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import ProductSelect from '@/components/Products/ProductSelect'
+import Spinner from '@/components/Shared/Spinner'
 import { useCheckoutLinks } from '@/hooks/queries'
+import { useInViewport } from '@/hooks/utils'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { AddOutlined, ArrowDownward, ArrowUpward } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -71,10 +70,10 @@ export const CheckoutLinkList = ({
   }, [inViewport, hasNextPage, fetchNextPage])
 
   useEffect(() => {
-    if (checkoutLinks.length > 0) {
+    if (checkoutLinks.length > 0 && !selectedCheckoutLinkId) {
       setSelectedCheckoutLinkId(checkoutLinks[0].id)
     }
-  }, [checkoutLinks, setSelectedCheckoutLinkId])
+  }, [checkoutLinks, setSelectedCheckoutLinkId, selectedCheckoutLinkId])
 
   return (
     <div className="dark:divide-polar-800 flex h-full flex-col divide-y divide-gray-200">
@@ -162,6 +161,7 @@ export const CheckoutLinkList = ({
             organization={organization}
             onClose={(checkoutLink) => {
               setSelectedCheckoutLinkId(checkoutLink.id)
+              setProductIds([])
               hideCreateCheckoutLinkModal()
             }}
           />

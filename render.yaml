@@ -133,7 +133,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: standard
-    dockerCommand: uv run dramatiq -p 4 -t 4 run_worker
+    dockerCommand: uv run dramatiq -t 4 run_worker
     healthCheckPath: /
     region: ohio
     numInstances: 1
@@ -313,7 +313,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: standard
-    dockerCommand: uv run dramatiq -p 4 -t 4 run_worker
+    dockerCommand: uv run dramatiq -t 4 run_worker
     healthCheckPath: /
     region: ohio
     numInstances: 1

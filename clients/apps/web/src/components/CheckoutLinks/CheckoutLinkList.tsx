@@ -6,7 +6,12 @@ import Spinner from '@/components/Shared/Spinner'
 import { useCheckoutLinks } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import { AddOutlined, ArrowDownward, ArrowUpward } from '@mui/icons-material'
+import {
+  AddOutlined,
+  ArrowDownward,
+  ArrowUpward,
+  LinkOutlined,
+} from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   parseAsArrayOf,
@@ -16,6 +21,7 @@ import {
 } from 'nuqs'
 import { useContext, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { toast } from '../Toast/use-toast'
 
 export interface CheckoutLinkListProps {
   selectedCheckoutLinkId: string | null
@@ -130,7 +136,7 @@ export const CheckoutLinkList = ({
               )}
             >
               <div className="flex flex-row items-center gap-3 px-4 py-3">
-                <div className="flex min-w-0 flex-col gap-1">
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <div className="w-full truncate text-sm">
                     {checkoutLink.label ?? '—'}
                   </div>
@@ -140,6 +146,24 @@ export const CheckoutLinkList = ({
                     </div>
                   </div>
                 </div>
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  onClick={(event) => {
+                    event.stopPropagation()
+
+                    if (typeof navigator !== 'undefined') {
+                      navigator.clipboard.writeText(checkoutLink.url)
+
+                      toast({
+                        title: 'Checkout Link Copied',
+                        description: `Checkout Link was copied to clipboard`,
+                      })
+                    }
+                  }}
+                >
+                  <LinkOutlined fontSize="small" />
+                </Button>
               </div>
             </div>
           )

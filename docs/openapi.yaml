@@ -5950,7 +5950,7 @@
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import dateutil.parser\nimport polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.metrics.get(start_date=dateutil.parser.parse(\"2025-02-06\").date(), end_date=dateutil.parser.parse(\"2024-09-04\").date(), interval=polar_sdk.TimeInterval.WEEK, organization_id=[\n        \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ])\n\n    # Handle response\n    print(res)"
+            "source": "from datetime import date\nimport polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.metrics.get(start_date=date.fromisoformat(\"2025-02-06\"), end_date=date.fromisoformat(\"2024-09-04\"), interval=polar_sdk.TimeInterval.WEEK, organization_id=[\n        \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ])\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
@@ -8695,22 +8695,22 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Update(ctx, \"<value>\", components.CustomerUpdate{\n        ExternalID: polargo.String(\"usr_1337\"),\n        Email: polargo.String(\"customer@example.com\"),\n        Name: polargo.String(\"John Doe\"),\n        BillingAddress: &components.Address{\n            Country: \"FR\",\n        },\n        TaxID: []*components.CustomerUpdateTaxID{\n            polargo.Pointer(components.CreateCustomerUpdateTaxIDStr(\n                \"FR61954506077\",\n            )),\n            polargo.Pointer(components.CreateCustomerUpdateTaxIDStr(\n                \"eu_vat\",\n            )),\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Update(ctx, \"<value>\", components.CustomerUpdate{\n        Email: polargo.String(\"customer@example.com\"),\n        Name: polargo.String(\"John Doe\"),\n        BillingAddress: &components.Address{\n            Country: \"FR\",\n        },\n        TaxID: []*components.CustomerUpdateTaxID{\n            polargo.Pointer(components.CreateCustomerUpdateTaxIDStr(\n                \"FR61954506077\",\n            )),\n            polargo.Pointer(components.CreateCustomerUpdateTaxIDStr(\n                \"eu_vat\",\n            )),\n        },\n        ExternalID: polargo.String(\"usr_1337\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customers.update(id=\"<value>\", customer_update={\n        \"external_id\": \"usr_1337\",\n        \"email\": \"customer@example.com\",\n        \"name\": \"John Doe\",\n        \"billing_address\": {\n            \"country\": \"FR\",\n        },\n        \"tax_id\": [\n            \"FR61954506077\",\n            \"eu_vat\",\n        ],\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customers.update(id=\"<value>\", customer_update={\n        \"email\": \"customer@example.com\",\n        \"name\": \"John Doe\",\n        \"billing_address\": {\n            \"country\": \"FR\",\n        },\n        \"tax_id\": [\n            \"FR61954506077\",\n            \"eu_vat\",\n        ],\n        \"external_id\": \"usr_1337\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.update({\n    id: \"<value>\",\n    customerUpdate: {\n      externalId: \"usr_1337\",\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: {\n        country: \"FR\",\n      },\n      taxId: [\n        \"FR61954506077\",\n        \"eu_vat\",\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.update({\n    id: \"<value>\",\n    customerUpdate: {\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: {\n        country: \"FR\",\n      },\n      taxId: [\n        \"FR61954506077\",\n        \"eu_vat\",\n      ],\n      externalId: \"usr_1337\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$customerUpdate = new Components\\CustomerUpdate(\n    externalId: 'usr_1337',\n    email: 'customer@example.com',\n    name: 'John Doe',\n    billingAddress: new Components\\Address(\n        country: 'FR',\n    ),\n    taxId: [\n        'FR61954506077',\n        'eu_vat',\n    ],\n);\n\n$response = $sdk->customers->update(\n    id: '<value>',\n    customerUpdate: $customerUpdate\n\n);\n\nif ($response->customer !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$customerUpdate = new Components\\CustomerUpdate(\n    email: 'customer@example.com',\n    name: 'John Doe',\n    billingAddress: new Components\\Address(\n        country: 'FR',\n    ),\n    taxId: [\n        'FR61954506077',\n        'eu_vat',\n    ],\n    externalId: 'usr_1337',\n);\n\n$response = $sdk->customers->update(\n    id: '<value>',\n    customerUpdate: $customerUpdate\n\n);\n\nif ($response->customer !== null) {\n    // handle response\n}"
           }
         ]
       },
@@ -8920,7 +8920,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CustomerUpdate"
+                "$ref": "#/components/schemas/CustomerUpdateExternalID"
               }
             }
           }
@@ -8974,22 +8974,22 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.UpdateExternal(ctx, \"<id>\", components.CustomerUpdate{\n        ExternalID: polargo.String(\"usr_1337\"),\n        Email: polargo.String(\"customer@example.com\"),\n        Name: polargo.String(\"John Doe\"),\n        BillingAddress: &components.Address{\n            Country: \"US\",\n        },\n        TaxID: []*components.CustomerUpdateTaxID{\n            polargo.Pointer(components.CreateCustomerUpdateTaxIDStr(\n                \"FR61954506077\",\n            )),\n            polargo.Pointer(components.CreateCustomerUpdateTaxIDStr(\n                \"eu_vat\",\n            )),\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.UpdateExternal(ctx, \"<id>\", components.CustomerUpdateExternalID{\n        Email: polargo.String(\"customer@example.com\"),\n        Name: polargo.String(\"John Doe\"),\n        BillingAddress: &components.Address{\n            Country: \"US\",\n        },\n        TaxID: []*components.CustomerUpdateExternalIDTaxID{\n            polargo.Pointer(components.CreateCustomerUpdateExternalIDTaxIDStr(\n                \"FR61954506077\",\n            )),\n            polargo.Pointer(components.CreateCustomerUpdateExternalIDTaxIDStr(\n                \"eu_vat\",\n            )),\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customers.update_external(external_id=\"<id>\", customer_update={\n        \"external_id\": \"usr_1337\",\n        \"email\": \"customer@example.com\",\n        \"name\": \"John Doe\",\n        \"billing_address\": {\n            \"country\": \"US\",\n        },\n        \"tax_id\": [\n            \"FR61954506077\",\n            \"eu_vat\",\n        ],\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customers.update_external(external_id=\"<id>\", customer_update_external_id={\n        \"email\": \"customer@example.com\",\n        \"name\": \"John Doe\",\n        \"billing_address\": {\n            \"country\": \"US\",\n        },\n        \"tax_id\": [\n            \"FR61954506077\",\n            \"eu_vat\",\n        ],\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.updateExternal({\n    externalId: \"<id>\",\n    customerUpdate: {\n      externalId: \"usr_1337\",\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: {\n        country: \"US\",\n      },\n      taxId: [\n        \"FR61954506077\",\n        \"eu_vat\",\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.updateExternal({\n    externalId: \"<id>\",\n    customerUpdateExternalID: {\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: {\n        country: \"US\",\n      },\n      taxId: [\n        \"FR61954506077\",\n        \"eu_vat\",\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$customerUpdate = new Components\\CustomerUpdate(\n    externalId: 'usr_1337',\n    email: 'customer@example.com',\n    name: 'John Doe',\n    billingAddress: new Components\\Address(\n        country: 'US',\n    ),\n    taxId: [\n        'FR61954506077',\n        'eu_vat',\n    ],\n);\n\n$response = $sdk->customers->updateExternal(\n    externalId: '<id>',\n    customerUpdate: $customerUpdate\n\n);\n\nif ($response->customer !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$customerUpdateExternalID = new Components\\CustomerUpdateExternalID(\n    email: 'customer@example.com',\n    name: 'John Doe',\n    billingAddress: new Components\\Address(\n        country: 'US',\n    ),\n    taxId: [\n        'FR61954506077',\n        'eu_vat',\n    ],\n);\n\n$response = $sdk->customers->updateExternal(\n    externalId: '<id>',\n    customerUpdateExternalID: $customerUpdateExternalID\n\n);\n\nif ($response->customer !== null) {\n    // handle response\n}"
           }
         ]
       },
@@ -13971,7 +13971,7 @@
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import dateutil.parser\nimport polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.meters.quantities(id=\"<value>\", start_timestamp=dateutil.parser.isoparse(\"2023-09-17T00:45:34.608Z\"), end_timestamp=dateutil.parser.isoparse(\"2023-07-21T18:11:39.069Z\"), interval=polar_sdk.TimeInterval.HOUR)\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\nfrom polar_sdk.utils import parse_datetime\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.meters.quantities(id=\"<value>\", start_timestamp=parse_datetime(\"2023-09-17T00:45:34.608Z\"), end_timestamp=parse_datetime(\"2023-07-21T18:11:39.069Z\"), interval=polar_sdk.TimeInterval.HOUR)\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
@@ -25592,6 +25592,12 @@
       },
       "CustomerOrder": {
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -25610,11 +25616,6 @@
             ],
             "title": "Modified At",
             "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id"
           },
           "status": {
             "$ref": "#/components/schemas/OrderStatus",
@@ -25645,6 +25646,12 @@
             "title": "Net Amount",
             "description": "Amount in cents, after discounts but before taxes."
           },
+          "amount": {
+            "type": "integer",
+            "title": "Amount",
+            "description": "Amount in cents, after discounts but before taxes.",
+            "deprecated": true
+          },
           "tax_amount": {
             "type": "integer",
             "title": "Tax Amount",
@@ -25669,6 +25676,19 @@
             "type": "string",
             "title": "Currency"
           },
+          "billing_reason": {
+            "$ref": "#/components/schemas/OrderBillingReason"
+          },
+          "billing_address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Address"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "customer_id": {
             "type": "string",
             "format": "uuid4",
@@ -25678,6 +25698,18 @@
             "type": "string",
             "format": "uuid4",
             "title": "Product Id"
+          },
+          "discount_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount Id"
           },
           "subscription_id": {
             "anyOf": [
@@ -25690,6 +25722,18 @@
               }
             ],
             "title": "Subscription Id"
+          },
+          "checkout_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkout Id"
           },
           "user_id": {
             "type": "string",
@@ -25721,22 +25765,27 @@
         },
         "type": "object",
         "required": [
+          "id",
           "created_at",
           "modified_at",
-          "id",
           "status",
           "paid",
           "subtotal_amount",
           "discount_amount",
           "net_amount",
+          "amount",
           "tax_amount",
           "total_amount",
           "refunded_amount",
           "refunded_tax_amount",
           "currency",
+          "billing_reason",
+          "billing_address",
           "customer_id",
           "product_id",
+          "discount_id",
           "subscription_id",
+          "checkout_id",
           "user_id",
           "product",
           "subscription",
@@ -27832,6 +27881,78 @@
             "title": "Metadata",
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email",
+            "description": "The email address of the customer. This must be unique within the organization.",
+            "examples": [
+              "customer@example.com"
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "The name of the customer.",
+            "examples": [
+              "John Doe"
+            ]
+          },
+          "billing_address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Address"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "prefixItems": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TaxIDFormat"
+                  }
+                ],
+                "type": "array",
+                "maxItems": 2,
+                "minItems": 2,
+                "examples": [
+                  [
+                    "911144442",
+                    "us_ein"
+                  ],
+                  [
+                    "FR61954506077",
+                    "eu_vat"
+                  ]
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
           "external_id": {
             "anyOf": [
               {
@@ -27846,6 +27967,40 @@
             "examples": [
               "usr_1337"
             ]
+          }
+        },
+        "type": "object",
+        "title": "CustomerUpdate"
+      },
+      "CustomerUpdateExternalID": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "email": {
             "anyOf": [
@@ -27921,7 +28076,7 @@
           }
         },
         "type": "object",
-        "title": "CustomerUpdate"
+        "title": "CustomerUpdateExternalID"
       },
       "Discount": {
         "oneOf": [
@@ -31683,14 +31838,60 @@
             "title": "Label"
           },
           "conditions": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
             "type": "object",
+            "maxProperties": 50,
             "title": "Conditions",
-            "default": {}
+            "description": "Key-value object allowing you to set conditions that must match when validating the license key.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "meta": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
             "type": "object",
+            "maxProperties": 50,
             "title": "Meta",
-            "default": {}
+            "description": "Key-value object allowing you to store additional information about the activation\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           }
         },
         "type": "object",
@@ -31718,6 +31919,22 @@
             "title": "Label"
           },
           "meta": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
             "type": "object",
             "title": "Meta"
           },
@@ -31767,6 +31984,22 @@
             "title": "Label"
           },
           "meta": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
             "type": "object",
             "title": "Meta"
           },
@@ -32018,7 +32251,27 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
           },
           "organization_id": {
             "type": "string",
@@ -32113,6 +32366,8 @@
         "type": "object",
         "required": [
           "id",
+          "created_at",
+          "modified_at",
           "organization_id",
           "customer_id",
           "customer",
@@ -32296,9 +32551,32 @@
             "title": "Increment Usage"
           },
           "conditions": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
             "type": "object",
+            "maxProperties": 50,
             "title": "Conditions",
-            "default": {}
+            "description": "Key-value object allowing you to set conditions that must match when validating the license key.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           }
         },
         "type": "object",
@@ -32313,7 +32591,27 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
           },
           "organization_id": {
             "type": "string",
@@ -32415,6 +32713,8 @@
         "type": "object",
         "required": [
           "id",
+          "created_at",
+          "modified_at",
           "organization_id",
           "customer_id",
           "customer",
@@ -34094,6 +34394,12 @@
       },
       "Order": {
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -34112,57 +34418,6 @@
             ],
             "title": "Modified At",
             "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the object."
-          },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Metadata"
-          },
-          "custom_field_data": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Custom Field Data",
-            "description": "Key-value object storing custom field values."
           },
           "status": {
             "$ref": "#/components/schemas/OrderStatus",
@@ -34282,6 +34537,51 @@
             ],
             "title": "Checkout Id"
           },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Metadata"
+          },
+          "custom_field_data": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Custom Field Data",
+            "description": "Key-value object storing custom field values."
+          },
           "customer": {
             "$ref": "#/components/schemas/OrderCustomer"
           },
@@ -34340,10 +34640,9 @@
         },
         "type": "object",
         "required": [
+          "id",
           "created_at",
           "modified_at",
-          "id",
-          "metadata",
           "status",
           "paid",
           "subtotal_amount",
@@ -34362,6 +34661,7 @@
           "discount_id",
           "subscription_id",
           "checkout_id",
+          "metadata",
           "customer",
           "user_id",
           "product",
@@ -39003,7 +39303,27 @@
           "id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Id"
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
           },
           "organization_id": {
             "type": "string",
@@ -39108,6 +39428,8 @@
         "type": "object",
         "required": [
           "id",
+          "created_at",
+          "modified_at",
           "organization_id",
           "customer_id",
           "customer",

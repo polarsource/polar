@@ -20,6 +20,11 @@ import CheckoutBenefits from './CheckoutBenefits'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 
+const isIntegrationError = (
+  err: any,
+): err is { name: 'IntegrationError'; message: string } =>
+  err.name === 'IntegrationError'
+
 const StripeRequiresAction = ({
   stripe,
   checkout,
@@ -43,6 +48,14 @@ const StripeRequiresAction = ({
             clientSecret: intent_client_secret,
           })
           setSuccess(true)
+        } catch (err) {
+          // Case where the intent is already confirmed, but we didn't receive the webhook update yet
+          if (
+            isIntegrationError(err) &&
+            err.message.includes('requires_action')
+          ) {
+            setSuccess(true)
+          }
         } finally {
           setPendingHandling(false)
         }

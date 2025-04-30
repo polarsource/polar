@@ -925,6 +925,10 @@ class CheckoutService:
             await order_service.create_from_checkout(session, checkout, payment_intent)
 
         checkout.status = CheckoutStatus.succeeded
+        checkout.payment_processor_metadata = {
+            **checkout.payment_processor_metadata,
+            "intent_status": payment_intent.status,
+        }
         session.add(checkout)
 
         await self._after_checkout_updated(session, checkout)
@@ -955,6 +959,10 @@ class CheckoutService:
 
         # Put back checkout in open state so the customer can try another payment method
         checkout.status = CheckoutStatus.open
+        payment_processor_metadata = checkout.payment_processor_metadata
+        payment_processor_metadata.pop("intent_status", None)
+        payment_processor_metadata.pop("intent_client_secret", None)
+        checkout.payment_processor_metadata = payment_processor_metadata
         session.add(checkout)
 
         # Make sure to remove the Discount Redemptions

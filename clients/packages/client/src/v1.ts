@@ -8240,6 +8240,12 @@ export interface components {
         /** CustomerOrder */
         CustomerOrder: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -8250,11 +8256,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             */
-            id: string;
             status: components["schemas"]["OrderStatus"];
             /**
              * Paid
@@ -8277,6 +8278,12 @@ export interface components {
              */
             net_amount: number;
             /**
+             * Amount
+             * @deprecated
+             * @description Amount in cents, after discounts but before taxes.
+             */
+            amount: number;
+            /**
              * Tax Amount
              * @description Sales tax amount in cents.
              */
@@ -8298,6 +8305,8 @@ export interface components {
             refunded_tax_amount: number;
             /** Currency */
             currency: string;
+            billing_reason: components["schemas"]["OrderBillingReason"];
+            billing_address: components["schemas"]["Address"] | null;
             /**
              * Customer Id
              * Format: uuid4
@@ -8308,8 +8317,12 @@ export interface components {
              * Format: uuid4
              */
             product_id: string;
+            /** Discount Id */
+            discount_id: string | null;
             /** Subscription Id */
             subscription_id: string | null;
+            /** Checkout Id */
+            checkout_id: string | null;
             /**
              * User Id
              * Format: uuid4
@@ -11222,8 +11235,20 @@ export interface components {
             /**
              * Id
              * Format: uuid4
+             * @description The ID of the object.
              */
             id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
             /**
              * Organization Id
              * Format: uuid4
@@ -11333,8 +11358,20 @@ export interface components {
             /**
              * Id
              * Format: uuid4
+             * @description The ID of the object.
              */
             id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
             /**
              * Organization Id
              * Format: uuid4
@@ -12263,6 +12300,12 @@ export interface components {
         /** Order */
         Order: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -12273,23 +12316,6 @@ export interface components {
              * @description Last modification timestamp of the object.
              */
             modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the object.
-             */
-            id: string;
-            /** Metadata */
-            metadata: {
-                [key: string]: string | number | boolean;
-            };
-            /**
-             * Custom Field Data
-             * @description Key-value object storing custom field values.
-             */
-            custom_field_data?: {
-                [key: string]: string | number | boolean | null;
-            };
             status: components["schemas"]["OrderStatus"];
             /**
              * Paid
@@ -12357,6 +12383,17 @@ export interface components {
             subscription_id: string | null;
             /** Checkout Id */
             checkout_id: string | null;
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Custom Field Data
+             * @description Key-value object storing custom field values.
+             */
+            custom_field_data?: {
+                [key: string]: string | number | boolean | null;
+            };
             customer: components["schemas"]["OrderCustomer"];
             /**
              * User Id
@@ -15032,8 +15069,20 @@ export interface components {
             /**
              * Id
              * Format: uuid4
+             * @description The ID of the object.
              */
             id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
             /**
              * Organization Id
              * Format: uuid4

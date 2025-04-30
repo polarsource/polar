@@ -18,7 +18,7 @@ from polar.kit.metadata import (
     MetadataKey,
     MetadataValue,
 )
-from polar.kit.schemas import Schema
+from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.kit.utils import generate_uuid, utc_now
 from polar.models.license_key import LicenseKeyStatus
 
@@ -118,8 +118,7 @@ class LicenseKeyUser(Schema):
     avatar_url: str | None = Field(None)
 
 
-class LicenseKeyRead(Schema):
-    id: UUID4
+class LicenseKeyRead(TimestampedSchema, IDSchema):
     organization_id: UUID4
     user_id: SkipJsonSchema[UUID4] = Field(
         validation_alias=AliasChoices(

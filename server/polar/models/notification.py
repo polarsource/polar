@@ -20,7 +20,9 @@ class Notification(RecordModel):
     user_id: Mapped[UUID] = mapped_column(Uuid, nullable=True)
     email_addr: Mapped[str] = mapped_column(String, nullable=True)
 
-    organization_id: Mapped[UUID] = mapped_column(Uuid, nullable=True, default=None)
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid, nullable=True, default=None, index=True
+    )
 
     type: Mapped[str] = mapped_column(String, nullable=False)
 

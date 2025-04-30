@@ -74,9 +74,7 @@ class Organization(RecordModel):
     )
 
     account_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        ForeignKey("accounts.id", ondelete="set null"),
-        nullable=True,
+        Uuid, ForeignKey("accounts.id", ondelete="set null"), nullable=True
     )
 
     @declared_attr

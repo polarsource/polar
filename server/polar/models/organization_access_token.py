@@ -24,7 +24,7 @@ class OrganizationAccessToken(RecordModel):
     )
 
     organization_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("organizations.id"), nullable=False
+        Uuid, ForeignKey("organizations.id"), nullable=False, index=True
     )
 
     @declared_attr

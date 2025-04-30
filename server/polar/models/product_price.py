@@ -85,9 +85,7 @@ class ProductPrice(RecordModel):
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     product_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("products.id", ondelete="cascade"),
-        nullable=False,
+        Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=False, index=True
     )
 
     @declared_attr

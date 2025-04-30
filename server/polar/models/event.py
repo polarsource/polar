@@ -137,6 +137,7 @@ class Event(Model, MetadataMixin):
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=False,
+        index=True,
     )
 
     @declared_attr

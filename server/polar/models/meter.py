@@ -32,6 +32,7 @@ class Meter(RecordModel, MetadataMixin):
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=False,
+        index=True,
     )
 
     @declared_attr

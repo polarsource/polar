@@ -24,9 +24,7 @@ OrderNotFound = {
 }
 
 
-class OrderBase(
-    CustomFieldDataOutputMixin, MetadataOutputMixin, IDSchema, TimestampedSchema
-):
+class OrderBase(TimestampedSchema, IDSchema):
     status: OrderStatus = Field(examples=["paid"])
     paid: bool = Field(
         description="Whether the order has been paid for.", examples=[True]
@@ -143,7 +141,7 @@ class OrderItemSchema(IDSchema, TimestampedSchema):
     product_price_id: UUID4 | None = Field(description="Associated price ID, if any.")
 
 
-class Order(OrderBase):
+class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
     customer: OrderCustomer
     user_id: UUID4 = Field(
         validation_alias=AliasChoices(

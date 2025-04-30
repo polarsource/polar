@@ -9321,10 +9321,46 @@ export interface components {
                 [key: string]: string | number | boolean;
             };
             /**
+             * Email
+             * @description The email address of the customer. This must be unique within the organization.
+             */
+            email?: string | null;
+            /**
+             * Name
+             * @description The name of the customer.
+             */
+            name?: string | null;
+            billing_address?: components["schemas"]["Address"] | null;
+            /** Tax Id */
+            tax_id?: [
+                string,
+                components["schemas"]["TaxIDFormat"]
+            ] | null;
+            /**
              * External Id
              * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
              */
             external_id?: string | null;
+        };
+        /** CustomerUpdateExternalID */
+        CustomerUpdateExternalID: {
+            /**
+             * Metadata
+             * @description Key-value object allowing you to store additional information.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
+             */
+            metadata?: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Email
              * @description The email address of the customer. This must be unique within the organization.
@@ -20518,7 +20554,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CustomerUpdate"];
+                "application/json": components["schemas"]["CustomerUpdateExternalID"];
             };
         };
         responses: {

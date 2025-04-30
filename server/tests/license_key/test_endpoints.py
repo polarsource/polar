@@ -234,7 +234,7 @@ class TestLicenseKeyEndpoints:
         assert lk
 
         activate = await client.post(
-            "/v1/users/license-keys/activate",
+            "/v1/customer-portal/license-keys/activate",
             json={
                 "key": lk.key,
                 "organization_id": str(organization.id),

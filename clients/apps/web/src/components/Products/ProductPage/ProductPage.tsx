@@ -17,7 +17,8 @@ import { ProductPageContextView } from './ProductPageContextView'
 
 const ProductTypeDisplayColor: Record<string, string> = {
   subscription: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950',
-  one_time: 'bg-blue-100 text-blue-400 dark:bg-blue-950',
+  one_time:
+    'bg-indigo-100 text-indigo-500 dark:bg-indigo-950 dark:text-indigo-400',
 }
 
 export interface ProductPageProps {

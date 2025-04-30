@@ -61,12 +61,7 @@ class CustomerCreate(MetadataInputMixin, Schema):
     )
 
 
-class CustomerUpdate(MetadataInputMixin, Schema):
-    external_id: str | None = Field(
-        default=None,
-        description=_external_id_description,
-        examples=[_external_id_example],
-    )
+class CustomerUpdateBase(MetadataInputMixin, Schema):
     email: EmailStrDNS | None = Field(
         default=None, description=_email_description, examples=[_email_example]
     )
@@ -75,6 +70,17 @@ class CustomerUpdate(MetadataInputMixin, Schema):
     )
     billing_address: Address | None = None
     tax_id: TaxID | None = None
+
+
+class CustomerUpdate(CustomerUpdateBase):
+    external_id: str | None = Field(
+        default=None,
+        description=_external_id_description,
+        examples=[_external_id_example],
+    )
+
+
+class CustomerUpdateExternalID(CustomerUpdateBase): ...
 
 
 class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):

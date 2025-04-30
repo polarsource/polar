@@ -242,6 +242,18 @@ class TestUpdate:
         assert customer.external_id == "123"
         assert customer.name == "John"
 
+    async def test_valid_same_external_id(
+        self, session: AsyncSession, customer_external_id: Customer
+    ) -> None:
+        customer = await customer_service.update(
+            session,
+            customer_external_id,
+            CustomerUpdate(external_id=customer_external_id.external_id),
+        )
+        await session.flush()
+
+        assert customer.external_id == customer_external_id.external_id
+
 
 @pytest.mark.asyncio
 class TestDelete:

@@ -11017,14 +11017,38 @@ export interface components {
             label: string;
             /**
              * Conditions
-             * @default {}
+             * @description Key-value object allowing you to set conditions that must match when validating the license key.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
              */
-            conditions: Record<string, never>;
+            conditions?: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Meta
-             * @default {}
+             * @description Key-value object allowing you to store additional information about the activation
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
              */
-            meta: Record<string, never>;
+            meta?: {
+                [key: string]: string | number | boolean;
+            };
         };
         /** LicenseKeyActivationBase */
         LicenseKeyActivationBase: {
@@ -11041,7 +11065,9 @@ export interface components {
             /** Label */
             label: string;
             /** Meta */
-            meta: Record<string, never>;
+            meta: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Created At
              * Format: date-time
@@ -11065,7 +11091,9 @@ export interface components {
             /** Label */
             label: string;
             /** Meta */
-            meta: Record<string, never>;
+            meta: {
+                [key: string]: string | number | boolean;
+            };
             /**
              * Created At
              * Format: date-time
@@ -11248,9 +11276,21 @@ export interface components {
             increment_usage?: number | null;
             /**
              * Conditions
-             * @default {}
+             * @description Key-value object allowing you to set conditions that must match when validating the license key.
+             *
+             *     The key must be a string with a maximum length of **40 characters**.
+             *     The value must be either:
+             *
+             *     * A string with a maximum length of **500 characters**
+             *     * An integer
+             *     * A floating-point number
+             *     * A boolean
+             *
+             *     You can store up to **50 key-value pairs**.
              */
-            conditions: Record<string, never>;
+            conditions?: {
+                [key: string]: string | number | boolean;
+            };
         };
         /** LicenseKeyWithActivations */
         LicenseKeyWithActivations: {

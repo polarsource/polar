@@ -17,12 +17,12 @@ class MetadataMixin:
     user_metadata: Mapped[MetadataColumn]
 
 
-_MAXIMUM_KEYS = 50
+MAXIMUM_KEYS = 50
 _MINIMUM_KEY_LENGTH = 1
 _MAXIMUM_KEY_LENGTH = 40
 _MINIMUM_VALUE_LENGTH = 1
 _MAXIMUM_VALUE_LENGTH = 500
-_MetadataKey = Annotated[
+MetadataKey = Annotated[
     str,
     StringConstraints(min_length=_MINIMUM_KEY_LENGTH, max_length=_MAXIMUM_KEY_LENGTH),
 ]
@@ -32,7 +32,7 @@ _MetadataValueString = Annotated[
         min_length=_MINIMUM_VALUE_LENGTH, max_length=_MAXIMUM_VALUE_LENGTH
     ),
 ]
-_MetadataValue = _MetadataValueString | int | float | bool
+MetadataValue = _MetadataValueString | int | float | bool
 
 METADATA_DESCRIPTION = inspect.cleandoc(
     f"""
@@ -46,7 +46,7 @@ METADATA_DESCRIPTION = inspect.cleandoc(
     * A floating-point number
     * A boolean
 
-    You can store up to **{_MAXIMUM_KEYS} key-value pairs**.
+    You can store up to **{MAXIMUM_KEYS} key-value pairs**.
     """
 )
 _description = METADATA_DESCRIPTION.format(
@@ -55,8 +55,8 @@ _description = METADATA_DESCRIPTION.format(
 
 
 MetadataField = Annotated[
-    dict[_MetadataKey, _MetadataValue],
-    Field(max_length=_MAXIMUM_KEYS, description=_description),
+    dict[MetadataKey, MetadataValue],
+    Field(max_length=MAXIMUM_KEYS, description=_description),
 ]
 
 

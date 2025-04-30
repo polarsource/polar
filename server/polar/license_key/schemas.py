@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Literal, Self
+from typing import Annotated, Literal, Self
 
 from dateutil.relativedelta import relativedelta
 from pydantic import UUID4, AliasChoices, AliasPath, Field
@@ -12,6 +12,12 @@ from polar.benefit.strategies.license_keys.properties import (
 )
 from polar.customer.schemas.customer import CustomerBase
 from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.kit.metadata import (
+    MAXIMUM_KEYS,
+    METADATA_DESCRIPTION,
+    MetadataKey,
+    MetadataValue,
+)
 from polar.kit.schemas import Schema
 from polar.kit.utils import generate_uuid, utc_now
 from polar.models.license_key import LicenseKeyStatus
@@ -35,6 +41,34 @@ UnauthorizedResponse = {
 # RESPONSES
 ###############################################################################
 
+ConditionsField = Annotated[
+    dict[MetadataKey, MetadataValue],
+    Field(
+        default_factory=dict,
+        max_length=MAXIMUM_KEYS,
+        description=METADATA_DESCRIPTION.format(
+            heading=(
+                "Key-value object allowing you to set conditions "
+                "that must match when validating the license key."
+            )
+        ),
+    ),
+]
+
+MetaField = Annotated[
+    dict[MetadataKey, MetadataValue],
+    Field(
+        default_factory=dict,
+        max_length=MAXIMUM_KEYS,
+        description=METADATA_DESCRIPTION.format(
+            heading=(
+                "Key-value object allowing you to store additional information "
+                "about the activation"
+            )
+        ),
+    ),
+]
+
 
 class LicenseKeyValidate(Schema):
     key: str
@@ -43,15 +77,15 @@ class LicenseKeyValidate(Schema):
     benefit_id: BenefitID | None = None
     customer_id: UUID4 | None = None
     increment_usage: int | None = None
-    conditions: dict[str, Any] = {}
+    conditions: ConditionsField
 
 
 class LicenseKeyActivate(Schema):
     key: str
     organization_id: UUID4
     label: str
-    conditions: dict[str, Any] = {}
-    meta: dict[str, Any] = {}
+    conditions: ConditionsField
+    meta: MetaField
 
 
 class LicenseKeyDeactivate(Schema):
@@ -123,7 +157,7 @@ class LicenseKeyActivationBase(Schema):
     id: UUID4
     license_key_id: UUID4
     label: str
-    meta: dict[str, Any]
+    meta: dict[str, str | int | float | bool]
     created_at: datetime
     modified_at: datetime | None
 

@@ -84,9 +84,12 @@ const ClientPage = ({
                     <FormControl>
                       <InputOTP
                         maxLength={6}
-                        pattern="^[A-Z0-9]+$"
+                        pattern="^[a-zA-Z0-9]+$"
                         inputMode="text"
                         {...field}
+                        onChange={(value) =>
+                          field.onChange(value.toUpperCase())
+                        }
                       >
                         <InputOTPGroup>
                           {Array.from({ length: 6 }).map((_, index) => (

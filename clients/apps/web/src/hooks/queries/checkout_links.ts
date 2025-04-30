@@ -41,7 +41,7 @@ export const useCheckoutLinks = (
 
 export const useCheckoutLink = (id?: string | null) =>
   useQuery({
-    queryKey: ['checkout_link', { id }],
+    queryKey: ['checkout_link', id],
     queryFn: () =>
       unwrap(
         api.GET('/v1/checkout-links/{id}', {
@@ -85,14 +85,45 @@ export const useUpdateCheckoutLink = () =>
         body: variables.body,
       })
     },
-    onSuccess: (result, _variables, _ctx) => {
+    onSuccess: (result, variables, _ctx) => {
       if (result.error) {
         return
       }
 
-      queryClient.invalidateQueries({
-        queryKey: ['checkout_links'],
-      })
+      queryClient.setQueriesData<{
+        pages: schemas['ListResource_CheckoutLink_'][]
+        pageParams: unknown[]
+      }>(
+        {
+          queryKey: [
+            'checkout_links',
+            { organizationId: result.data.organization_id },
+          ],
+        },
+        (old) => {
+          if (!old) {
+            return {
+              pages: [],
+              pageParams: [],
+            }
+          }
+
+          return {
+            pages: old.pages.map((page) => ({
+              ...page,
+              items: page.items.map((item) =>
+                item.id === variables.id ? result.data : item,
+              ),
+            })),
+            pageParams: old.pageParams,
+          }
+        },
+      )
+
+      queryClient.setQueryData<schemas['CheckoutLink']>(
+        ['checkout_link', variables.id],
+        result.data,
+      )
     },
   })
 
@@ -111,13 +142,37 @@ export const useDeleteCheckoutLink = () =>
       if (result.error) {
         return
       }
+
+      queryClient.setQueriesData<{
+        pages: schemas['ListResource_CheckoutLink_'][]
+        pageParams: unknown[]
+      }>(
+        {
+          queryKey: [
+            'checkout_links',
+            { organizationId: variables.organization_id },
+          ],
+        },
+        (old) => {
+          if (!old) {
+            return {
+              pages: [],
+              pageParams: [],
+            }
+          }
+
+          return {
+            pages: old.pages.map((page) => ({
+              ...page,
+              items: page.items.filter((item) => item.id !== variables.id),
+            })),
+            pageParams: old.pageParams,
+          }
+        },
+      )
+
       queryClient.invalidateQueries({
-        queryKey: [
-          'checkout_links',
-          {
-            organizationId: variables.organization_id,
-          },
-        ],
+        queryKey: ['checkout_link', variables.id],
       })
     },
   })

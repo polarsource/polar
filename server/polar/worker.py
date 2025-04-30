@@ -9,7 +9,6 @@ from typing import Any, ParamSpec, TypeAlias, TypeVar
 import dramatiq
 import logfire
 import structlog
-from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 from dramatiq import actor as _actor
 from dramatiq import middleware
@@ -271,10 +270,6 @@ class SchedulerMiddleware(dramatiq.Middleware):
     def actor_options(self) -> set[str]:
         return {"cron_trigger"}
 
-    @property
-    def forks(self) -> list[Callable[..., Any]]:
-        return [_start_scheduler]
-
     def after_declare_actor(
         self, broker: dramatiq.Broker, actor: dramatiq.Actor[Any, Any]
     ) -> None:
@@ -283,18 +278,6 @@ class SchedulerMiddleware(dramatiq.Middleware):
 
 
 scheduler_middleware = SchedulerMiddleware()
-
-
-def _start_scheduler() -> None:
-    scheduler = BlockingScheduler()
-
-    for func, cron_trigger in scheduler_middleware.cron_triggers:
-        scheduler.add_job(func, cron_trigger)
-
-    try:
-        scheduler.start()
-    except KeyboardInterrupt:
-        scheduler.shutdown()
 
 
 class LogfireMiddleware(dramatiq.Middleware):

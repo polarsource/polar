@@ -558,7 +558,7 @@ wheels = [
 
 [[package]]
 name = "githubkit"
-version = "0.12.9"
+version = "0.12.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -567,9 +567,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f2/4b/70a54df188a05e4d3fef4854e75195ecd3a3addd29b5b254065774785098/githubkit-0.12.9.tar.gz", hash = "sha256:3f44fa6f488846d1e591c45c893858e06ae386bce37f1307077a6146c4e05103", size = 1879041, upload_time = "2025-03-22T04:44:40.721Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6b/55/8af7b60977bb23ea8573c5783fe0efe25d92d8ed2a1b4625aa550904831b/githubkit-0.12.12.tar.gz", hash = "sha256:638d736728457d3412c60d82541709e323e2f2beeab0eb256e87ce5f1024d2e8", size = 2109399, upload_time = "2025-04-26T04:58:39.632Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1d/ac/eccb81318f2f0be1adcc6e918329f9a2944934d7cf81ec392d7fd9a1cace/githubkit-0.12.9-py3-none-any.whl", hash = "sha256:5eb3e27bf4b1f64090d389f55c524ebc5edb464beffaa7eb1beb058d43a4be13", size = 5441889, upload_time = "2025-03-22T04:44:38.529Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/26/eb92391004efcdd9bc2a2349bbd37b5fba4974fb39f98655bfb5c4690284/githubkit-0.12.12-py3-none-any.whl", hash = "sha256:c505019ae4e4b30365c628941d03e1fcb0c0636e0ef9aa039a649246e3de1670", size = 5697349, upload_time = "2025-04-26T04:58:37.473Z" },
 ]
 
 [[package]]
@@ -1369,7 +1369,7 @@ requires-dist = [
     { name = "email-validator", specifier = ">=2.1.0.post1" },
     { name = "exponent-server-sdk", specifier = ">=2.1.0" },
     { name = "fastapi", specifier = ">=0.115.2" },
-    { name = "githubkit", specifier = "==0.12.9" },
+    { name = "githubkit", specifier = "==0.12.12" },
     { name = "greenlet", specifier = ">=3.1.1" },
     { name = "httpx", specifier = ">=0.23.0" },
     { name = "httpx-oauth", specifier = ">=0.16.0" },

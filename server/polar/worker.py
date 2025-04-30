@@ -18,7 +18,7 @@ from dramatiq.brokers.redis import RedisBroker
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSessionMaker as AsyncSessionMakerType
 from polar.kit.db.postgres import create_async_sessionmaker
-from polar.logfire import instrument_sqlalchemy
+from polar.logfire import instrument_httpx, instrument_sqlalchemy
 from polar.logging import Logger
 from polar.postgres import AsyncSession, create_async_engine
 from polar.redis import Redis, create_redis
@@ -289,12 +289,19 @@ class LogfireMiddleware(dramatiq.Middleware):
         )
     )
 
+    def before_worker_boot(
+        self, broker: dramatiq.Broker, worker: dramatiq.Worker
+    ) -> None:
+        instrument_httpx()
+
     def before_process_message(
         self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
     ) -> None:
         logfire_span_stack = self._logfire_span_stack.get()
         logfire_span = logfire_span_stack.enter_context(
-            logfire.span("TASK {actor}", actor=message.actor_name)
+            logfire.span(
+                "TASK {actor}", actor=message.actor_name, message=message.asdict()
+            )
         )
 
     def after_process_message(

@@ -30,9 +30,8 @@ class DramatiqIntegration(_DramatiqIntegration):
 def configure_sentry() -> None:
     sentry_sdk.init(
         dsn=settings.SENTRY_DSN,
-        enable_tracing=False,
-        traces_sample_rate=0.1,
-        profiles_sample_rate=0.1,
+        traces_sample_rate=0,
+        profiles_sample_rate=0,
         release=os.environ.get("RELEASE_VERSION", "development"),
         server_name=os.environ.get("RENDER_INSTANCE_ID", "localhost"),
         environment=settings.ENV,

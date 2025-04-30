@@ -75,7 +75,11 @@ const CountryPicker = ({
             textValue={country.name}
             className={itemClassName}
           >
-            {emoji} {country.name}
+            {/* Wrap in div to workaround an issue with browser automatic translation
+              https://github.com/shadcn-ui/ui/issues/852 */}
+            <div>
+              {emoji} {country.name}
+            </div>
           </SelectItem>
         ))}
       </SelectContent>

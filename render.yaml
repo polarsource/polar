@@ -79,60 +79,6 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: standard
-    dockerCommand: uv run supervisord -c supervisord.worker.conf
-    healthCheckPath: /healthz
-    region: ohio
-    numInstances: 1
-    autoDeploy: false # deploys are triggered by github actions
-    envVars:
-      - key: POLAR_POSTGRES_DATABASE
-        fromDatabase:
-          name: db
-          property: database
-      - key: POLAR_POSTGRES_HOST
-        fromDatabase:
-          name: db
-          property: host
-      - key: POLAR_POSTGRES_PORT
-        fromDatabase:
-          name: db
-          property: port
-      - key: POLAR_POSTGRES_PWD
-        fromDatabase:
-          name: db
-          property: password
-      - key: POLAR_POSTGRES_USER
-        fromDatabase:
-          name: db
-          property: user
-      - key: POLAR_REDIS_HOST
-        fromService:
-          type: redis
-          name: redis
-          property: host
-      - key: POLAR_REDIS_PORT
-        fromService:
-          type: redis
-          name: redis
-          property: port
-      - key: POLAR_REDIS_DB
-        value: 0
-      - fromGroup: google-production
-      - fromGroup: github-production
-      - fromGroup: backend-production
-      - fromGroup: stripe-production
-      - fromGroup: logfire-worker
-
-  # Worker
-  - type: web # Use a web service to allow health checks
-    name: worker-dramatiq
-    runtime: image
-    image:
-      url: ghcr.io/polarsource/polar:latest
-      creds:
-        fromRegistryCreds:
-          name: Registry Credentials (by fvoron)
-    plan: standard
     dockerCommand: uv run dramatiq -p 2 -t 2 -f scheduler:start run_worker
     healthCheckPath: /
     region: ohio
@@ -255,57 +201,6 @@ services:
   # Worker
   - type: web # Use a web service to allow health checks
     name: worker-sandbox
-    runtime: image
-    image:
-      url: ghcr.io/polarsource/polar:latest
-      creds:
-        fromRegistryCreds:
-          name: Registry Credentials (by fvoron)
-    plan: standard
-    dockerCommand: uv run supervisord -c supervisord.worker.conf
-    healthCheckPath: /healthz
-    region: ohio
-    numInstances: 1
-    autoDeploy: false # deploys are triggered by github actions
-    envVars:
-      - key: POLAR_POSTGRES_DATABASE
-        value: polar_sandbox
-      - key: POLAR_POSTGRES_HOST
-        fromDatabase:
-          name: db
-          property: host
-      - key: POLAR_POSTGRES_PORT
-        fromDatabase:
-          name: db
-          property: port
-      - key: POLAR_POSTGRES_PWD
-        fromDatabase:
-          name: db
-          property: password
-      - key: POLAR_POSTGRES_USER
-        fromDatabase:
-          name: db
-          property: user
-      - key: POLAR_REDIS_HOST
-        fromService:
-          type: redis
-          name: redis
-          property: host
-      - key: POLAR_REDIS_PORT
-        fromService:
-          type: redis
-          name: redis
-          property: port
-      - key: POLAR_REDIS_DB
-        value: 1
-      - fromGroup: google-sandbox
-      - fromGroup: github-sandbox
-      - fromGroup: backend-sandbox
-      - fromGroup: stripe-sandbox
-
-  # Worker
-  - type: web # Use a web service to allow health checks
-    name: worker-sandbox-dramatiq
     runtime: image
     image:
       url: ghcr.io/polarsource/polar:latest

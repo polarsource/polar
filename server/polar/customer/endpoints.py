@@ -17,6 +17,7 @@ from .schemas.customer import (
     CustomerExternalID,
     CustomerID,
     CustomerUpdate,
+    CustomerUpdateExternalID,
 )
 from .schemas.state import CustomerState
 from .service import customer as customer_service
@@ -217,7 +218,7 @@ async def update(
 )
 async def update_external(
     external_id: CustomerExternalID,
-    customer_update: CustomerUpdate,
+    customer_update: CustomerUpdateExternalID,
     auth_subject: auth.CustomerWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:

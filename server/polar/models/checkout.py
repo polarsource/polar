@@ -132,9 +132,7 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return relationship(Discount, lazy="joined")
 
     customer_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        ForeignKey("customers.id", ondelete="set null"),
-        nullable=True,
+        Uuid, ForeignKey("customers.id", ondelete="set null"), nullable=True
     )
 
     @declared_attr

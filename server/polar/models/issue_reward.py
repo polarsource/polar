@@ -33,7 +33,7 @@ class IssueReward(RecordModel):
     )
 
     organization_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("organizations.id"), nullable=True, default=None
+        Uuid, ForeignKey("organizations.id"), nullable=True, default=None, index=True
     )
 
     user_id: Mapped[UUID | None] = mapped_column(

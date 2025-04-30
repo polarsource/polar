@@ -124,6 +124,7 @@ class Customer(MetadataMixin, RecordModel):
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=False,
+        index=True,
     )
 
     @declared_attr

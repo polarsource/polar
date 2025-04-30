@@ -112,7 +112,9 @@ const CountryStatePicker = ({
               textValue={name}
               className={itemClassName}
             >
-              {name}
+              {/* Wrap in div to workaround an issue with browser automatic translation
+                https://github.com/shadcn-ui/ui/issues/852 */}
+              <div>{name}</div>
             </SelectItem>
           ))}
         </SelectContent>

@@ -134,25 +134,8 @@ const BaseCheckoutForm = ({
       }
 
       let payload: CheckoutUpdatePublic = {}
-      // Update Tax ID
-      if (name === 'customerTaxId') {
-        payload = {
-          ...payload,
-          customerTaxId: value.customerTaxId,
-          // Make sure the address is up-to-date while updating the tax ID
-          ...(value.customerBillingAddress &&
-          value.customerBillingAddress.country
-            ? {
-                customerBillingAddress: {
-                  ...value.customerBillingAddress,
-                  country: value.customerBillingAddress.country,
-                },
-              }
-            : {}),
-        }
-        clearErrors('customerTaxId')
-        // Update country, make sure to reset other address fields
-      } else if (name === 'customerBillingAddress.country') {
+      // Update country, make sure to reset other address fields
+      if (name === 'customerBillingAddress.country') {
         const { customerBillingAddress } = value
         if (customerBillingAddress && customerBillingAddress.country) {
           payload = {
@@ -224,10 +207,22 @@ const BaseCheckoutForm = ({
 
   const taxId = watch('customerTaxId')
   const [showTaxId, setShowTaxID] = useState(false)
-  const clearTaxId = useCallback(() => {
-    setValue('customerTaxId', '')
-    setShowTaxID(false)
-  }, [setValue])
+  const addTaxID = useCallback(async () => {
+    if (!taxId) {
+      return
+    }
+    clearErrors('customerTaxId')
+    try {
+      await update({ customerTaxId: taxId })
+    } catch {}
+  }, [update, taxId, clearErrors])
+  const clearTaxId = useCallback(async () => {
+    clearErrors('customerTaxId')
+    try {
+      await update({ customerTaxId: null })
+      resetField('customerTaxId')
+    } catch {}
+  }, [update, clearErrors, resetField])
   useEffect(() => {
     if (taxId) {
       setShowTaxID(true)
@@ -255,6 +250,7 @@ const BaseCheckoutForm = ({
   }
 
   const checkoutDiscounted = !!checkout.discount
+  const validTaxID = !!checkout.customerTaxId
 
   // Make sure to clear the discount code field if the discount is removed by the API
   useEffect(() => {
@@ -515,17 +511,31 @@ const BaseCheckoutForm = ({
                                 className={themePresetProps.polar.input}
                                 {...field}
                                 value={field.value || ''}
+                                disabled={validTaxID}
                               />
-                              <div className="absolute inset-y-0 right-1 z-10 flex items-center">
-                                <Button
-                                  type="button"
-                                  variant="secondary"
-                                  size="sm"
-                                  onClick={() => clearTaxId()}
-                                  className={themePresetProps.polar.button}
-                                >
-                                  <XIcon className="h-4 w-4" />
-                                </Button>
+                              <div className="absolute inset-y-0 right-1 z-10 flex items-center gap-1">
+                                {!validTaxID && taxId && (
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={addTaxID}
+                                    className={themePresetProps.polar.button}
+                                  >
+                                    Apply
+                                  </Button>
+                                )}
+                                {validTaxID && (
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => clearTaxId()}
+                                    className={themePresetProps.polar.button}
+                                  >
+                                    <XIcon className="h-4 w-4" />
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           </FormControl>

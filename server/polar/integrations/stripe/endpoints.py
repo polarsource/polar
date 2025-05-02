@@ -21,6 +21,8 @@ router = APIRouter(
 DIRECT_IMPLEMENTED_WEBHOOKS = {
     "payment_intent.succeeded",
     "payment_intent.payment_failed",
+    "setup_intent.succeeded",
+    "setup_intent.setup_failed",
     "charge.succeeded",
     "charge.dispute.closed",
     "refund.created",

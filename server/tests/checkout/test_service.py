@@ -23,10 +23,10 @@ from polar.checkout.schemas import (
 from polar.checkout.service import (
     AlreadyActiveSubscriptionError,
     CheckoutDoesNotExist,
-    NoPaymentMethodOnPaymentIntent,
+    IntentNotSucceeded,
+    NoPaymentMethodOnIntent,
     NotConfirmedCheckout,
     NotOpenCheckout,
-    PaymentIntentNotSucceeded,
     PaymentRequired,
 )
 from polar.checkout.service import checkout as checkout_service
@@ -2857,7 +2857,7 @@ class TestHandleStripeSuccess:
     async def test_not_succeeded_payment_intent(
         self, session: AsyncSession, checkout_confirmed_one_time: Checkout
     ) -> None:
-        with pytest.raises(PaymentIntentNotSucceeded):
+        with pytest.raises(IntentNotSucceeded):
             await checkout_service.handle_stripe_success(
                 session,
                 checkout_confirmed_one_time.id,
@@ -2867,7 +2867,7 @@ class TestHandleStripeSuccess:
     async def test_no_payment_method_on_payment_intent(
         self, session: AsyncSession, checkout_confirmed_one_time: Checkout
     ) -> None:
-        with pytest.raises(NoPaymentMethodOnPaymentIntent):
+        with pytest.raises(NoPaymentMethodOnIntent):
             await checkout_service.handle_stripe_success(
                 session,
                 checkout_confirmed_one_time.id,

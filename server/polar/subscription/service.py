@@ -331,7 +331,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self,
         session: AsyncSession,
         checkout: Checkout,
-        payment_intent: stripe_lib.PaymentIntent | None,
+        intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent | None,
     ) -> Subscription:
         product = checkout.product
         if not product.is_recurring:
@@ -346,8 +346,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             raise MissingStripeCustomerID(checkout, customer)
 
         stripe_payment_method_id = (
-            get_expandable_id(payment_intent.payment_method)
-            if payment_intent and payment_intent.payment_method
+            get_expandable_id(intent.payment_method)
+            if intent and intent.payment_method
             else None
         )
         metadata = {
@@ -358,8 +358,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         invoice_metadata = {
             "checkout_id": str(checkout.id),
         }
-        if payment_intent is not None:
-            invoice_metadata["payment_intent_id"] = payment_intent.id
+        if intent is not None and isinstance(intent, stripe_lib.PaymentIntent):
+            invoice_metadata["payment_intent_id"] = intent.id
 
         stripe_price_ids: list[str] = []
         subscription_product_prices: list[SubscriptionProductPrice] = []
@@ -489,12 +489,15 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         # Sanity check to make sure we didn't mess up the amount.
         # Don't raise an error so the order can be successfully completed nonetheless.
-        if payment_intent and stripe_invoice.total != payment_intent.amount:
+        if (
+            isinstance(intent, stripe_lib.PaymentIntent)
+            and stripe_invoice.total != intent.amount
+        ):
             log.error(
                 "Mismatch between payment intent and invoice amount",
                 subscription=subscription.id,
                 checkout=checkout.id,
-                payment_intent=payment_intent.id,
+                payment_intent=intent.id,
                 invoice=stripe_invoice.id,
             )
 

@@ -7,7 +7,7 @@ from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.pagination import ListResource, Pagination
-from polar.kit.tax import to_stripe_tax_id, validate_tax_id
+from polar.kit.tax import InvalidTaxID, to_stripe_tax_id, validate_tax_id
 from polar.models import Customer
 from polar.postgres import AsyncSession
 
@@ -66,7 +66,7 @@ class CustomerService:
                 customer.tax_id = validate_tax_id(
                     tax_id, customer.billing_address.country
                 )
-            except ValueError as e:
+            except InvalidTaxID as e:
                 raise PolarRequestValidationError(
                     [
                         {

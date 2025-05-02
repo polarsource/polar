@@ -147,20 +147,65 @@ async def payment_intent_succeeded(event_id: uuid.UUID) -> None:
 async def payment_intent_payment_failed(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
-            async with AsyncSessionMaker() as session:
-                payment_intent = cast(
-                    stripe_lib.PaymentIntent, event.stripe_data.data.object
-                )
-                metadata = payment_intent.metadata or {}
+            payment_intent = cast(
+                stripe_lib.PaymentIntent, event.stripe_data.data.object
+            )
+            metadata = payment_intent.metadata or {}
 
-                # Payment for Polar Checkout Session
-                if (
-                    metadata.get("type") == ProductType.product
-                    and (checkout_id := metadata.get("checkout_id")) is not None
-                ):
-                    await checkout_service.handle_stripe_failure(
-                        session, uuid.UUID(checkout_id), payment_intent
-                    )
+            # Payment for Polar Checkout Session
+            if (
+                metadata.get("type") == ProductType.product
+                and (checkout_id := metadata.get("checkout_id")) is not None
+            ):
+                await checkout_service.handle_stripe_failure(
+                    session, uuid.UUID(checkout_id), payment_intent
+                )
+
+
+@actor(actor_name="stripe.webhook.setup_intent.succeeded")
+@stripe_api_connection_error_retry
+async def setup_intent_succeeded(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            setup_intent = cast(stripe_lib.SetupIntent, event.stripe_data.data.object)
+            metadata = setup_intent.metadata or {}
+
+        # Intent for Polar Checkout Session
+        if (
+            metadata.get("type") == ProductType.product
+            and (checkout_id := metadata.get("checkout_id")) is not None
+        ):
+            try:
+                await checkout_service.handle_stripe_success(
+                    session, uuid.UUID(checkout_id), setup_intent
+                )
+            except NotConfirmedCheckout as e:
+                # Retry because we've seen in the wild a Stripe webhook coming
+                # *before* we updated the Checkout Session status in the database!
+                if can_retry():
+                    raise Retry() from e
+                # Raise the exception to be notified about it
+                else:
+                    raise
+            return
+
+
+@actor(actor_name="stripe.webhook.setup_intent.setup_failed")
+@stripe_api_connection_error_retry
+async def setup_intent_setup_failed(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            setup_intent = cast(stripe_lib.SetupIntent, event.stripe_data.data.object)
+            metadata = setup_intent.metadata or {}
+
+            # Payment for Polar Checkout Session
+            if (
+                metadata.get("type") == ProductType.product
+                and (checkout_id := metadata.get("checkout_id")) is not None
+            ):
+                await checkout_service.handle_stripe_failure(
+                    session, uuid.UUID(checkout_id), setup_intent
+                )
 
 
 @actor(actor_name="stripe.webhook.charge.succeeded")

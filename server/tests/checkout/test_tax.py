@@ -1,7 +1,7 @@
 import pytest
 from pydantic_extra_types.country import CountryAlpha2
 
-from polar.kit.tax import TaxID, TaxIDFormat, validate_tax_id
+from polar.kit.tax import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
 
 
 @pytest.mark.parametrize(
@@ -21,6 +21,8 @@ from polar.kit.tax import TaxID, TaxIDFormat, validate_tax_id
             "US",
             ("911144442", TaxIDFormat.us_ein),
         ),
+        ("234567899RT0001", "CA", ("234567899RT0001", TaxIDFormat.ca_gst_hst)),
+        ("234567899", "CA", ("234567899", TaxIDFormat.ca_bn)),
     ],
 )
 def test_validate_tax_id_valid(
@@ -40,5 +42,5 @@ def test_validate_tax_id_valid(
     ],
 )
 def test_validate_tax_id_invalid(number: str, country: CountryAlpha2) -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidTaxID):
         validate_tax_id(number, country)

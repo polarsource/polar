@@ -82,7 +82,7 @@ from polar.subscription.service import subscription as subscription_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
-from ..kit.tax import TaxCalculationError, calculate_tax
+from ..kit.tax import InvalidTaxID, TaxCalculationError, calculate_tax
 from . import ip_geolocation
 from .eventstream import CheckoutEvent, publish_checkout_event
 from .repository import CheckoutRepository
@@ -325,7 +325,7 @@ class CheckoutService:
                     checkout_create.customer_tax_id,
                     checkout_create.customer_billing_address.country,
                 )
-            except ValueError as e:
+            except InvalidTaxID as e:
                 raise PolarRequestValidationError(
                     [
                         {
@@ -1485,7 +1485,7 @@ class CheckoutService:
                     checkout.customer_tax_id = validate_tax_id(
                         customer_tax_id_number, customer_billing_address.country
                     )
-                except ValueError as e:
+                except InvalidTaxID as e:
                     raise PolarRequestValidationError(
                         [
                             {

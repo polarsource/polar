@@ -2,7 +2,12 @@ from typing import TYPE_CHECKING, Any, cast
 
 import structlog
 from githubkit import AppInstallationAuthStrategy, GitHub
-from githubkit.exception import RateLimitExceeded, RequestError, RequestTimeout
+from githubkit.exception import (
+    RateLimitExceeded,
+    RequestError,
+    RequestFailed,
+    RequestTimeout,
+)
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.integrations.github import client as github
@@ -102,6 +107,10 @@ class BenefitGitHubRepositoryService(
             )
         except RateLimitExceeded as e:
             raise BenefitRetriableError(int(e.retry_after.total_seconds())) from e
+        except RequestFailed as e:
+            if e.response.is_client_error:
+                raise
+            raise BenefitRetriableError() from e
         except (RequestTimeout, RequestError) as e:
             raise BenefitRetriableError() from e
 
@@ -179,6 +188,10 @@ class BenefitGitHubRepositoryService(
             await revoke_request
         except RateLimitExceeded as e:
             raise BenefitRetriableError(int(e.retry_after.total_seconds())) from e
+        except RequestFailed as e:
+            if e.response.is_client_error:
+                raise
+            raise BenefitRetriableError() from e
         except (RequestTimeout, RequestError) as e:
             raise BenefitRetriableError() from e
 

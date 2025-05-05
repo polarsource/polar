@@ -113,7 +113,7 @@ export const useThemePreset = (
           },
           variables: {
             borderRadius: '8px',
-            fontSizeBase: '0.875rem',
+            fontSizeBase: '1rem',
             spacingGridRow: '18px',
             colorDanger: theme === 'dark' ? '#F17878' : '#E64D4D',
           },
@@ -218,7 +218,7 @@ export const useThemePreset = (
           },
           variables: {
             borderRadius: '0',
-            fontSizeBase: '0.875rem',
+            fontSizeBase: '1rem',
             spacingGridRow: '18px',
             colorDanger: '#F17878',
           },

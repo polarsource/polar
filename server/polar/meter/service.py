@@ -257,6 +257,7 @@ class MeterService:
             event_repository.get_base_statement()
             .where(
                 Event.organization_id == meter.organization_id,
+                Event.customer.is_not(None),
                 or_(
                     # Events matching meter definitions
                     event_repository.get_meter_clause(meter),

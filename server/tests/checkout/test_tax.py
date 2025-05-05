@@ -22,6 +22,7 @@ from polar.kit.tax import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
             ("911144442", TaxIDFormat.us_ein),
         ),
         ("234567899RT0001", "CA", ("234567899RT0001", TaxIDFormat.ca_gst_hst)),
+        ("234567899 RT0001", "CA", ("234567899RT0001", TaxIDFormat.ca_gst_hst)),
         ("234567899", "CA", ("234567899", TaxIDFormat.ca_bn)),
     ],
 )

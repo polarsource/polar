@@ -59,6 +59,7 @@ async def list(
         auth_subject,
         organization_id=organization_id,
         customer_id=customer_id,
+        external_customer_id=external_customer_id,
         meter_id=meter_id,
         pagination=pagination,
         sorting=sorting,

@@ -167,6 +167,9 @@ class EnqueuedJobsMiddleware(dramatiq.Middleware):
     _enqueued_jobs = contextvars.ContextVar[list[JobToEnqueue]](
         "polar.enqueued_jobs", default=[]
     )
+    _ingested_events = contextvars.ContextVar[list[uuid.UUID]](
+        "polar.ingested_events", default=[]
+    )
 
     @classmethod
     def get_enqueued_jobs_context(
@@ -174,10 +177,17 @@ class EnqueuedJobsMiddleware(dramatiq.Middleware):
     ) -> contextvars.ContextVar[list[JobToEnqueue]]:
         return cls._enqueued_jobs
 
+    @classmethod
+    def get_ingested_events_context(
+        cls,
+    ) -> contextvars.ContextVar[list[uuid.UUID]]:
+        return cls._ingested_events
+
     def after_worker_thread_boot(
         self, broker: dramatiq.Broker, thread: threading.Thread
     ) -> None:
         self._enqueued_jobs.set([])
+        self._ingested_events.set([])
 
     def before_process_message(
         self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
@@ -185,6 +195,10 @@ class EnqueuedJobsMiddleware(dramatiq.Middleware):
         enqueued_jobs = self._enqueued_jobs.get()
         assert enqueued_jobs == [], (
             "Enqueued jobs should be empty before processing a message"
+        )
+        ingested_events = self._ingested_events.get()
+        assert ingested_events == [], (
+            "Ingested events should be empty before processing a message"
         )
 
     def after_process_message(
@@ -200,8 +214,10 @@ class EnqueuedJobsMiddleware(dramatiq.Middleware):
             redis = RedisMiddleware.get()
             event_loop_thread = get_event_loop_thread()
             assert event_loop_thread is not None
+            event_loop_thread.run_coroutine(flush_ingested_events())
             event_loop_thread.run_coroutine(flush_enqueued_jobs(broker, redis))
         self._enqueued_jobs.set([])
+        self._ingested_events.set([])
 
 
 def enqueue_job(
@@ -233,6 +249,23 @@ async def flush_enqueued_jobs(broker: dramatiq.Broker, redis: Redis) -> None:
         )
 
     enqueued_jobs_context.set([])
+
+
+def enqueue_events(*event_ids: uuid.UUID) -> None:
+    """Enqueue events to be ingested."""
+    ingested_events_context = EnqueuedJobsMiddleware.get_ingested_events_context()
+    ingested_events_list = ingested_events_context.get([])
+    ingested_events_list.extend(event_ids)
+    ingested_events_context.set(ingested_events_list)
+
+
+async def flush_ingested_events() -> None:
+    """Trigger the `event.ingested` job for all ingested events."""
+    ingested_events_context = EnqueuedJobsMiddleware.get_ingested_events_context()
+    ingested_events = ingested_events_context.get([])
+    if len(ingested_events) > 0:
+        enqueue_job("event.ingested", ingested_events)
+    ingested_events_context.set([])
 
 
 class MaxRetriesMiddleware(dramatiq.Middleware):

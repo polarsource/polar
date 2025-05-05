@@ -32,6 +32,11 @@ def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.event.service.enqueue_job")
 
 
+@pytest.fixture
+def enqueue_events_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch("polar.event.service.enqueue_events")
+
+
 @pytest.mark.asyncio
 class TestList:
     @pytest.mark.auth
@@ -416,7 +421,7 @@ class TestIngest:
     @pytest.mark.auth
     async def test_valid_user(
         self,
-        enqueue_job_mock: AsyncMock,
+        enqueue_events_mock: AsyncMock,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
@@ -442,14 +447,12 @@ class TestIngest:
         for event in events:
             assert event.source == EventSource.user
 
-        enqueue_job_mock.assert_called_once_with(
-            "event.ingested", event_ids=[event.id for event in events]
-        )
+        enqueue_events_mock.assert_called_once_with(*(event.id for event in events))
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_valid_organization(
         self,
-        enqueue_job_mock: AsyncMock,
+        enqueue_events_mock: AsyncMock,
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
     ) -> None:
@@ -472,9 +475,7 @@ class TestIngest:
         for event in events:
             assert event.source == EventSource.user
 
-        enqueue_job_mock.assert_called_once_with(
-            "event.ingested", event_ids=[event.id for event in events]
-        )
+        enqueue_events_mock.assert_called_once_with(*(event.id for event in events))
 
 
 @pytest.mark.asyncio

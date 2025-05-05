@@ -2,7 +2,7 @@ import uuid
 from typing import Any, cast
 
 from polar.auth.models import AuthSubject
-from polar.event.repository import EventRepository
+from polar.event.service import event as event_service
 from polar.event.system import SystemEvent, build_system_event
 from polar.kit.utils import utc_now
 from polar.meter.repository import MeterRepository
@@ -100,8 +100,8 @@ class BenefitMeterCreditService(
         meter_id: uuid.UUID,
         units: int,
     ) -> BenefitGrantMeterCreditProperties:
-        event_repository = EventRepository.from_session(self.session)
-        event = await event_repository.create(
+        await event_service.create_event(
+            self.session,
             build_system_event(
                 SystemEvent.meter_credited,
                 customer=customer,
@@ -110,7 +110,7 @@ class BenefitMeterCreditService(
                     "meter_id": str(meter_id),
                     "units": units,
                 },
-            )
+            ),
         )
         return {
             "last_credited_meter_id": str(meter_id),

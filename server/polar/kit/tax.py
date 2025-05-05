@@ -231,6 +231,7 @@ class StdNumValidator(ValidatorProtocol):
 
 class CAGSTHSTValidator(ValidatorProtocol):
     def validate(self, number: str, country: str) -> str:
+        number = stdnum.ca.bn.compact(number)
         if len(number) != 15:
             raise InvalidTaxID(number, country)
         try:

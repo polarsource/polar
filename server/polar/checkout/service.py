@@ -452,6 +452,14 @@ class CheckoutService:
                 **(checkout.payment_processor_metadata or {}),
                 "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
             }
+            if checkout.customer and checkout.customer.stripe_customer_id is not None:
+                stripe_customer_session = await stripe_service.create_customer_session(
+                    checkout.customer.stripe_customer_id
+                )
+                checkout.payment_processor_metadata = {
+                    **(checkout.payment_processor_metadata or {}),
+                    "customer_session_client_secret": stripe_customer_session.client_secret,
+                }
 
         session.add(checkout)
 

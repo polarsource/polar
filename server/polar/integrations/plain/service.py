@@ -48,7 +48,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.postgres import AsyncSession
-from polar.user.service.user import user as user_service
+from polar.user.repository import UserRepository
 
 from .schemas import (
     CustomerCard,
@@ -117,7 +117,8 @@ class PlainService:
     async def create_account_review_thread(
         self, session: AsyncSession, account: Account
     ) -> None:
-        admin = await user_service.get(session, account.admin_id)
+        user_repository = UserRepository.from_session(session)
+        admin = await user_repository.get_by_id(account.admin_id)
         if admin is None:
             raise AccountAdminDoesNotExistError(account.id)
 

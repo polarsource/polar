@@ -4,7 +4,7 @@ import structlog
 
 from polar.email.sender import enqueue_email
 from polar.notifications.service import notifications
-from polar.user.service.user import user as user_service
+from polar.user.repository import UserRepository
 from polar.worker import AsyncSessionMaker, actor
 
 log = structlog.get_logger()
@@ -21,7 +21,8 @@ async def notifications_send(notification_id: UUID) -> None:
         # TODO: support sending to "notif.email_addr"
 
         # Get users to send to
-        user = await user_service.get(session, notif.user_id)
+        repository = UserRepository.from_session(session)
+        user = await repository.get_by_id(notif.user_id)
         if not user:
             log.warning("notifications.send.user_not_found", user_id=notif.user_id)
             return

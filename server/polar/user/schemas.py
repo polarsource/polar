@@ -35,14 +35,6 @@ class UserRead(UserBase, TimestampedSchema):
     oauth_accounts: list[OAuthAccountRead]
 
 
-# TODO: remove
-class UserCreate(UserBase): ...
-
-
-# TODO: remove
-class UserUpdate(UserBase): ...
-
-
 class UserSetAccount(Schema):
     account_id: UUID4
 

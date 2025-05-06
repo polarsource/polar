@@ -9,11 +9,11 @@ from polar.models import User
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
-from polar.user.service.user import user as user_service
+from polar.user.service import user as user_service
 
-from ..schemas.user import UserRead, UserScopes, UserSetAccount, UserStripePortalSession
+from .schemas import UserRead, UserScopes, UserSetAccount, UserStripePortalSession
 
-router = APIRouter(tags=[APITag.private])
+router = APIRouter(prefix="/users", tags=[APITag.private])
 
 
 @router.get("/me", response_model=UserRead)

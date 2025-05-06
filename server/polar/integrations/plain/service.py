@@ -92,6 +92,12 @@ class PlainService:
     ) -> CustomerCardsResponse:
         tasks: list[asyncio.Task[CustomerCard | None]] = []
         async with asyncio.TaskGroup() as tg:
+            if CustomerCardKey.user in request.cardKeys:
+                tasks.append(
+                    tg.create_task(
+                        _card_getter_task(self._get_user_card(session, request))
+                    )
+                )
             if CustomerCardKey.organization in request.cardKeys:
                 tasks.append(
                     tg.create_task(
@@ -187,6 +193,123 @@ class PlainService:
                 raise AccountReviewThreadCreationError(
                     account.id, thread_result.error.message
                 )
+
+    async def _get_user_card(
+        self, session: AsyncSession, request: CustomerCardsRequest
+    ) -> CustomerCard | None:
+        email = request.customer.email
+
+        user_repository = UserRepository.from_session(session)
+        user = await user_repository.get_by_email(email)
+
+        if user is None:
+            return None
+
+        components: list[ComponentInput] = [
+            ComponentInput(
+                component_container=ComponentContainerInput(
+                    container_content=[
+                        ComponentContainerContentInput(
+                            component_row=ComponentRowInput(
+                                row_main_content=[
+                                    ComponentRowContentInput(
+                                        component_text=ComponentTextInput(
+                                            text=user.email
+                                        )
+                                    ),
+                                ],
+                                row_aside_content=[],
+                            )
+                        ),
+                        ComponentContainerContentInput(
+                            component_divider=ComponentDividerInput(
+                                divider_spacing_size=ComponentDividerSpacingSize.M
+                            )
+                        ),
+                        ComponentContainerContentInput(
+                            component_row=ComponentRowInput(
+                                row_main_content=[
+                                    ComponentRowContentInput(
+                                        component_text=ComponentTextInput(
+                                            text="ID",
+                                            text_size=ComponentTextSize.S,
+                                            text_color=ComponentTextColor.MUTED,
+                                        )
+                                    ),
+                                    ComponentRowContentInput(
+                                        component_text=ComponentTextInput(
+                                            text=str(user.id)
+                                        )
+                                    ),
+                                ],
+                                row_aside_content=[
+                                    ComponentRowContentInput(
+                                        component_copy_button=ComponentCopyButtonInput(
+                                            copy_button_value=str(user.id),
+                                            copy_button_tooltip_label="Copy User ID",
+                                        )
+                                    )
+                                ],
+                            )
+                        ),
+                        ComponentContainerContentInput(
+                            component_spacer=ComponentSpacerInput(
+                                spacer_size=ComponentSpacerSize.M
+                            )
+                        ),
+                        ComponentContainerContentInput(
+                            component_text=ComponentTextInput(
+                                text="Created At",
+                                text_size=ComponentTextSize.S,
+                                text_color=ComponentTextColor.MUTED,
+                            )
+                        ),
+                        ComponentContainerContentInput(
+                            component_text=ComponentTextInput(
+                                text=user.created_at.date().isoformat()
+                            )
+                        ),
+                        ComponentContainerContentInput(
+                            component_row=ComponentRowInput(
+                                row_main_content=[
+                                    ComponentRowContentInput(
+                                        component_text=ComponentTextInput(
+                                            text="Identity Verification",
+                                            text_size=ComponentTextSize.S,
+                                            text_color=ComponentTextColor.MUTED,
+                                        )
+                                    ),
+                                    ComponentRowContentInput(
+                                        component_text=ComponentTextInput(
+                                            text=user.identity_verification_status
+                                        )
+                                    ),
+                                ],
+                                row_aside_content=[
+                                    ComponentRowContentInput(
+                                        component_link_button=ComponentLinkButtonInput(
+                                            link_button_label="Stripe ↗",
+                                            link_button_url=f"https://dashboard.stripe.com/identity/verification-sessions/{user.identity_verification_id}",
+                                        )
+                                    )
+                                ]
+                                if user.identity_verification_id
+                                else [],
+                            )
+                        ),
+                    ]
+                )
+            )
+        ]
+
+        return CustomerCard(
+            key=CustomerCardKey.user,
+            timeToLiveSeconds=86400,
+            components=[
+                component.model_dump(by_alias=True, exclude_none=True)
+                for component in components
+            ],
+        )
 
     async def _get_organization_card(
         self, session: AsyncSession, request: CustomerCardsRequest

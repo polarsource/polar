@@ -2,12 +2,7 @@ import uuid
 
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
-from polar.integrations.discord.internal_webhook import (
-    get_branded_discord_embed,
-    send_internal_webhook,
-)
 from polar.integrations.plain.service import plain as plain_service
-from polar.models import Account
 from polar.notifications.notification import (
     MaintainerAccountReviewedNotificationPayload,
     MaintainerAccountUnderReviewNotificationPayload,
@@ -28,25 +23,6 @@ class AccountDoesNotExist(AccountTaskError):
         self.account_id = account_id
         message = f"The account with id {account_id} does not exist."
         super().__init__(message)
-
-
-async def send_account_under_review_discord_notification(account: Account) -> None:
-    await send_internal_webhook(
-        {
-            "content": "Payout account should be reviewed",
-            "embeds": [
-                get_branded_discord_embed(
-                    {
-                        "title": "Payout account should be reviewed",
-                        "description": (
-                            f"The {account.account_type.get_display_name()} "
-                            f"payout account used by {', '.join(account.get_associations_names())} should be reviewed."
-                        ),
-                    }
-                )
-            ],
-        }
-    )
 
 
 @actor(actor_name="account.under_review")

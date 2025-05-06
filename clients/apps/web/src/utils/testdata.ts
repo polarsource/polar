@@ -39,6 +39,8 @@ export const user: schemas['UserRead'] = {
   modified_at: new Date('2023-01-01T09:00:00Z').toISOString(),
   email: 'test@example.com',
   avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+  identity_verification_status: 'unverified',
+  identity_verified: false,
   accepted_terms_of_service: true,
   id: 'xxxabc-123',
   oauth_accounts: [],

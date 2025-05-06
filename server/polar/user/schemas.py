@@ -6,16 +6,9 @@ from pydantic import UUID4, EmailStr
 
 from polar.auth.scope import Scope
 from polar.kit.schemas import Schema, TimestampedSchema, UUID4ToStr
-from polar.models.user import OAuthPlatform
+from polar.models.user import IdentityVerificationStatus, OAuthPlatform
 
 
-# Public API
-class User(Schema):
-    public_name: str
-    avatar_url: str | None
-
-
-# Private APIs below
 class UserBase(Schema):
     email: EmailStr
     avatar_url: str | None
@@ -32,7 +25,14 @@ class OAuthAccountRead(TimestampedSchema):
 class UserRead(UserBase, TimestampedSchema):
     id: uuid.UUID
     accepted_terms_of_service: bool
+    identity_verified: bool
+    identity_verification_status: IdentityVerificationStatus
     oauth_accounts: list[OAuthAccountRead]
+
+
+class UserIdentityVerification(Schema):
+    id: str
+    client_secret: str
 
 
 class UserSetAccount(Schema):

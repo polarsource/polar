@@ -29,3 +29,10 @@ export const useDeletePersonalAccessToken = () =>
       queryClient.invalidateQueries({ queryKey: ['personalAccessTokens'] })
     },
   })
+
+export const useCreateIdentityVerification = () =>
+  useMutation({
+    mutationFn: () => {
+      return api.POST('/v1/users/me/identity-verification')
+    },
+  })

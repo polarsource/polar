@@ -7,14 +7,20 @@ import { Modal } from '@/components/Modal'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
-import { useListAccounts, useOrganizationAccount } from '@/hooks/queries'
+import { useAuth } from '@/hooks'
+import {
+  useCreateIdentityVerification,
+  useListAccounts,
+  useOrganizationAccount,
+} from '@/hooks/queries'
 import { api } from '@/utils/client'
-import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
+import { loadStripe } from '@stripe/stripe-js'
+import { CircleAlert, CircleDot } from 'lucide-react'
 import { useCallback, useState } from 'react'
 
 const OrganizationDetailsModal = ({
@@ -43,6 +49,7 @@ export default function ClientPage({
 }: {
   organization: schemas['Organization']
 }) {
+  const { currentUser } = useAuth()
   const { data: accounts } = useListAccounts()
   const {
     isShown: isShownSetupModal,
@@ -57,8 +64,31 @@ export default function ClientPage({
   } = useModal()
 
   const requireDetails = !organization.details_submitted_at
+  const identityVerified = currentUser?.identity_verified
+  const identityVerificationStatus = currentUser?.identity_verification_status
 
   const { data: organizationAccount } = useOrganizationAccount(organization.id)
+
+  const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
+  const createIdentityVerification = useCreateIdentityVerification()
+  const startIdentityVerification = useCallback(async () => {
+    const { data, error } = await createIdentityVerification.mutateAsync()
+    if (error) {
+      return
+    }
+    const stripe = await stripePromise
+    if (!stripe) {
+      return
+    }
+    const { error: stripeError } = await stripe.verifyIdentity(
+      data.client_secret,
+    )
+    if (stripeError) {
+      console.log('[error]', stripeError)
+    } else {
+      console.log('Verification submitted!')
+    }
+  }, [createIdentityVerification, stripePromise])
 
   const [linkAccountLoading, setLinkAccountLoading] = useState(false)
   const onLinkAccount = useCallback(
@@ -87,9 +117,9 @@ export default function ClientPage({
             </Button>
           }
         >
-          <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
+          <CircleAlert className="h-6 w-6 text-red-500" />
           <span className="text-sm">
-            Please share details of your use case for Polar for our compliance-
+            Please share details of your use case for Polar for our compliance
             and{' '}
             <a
               href="https://docs.polar.sh/merchant-of-record/acceptable-use"
@@ -101,6 +131,41 @@ export default function ClientPage({
             reviews.
           </span>
         </Banner>
+      )}
+
+      {!identityVerified && identityVerificationStatus && (
+        <>
+          {['unverified', 'failed'].includes(identityVerificationStatus) && (
+            <Banner
+              color="default"
+              right={
+                <Button
+                  size="sm"
+                  onClick={startIdentityVerification}
+                  loading={createIdentityVerification.isPending}
+                >
+                  Verify my identity
+                </Button>
+              }
+            >
+              <CircleAlert className="h-6 w-6 text-red-500" />
+              <span className="text-sm">
+                {identityVerificationStatus === 'unverified' &&
+                  'Please verify your identity for our compliance reviews.'}
+                {identityVerificationStatus === 'failed' &&
+                  'The identity verification failed. Please try again.'}
+              </span>
+            </Banner>
+          )}
+          {identityVerificationStatus === 'pending' && (
+            <Banner color="default">
+              <CircleDot className="h-6 w-6 text-yellow-500" />
+              <span className="text-sm">
+                Your identity verification is pending. Please check back later.
+              </span>
+            </Banner>
+          )}
+        </>
       )}
 
       {accounts ? (

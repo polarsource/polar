@@ -14,7 +14,7 @@ export const Pricing = () => {
           Pricing
         </h1>
       </div>
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
         <div className="dark:bg-polar-800 flex w-full flex-col gap-y-4 rounded-3xl bg-gray-50 p-8">
           <div className="flex flex-row items-center gap-x-3">
             <h1 className="text-xl">4% + 40¢ per transaction</h1>

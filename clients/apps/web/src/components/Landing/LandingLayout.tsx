@@ -4,80 +4,111 @@ import { TopbarNavigation } from '@/components/Landing/TopbarNavigation'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
-import { ArrowOutward } from '@mui/icons-material'
+import { ArrowOutward, KeyboardArrowRightOutlined } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { PropsWithChildren } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { AuthModal } from '../Auth/AuthModal'
-import GetStartedButton from '../Auth/GetStartedButton'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
-    <div className="relative flex w-screen flex-col items-center">
-      <div className="flex w-fit flex-col gap-32 md:flex-row md:pt-16">
-        <LandingPageTopbar />
-        <LandingPageDesktopNavigation />
-        <div className="dark:bg-polar-950 relative flex w-full max-w-6xl flex-col bg-gray-100">
-          {children}
-          <LandingPageFooter />
+    <div className="dark:bg-polar-950 relative flex flex-row bg-gray-50">
+      <LandingPageDesktopNavigation />
+      <div className="flex flex-col gap-32 md:w-full md:flex-1 md:items-center md:pt-16">
+        <div className="flex flex-col gap-y-2 md:w-full md:max-w-3xl xl:max-w-7xl">
+          <LandingPageTopbar />
+          <div className="dark:bg-polar-950 relative flex w-screen flex-col px-4 md:w-full md:px-0">
+            {children}
+            <LandingPageFooter />
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
+const NavLink = ({
+  href,
+  children,
+  isActive: _isActive,
+}: {
+  href: string
+  children: React.ReactNode
+  isActive?: (pathname: string) => boolean
+}) => {
+  const pathname = usePathname()
+  const isActive = _isActive ? _isActive(pathname) : pathname.startsWith(href)
+  const isExternal = href.startsWith('http')
+
+  return (
+    <Link
+      href={href}
+      target={isExternal ? '_blank' : undefined}
+      prefetch
+      className={twMerge(
+        'dark:text-polar-500 flex items-center gap-x-2 text-gray-500 transition-colors hover:text-black dark:hover:text-white',
+        isActive && 'text-black dark:text-white',
+      )}
+    >
+      {children}
+      {isExternal && (
+        <span>
+          <ArrowOutward fontSize="inherit" />
+        </span>
+      )}
+    </Link>
+  )
+}
+
 const LandingPageDesktopNavigation = () => {
   return (
-    <div className="dark:text-polar-50 sticky top-16 hidden h-full w-fit flex-shrink-0 flex-col justify-between gap-y-12 md:flex">
-      <div className="flex flex-col gap-y-8 text-[1.05rem] font-medium leading-tight tracking-[-0.01em]">
+    <div className="dark:text-polar-50 sticky top-0 hidden h-full w-fit flex-shrink-0 flex-col justify-between gap-y-12 p-12 md:flex">
+      <div className="flex flex-col gap-y-12 text-base font-medium leading-tight tracking-[-0.01em]">
         <BrandingMenu logoVariant="logotype" size={100} />
 
-        <ul className="flex flex-col gap-y-2">
-          <li>
-            <Link href="/pricing">Billing</Link>
-          </li>
-          <li>
-            <Link href="/pricing">Usage Billing</Link>
-          </li>
-          <li>
-            <Link href="/pricing">Entitlements</Link>
-          </li>
-          <li>
-            <Link href="/pricing">Integrate</Link>
-          </li>
-        </ul>
-
-        <ul className="flex flex-col gap-y-2">
-          <li className="flex items-baseline gap-x-2">
-            <Link href="https://docs.polar.sh" target="_blank">
-              Docs
-            </Link>
-            <span>
-              <ArrowOutward fontSize="inherit" />
-            </span>
-          </li>
-          <li>
-            <Link href="/pricing">Merchant of Record</Link>
-          </li>
-          <li>
-            <Link href="#pricing">Pricing</Link>
-          </li>
-          <li>
-            <Link href="/pricing">GitHub</Link>
-          </li>
-          <li>
-            <Link href="/careers">Careers</Link>
-          </li>
-          <li>
-            <Link href="/company">Company</Link>
-          </li>
-        </ul>
+        <div className="flex flex-col gap-y-12">
+          <ul className="flex flex-col gap-y-3">
+            <li>
+              <NavLink href="/" isActive={(pathname) => pathname === '/'}>
+                Features
+              </NavLink>
+            </li>
+            <li>
+              <NavLink href="https://docs.polar.sh">Docs</NavLink>
+            </li>
+            <li>
+              <NavLink href="https://github.com/polarsource">
+                Open Source
+              </NavLink>
+            </li>
+            <li>
+              <NavLink href="/company">Company</NavLink>
+            </li>
+            <li>
+              <NavLink href="/blog">Blog</NavLink>
+            </li>
+          </ul>
+          <ul className="flex flex-col gap-y-3">
+            <li>
+              <NavLink href="/login">
+                <span>Login</span>
+                <KeyboardArrowRightOutlined fontSize="inherit" />
+              </NavLink>
+            </li>
+            <li>
+              <NavLink href="/login">
+                <span>Get Started</span>
+                <KeyboardArrowRightOutlined fontSize="inherit" />
+              </NavLink>
+            </li>
+          </ul>
+        </div>
       </div>
-
-      <GetStartedButton className="w-fit rounded-full bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-50" />
     </div>
   )
 }
@@ -92,7 +123,7 @@ const LandingPageTopbar = () => {
   }
 
   return (
-    <div className="z-30 flex w-full flex-row items-center justify-between px-8 py-6 md:hidden md:max-w-7xl md:px-12">
+    <div className="z-30 flex w-full flex-row items-center justify-between px-6 py-6 md:hidden md:max-w-7xl md:px-12">
       <TopbarNavigation />
       <BrandingMenu
         className="ml-2 mt-1 md:hidden"

@@ -1,7 +1,15 @@
-export default function Layout({ children }: { children: React.ReactNode }) {
+import ProseWrapper from '@/components/MDX/ProseWrapper'
+import { PropsWithChildren } from 'react'
+
+export const dynamic = 'force-static'
+export const dynamicParams = false
+
+export default function Layout({ children }: PropsWithChildren) {
   return (
-    <div className="flex w-full max-w-[100vw] flex-col gap-x-16 gap-y-16 px-4 py-4 pb-24 pt-16 md:max-w-7xl md:flex-row md:items-start md:justify-between md:px-8 [&>*]:pt-0">
-      {children}
+    <div className="flex flex-col items-center md:w-full">
+      <ProseWrapper className="flex flex-col items-center md:w-full lg:!max-w-6xl">
+        {children}
+      </ProseWrapper>
     </div>
   )
 }

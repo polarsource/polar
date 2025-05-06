@@ -326,7 +326,7 @@ export const Testimonials = () => {
             <Testamonial key={`testimonial-${index}`} {...testimonial} />
           ))}
         </div>
-        <div className="hidden flex-col flex-wrap gap-4 md:grid md:grid-cols-3">
+        <div className="hidden flex-col flex-wrap gap-4 md:grid md:grid-cols-2 xl:grid-cols-3">
           <div className="flex flex-col gap-y-4">
             {firstRow.map((testimonial, index) => (
               <Testamonial key={`testimonial-${index}`} {...testimonial} />
@@ -337,7 +337,7 @@ export const Testimonials = () => {
               <Testamonial key={`testimonial-${index}`} {...testimonial} />
             ))}
           </div>
-          <div className="flex flex-col gap-y-4">
+          <div className="hidden flex-col gap-y-4 xl:flex">
             {thirdRow.map((testimonial, index) => (
               <Testamonial key={`testimonial-${index}`} {...testimonial} />
             ))}

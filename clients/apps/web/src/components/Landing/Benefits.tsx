@@ -128,7 +128,7 @@ export const Benefits = () => {
 
   return (
     <div
-      className={`dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-xl bg-gray-50 md:flex-row-reverse md:items-stretch`}
+      className={`dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-xl bg-white md:flex-row-reverse md:items-stretch`}
     >
       <div className="flex flex-1 grow flex-col gap-y-10 p-8 md:p-16">
         <div className="flex flex-col gap-y-4">

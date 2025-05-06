@@ -28,6 +28,9 @@ from polar.refund.service import refund as refund_service
 from polar.subscription.service import SubscriptionDoesNotExist
 from polar.subscription.service import subscription as subscription_service
 from polar.transaction.service.dispute import (
+    DisputeClosed,
+)
+from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
 from polar.transaction.service.payment import (
@@ -281,7 +284,13 @@ async def charge_dispute_closed(event_id: uuid.UUID) -> None:
         async with external_event_service.handle_stripe(session, event_id) as event:
             dispute = cast(stripe_lib.Dispute, event.stripe_data.data.object)
 
-            await dispute_transaction_service.create_dispute(session, dispute=dispute)
+            try:
+                await dispute_transaction_service.create_dispute(
+                    session, dispute=dispute
+                )
+            except DisputeClosed:
+                # The dispute was closed without any action, do nothing
+                pass
 
 
 @actor(actor_name="stripe.webhook.customer.subscription.updated")

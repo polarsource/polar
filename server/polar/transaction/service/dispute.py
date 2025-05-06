@@ -19,6 +19,13 @@ from .processor_fee import (
 class DisputeTransactionError(BaseTransactionServiceError): ...
 
 
+class DisputeClosed(DisputeTransactionError):
+    def __init__(self, dispute_id: str) -> None:
+        self.dispute_id = dispute_id
+        message = f"Dispute {dispute_id} is closed."
+        super().__init__(message)
+
+
 class DisputeNotResolved(DisputeTransactionError):
     def __init__(self, dispute_id: str) -> None:
         self.dispute_id = dispute_id
@@ -41,6 +48,9 @@ class DisputeTransactionService(BaseTransactionService):
     async def create_dispute(
         self, session: AsyncSession, *, dispute: stripe_lib.Dispute
     ) -> tuple[Transaction, Transaction | None]:
+        if dispute.status in {"warning_closed"}:
+            raise DisputeClosed(dispute.id)
+
         if dispute.status not in {"won", "lost"}:
             raise DisputeNotResolved(dispute.id)
 

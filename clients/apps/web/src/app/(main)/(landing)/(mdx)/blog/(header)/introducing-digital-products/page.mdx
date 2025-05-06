@@ -5,13 +5,18 @@ created_at: 2024-06-13T08:45:18.331608+00:00
 description: Today, we're thrilled to announce two big, new features towards our vision of building the all-in-one funding & monetization platform for developers.
 ---
 
-# Introducing Digital Products
+<InnerHeaderWrapper>
+  <h1>Introducing Digital Products</h1>
+</InnerHeaderWrapper>
 
-![Introducing digital products](./image-AjGIfjtZ6O3iRIOOPSVKIt4tmSguK6.png)
+![Introducing digital products](./abstract_05.jpg)
+
+<InnerWrapper>
 
 Today, we're thrilled to announce two big - new - features towards our vision of building the all-in-one funding & monetization platform for developers.
 
 **Products.** Sell your digital services and goods for a pay once price vs. subscriptions only. There is no limit to what you can sell and our built-in benefits make it super easy to offer:
+
 - Access to private GitHub repo(s)
 - Discord invites & roles
 - Premium- or early access newsletter content
@@ -24,8 +29,7 @@ Today, we're thrilled to announce two big - new - features towards our vision of
 
 **Worried about VAT & Sales Tax? We got you covered.** We're the merchant of record and deal with accountants and international tax authorities so you don't have to.
 
------------
-
+---
 
 ### Create a product
 
@@ -50,6 +54,7 @@ Upload image assets to showcase your product and to trigger some "shut up and ta
 ![Product benefit settings](./image-JlKR2bOUVXghUt9fUMSmPPT4KcCm5Y.png)
 
 You can select existing benefits to enable for buyers of this product. Let's go with:
+
 - Private GitHub repo(s) access
 - Premium newsletter access
 - Discord membership
@@ -59,12 +64,14 @@ Of course, let's also create a new one: File Downloads.
 ### Upload & manage downloadable files
 
 ![Create File Downloads Benefit](./image-DicImdX46zgaHhnSlAMq4hcqQvj3HP.png)
+
 1. Click `New benefit` within the product management view
 2. Write a short description (shown to potential buyers)
 3. Choose `File Downloads` as the type
 4. Click the dropzone (Netscape for life) and select 1 or more files to upload
 
 ![Files Uploading](./image-etrEdt2UinoNi5BVISyulBWLhMrP9b.png)
+
 - Click on the filenames to rename them (if desired)
 - Drag & drop on the file icons to change their order
 - You can also disable files for new subscribers & buyers (existing buyers keep legacy access)
@@ -91,8 +98,7 @@ Your Polar page now automatically shows `Products` in the navigation. Showing al
 
 Each product has it's own dedicated page too. Showing all the images in a carousel, full GitHub flavoured markdown description and all the benefit details.
 
-> [!TIP]
-> **Want to integrate Polar on your own site or service instead?** You can use our API & TS SDK to easily integrate everything we have to offer. Just like [Your Next Store](https://yournextstore.com/) has on their gorgeous - custom - page. 
+> [!TIP] > **Want to integrate Polar on your own site or service instead?** You can use our API & TS SDK to easily integrate everything we have to offer. Just like [Your Next Store](https://yournextstore.com/) has on their gorgeous - custom - page.
 
 Once users click `Buy Now` they're redirected to our checkout. It's hosted with Stripe (soon an embeddable checkout without redirects) offering a wide range of payment methods internationally.
 
@@ -112,13 +118,14 @@ Seeing the full product-, payment- and invoice details and of course having seam
 
 ![Purchased product page](./image-w1EylkDbiQVqSZAVtf9w6mhc0zpNcy.png)
 
-Customers or community members can now easily download the files and access the SHA256 checksum if they want to verify the download. 
+Customers or community members can now easily download the files and access the SHA256 checksum if they want to verify the download.
 
 ![Download files](./image-n86lksYvevfV3HfoYeKifhBtbpPrTV.png)
 
 ### Future enhancements
 
 Polar is built entirely [open source](https://github.com/polarsource/polar). Below are some of the relevant GitHub issues we have planned in the near-term.
+
 - Support versioning of files [(#3456)](https://github.com/polarsource/polar/issues/3456).
 - GitHub Action to automate uploading releases
   ($500 reward) [(#3457)](https://github.com/polarsource/polar/issues/3457)
@@ -134,9 +141,9 @@ We'd love to hear from you and help support and build for your use case. Join ou
 No. We're the merchant of record and automatically capture & remit sales taxes if required. Of course, your own revenue is still something you personally need to report.
 
 **Can subscribers still access downloadable files after cancelling their subscription?**
-No. We automatically revoke their access upon cancellation. 
+No. We automatically revoke their access upon cancellation.
 
-**Can buyers of products (pay once) ever lose access to files?** 
+**Can buyers of products (pay once) ever lose access to files?**
 Only if you explicitly delete the file(s).
 
 **Can I disable file(s) for future buyers without existing customers losing their access?**
@@ -145,3 +152,4 @@ Yes. You can easily disable files without deleting them to make them unavailable
 **Can I upload new versions of an existing file without creating new file entries?**
 Not yet, but it's a priority of ours. We want to automate uploads of SemVer versions from GitHub (or elsewhere) and make it a great experience. Stay tuned.
 
+</InnerWrapper>

@@ -3,7 +3,6 @@
 import { KeyboardArrowRight } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
 
@@ -62,21 +61,6 @@ export const Usage = () => {
             </Link>
           </div>
         </div>
-
-        <Image
-          className="dark:border-polar-800 hidden rounded-lg border border-gray-200 dark:block"
-          src="/assets/landing/events.dark.png"
-          alt="Usage Billing"
-          width={1000}
-          height={1000}
-        />
-        <Image
-          className="dark:border-polar-800 block rounded-lg border border-gray-200 dark:hidden"
-          src="/assets/landing/events.light.png"
-          alt="Usage Billing"
-          width={1000}
-          height={1000}
-        />
       </div>
 
       <div className="dark:bg-polar-900 flex flex-1 flex-col gap-12 rounded-2xl bg-white p-8 md:justify-between md:p-12">
@@ -105,30 +89,6 @@ export const Usage = () => {
               </Button>
             </Link>
           </div>
-        </div>
-
-        <div className="dark:bg-polar-800 dark:text-polar-300 relative flex h-full flex-col overflow-auto rounded-lg bg-gray-50 p-4 text-xs text-gray-700">
-          <code>
-            <pre>{`const llmIngestion = Ingestion({ accessToken: 'xxx' })
-  .strategy(new LLMStrategy(openai("gpt-4o")))
-  .ingest("openai-usage");
-
-export async function POST(req: Request) {
-  const { prompt }: { prompt: string } = await req.json();
-
-  const model = llmIngestion.client({
-    externalCustomerId: request.context.userId,
-  });
-
-  const { text } = await streamText({
-    model,
-    system: "You are a helpful assistant.",
-    prompt,
-  });
-
-  return Response.json({ text });
-}`}</pre>
-          </code>
         </div>
       </div>
     </motion.div>

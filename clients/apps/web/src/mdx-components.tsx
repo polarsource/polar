@@ -1,5 +1,4 @@
 import ProseWrapper from '@/components/MDX/ProseWrapper'
-import { TableOfContents } from '@/components/MDX/TableOfContents'
 import type { MDXComponents } from 'mdx/types'
 import Image from 'next/image'
 
@@ -17,14 +16,24 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     ...components,
     BodyWrapper(props) {
       return (
-        <article className="flex w-full max-w-3xl flex-shrink flex-col py-16">
-          <ProseWrapper>{props.children}</ProseWrapper>
-        </article>
+        <ProseWrapper className="flex w-full flex-col items-center md:!max-w-6xl">
+          {props.children}
+        </ProseWrapper>
       )
     },
-    TOCGenerator: ({ items }: { items: string }) => {
-      const parsedItems = JSON.parse(items)
-      return <TableOfContents items={parsedItems} />
+    InnerHeaderWrapper(props) {
+      return (
+        <div className="prose-headings:font-normal prose-h1:leading-tight prose-headings:text-balance pt-12 text-center md:max-w-2xl md:pt-0">
+          {props.children}
+        </div>
+      )
+    },
+    InnerWrapper(props) {
+      return (
+        <div className="flex w-full flex-col md:max-w-2xl">
+          {props.children}
+        </div>
+      )
     },
     img: (props) => {
       /* If the `src` is a string, it's an absolute path we render as an `img` */

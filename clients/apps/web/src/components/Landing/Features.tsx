@@ -275,11 +275,11 @@ const Features = ({ className }: FeaturesProps) => {
         transition={{
           staggerChildren: 0.1,
         }}
-        className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
+        className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
       >
         {features.map((feature, index) => (
           <FeatureCard
-            className={index === 0 ? 'md:col-span-2' : ''}
+            className={index === 0 ? 'xl:col-span-2' : ''}
             key={index}
             icon={feature.icon}
             title={feature.title}

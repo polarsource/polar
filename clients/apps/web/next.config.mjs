@@ -441,20 +441,6 @@ const createConfig = async () => {
               attributes: [],
               children: tree.children,
             },
-            // Automatically add a TOCGenerator component to the end of the MDX file
-            // using the TOC data from the remarkFlexibleToc plugin
-            {
-              type: 'mdxJsxFlowElement',
-              name: 'TOCGenerator',
-              attributes: [
-                {
-                  type: 'mdxJsxAttribute',
-                  name: 'items',
-                  value: JSON.stringify(file.data.toc),
-                },
-              ],
-              children: [],
-            },
           ],
         }),
       ],

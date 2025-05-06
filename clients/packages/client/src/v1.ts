@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/users/me/identity-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Identity Verification */
+        post: operations["users:create_identity_verification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/users/me/account": {
         parameters: {
             query?: never;
@@ -10835,6 +10852,11 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * IdentityVerificationStatus
+         * @enum {string}
+         */
+        IdentityVerificationStatus: "unverified" | "pending" | "verified" | "failed";
         /** IntrospectTokenResponse */
         IntrospectTokenResponse: {
             /** Active */
@@ -14971,6 +14993,13 @@ export interface components {
             /** Account Id */
             account_id: string | null;
         };
+        /** UserIdentityVerification */
+        UserIdentityVerification: {
+            /** Id */
+            id: string;
+            /** Client Secret */
+            client_secret: string;
+        };
         /** UserInfoOrganization */
         UserInfoOrganization: {
             /** Sub */
@@ -15018,6 +15047,9 @@ export interface components {
             id: string;
             /** Accepted Terms Of Service */
             accepted_terms_of_service: boolean;
+            /** Identity Verified */
+            identity_verified: boolean;
+            identity_verification_status: components["schemas"]["IdentityVerificationStatus"];
             /** Oauth Accounts */
             oauth_accounts: components["schemas"]["OAuthAccountRead"][];
         };
@@ -15837,6 +15869,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserScopes"];
+                };
+            };
+        };
+    };
+    "users:create_identity_verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserIdentityVerification"];
                 };
             };
         };
@@ -23586,6 +23638,7 @@ export const eventSourceValues: ReadonlyArray<components["schemas"]["EventSource
 export const fileServiceTypesValues: ReadonlyArray<components["schemas"]["FileServiceTypes"]> = ["downloadable", "product_media", "organization_avatar"];
 export const filterConjunctionValues: ReadonlyArray<components["schemas"]["FilterConjunction"]> = ["and", "or"];
 export const filterOperatorValues: ReadonlyArray<components["schemas"]["FilterOperator"]> = ["eq", "ne", "gt", "gte", "lt", "lte", "like", "not_like"];
+export const identityVerificationStatusValues: ReadonlyArray<components["schemas"]["IdentityVerificationStatus"]> = ["unverified", "pending", "verified", "failed"];
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<components["schemas"]["IntrospectTokenResponse"]["token_type"]> = ["access_token", "refresh_token"];
 export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<components["schemas"]["LegacyRecurringProductPriceCustom"]["amount_type"]> = ["custom"];
 export const legacyRecurringProductPriceFixedAmount_typeValues: ReadonlyArray<components["schemas"]["LegacyRecurringProductPriceFixed"]["amount_type"]> = ["fixed"];

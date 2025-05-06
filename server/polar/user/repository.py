@@ -66,3 +66,17 @@ class UserRepository(
         if not included_blocked:
             statement = statement.where(User.blocked_at.is_(None))
         return await self.get_one_or_none(statement)
+
+    async def get_by_identity_verification_id(
+        self,
+        identity_verification_id: str,
+        *,
+        include_deleted: bool = False,
+        included_blocked: bool = False,
+    ) -> User | None:
+        statement = self.get_base_statement(include_deleted=include_deleted).where(
+            User.identity_verification_id == identity_verification_id
+        )
+        if not included_blocked:
+            statement = statement.where(User.blocked_at.is_(None))
+        return await self.get_one_or_none(statement)

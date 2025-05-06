@@ -11,9 +11,15 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.user.service import user as user_service
 
-from .schemas import UserRead, UserScopes, UserSetAccount, UserStripePortalSession
+from .schemas import (
+    UserIdentityVerification,
+    UserRead,
+    UserScopes,
+    UserSetAccount,
+    UserStripePortalSession,
+)
 
-router = APIRouter(prefix="/users", tags=[APITag.private])
+router = APIRouter(prefix="/users", tags=["users", APITag.private])
 
 
 @router.get("/me", response_model=UserRead)
@@ -26,6 +32,16 @@ async def scopes(
     auth_subject: AuthSubject[User] = Depends(Authenticator(allowed_subjects={User})),
 ) -> UserScopes:
     return UserScopes(scopes=list(auth_subject.scopes))
+
+
+@router.post("/me/identity-verification", response_model=UserIdentityVerification)
+async def create_identity_verification(
+    auth_subject: WebUser,
+    session: AsyncSession = Depends(get_db_session),
+) -> UserIdentityVerification:
+    return await user_service.create_identity_verification(
+        session, user=auth_subject.subject
+    )
 
 
 @router.patch("/me/account", response_model=UserRead)

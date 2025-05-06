@@ -42,6 +42,7 @@ from polar.transaction.service.payment import (
 from polar.transaction.service.payout import (
     payout_transaction as payout_transaction_service,
 )
+from polar.user.service import user as user_service
 from polar.worker import AsyncSessionMaker, actor, can_retry, get_retries
 
 from .service import stripe as stripe_service
@@ -387,4 +388,40 @@ async def payout_paid(event_id: uuid.UUID) -> None:
             payout = cast(stripe_lib.Payout, event.stripe_data.data.object)
             await payout_transaction_service.create_payout_from_stripe(
                 session, payout=payout, stripe_account_id=account
+            )
+
+
+@actor(actor_name="stripe.webhook.identity.verification_session.verified")
+async def identity_verification_session_verified(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            verification_session = cast(
+                stripe_lib.identity.VerificationSession, event.stripe_data.data.object
+            )
+            await user_service.identity_verification_verified(
+                session, verification_session
+            )
+
+
+@actor(actor_name="stripe.webhook.identity.verification_session.processing")
+async def identity_verification_session_processing(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            verification_session = cast(
+                stripe_lib.identity.VerificationSession, event.stripe_data.data.object
+            )
+            await user_service.identity_verification_pending(
+                session, verification_session
+            )
+
+
+@actor(actor_name="stripe.webhook.identity.verification_session.requires_input")
+async def identity_verification_session_requires_input(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            verification_session = cast(
+                stripe_lib.identity.VerificationSession, event.stripe_data.data.object
+            )
+            await user_service.identity_verification_failed(
+                session, verification_session
             )

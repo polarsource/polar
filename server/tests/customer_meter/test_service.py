@@ -65,7 +65,9 @@ async def events(
             timestamp=timestamp + timedelta(seconds=2),
             organization=customer.organization,
             customer=customer,
-            metadata={"tokens": 10, "model": "lite"},
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            metadata={"meter_id": str(meter.id)},
         ),
         await create_event(
             save_fixture,
@@ -79,11 +81,18 @@ async def events(
             timestamp=timestamp + timedelta(seconds=4),
             organization=customer.organization,
             customer=customer,
-            metadata={"tokens": 0, "model": "lite"},
+            metadata={"tokens": 10, "model": "lite"},
         ),
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=5),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 0, "model": "lite"},
+        ),
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=6),
             organization=customer.organization,
             customer=customer,
             source=EventSource.system,
@@ -93,14 +102,14 @@ async def events(
         # Events that should not be considered by the meter
         await create_event(
             save_fixture,
-            timestamp=timestamp + timedelta(seconds=6),
+            timestamp=timestamp + timedelta(seconds=7),
             organization=customer.organization,
             customer=customer,
             metadata={"tokens": 100, "model": "pro"},
         ),
         await create_event(
             save_fixture,
-            timestamp=timestamp + timedelta(seconds=7),
+            timestamp=timestamp + timedelta(seconds=8),
             organization=customer.organization,
             customer=customer,
             source=EventSource.system,
@@ -133,8 +142,8 @@ class TestUpdateCustomerMeter:
             customer=customer,
             meter=meter,
             consumed_units=Decimal(0),
-            credited_units=20,
-            balance=Decimal(20),
+            credited_units=0,
+            balance=Decimal(0),
         )
         await save_fixture(customer_meter)
 
@@ -146,8 +155,8 @@ class TestUpdateCustomerMeter:
         assert updated_customer_meter is not None
         assert updated_customer_meter == customer_meter
         assert updated_customer_meter.consumed_units == Decimal(0)
-        assert updated_customer_meter.credited_units == Decimal(20)
-        assert updated_customer_meter.balance == Decimal(20)
+        assert updated_customer_meter.credited_units == Decimal(0)
+        assert updated_customer_meter.balance == Decimal(0)
 
         assert updated is False
 
@@ -165,14 +174,14 @@ class TestUpdateCustomerMeter:
         assert customer_meter is not None
         assert customer_meter.customer == customer
         assert customer_meter.meter == meter
-        assert customer_meter.consumed_units == Decimal(40)
+        assert customer_meter.consumed_units == Decimal(20)
         assert customer_meter.credited_units == Decimal(10)
-        assert customer_meter.balance == Decimal(0)
+        assert customer_meter.balance == Decimal(-10)
         assert customer_meter.last_balanced_event == events[-3]
 
         assert updated is True
 
-    async def test_existing_customer_meter(
+    async def test_existing_customer_meter_new_event(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -183,10 +192,10 @@ class TestUpdateCustomerMeter:
         customer_meter = CustomerMeter(
             customer=customer,
             meter=meter,
-            last_balanced_event=events[0],
-            consumed_units=Decimal(20),
-            credited_units=40,
-            balance=Decimal(20),
+            last_balanced_event=events[2],
+            consumed_units=Decimal(10),
+            credited_units=0,
+            balance=Decimal(-10),
         )
         await save_fixture(customer_meter)
 
@@ -196,9 +205,40 @@ class TestUpdateCustomerMeter:
         ) = await customer_meter_service.update_customer_meter(session, customer, meter)
 
         assert updated_customer_meter is not None
-        assert customer_meter.consumed_units == Decimal(40)
-        assert customer_meter.credited_units == Decimal(50)
-        assert customer_meter.balance == Decimal(10)
+        assert customer_meter.consumed_units == Decimal(20)
+        assert customer_meter.credited_units == Decimal(10)
+        assert customer_meter.balance == Decimal(-10)
         assert updated_customer_meter.last_balanced_event == events[-3]
 
         assert updated is True
+
+    async def test_existing_customer_meter_no_new_event(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        events: list[Event],
+        meter: Meter,
+    ) -> None:
+        customer_meter = CustomerMeter(
+            customer=customer,
+            meter=meter,
+            last_balanced_event=events[-3],
+            consumed_units=Decimal(20),
+            credited_units=10,
+            balance=Decimal(-10),
+        )
+        await save_fixture(customer_meter)
+
+        (
+            updated_customer_meter,
+            updated,
+        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+
+        assert updated_customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(20)
+        assert customer_meter.credited_units == Decimal(10)
+        assert customer_meter.balance == Decimal(-10)
+        assert updated_customer_meter.last_balanced_event == events[-3]
+
+        assert updated is False

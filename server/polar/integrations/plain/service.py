@@ -218,7 +218,16 @@ class PlainService:
                                         )
                                     ),
                                 ],
-                                row_aside_content=[],
+                                row_aside_content=[
+                                    ComponentRowContentInput(
+                                        component_link_button=ComponentLinkButtonInput(
+                                            link_button_label="Backoffice ↗",
+                                            link_button_url=settings.generate_external_url(
+                                                f"/backoffice/users/{user.id}"
+                                            ),
+                                        )
+                                    )
+                                ],
                             )
                         ),
                         ComponentContainerContentInput(

@@ -99,7 +99,7 @@ class CustomerMeterService:
     ) -> tuple[CustomerMeter | None, bool]:
         event_repository = EventRepository.from_session(session)
         meter_reset_event = await event_repository.get_latest_meter_reset(
-            customer.id, meter.id
+            customer, meter.id
         )
         statement = (
             event_repository.get_base_statement()
@@ -109,14 +109,14 @@ class CustomerMeterService:
                     # Events matching meter definitions
                     event_repository.get_meter_clause(meter),
                     # System events impacting the meter balance
-                    event_repository.get_meter_credit_clause(meter),
+                    event_repository.get_meter_system_clause(meter),
                 ),
             )
             .order_by(Event.ingested_at.asc())
         )
         if meter_reset_event is not None:
             statement = statement.where(
-                Event.ingested_at > meter_reset_event.ingested_at
+                Event.ingested_at >= meter_reset_event.ingested_at
             )
 
         repository = CustomerMeterRepository.from_session(session)

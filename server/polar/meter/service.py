@@ -262,7 +262,7 @@ class MeterService:
                     # Events matching meter definitions
                     event_repository.get_meter_clause(meter),
                     # System events impacting the meter balance
-                    event_repository.get_meter_credit_clause(meter),
+                    event_repository.get_meter_system_clause(meter),
                 ),
             )
             .order_by(Event.ingested_at.asc())

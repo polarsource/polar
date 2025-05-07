@@ -242,3 +242,52 @@ class TestUpdateCustomerMeter:
         assert updated_customer_meter.last_balanced_event == events[-3]
 
         assert updated is False
+
+    async def test_event_reset_last(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        timestamp = utc_now()
+        events = [
+            await create_event(
+                save_fixture,
+                timestamp=timestamp + timedelta(seconds=1),
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 20, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp + timedelta(seconds=2),
+                organization=customer.organization,
+                customer=customer,
+                source=EventSource.system,
+                name=SystemEvent.meter_reset,
+                metadata={"meter_id": str(meter.id)},
+            ),
+        ]
+        customer_meter = CustomerMeter(
+            customer=customer,
+            meter=meter,
+            last_balanced_event=events[0],
+            consumed_units=Decimal(20),
+            credited_units=10,
+            balance=Decimal(-10),
+        )
+        await save_fixture(customer_meter)
+
+        (
+            updated_customer_meter,
+            updated,
+        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+
+        assert updated_customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(0)
+        assert customer_meter.credited_units == Decimal(0)
+        assert customer_meter.balance == Decimal(0)
+        assert updated_customer_meter.last_balanced_event == events[-1]
+
+        assert updated is True

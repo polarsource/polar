@@ -42,6 +42,14 @@ class IdentityVerificationStatus(StrEnum):
     verified = "verified"
     failed = "failed"
 
+    def get_display_name(self) -> str:
+        return {
+            IdentityVerificationStatus.unverified: "Unverified",
+            IdentityVerificationStatus.pending: "Pending",
+            IdentityVerificationStatus.verified: "Verified",
+            IdentityVerificationStatus.failed: "Failed",
+        }[self]
+
 
 class OAuthAccount(RecordModel):
     __tablename__ = "oauth_accounts"

@@ -1,6 +1,7 @@
 from .components import navigation
 
 NAVIGATION = [
+    navigation.NavigationItem("Users", "users:list", active_route_name_prefix="users:"),
     navigation.NavigationItem(
         "Organizations", "organizations:list", active_route_name_prefix="organizations:"
     ),

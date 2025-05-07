@@ -1,7 +1,7 @@
 'use client'
 
 import { CommandLineIcon } from '@heroicons/react/24/outline'
-import { KeyboardArrowRight } from '@mui/icons-material'
+import { ArrowOutwardOutlined } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 
@@ -16,13 +16,9 @@ export const Tools = () => {
           The fastest way to add SaaS & digital products to your stack
         </h1>
         <Link href="https://docs.polar.sh/documentation/tools/polar-init">
-          <Button
-            fullWidth
-            wrapperClassNames="flex flex-row items-center gap-x-1"
-            variant="secondary"
-          >
+          <Button className="rounded-full" variant="secondary">
             <span>Explore our tools</span>
-            <KeyboardArrowRight className="text-lg" fontSize="inherit" />
+            <ArrowOutwardOutlined className="ml-2" />
           </Button>
         </Link>
       </div>

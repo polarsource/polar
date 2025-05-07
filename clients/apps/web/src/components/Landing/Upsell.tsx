@@ -2,8 +2,8 @@
 
 import {
   AccountBalance,
+  ArrowOutwardOutlined,
   GitHub,
-  KeyboardArrowRight,
   ShoppingBagOutlined,
 } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -40,10 +40,10 @@ const UpsellCard = ({
       {children && <div className="flex gap-4">{children}</div>}
       {link && (
         <Link href={link} target="_blank">
-          <Button variant="ghost">
+          <Button variant="ghost" className="rounded-full">
             Learn more
-            <span className="ml-1">
-              <KeyboardArrowRight fontSize="inherit" />
+            <span className="ml-2">
+              <ArrowOutwardOutlined fontSize="inherit" />
             </span>
           </Button>
         </Link>

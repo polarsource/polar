@@ -1,3 +1,4 @@
+import { ArrowOutwardOutlined } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
@@ -17,14 +18,17 @@ export const Intro = () => {
         ]}
         cta1={
           <GetStartedButton
-            className="bg-black font-medium text-white hover:bg-gray-900 dark:bg-white dark:text-black"
+            className="rounded-full bg-black font-medium text-white hover:bg-gray-900 dark:bg-white dark:text-black"
             text="Sell with Polar"
             size="default"
           />
         }
         cta2={
           <Link href="https://docs.polar.sh/api-reference">
-            <Button variant="ghost">API Reference</Button>
+            <Button variant="ghost" className="rounded-full">
+              API Reference
+              <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
+            </Button>
           </Link>
         }
       />

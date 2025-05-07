@@ -98,6 +98,9 @@ class CustomerMeterService:
         self, session: AsyncSession, customer: Customer, meter: Meter
     ) -> tuple[CustomerMeter | None, bool]:
         event_repository = EventRepository.from_session(session)
+        meter_reset_event = await event_repository.get_latest_meter_reset(
+            customer.id, meter.id
+        )
         statement = (
             event_repository.get_base_statement()
             .where(
@@ -111,20 +114,15 @@ class CustomerMeterService:
             )
             .order_by(Event.ingested_at.asc())
         )
+        if meter_reset_event is not None:
+            statement = statement.where(
+                Event.ingested_at > meter_reset_event.ingested_at
+            )
 
         repository = CustomerMeterRepository.from_session(session)
         customer_meter = await repository.get_by_customer_and_meter(
-            customer.id,
-            meter.id,
-            options=(joinedload(CustomerMeter.last_balanced_event),),
+            customer.id, meter.id
         )
-        if (
-            customer_meter is not None
-            and customer_meter.last_balanced_event is not None
-        ):
-            statement = statement.where(
-                Event.ingested_at > customer_meter.last_balanced_event.ingested_at
-            )
 
         events = await event_repository.get_all(statement)
 
@@ -136,20 +134,22 @@ class CustomerMeterService:
                 CustomerMeter(customer=customer, meter=meter)
             )
 
+        if customer_meter.last_balanced_event_id == events[-1].id:
+            return customer_meter, False
+
         usage_events = [
             event.id for event in events if event.source == EventSource.user
         ]
         usage_units = await meter_service.get_quantity(session, meter, usage_events)
-        customer_meter.consumed_units += Decimal(usage_units)
+        customer_meter.consumed_units = Decimal(usage_units)
 
         credit_events = [event for event in events if is_meter_credit_event(event)]
         credited_units = non_negative_running_sum(
             event.user_metadata["units"] for event in credit_events
         )
-        customer_meter.credited_units += credited_units
-
-        customer_meter.balance = max(
-            Decimal(0), customer_meter.credited_units - customer_meter.consumed_units
+        customer_meter.credited_units = credited_units
+        customer_meter.balance = (
+            customer_meter.credited_units - customer_meter.consumed_units
         )
         customer_meter.last_balanced_event = events[-1]
 

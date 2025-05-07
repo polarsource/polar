@@ -1,7 +1,9 @@
 import uuid
+from datetime import datetime
 from typing import Any, cast
 
 from polar.auth.models import AuthSubject
+from polar.event.repository import EventRepository
 from polar.event.service import event as event_service
 from polar.event.system import SystemEvent, build_system_event
 from polar.kit.utils import utc_now
@@ -42,6 +44,31 @@ class BenefitMeterCreditService(
     ) -> BenefitGrantMeterCreditProperties:
         properties = self._get_properties(benefit)
         meter_id = uuid.UUID(properties["meter_id"])
+
+        # Reset the meter on cycle
+        event_repository = EventRepository.from_session(self.session)
+        latest_meter_reset = await event_repository.get_latest_meter_reset(
+            customer.id, meter_id
+        )
+        last_credited_at = datetime.fromisoformat(grant_properties["last_credited_at"])
+        # Do it only if the meter wasn't reset during the last cycle
+        # It happens because the billing logic trigger a reset after generating the invoice
+        if (
+            latest_meter_reset is None
+            or latest_meter_reset.ingested_at < last_credited_at
+        ):
+            await event_service.create_event(
+                self.session,
+                build_system_event(
+                    SystemEvent.meter_reset,
+                    customer=customer,
+                    organization=benefit.organization,
+                    metadata={
+                        "meter_id": str(meter_id),
+                    },
+                ),
+            )
+
         return await self._create_event(
             customer, benefit.organization, meter_id=meter_id, units=properties["units"]
         )

@@ -4,6 +4,7 @@ from ..base.properties import BenefitGrantProperties, BenefitProperties
 class BenefitMeterCreditProperties(BenefitProperties):
     meter_id: str
     units: int
+    rollover: bool
 
 
 class BenefitGrantMeterCreditProperties(BenefitGrantProperties):

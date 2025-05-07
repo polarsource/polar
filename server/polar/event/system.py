@@ -17,6 +17,7 @@ class SystemEvent(StrEnum):
 class MeterCreditedMetadata(TypedDict):
     meter_id: str
     units: int
+    rollover: bool
 
 
 class MeterCreditedEvent(Event):

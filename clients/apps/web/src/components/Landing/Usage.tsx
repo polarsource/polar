@@ -1,6 +1,6 @@
 'use client'
 
-import { KeyboardArrowRight } from '@mui/icons-material'
+import { ArrowOutwardOutlined } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
@@ -46,20 +46,26 @@ export const Usage = () => {
             Ingest usage events from any source and bill your customers
             accordingly. Now in Alpha.
           </motion.p>
-          <div className="flex items-center gap-4">
-            <GetStartedButton size="default" />
-            <Link
-              href="https://docs.polar.sh/features/usage-based-billing"
-              target="_blank"
+        </div>
+        <div className="flex items-center gap-4">
+          <GetStartedButton
+            size="default"
+            className="rounded-full"
+            variant="secondary"
+          />
+          <Link
+            href="https://docs.polar.sh/features/usage-based-billing"
+            target="_blank"
+          >
+            <Button
+              wrapperClassNames="flex items-center gap-2"
+              variant="ghost"
+              className="rounded-full"
             >
-              <Button
-                wrapperClassNames="flex items-center gap-2"
-                variant="ghost"
-              >
-                Learn More
-              </Button>
-            </Link>
-          </div>
+              Learn More
+              <ArrowOutwardOutlined fontSize="inherit" />
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -69,7 +75,7 @@ export const Usage = () => {
             className="text-balance text-4xl leading-snug"
             variants={itemVariants}
           >
-            Revolutionary Usage Strategies
+            Usage Billing on Autopilot with Ingestion Strategies
           </motion.h3>
           <motion.p
             className="text-pretty text-lg text-gray-600 dark:text-gray-400"
@@ -78,17 +84,21 @@ export const Usage = () => {
             Plug in our flexible ingestion strategies to automate billing across
             your stack.
           </motion.p>
-          <div className="flex items-center gap-4">
-            <Link
-              href="https://docs.polar.sh/features/usage-based-billing/ingestion-strategies/ingestion-strategy"
-              target="_blank"
+        </div>
+        <div className="flex items-center gap-4">
+          <Link
+            href="https://docs.polar.sh/features/usage-based-billing/ingestion-strategies/ingestion-strategy"
+            target="_blank"
+          >
+            <Button
+              wrapperClassNames="flex items-center gap-2"
+              variant="secondary"
+              className="rounded-full"
             >
-              <Button wrapperClassNames="flex items-center gap-2">
-                <span>Strategies</span>
-                <KeyboardArrowRight fontSize="inherit" />
-              </Button>
-            </Link>
-          </div>
+              <span>Strategies</span>
+              <ArrowOutwardOutlined fontSize="inherit" />
+            </Button>
+          </Link>
         </div>
       </div>
     </motion.div>

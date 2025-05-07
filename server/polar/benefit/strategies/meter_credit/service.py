@@ -48,7 +48,7 @@ class BenefitMeterCreditService(
         # Reset the meter on cycle
         event_repository = EventRepository.from_session(self.session)
         latest_meter_reset = await event_repository.get_latest_meter_reset(
-            customer.id, meter_id
+            customer, meter_id
         )
         last_credited_at = datetime.fromisoformat(grant_properties["last_credited_at"])
         # Do it only if the meter wasn't reset during the last cycle

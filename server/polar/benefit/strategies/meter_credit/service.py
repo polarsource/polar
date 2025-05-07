@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Any, cast
 
 from polar.auth.models import AuthSubject
+from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.repository import EventRepository
 from polar.event.service import event as event_service
 from polar.event.system import SystemEvent, build_system_event
@@ -31,7 +32,11 @@ class BenefitMeterCreditService(
         properties = self._get_properties(benefit)
         meter_id = uuid.UUID(properties["meter_id"])
         return await self._create_event(
-            customer, benefit.organization, meter_id=meter_id, units=properties["units"]
+            customer,
+            benefit.organization,
+            meter_id=meter_id,
+            units=properties["units"],
+            rollover=properties["rollover"],
         )
 
     async def cycle(
@@ -57,6 +62,15 @@ class BenefitMeterCreditService(
             latest_meter_reset is None
             or latest_meter_reset.ingested_at < last_credited_at
         ):
+            rollover_units = 0
+            if properties["rollover"]:
+                meter_repository = MeterRepository.from_session(self.session)
+                meter = await meter_repository.get_by_id(meter_id)
+                assert meter is not None
+                rollover_units = await customer_meter_service.get_rollover_units(
+                    self.session, customer, meter
+                )
+
             await event_service.create_event(
                 self.session,
                 build_system_event(
@@ -69,8 +83,27 @@ class BenefitMeterCreditService(
                 ),
             )
 
+            if rollover_units > 0:
+                await event_service.create_event(
+                    self.session,
+                    build_system_event(
+                        SystemEvent.meter_credited,
+                        customer=customer,
+                        organization=benefit.organization,
+                        metadata={
+                            "meter_id": str(meter_id),
+                            "units": rollover_units,
+                            "rollover": True,
+                        },
+                    ),
+                )
+
         return await self._create_event(
-            customer, benefit.organization, meter_id=meter_id, units=properties["units"]
+            customer,
+            benefit.organization,
+            meter_id=meter_id,
+            units=properties["units"],
+            rollover=properties["rollover"],
         )
 
     async def revoke(
@@ -90,7 +123,11 @@ class BenefitMeterCreditService(
 
         units = -grant_properties.get("last_credited_units", properties["units"])
         return await self._create_event(
-            customer, benefit.organization, meter_id=uuid.UUID(meter_id), units=units
+            customer,
+            benefit.organization,
+            meter_id=uuid.UUID(meter_id),
+            units=units,
+            rollover=properties["rollover"],
         )
 
     async def requires_update(
@@ -126,6 +163,7 @@ class BenefitMeterCreditService(
         *,
         meter_id: uuid.UUID,
         units: int,
+        rollover: bool,
     ) -> BenefitGrantMeterCreditProperties:
         await event_service.create_event(
             self.session,
@@ -136,6 +174,7 @@ class BenefitMeterCreditService(
                 metadata={
                     "meter_id": str(meter_id),
                     "units": units,
+                    "rollover": rollover,
                 },
             ),
         )

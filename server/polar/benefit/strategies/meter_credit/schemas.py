@@ -20,6 +20,7 @@ class BenefitMeterCreditProperties(Schema):
     """
 
     units: int
+    rollover: bool
     meter_id: UUID4
 
 
@@ -29,6 +30,7 @@ class BenefitMeterCreditCreateProperties(Schema):
     """
 
     units: Annotated[int, Gt(0)]
+    rollover: bool
     meter_id: UUID4
 
 
@@ -38,6 +40,7 @@ class BenefitMeterCreditSubscriberProperties(Schema):
     """
 
     units: int
+    rollover: bool
     meter_id: UUID4
 
 

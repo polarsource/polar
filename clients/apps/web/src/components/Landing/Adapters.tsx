@@ -100,6 +100,7 @@ export const Adapters = () => {
             <TabsList>
               {adapters.map((adapter) => (
                 <TabsTrigger
+                  key={adapter.name}
                   value={adapter.name}
                   className={tabsTriggerClassName}
                 >
@@ -118,7 +119,7 @@ export const Adapters = () => {
             </TabsList>
           </div>
           {adapters.map((adapter) => (
-            <TabsContent value={adapter.name}>
+            <TabsContent value={adapter.name} key={adapter.name}>
               <motion.div
                 className={`dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row`}
                 variants={containerVariants}

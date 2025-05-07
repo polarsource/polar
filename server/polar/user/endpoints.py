@@ -3,6 +3,10 @@ from fastapi import Depends
 from polar.auth.dependencies import Authenticator, WebUser
 from polar.auth.models import AuthSubject
 from polar.authz.service import Authz
+from polar.customer_portal.endpoints.downloadables import router as downloadables_router
+from polar.customer_portal.endpoints.license_keys import router as license_keys_router
+from polar.customer_portal.endpoints.order import router as order_router
+from polar.customer_portal.endpoints.subscription import router as subscription_router
 from polar.exceptions import InternalServerError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.models import User
@@ -20,6 +24,12 @@ from .schemas import (
 )
 
 router = APIRouter(prefix="/users", tags=["users", APITag.private])
+
+# Include customer portal endpoints for backwards compatibility
+router.include_router(order_router, deprecated=True, include_in_schema=False)
+router.include_router(subscription_router, deprecated=True, include_in_schema=False)
+router.include_router(downloadables_router, deprecated=True, include_in_schema=False)
+router.include_router(license_keys_router, deprecated=True, include_in_schema=False)
 
 
 @router.get("/me", response_model=UserRead)

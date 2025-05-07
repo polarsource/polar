@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import func
@@ -9,7 +10,7 @@ from polar.kit.repository import (
     RepositorySortingMixin,
 )
 from polar.kit.repository.base import SortingClause
-from polar.models import OAuthAccount, User
+from polar.models import OAuthAccount, User, UserOrganization
 from polar.models.user import OAuthPlatform
 
 from .sorting import UserSortProperty
@@ -85,6 +86,25 @@ class UserRepository(
         if not included_blocked:
             statement = statement.where(User.blocked_at.is_(None))
         return await self.get_one_or_none(statement)
+
+    async def get_all_by_organization(
+        self,
+        organization_id: UUID,
+        *,
+        include_deleted: bool = False,
+        included_blocked: bool = False,
+    ) -> Sequence[User]:
+        statement = (
+            self.get_base_statement(include_deleted=include_deleted)
+            .join(UserOrganization, UserOrganization.user_id == User.id)
+            .where(
+                UserOrganization.deleted_at.is_(None),
+                UserOrganization.organization_id == organization_id,
+            )
+        )
+        if not included_blocked:
+            statement = statement.where(User.blocked_at.is_(None))
+        return await self.get_all(statement)
 
     def get_sorting_clause(self, property: UserSortProperty) -> SortingClause:
         match property:

@@ -19,6 +19,7 @@ from polar.organization import sorting
 from polar.organization.repository import OrganizationRepository
 from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
+from polar.user.repository import UserRepository
 
 from ..components import accordion, button, datatable, description_list, input
 from ..layout import layout
@@ -188,6 +189,9 @@ async def get(
     if organization is None:
         raise HTTPException(status_code=404)
 
+    user_repository = UserRepository.from_session(session)
+    users = await user_repository.get_all_by_organization(organization.id)
+
     account = organization.account
     validation_error: ValidationError | None = None
     if account and request.method == "POST":
@@ -212,20 +216,37 @@ async def get(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.h1(classes="text-4xl"):
                 text(organization.name)
-            with description_list.DescriptionList[Organization](
-                description_list.DescriptionListAttrItem("id", "ID", clipboard=True),
-                description_list.DescriptionListAttrItem(
-                    "slug", "Slug", clipboard=True
-                ),
-                description_list.DescriptionListDateTimeItem(
-                    "created_at", "Created At"
-                ),
-                description_list.DescriptionListDateTimeItem(
-                    "created_at", "Created At"
-                ),
-                description_list.DescriptionListLinkItem("website", "Website"),
-            ).render(request, organization):
-                pass
+            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+                with description_list.DescriptionList[Organization](
+                    description_list.DescriptionListAttrItem(
+                        "id", "ID", clipboard=True
+                    ),
+                    description_list.DescriptionListAttrItem(
+                        "slug", "Slug", clipboard=True
+                    ),
+                    description_list.DescriptionListDateTimeItem(
+                        "created_at", "Created At"
+                    ),
+                    description_list.DescriptionListDateTimeItem(
+                        "created_at", "Created At"
+                    ),
+                    description_list.DescriptionListLinkItem("website", "Website"),
+                ).render(request, organization):
+                    pass
+                with tag.div(classes="card card-border w-full shadow-sm"):
+                    with tag.div(classes="card-body"):
+                        with tag.h2(classes="card-title"):
+                            text("Users")
+                        with tag.ul():
+                            for user in users:
+                                with tag.li():
+                                    with tag.a(
+                                        href=str(
+                                            request.url_for("users:get", id=user.id)
+                                        ),
+                                        classes="link",
+                                    ):
+                                        text(user.email)
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):

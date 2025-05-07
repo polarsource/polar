@@ -18,6 +18,8 @@ from polar.customer_session.service import customer_session as customer_session_
 from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import enqueue_email
+from polar.event.service import event as event_service
+from polar.event.system import SystemEvent, build_system_event
 from polar.exceptions import PolarError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
@@ -589,6 +591,18 @@ class OrderService:
             ),
             flush=True,
         )
+
+        # Reset the associated meters, if any
+        for subscription_meter in subscription.meters:
+            await event_service.create_event(
+                session,
+                build_system_event(
+                    SystemEvent.meter_reset,
+                    customer=customer,
+                    organization=subscription.organization,
+                    metadata={"meter_id": str(subscription_meter.meter_id)},
+                ),
+            )
 
         await self._on_order_created(session, order)
 

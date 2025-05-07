@@ -11,6 +11,7 @@ from .middlewares import SecurityHeadersMiddleware, TagflowMiddleware
 from .organizations.endpoints import router as organizations_router
 from .responses import TagResponse
 from .tasks.endpoints import router as tasks_router
+from .users.endpoints import router as users_router
 
 app = FastAPI(
     default_response_class=TagResponse,
@@ -26,6 +27,7 @@ app.add_middleware(TagflowMiddleware)
 app.mount(
     "/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static"
 )
+app.include_router(users_router, prefix="/users")
 app.include_router(organizations_router, prefix="/organizations")
 app.include_router(external_events_router, prefix="/external-events")
 app.include_router(tasks_router, prefix="/tasks")

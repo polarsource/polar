@@ -17,10 +17,10 @@ import { useModal } from '../Modal/useModal'
 export default function Layout({ children }: PropsWithChildren) {
   return (
     <div className="dark:bg-polar-950 relative flex flex-col gap-32 bg-gray-50 md:w-full md:flex-1 md:items-center">
-      <div className="flex flex-col gap-y-2 md:w-full md:max-w-3xl xl:max-w-7xl">
+      <div className="flex flex-col gap-y-2 md:w-full">
         <LandingPageTopbar />
         <LandingPageDesktopNavigation />
-        <div className="dark:bg-polar-950 relative flex w-screen flex-col px-4 md:w-full md:px-0">
+        <div className="dark:bg-polar-950 relative flex flex-col px-4 md:w-full md:px-0">
           {children}
           <LandingPageFooter />
         </div>
@@ -67,33 +67,35 @@ const LandingPageDesktopNavigation = () => {
   }
 
   return (
-    <div className="dark:text-polar-50 relative hidden w-full flex-shrink-0 flex-row items-center justify-between gap-y-12 py-12 md:flex">
-      <BrandingMenu logoVariant="logotype" size={100} />
+    <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-12 md:flex">
+      <div className="relative flex w-full flex-row items-center justify-between md:max-w-3xl xl:max-w-7xl">
+        <BrandingMenu logoVariant="logotype" size={100} />
 
-      <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-6 font-medium">
-        <li>
-          <NavLink href="/" isActive={(pathname) => pathname === '/'}>
-            Features
-          </NavLink>
-        </li>
-        <li>
-          <NavLink href="https://docs.polar.sh">Docs</NavLink>
-        </li>
-        <li>
-          <NavLink href="/company">Company</NavLink>
-        </li>
-        <li>
-          <NavLink href="/blog">Blog</NavLink>
-        </li>
-      </ul>
+        <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-6 font-medium">
+          <li>
+            <NavLink href="/" isActive={(pathname) => pathname === '/'}>
+              Features
+            </NavLink>
+          </li>
+          <li>
+            <NavLink href="https://docs.polar.sh">Docs</NavLink>
+          </li>
+          <li>
+            <NavLink href="/company">Company</NavLink>
+          </li>
+          <li>
+            <NavLink href="/blog">Blog</NavLink>
+          </li>
+        </ul>
 
-      <Button
-        onClick={onLoginClick}
-        className="rounded-full"
-        variant="secondary"
-      >
-        Log In
-      </Button>
+        <Button
+          onClick={onLoginClick}
+          className="rounded-full"
+          variant="secondary"
+        >
+          Log In
+        </Button>
+      </div>
       <Modal
         isShown={isModalShown}
         hide={hideModal}
@@ -114,7 +116,7 @@ const LandingPageTopbar = () => {
   }
 
   return (
-    <div className="z-30 flex w-full flex-row items-center justify-between px-6 py-6 md:hidden md:max-w-7xl md:px-12">
+    <div className="z-30 flex w-full flex-row items-center justify-between px-6 py-6 md:hidden md:px-12">
       <TopbarNavigation />
       <BrandingMenu
         className="ml-2 mt-1 md:hidden"
@@ -144,13 +146,15 @@ const LandingPageFooter = () => {
   return (
     <motion.div
       initial="initial"
-      className="flex"
+      className="flex w-full flex-col items-center"
       variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
       transition={{ duration: 0.5, ease: 'easeInOut' }}
       whileInView="animate"
       viewport={{ once: true }}
     >
-      <Footer />
+      <div className="flex w-full flex-col gap-y-12 md:max-w-3xl xl:max-w-7xl">
+        <Footer />
+      </div>
     </motion.div>
   )
 }

@@ -106,16 +106,20 @@ const Features = ({ className }: FeaturesProps) => {
         <ul className="flex flex-col gap-y-1">
           <li className="flex flex-row items-center gap-x-2">
             <Check className="text-emerald-500" fontSize="small" />
-            <p className="text-pretty leading-relaxed">Subscription Products</p>
-          </li>
-          <li className="flex flex-row items-center gap-x-2">
-            <Check className="text-emerald-500" fontSize="small" />
-            <p className="text-pretty leading-relaxed">One-time Purchases</p>
+            <p className="text-pretty leading-relaxed">
+              Digital & Subscription Products
+            </p>
           </li>
           <li className="flex flex-row items-center gap-x-2">
             <Check className="text-emerald-500" fontSize="small" />
             <p className="text-pretty leading-relaxed">
-              Usage-based billing for metered products
+              Multiple Pricing Models
+            </p>
+          </li>
+          <li className="flex flex-row items-center gap-x-2">
+            <Check className="text-emerald-500" fontSize="small" />
+            <p className="text-pretty leading-relaxed">
+              Discounts, Checkout Links & Benefits
             </p>
           </li>
         </ul>

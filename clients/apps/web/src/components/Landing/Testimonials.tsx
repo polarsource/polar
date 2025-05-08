@@ -284,7 +284,7 @@ const Testamonial = ({
     <Link
       href={link}
       target="_blank"
-      className="dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex flex-row gap-x-4 rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-white"
+      className="dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex flex-row gap-x-4 rounded-2xl border border-transparent bg-white p-4 transition-colors hover:bg-white"
     >
       <div className="flex flex-col gap-y-4 pt-1.5">
         <div className="flex flex-row items-center gap-x-3">

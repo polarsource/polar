@@ -10,7 +10,7 @@ const ProseWrapper = ({
       className={twMerge(
         className,
         'prose dark:prose-invert text-black dark:text-white',
-        'prose-p:tracking-normal prose-p:leading-relaxed',
+        'prose-p:tracking-normal prose-p:leading-relaxed prose-hr:border-gray-300 dark:prose-hr:border-polar-600',
         'prose-img:rounded-lg prose-img:shadow-sm prose-img:border prose-img:border-gray-200 dark:prose-img:border-polar-800',
         'prose-headings:text-black prose-h1:text-5xl prose-h2:text-3xl prose-h3:text-2xl prose-h4:text-xl prose-h5:text-lg prose-h6:text-md dark:prose-headings:text-white prose-headings:font-medium',
         'prose-a:text-blue-500 dark:prose-a:text-blue-400 prose-a:no-underline prose-a:font-normal',

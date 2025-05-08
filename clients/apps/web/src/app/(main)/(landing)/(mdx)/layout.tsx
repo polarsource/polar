@@ -7,7 +7,7 @@ export const dynamicParams = false
 export default function Layout({ children }: PropsWithChildren) {
   return (
     <div className="flex flex-col items-center md:w-full">
-      <ProseWrapper className="flex flex-col items-center md:w-full lg:!max-w-6xl">
+      <ProseWrapper className="flex flex-col items-center md:w-full lg:!max-w-7xl">
         {children}
       </ProseWrapper>
     </div>

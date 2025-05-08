@@ -16,10 +16,16 @@ export const Section = ({
   return (
     <div
       id={id}
-      className={twMerge('relative flex flex-col', wrapperClassName)}
+      className={twMerge(
+        'relative flex flex-col md:items-center',
+        wrapperClassName,
+      )}
     >
       <div
-        className={twMerge('flex flex-col py-12 md:px-0 md:py-16', className)}
+        className={twMerge(
+          'flex w-full flex-col py-12 md:max-w-3xl md:px-0 md:py-16 xl:max-w-7xl',
+          className,
+        )}
       >
         {children}
       </div>

@@ -27,12 +27,11 @@ export default function Page() {
 export const PageContent = () => {
   return (
     <>
-      <Hero className="relative z-10" />
-      <Section className="flex flex-col gap-y-24">
+      <Section className="flex flex-col gap-y-24 md:pt-0">
+        <Hero className="relative z-10" />
         <Features />
         <Adapters />
         <SDKs />
-
         <Usage />
         <Link
           href="https://x.com/rauchg/status/1909810055622672851"

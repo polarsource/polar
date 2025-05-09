@@ -42,6 +42,29 @@ const redirectDocs = (source, destination, permanent = false) => {
   ]
 }
 
+const S3_PUBLIC_IMAGES_BUCKET_ORIGIN = process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME ? `${process.env.S3_PUBLIC_IMAGES_BUCKET_PROTOCOL || 'https'}://${process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME}${process.env.S3_PUBLIC_IMAGES_BUCKET_PORT ? `:${process.env.S3_PUBLIC_IMAGES_BUCKET_PORT}` : ''}` : ''
+const baseCSP = `
+    default-src 'self';
+    connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL} ${process.env.S3_UPLOAD_ORIGINS} https://api.stripe.com https://maps.googleapis.com;
+    frame-src 'self' https://*.js.stripe.com https://js.stripe.com https://hooks.stripe.com;
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.js.stripe.com https://js.stripe.com https://maps.googleapis.com;
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' blob: data: https://www.gravatar.com https://avatars.githubusercontent.com ${S3_PUBLIC_IMAGES_BUCKET_ORIGIN};
+    font-src 'self';
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+    ${ENVIRONMENT !== 'development' ? 'upgrade-insecure-requests;' : ''}
+`
+const nonEmbeddedCSP = `
+  ${baseCSP}
+  frame-ancestors 'none';
+`
+const embeddedCSP = `
+  ${baseCSP}
+  frame-ancestors *;
+`
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -411,6 +434,40 @@ const nextConfig = {
           },
         ],
         permanent: false,
+      },
+    ]
+  },
+  async headers() {
+    return [
+      {
+        source:  '/((?!checkout).*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: nonEmbeddedCSP.replace(/\n/g, ''),
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'payment=(), publickey-credentials-get=(), camera=(), microphone=(), geolocation=()'
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+        ],
+      },
+      {
+        source: '/checkout/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: embeddedCSP.replace(/\n/g, ''),
+          },
+          {
+            key: 'Permissions-Policy',
+            value: `payment=(self "${process.env.NEXT_PUBLIC_FRONTEND_BASE_URL}"), publickey-credentials-get=(self "${process.env.NEXT_PUBLIC_FRONTEND_BASE_URL}"), camera=(), microphone=(), geolocation=()`
+          },
+        ],
       },
     ]
   },

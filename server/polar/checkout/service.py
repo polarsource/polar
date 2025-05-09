@@ -70,7 +70,7 @@ from polar.product.guard import (
     is_fixed_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
-from polar.product.service.product import product as product_service
+from polar.product.service import product as product_service
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.webhook.service import webhook as webhook_service

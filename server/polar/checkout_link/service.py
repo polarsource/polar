@@ -24,7 +24,7 @@ from polar.models import (
 )
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductPriceRepository
-from polar.product.service.product import product as product_service
+from polar.product.service import product as product_service
 
 from .schemas import (
     CheckoutLinkCreate,

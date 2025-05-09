@@ -9,7 +9,7 @@ from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.benefit_grant import BenefitGrantScopeArgs
-from polar.product.service.product import product as product_service
+from polar.product.service import product as product_service
 from polar.worker import AsyncSessionMaker, RedisMiddleware, actor, get_retries
 
 from .grant.scope import resolve_scope

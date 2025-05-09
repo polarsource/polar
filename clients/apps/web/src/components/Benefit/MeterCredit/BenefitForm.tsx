@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
+import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   FormControl,
   FormDescription,
@@ -85,6 +86,27 @@ export const MeterCreditBenefitForm = ({
             </FormItem>
           )
         }}
+      />
+      <FormField
+        control={control}
+        name="properties.rollover"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Rollover unused credits</FormLabel>
+            <FormControl>
+              <div className="flex flex-row items-center gap-x-2">
+                <Checkbox
+                  defaultChecked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+                <p className="text-sm">
+                  Rollover unused credits to the next billing cycle
+                </p>
+              </div>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
       />
     </>
   )

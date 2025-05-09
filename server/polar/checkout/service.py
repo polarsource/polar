@@ -9,10 +9,7 @@ from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
-from polar.auth.models import (
-    Anonymous,
-    AuthSubject,
-)
+from polar.auth.models import Anonymous, AuthSubject
 from polar.checkout.schemas import (
     CheckoutConfirm,
     CheckoutCreate,
@@ -61,12 +58,10 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 from polar.models.checkout_product import CheckoutProduct
 from polar.models.discount import DiscountDuration
-from polar.models.product_price import (
-    ProductPriceAmountType,
-)
+from polar.models.product_price import ProductPriceAmountType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import order as order_service
-from polar.organization.service import organization as organization_service
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_currency_price,
@@ -1763,8 +1758,9 @@ class CheckoutService:
     async def _after_checkout_created(
         self, session: AsyncSession, checkout: Checkout
     ) -> None:
-        organization = await organization_service.get(
-            session, checkout.product.organization_id
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            checkout.product.organization_id
         )
         assert organization is not None
         await webhook_service.send(
@@ -1777,8 +1773,9 @@ class CheckoutService:
         await publish_checkout_event(
             checkout.client_secret, CheckoutEvent.updated, {"status": checkout.status}
         )
-        organization = await organization_service.get(
-            session, checkout.product.organization_id
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            checkout.product.organization_id
         )
         if organization is not None:
             events = await webhook_service.send(

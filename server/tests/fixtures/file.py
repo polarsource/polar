@@ -16,6 +16,7 @@ from httpx import AsyncClient, Response
 from minio import Minio
 
 from polar.config import settings
+from polar.file.repository import FileRepository
 from polar.file.s3 import S3_SERVICES
 from polar.file.schemas import DownloadableFileCreate, FileUpload, FileUploadCompleted
 from polar.file.service import file as file_service
@@ -201,7 +202,8 @@ class TestFile:
         created: FileUpload,
         uploaded: list[S3FileUploadCompletedPart],
     ) -> File:
-        file = await file_service.get(session, created.id)
+        repository = FileRepository.from_session(session)
+        file = await repository.get_by_id(created.id)
         assert file is not None
         completed = await file_service.complete_upload(
             session,

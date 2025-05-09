@@ -9,7 +9,7 @@ from polar.auth.models import is_user
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import OAuth2Token, Organization
 from polar.openapi import APITag
-from polar.organization.service import organization as organization_service
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -164,8 +164,9 @@ async def authorize(
     organizations: Sequence[Organization] | None = None
     if grant.sub_type == SubType.organization:
         assert is_user(auth_subject)
-        organizations = await organization_service.list_all_orgs_by_user_id(
-            session, auth_subject.subject.id
+        organization_repository = OrganizationRepository.from_session(session)
+        organizations = await organization_repository.get_all_by_user(
+            auth_subject.subject.id
         )
 
     return authorize_response_adapter.validate_python(

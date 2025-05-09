@@ -23,7 +23,7 @@ class AccessType(StrEnum):
     write = "write"
 
 
-Object = User | Organization | Account | IssueReward | Pledge | Product | LicenseKey
+Object = Account | Product | LicenseKey
 
 
 class Authz:

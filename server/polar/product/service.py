@@ -49,14 +49,14 @@ from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
-from ..schemas import (
+from .schemas import (
     ExistingProductPrice,
     ProductCreate,
     ProductPriceCreate,
     ProductPriceMeteredCreateBase,
     ProductUpdate,
 )
-from ..sorting import ProductSortProperty
+from .sorting import ProductSortProperty
 
 
 class ProductError(PolarError): ...

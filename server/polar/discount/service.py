@@ -26,7 +26,7 @@ from polar.models.checkout import Checkout
 from polar.models.discount_redemption import DiscountRedemption
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
-from polar.product.service.product import product as product_service
+from polar.product.service import product as product_service
 
 from .schemas import DiscountCreate, DiscountUpdate
 from .sorting import DiscountSortProperty

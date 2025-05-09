@@ -38,7 +38,7 @@ from polar.product.schemas import (
     ProductPriceMeteredUnitCreate,
     ProductUpdate,
 )
-from polar.product.service.product import product as product_service
+from polar.product.service import product as product_service
 from polar.product.sorting import ProductSortProperty
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -58,7 +58,7 @@ def authz(session: AsyncSession) -> Authz:
 
 @pytest.fixture
 def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
-    return mocker.patch("polar.product.service.product.enqueue_job")
+    return mocker.patch("polar.product.service.enqueue_job")
 
 
 @pytest.mark.asyncio

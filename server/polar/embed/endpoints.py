@@ -5,7 +5,7 @@ from polar.exceptions import ResourceNotFound, ResourceNotModified
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.product.schemas import ProductID
-from polar.product.service.product import product as product_service
+from polar.product.service import product as product_service
 from polar.routing import APIRouter
 
 from . import auth

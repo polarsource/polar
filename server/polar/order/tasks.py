@@ -14,7 +14,7 @@ from polar.integrations.discord.internal_webhook import (
 from polar.logging import Logger
 from polar.models import Customer, Order
 from polar.models.order import OrderBillingReason
-from polar.product.service.product import product as product_service
+from polar.product.service import product as product_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.worker import AsyncSessionMaker, actor, can_retry
 

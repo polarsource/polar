@@ -192,6 +192,7 @@ export const Usage = () => {
                         <motion.li
                           className="flex flex-row items-center gap-x-2"
                           variants={itemVariants}
+                          key={bullet}
                         >
                           <Check
                             className="text-emerald-500"

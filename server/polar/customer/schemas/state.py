@@ -143,8 +143,7 @@ class CustomerStateMeter(TimestampedSchema):
     balance: float = Field(
         description=(
             "The balance of the meter, "
-            "i.e. the difference between credited and consumed units. "
-            "Never goes negative."
+            "i.e. the difference between credited and consumed units."
         ),
         examples=[75.0],
     )

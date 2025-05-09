@@ -72,7 +72,6 @@ from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
-from ..product.service.product import product as product_service
 from .repository import SubscriptionRepository
 from .schemas import (
     SubscriptionCancel,
@@ -1068,9 +1067,11 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         full_subscription = await self.get(session, subscription.id)
         assert full_subscription
 
-        if product := await product_service.get_loaded(
-            session, subscription.product_id
-        ):
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(
+            subscription.product_id, options=product_repository.get_eager_options()
+        )
+        if product is not None:
             await webhook_service.send(
                 session, product.organization, event_type, full_subscription
             )
@@ -1078,7 +1079,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def enqueue_benefits_grants(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
-        product = await product_service.get(session, subscription.product_id)
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(subscription.product_id)
         assert product is not None
 
         if subscription.is_incomplete():

@@ -4,17 +4,15 @@ from collections.abc import Sequence
 from typing import Any, List, Literal, TypeVar  # noqa: UP035
 
 import stripe
-from sqlalchemy import Select, UnaryExpression, asc, case, desc, func, select
-from sqlalchemy.orm import contains_eager, joinedload, selectinload
+from sqlalchemy import UnaryExpression, asc, case, desc, func, select
+from sqlalchemy.orm import contains_eager, selectinload
 
-from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.authz.service import AccessType, Authz
+from polar.auth.models import AuthSubject, is_user
 from polar.benefit.service import benefit as benefit_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
-    NotPermitted,
     PolarError,
     PolarRequestValidationError,
     ValidationError,
@@ -24,7 +22,6 @@ from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.meter.repository import MeterRepository
 from polar.models import (
@@ -37,7 +34,6 @@ from polar.models import (
     ProductPriceCustom,
     ProductPriceFixed,
     User,
-    UserOrganization,
 )
 from polar.models.product_custom_field import ProductCustomField
 from polar.models.product_price import HasStripePriceId, ProductPriceAmountType
@@ -65,7 +61,7 @@ class ProductError(PolarError): ...
 T = TypeVar("T", bound=tuple[Any])
 
 
-class ProductService(ResourceServiceReader[Product]):
+class ProductService:
     async def list(
         self,
         session: AsyncSession,
@@ -82,7 +78,8 @@ class ProductService(ResourceServiceReader[Product]):
             (ProductSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Product], int]:
-        statement = self._get_readable_product_statement(auth_subject).join(
+        repository = ProductRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).join(
             ProductPrice,
             onclause=(
                 ProductPrice.id
@@ -181,78 +178,28 @@ class ProductService(ResourceServiceReader[Product]):
 
         return await paginate(session, statement, pagination=pagination)
 
-    async def get_by_id(
+    async def get(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Product | None:
+        repository = ProductRepository.from_session(session)
         statement = (
-            self._get_readable_product_statement(auth_subject)
-            .where(Product.id == id, Product.deleted_at.is_(None))
-            .options(
-                contains_eager(Product.organization),
-                selectinload(Product.product_medias),
-                selectinload(Product.attached_custom_fields),
-                selectinload(Product.all_prices),
-            )
-            .limit(1)
+            repository.get_readable_statement(auth_subject)
+            .where(Product.id == id)
+            .options(*repository.get_eager_options())
         )
-
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
+        return await repository.get_one_or_none(statement)
 
     async def get_embed(self, session: AsyncSession, id: uuid.UUID) -> Product | None:
+        repository = ProductRepository.from_session(session)
         statement = (
-            select(Product)
-            .where(
-                Product.id == id,
-                Product.deleted_at.is_(None),
-                Product.is_archived.is_(False),
-            )
-            .options(
-                selectinload(Product.product_medias),
-            )
-            .limit(1)
+            repository.get_base_statement()
+            .where(Product.id == id, Product.is_archived.is_(False))
+            .options(selectinload(Product.product_medias))
         )
-
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
-
-    async def get_loaded(
-        self, session: AsyncSession, id: uuid.UUID, allow_deleted: bool = False
-    ) -> Product | None:
-        statement = (
-            select(Product)
-            .where(Product.id == id)
-            .options(
-                joinedload(Product.organization),
-                selectinload(Product.product_medias),
-                selectinload(Product.attached_custom_fields),
-            )
-            .limit(1)
-        )
-
-        if not allow_deleted:
-            statement = statement.where(Product.deleted_at.is_(None))
-
-        result = await session.execute(statement)
-
-        return result.scalar_one_or_none()
-
-    async def get_by_id_and_organization(
-        self,
-        session: AsyncSession,
-        id: uuid.UUID,
-        organization: Organization,
-    ) -> Product | None:
-        statement = select(Product).where(
-            Product.id == id,
-            Product.organization_id == organization.id,
-            Product.deleted_at.is_(None),
-        )
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
+        return await repository.get_one_or_none(statement)
 
     async def create(
         self,
@@ -371,16 +318,10 @@ class ProductService(ResourceServiceReader[Product]):
     async def update(
         self,
         session: AsyncSession,
-        authz: Authz,
         product: Product,
         update_schema: ProductUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Product:
-        subject = auth_subject.subject
-
-        if not await authz.can(subject, AccessType.write, product):
-            raise NotPermitted()
-
         errors: list[ValidationError] = []
 
         # Prevent non-legacy products from changing their recurring interval
@@ -545,15 +486,10 @@ class ProductService(ResourceServiceReader[Product]):
     async def update_benefits(
         self,
         session: AsyncSession,
-        authz: Authz,
         product: Product,
         benefits: List[uuid.UUID],  # noqa: UP006
         auth_subject: AuthSubject[User | Organization],
     ) -> tuple[Product, set[Benefit], set[Benefit]]:
-        subject = auth_subject.subject
-        if not await authz.can(subject, AccessType.write, product):
-            raise NotPermitted()
-
         previous_benefits = set(product.benefits)
         new_benefits: set[Benefit] = set()
 
@@ -746,36 +682,6 @@ class ProductService(ResourceServiceReader[Product]):
 
         return product
 
-    def _get_readable_product_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[Product]]:
-        statement = (
-            select(Product)
-            .join(Product.organization)
-            .where(
-                # Prevent to return `None` objects due to the full outer join
-                Product.id.is_not(None),
-                Product.deleted_at.is_(None),
-            )
-        )
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Product.organization_id.in_(
-                    select(UserOrganization.organization_id).where(
-                        UserOrganization.user_id == user.id,
-                        UserOrganization.deleted_at.is_(None),
-                    )
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Product.organization_id == auth_subject.subject.id
-            )
-
-        return statement
-
     async def _after_product_created(
         self,
         session: AsyncSession,
@@ -806,4 +712,4 @@ class ProductService(ResourceServiceReader[Product]):
             await webhook_service.send(session, organization, event_type, product)
 
 
-product = ProductService(Product)
+product = ProductService()

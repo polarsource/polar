@@ -23,7 +23,7 @@ from polar.models import (
     User,
 )
 from polar.postgres import AsyncSession
-from polar.product.repository import ProductPriceRepository
+from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.service import product as product_service
 
 from .schemas import (
@@ -227,7 +227,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         errors: list[ValidationError] = []
 
         for index, product_id in enumerate(product_ids):
-            product = await product_service.get_by_id(session, auth_subject, product_id)
+            product = await product_service.get(session, auth_subject, product_id)
 
             if product is None:
                 errors.append(
@@ -317,7 +317,13 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                 ]
             )
 
-        product = cast(Product, await product_service.get_loaded(session, product.id))
+        product_repository = ProductRepository.from_session(session)
+        product = cast(
+            Product,
+            await product_repository.get_by_id(
+                product.id, options=product_repository.get_eager_options()
+            ),
+        )
         return (product, price)
 
     async def _get_validated_discount(

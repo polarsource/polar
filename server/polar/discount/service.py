@@ -26,7 +26,7 @@ from polar.models.checkout import Checkout
 from polar.models.discount_redemption import DiscountRedemption
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
-from polar.product.service import product as product_service
+from polar.product.repository import ProductRepository
 
 from .schemas import DiscountCreate, DiscountUpdate
 from .sorting import DiscountSortProperty
@@ -123,9 +123,10 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         discount_products: list[DiscountProduct] = []
         if discount_create.products:
+            product_repository = ProductRepository.from_session(session)
             for index, product_id in enumerate(discount_create.products):
-                product = await product_service.get_by_id_and_organization(
-                    session, product_id, organization
+                product = await product_repository.get_by_id_and_organization(
+                    product_id, organization.id
                 )
                 if product is None:
                     raise PolarRequestValidationError(
@@ -221,9 +222,10 @@ class DiscountService(ResourceServiceReader[Discount]):
             discount.discount_products = []
             await session.flush()
 
+            product_repository = ProductRepository.from_session(session)
             for index, product_id in enumerate(discount_update.products):
-                product = await product_service.get_by_id_and_organization(
-                    session, product_id, discount.organization
+                product = await product_repository.get_by_id_and_organization(
+                    product_id, discount.organization_id
                 )
                 if product is None:
                     await nested.rollback()

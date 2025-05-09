@@ -2,6 +2,7 @@ import uuid
 
 import structlog
 
+from polar.account.repository import AccountRepository
 from polar.account.service import account as account_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -157,7 +158,8 @@ class BalanceTransactionService(BaseTransactionService):
         outgoing, incoming = balance_transactions
         source_account_id = incoming.account_id
         assert source_account_id is not None
-        source_account = await account_service.get(session, source_account_id)
+        account_repository = AccountRepository.from_session(session)
+        source_account = await account_repository.get_by_id(source_account_id)
         assert source_account is not None
 
         balance_correlation_key = str(uuid.uuid4())

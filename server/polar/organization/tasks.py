@@ -1,6 +1,6 @@
 import uuid
 
-from polar.account.service import account as account_service
+from polar.account.repository import AccountRepository
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.worker import AsyncSessionMaker, actor
@@ -54,7 +54,8 @@ async def organization_account_set(organization_id: uuid.UUID) -> None:
         if organization.account_id is None:
             raise OrganizationAccountNotSet(organization_id)
 
-        account = await account_service.get_by_id(session, organization.account_id)
+        account_repository = AccountRepository.from_session(session)
+        account = await account_repository.get_by_id(organization.account_id)
         if account is None:
             raise AccountDoesNotExist(organization.account_id)
 

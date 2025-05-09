@@ -1,5 +1,6 @@
 import uuid
 
+from polar.account.repository import AccountRepository
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.plain.service import plain as plain_service
@@ -11,8 +12,6 @@ from polar.notifications.notification import (
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notification_service
 from polar.worker import AsyncSessionMaker, actor
-
-from .service import account as account_service
 
 
 class AccountTaskError(PolarTaskError): ...
@@ -28,7 +27,8 @@ class AccountDoesNotExist(AccountTaskError):
 @actor(actor_name="account.under_review")
 async def account_under_review(account_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
-        account = await account_service.get_by_id(session, account_id)
+        repository = AccountRepository.from_session(session)
+        account = await repository.get_by_id(account_id)
         if account is None:
             raise AccountDoesNotExist(account_id)
 
@@ -49,7 +49,8 @@ async def account_under_review(account_id: uuid.UUID) -> None:
 @actor(actor_name="account.reviewed")
 async def account_reviewed(account_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
-        account = await account_service.get_by_id(session, account_id)
+        repository = AccountRepository.from_session(session)
+        account = await repository.get_by_id(account_id)
         if account is None:
             raise AccountDoesNotExist(account_id)
 

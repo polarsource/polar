@@ -2,18 +2,12 @@ import uuid
 
 import pytest
 
-from polar.authz.service import Authz
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.models import Account, Organization, Transaction, User, UserOrganization
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transaction import transaction as transaction_service
-
-
-@pytest.fixture
-def authz(session: AsyncSession) -> Authz:
-    return Authz(session)
 
 
 @pytest.mark.asyncio
@@ -171,27 +165,14 @@ class TestSearch:
 
 @pytest.mark.asyncio
 class TestGetSummary:
-    async def test_account_not_permitted(
-        self, session: AsyncSession, account: Account, user_second: User, authz: Authz
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        with pytest.raises(NotPermitted):
-            await transaction_service.get_summary(session, user_second, account, authz)
-
     async def test_no_transaction(
         self,
         session: AsyncSession,
         account: Account,
         user: User,
         user_organization: UserOrganization,
-        authz: Authz,
     ) -> None:
-        # then
-        session.expunge_all()
-
-        summary = await transaction_service.get_summary(session, user, account, authz)
+        summary = await transaction_service.get_summary(session, account)
 
         assert summary.balance.currency == "usd"
         assert summary.balance.account_currency == account.currency
@@ -209,13 +190,9 @@ class TestGetSummary:
         account: Account,
         user: User,
         user_organization: UserOrganization,
-        authz: Authz,
         account_transactions: list[Transaction],
     ) -> None:
-        # then
-        session.expunge_all()
-
-        summary = await transaction_service.get_summary(session, user, account, authz)
+        summary = await transaction_service.get_summary(session, account)
 
         assert summary.balance.currency == "usd"
         assert summary.balance.account_currency == "usd"

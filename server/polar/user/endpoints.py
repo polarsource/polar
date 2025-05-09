@@ -2,7 +2,6 @@ from fastapi import Depends
 
 from polar.auth.dependencies import Authenticator, WebUser
 from polar.auth.models import AuthSubject
-from polar.authz.service import Authz
 from polar.customer_portal.endpoints.downloadables import router as downloadables_router
 from polar.customer_portal.endpoints.license_keys import router as license_keys_router
 from polar.customer_portal.endpoints.order import router as order_router
@@ -19,7 +18,6 @@ from .schemas import (
     UserIdentityVerification,
     UserRead,
     UserScopes,
-    UserSetAccount,
     UserStripePortalSession,
 )
 
@@ -51,21 +49,6 @@ async def create_identity_verification(
 ) -> UserIdentityVerification:
     return await user_service.create_identity_verification(
         session, user=auth_subject.subject
-    )
-
-
-@router.patch("/me/account", response_model=UserRead)
-async def set_account(
-    set_account: UserSetAccount,
-    auth_subject: WebUser,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> User:
-    return await user_service.set_account(
-        session,
-        authz=authz,
-        user=auth_subject.subject,
-        account_id=set_account.account_id,
     )
 
 

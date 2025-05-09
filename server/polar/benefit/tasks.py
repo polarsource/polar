@@ -9,7 +9,7 @@ from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.benefit_grant import BenefitGrantScopeArgs
-from polar.product.service import product as product_service
+from polar.product.repository import ProductRepository
 from polar.worker import AsyncSessionMaker, RedisMiddleware, actor, get_retries
 
 from .grant.scope import resolve_scope
@@ -74,7 +74,8 @@ async def enqueue_benefits_grants(
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
 
-        product = await product_service.get(session, product_id)
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(product_id)
         if product is None:
             raise ProductDoesNotExist(product_id)
 

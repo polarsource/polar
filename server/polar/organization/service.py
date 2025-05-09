@@ -208,10 +208,11 @@ class OrganizationService:
     async def set_account(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
         organization: Organization,
         account_id: UUID,
     ) -> Organization:
-        account = await account_service.get_by_id(session, account_id)
+        account = await account_service.get(session, auth_subject, account_id)
         if account is None:
             raise InvalidAccount(account_id)
 

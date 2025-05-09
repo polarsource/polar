@@ -6,8 +6,7 @@ from pydantic import UUID4
 
 from polar.account.service import account as account_service
 from polar.auth.dependencies import WebUser
-from polar.authz.service import AccessType, Authz
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
@@ -87,15 +86,12 @@ async def get_summary(
     auth_subject: WebUser,
     account_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> TransactionsSummary:
-    account = await account_service.get(session, account_id)
+    account = await account_service.get(session, auth_subject, account_id)
     if account is None:
-        raise ResourceNotFound("Account not found")
+        raise ResourceNotFound()
 
-    return await transaction_service.get_summary(
-        session, auth_subject.subject, account, authz
-    )
+    return await transaction_service.get_summary(session, account)
 
 
 @router.get("/payouts", response_model=PayoutEstimate)
@@ -103,14 +99,10 @@ async def get_payout_estimate(
     auth_subject: WebUser,
     account_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> PayoutEstimate:
-    account = await account_service.get(session, account_id)
+    account = await account_service.get(session, auth_subject, account_id)
     if account is None:
-        raise ResourceNotFound("Account not found")
-
-    if not await authz.can(auth_subject.subject, AccessType.write, account):
-        raise NotPermitted()
+        raise ResourceNotFound()
 
     return await payout_transaction_service.get_payout_estimate(
         session, account=account
@@ -123,15 +115,11 @@ async def create_payout(
     payout_create: PayoutCreate,
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
-    authz: Authz = Depends(Authz.authz),
 ) -> TransactionModel:
     account_id = payout_create.account_id
-    account = await account_service.get(session, account_id)
+    account = await account_service.get(session, auth_subject, account_id)
     if account is None:
-        raise ResourceNotFound("Account not found")
-
-    if not await authz.can(auth_subject.subject, AccessType.write, account):
-        raise NotPermitted()
+        raise ResourceNotFound()
 
     return await payout_transaction_service.create_payout(
         session, locker, account=account
@@ -144,19 +132,16 @@ async def get_payout_csv(
     auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
-    authz: Authz = Depends(Authz.authz),
 ) -> StreamingResponse:
     payout = await payout_transaction_service.get(session, id)
 
     if payout is None:
-        raise ResourceNotFound("Payout not found")
+        raise ResourceNotFound()
 
     assert payout.account_id is not None
-    account = await account_service.get(session, payout.account_id)
-    assert account is not None
-
-    if not await authz.can(auth_subject.subject, AccessType.write, account):
-        raise NotPermitted()
+    account = await account_service.get(session, auth_subject, payout.account_id)
+    if account is None:
+        raise ResourceNotFound()
 
     content = payout_transaction_service.get_payout_csv(
         sessionmaker, account=account, payout=payout

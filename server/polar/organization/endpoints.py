@@ -132,10 +132,6 @@ async def update(
     response_model=AccountSchema,
     summary="Get Organization Account",
     responses={
-        403: {
-            "description": "You don't have the permission to update this organization.",
-            "model": NotPermitted.schema(),
-        },
         404: {
             "description": "Organization not found or account not set.",
             "model": ResourceNotFound.schema(),
@@ -157,7 +153,7 @@ async def get_account(
     if organization.account_id is None:
         raise ResourceNotFound()
 
-    account = await account_service.get_by_id(session, organization.account_id)
+    account = await account_service.get(session, auth_subject, organization.account_id)
 
     if account is None:
         raise ResourceNotFound()
@@ -192,7 +188,7 @@ async def set_account(
         raise ResourceNotFound()
 
     return await organization_service.set_account(
-        session, organization, set_account.account_id
+        session, auth_subject, organization, set_account.account_id
     )
 
 

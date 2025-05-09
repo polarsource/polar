@@ -4,7 +4,7 @@ from uuid import UUID
 import structlog
 from sqlalchemy import select
 
-from polar.account.service import account as account_service
+from polar.account.repository import AccountRepository
 from polar.enums import AccountType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.logging import Logger
@@ -133,7 +133,8 @@ class PlatformFeeTransactionService(BaseTransactionService):
         outgoing, incoming = balance_transactions
 
         assert incoming.account_id is not None
-        account = await account_service.get_by_id(session, incoming.account_id)
+        account_repository = AccountRepository.from_session(session)
+        account = await account_repository.get_by_id(incoming.account_id)
         assert account is not None
 
         total_amount = incoming.amount + incoming.tax_amount

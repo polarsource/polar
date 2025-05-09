@@ -8,7 +8,7 @@ import structlog
 from sqlalchemy import UnaryExpression, asc, desc, select
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.account.service import account as account_service
+from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
@@ -746,7 +746,8 @@ class OrderService:
         self, session: AsyncSession, order: Order, charge_id: str
     ) -> None:
         organization = order.organization
-        account = await account_service.get_by_organization_id(session, organization.id)
+        account_repository = AccountRepository.from_session(session)
+        account = await account_repository.get_by_organization(organization.id)
 
         # Retrieve the payment transaction and link it to the order
         payment_transaction = await balance_transaction_service.get_by(

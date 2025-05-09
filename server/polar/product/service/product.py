@@ -42,8 +42,8 @@ from polar.models import (
 from polar.models.product_custom_field import ProductCustomField
 from polar.models.product_price import HasStripePriceId, ProductPriceAmountType
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
-from polar.organization.service import organization as organization_service
 from polar.product.guard import is_legacy_price, is_metered_price, is_static_price
 from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
@@ -800,10 +800,10 @@ class ProductService(ResourceServiceReader[Product]):
             WebhookEventType.product_created, WebhookEventType.product_updated
         ],
     ) -> None:
-        if managing_org := await organization_service.get(
-            session, product.organization_id
-        ):
-            await webhook_service.send(session, managing_org, event_type, product)
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(product.organization_id)
+        if organization is not None:
+            await webhook_service.send(session, organization, event_type, product)
 
 
 product = ProductService(Product)

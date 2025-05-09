@@ -13,6 +13,7 @@ from polar.exceptions import (
     ResourceNotFound,
     ResourceUnavailable,
 )
+from polar.file.repository import FileRepository
 from polar.file.schemas import FileDownload
 from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParams, paginate
@@ -66,7 +67,8 @@ class DownloadableService(
         benefit_id: UUID,
         file_id: UUID,
     ) -> Downloadable | None:
-        file = await file_service.get(session, file_id)
+        file_repository = FileRepository.from_session(session)
+        file = await file_repository.get_by_id(file_id)
         if not file:
             log.info(
                 "downloadables.grant.file_not_found",

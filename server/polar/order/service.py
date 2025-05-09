@@ -59,7 +59,7 @@ from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.order.repository import OrderRepository
 from polar.order.sorting import OrderSortProperty
-from polar.organization.service import organization as organization_service
+from polar.organization.repository import OrganizationRepository
 from polar.product.guard import is_custom_price, is_static_price
 from polar.product.repository import ProductPriceRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -873,8 +873,9 @@ class OrderService:
     ) -> None:
         await session.refresh(order.product, {"prices"})
 
-        organization = await organization_service.get(
-            session, order.product.organization_id
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            order.product.organization_id
         )
         if organization is not None:
             await webhook_service.send(session, organization, event_type, order)

@@ -1,4 +1,4 @@
-from typing import Any, Self
+from typing import Any, Literal, Self
 from uuid import UUID
 
 from pydantic import Field, model_validator
@@ -12,20 +12,10 @@ from polar.user.schemas import UserBase
 
 # Public API
 class AccountCreate(Schema):
-    account_type: AccountType
-    open_collective_slug: str | None = Field(default=None, min_length=1)
+    account_type: Literal[AccountType.stripe]
     country: str = Field(
         description="Two letter uppercase country code", min_length=2, max_length=2
     )
-
-    @model_validator(mode="after")
-    def validate_open_collective(self) -> Self:
-        if (
-            self.account_type == AccountType.open_collective
-            and self.open_collective_slug is None
-        ):
-            raise ValueError("The Open Collective slug must be provided.")
-        return self
 
     @model_validator(mode="after")
     def validate_country(self) -> Self:

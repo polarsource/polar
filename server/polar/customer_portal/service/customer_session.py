@@ -15,7 +15,7 @@ from polar.exceptions import PolarError
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
 from polar.models import CustomerSession, CustomerSessionCode, Organization
-from polar.organization.service import organization as organization_service
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 
 
@@ -48,7 +48,8 @@ class CustomerSessionService:
     async def request(
         self, session: AsyncSession, email: str, organization_id: uuid.UUID
     ) -> tuple[CustomerSessionCode, str]:
-        organization = await organization_service.get(session, organization_id)
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(organization_id)
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
 
@@ -79,8 +80,9 @@ class CustomerSessionService:
         )
 
         customer = customer_session_code.customer
-        organization = await organization_service.get(
-            session, customer_session_code.customer.organization_id
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            customer_session_code.customer.organization_id
         )
         assert organization is not None
 

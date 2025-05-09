@@ -57,7 +57,30 @@ class ProductRepository(
             joinedload(Product.organization),
             selectinload(Product.product_medias),
             selectinload(Product.attached_custom_fields),
+            selectinload(Product.all_prices),
         )
+
+    def get_readable_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[tuple[Product]]:
+        statement = self.get_base_statement()
+
+        if is_user(auth_subject):
+            user = auth_subject.subject
+            statement = statement.where(
+                Product.organization_id.in_(
+                    select(UserOrganization.organization_id).where(
+                        UserOrganization.user_id == user.id,
+                        UserOrganization.deleted_at.is_(None),
+                    )
+                )
+            )
+        elif is_organization(auth_subject):
+            statement = statement.where(
+                Product.organization_id == auth_subject.subject.id
+            )
+
+        return statement
 
 
 class ProductPriceRepository(

@@ -30,7 +30,7 @@ from polar.models.refund import Refund, RefundReason, RefundStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
-from polar.organization.service import organization as organization_service
+from polar.organization.repository import OrganizationRepository
 from polar.pledge.service import pledge as pledge_service
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
@@ -324,10 +324,11 @@ class RefundService(ResourceServiceReader[Refund]):
         if order is None:
             return refund
 
-        organization = await organization_service.get(
-            session, order.product.organization_id
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            order.product.organization_id
         )
-        if not organization:
+        if organization is None:
             return refund
 
         await self._on_updated(session, organization, refund)
@@ -501,10 +502,11 @@ class RefundService(ResourceServiceReader[Refund]):
         if order is None:
             return instance
 
-        organization = await organization_service.get(
-            session, order.product.organization_id
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            order.product.organization_id
         )
-        if not organization:
+        if organization is None:
             return instance
 
         await self._on_created(session, organization, instance)

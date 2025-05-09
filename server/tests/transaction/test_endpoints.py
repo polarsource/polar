@@ -158,11 +158,7 @@ class TestCreatePayout:
         response = await client.post(
             "/v1/transactions/payouts", json={"account_id": str(account.id)}
         )
-
-        # then
-        session.expunge_all()
-
-        assert response.status_code == 403
+        assert response.status_code == 404
 
     @pytest.mark.auth
     async def test_valid(

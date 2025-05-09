@@ -9,15 +9,12 @@ from sse_starlette.sse import EventSourceResponse
 from uvicorn import Server
 
 from polar.auth.dependencies import WebUser
-from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.exceptions import ResourceNotFound
 from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
-from polar.user_organization.service import (
-    user_organization as user_organization_service,
-)
 
 from .service import Receivers
 
@@ -99,20 +96,11 @@ async def org_stream(
     redis: Redis = Depends(get_redis),
     session: AsyncSession = Depends(get_db_session),
 ) -> EventSourceResponse:
-    if not auth_subject.subject:
-        raise Unauthorized()
-
-    org = await organization_service.get(session, id)
-    if not org:
+    organization = await organization_service.get(session, auth_subject, id)
+    if organization is None:
         raise ResourceNotFound()
 
-    # only if user is a member of this org
-    if not await user_organization_service.get_by_user_and_org(
-        session,
-        auth_subject.subject.id,
-        organization_id=org.id,
-    ):
-        raise Unauthorized()
-
-    receivers = Receivers(user_id=auth_subject.subject.id, organization_id=org.id)
+    receivers = Receivers(
+        user_id=auth_subject.subject.id, organization_id=organization.id
+    )
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))

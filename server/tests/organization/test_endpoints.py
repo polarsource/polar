@@ -149,4 +149,4 @@ async def test_list_members_not_member(
 ) -> None:
     response = await client.get(f"/v1/organizations/{organization.id}/members")
 
-    assert response.status_code == 401
+    assert response.status_code == 404

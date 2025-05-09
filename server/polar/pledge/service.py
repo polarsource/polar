@@ -11,7 +11,7 @@ from sqlalchemy.orm import (
     joinedload,
 )
 
-from polar.account.service import account as account_service
+from polar.account.repository import AccountRepository
 from polar.exceptions import (
     NotPermitted,
     ResourceNotFound,
@@ -327,16 +327,15 @@ class PledgeService(ResourceServiceReader[Pledge]):
         # pledge amount * the users share
         payout_amount = split.get_share_amount(pledge)
 
+        account_repository = AccountRepository.from_session(session)
         if split.user_id:
-            pay_to_account = await account_service.get_by_user_id(
-                session, split.user_id
-            )
+            pay_to_account = await account_repository.get_by_user(split.user_id)
             if pay_to_account is None:
                 raise NotPermitted("Receiving user has no account")
 
         elif split.organization_id:
-            pay_to_account = await account_service.get_by_organization_id(
-                session, split.organization_id
+            pay_to_account = await account_repository.get_by_organization(
+                split.organization_id
             )
             if pay_to_account is None:
                 raise NotPermitted("Receiving organization has no account")

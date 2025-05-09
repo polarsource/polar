@@ -8,7 +8,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
 
-from polar.account.service import account as account_service
+from polar.account.repository import AccountRepository
 from polar.config import settings
 from polar.enums import AccountType
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -226,7 +226,8 @@ class PayoutTransactionService(BaseTransactionService):
         self, session: AsyncSession, payout: Transaction
     ) -> Transaction:
         assert payout.account_id is not None
-        account = await account_service.get(session, payout.account_id)
+        account_repository = AccountRepository.from_session(session)
+        account = await account_repository.get_by_id(payout.account_id)
         assert account is not None
         assert account.stripe_id is not None
         _, balance = await stripe_service.retrieve_balance(account.stripe_id)
@@ -277,7 +278,8 @@ class PayoutTransactionService(BaseTransactionService):
         if payout.status != "paid":
             raise StripePayoutNotPaid(payout.id)
 
-        account = await account_service.get_by_stripe_id(session, stripe_account_id)
+        account_repository = AccountRepository.from_session(session)
+        account = await account_repository.get_by_stripe_id(stripe_account_id)
         if account is None:
             raise UnknownAccount(stripe_account_id)
 

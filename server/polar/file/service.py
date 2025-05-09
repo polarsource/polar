@@ -1,15 +1,16 @@
+import uuid
 from collections.abc import Sequence
-from uuid import UUID
 
 import structlog
 
+from polar.auth.models import AuthSubject
 from polar.integrations.aws.s3 import S3FileError
-from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceServiceReader
-from polar.models import Organization, ProductMedia
+from polar.kit.pagination import PaginationParams
+from polar.models import Organization, ProductMedia, User
 from polar.models.file import File, ProductMediaFile
 from polar.postgres import AsyncSession, sql
 
+from .repository import FileRepository
 from .s3 import S3_SERVICES
 from .schemas import (
     FileCreate,
@@ -25,28 +26,41 @@ log = structlog.get_logger()
 class FileError(S3FileError): ...
 
 
-class FileService(ResourceServiceReader[File]):
-    async def get_list(
+class FileService:
+    async def list(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
         *,
-        organization_id: UUID,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        ids: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        ids: Sequence[UUID] | None = None,
     ) -> tuple[Sequence[File], int]:
-        statement = (
-            sql.select(File)
-            .where(
-                File.organization_id == organization_id,
-                File.is_uploaded == True,  # noqa
-                File.deleted_at.is_(None),
-            )
-            .order_by(File.created_at.desc())
+        repository = FileRepository.from_session(session)
+
+        statement = repository.get_readable_statement(auth_subject).where(
+            File.is_uploaded.is_(True)
         )
-        if ids:
+
+        if organization_id is not None:
+            statement = statement.where(File.organization_id.in_(organization_id))
+
+        if ids is not None:
             statement = statement.where(File.id.in_(ids))
 
-        return await paginate(session, statement, pagination=pagination)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
+
+    async def get(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+    ) -> File | None:
+        repository = FileRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(File.id == id)
+        return await repository.get_one_or_none(statement)
 
     async def patch(
         self,
@@ -155,9 +169,9 @@ class FileService(ResourceServiceReader[File]):
     async def get_selectable_product_media_file(
         self,
         session: AsyncSession,
-        id: UUID,
+        id: uuid.UUID,
         *,
-        organization_id: UUID,
+        organization_id: uuid.UUID,
     ) -> ProductMediaFile | None:
         statement = sql.select(ProductMediaFile).where(
             File.id == id,
@@ -170,4 +184,4 @@ class FileService(ResourceServiceReader[File]):
         return result.scalar_one_or_none()
 
 
-file = FileService(File)
+file = FileService()

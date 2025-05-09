@@ -8,7 +8,7 @@ import structlog
 from sqlalchemy import UnaryExpression, asc, desc, select
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.account.service import account as account_service
+from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
@@ -59,7 +59,7 @@ from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.order.repository import OrderRepository
 from polar.order.sorting import OrderSortProperty
-from polar.organization.service import organization as organization_service
+from polar.organization.repository import OrganizationRepository
 from polar.product.guard import is_custom_price, is_static_price
 from polar.product.repository import ProductPriceRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -746,7 +746,8 @@ class OrderService:
         self, session: AsyncSession, order: Order, charge_id: str
     ) -> None:
         organization = order.organization
-        account = await account_service.get_by_organization_id(session, organization.id)
+        account_repository = AccountRepository.from_session(session)
+        account = await account_repository.get_by_organization(organization.id)
 
         # Retrieve the payment transaction and link it to the order
         payment_transaction = await balance_transaction_service.get_by(
@@ -873,8 +874,9 @@ class OrderService:
     ) -> None:
         await session.refresh(order.product, {"prices"})
 
-        organization = await organization_service.get(
-            session, order.product.organization_id
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            order.product.organization_id
         )
         if organization is not None:
             await webhook_service.send(session, organization, event_type, order)

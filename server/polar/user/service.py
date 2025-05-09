@@ -2,8 +2,6 @@ from uuid import UUID
 
 import stripe as stripe_lib
 
-from polar.account.service import account as account_service
-from polar.authz.service import AccessType, Authz
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.models import User
@@ -175,19 +173,6 @@ class UserService:
                 "identity_verification_status": IdentityVerificationStatus.failed
             },
         )
-
-    async def set_account(
-        self, session: AsyncSession, *, authz: Authz, user: User, account_id: UUID
-    ) -> User:
-        account = await account_service.get_by_id(session, account_id)
-        if account is None:
-            raise InvalidAccount(account_id)
-        if not await authz.can(user, AccessType.write, account):
-            raise InvalidAccount(account_id)
-
-        user.account = account
-        session.add(user)
-        return user
 
 
 user = UserService()

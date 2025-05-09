@@ -59,6 +59,7 @@
                   "features/benefits/file-downloads",
                   "features/benefits/discord-access",
                   "features/benefits/github-access",
+                  "features/benefits/credits",
                   "features/benefits/custom"
                 ]
               },

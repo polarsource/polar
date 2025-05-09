@@ -158,8 +158,11 @@ class EmbedCheckout {
     iframe.style.zIndex = '2147483647'
     iframe.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
     iframe.style.colorScheme = 'auto'
+
     // @ts-ignore
-    iframe.allow = `payment 'self' ${__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__.split(',').join(' ')}`
+    const origins = __POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__.split(',').join(' ')
+    iframe.allow = `payment 'self' ${origins}; publickey-credentials-get 'self' ${origins};`
+
     document.body.appendChild(iframe)
 
     const embedCheckout = new EmbedCheckout(iframe, loader)

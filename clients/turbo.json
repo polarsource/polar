@@ -1,8 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": [
-    "**/.env.*local"
-  ],
+  "globalDependencies": ["**/.env.*local"],
   "globalEnv": [
     "CODESPACES",
     "CODESPACE_NAME",
@@ -40,13 +38,12 @@
     "S3_PUBLIC_IMAGES_BUCKET_PROTOCOL",
     "S3_PUBLIC_IMAGES_BUCKET_HOSTNAME",
     "S3_PUBLIC_IMAGES_BUCKET_PORT",
-    "S3_PUBLIC_IMAGES_BUCKET_PATHNAME"
+    "S3_PUBLIC_IMAGES_BUCKET_PATHNAME",
+    "S3_UPLOAD_ORIGINS"
   ],
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "outputs": [
         ".next/**",
         "!.next/cache/**",
@@ -57,16 +54,12 @@
     "lint": {},
     "test": {},
     "dev": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     },
     "storybook": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     }

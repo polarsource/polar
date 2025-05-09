@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.1.11
+
+### Patch Changes
+
+- 664460e: Tweak allow policy on iframe
+
 ## 0.1.10
 
 ### Patch Changes

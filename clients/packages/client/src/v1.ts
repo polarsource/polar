@@ -5098,6 +5098,8 @@ export interface components {
         BenefitMeterCreditCreateProperties: {
             /** Units */
             units: number;
+            /** Rollover */
+            rollover: boolean;
             /**
              * Meter Id
              * Format: uuid4
@@ -5111,6 +5113,8 @@ export interface components {
         BenefitMeterCreditProperties: {
             /** Units */
             units: number;
+            /** Rollover */
+            rollover: boolean;
             /**
              * Meter Id
              * Format: uuid4
@@ -5176,6 +5180,8 @@ export interface components {
         BenefitMeterCreditSubscriberProperties: {
             /** Units */
             units: number;
+            /** Rollover */
+            rollover: boolean;
             /**
              * Meter Id
              * Format: uuid4
@@ -8155,7 +8161,7 @@ export interface components {
             credited_units: number;
             /**
              * Balance
-             * @description The balance of the meter, i.e. the difference between credited and consumed units. Never goes negative.
+             * @description The balance of the meter, i.e. the difference between credited and consumed units.
              */
             balance: number;
             meter: components["schemas"]["CustomerCustomerMeterMeter"];
@@ -8236,7 +8242,7 @@ export interface components {
             credited_units: number;
             /**
              * Balance
-             * @description The balance of the meter, i.e. the difference between credited and consumed units. Never goes negative.
+             * @description The balance of the meter, i.e. the difference between credited and consumed units.
              */
             balance: number;
             /** @description The customer associated with this meter. */
@@ -8910,7 +8916,7 @@ export interface components {
             credited_units: number;
             /**
              * Balance
-             * @description The balance of the meter, i.e. the difference between credited and consumed units. Never goes negative.
+             * @description The balance of the meter, i.e. the difference between credited and consumed units.
              */
             balance: number;
         };

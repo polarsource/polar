@@ -7,7 +7,7 @@
   "name": "Polar",
   "description": "Payments & Billing with 6 lines of code. Open Source & Global Merchant of Record.",
   "colors": {
-    "primary": "#fff",
+    "primary": "#000",
     "light": "#fff",
     "dark": "#000"
   },

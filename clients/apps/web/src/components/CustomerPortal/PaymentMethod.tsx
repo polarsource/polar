@@ -40,9 +40,11 @@ const PaymentMethodCard = ({
 const PaymentMethod = ({
   api,
   paymentMethod,
+  deletable,
 }: {
   api: Client
   paymentMethod: PaymentMethodType
+  deletable: boolean
 }) => {
   const deletePaymentMethod = useDeleteCustomerPaymentMethod(api)
 
@@ -64,16 +66,18 @@ const PaymentMethod = ({
             className="bg-emerald-50 text-emerald-500 dark:bg-emerald-950"
           />
         )}
-        <Button
-          variant="secondary"
-          size="sm"
-          className="h-8 w-8"
-          onClick={onDeletePaymentMethod}
-          loading={deletePaymentMethod.isPending}
-          disabled={deletePaymentMethod.isPending}
-        >
-          <X className="size-4" />
-        </Button>
+        {deletable && (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="h-8 w-8"
+            onClick={onDeletePaymentMethod}
+            loading={deletePaymentMethod.isPending}
+            disabled={deletePaymentMethod.isPending}
+          >
+            <X className="size-4" />
+          </Button>
+        )}
       </div>
     </div>
   )

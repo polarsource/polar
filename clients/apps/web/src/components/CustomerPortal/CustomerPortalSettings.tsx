@@ -65,7 +65,12 @@ export const CustomerPortalSettings = ({
         <Separator className="dark:bg-polar-700" />
         <WellContent className="gap-y-4">
           {paymentMethods?.items.map((pm) => (
-            <PaymentMethod key={pm.id} paymentMethod={pm} api={api} />
+            <PaymentMethod
+              key={pm.id}
+              paymentMethod={pm}
+              api={api}
+              deletable={paymentMethods.items.length > 1}
+            />
           ))}
         </WellContent>
       </Well>

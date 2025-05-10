@@ -53,7 +53,7 @@ const baseCSP = `
     font-src 'self';
     object-src 'none';
     base-uri 'self';
-    form-action 'self';
+    form-action 'self' ${process.env.NEXT_PUBLIC_API_URL};
     ${ENVIRONMENT !== 'development' ? 'upgrade-insecure-requests;' : ''}
 `
 const nonEmbeddedCSP = `

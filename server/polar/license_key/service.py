@@ -213,7 +213,7 @@ class LicenseKeyService(
             raise ResourceNotFound("License key does not match given benefit.")
 
         if validate.customer_id and validate.customer_id != license_key.customer_id:
-            bound_logger.warn(
+            bound_logger.warning(
                 "license_key.validate.invalid_owner",
                 validate_customer_id=validate.customer_id,
             )

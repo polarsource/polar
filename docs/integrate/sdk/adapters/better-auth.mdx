@@ -58,7 +58,8 @@ const auth = betterAuth({
                         slug: "pro" // Custom slug for easy reference in Checkout URL, e.g. /checkout/pro
                     }
                 ],
-                successUrl: "/success?checkout_id={CHECKOUT_ID}"
+                successUrl: "/success?checkout_id={CHECKOUT_ID}",
+                authenticatedUsersOnly: true
             },
             // Incoming Webhooks handler will be installed at /polar/webhooks
             webhooks: {
@@ -84,6 +85,7 @@ const auth = betterAuth({
 - `checkout.enabled`: Enable checkout functionality. Deployed as GET endpoint at /checkout
 - `checkout.products`: Array of products or function returning products. Slug passed will then be passable as route param.
 - `checkout.successUrl`: URL to redirect to after successful checkout
+- `checkout.authenticatedUsersOnly`: If true, only authenticated users will be able to access the checkout page
 
 ### Webhook Handlers
 
@@ -102,6 +104,7 @@ The plugin supports handlers for all Polar webhook events:
 - `onCheckoutCreated` - Triggered when a checkout is created
 - `onCheckoutUpdated` - Triggered when a checkout is updated
 - `onOrderCreated` - Triggered when an order is created
+- `onOrderPaid` - Triggered when an order is paid
 - `onOrderRefunded` - Triggered when an order is refunded
 - `onRefundCreated` - Triggered when a refund is created
 - `onRefundUpdated` - Triggered when a refund is updated
@@ -149,8 +152,10 @@ When checkouts are enabled, you're able to initialize Checkout Sessions on the `
 
 If you pass an array of products to the configuration, you're able to use the slug as a reference instead of using the product id.
 
-### Checkouts with product id
+### Checkouts with products
 
 All your organization products are eligible for checkouts, even if they're not passed to the products-configuration.
 
-You can initialize a checkout session like following - `/checkout?productId=123-456-789`
+You can initialize a checkout session like following - `/checkout?products=123-456-789`
+
+You can pass multiple products like - `/checkout?products=123-456-789&products=987-654-321`

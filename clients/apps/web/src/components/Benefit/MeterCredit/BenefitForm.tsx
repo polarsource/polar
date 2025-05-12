@@ -90,6 +90,7 @@ export const MeterCreditBenefitForm = ({
       <FormField
         control={control}
         name="properties.rollover"
+        defaultValue={false}
         render={({ field }) => (
           <FormItem>
             <FormLabel>Rollover unused credits</FormLabel>

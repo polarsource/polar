@@ -44,6 +44,9 @@ class Payment(RecordModel):
     method_metadata: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )
+    customer_email: Mapped[str | None] = mapped_column(
+        String, nullable=True, index=True
+    )
 
     processor_id: Mapped[str] = mapped_column(
         String, index=True, nullable=False, unique=True

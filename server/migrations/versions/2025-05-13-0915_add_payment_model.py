@@ -37,6 +37,7 @@ def upgrade() -> None:
         sa.Column(
             "method_metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False
         ),
+        sa.Column("customer_email", sa.String(), nullable=True),
         sa.Column("processor_id", sa.String(), nullable=False),
         sa.Column("decline_reason", sa.String(), nullable=True),
         sa.Column("decline_message", sa.String(), nullable=True),
@@ -75,6 +76,9 @@ def upgrade() -> None:
         op.f("ix_payments_deleted_at"), "payments", ["deleted_at"], unique=False
     )
     op.create_index(op.f("ix_payments_method"), "payments", ["method"], unique=False)
+    op.create_index(
+        op.f("ix_payments_customer_email"), "payments", ["customer_email"], unique=False
+    )
     op.create_index(
         op.f("ix_payments_modified_at"), "payments", ["modified_at"], unique=False
     )

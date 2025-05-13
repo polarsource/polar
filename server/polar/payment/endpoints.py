@@ -45,6 +45,9 @@ async def list(
     method: MultipleQueryFilter[str] | None = Query(
         None, title="Method Filter", description="Filter by payment method."
     ),
+    customer_email: MultipleQueryFilter[str] | None = Query(
+        None, title="CustomerEmail Filter", description="Filter by customer email."
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[PaymentSchema]:
     """List payments."""
@@ -56,6 +59,7 @@ async def list(
         order_id=order_id,
         status=status,
         method=method,
+        customer_email=customer_email,
         pagination=pagination,
         sorting=sorting,
     )

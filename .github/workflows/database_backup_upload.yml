@@ -1,0 +1,73 @@
+name: Upload database backup to S3
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: backup
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Download backup from Render
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_DATABASE_ID: ${{ secrets.RENDER_DATABASE_ID }}
+        run: |
+          mkdir -p backups
+
+          if ! DOWNLOAD_URL=$(curl -s -X GET "https://api.render.com/v1/postgres/$RENDER_DATABASE_ID/export" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" | jq -r '.[0].url'); then
+            echo "Error: Failed to fetch database export list" >&2
+            exit 1
+          fi
+
+          if [[ "$DOWNLOAD_URL" == "null" || -z "$DOWNLOAD_URL" ]]; then
+            echo "Error: No valid export URL found" >&2
+            exit 1
+          fi
+
+          echo "Downloading database backup..."
+          if ! curl -s -o "backups/$(date +%Y%m%d)_backup.tar.gz" "$DOWNLOAD_URL"; then
+            echo "Error: Failed to download backup" >&2
+            exit 1
+          fi
+
+          echo "Download completed successfully"
+
+      - name: Upload backup to S3
+        env:
+          BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
+        run: |
+          BACKUP_COUNT=$(find backups -name "*.tar.gz" -type f | wc -l)
+
+          if [ "$BACKUP_COUNT" -gt 0 ]; then
+            echo "Uploading $BACKUP_COUNT backup file(s) to S3..."
+
+            if ! aws s3 cp backups/*.tar.gz "s3://$BUCKET_NAME/$(date +%Y%m%d)/" --no-progress; then
+              echo "Error: Failed to upload backups to S3" >&2
+              exit 1
+            fi
+
+            echo "Upload completed successfully"
+          else
+            echo "Error: No backup files found to upload" >&2
+            exit 1
+          fi
+
+      - name: Cleanup sensitive data
+        if: always()
+        run: |
+          # Remove any sensitive files regardless of whether steps succeeded
+          rm -rf backups/

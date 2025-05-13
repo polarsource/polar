@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, Self
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, SmallInteger, String, Uuid
@@ -10,7 +10,6 @@ from sqlalchemy.sql.sqltypes import Integer
 from polar.enums import PaymentProcessor
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StrEnumType
-from polar.kit.metadata import MetadataMixin
 
 if TYPE_CHECKING:
     from .checkout import Checkout
@@ -23,8 +22,14 @@ class PaymentStatus(StrEnum):
     succeeded = "succeeded"
     failed = "failed"
 
+    @classmethod
+    def from_stripe_charge(
+        cls, stripe_status: Literal["failed", "pending", "succeeded"]
+    ) -> Self:
+        return cls(stripe_status)
 
-class Payment(MetadataMixin, RecordModel):
+
+class Payment(RecordModel):
     __tablename__ = "payments"
 
     processor: Mapped[PaymentProcessor] = mapped_column(

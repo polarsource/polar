@@ -7,9 +7,8 @@ from sqlalchemy import select
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.models import Organization, Pledge, Transaction, User
+from polar.models import Pledge, Transaction
 from polar.models.transaction import Processor, TransactionType
-from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 
 from .base import BaseTransactionService, BaseTransactionServiceError
@@ -19,17 +18,6 @@ from .processor_fee import (
 
 
 class PaymentTransactionError(BaseTransactionServiceError): ...
-
-
-class PledgeDoesNotExist(PaymentTransactionError):
-    def __init__(self, charge_id: str, payment_intent_id: str) -> None:
-        self.charge_id = charge_id
-        self.payment_intent_id = payment_intent_id
-        message = (
-            f"Received a pledge charge {charge_id} ({payment_intent_id}) from Stripe "
-            "but no such Pledge exists."
-        )
-        super().__init__(message)
 
 
 class PaymentTransactionService(BaseTransactionService):
@@ -90,23 +78,6 @@ class PaymentTransactionService(BaseTransactionService):
             ):
                 pledge_invoice = True
 
-        # Try to link with a Pledge
-        payment_user: User | None = None
-        payment_organization: Organization | None = None
-        if pledge_invoice or charge.metadata.get("type") == ProductType.pledge:
-            assert charge.payment_intent is not None
-            payment_intent = get_expandable_id(charge.payment_intent)
-            pledge = await pledge_service.get_by_payment_id(session, payment_intent)
-            # Give a chance to retry this later in case we didn't create the Pledge yet.
-            if pledge is None:
-                raise PledgeDoesNotExist(charge.id, payment_intent)
-            # If we were not able to link to a payer by Stripe Customer ID,
-            # link from the pledge data. Happens for anonymous pledges.
-            if payment_organization is None:
-                await session.refresh(pledge, {"user", "by_organization"})
-                payment_user = pledge.user
-                payment_organization = pledge.by_organization
-
         risk = getattr(charge, "outcome", {})
         transaction = Transaction(
             type=TransactionType.payment,
@@ -119,8 +90,6 @@ class PaymentTransactionService(BaseTransactionService):
             tax_country=tax_country,
             tax_state=tax_state if tax_country in {"US", "CA"} else None,
             customer_id=get_expandable_id(charge.customer) if charge.customer else None,
-            payment_organization=payment_organization,
-            payment_user=payment_user,
             charge_id=charge.id,
             pledge=pledge,
             risk_level=risk.get("risk_level"),
@@ -128,6 +97,9 @@ class PaymentTransactionService(BaseTransactionService):
             # Filled when we handle the invoice
             order=None,
             payment_customer=None,
+            # Legacy fields for pledges
+            payment_organization=None,
+            payment_user=None,
         )
 
         # Compute and link fees

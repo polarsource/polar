@@ -23,6 +23,8 @@ from polar.order.service import (
     SubscriptionDoesNotExist as OrderSubscriptionDoesNotExist,
 )
 from polar.order.service import order as order_service
+from polar.payment.service import UnhandledPaymentIntent
+from polar.payment.service import payment as payment_service
 from polar.pledge.service import pledge as pledge_service
 from polar.refund.service import refund as refund_service
 from polar.subscription.service import SubscriptionDoesNotExist
@@ -32,9 +34,6 @@ from polar.transaction.service.dispute import (
 )
 from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
-)
-from polar.transaction.service.payment import (
-    PledgeDoesNotExist as PaymentTransactionPledgeDoesNotExist,
 )
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
@@ -165,6 +164,13 @@ async def payment_intent_payment_failed(event_id: uuid.UUID) -> None:
                     session, uuid.UUID(checkout_id), payment_intent
                 )
 
+            try:
+                await payment_service.create_from_stripe_payment_intent(
+                    session, payment_intent
+                )
+            except UnhandledPaymentIntent:
+                pass
+
 
 @actor(actor_name="stripe.webhook.setup_intent.succeeded")
 @stripe_api_connection_error_retry
@@ -212,25 +218,32 @@ async def setup_intent_setup_failed(event_id: uuid.UUID) -> None:
                 )
 
 
+@actor(actor_name="stripe.webhook.charge.pending")
+async def charge_pending(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            charge = cast(stripe_lib.Charge, event.stripe_data.data.object)
+            await payment_service.upsert_from_stripe_charge(session, charge)
+
+
+@actor(actor_name="stripe.webhook.charge.failed")
+async def charge_failed(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            charge = cast(stripe_lib.Charge, event.stripe_data.data.object)
+            await payment_service.upsert_from_stripe_charge(session, charge)
+
+
 @actor(actor_name="stripe.webhook.charge.succeeded")
 @stripe_api_connection_error_retry
 async def charge_succeeded(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             charge = cast(stripe_lib.Charge, event.stripe_data.data.object)
-            try:
-                await payment_transaction_service.create_payment(
-                    session=session, charge=charge
-                )
-            except PaymentTransactionPledgeDoesNotExist as e:
-                log.warning(e.message, event_id=event.id)
-                # Retry because we might not have been able to handle other events
-                # triggering the creation of Pledge and Subscription
-                if can_retry():
-                    raise Retry() from e
-                # Raise the exception to be notified about it
-                else:
-                    raise
+            await payment_service.upsert_from_stripe_charge(session, charge)
+            await payment_transaction_service.create_payment(
+                session=session, charge=charge
+            )
 
 
 @actor(actor_name="stripe.webhook.refund.created")

@@ -9,13 +9,18 @@ from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
+    RepositorySortingMixin,
+    SortingClause,
 )
 from polar.kit.utils import utc_now
 from polar.models import Checkout, CheckoutProduct, Product, UserOrganization
 from polar.models.checkout import CheckoutStatus
 
+from .sorting import CheckoutSortProperty
+
 
 class CheckoutRepository(
+    RepositorySortingMixin[Checkout, CheckoutSortProperty],
     RepositorySoftDeletionIDMixin[Checkout, UUID],
     RepositorySoftDeletionMixin[Checkout],
     RepositoryBase[Checkout],
@@ -80,3 +85,12 @@ class CheckoutRepository(
                 )
             ),
         )
+
+    def get_sorting_clause(self, property: CheckoutSortProperty) -> SortingClause:
+        match property:
+            case CheckoutSortProperty.created_at:
+                return Checkout.created_at
+            case CheckoutSortProperty.expires_at:
+                return Checkout.expires_at
+            case CheckoutSortProperty.status:
+                return Checkout.status

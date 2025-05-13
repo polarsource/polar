@@ -2,12 +2,11 @@ import contextlib
 import typing
 import uuid
 from collections.abc import AsyncIterator, Sequence
-from typing import Any
 
 import stripe as stripe_lib
 import structlog
 from pydantic import ValidationError as PydanticValidationError
-from sqlalchemy import UnaryExpression, asc, desc, func, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import (
@@ -189,6 +188,8 @@ class CheckoutService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        status: Sequence[CheckoutStatus] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[CheckoutSortProperty]] = [
             (CheckoutSortProperty.created_at, True)
@@ -205,14 +206,13 @@ class CheckoutService:
         if product_id is not None:
             statement = statement.where(Checkout.product_id.in_(product_id))
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
-        for criterion, is_desc in sorting:
-            clause_function = desc if is_desc else asc
-            if criterion == CheckoutSortProperty.created_at:
-                order_by_clauses.append(clause_function(Checkout.created_at))
-            elif criterion == CheckoutSortProperty.expires_at:
-                order_by_clauses.append(clause_function(Checkout.expires_at))
-        statement = statement.order_by(*order_by_clauses)
+        if customer_id is not None:
+            statement = statement.where(Checkout.customer_id.in_(customer_id))
+
+        if status is not None:
+            statement = statement.where(Checkout.status.in_(status))
+
+        statement = repository.apply_sorting(statement, sorting)
 
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page

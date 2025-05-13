@@ -54,6 +54,7 @@ class PaymentService:
         order_id: Sequence[uuid.UUID] | None = None,
         status: Sequence[PaymentStatus] | None = None,
         method: Sequence[str] | None = None,
+        customer_email: Sequence[str] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[PaymentSortProperty]] = [
             (PaymentSortProperty.created_at, True)
@@ -76,6 +77,9 @@ class PaymentService:
 
         if method is not None:
             statement = statement.where(Payment.method.in_(method))
+
+        if customer_email is not None:
+            statement = statement.where(Payment.customer_email.in_(customer_email))
 
         statement = repository.apply_sorting(statement, sorting)
 
@@ -115,6 +119,7 @@ class PaymentService:
         payment.method_metadata = dict(
             payment_method_details[payment_method_details.type]
         )
+        payment.customer_email = charge.billing_details.email
 
         if charge.outcome is not None:
             payment.decline_reason = charge.outcome.reason
@@ -189,6 +194,7 @@ class PaymentService:
         assert payment_method is not None
         payment.method = payment_method.type
         payment.method_metadata = dict(payment_method[payment_method.type])
+        payment.customer_email = payment_intent.receipt_email
 
         payment.decline_reason = payment_error.code
         payment.decline_message = payment_error.message

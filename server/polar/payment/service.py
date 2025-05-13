@@ -1,18 +1,23 @@
 import uuid
+from collections.abc import Sequence
 
 import stripe as stripe_lib
 from sqlalchemy.orm import joinedload
 
+from polar.auth.models import AuthSubject, Organization, User
 from polar.checkout.repository import CheckoutRepository
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.integrations.stripe.utils import get_expandable_id
+from polar.kit.pagination import PaginationParams
+from polar.kit.sorting import Sorting
 from polar.models import Checkout, Customer, Order, Payment, Product
 from polar.models.payment import PaymentStatus
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
 
 from .repository import PaymentRepository
+from .sorting import PaymentSortProperty
 
 
 class PaymentError(PolarError): ...
@@ -39,6 +44,57 @@ class UnhandledPaymentIntent(PaymentError):
 
 
 class PaymentService:
+    async def list(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        checkout_id: Sequence[uuid.UUID] | None = None,
+        order_id: Sequence[uuid.UUID] | None = None,
+        status: Sequence[PaymentStatus] | None = None,
+        method: Sequence[str] | None = None,
+        pagination: PaginationParams,
+        sorting: list[Sorting[PaymentSortProperty]] = [
+            (PaymentSortProperty.created_at, True)
+        ],
+    ) -> tuple[Sequence[Payment], int]:
+        repository = PaymentRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject)
+
+        if organization_id is not None:
+            statement = statement.where(Payment.organization_id.in_(organization_id))
+
+        if checkout_id is not None:
+            statement = statement.where(Payment.checkout_id.in_(checkout_id))
+
+        if order_id is not None:
+            statement = statement.where(Payment.order_id.in_(order_id))
+
+        if status is not None:
+            statement = statement.where(Payment.status.in_(status))
+
+        if method is not None:
+            statement = statement.where(Payment.method.in_(method))
+
+        statement = repository.apply_sorting(statement, sorting)
+
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
+
+    async def get(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+    ) -> Payment | None:
+        repository = PaymentRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            Payment.id == id
+        )
+        return await repository.get_one_or_none(statement)
+
     async def upsert_from_stripe_charge(
         self, session: AsyncSession, charge: stripe_lib.Charge
     ) -> Payment:

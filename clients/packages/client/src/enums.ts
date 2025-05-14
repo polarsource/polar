@@ -2,6 +2,7 @@ export {
   availableScopeValues,
   benefitGitHubRepositoryPropertiesPermissionValues,
   benefitTypeValues,
+  checkoutStatusValues,
   countAggregationFuncValues,
   customFieldTypeValues,
   propertyAggregationFuncValues,

@@ -52,6 +52,7 @@ interface DataTableProps<TData, TValue> {
   rowSelection?: RowSelectionState
   enableRowSelection?: boolean
   onRowSelectionChange?: OnChangeFn<RowSelectionState>
+  onRowClick?: (row: Row<TData>) => void
 }
 
 export type DataTableColumnDef<TData, TValue = unknown> = ColumnDef<
@@ -87,6 +88,7 @@ export function DataTable<TData, TValue>({
   rowSelection,
   enableRowSelection,
   onRowSelectionChange,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -166,7 +168,7 @@ export function DataTable<TData, TValue>({
                     <TableRow
                       key={row.id}
                       className={
-                        enableRowSelection
+                        enableRowSelection || onRowClick
                           ? row.getCanSelect()
                             ? 'cursor-pointer'
                             : ''
@@ -180,9 +182,11 @@ export function DataTable<TData, TValue>({
                           : undefined
                       }
                       onClick={
-                        enableRowSelection
-                          ? row.getToggleSelectedHandler()
-                          : undefined
+                        onRowClick
+                          ? () => onRowClick(row)
+                          : enableRowSelection
+                            ? row.getToggleSelectedHandler()
+                            : undefined
                       }
                     >
                       {row.getVisibleCells().map((cell) => {

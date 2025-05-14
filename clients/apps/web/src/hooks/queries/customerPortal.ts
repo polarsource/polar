@@ -25,7 +25,7 @@ export const useCustomerPortalSessionAuthenticate = (api: Client) =>
       }),
   })
 
-export const useCustomer = (api: Client) =>
+export const useAuthenticatedCustomer = (api: Client) =>
   useQuery({
     queryKey: ['customer'],
     queryFn: () => unwrap(api.GET('/v1/customer-portal/customers/me')),

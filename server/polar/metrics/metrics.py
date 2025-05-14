@@ -2,11 +2,20 @@ from datetime import datetime
 from enum import StrEnum
 from typing import ClassVar, Protocol, cast
 
-from sqlalchemy import ColumnElement, Integer, SQLColumnExpression, case, func
+from sqlalchemy import (
+    ColumnElement,
+    Float,
+    Integer,
+    SQLColumnExpression,
+    case,
+    func,
+    type_coerce,
+)
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
-from polar.models import Order, Subscription
+from polar.models import Checkout, Order, Subscription
+from polar.models.checkout import CheckoutStatus
 
 from .queries import MetricQuery
 
@@ -14,6 +23,7 @@ from .queries import MetricQuery
 class MetricType(StrEnum):
     scalar = "scalar"
     currency = "currency"
+    percentage = "percentage"
 
 
 class Metric(Protocol):
@@ -25,7 +35,7 @@ class Metric(Protocol):
     @classmethod
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval
-    ) -> ColumnElement[int]: ...
+    ) -> ColumnElement[int] | ColumnElement[float]: ...
 
 
 class OrdersMetric(Metric):
@@ -220,6 +230,51 @@ class MonthlyRecurringRevenueMetric(Metric):
         )
 
 
+class CheckoutsMetric(Metric):
+    slug = "checkouts"
+    display_name = "Checkouts"
+    type = MetricType.scalar
+    query = MetricQuery.checkouts
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval
+    ) -> ColumnElement[int]:
+        return func.count(Checkout.id)
+
+
+class SucceededCheckoutsMetric(Metric):
+    slug = "succeeded_checkouts"
+    display_name = "Succeeded Checkouts"
+    type = MetricType.scalar
+    query = MetricQuery.checkouts
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval
+    ) -> ColumnElement[int]:
+        return func.count(Checkout.id).filter(
+            Checkout.status == CheckoutStatus.succeeded
+        )
+
+
+class CheckoutsConversionMetric(Metric):
+    slug = "checkouts_conversion"
+    display_name = "Checkouts Conversion Rate"
+    type = MetricType.percentage
+    query = MetricQuery.checkouts
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval
+    ) -> ColumnElement[float]:
+        return type_coerce(
+            func.count(Checkout.id).filter(Checkout.status == CheckoutStatus.succeeded)
+            / func.count(Checkout.id),
+            Float,
+        )
+
+
 METRICS: list[type[Metric]] = [
     OrdersMetric,
     RevenueMetric,
@@ -233,6 +288,9 @@ METRICS: list[type[Metric]] = [
     RenewedSubscriptionsRevenueMetric,
     ActiveSubscriptionsMetric,
     MonthlyRecurringRevenueMetric,
+    CheckoutsMetric,
+    SucceededCheckoutsMetric,
+    CheckoutsConversionMetric,
 ]
 
 __all__ = ["MetricType", "Metric", "METRICS"]

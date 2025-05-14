@@ -190,6 +190,7 @@ class CheckoutService:
         product_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         status: Sequence[CheckoutStatus] | None = None,
+        query: str | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[CheckoutSortProperty]] = [
             (CheckoutSortProperty.created_at, True)
@@ -211,6 +212,9 @@ class CheckoutService:
 
         if status is not None:
             statement = statement.where(Checkout.status.in_(status))
+
+        if query is not None:
+            statement = statement.where(Checkout.customer_email.ilike(f"%{query}%"))
 
         statement = repository.apply_sorting(statement, sorting)
 

@@ -49,7 +49,7 @@ if TYPE_CHECKING:
 else:
     MetricsPeriod = create_model(
         "MetricPeriod",
-        **{m.slug: (int, ...) for m in METRICS},
+        **{m.slug: (int | float, ...) for m in METRICS},
         __base__=MetricsPeriodBase,
     )
 

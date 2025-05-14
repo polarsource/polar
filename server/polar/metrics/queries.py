@@ -19,6 +19,8 @@ from sqlalchemy import (
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.kit.time_queries import TimeInterval
 from polar.models import (
+    Checkout,
+    CheckoutProduct,
     Customer,
     Order,
     Organization,
@@ -37,6 +39,7 @@ class MetricQuery(StrEnum):
     orders = "orders"
     cumulative_orders = "cumulative_orders"
     active_subscriptions = "active_subscriptions"
+    checkouts = "checkouts"
 
 
 def _get_metrics_columns(
@@ -44,7 +47,7 @@ def _get_metrics_columns(
     timestamp_column: ColumnElement[datetime],
     interval: TimeInterval,
     metrics: list["type[Metric]"],
-) -> Generator[ColumnElement[int], None, None]:
+) -> Generator[ColumnElement[int] | ColumnElement[float], None, None]:
     return (
         func.coalesce(metric.get_sql_expression(timestamp_column, interval), 0).label(
             metric.slug
@@ -291,8 +294,85 @@ def get_active_subscriptions_cte(
     )
 
 
+def get_checkouts_cte(
+    timestamp_series: CTE,
+    interval: TimeInterval,
+    auth_subject: AuthSubject[User | Organization],
+    metrics: list["type[Metric]"],
+    *,
+    organization_id: Sequence[uuid.UUID] | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
+) -> CTE:
+    timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+    readable_checkouts_statement = (
+        select(Checkout.id)
+        .join(CheckoutProduct, CheckoutProduct.checkout_id == Checkout.id)
+        .join(Product, onclause=CheckoutProduct.product_id == Product.id)
+    )
+
+    if is_user(auth_subject):
+        readable_checkouts_statement = readable_checkouts_statement.where(
+            Product.organization_id.in_(
+                select(UserOrganization.organization_id).where(
+                    UserOrganization.user_id == auth_subject.subject.id,
+                    UserOrganization.deleted_at.is_(None),
+                )
+            )
+        )
+    elif is_organization(auth_subject):
+        readable_checkouts_statement = readable_checkouts_statement.where(
+            Product.organization_id == auth_subject.subject.id
+        )
+
+    if organization_id is not None:
+        readable_checkouts_statement = readable_checkouts_statement.where(
+            Product.organization_id.in_(organization_id)
+        )
+
+    if product_id is not None:
+        readable_checkouts_statement = readable_checkouts_statement.where(
+            CheckoutProduct.product_id.in_(product_id)
+        )
+
+    if billing_type is not None:
+        readable_checkouts_statement = readable_checkouts_statement.where(
+            Product.billing_type.in_(billing_type)
+        )
+
+    if customer_id is not None:
+        readable_checkouts_statement = readable_checkouts_statement.where(
+            Checkout.customer_id.in_(customer_id)
+        )
+
+    return cte(
+        select(
+            timestamp_column.label("timestamp"),
+            *_get_metrics_columns(
+                MetricQuery.checkouts, timestamp_column, interval, metrics
+            ),
+        )
+        .select_from(
+            timestamp_series.join(
+                Checkout,
+                isouter=True,
+                onclause=and_(
+                    interval.sql_date_trunc(Checkout.created_at)
+                    == interval.sql_date_trunc(timestamp_column),
+                    Checkout.id.in_(readable_checkouts_statement),
+                ),
+            )
+        )
+        .group_by(timestamp_column)
+        .order_by(timestamp_column.asc())
+    )
+
+
 QUERIES: list[QueryCallable] = [
     get_orders_cte,
     get_cumulative_orders_cte,
     get_active_subscriptions_cte,
+    get_checkouts_cte,
 ]

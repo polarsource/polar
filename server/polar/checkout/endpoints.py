@@ -91,6 +91,7 @@ async def list(
         title="Status Filter",
         description="Filter by checkout session status.",
     ),
+    query: str | None = Query(None, description="Filter by customer email."),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[CheckoutSchema]:
     """List checkout sessions."""
@@ -101,6 +102,7 @@ async def list(
         product_id=product_id,
         customer_id=customer_id,
         status=status,
+        query=query,
         pagination=pagination,
         sorting=sorting,
     )

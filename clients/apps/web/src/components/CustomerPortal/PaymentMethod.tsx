@@ -24,7 +24,11 @@ const PaymentMethodCard = ({
 
   return (
     <div className="flex grow flex-row items-center gap-4">
-      <CreditCardBrandIcon width="4em" brand={brand} />
+      <CreditCardBrandIcon
+        width="4em"
+        brand={brand}
+        className="dark:border-polar-700 rounded-lg border border-gray-200 p-2"
+      />
       <div className="flex flex-col">
         <span className="capitalize">
           {`${paymentMethod.card.brand} •••• ${paymentMethod.card.last4}`}

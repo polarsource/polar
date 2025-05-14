@@ -1,7 +1,10 @@
 'use client'
 
 import revalidate from '@/app/actions'
-import { useCustomer, useCustomerPaymentMethods } from '@/hooks/queries'
+import {
+  useAuthenticatedCustomer,
+  useCustomerPaymentMethods,
+} from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -31,7 +34,7 @@ export const CustomerPortalSettings = ({
     hide: hideAddPaymentMethodModal,
     show: showAddPaymentMethodModal,
   } = useModal()
-  const { data: customer } = useCustomer(api)
+  const { data: customer } = useAuthenticatedCustomer(api)
   const { data: paymentMethods } = useCustomerPaymentMethods(api)
 
   const themingPreset = useThemePreset(

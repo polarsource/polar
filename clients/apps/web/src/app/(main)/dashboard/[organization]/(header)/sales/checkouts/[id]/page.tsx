@@ -1,12 +1,12 @@
+import { getCheckoutById } from '@/utils/checkout'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { getSubscriptionById } from '@/utils/subscription'
 import { Metadata } from 'next'
 import ClientPage from './ClientPage'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Subscription', // " | Polar is added by the template"
+    title: 'Checkout', // " | Polar is added by the template"
   }
 }
 
@@ -20,7 +20,7 @@ export default async function Page({
     api,
     params.organization,
   )
-  const subscription = await getSubscriptionById(api, params.id)
+  const checkout = await getCheckoutById(api, params.id)
 
-  return <ClientPage organization={organization} subscription={subscription} />
+  return <ClientPage organization={organization} checkout={checkout} />
 }

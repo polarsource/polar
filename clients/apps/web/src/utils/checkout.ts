@@ -23,6 +23,27 @@ const _getCheckoutByClientSecret = async (
 // Tell React to memoize it for the duration of the request
 export const getCheckoutByClientSecret = cache(_getCheckoutByClientSecret)
 
+const _getCheckoutById = async (
+  api: Client,
+  id: string,
+): Promise<schemas['Checkout']> => {
+  return unwrap(
+    api.GET('/v1/checkouts/{id}', {
+      params: {
+        path: {
+          id,
+        },
+      },
+    }),
+    {
+      404: notFound,
+    },
+  )
+}
+
+// Tell React to memoize it for the duration of the request
+export const getCheckoutById = cache(_getCheckoutById)
+
 export const CheckoutStatusDisplayTitle: Record<
   schemas['CheckoutStatus'],
   string

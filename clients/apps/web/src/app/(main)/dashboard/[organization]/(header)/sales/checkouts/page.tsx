@@ -20,6 +20,7 @@ export default async function Page({
     product_id?: string | string[]
     customer_id?: string
     status?: schemas['CheckoutStatus']
+    query?: string
   }
 }) {
   const api = getServerSideAPI()
@@ -48,6 +49,7 @@ export default async function Page({
       productId={productId}
       customerId={searchParams.customer_id}
       status={searchParams.status}
+      query={searchParams.query}
     />
   )
 }

@@ -4,6 +4,7 @@ import uuid
 from collections.abc import Sequence
 
 import stripe as stripe_lib
+from sqlalchemy.orm.strategy_options import joinedload
 
 from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
@@ -48,7 +49,10 @@ class AccountService:
         pagination: PaginationParams,
     ) -> tuple[Sequence[Account], int]:
         repository = AccountRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        statement = repository.get_readable_statement(auth_subject).options(
+            joinedload(Account.users),
+            joinedload(Account.organizations),
+        )
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page
         )
@@ -60,8 +64,13 @@ class AccountService:
         id: uuid.UUID,
     ) -> Account | None:
         repository = AccountRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
-            Account.id == id
+        statement = (
+            repository.get_readable_statement(auth_subject)
+            .where(Account.id == id)
+            .options(
+                joinedload(Account.users),
+                joinedload(Account.organizations),
+            )
         )
         return await repository.get_one_or_none(statement)
 

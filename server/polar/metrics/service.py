@@ -75,8 +75,19 @@ class MetricsService:
         periods: list[MetricsPeriod] = []
         async for row in result:
             periods.append(MetricsPeriod(**row._asdict()))
+
+        totals: dict[str, int | float] = {}
+        for metric in METRICS:
+            totals[metric.slug] = metric.get_cumulative_function()(
+                getattr(p, metric.slug) for p in periods
+            )
+
         return MetricsResponse.model_validate(
-            {"periods": periods, "metrics": {m.slug: m for m in METRICS}}
+            {
+                "periods": periods,
+                "totals": totals,
+                "metrics": {m.slug: m for m in METRICS},
+            }
         )
 
 

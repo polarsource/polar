@@ -44,7 +44,7 @@ class MetricsPeriodBase(Schema):
 if TYPE_CHECKING:
 
     class MetricsPeriod(MetricsPeriodBase):
-        def __getattr__(self, name: str) -> int: ...
+        def __getattr__(self, name: str) -> int | float: ...
 
 else:
     MetricsPeriod = create_model(
@@ -54,10 +54,34 @@ else:
     )
 
 
+class MetricsTotalsBase(Schema):
+    """
+    Metrics totals over the whole selected period.
+
+    It maps each metric slug to its value for this period. The aggregation is done
+    differently depending on the metric type.
+    """
+
+
+if TYPE_CHECKING:
+
+    class MetricsTotals(MetricsTotalsBase):
+        def __getattr__(self, name: str) -> int | float: ...
+
+
+else:
+    MetricsTotals = create_model(
+        "MetricsTotals",
+        **{m.slug: (int | float, ...) for m in METRICS},
+        __base__=MetricsTotalsBase,
+    )
+
+
 class MetricsResponse(Schema):
     """Metrics response schema."""
 
     periods: list[MetricsPeriod] = Field(description="List of data for each timestamp.")
+    totals: MetricsTotals = Field(description="Totals for the whole selected period.")
     metrics: Metrics = Field(description="Information about the returned metrics.")
 
 

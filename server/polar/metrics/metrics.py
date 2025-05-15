@@ -1,4 +1,5 @@
 import statistics
+from collections import deque
 from collections.abc import Callable, Iterable
 from datetime import datetime
 from enum import StrEnum
@@ -29,6 +30,11 @@ class MetricType(StrEnum):
 
 
 CumulativeFunction = Callable[[Iterable[int | float]], int | float]
+
+
+def last(values: Iterable[int | float]) -> int | float:
+    dd = deque(values, maxlen=1)
+    return dd.pop()
 
 
 class Metric(Protocol):
@@ -94,7 +100,7 @@ class CumulativeRevenueMetric(Metric):
 
     @classmethod
     def get_cumulative_function(cls) -> CumulativeFunction:
-        return max
+        return last
 
 
 class AverageOrderValueMetric(Metric):
@@ -250,7 +256,7 @@ class ActiveSubscriptionsMetric(Metric):
 
     @classmethod
     def get_cumulative_function(cls) -> CumulativeFunction:
-        return sum
+        return last
 
 
 class MonthlyRecurringRevenueMetric(Metric):
@@ -283,7 +289,7 @@ class MonthlyRecurringRevenueMetric(Metric):
 
     @classmethod
     def get_cumulative_function(cls) -> CumulativeFunction:
-        return sum
+        return last
 
 
 class CheckoutsMetric(Metric):

@@ -4436,6 +4436,76 @@
             "description": "Filter by product ID."
           },
           {
+            "name": "customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4",
+                  "description": "The customer ID."
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4",
+                    "description": "The customer ID."
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "CustomerID Filter",
+              "description": "Filter by customer ID."
+            },
+            "description": "Filter by customer ID."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CheckoutStatus"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CheckoutStatus"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status Filter",
+              "description": "Filter by checkout session status."
+            },
+            "description": "Filter by checkout session status."
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by customer email.",
+              "title": "Query"
+            },
+            "description": "Filter by customer email."
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -13605,17 +13675,17 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Meters.Create(ctx, components.MeterCreate{\n        Name: \"<value>\",\n        Filter: components.Filter{\n            Conjunction: components.FilterConjunctionAnd,\n            Clauses: []components.Clauses{},\n        },\n        Aggregation: components.CreateMeterCreateAggregationAvg(\n            components.PropertyAggregation{\n                Func: components.FuncSum,\n                Property: \"<value>\",\n            },\n        ),\n        OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Meter != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Meters.Create(ctx, components.MeterCreate{\n        Name: \"<value>\",\n        Filter: components.Filter{\n            Conjunction: components.FilterConjunctionAnd,\n            Clauses: []components.Clauses{\n                components.CreateClausesFilterClause(\n                    components.FilterClause{\n                        Property: \"<value>\",\n                        Operator: components.FilterOperatorNe,\n                        Value: components.CreateValueStr(\n                            \"<value>\",\n                        ),\n                    },\n                ),\n            },\n        },\n        Aggregation: components.CreateMeterCreateAggregationAvg(\n            components.PropertyAggregation{\n                Func: components.FuncSum,\n                Property: \"<value>\",\n            },\n        ),\n        OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Meter != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.meters.create(request={\n        \"name\": \"<value>\",\n        \"filter_\": {\n            \"conjunction\": polar_sdk.FilterConjunction.AND,\n            \"clauses\": [],\n        },\n        \"aggregation\": {\n            \"func\": polar_sdk.Func.SUM,\n            \"property\": \"<value>\",\n        },\n        \"organization_id\": \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.meters.create(request={\n        \"name\": \"<value>\",\n        \"filter_\": {\n            \"conjunction\": polar_sdk.FilterConjunction.AND,\n            \"clauses\": [\n                {\n                    \"property\": \"<value>\",\n                    \"operator\": polar_sdk.FilterOperator.NE,\n                    \"value\": \"<value>\",\n                },\n            ],\n        },\n        \"aggregation\": {\n            \"func\": polar_sdk.Func.SUM,\n            \"property\": \"<value>\",\n        },\n        \"organization_id\": \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.meters.create({\n    name: \"<value>\",\n    filter: {\n      conjunction: \"and\",\n      clauses: [],\n    },\n    aggregation: {\n      func: \"sum\",\n      property: \"<value>\",\n    },\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.meters.create({\n    name: \"<value>\",\n    filter: {\n      conjunction: \"and\",\n      clauses: [\n        {\n          property: \"<value>\",\n          operator: \"ne\",\n          value: \"<value>\",\n        },\n      ],\n    },\n    aggregation: {\n      func: \"sum\",\n      property: \"<value>\",\n    },\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -14341,6 +14411,407 @@
             "lang": "php",
             "label": "PHP (SDK)",
             "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->customerMeters->get(\n    id: '<value>'\n);\n\nif ($response->customerMeter !== null) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
+    "/v1/payments/": {
+      "get": {
+        "tags": [
+          "payments",
+          "documented",
+          "mcp"
+        ],
+        "summary": "List Payments",
+        "description": "List payments.\n\n**Scopes**: `payments:read`",
+        "operationId": "payments:list",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4",
+                  "examples": [
+                    "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                  ],
+                  "description": "The organization ID.",
+                  "x-polar-selector-widget": {
+                    "resourceRoot": "/v1/organizations",
+                    "resourceName": "Organization",
+                    "displayProperty": "name"
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4",
+                    "examples": [
+                      "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                    ],
+                    "description": "The organization ID.",
+                    "x-polar-selector-widget": {
+                      "resourceRoot": "/v1/organizations",
+                      "resourceName": "Organization",
+                      "displayProperty": "name"
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "OrganizationID Filter",
+              "description": "Filter by organization ID."
+            },
+            "description": "Filter by organization ID."
+          },
+          {
+            "name": "checkout_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "CheckoutID Filter",
+              "description": "Filter by checkout ID."
+            },
+            "description": "Filter by checkout ID."
+          },
+          {
+            "name": "order_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "OrderID Filter",
+              "description": "Filter by order ID."
+            },
+            "description": "Filter by order ID."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PaymentStatus"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentStatus"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status Filter",
+              "description": "Filter by payment status."
+            },
+            "description": "Filter by payment status."
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Method Filter",
+              "description": "Filter by payment method."
+            },
+            "description": "Filter by payment method."
+          },
+          {
+            "name": "customer_email",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "CustomerEmail Filter",
+              "description": "Filter by customer email."
+            },
+            "description": "Filter by customer email."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Page number, defaults to 1.",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number, defaults to 1."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Size of a page, defaults to 10. Maximum is 100.",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Size of a page, defaults to 10. Maximum is 100."
+          },
+          {
+            "name": "sorting",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentSortProperty"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+              "default": [
+                "-created_at"
+              ],
+              "title": "Sorting"
+            },
+            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListResource__"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-pagination": {
+          "type": "offsetLimit",
+          "inputs": [
+            {
+              "name": "page",
+              "in": "parameters",
+              "type": "page"
+            },
+            {
+              "name": "limit",
+              "in": "parameters",
+              "type": "limit"
+            }
+          ],
+          "outputs": {
+            "results": "$.items",
+            "numPages": "$.pagination.max_page"
+          }
+        },
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "read",
+            "payments"
+          ]
+        },
+        "x-speakeasy-group": "payments",
+        "x-speakeasy-name-override": "list",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Payments.List(ctx, operations.PaymentsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreatePaymentsListQueryParamOrganizationIDFilterArrayOfStr(\n            []string{\n                \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n            },\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResource != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.payments.list(organization_id=[\n        \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ])\n\n    while res is not None:\n        # Handle items\n\n        res = res.next()"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.payments.list({\n    organizationId: [\n      \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ],\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\PaymentsListRequest(\n    organizationId: [\n        '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ],\n);\n\n$responses = $sdk->payments->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+          }
+        ]
+      }
+    },
+    "/v1/payments/{id}": {
+      "get": {
+        "tags": [
+          "payments",
+          "documented",
+          "mcp"
+        ],
+        "summary": "Get Payment",
+        "description": "Get a payment by ID.\n\n**Scopes**: `payments:read`",
+        "operationId": "payments:get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The payment ID.",
+              "title": "Id"
+            },
+            "description": "The payment ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Payment not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": false,
+          "scopes": [
+            "read",
+            "payments"
+          ]
+        },
+        "x-speakeasy-group": "payments",
+        "x-speakeasy-name-override": "get",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Payments.Get(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Payment != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.payments.get(id=\"<value>\")\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.payments.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->payments->get(\n    id: '<value>'\n);\n\nif ($response->payment !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -18510,6 +18981,10 @@
             "exclusiveMinimum": 0,
             "title": "Units"
           },
+          "rollover": {
+            "type": "boolean",
+            "title": "Rollover"
+          },
           "meter_id": {
             "type": "string",
             "format": "uuid4",
@@ -18519,6 +18994,7 @@
         "type": "object",
         "required": [
           "units",
+          "rollover",
           "meter_id"
         ],
         "title": "BenefitMeterCreditCreateProperties",
@@ -18530,6 +19006,10 @@
             "type": "integer",
             "title": "Units"
           },
+          "rollover": {
+            "type": "boolean",
+            "title": "Rollover"
+          },
           "meter_id": {
             "type": "string",
             "format": "uuid4",
@@ -18539,6 +19019,7 @@
         "type": "object",
         "required": [
           "units",
+          "rollover",
           "meter_id"
         ],
         "title": "BenefitMeterCreditProperties",
@@ -18646,6 +19127,10 @@
             "type": "integer",
             "title": "Units"
           },
+          "rollover": {
+            "type": "boolean",
+            "title": "Rollover"
+          },
           "meter_id": {
             "type": "string",
             "format": "uuid4",
@@ -18655,6 +19140,7 @@
         "type": "object",
         "required": [
           "units",
+          "rollover",
           "meter_id"
         ],
         "title": "BenefitMeterCreditSubscriberProperties",
@@ -18813,6 +19299,195 @@
           "meter_credit"
         ],
         "title": "BenefitType"
+      },
+      "CardPayment": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "processor": {
+            "$ref": "#/components/schemas/PaymentProcessor",
+            "description": "The payment processor.",
+            "examples": [
+              "stripe"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus",
+            "description": "The payment status.",
+            "examples": [
+              "succeeded"
+            ]
+          },
+          "amount": {
+            "type": "integer",
+            "title": "Amount",
+            "description": "The payment amount in cents.",
+            "examples": [
+              1000
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "description": "The payment currency. Currently, only `usd` is supported.",
+            "examples": [
+              "usd"
+            ]
+          },
+          "method": {
+            "type": "string",
+            "const": "card",
+            "title": "Method",
+            "description": "The payment method used.",
+            "examples": [
+              "card"
+            ]
+          },
+          "decline_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decline Reason",
+            "description": "Error code, if the payment was declined.",
+            "examples": [
+              "insufficient_funds"
+            ]
+          },
+          "decline_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decline Message",
+            "description": "Human-reasable error message, if the payment was declined.",
+            "examples": [
+              "Your card has insufficient funds."
+            ]
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization that owns the payment.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ]
+          },
+          "checkout_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkout Id",
+            "description": "The ID of the checkout session associated with this payment.",
+            "examples": [
+              "e4b478fa-cd25-4253-9f1f-8a41e6370ede"
+            ]
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id",
+            "description": "The ID of the order associated with this payment.",
+            "examples": [
+              "e4b478fa-cd25-4253-9f1f-8a41e6370ede"
+            ]
+          },
+          "method_metadata": {
+            "$ref": "#/components/schemas/CardPaymentMetadata",
+            "description": "Additional metadata for the card payment method."
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "processor",
+          "status",
+          "amount",
+          "currency",
+          "method",
+          "decline_reason",
+          "decline_message",
+          "organization_id",
+          "checkout_id",
+          "order_id",
+          "method_metadata"
+        ],
+        "title": "CardPayment",
+        "description": "Schema of a payment with a card payment method."
+      },
+      "CardPaymentMetadata": {
+        "properties": {
+          "brand": {
+            "type": "string",
+            "title": "Brand",
+            "description": "The brand of the card used for the payment.",
+            "examples": [
+              "visa"
+            ]
+          },
+          "last4": {
+            "type": "string",
+            "title": "Last4",
+            "description": "The last 4 digits of the card number.",
+            "examples": [
+              "4242"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "brand",
+          "last4"
+        ],
+        "title": "CardPaymentMetadata",
+        "description": "Additional metadata for a card payment method."
       },
       "Checkout": {
         "properties": {
@@ -22076,7 +22751,9 @@
           "created_at",
           "-created_at",
           "expires_at",
-          "-expires_at"
+          "-expires_at",
+          "status",
+          "-status"
         ],
         "title": "CheckoutSortProperty"
       },
@@ -25387,7 +26064,7 @@
           "balance": {
             "type": "number",
             "title": "Balance",
-            "description": "The balance of the meter, i.e. the difference between credited and consumed units. Never goes negative.",
+            "description": "The balance of the meter, i.e. the difference between credited and consumed units.",
             "examples": [
               75
             ]
@@ -25536,7 +26213,7 @@
           "balance": {
             "type": "number",
             "title": "Balance",
-            "description": "The balance of the meter, i.e. the difference between credited and consumed units. Never goes negative.",
+            "description": "The balance of the meter, i.e. the difference between credited and consumed units.",
             "examples": [
               75
             ]
@@ -26959,7 +27636,7 @@
           "balance": {
             "type": "number",
             "title": "Balance",
-            "description": "The balance of the meter, i.e. the difference between credited and consumed units. Never goes negative.",
+            "description": "The balance of the meter, i.e. the difference between credited and consumed units.",
             "examples": [
               75
             ]
@@ -31448,6 +32125,162 @@
         ],
         "title": "FilterOperator"
       },
+      "GenericPayment": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "processor": {
+            "$ref": "#/components/schemas/PaymentProcessor",
+            "description": "The payment processor.",
+            "examples": [
+              "stripe"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus",
+            "description": "The payment status.",
+            "examples": [
+              "succeeded"
+            ]
+          },
+          "amount": {
+            "type": "integer",
+            "title": "Amount",
+            "description": "The payment amount in cents.",
+            "examples": [
+              1000
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "description": "The payment currency. Currently, only `usd` is supported.",
+            "examples": [
+              "usd"
+            ]
+          },
+          "method": {
+            "type": "string",
+            "title": "Method",
+            "description": "The payment method used.",
+            "examples": [
+              "card"
+            ]
+          },
+          "decline_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decline Reason",
+            "description": "Error code, if the payment was declined.",
+            "examples": [
+              "insufficient_funds"
+            ]
+          },
+          "decline_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decline Message",
+            "description": "Human-reasable error message, if the payment was declined.",
+            "examples": [
+              "Your card has insufficient funds."
+            ]
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization that owns the payment.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ]
+          },
+          "checkout_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkout Id",
+            "description": "The ID of the checkout session associated with this payment.",
+            "examples": [
+              "e4b478fa-cd25-4253-9f1f-8a41e6370ede"
+            ]
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id",
+            "description": "The ID of the order associated with this payment.",
+            "examples": [
+              "e4b478fa-cd25-4253-9f1f-8a41e6370ede"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "processor",
+          "status",
+          "amount",
+          "currency",
+          "method",
+          "decline_reason",
+          "decline_message",
+          "organization_id",
+          "checkout_id",
+          "order_id"
+        ],
+        "title": "GenericPayment",
+        "description": "Schema of a payment with a generic payment method."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -33262,6 +34095,26 @@
         ],
         "title": "ListResource[Union[PaymentMethodCard, PaymentMethodGeneric]]"
       },
+      "ListResource__": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Payment"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "title": "ListResource[]"
+      },
       "Meter": {
         "properties": {
           "metadata": {
@@ -33634,52 +34487,169 @@
             "description": "Timestamp of this period data."
           },
           "orders": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
             "title": "Orders"
           },
           "revenue": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
             "title": "Revenue"
           },
           "cumulative_revenue": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
             "title": "Cumulative Revenue"
           },
           "average_order_value": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
             "title": "Average Order Value"
           },
           "one_time_products": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
             "title": "One Time Products"
           },
           "one_time_products_revenue": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
             "title": "One Time Products Revenue"
           },
           "new_subscriptions": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
             "title": "New Subscriptions"
           },
           "new_subscriptions_revenue": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
             "title": "New Subscriptions Revenue"
           },
           "renewed_subscriptions": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
             "title": "Renewed Subscriptions"
           },
           "renewed_subscriptions_revenue": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
             "title": "Renewed Subscriptions Revenue"
           },
           "active_subscriptions": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
             "title": "Active Subscriptions"
           },
           "monthly_recurring_revenue": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
             "title": "Monthly Recurring Revenue"
+          },
+          "checkouts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Checkouts"
+          },
+          "succeeded_checkouts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Succeeded Checkouts"
+          },
+          "checkouts_conversion": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Checkouts Conversion"
           }
         },
         "type": "object",
@@ -33696,7 +34666,10 @@
           "renewed_subscriptions",
           "renewed_subscriptions_revenue",
           "active_subscriptions",
-          "monthly_recurring_revenue"
+          "monthly_recurring_revenue",
+          "checkouts",
+          "succeeded_checkouts",
+          "checkouts_conversion"
         ],
         "title": "MetricPeriod"
       },
@@ -33704,7 +34677,8 @@
         "type": "string",
         "enum": [
           "scalar",
-          "currency"
+          "currency",
+          "percentage"
         ],
         "title": "MetricType"
       },
@@ -33745,6 +34719,15 @@
           },
           "monthly_recurring_revenue": {
             "$ref": "#/components/schemas/Metric"
+          },
+          "checkouts": {
+            "$ref": "#/components/schemas/Metric"
+          },
+          "succeeded_checkouts": {
+            "$ref": "#/components/schemas/Metric"
+          },
+          "checkouts_conversion": {
+            "$ref": "#/components/schemas/Metric"
           }
         },
         "type": "object",
@@ -33760,7 +34743,10 @@
           "renewed_subscriptions",
           "renewed_subscriptions_revenue",
           "active_subscriptions",
-          "monthly_recurring_revenue"
+          "monthly_recurring_revenue",
+          "checkouts",
+          "succeeded_checkouts",
+          "checkouts_conversion"
         ],
         "title": "Metrics"
       },
@@ -33844,6 +34830,10 @@
             "title": "Periods",
             "description": "List of data for each timestamp."
           },
+          "totals": {
+            "$ref": "#/components/schemas/MetricsTotals",
+            "description": "Totals for the whole selected period."
+          },
           "metrics": {
             "$ref": "#/components/schemas/Metrics",
             "description": "Information about the returned metrics."
@@ -33852,10 +34842,199 @@
         "type": "object",
         "required": [
           "periods",
+          "totals",
           "metrics"
         ],
         "title": "MetricsResponse",
         "description": "Metrics response schema."
+      },
+      "MetricsTotals": {
+        "properties": {
+          "orders": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Orders"
+          },
+          "revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Revenue"
+          },
+          "cumulative_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Cumulative Revenue"
+          },
+          "average_order_value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Average Order Value"
+          },
+          "one_time_products": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "One Time Products"
+          },
+          "one_time_products_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "One Time Products Revenue"
+          },
+          "new_subscriptions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "New Subscriptions"
+          },
+          "new_subscriptions_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "New Subscriptions Revenue"
+          },
+          "renewed_subscriptions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Renewed Subscriptions"
+          },
+          "renewed_subscriptions_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Renewed Subscriptions Revenue"
+          },
+          "active_subscriptions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Active Subscriptions"
+          },
+          "monthly_recurring_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Monthly Recurring Revenue"
+          },
+          "checkouts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Checkouts"
+          },
+          "succeeded_checkouts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Succeeded Checkouts"
+          },
+          "checkouts_conversion": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Checkouts Conversion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "orders",
+          "revenue",
+          "cumulative_revenue",
+          "average_order_value",
+          "one_time_products",
+          "one_time_products_revenue",
+          "new_subscriptions",
+          "new_subscriptions_revenue",
+          "renewed_subscriptions",
+          "renewed_subscriptions_revenue",
+          "active_subscriptions",
+          "monthly_recurring_revenue",
+          "checkouts",
+          "succeeded_checkouts",
+          "checkouts_conversion"
+        ],
+        "title": "MetricsTotals"
       },
       "NotOpenCheckout": {
         "properties": {
@@ -33951,7 +35130,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write"
+            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write"
           },
           "client_name": {
             "type": "string",
@@ -34109,7 +35288,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write"
+            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write"
           },
           "client_name": {
             "type": "string",
@@ -34226,7 +35405,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write"
+            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write"
           },
           "client_name": {
             "type": "string",
@@ -36244,6 +37423,16 @@
         ],
         "title": "Pagination"
       },
+      "Payment": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/CardPayment"
+          },
+          {
+            "$ref": "#/components/schemas/GenericPayment"
+          }
+        ]
+      },
       "PaymentError": {
         "properties": {
           "error": {
@@ -36374,6 +37563,29 @@
           "stripe"
         ],
         "title": "PaymentProcessor"
+      },
+      "PaymentSortProperty": {
+        "type": "string",
+        "enum": [
+          "created_at",
+          "-created_at",
+          "status",
+          "-status",
+          "amount",
+          "-amount",
+          "method",
+          "-method"
+        ],
+        "title": "PaymentSortProperty"
+      },
+      "PaymentStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "succeeded",
+          "failed"
+        ],
+        "title": "PaymentStatus"
       },
       "Product": {
         "properties": {
@@ -38217,6 +39429,7 @@
           "orders:read",
           "refunds:read",
           "refunds:write",
+          "payments:read",
           "metrics:read",
           "webhooks:read",
           "webhooks:write",
@@ -38264,6 +39477,7 @@
           "orders:read": "Read orders made on your organizations",
           "organizations:read": "Read your organizations",
           "organizations:write": "Create or modify organizations",
+          "payments:read": "Read payments made on your organizations",
           "products:read": "Read products",
           "products:write": "Create or modify products",
           "profile": "Read your profile",

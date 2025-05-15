@@ -4,15 +4,14 @@ from uuid import UUID
 
 import structlog
 from sqlalchemy import Select, func, select
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import joinedload
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import AuthSubject
 from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeysProperties,
 )
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
 from polar.models import (
     Benefit,
@@ -21,10 +20,10 @@ from polar.models import (
     LicenseKeyActivation,
     Organization,
     User,
-    UserOrganization,
 )
 from polar.postgres import AsyncSession
 
+from .repository import LicenseKeyRepository
 from .schemas import (
     LicenseKeyActivate,
     LicenseKeyCreate,
@@ -36,22 +35,46 @@ from .schemas import (
 log = structlog.get_logger()
 
 
-class LicenseKeyService(
-    ResourceService[LicenseKey, LicenseKeyCreate, LicenseKeyUpdate]
-):
-    async def get_by_key(
+class LicenseKeyService:
+    async def list(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
         *,
-        organization_id: UUID,
-        key: str,
-    ) -> LicenseKey | None:
-        query = self._get_select_base().where(
-            LicenseKey.key == key,
-            LicenseKey.organization_id == organization_id,
+        pagination: PaginationParams,
+        organization_id: Sequence[UUID] | None = None,
+        benefit_id: Sequence[UUID] | None = None,
+    ) -> tuple[Sequence[LicenseKey], int]:
+        repository = LicenseKeyRepository.from_session(session)
+        statement = (
+            repository.get_readable_statement(auth_subject)
+            .order_by(LicenseKey.created_at.asc())
+            .options(*repository.get_eager_options())
         )
-        result = await session.execute(query)
-        return result.unique().scalar_one_or_none()
+
+        if organization_id is not None:
+            statement = statement.where(LicenseKey.organization_id.in_(organization_id))
+
+        if benefit_id is not None:
+            statement = statement.where(LicenseKey.benefit_id.in_(benefit_id))
+
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
+
+    async def get(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: UUID,
+    ) -> LicenseKey | None:
+        repository = LicenseKeyRepository.from_session(session)
+        statement = (
+            repository.get_readable_statement(auth_subject)
+            .where(LicenseKey.id == id)
+            .options(*repository.get_eager_options())
+        )
+        return await repository.get_one_or_none(statement)
 
     async def get_or_raise_by_key(
         self,
@@ -60,37 +83,13 @@ class LicenseKeyService(
         organization_id: UUID,
         key: str,
     ) -> LicenseKey:
-        lk = await self.get_by_key(session, organization_id=organization_id, key=key)
-        if not lk:
-            raise ResourceNotFound()
-
-        return lk
-
-    async def get_loaded(
-        self,
-        session: AsyncSession,
-        id: UUID,
-    ) -> LicenseKey | None:
-        query = (
-            self._get_select_base()
-            .join(Benefit, onclause=LicenseKey.benefit_id == Benefit.id)
-            .options(
-                joinedload(LicenseKey.activations),
-                contains_eager(LicenseKey.benefit),
-            )
-            .where(LicenseKey.id == id)
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_organization_and_key(
+            organization_id, key, options=repository.get_eager_options()
         )
-        result = await session.execute(query)
-        return result.unique().scalar_one_or_none()
-
-    async def get_by_id(
-        self,
-        session: AsyncSession,
-        id: UUID,
-    ) -> LicenseKey | None:
-        query = self._get_select_base().where(LicenseKey.id == id)
-        result = await session.execute(query)
-        return result.unique().scalar_one_or_none()
+        if lk is None:
+            raise ResourceNotFound()
+        return lk
 
     async def get_by_grant_or_raise(
         self,
@@ -101,17 +100,17 @@ class LicenseKeyService(
         customer_id: UUID,
         benefit_id: UUID,
     ) -> LicenseKey:
-        query = self._get_select_base().where(
-            LicenseKey.id == id,
-            LicenseKey.organization_id == organization_id,
-            LicenseKey.customer_id == customer_id,
-            LicenseKey.benefit_id == benefit_id,
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id_organization_customer_and_benefit(
+            id,
+            organization_id,
+            customer_id,
+            benefit_id,
+            options=repository.get_eager_options(),
         )
-        result = await session.execute(query)
-        key = result.unique().scalar_one_or_none()
-        if not key:
+        if lk is None:
             raise ResourceNotFound()
-        return key
+        return lk
 
     async def get_activation_or_raise(
         self, session: AsyncSession, *, license_key: LicenseKey, activation_id: UUID
@@ -128,36 +127,6 @@ class LicenseKeyService(
 
         record.license_key = license_key
         return record
-
-    async def get_list(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        *,
-        pagination: PaginationParams,
-        benefit_ids: Sequence[UUID] | None = None,
-        organization_ids: Sequence[UUID] | None = None,
-    ) -> tuple[Sequence[LicenseKey], int]:
-        query = self._get_select_base().order_by(LicenseKey.created_at.asc())
-
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            query = query.join(
-                UserOrganization,
-                onclause=UserOrganization.organization_id == LicenseKey.organization_id,
-            ).where(UserOrganization.user_id == user.id)
-        elif is_organization(auth_subject):
-            query = query.where(LicenseKey.organization_id == auth_subject.subject.id)
-        else:
-            raise ValueError("Invalid auth_subject given to license keys")
-
-        if organization_ids:
-            query = query.where(LicenseKey.organization_id.in_(organization_ids))
-
-        if benefit_ids:
-            query = query.where(LicenseKey.benefit_id.in_(benefit_ids))
-
-        return await paginate(session, query, pagination=pagination)
 
     async def update(
         self,
@@ -475,19 +444,17 @@ class LicenseKeyService(
         result = await session.execute(query)
         return result.unique().scalar_one_or_none()
 
-    def _get_select_base(self) -> Select[tuple[LicenseKey]]:
-        return (
-            select(LicenseKey)
-            .options(joinedload(LicenseKey.customer))
-            .where(LicenseKey.deleted_at.is_(None))
-        )
-
     def _get_select_customer_base(
         self, auth_subject: AuthSubject[Customer]
     ) -> Select[tuple[LicenseKey]]:
-        return self._get_select_base().where(
-            LicenseKey.customer_id == auth_subject.subject.id
+        return (
+            select(LicenseKey)
+            .options(joinedload(LicenseKey.customer))
+            .where(
+                LicenseKey.deleted_at.is_(None),
+                LicenseKey.customer_id == auth_subject.subject.id,
+            )
         )
 
 
-license_key = LicenseKeyService(LicenseKey)
+license_key = LicenseKeyService()

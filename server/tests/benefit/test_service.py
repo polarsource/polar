@@ -5,7 +5,6 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
-from polar.authz.service import Authz
 from polar.benefit.grant.service import BenefitGrantService
 from polar.benefit.service import benefit as benefit_service
 from polar.benefit.service import (  # type: ignore[attr-defined]
@@ -29,11 +28,6 @@ from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit
-
-
-@pytest.fixture
-def authz(session: AsyncSession) -> Authz:
-    return Authz(session)
 
 
 @pytest.fixture

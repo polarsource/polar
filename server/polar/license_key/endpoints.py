@@ -1,9 +1,8 @@
 from fastapi import Depends, Query
 from pydantic import UUID4
 
-from polar.authz.service import AccessType, Authz
 from polar.benefit.schemas import BenefitID
-from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -34,7 +33,7 @@ router = APIRouter(
 
 
 @router.get(
-    "",
+    "/",
     summary="List License Keys",
     response_model=ListResource[LicenseKeyRead],
     responses={
@@ -54,11 +53,11 @@ async def list(
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[LicenseKeyRead]:
     """Get license keys connected to the given organization & filters."""
-    results, count = await license_key_service.get_list(
+    results, count = await license_key_service.list(
         session,
         auth_subject,
-        organization_ids=organization_id,
-        benefit_ids=benefit_id,
+        organization_id=organization_id,
+        benefit_id=benefit_id,
         pagination=pagination,
     )
 
@@ -82,15 +81,11 @@ async def get(
     auth_subject: auth.LicenseKeysRead,
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> LicenseKey:
     """Get a license key."""
-    lk = await license_key_service.get_loaded(session, id)
+    lk = await license_key_service.get(session, auth_subject, id)
     if not lk:
         raise ResourceNotFound()
-
-    if not await authz.can(auth_subject.subject, AccessType.read, lk):
-        raise Unauthorized()
 
     return lk
 
@@ -109,15 +104,11 @@ async def update(
     id: UUID4,
     updates: LicenseKeyUpdate,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> LicenseKey:
     """Update a license key."""
-    lk = await license_key_service.get_by_id(session, id)
+    lk = await license_key_service.get(session, auth_subject, id)
     if not lk:
         raise ResourceNotFound()
-
-    if not await authz.can(auth_subject.subject, AccessType.write, lk):
-        raise Unauthorized()
 
     updated = await license_key_service.update(session, license_key=lk, updates=updates)
     return updated
@@ -142,15 +133,11 @@ async def get_activation(
     id: UUID4,
     activation_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> LicenseKeyActivation:
     """Get a license key activation."""
-    lk = await license_key_service.get_by_id(session, id)
+    lk = await license_key_service.get(session, auth_subject, id)
     if not lk:
         raise ResourceNotFound()
-
-    if not await authz.can(auth_subject.subject, AccessType.read, lk):
-        raise Unauthorized()
 
     activation = await license_key_service.get_activation_or_raise(
         session,

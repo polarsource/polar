@@ -42,7 +42,10 @@ const redirectDocs = (source, destination, permanent = false) => {
   ]
 }
 
-const S3_PUBLIC_IMAGES_BUCKET_ORIGIN = process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME ? `${process.env.S3_PUBLIC_IMAGES_BUCKET_PROTOCOL || 'https'}://${process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME}${process.env.S3_PUBLIC_IMAGES_BUCKET_PORT ? `:${process.env.S3_PUBLIC_IMAGES_BUCKET_PORT}` : ''}` : ''
+const S3_PUBLIC_IMAGES_BUCKET_ORIGIN = process.env
+  .S3_PUBLIC_IMAGES_BUCKET_HOSTNAME
+  ? `${process.env.S3_PUBLIC_IMAGES_BUCKET_PROTOCOL || 'https'}://${process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME}${process.env.S3_PUBLIC_IMAGES_BUCKET_PORT ? `:${process.env.S3_PUBLIC_IMAGES_BUCKET_PORT}` : ''}`
+  : ''
 const baseCSP = `
     default-src 'self';
     connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL} ${process.env.S3_UPLOAD_ORIGINS} https://api.stripe.com https://maps.googleapis.com;
@@ -440,7 +443,7 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source:  '/((?!checkout).*)',
+        source: '/((?!checkout).*)',
         headers: [
           {
             key: 'Content-Security-Policy',
@@ -448,7 +451,8 @@ const nextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'payment=(), publickey-credentials-get=(), camera=(), microphone=(), geolocation=()'
+            value:
+              'payment=(), publickey-credentials-get=(), camera=(), microphone=(), geolocation=()',
           },
           {
             key: 'X-Frame-Options',
@@ -465,7 +469,7 @@ const nextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: `payment=(self "${process.env.NEXT_PUBLIC_FRONTEND_BASE_URL}"), publickey-credentials-get=(self "${process.env.NEXT_PUBLIC_FRONTEND_BASE_URL}"), camera=(), microphone=(), geolocation=()`
+            value: `payment=*, publickey-credentials-get=*, camera=(), microphone=(), geolocation=()`,
           },
         ],
       },

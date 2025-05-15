@@ -1,5 +1,5 @@
 import { useMetrics } from '@/hooks/queries'
-import { dateToInterval } from '@/utils/metrics'
+import { getChartRangeParams } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import {
@@ -8,7 +8,6 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
-import { useMemo } from 'react'
 import { DashboardBody } from '../../Layout/DashboardLayout'
 import { ProductThumbnail } from '../ProductThumbnail'
 import { ProductMetricsView } from './ProductMetricsView'
@@ -27,16 +26,16 @@ export interface ProductPageProps {
 }
 
 export const ProductPage = ({ organization, product }: ProductPageProps) => {
-  const interval = useMemo(
-    () => dateToInterval(new Date(product.created_at)),
-    [product.created_at],
+  const [allTimeStart, allTimeEnd, allTimeInterval] = getChartRangeParams(
+    'all_time',
+    product.created_at,
   )
   const { data: metrics, isLoading: metricsLoading } = useMetrics({
     organization_id: organization.id,
     product_id: [product.id],
-    interval,
-    startDate: new Date(product.created_at),
-    endDate: new Date(),
+    startDate: allTimeStart,
+    endDate: allTimeEnd,
+    interval: allTimeInterval,
   })
   const { data: todayMetrics } = useMetrics({
     organization_id: organization.id,
@@ -100,9 +99,8 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
         </TabsContent>
         <TabsContent value="metrics">
           <ProductMetricsView
-            metrics={metrics?.metrics}
-            periods={metrics?.periods}
-            interval={interval}
+            data={metrics}
+            interval={allTimeInterval}
             loading={metricsLoading}
           />
         </TabsContent>

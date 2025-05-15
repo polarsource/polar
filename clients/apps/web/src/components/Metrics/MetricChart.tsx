@@ -1,4 +1,5 @@
 import { ParsedMetricPeriod } from '@/hooks/queries'
+import { getFormattedMetricValue, getMetricFormatter } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import {
   CartesianGrid,
@@ -10,12 +11,13 @@ import {
   XAxis,
   YAxis,
 } from '@polar-sh/ui/components/ui/chart'
-import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { useTheme } from 'next-themes'
+import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface MetricChartProps {
   data: ParsedMetricPeriod[]
+  previousData?: ParsedMetricPeriod[]
   interval: schemas['TimeInterval']
   metric: schemas['Metric']
   height?: number
@@ -24,12 +26,31 @@ interface MetricChartProps {
 
 const MetricChart: React.FC<MetricChartProps> = ({
   data,
+  previousData,
   interval,
   metric,
   height: _height,
   onDataIndexHover,
 }) => {
   const { resolvedTheme } = useTheme()
+  const mergedData = useMemo(() => {
+    if (!data) {
+      return undefined
+    }
+    return data.map((period, index) => ({
+      timestamp: period.timestamp,
+      current:
+        period[metric.slug as keyof Omit<ParsedMetricPeriod, 'timestamp'>],
+      ...(previousData && previousData[index]
+        ? {
+            previous:
+              previousData[index][
+                metric.slug as keyof Omit<ParsedMetricPeriod, 'timestamp'>
+              ],
+          }
+        : {}),
+    }))
+  }, [data, previousData, metric.slug])
 
   const isDark = resolvedTheme === 'dark'
 
@@ -52,7 +73,7 @@ const MetricChart: React.FC<MetricChartProps> = ({
     >
       <LineChart
         accessibilityLayer
-        data={data}
+        data={mergedData}
         margin={{
           left: 0,
           right: 12,
@@ -111,16 +132,7 @@ const MetricChart: React.FC<MetricChartProps> = ({
           tickLine={false}
           axisLine={false}
           tickMargin={8}
-          tickFormatter={(value) => {
-            if (metric?.type === 'currency') {
-              return formatCurrencyAndAmount(value, 'USD', 0, 'compact')
-            } else {
-              return Intl.NumberFormat('en-US', {
-                notation: 'compact',
-                maximumFractionDigits: 2,
-              }).format(value)
-            }
-          }}
+          tickFormatter={getMetricFormatter(metric)}
         />
         <ChartTooltip
           cursor={false}
@@ -130,25 +142,19 @@ const MetricChart: React.FC<MetricChartProps> = ({
               indicator="dot"
               labelKey="metric"
               formatter={(value, name) => {
-                const formattedValue =
-                  metric?.type === 'currency'
-                    ? formatCurrencyAndAmount(
-                        value as number,
-                        'USD',
-                        0,
-                        'compact',
-                      )
-                    : Intl.NumberFormat('en-US', {
-                        notation: 'compact',
-                        maximumFractionDigits: 2,
-                      }).format(value as number)
-
+                const formattedValue = getFormattedMetricValue(
+                  metric,
+                  value as number,
+                )
                 return (
                   <div className="flex flex-row justify-between gap-x-8">
                     <div className="flex flex-row items-center gap-x-2">
                       <span
                         className={twMerge(
-                          'bg-primary dark:bg-primary h-2 w-2 rounded-full',
+                          'h-2 w-2 rounded-full',
+                          name === 'current'
+                            ? 'bg-primary dark:bg-primary'
+                            : 'dark:bg-polar-500 bg-gray-500',
                         )}
                       />
                       <span className="capitalize">
@@ -162,8 +168,17 @@ const MetricChart: React.FC<MetricChartProps> = ({
             />
           }
         />
+        {previousData && (
+          <Line
+            dataKey="previous"
+            stroke="var(--color-previous)"
+            type="linear"
+            dot={false}
+            strokeWidth={1.5}
+          />
+        )}
         <Line
-          dataKey={metric.slug}
+          dataKey="current"
           stroke="var(--color-current)"
           type="linear"
           dot={false}

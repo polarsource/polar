@@ -5,7 +5,7 @@ import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker from '@/components/Metrics/IntervalPicker'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import ProductSelect from '@/components/Products/ProductSelect'
-import { ParsedMetricPeriod, useMetrics } from '@/hooks/queries'
+import { ParsedMetricsResponse, useMetrics } from '@/hooks/queries'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { useRouter } from 'next/navigation'
@@ -115,6 +115,11 @@ export default function ClientPage({
     'one_time_products',
     'one_time_products_revenue',
   ]
+  const checkoutEvents: (keyof schemas['Metrics'])[] = [
+    'checkouts',
+    'succeeded_checkouts',
+    'checkouts_conversion',
+  ]
 
   return (
     <DashboardBody
@@ -150,22 +155,25 @@ export default function ClientPage({
             <MetricGroup
               title="Orders"
               metricKeys={generalEvents}
-              metrics={data.metrics}
-              periods={data.periods}
+              data={data}
               interval={interval}
             />
             <MetricGroup
               title="Subscriptions"
               metricKeys={subscriptionEvents}
-              metrics={data.metrics}
-              periods={data.periods}
+              data={data}
               interval={interval}
             />
             <MetricGroup
               title="One-time Purchases"
               metricKeys={oneTimeEvents}
-              metrics={data.metrics}
-              periods={data.periods}
+              data={data}
+              interval={interval}
+            />
+            <MetricGroup
+              title="Checkouts"
+              metricKeys={checkoutEvents}
+              data={data}
               interval={interval}
             />
           </>
@@ -177,17 +185,15 @@ export default function ClientPage({
 
 interface MetricGroupProps {
   title: string
+  data: ParsedMetricsResponse
   metricKeys: (keyof schemas['Metrics'])[]
-  metrics: schemas['Metrics']
-  periods: ParsedMetricPeriod[]
   interval: schemas['TimeInterval']
 }
 
 const MetricGroup = ({
   title,
   metricKeys,
-  metrics,
-  periods,
+  data,
   interval,
 }: MetricGroupProps) => {
   return (
@@ -198,9 +204,9 @@ const MetricGroup = ({
           {metricKeys.map((metricKey, index) => (
             <MetricChartBox
               key={metricKey}
-              data={periods}
+              data={data}
               interval={interval}
-              metric={metrics[metricKey as keyof schemas['Metrics']]}
+              metric={metricKey}
               height={200}
               className={twMerge(
                 '!rounded-none bg-transparent dark:bg-transparent',

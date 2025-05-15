@@ -11,6 +11,7 @@ from polar.benefit.strategies.license_keys.schemas import (
 )
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import generate_uuid, utc_now
+from polar.license_key.repository import LicenseKeyRepository
 from polar.license_key.service import license_key as license_key_service
 from polar.models import Customer, Organization, Product, User, UserOrganization
 from polar.postgres import AsyncSession
@@ -56,9 +57,8 @@ class TestLicenseKeyEndpoints:
                 prefix="testing",
             ),
         )
-        id = UUID(granted["license_key_id"])
-        lk = await license_key_service.get(session, id)
-        assert lk
+        repository = LicenseKeyRepository.from_session(session)
+        assert await repository.get_by_id(UUID(granted["license_key_id"])) is not None
 
         response = await client.get(f"/v1/license-keys/{id}")
         assert response.status_code == 401
@@ -89,11 +89,11 @@ class TestLicenseKeyEndpoints:
                 prefix="testing",
             ),
         )
-        id = UUID(granted["license_key_id"])
-        lk = await license_key_service.get(session, id)
-        assert lk
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
 
-        response = await client.get(f"/v1/license-keys/{id}")
+        response = await client.get(f"/v1/license-keys/{lk.id}")
         assert response.status_code == 200
         data = response.json()
         assert data.get("benefit_id") == str(benefit.id)
@@ -125,9 +125,9 @@ class TestLicenseKeyEndpoints:
                 prefix="testing",
             ),
         )
-        id = UUID(granted["license_key_id"])
-        lk = await license_key_service.get(session, id)
-        assert lk
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
 
         expires = utc_now() + relativedelta(months=1)
         expires_at = expires.strftime("%Y-%m-%dT%H:%M:%S")
@@ -185,16 +185,16 @@ class TestLicenseKeyEndpoints:
                 prefix="testing",
             ),
         )
-        keys, count = await license_key_service.get_list(
+        keys, count = await license_key_service.list(
             session,
             auth_subject,
-            organization_ids=[organization.id],
+            organization_id=[organization.id],
             pagination=PaginationParams(1, 50),
         )
         assert count >= 2
 
         response = await client.get(
-            f"/v1/license-keys?organization_id={str(organization.id)}",
+            f"/v1/license-keys/?organization_id={str(organization.id)}",
         )
         assert response.status_code == 200
         data = response.json()
@@ -229,9 +229,9 @@ class TestLicenseKeyEndpoints:
                 ),
             ),
         )
-        id = UUID(granted["license_key_id"])
-        lk = await license_key_service.get(session, id)
-        assert lk
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
 
         activate = await client.post(
             "/v1/customer-portal/license-keys/activate",

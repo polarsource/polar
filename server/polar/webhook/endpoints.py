@@ -3,7 +3,6 @@ from typing import Annotated
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
-from polar.authz.service import Authz
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import WebhookEndpoint
@@ -102,7 +101,6 @@ async def update_webhook_endpoint(
     update: WebhookEndpointUpdate,
     auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> WebhookEndpoint:
     """
     Update a webhook endpoint.
@@ -132,7 +130,6 @@ async def delete_webhook_endpoint(
     id: WebhookEndpointID,
     auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> None:
     """
     Delete a webhook endpoint.
@@ -187,7 +184,6 @@ async def redeliver_webhook_event(
     id: Annotated[UUID4, Path(..., description="The webhook event ID.")],
     auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> None:
     """
     Schedule the re-delivery of a webhook event.

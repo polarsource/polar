@@ -24,11 +24,9 @@ interface AccountForm {
 
 const AccountCreateModal = ({
   forOrganizationId,
-  forUserId,
   returnPath,
 }: {
-  forOrganizationId?: string
-  forUserId?: string
+  forOrganizationId: string
   returnPath: string
 }) => {
   const form = useForm<AccountForm>({
@@ -86,22 +84,15 @@ const AccountCreateModal = ({
         return
       }
 
-      if (forOrganizationId) {
-        await api.PATCH('/v1/organizations/{id}/account', {
-          params: { path: { id: forOrganizationId } },
-          body: { account_id: account.id },
-        })
-      }
-      if (forUserId) {
-        await api.PATCH('/v1/users/me/account', {
-          body: { account_id: account.id },
-        })
-      }
+      await api.PATCH('/v1/organizations/{id}/account', {
+        params: { path: { id: forOrganizationId } },
+        body: { account_id: account.id },
+      })
 
       setLoading(false)
       await goToOnboarding(account)
     },
-    [setLoading, forOrganizationId, forUserId, goToOnboarding, setError],
+    [setLoading, forOrganizationId, goToOnboarding, setError],
   )
 
   return (

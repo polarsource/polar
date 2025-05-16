@@ -38,7 +38,7 @@ const auth = betterAuth({
     // ... Better Auth config
     plugins: [
         polar({
-            client: polarClient,
+            client,
             createCustomerOnSignUp: true,
             use: [
                 checkout(...),

@@ -4,6 +4,7 @@ from fastapi import Depends, Path, Query, Request
 from pydantic import UUID4
 from sse_starlette.sse import EventSourceResponse
 
+from polar.customer.schemas.customer import CustomerID
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
@@ -14,6 +15,7 @@ from polar.kit.schemas import (
 )
 from polar.locker import Locker, get_locker
 from polar.models import Checkout
+from polar.models.checkout import CheckoutStatus
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
@@ -81,6 +83,15 @@ async def list(
     product_id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="ProductID Filter", description="Filter by product ID."
     ),
+    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    ),
+    status: MultipleQueryFilter[CheckoutStatus] | None = Query(
+        None,
+        title="Status Filter",
+        description="Filter by checkout session status.",
+    ),
+    query: str | None = Query(None, description="Filter by customer email."),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[CheckoutSchema]:
     """List checkout sessions."""
@@ -89,6 +100,9 @@ async def list(
         auth_subject,
         organization_id=organization_id,
         product_id=product_id,
+        customer_id=customer_id,
+        status=status,
+        query=query,
         pagination=pagination,
         sorting=sorting,
     )

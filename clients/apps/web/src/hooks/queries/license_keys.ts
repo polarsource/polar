@@ -56,7 +56,7 @@ export const useOrganizationLicenseKeys = ({
     ],
     queryFn: () =>
       unwrap(
-        api.GET('/v1/license-keys', {
+        api.GET('/v1/license-keys/', {
           params: {
             query: {
               organization_id,

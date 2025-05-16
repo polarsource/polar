@@ -14,7 +14,7 @@ from polar.integrations.discord.internal_webhook import (
 from polar.logging import Logger
 from polar.models import Customer, Order
 from polar.models.order import OrderBillingReason
-from polar.product.service.product import product as product_service
+from polar.product.repository import ProductRepository
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.worker import AsyncSessionMaker, actor, can_retry
 
@@ -70,7 +70,8 @@ async def create_order_balance(order_id: uuid.UUID, charge_id: str) -> None:
 @actor(actor_name="order.update_product_benefits_grants")
 async def update_product_benefits_grants(product_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
-        product = await product_service.get(session, product_id)
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(product_id)
         if product is None:
             raise ProductDoesNotExist(product_id)
 

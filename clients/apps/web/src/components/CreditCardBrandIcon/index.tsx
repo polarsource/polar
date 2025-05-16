@@ -38,11 +38,7 @@ const CreditCardBrandIcon = ({
 }: SVGProps<SVGSVGElement> & { brand: string }) => {
   const Icon = getCardIcon(brand)
   return (
-    <svg
-      className="dark:border-polar-700 rounded-lg border border-gray-200 p-2"
-      viewBox="0 0 24 16"
-      {...props}
-    >
+    <svg viewBox="0 0 24 16" {...props}>
       {Icon}
     </svg>
   )

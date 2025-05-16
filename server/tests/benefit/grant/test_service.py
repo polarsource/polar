@@ -111,13 +111,20 @@ class TestGrantBenefit:
         benefit_organization: Benefit,
         benefit_strategy_mock: MagicMock,
     ) -> None:
-        benefit_strategy_mock.grant.side_effect = BenefitActionRequiredError("Error")
+        error_message = "Action required error message"
+        benefit_strategy_mock.grant.side_effect = BenefitActionRequiredError(
+            error_message
+        )
 
         grant = await benefit_grant_service.grant_benefit(
             session, redis, customer, benefit_organization, subscription=subscription
         )
 
         assert not grant.is_granted
+        assert grant.error is not None
+        assert grant.error["message"] == error_message
+        assert grant.error["type"] == "BenefitActionRequiredError"
+        assert "timestamp" in grant.error
 
     async def test_default_properties_value(
         self,
@@ -302,7 +309,10 @@ class TestRevokeBenefit:
         benefit_organization: Benefit,
         benefit_strategy_mock: MagicMock,
     ) -> None:
-        benefit_strategy_mock.revoke.side_effect = BenefitActionRequiredError("Error")
+        error_message = "Revoke action required error message"
+        benefit_strategy_mock.revoke.side_effect = BenefitActionRequiredError(
+            error_message
+        )
 
         grant = BenefitGrant(
             subscription=subscription,
@@ -318,6 +328,8 @@ class TestRevokeBenefit:
 
         assert updated_grant.id == grant.id
         assert updated_grant.is_revoked
+        # In revoke_benefit, we don't set the error field when BenefitActionRequiredError is raised
+        # This is because we always want to mark the grant as revoked, regardless of errors
         benefit_strategy_mock.revoke.assert_called_once()
 
 
@@ -562,7 +574,10 @@ class TestUpdateBenefitGrant:
         grant.set_granted()
         await save_fixture(grant)
 
-        benefit_strategy_mock.grant.side_effect = BenefitActionRequiredError("Error")
+        error_message = "Update action required error message"
+        benefit_strategy_mock.grant.side_effect = BenefitActionRequiredError(
+            error_message
+        )
 
         # load
         grant_loaded = await benefit_grant_service.get(session, grant.id, loaded=True)
@@ -573,6 +588,10 @@ class TestUpdateBenefitGrant:
         )
 
         assert not updated_grant.is_granted
+        assert updated_grant.error is not None
+        assert updated_grant.error["message"] == error_message
+        assert updated_grant.error["type"] == "BenefitActionRequiredError"
+        assert "timestamp" in updated_grant.error
 
 
 @pytest.mark.asyncio
@@ -687,7 +706,10 @@ class TestCycleBenefitGrant:
             subscription=subscription,
         )
 
-        benefit_strategy_mock.cycle.side_effect = BenefitActionRequiredError("Error")
+        error_message = "Cycle action required error message"
+        benefit_strategy_mock.cycle.side_effect = BenefitActionRequiredError(
+            error_message
+        )
 
         updated_grant = await benefit_grant_service.cycle_benefit_grant(
             session, redis, grant
@@ -695,6 +717,10 @@ class TestCycleBenefitGrant:
 
         benefit_strategy_mock.cycle.assert_called_once()
         assert not updated_grant.is_granted
+        assert updated_grant.error is not None
+        assert updated_grant.error["message"] == error_message
+        assert updated_grant.error["type"] == "BenefitActionRequiredError"
+        assert "timestamp" in updated_grant.error
 
 
 @pytest.mark.asyncio

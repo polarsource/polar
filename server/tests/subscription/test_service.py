@@ -1197,6 +1197,51 @@ class TestList:
         assert len(results) == 1
         assert count == 1
 
+    @pytest.mark.auth
+    async def test_metadata_filter(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription_1 = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "ABC"},
+        )
+        subscription_2 = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "DEF"},
+        )
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "GHI"},
+        )
+
+        # then
+        session.expunge_all()
+
+        results, count = await subscription_service.list(
+            session,
+            auth_subject,
+            pagination=PaginationParams(1, 10),
+            metadata={"reference_id": ["ABC", "DEF"]},
+        )
+
+        assert len(results) == 2
+        assert count == 2
+
+        assert subscription_1 in results
+        assert subscription_2 in results
+
 
 @pytest.mark.asyncio
 @pytest.mark.email_subscription_confirmation

@@ -1,12 +1,24 @@
+import statistics
+from collections import deque
+from collections.abc import Callable, Iterable
 from datetime import datetime
 from enum import StrEnum
 from typing import ClassVar, Protocol, cast
 
-from sqlalchemy import ColumnElement, Integer, SQLColumnExpression, case, func
+from sqlalchemy import (
+    ColumnElement,
+    Float,
+    Integer,
+    SQLColumnExpression,
+    case,
+    func,
+    type_coerce,
+)
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
-from polar.models import Order, Subscription
+from polar.models import Checkout, Order, Subscription
+from polar.models.checkout import CheckoutStatus
 
 from .queries import MetricQuery
 
@@ -14,6 +26,15 @@ from .queries import MetricQuery
 class MetricType(StrEnum):
     scalar = "scalar"
     currency = "currency"
+    percentage = "percentage"
+
+
+CumulativeFunction = Callable[[Iterable[int | float]], int | float]
+
+
+def last(values: Iterable[int | float]) -> int | float:
+    dd = deque(values, maxlen=1)
+    return dd.pop()
 
 
 class Metric(Protocol):
@@ -25,7 +46,10 @@ class Metric(Protocol):
     @classmethod
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval
-    ) -> ColumnElement[int]: ...
+    ) -> ColumnElement[int] | ColumnElement[float]: ...
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction: ...
 
 
 class OrdersMetric(Metric):
@@ -40,6 +64,10 @@ class OrdersMetric(Metric):
     ) -> ColumnElement[int]:
         return func.count(Order.id)
 
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
 
 class RevenueMetric(Metric):
     slug = "revenue"
@@ -52,6 +80,10 @@ class RevenueMetric(Metric):
         cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.sum(Order.net_amount)
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
 
 
 class CumulativeRevenueMetric(Metric):
@@ -66,6 +98,10 @@ class CumulativeRevenueMetric(Metric):
     ) -> ColumnElement[int]:
         return func.sum(Order.net_amount)
 
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return last
+
 
 class AverageOrderValueMetric(Metric):
     slug = "average_order_value"
@@ -78,6 +114,10 @@ class AverageOrderValueMetric(Metric):
         cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.cast(func.ceil(func.avg(Order.net_amount)), Integer)
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return statistics.fmean
 
 
 class OneTimeProductsMetric(Metric):
@@ -92,6 +132,10 @@ class OneTimeProductsMetric(Metric):
     ) -> ColumnElement[int]:
         return func.count(Order.id).filter(Order.subscription_id.is_(None))
 
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
 
 class OneTimeProductsRevenueMetric(Metric):
     slug = "one_time_products_revenue"
@@ -104,6 +148,10 @@ class OneTimeProductsRevenueMetric(Metric):
         cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.sum(Order.net_amount).filter(Order.subscription_id.is_(None))
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
 
 
 class NewSubscriptionsMetric(Metric):
@@ -123,6 +171,10 @@ class NewSubscriptionsMetric(Metric):
             == i.sql_date_trunc(t)
         )
 
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
 
 class NewSubscriptionsRevenueMetric(Metric):
     slug = "new_subscriptions_revenue"
@@ -140,6 +192,10 @@ class NewSubscriptionsRevenueMetric(Metric):
             )
             == i.sql_date_trunc(t)
         )
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
 
 
 class RenewedSubscriptionsMetric(Metric):
@@ -159,6 +215,10 @@ class RenewedSubscriptionsMetric(Metric):
             != i.sql_date_trunc(t)
         )
 
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
 
 class RenewedSubscriptionsRevenueMetric(Metric):
     slug = "renewed_subscriptions_revenue"
@@ -177,6 +237,10 @@ class RenewedSubscriptionsRevenueMetric(Metric):
             != i.sql_date_trunc(t)
         )
 
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
 
 class ActiveSubscriptionsMetric(Metric):
     slug = "active_subscriptions"
@@ -189,6 +253,10 @@ class ActiveSubscriptionsMetric(Metric):
         cls, t: ColumnElement[datetime], i: TimeInterval
     ) -> ColumnElement[int]:
         return func.count(Subscription.id)
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return last
 
 
 class MonthlyRecurringRevenueMetric(Metric):
@@ -219,6 +287,72 @@ class MonthlyRecurringRevenueMetric(Metric):
             0,
         )
 
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return last
+
+
+class CheckoutsMetric(Metric):
+    slug = "checkouts"
+    display_name = "Checkouts"
+    type = MetricType.scalar
+    query = MetricQuery.checkouts
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval
+    ) -> ColumnElement[int]:
+        return func.count(Checkout.id)
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
+class SucceededCheckoutsMetric(Metric):
+    slug = "succeeded_checkouts"
+    display_name = "Succeeded Checkouts"
+    type = MetricType.scalar
+    query = MetricQuery.checkouts
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval
+    ) -> ColumnElement[int]:
+        return func.count(Checkout.id).filter(
+            Checkout.status == CheckoutStatus.succeeded
+        )
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
+class CheckoutsConversionMetric(Metric):
+    slug = "checkouts_conversion"
+    display_name = "Checkouts Conversion Rate"
+    type = MetricType.percentage
+    query = MetricQuery.checkouts
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval
+    ) -> ColumnElement[float]:
+        return type_coerce(
+            case(
+                (func.count(Checkout.id) == 0, 0),
+                else_=func.count(Checkout.id).filter(
+                    Checkout.status == CheckoutStatus.succeeded
+                )
+                / func.count(Checkout.id),
+            ),
+            Float,
+        )
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return statistics.fmean
+
 
 METRICS: list[type[Metric]] = [
     OrdersMetric,
@@ -233,6 +367,9 @@ METRICS: list[type[Metric]] = [
     RenewedSubscriptionsRevenueMetric,
     ActiveSubscriptionsMetric,
     MonthlyRecurringRevenueMetric,
+    CheckoutsMetric,
+    SucceededCheckoutsMetric,
+    CheckoutsConversionMetric,
 ]
 
 __all__ = ["MetricType", "Metric", "METRICS"]

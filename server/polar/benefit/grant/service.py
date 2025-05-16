@@ -160,8 +160,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 grant.properties,
                 attempt=attempt,
             )
-        except BenefitActionRequiredError:
-            grant.granted_at = None
+        except BenefitActionRequiredError as e:
+            grant.set_grant_failed(e)
         else:
             grant.properties = properties
             grant.set_granted()
@@ -340,8 +340,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 update=True,
                 attempt=attempt,
             )
-        except BenefitActionRequiredError:
-            grant.granted_at = None
+        except BenefitActionRequiredError as e:
+            grant.set_grant_failed(e)
         else:
             grant.properties = properties
             grant.set_granted()
@@ -395,8 +395,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 grant.properties,
                 attempt=attempt,
             )
-        except BenefitActionRequiredError:
-            grant.granted_at = None
+        except BenefitActionRequiredError as e:
+            grant.set_grant_failed(e)
         else:
             grant.properties = properties
 

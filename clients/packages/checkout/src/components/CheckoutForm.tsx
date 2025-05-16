@@ -161,13 +161,6 @@ const BaseCheckoutForm = ({
           }
           clearErrors('customerBillingAddress')
         }
-      } else if (name === 'discountCode') {
-        const { discountCode } = value
-        clearErrors('discountCode')
-        // Ensure we don't submit an empty discount code
-        if (discountCode === '') {
-          setValue('discountCode', undefined)
-        }
       }
 
       if (Object.keys(payload).length === 0) {
@@ -178,7 +171,7 @@ const BaseCheckoutForm = ({
         await update(payload)
       } catch {}
     },
-    [clearErrors, resetField, update, setValue],
+    [clearErrors, resetField, update],
   )
   const debouncedWatcher = useDebouncedCallback(watcher, 500, [watcher])
 

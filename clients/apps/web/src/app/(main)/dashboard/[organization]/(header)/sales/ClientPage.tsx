@@ -12,7 +12,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { dateToInterval } from '@/utils/metrics'
+import { getChartRangeParams } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
@@ -217,11 +217,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
     }
   }, [selectedOrder, router, organization])
 
+  const [allTimeStart, allTimeEnd, allTimeInterval] = getChartRangeParams(
+    'all_time',
+    organization.created_at,
+  )
   const { data: metricsData } = useMetrics({
     organization_id: organization.id,
-    startDate: new Date(organization.created_at),
-    endDate: new Date(),
-    interval: dateToInterval(new Date(organization.created_at)),
+    startDate: allTimeStart,
+    endDate: allTimeEnd,
+    interval: allTimeInterval,
     product_id: productId,
   })
   const { data: todayMetricsData } = useMetrics({
@@ -248,25 +252,16 @@ const ClientPage: React.FC<ClientPageProps> = ({
         </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <MiniMetricChartBox
-            value={metricsData?.periods.reduce(
-              (acc, current) => acc + current.orders,
-              0,
-            )}
+            value={metricsData?.totals.orders}
             metric={metricsData?.metrics.orders}
           />
           <MiniMetricChartBox
             title="Today's Revenue"
-            value={
-              todayMetricsData?.periods[todayMetricsData.periods.length - 1]
-                .revenue
-            }
+            value={todayMetricsData?.totals.revenue}
             metric={todayMetricsData?.metrics.revenue}
           />
           <MiniMetricChartBox
-            value={
-              metricsData?.periods[metricsData.periods.length - 1]
-                .cumulative_revenue
-            }
+            value={metricsData?.totals.revenue}
             metric={metricsData?.metrics.cumulative_revenue}
           />
         </div>

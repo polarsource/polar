@@ -3,25 +3,66 @@ title: "Orders & Subscriptions"
 sidebarTitle: "Orders & Subscriptions"
 ---
 
-Sales
-------------
+## Sales
 
-<img className="block dark:hidden" src="/assets/features/orders/overview.light.png" />
-<img className="hidden dark:block" src="/assets/features/orders/overview.dark.png" />
+<img
+  className="block dark:hidden"
+  src="/assets/features/orders/overview.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/orders/overview.dark.png"
+/>
 
 The sales view shows you all sales in a paginated list.
 
-Order & Subscription Details
--------------------------
+## Order & Subscription Details
 
-<img className="block dark:hidden" src="/assets/features/orders/detail.light.png" />
-<img className="hidden dark:block" src="/assets/features/orders/detail.dark.png" />
+<img
+  className="block dark:hidden"
+  src="/assets/features/orders/detail.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/orders/detail.dark.png"
+/>
 
 Each sale has metadata attached to it. Common properties like
 
-* Amount
-* Tax Amount
-* Invoices
-* Customer
-  + Basic Customer Details
-  + Past Orders
+- Amount
+- Tax Amount
+- Invoices
+- Customer
+  - Basic Customer Details
+  - Past Orders
+
+## Checkouts
+
+<img
+  className="block dark:hidden"
+  src="/assets/features/orders/checkouts.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/orders/checkouts.dark.png"
+/>
+
+You can also have an overview of all checkout sessions. You can filter them by customer email, status and product.
+
+A checkout can be in the following states:
+
+- Open: The checkout session is open and waiting for the customer to complete the payment.
+- Confirmed: The customer clicked the **Pay** or **Subscribe** button and the payment is being processed.
+- Succeeded: The payment was successful and the order was created.
+- Expired: The checkout session expired and the customer can no longer complete it. A new checkout session must be created.
+
+If you click on a Checkout, you can have more details on the **payment attempts**, in particular, why a payment has failed or has been declined.
+
+<img
+  className="block dark:hidden"
+  src="/assets/features/orders/checkout.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/orders/checkout.dark.png"
+/>

@@ -1,8 +1,12 @@
 'use client'
 
 import Spinner from '@/components/Shared/Spinner'
-import { ParsedMetricPeriod } from '@/hooks/queries'
-import { computeCumulativeValue, metricDisplayNames } from '@/utils/metrics'
+import { ParsedMetricPeriod, ParsedMetricsResponse } from '@/hooks/queries'
+import {
+  CHART_RANGES,
+  ChartRange,
+  getFormattedMetricValue,
+} from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
@@ -13,74 +17,53 @@ import {
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
+import { Tabs, TabsList, TabsTrigger } from '@polar-sh/ui/components/atoms/Tabs'
 import React, { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import MetricChart from './MetricChart'
 
 interface MetricChartBoxProps {
-  className?: string
-  data: ParsedMetricPeriod[]
+  metric: keyof schemas['Metrics']
+  onMetricChange?: (metric: keyof schemas['Metrics']) => void
+  data?: ParsedMetricsResponse
+  previousData?: ParsedMetricsResponse
   interval: schemas['TimeInterval']
-  metric?: schemas['Metric']
+  range?: ChartRange
+  onRangeChange?: (range: ChartRange) => void
+  className?: string
   height?: number
   loading?: boolean
-  defaultMetric?: keyof schemas['Metrics']
   compact?: boolean
 }
 
 const MetricChartBox: React.FC<MetricChartBoxProps> = ({
-  className,
-  data,
-  interval,
   metric,
+  onMetricChange,
+  data,
+  previousData,
+  interval,
+  range,
+  onRangeChange,
+  className,
   height = 300,
   loading,
   compact = false,
-  defaultMetric,
 }) => {
-  const [selectedMetric, setSelectedMetric] = React.useState<
-    keyof schemas['Metrics'] | undefined
-  >(defaultMetric)
-
-  const [hoveredMetricPeriod, setHoveredMetricPeriod] =
+  const selectedMetric = useMemo(() => data?.metrics[metric], [data, metric])
+  const [hoveredPeriod, setHoveredPeriod] =
     React.useState<ParsedMetricPeriod | null>(null)
 
-  const isMetricObject = metric && 'slug' in metric
-
   const metricValue = useMemo(() => {
-    if (!data || !metric) return 0
+    if (!data) return 0
 
-    const currentMetric = isMetricObject
-      ? metric
-      : selectedMetric
-        ? metric[selectedMetric]
-        : undefined
+    const currentPeriod = hoveredPeriod
+      ? hoveredPeriod
+      : data.periods[data.periods.length - 1]
 
-    if (!currentMetric) return 0
+    const value = hoveredPeriod ? currentPeriod[metric] : data.totals[metric]
 
-    const currentMetricPeriod = hoveredMetricPeriod
-      ? hoveredMetricPeriod
-      : data[data.length - 1]
-
-    const value = hoveredMetricPeriod
-      ? (currentMetricPeriod[
-          currentMetric.slug as keyof ParsedMetricPeriod
-        ] as number)
-      : computeCumulativeValue(
-          currentMetric,
-          data.map((period) => {
-            const value = period[currentMetric.slug as keyof ParsedMetricPeriod]
-            return typeof value === 'number' ? value : 0
-          }),
-        )
-
-    if (currentMetric?.type === 'currency') {
-      return `$${getCentsInDollarString(value ?? 0)}`
-    } else {
-      return value
-    }
-  }, [hoveredMetricPeriod, data, selectedMetric])
+    return getFormattedMetricValue(data.metrics[metric], value)
+  }, [hoveredPeriod, data, metric])
 
   return (
     <ShadowBox
@@ -103,27 +86,23 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
               : 'flex-col gap-y-3',
           )}
         >
-          {!isMetricObject ? (
-            <Select
-              value={selectedMetric}
-              onValueChange={(value) =>
-                setSelectedMetric(value as keyof schemas['Metrics'])
-              }
-            >
+          {onMetricChange ? (
+            <Select value={metric} onValueChange={onMetricChange}>
               <SelectTrigger className="h-fit w-fit border-0 border-none bg-transparent p-0 shadow-none ring-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 dark:hover:bg-transparent">
                 <SelectValue placeholder="Select a metric" />
               </SelectTrigger>
               <SelectContent className="dark:bg-polar-800 dark:ring-polar-700 ring-1 ring-gray-200">
-                {Object.entries(metricDisplayNames).map(([key, value]) => (
-                  <SelectItem key={key} value={key}>
-                    {value}
-                  </SelectItem>
-                ))}
+                {data &&
+                  Object.values(data.metrics).map((metric) => (
+                    <SelectItem key={metric.slug} value={metric.slug}>
+                      {metric.display_name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           ) : (
             <h3 className={compact ? 'text-base' : 'text-lg'}>
-              {metric.display_name}
+              {selectedMetric?.display_name}
             </h3>
           )}
           <h2 className={compact ? 'text-base' : 'text-3xl'}>{metricValue}</h2>
@@ -135,12 +114,20 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
                   Current Period
                 </span>
               </div>
-              {hoveredMetricPeriod && (
+              {previousData && (
+                <div className="flex flex-row items-center gap-x-2">
+                  <span className="dark:border-polar-600 h-3 w-3 rounded-full border-2 border-gray-500" />
+                  <span className="dark:text-polar-500 text-sm text-gray-500">
+                    Previous Period
+                  </span>
+                </div>
+              )}
+              {hoveredPeriod && (
                 <div className="flex flex-row items-center gap-x-2">
                   <span className="h-3 w-3 rounded-full border-2 border-gray-500 dark:border-gray-700" />
                   <span className="dark:text-polar-500 text-sm text-gray-500">
                     <FormattedDateTime
-                      datetime={hoveredMetricPeriod.timestamp}
+                      datetime={hoveredPeriod.timestamp}
                       dateStyle="medium"
                     />
                   </span>
@@ -149,6 +136,25 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
             </div>
           )}
         </div>
+        {range && onRangeChange && (
+          <Tabs
+            value={range}
+            onValueChange={(value) => onRangeChange(value as ChartRange)}
+          >
+            <TabsList className="dark:bg-polar-900 flex flex-row gap-x-0 rounded-md bg-white">
+              {Object.entries(CHART_RANGES).map(([key, value]) => (
+                <TabsTrigger
+                  size="small"
+                  key={key}
+                  value={key}
+                  className="!rounded-sm p-1 px-2 text-xs font-normal"
+                >
+                  {value}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        )}
       </div>
       <div
         className={twMerge(
@@ -163,18 +169,15 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
           >
             <Spinner />
           </div>
-        ) : data && metric ? (
+        ) : data && selectedMetric ? (
           <MetricChart
             height={height}
-            data={data}
+            data={data.periods}
+            previousData={previousData?.periods}
             interval={interval}
-            metric={
-              isMetricObject
-                ? metric
-                : metric[selectedMetric as keyof schemas['Metrics']]
-            }
+            metric={selectedMetric}
             onDataIndexHover={(period) =>
-              setHoveredMetricPeriod(data[period as number] ?? null)
+              setHoveredPeriod(data.periods[period as number] ?? null)
             }
           />
         ) : (

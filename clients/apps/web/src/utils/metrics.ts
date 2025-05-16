@@ -1,4 +1,3 @@
-import { ParsedMetricPeriod } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { format, parse } from 'date-fns'
@@ -8,20 +7,35 @@ export const toISODate = (date: Date) => format(date, 'yyyy-MM-dd')
 export const fromISODate = (date: string) =>
   parse(date, 'yyyy-MM-dd', new Date('1970-01-01T12:00:00Z'))
 
-export const getValueFormatter = (
+const scalarFormatter = Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  maximumFractionDigits: 2,
+})
+
+const percentageFormatter = Intl.NumberFormat('en-US', {
+  style: 'percent',
+  maximumFractionDigits: 2,
+})
+
+export const getMetricFormatter = (
   metric: schemas['Metric'],
 ): ((value: number) => string) => {
-  const numberFormat = new Intl.NumberFormat(undefined, {
-    maximumFractionDigits: 2,
-    notation: 'compact',
-  })
   switch (metric.type) {
+    case 'scalar':
+      return scalarFormatter.format
     case 'currency':
       return (value: number) =>
-        formatCurrencyAndAmount(value, 'usd', 0, 'compact')
-    case 'scalar':
-      return (value: number) => numberFormat.format(value)
+        formatCurrencyAndAmount(value, 'USD', 0, 'compact')
+    case 'percentage':
+      return percentageFormatter.format
   }
+}
+
+export const getFormattedMetricValue = (
+  metric: schemas['Metric'],
+  value: number,
+): string => {
+  return getMetricFormatter(metric)(value)
 }
 
 export const getTimestampFormatter = (
@@ -53,74 +67,7 @@ export const getTicks = (timestamps: Date[], maxTicks: number = 10): Date[] => {
   return timestamps.filter((_, index) => index % step === 0)
 }
 
-export type MetricData =
-  | ParsedMetricPeriod[]
-  | {
-      timestamp: Date
-      quantity: number
-    }[]
-
-export const metricDisplayNames: Record<keyof schemas['Metrics'], string> = {
-  revenue: 'Revenue',
-  orders: 'Orders',
-  cumulative_revenue: 'Cumulative Revenue',
-  average_order_value: 'Average Order Value',
-  one_time_products: 'One-Time Products',
-  one_time_products_revenue: 'One-Time Products Revenue',
-  new_subscriptions: 'New Subscriptions',
-  new_subscriptions_revenue: 'New Subscriptions Revenue',
-  renewed_subscriptions: 'Renewed Subscriptions',
-  renewed_subscriptions_revenue: 'Renewed Subscriptions Revenue',
-  active_subscriptions: 'Active Subscriptions',
-  monthly_recurring_revenue: 'Monthly Recurring Revenue',
-}
-
-export const metricToCumulativeType: Record<
-  schemas['Metric']['slug'],
-  MetricCumulativeType
-> = {
-  revenue: 'sum',
-  orders: 'sum',
-  cumulative_revenue: 'lastValue',
-  average_order_value: 'average',
-  one_time_products: 'sum',
-  one_time_products_revenue: 'sum',
-  new_subscriptions: 'sum',
-  new_subscriptions_revenue: 'sum',
-  renewed_subscriptions: 'sum',
-  renewed_subscriptions_revenue: 'sum',
-  active_subscriptions: 'lastValue',
-  monthly_recurring_revenue: 'lastValue',
-  quantity: 'sum',
-}
-
-export type MetricCumulativeType = 'sum' | 'average' | 'lastValue'
-
-export const computeCumulativeValue = (
-  metric: schemas['Metric'],
-  values: number[],
-): number => {
-  if (values.length === 0) return 0
-
-  const cumulativeType = metricToCumulativeType[metric.slug]
-
-  switch (cumulativeType) {
-    case 'sum':
-      return values.reduce((acc, value) => acc + value, 0)
-    case 'average':
-      const nonZeroValues = values.filter((value) => value !== 0)
-      return (
-        nonZeroValues.reduce((acc, value) => acc + value, 0) /
-        (nonZeroValues.length || 1)
-      )
-    case 'lastValue':
-      return values[values.length - 1]
-    default:
-      return 0
-  }
-}
-
-export const dateToInterval = (startDate: Date) => {
+const dateToInterval = (startDate: Date) => {
   const yearsAgo = new Date().getFullYear() - startDate.getFullYear()
   const monthsAgo =
     (new Date().getFullYear() - startDate.getFullYear()) * 12 +
@@ -142,5 +89,73 @@ export const dateToInterval = (startDate: Date) => {
     return 'day'
   } else {
     return 'hour'
+  }
+}
+
+export type ChartRange = 'all_time' | '12m' | '3m' | '30d' | '24h'
+
+export const CHART_RANGES: Record<ChartRange, string> = {
+  all_time: 'All Time',
+  '12m': '12m',
+  '3m': '3m',
+  '30d': '30d',
+  '24h': '24h',
+}
+
+export const getChartRangeParams = (
+  range: ChartRange,
+  createdAt: string | Date,
+): [Date, Date, schemas['TimeInterval']] => {
+  const endDate = new Date()
+  const parsedCreatedAt = new Date(createdAt)
+  const _getStartDate = (range: ChartRange) => {
+    const now = new Date()
+    switch (range) {
+      case 'all_time':
+        return parsedCreatedAt
+      case '12m':
+        return new Date(new Date().setFullYear(now.getFullYear() - 1))
+      case '3m':
+        return new Date(new Date().setMonth(now.getMonth() - 3))
+      case '30d':
+        return new Date(new Date().setDate(now.getDate() - 30))
+      case '24h':
+        return new Date(new Date().setHours(now.getHours() - 24))
+    }
+  }
+  const startDate = _getStartDate(range)
+  const maxStartDate = startDate > parsedCreatedAt ? startDate : parsedCreatedAt
+  const interval = dateToInterval(maxStartDate)
+  return [maxStartDate, endDate, interval]
+}
+
+export const getPreviousParams = (
+  startDate: Date,
+  range: ChartRange,
+): [Date, Date] | null => {
+  const startDateCopy = new Date(startDate)
+  switch (range) {
+    case 'all_time':
+      return null
+    case '12m':
+      return [
+        new Date(startDateCopy.setFullYear(startDateCopy.getFullYear() - 1)),
+        startDate,
+      ]
+    case '3m':
+      return [
+        new Date(startDateCopy.setMonth(startDateCopy.getMonth() - 3)),
+        startDate,
+      ]
+    case '30d':
+      return [
+        new Date(startDateCopy.setDate(startDateCopy.getDate() - 30)),
+        startDate,
+      ]
+    case '24h':
+      return [
+        new Date(startDateCopy.setHours(startDateCopy.getHours() - 24)),
+        startDate,
+      ]
   }
 }

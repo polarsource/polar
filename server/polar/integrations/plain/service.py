@@ -437,6 +437,38 @@ class PlainService:
                         ],
                     )
                 ),
+                *(
+                    [
+                        ComponentContainerContentInput(
+                            component_row=ComponentRowInput(
+                                row_main_content=[
+                                    ComponentRowContentInput(
+                                        component_text=ComponentTextInput(
+                                            text="Support Email",
+                                            text_size=ComponentTextSize.S,
+                                            text_color=ComponentTextColor.MUTED,
+                                        )
+                                    ),
+                                    ComponentRowContentInput(
+                                        component_text=ComponentTextInput(
+                                            text=organization.email
+                                        )
+                                    ),
+                                ],
+                                row_aside_content=[
+                                    ComponentRowContentInput(
+                                        component_copy_button=ComponentCopyButtonInput(
+                                            copy_button_value=organization.email,
+                                            copy_button_tooltip_label="Copy Support Email",
+                                        )
+                                    )
+                                ],
+                            )
+                        ),
+                    ]
+                    if organization.email
+                    else []
+                ),
                 ComponentContainerContentInput(
                     component_spacer=ComponentSpacerInput(
                         spacer_size=ComponentSpacerSize.M

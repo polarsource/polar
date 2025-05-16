@@ -8,9 +8,8 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
-from polar.authz.service import Authz
 from polar.enums import SubscriptionRecurringInterval
-from polar.exceptions import NotPermitted, PolarRequestValidationError
+from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.models import (
     Benefit,
@@ -38,7 +37,7 @@ from polar.product.schemas import (
     ProductPriceMeteredUnitCreate,
     ProductUpdate,
 )
-from polar.product.service.product import product as product_service
+from polar.product.service import product as product_service
 from polar.product.sorting import ProductSortProperty
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -52,13 +51,8 @@ from tests.fixtures.random_objects import (
 
 
 @pytest.fixture
-def authz(session: AsyncSession) -> Authz:
-    return Authz(session)
-
-
-@pytest.fixture
 def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
-    return mocker.patch("polar.product.service.product.enqueue_job")
+    return mocker.patch("polar.product.service.enqueue_job")
 
 
 @pytest.mark.asyncio
@@ -269,7 +263,7 @@ class TestList:
 
 
 @pytest.mark.asyncio
-class TestGetById:
+class TestGet:
     @pytest.mark.auth
     async def test_user(
         self,
@@ -280,9 +274,7 @@ class TestGetById:
         # then
         session.expunge_all()
 
-        retrieved_product = await product_service.get_by_id(
-            session, auth_subject, product.id
-        )
+        retrieved_product = await product_service.get(session, auth_subject, product.id)
         assert retrieved_product is None
 
     @pytest.mark.auth
@@ -297,12 +289,12 @@ class TestGetById:
         # then
         session.expunge_all()
 
-        not_existing_product = await product_service.get_by_id(
+        not_existing_product = await product_service.get(
             session, auth_subject, uuid.uuid4()
         )
         assert not_existing_product is None
 
-        accessible_product = await product_service.get_by_id(
+        accessible_product = await product_service.get(
             session, auth_subject, product.id
         )
         assert accessible_product is not None
@@ -318,12 +310,12 @@ class TestGetById:
         # then
         session.expunge_all()
 
-        not_existing_product = await product_service.get_by_id(
+        not_existing_product = await product_service.get(
             session, auth_subject, uuid.uuid4()
         )
         assert not_existing_product is None
 
-        accessible_product = await product_service.get_by_id(
+        accessible_product = await product_service.get(
             session, auth_subject, product.id
         )
         assert accessible_product is not None
@@ -865,24 +857,6 @@ class TestCreate:
 
 @pytest.mark.asyncio
 class TestUpdate:
-    @pytest.mark.auth
-    async def test_not_writable_product(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        authz: Authz,
-        product: Product,
-    ) -> None:
-        update_schema = ProductUpdate(name="Product Update")
-        with pytest.raises(NotPermitted):
-            await product_service.update(
-                session,
-                authz,
-                product,
-                update_schema,
-                auth_subject,
-            )
-
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
@@ -891,7 +865,6 @@ class TestUpdate:
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        authz: Authz,
         product: Product,
         user_organization: UserOrganization,
     ) -> None:
@@ -899,7 +872,6 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await product_service.update(
                 session,
-                authz,
                 product,
                 update_schema,
                 auth_subject,
@@ -912,7 +884,6 @@ class TestUpdate:
     async def test_valid_name_change(
         self,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
         organization: Organization,
@@ -924,7 +895,6 @@ class TestUpdate:
         update_schema = ProductUpdate(name="Product Update")
         updated_product = await product_service.update(
             session,
-            authz,
             product,
             update_schema,
             auth_subject,
@@ -943,7 +913,6 @@ class TestUpdate:
     async def test_valid_description_change(
         self,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
         user_organization: UserOrganization,
@@ -954,7 +923,6 @@ class TestUpdate:
         update_schema = ProductUpdate(description="Description update")
         updated_product = await product_service.update(
             session,
-            authz,
             product,
             update_schema,
             auth_subject,
@@ -973,7 +941,6 @@ class TestUpdate:
     async def test_empty_description_update(
         self,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
         user_organization: UserOrganization,
@@ -984,7 +951,6 @@ class TestUpdate:
         update_schema = ProductUpdate(description="")
         updated_product = await product_service.update(
             session,
-            authz,
             product,
             update_schema,
             auth_subject,
@@ -1003,7 +969,6 @@ class TestUpdate:
     async def test_valid_price_kept(
         self,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
         user_organization: UserOrganization,
@@ -1020,7 +985,6 @@ class TestUpdate:
         )
         updated_product = await product_service.update(
             session,
-            authz,
             product,
             update_schema,
             auth_subject,
@@ -1038,7 +1002,6 @@ class TestUpdate:
     async def test_valid_price_replaced(
         self,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
         user_organization: UserOrganization,
@@ -1065,7 +1028,6 @@ class TestUpdate:
 
         updated_product = await product_service.update(
             session,
-            authz,
             product,
             update_schema,
             auth_subject,
@@ -1094,7 +1056,6 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
         product_second: Product,
@@ -1112,7 +1073,6 @@ class TestUpdate:
         update_schema = ProductUpdate(is_archived=True)
         updated_product = await product_service.update(
             session,
-            authz,
             product,
             update_schema,
             auth_subject,
@@ -1143,7 +1103,6 @@ class TestUpdate:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
         user_organization: UserOrganization,
@@ -1157,7 +1116,6 @@ class TestUpdate:
         update_schema = ProductUpdate(is_archived=False)
         updated_product = await product_service.update(
             session,
-            authz,
             product,
             update_schema,
             auth_subject,
@@ -1175,7 +1133,6 @@ class TestUpdate:
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        authz: Authz,
         product: Product,
         user_organization: UserOrganization,
     ) -> None:
@@ -1183,7 +1140,6 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await product_service.update(
                 session,
-                authz,
                 product,
                 update_schema,
                 auth_subject,
@@ -1207,7 +1163,6 @@ class TestUpdate:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        authz: Authz,
         product: Product,
         organization: Organization,
         user_organization: UserOrganization,
@@ -1231,7 +1186,6 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await product_service.update(
                 session,
-                authz,
                 product,
                 update_schema,
                 auth_subject,
@@ -1246,7 +1200,6 @@ class TestUpdate:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        authz: Authz,
         product: Product,
         organization: Organization,
         user_organization: UserOrganization,
@@ -1268,7 +1221,6 @@ class TestUpdate:
         update_schema = ProductUpdate(medias=[file.id])
         updated_product = await product_service.update(
             session,
-            authz,
             product,
             update_schema,
             auth_subject,
@@ -1283,7 +1235,6 @@ class TestUpdate:
     async def test_invalid_change_recurring_interval_on_non_legacy_product(
         self,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
         user_organization: UserOrganization,
@@ -1295,7 +1246,6 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await product_service.update(
                 session,
-                authz,
                 product,
                 update_schema,
                 auth_subject,
@@ -1308,7 +1258,6 @@ class TestUpdate:
     async def test_invalid_legacy_product_price_with_new_price(
         self,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product_recurring_monthly_and_yearly: Product,
         user_organization: UserOrganization,
@@ -1329,7 +1278,6 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await product_service.update(
                 session,
-                authz,
                 product_recurring_monthly_and_yearly,
                 update_schema,
                 auth_subject,
@@ -1342,7 +1290,6 @@ class TestUpdate:
     async def test_valid_legacy_product_price_kept(
         self,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product_recurring_monthly_and_yearly: Product,
         user_organization: UserOrganization,
@@ -1364,7 +1311,6 @@ class TestUpdate:
         )
         updated_product = await product_service.update(
             session,
-            authz,
             product_recurring_monthly_and_yearly,
             update_schema,
             auth_subject,
@@ -1389,7 +1335,6 @@ class TestUpdate:
     async def test_valid_legacy_product_price_replaced(
         self,
         session: AsyncSession,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product_recurring_monthly_and_yearly: Product,
         user_organization: UserOrganization,
@@ -1419,7 +1364,6 @@ class TestUpdate:
         )
         updated_product = await product_service.update(
             session,
-            authz,
             product_recurring_monthly_and_yearly,
             update_schema,
             auth_subject,
@@ -1439,7 +1383,6 @@ class TestUpdate:
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        authz: Authz,
         product: Product,
         user_organization: UserOrganization,
     ) -> None:
@@ -1456,7 +1399,6 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await product_service.update(
                 session,
-                authz,
                 product,
                 update_schema,
                 auth_subject,
@@ -1470,7 +1412,6 @@ class TestUpdate:
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        authz: Authz,
         product: Product,
         user_organization: UserOrganization,
     ) -> None:
@@ -1487,7 +1428,6 @@ class TestUpdate:
         with pytest.raises(PolarRequestValidationError):
             await product_service.update(
                 session,
-                authz,
                 product,
                 update_schema,
                 auth_subject,
@@ -1496,19 +1436,6 @@ class TestUpdate:
 
 @pytest.mark.asyncio
 class TestUpdateBenefits:
-    @pytest.mark.auth
-    async def test_not_writable_product(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        authz: Authz,
-        product: Product,
-    ) -> None:
-        with pytest.raises(NotPermitted):
-            await product_service.update_benefits(
-                session, authz, product, [], auth_subject
-            )
-
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
@@ -1517,7 +1444,6 @@ class TestUpdateBenefits:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         product: Product,
@@ -1531,7 +1457,6 @@ class TestUpdateBenefits:
         with pytest.raises(PolarRequestValidationError):
             await product_service.update_benefits(
                 session,
-                authz,
                 product,
                 [uuid.uuid4()],
                 auth_subject,
@@ -1548,7 +1473,6 @@ class TestUpdateBenefits:
         save_fixture: SaveFixture,
         session: AsyncSession,
         enqueue_job_mock: AsyncMock,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         product: Product,
@@ -1562,7 +1486,6 @@ class TestUpdateBenefits:
             deleted,
         ) = await product_service.update_benefits(
             session,
-            authz,
             product,
             [benefit.id for benefit in benefits],
             auth_subject,
@@ -1596,7 +1519,6 @@ class TestUpdateBenefits:
         save_fixture: SaveFixture,
         session: AsyncSession,
         enqueue_job_mock: AsyncMock,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         product: Product,
@@ -1610,7 +1532,6 @@ class TestUpdateBenefits:
             deleted,
         ) = await product_service.update_benefits(
             session,
-            authz,
             product,
             [benefit.id for benefit in benefits[::-1]],
             auth_subject,
@@ -1644,7 +1565,6 @@ class TestUpdateBenefits:
         session: AsyncSession,
         save_fixture: SaveFixture,
         enqueue_job_mock: AsyncMock,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         product: Product,
@@ -1660,9 +1580,7 @@ class TestUpdateBenefits:
             product,
             added,
             deleted,
-        ) = await product_service.update_benefits(
-            session, authz, product, [], auth_subject
-        )
+        ) = await product_service.update_benefits(session, product, [], auth_subject)
         await session.flush()
 
         assert len(product.product_benefits) == 0
@@ -1688,7 +1606,6 @@ class TestUpdateBenefits:
         session: AsyncSession,
         save_fixture: SaveFixture,
         enqueue_job_mock: AsyncMock,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         product: Product,
@@ -1706,7 +1623,6 @@ class TestUpdateBenefits:
             deleted,
         ) = await product_service.update_benefits(
             session,
-            authz,
             product,
             [benefit.id for benefit in benefits[::-1]],
             auth_subject,
@@ -1738,7 +1654,6 @@ class TestUpdateBenefits:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         organization: Organization,
@@ -1756,7 +1671,6 @@ class TestUpdateBenefits:
         with pytest.raises(PolarRequestValidationError):
             await product_service.update_benefits(
                 session,
-                authz,
                 product,
                 [not_selectable_benefit.id],
                 auth_subject,
@@ -1770,7 +1684,6 @@ class TestUpdateBenefits:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         organization: Organization,
@@ -1794,7 +1707,6 @@ class TestUpdateBenefits:
         with pytest.raises(PolarRequestValidationError):
             await product_service.update_benefits(
                 session,
-                authz,
                 product,
                 [],
                 auth_subject,
@@ -1809,7 +1721,6 @@ class TestUpdateBenefits:
         session: AsyncSession,
         save_fixture: SaveFixture,
         enqueue_job_mock: AsyncMock,
-        authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         organization: Organization,
@@ -1842,7 +1753,6 @@ class TestUpdateBenefits:
             deleted,
         ) = await product_service.update_benefits(
             session,
-            authz,
             product,
             [not_selectable_benefit.id, selectable_benefit.id],
             auth_subject,

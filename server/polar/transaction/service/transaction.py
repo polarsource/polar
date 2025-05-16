@@ -7,8 +7,7 @@ from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import aliased, joinedload, subqueryload
 
-from polar.authz.service import AccessType, Authz
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
 from polar.models import (
@@ -143,11 +142,8 @@ class TransactionService(BaseTransactionService):
         return transaction
 
     async def get_summary(
-        self, session: AsyncSession, user: User, account: Account, authz: Authz
+        self, session: AsyncSession, account: Account
     ) -> TransactionsSummary:
-        if not await authz.can(user, AccessType.read, account):
-            raise NotPermitted()
-
         statement = select(
             cast(type[int], func.coalesce(func.sum(Transaction.amount), 0)),
             cast(type[int], func.coalesce(func.sum(Transaction.account_amount), 0)),

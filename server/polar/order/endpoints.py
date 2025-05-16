@@ -3,6 +3,7 @@ from pydantic import UUID4
 
 from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import ResourceNotFound
+from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Order
@@ -21,11 +22,17 @@ from .service import order as order_service
 router = APIRouter(prefix="/orders", tags=["orders", APITag.documented, APITag.mcp])
 
 
-@router.get("/", summary="List Orders", response_model=ListResource[OrderSchema])
+@router.get(
+    "/",
+    summary="List Orders",
+    response_model=ListResource[OrderSchema],
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+)
 async def list(
     auth_subject: auth.OrdersRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
+    metadata: MetadataQuery,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
@@ -63,6 +70,7 @@ async def list(
         discount_id=discount_id,
         customer_id=customer_id,
         checkout_id=checkout_id,
+        metadata=metadata,
         pagination=pagination,
         sorting=sorting,
     )

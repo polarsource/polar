@@ -235,7 +235,7 @@ const CustomerChangePlanModal = ({
           {removedBenefits.length > 0 && (
             <div className="flex flex-col gap-y-4">
               <h3 className="text-sm font-medium text-red-400">
-                You&apos;ll will loose access to the following benefits
+                You&apos;ll lose access to the following benefits
               </h3>
               <div className="flex flex-col gap-y-2">
                 {removedBenefits.map((benefit) => (

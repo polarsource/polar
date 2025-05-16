@@ -55,23 +55,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/users/me/account": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Set Account */
-        patch: operations["users:set_account"];
-        trace?: never;
-    };
     "/v1/users/me/stripe_customer_portal": {
         parameters: {
             query?: never;
@@ -1621,7 +1604,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/license-keys": {
+    "/v1/license-keys/": {
         parameters: {
             query?: never;
             header?: never;
@@ -2917,6 +2900,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payments/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Payments
+         * @description List payments.
+         *
+         *     **Scopes**: `payments:read`
+         */
+        get: operations["payments:list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Payment
+         * @description Get a payment by ID.
+         *
+         *     **Scopes**: `payments:read`
+         */
+        get: operations["payments:get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export interface webhooks {
     "checkout.created": {
@@ -3299,7 +3326,7 @@ export interface webhooks {
         put?: never;
         /**
          * subscription.revoked
-         * @description Sent when a subscription is revoked, the user looses access immediately.
+         * @description Sent when a subscription is revoked, the user loses access immediately.
          *     Happens when the subscription is canceled, or payment is past due.
          *
          *     **Discord & Slack support:** Full
@@ -3585,9 +3612,11 @@ export interface components {
         };
         /** AccountCreate */
         AccountCreate: {
-            account_type: components["schemas"]["AccountType"];
-            /** Open Collective Slug */
-            open_collective_slug?: string | null;
+            /**
+             * Account Type
+             * @constant
+             */
+            account_type: "stripe";
             /**
              * Country
              * @description Two letter uppercase country code
@@ -3742,7 +3771,7 @@ export interface components {
          * AvailableScope
          * @enum {string}
          */
-        AvailableScope: "openid" | "profile" | "email" | "user:read" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "refunds:read" | "refunds:write" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notification_recipients:read" | "notification_recipients:write";
+        AvailableScope: "openid" | "profile" | "email" | "user:read" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "refunds:read" | "refunds:write" | "payments:read" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notification_recipients:read" | "notification_recipients:write";
         Benefit: components["schemas"]["BenefitCustom"] | components["schemas"]["BenefitDiscord"] | components["schemas"]["BenefitGitHubRepository"] | components["schemas"]["BenefitDownloadables"] | components["schemas"]["BenefitLicenseKeys"] | components["schemas"]["BenefitMeterCredit"];
         BenefitCreate: components["schemas"]["BenefitCustomCreate"] | components["schemas"]["BenefitDiscordCreate"] | components["schemas"]["BenefitGitHubRepositoryCreate"] | components["schemas"]["BenefitDownloadablesCreate"] | components["schemas"]["BenefitLicenseKeysCreate"] | components["schemas"]["BenefitMeterCreditCreate"];
         /**
@@ -4656,6 +4685,8 @@ export interface components {
              * @description The ID of the benefit concerned by this grant.
              */
             benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
             customer: components["schemas"]["Customer"];
             /** Properties */
             properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
@@ -4675,6 +4706,15 @@ export interface components {
         BenefitGrantDownloadablesProperties: {
             /** Files */
             files?: string[];
+        };
+        /** BenefitGrantError */
+        BenefitGrantError: {
+            /** Message */
+            message: string;
+            /** Type */
+            type: string;
+            /** Timestamp */
+            timestamp: string;
         };
         /** BenefitGrantGitHubRepositoryProperties */
         BenefitGrantGitHubRepositoryProperties: {
@@ -4767,6 +4807,8 @@ export interface components {
              * @description The ID of the benefit concerned by this grant.
              */
             benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
             customer: components["schemas"]["Customer"];
             /** Properties */
             properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
@@ -5284,6 +5326,93 @@ export interface components {
              * @enum {string}
              */
             action: "allow" | "deny";
+        };
+        /**
+         * CardPayment
+         * @description Schema of a payment with a card payment method.
+         */
+        CardPayment: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /** @description The payment processor. */
+            processor: components["schemas"]["PaymentProcessor"];
+            /** @description The payment status. */
+            status: components["schemas"]["PaymentStatus"];
+            /**
+             * Amount
+             * @description The payment amount in cents.
+             */
+            amount: number;
+            /**
+             * Currency
+             * @description The payment currency. Currently, only `usd` is supported.
+             */
+            currency: string;
+            /**
+             * Method
+             * @description The payment method used.
+             * @constant
+             */
+            method: "card";
+            /**
+             * Decline Reason
+             * @description Error code, if the payment was declined.
+             */
+            decline_reason: string | null;
+            /**
+             * Decline Message
+             * @description Human-reasable error message, if the payment was declined.
+             */
+            decline_message: string | null;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization that owns the payment.
+             */
+            organization_id: string;
+            /**
+             * Checkout Id
+             * @description The ID of the checkout session associated with this payment.
+             */
+            checkout_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order associated with this payment.
+             */
+            order_id: string | null;
+            /** @description Additional metadata for the card payment method. */
+            method_metadata: components["schemas"]["CardPaymentMetadata"];
+        };
+        /**
+         * CardPaymentMetadata
+         * @description Additional metadata for a card payment method.
+         */
+        CardPaymentMetadata: {
+            /**
+             * Brand
+             * @description The brand of the card used for the payment.
+             */
+            brand: string;
+            /**
+             * Last4
+             * @description The last 4 digits of the card number.
+             */
+            last4: string;
         };
         /**
          * Checkout
@@ -6806,7 +6935,7 @@ export interface components {
          * CheckoutSortProperty
          * @enum {string}
          */
-        CheckoutSortProperty: "created_at" | "-created_at" | "expires_at" | "-expires_at";
+        CheckoutSortProperty: "created_at" | "-created_at" | "expires_at" | "-expires_at" | "status" | "-status";
         /**
          * CheckoutStatus
          * @enum {string}
@@ -10828,6 +10957,74 @@ export interface components {
          * @enum {string}
          */
         FilterOperator: "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "like" | "not_like";
+        /**
+         * GenericPayment
+         * @description Schema of a payment with a generic payment method.
+         */
+        GenericPayment: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /** @description The payment processor. */
+            processor: components["schemas"]["PaymentProcessor"];
+            /** @description The payment status. */
+            status: components["schemas"]["PaymentStatus"];
+            /**
+             * Amount
+             * @description The payment amount in cents.
+             */
+            amount: number;
+            /**
+             * Currency
+             * @description The payment currency. Currently, only `usd` is supported.
+             */
+            currency: string;
+            /**
+             * Method
+             * @description The payment method used.
+             */
+            method: string;
+            /**
+             * Decline Reason
+             * @description Error code, if the payment was declined.
+             */
+            decline_reason: string | null;
+            /**
+             * Decline Message
+             * @description Human-reasable error message, if the payment was declined.
+             */
+            decline_message: string | null;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization that owns the payment.
+             */
+            organization_id: string;
+            /**
+             * Checkout Id
+             * @description The ID of the checkout session associated with this payment.
+             */
+            checkout_id: string | null;
+            /**
+             * Order Id
+             * @description The ID of the order associated with this payment.
+             */
+            order_id: string | null;
+        };
         /** GitHubInvitesBenefitOrganization */
         GitHubInvitesBenefitOrganization: {
             /** Name */
@@ -11635,6 +11832,12 @@ export interface components {
             items: components["schemas"]["WebhookEndpoint"][];
             pagination: components["schemas"]["Pagination"];
         };
+        /** ListResource[] */
+        ListResource__: {
+            /** Items */
+            items: components["schemas"]["Payment"][];
+            pagination: components["schemas"]["Pagination"];
+        };
         /** MagicLinkRequest */
         MagicLinkRequest: {
             /**
@@ -11972,12 +12175,18 @@ export interface components {
             active_subscriptions: number;
             /** Monthly Recurring Revenue */
             monthly_recurring_revenue: number;
+            /** Checkouts */
+            checkouts: number;
+            /** Succeeded Checkouts */
+            succeeded_checkouts: number;
+            /** Checkouts Conversion */
+            checkouts_conversion: number;
         };
         /**
          * MetricType
          * @enum {string}
          */
-        MetricType: "scalar" | "currency";
+        MetricType: "scalar" | "currency" | "percentage";
         /** Metrics */
         Metrics: {
             orders: components["schemas"]["Metric"];
@@ -11992,6 +12201,9 @@ export interface components {
             renewed_subscriptions_revenue: components["schemas"]["Metric"];
             active_subscriptions: components["schemas"]["Metric"];
             monthly_recurring_revenue: components["schemas"]["Metric"];
+            checkouts: components["schemas"]["Metric"];
+            succeeded_checkouts: components["schemas"]["Metric"];
+            checkouts_conversion: components["schemas"]["Metric"];
         };
         /**
          * MetricsIntervalLimit
@@ -12044,8 +12256,43 @@ export interface components {
              * @description List of data for each timestamp.
              */
             periods: components["schemas"]["MetricPeriod"][];
+            /** @description Totals for the whole selected period. */
+            totals: components["schemas"]["MetricsTotals"];
             /** @description Information about the returned metrics. */
             metrics: components["schemas"]["Metrics"];
+        };
+        /** MetricsTotals */
+        MetricsTotals: {
+            /** Orders */
+            orders: number;
+            /** Revenue */
+            revenue: number;
+            /** Cumulative Revenue */
+            cumulative_revenue: number;
+            /** Average Order Value */
+            average_order_value: number;
+            /** One Time Products */
+            one_time_products: number;
+            /** One Time Products Revenue */
+            one_time_products_revenue: number;
+            /** New Subscriptions */
+            new_subscriptions: number;
+            /** New Subscriptions Revenue */
+            new_subscriptions_revenue: number;
+            /** Renewed Subscriptions */
+            renewed_subscriptions: number;
+            /** Renewed Subscriptions Revenue */
+            renewed_subscriptions_revenue: number;
+            /** Active Subscriptions */
+            active_subscriptions: number;
+            /** Monthly Recurring Revenue */
+            monthly_recurring_revenue: number;
+            /** Checkouts */
+            checkouts: number;
+            /** Succeeded Checkouts */
+            succeeded_checkouts: number;
+            /** Checkouts Conversion */
+            checkouts_conversion: number;
         };
         /** NotOpenCheckout */
         NotOpenCheckout: {
@@ -12156,7 +12403,7 @@ export interface components {
             response_types: "code"[];
             /**
              * Scope
-             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
+             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
              */
             scope: string;
             /** Client Name */
@@ -12216,7 +12463,7 @@ export interface components {
             response_types: "code"[];
             /**
              * Scope
-             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
+             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
              */
             scope: string;
             /** Client Name */
@@ -12257,7 +12504,7 @@ export interface components {
             response_types: "code"[];
             /**
              * Scope
-             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
+             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
              */
             scope: string;
             /** Client Name */
@@ -13175,6 +13422,7 @@ export interface components {
             /** Max Page */
             max_page: number;
         };
+        Payment: components["schemas"]["CardPayment"] | components["schemas"]["GenericPayment"];
         /** PaymentError */
         PaymentError: {
             /**
@@ -13235,6 +13483,16 @@ export interface components {
          * @enum {string}
          */
         PaymentProcessor: "stripe";
+        /**
+         * PaymentSortProperty
+         * @enum {string}
+         */
+        PaymentSortProperty: "created_at" | "-created_at" | "status" | "-status" | "amount" | "-amount" | "method" | "-method";
+        /**
+         * PaymentStatus
+         * @enum {string}
+         */
+        PaymentStatus: "pending" | "succeeded" | "failed";
         /** PayoutCreate */
         PayoutCreate: {
             /**
@@ -14261,7 +14519,7 @@ export interface components {
          * Scope
          * @enum {string}
          */
-        Scope: "openid" | "profile" | "email" | "user:read" | "admin" | "web_default" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "refunds:read" | "refunds:write" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notification_recipients:read" | "notification_recipients:write";
+        Scope: "openid" | "profile" | "email" | "user:read" | "admin" | "web_default" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "refunds:read" | "refunds:write" | "payments:read" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notification_recipients:read" | "notification_recipients:write";
         /**
          * Status
          * @enum {string}
@@ -15064,14 +15322,6 @@ export interface components {
             /** Scopes */
             scopes: components["schemas"]["Scope"][];
         };
-        /** UserSetAccount */
-        UserSetAccount: {
-            /**
-             * Account Id
-             * Format: uuid4
-             */
-            account_id: string;
-        };
         /** UserSignupAttribution */
         UserSignupAttribution: {
             /** Intent */
@@ -15715,7 +15965,7 @@ export interface components {
         };
         /**
          * WebhookSubscriptionRevokedPayload
-         * @description Sent when a subscription is revoked, the user looses access immediately.
+         * @description Sent when a subscription is revoked, the user loses access immediately.
          *     Happens when the subscription is canceled, or payment is past due.
          *
          *     **Discord & Slack support:** Full
@@ -15895,39 +16145,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserIdentityVerification"];
-                };
-            };
-        };
-    };
-    "users:set_account": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UserSetAccount"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -16878,15 +17095,6 @@ export interface operations {
                     "application/json": components["schemas"]["Account"];
                 };
             };
-            /** @description You don't have the permission to update this organization. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotPermitted"];
-                };
-            };
             /** @description Organization not found or account not set. */
             404: {
                 headers: {
@@ -16965,7 +17173,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string | null;
+                id: string;
             };
             cookie?: never;
         };
@@ -17010,6 +17218,8 @@ export interface operations {
                 limit?: number;
                 /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
                 sorting?: components["schemas"]["SubscriptionSortProperty"][] | null;
+                /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+                metadata?: components["schemas"]["MetadataQuery"];
             };
             header?: never;
             path?: never;
@@ -18534,6 +18744,8 @@ export interface operations {
                 limit?: number;
                 /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
                 sorting?: components["schemas"]["OrderSortProperty"][] | null;
+                /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+                metadata?: components["schemas"]["MetadataQuery"];
             };
             header?: never;
             path?: never;
@@ -18756,6 +18968,12 @@ export interface operations {
                 organization_id?: string | string[] | null;
                 /** @description Filter by product ID. */
                 product_id?: string | string[] | null;
+                /** @description Filter by customer ID. */
+                customer_id?: string | string[] | null;
+                /** @description Filter by checkout session status. */
+                status?: components["schemas"]["CheckoutStatus"] | components["schemas"]["CheckoutStatus"][] | null;
+                /** @description Filter by customer email. */
+                query?: string | null;
                 /** @description Page number, defaults to 1. */
                 page?: number;
                 /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -19138,9 +19356,10 @@ export interface operations {
     "files:list": {
         parameters: {
             query?: {
-                organization_id?: string | null;
-                /** @description List of file IDs to get.  */
-                ids?: string[] | null;
+                /** @description Filter by organization ID. */
+                organization_id?: string | string[] | null;
+                /** @description Filter by file ID. */
+                ids?: string | string[] | null;
                 /** @description Page number, defaults to 1. */
                 page?: number;
                 /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -22684,6 +22903,95 @@ export interface operations {
             };
         };
     };
+    "payments:list": {
+        parameters: {
+            query?: {
+                /** @description Filter by organization ID. */
+                organization_id?: string | string[] | null;
+                /** @description Filter by checkout ID. */
+                checkout_id?: string | string[] | null;
+                /** @description Filter by order ID. */
+                order_id?: string | string[] | null;
+                /** @description Filter by payment status. */
+                status?: components["schemas"]["PaymentStatus"] | components["schemas"]["PaymentStatus"][] | null;
+                /** @description Filter by payment method. */
+                method?: string | string[] | null;
+                /** @description Filter by customer email. */
+                customer_email?: string | string[] | null;
+                /** @description Page number, defaults to 1. */
+                page?: number;
+                /** @description Size of a page, defaults to 10. Maximum is 100. */
+                limit?: number;
+                /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+                sorting?: components["schemas"]["PaymentSortProperty"][] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResource__"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "payments:get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The payment ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Payment"];
+                };
+            };
+            /** @description Payment not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     _endpointcheckout_created_post: {
         parameters: {
             query?: never;
@@ -23584,7 +23892,7 @@ type ReadonlyArray<T> = [
 export const accountTypeValues: ReadonlyArray<components["schemas"]["AccountType"]> = ["stripe", "open_collective"];
 export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseOrganization"]["sub_type"]> = ["organization"];
 export const authorizeResponseUserSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseUser"]["sub_type"]> = ["user"];
-export const availableScopeValues: ReadonlyArray<components["schemas"]["AvailableScope"]> = ["openid", "profile", "email", "user:read", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notification_recipients:read", "notification_recipients:write"];
+export const availableScopeValues: ReadonlyArray<components["schemas"]["AvailableScope"]> = ["openid", "profile", "email", "user:read", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notification_recipients:read", "notification_recipients:write"];
 export const benefitCustomCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitCustomCreate"]["type"]> = ["custom"];
 export const benefitDiscordCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitDiscordCreate"]["type"]> = ["discord"];
 export const benefitDownloadablesCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitDownloadablesCreate"]["type"]> = ["downloadables"];
@@ -23599,7 +23907,7 @@ export const benefitSortPropertyValues: ReadonlyArray<components["schemas"]["Ben
 export const benefitTypeValues: ReadonlyArray<components["schemas"]["BenefitType"]> = ["custom", "discord", "github_repository", "downloadables", "license_keys", "meter_credit"];
 export const body_oauth2_consentActionValues: ReadonlyArray<components["schemas"]["Body_oauth2_consent"]["action"]> = ["allow", "deny"];
 export const checkoutLinkSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutLinkSortProperty"]> = ["created_at", "-created_at", "label", "-label", "success_url", "-success_url", "allow_discount_codes", "-allow_discount_codes"];
-export const checkoutSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutSortProperty"]> = ["created_at", "-created_at", "expires_at", "-expires_at"];
+export const checkoutSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutSortProperty"]> = ["created_at", "-created_at", "expires_at", "-expires_at", "status", "-status"];
 export const checkoutStatusValues: ReadonlyArray<components["schemas"]["CheckoutStatus"]> = ["open", "expired", "confirmed", "succeeded", "failed"];
 export const countAggregationFuncValues: ReadonlyArray<components["schemas"]["CountAggregation"]["func"]> = ["count"];
 export const customFieldCheckboxTypeValues: ReadonlyArray<components["schemas"]["CustomFieldCheckbox"]["type"]> = ["checkbox"];
@@ -23656,7 +23964,7 @@ export const maintainerCreateAccountNotificationTypeValues: ReadonlyArray<compon
 export const maintainerNewPaidSubscriptionNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerNewPaidSubscriptionNotification"]["type"]> = ["MaintainerNewPaidSubscriptionNotification"];
 export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerNewProductSaleNotification"]["type"]> = ["MaintainerNewProductSaleNotification"];
 export const meterSortPropertyValues: ReadonlyArray<components["schemas"]["MeterSortProperty"]> = ["created_at", "-created_at", "name", "-name"];
-export const metricTypeValues: ReadonlyArray<components["schemas"]["MetricType"]> = ["scalar", "currency"];
+export const metricTypeValues: ReadonlyArray<components["schemas"]["MetricType"]> = ["scalar", "currency", "percentage"];
 export const notificationRecipientPlatformValues: ReadonlyArray<components["schemas"]["NotificationRecipientPlatform"]> = ["ios", "android"];
 export const oAuth2ClientToken_endpoint_auth_methodValues: ReadonlyArray<components["schemas"]["OAuth2Client"]["token_endpoint_auth_method"]> = ["client_secret_basic", "client_secret_post", "none"];
 export const oAuth2ClientGrant_typesValues: ReadonlyArray<components["schemas"]["OAuth2Client"]["grant_types"]> = ["authorization_code", "refresh_token"];
@@ -23675,6 +23983,8 @@ export const organizationDetailsSwitching_fromValues: ReadonlyArray<components["
 export const organizationSocialPlatformsValues: ReadonlyArray<components["schemas"]["OrganizationSocialPlatforms"]> = ["x", "github", "facebook", "instagram", "youtube", "tiktok", "linkedin", "other"];
 export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationSortProperty"]> = ["created_at", "-created_at", "slug", "-slug", "name", "-name"];
 export const paymentProcessorValues: ReadonlyArray<components["schemas"]["PaymentProcessor"]> = ["stripe"];
+export const paymentSortPropertyValues: ReadonlyArray<components["schemas"]["PaymentSortProperty"]> = ["created_at", "-created_at", "status", "-status", "amount", "-amount", "method", "-method"];
+export const paymentStatusValues: ReadonlyArray<components["schemas"]["PaymentStatus"]> = ["pending", "succeeded", "failed"];
 export const platformFeeTypeValues: ReadonlyArray<components["schemas"]["PlatformFeeType"]> = ["payment", "international_payment", "subscription", "invoice", "cross_border_transfer", "payout", "account", "dispute", "platform"];
 export const pledgeStateValues: ReadonlyArray<components["schemas"]["PledgeState"]> = ["initiated", "created", "pending", "refunded", "disputed", "charge_disputed", "cancelled"];
 export const processorValues: ReadonlyArray<components["schemas"]["Processor"]> = ["stripe", "open_collective"];
@@ -23691,7 +24001,7 @@ export const propertyAggregationFuncValues: ReadonlyArray<components["schemas"][
 export const refundReasonValues: ReadonlyArray<components["schemas"]["RefundReason"]> = ["duplicate", "fraudulent", "customer_request", "service_disruption", "satisfaction_guarantee", "other"];
 export const refundSortPropertyValues: ReadonlyArray<components["schemas"]["RefundSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
 export const refundStatusValues: ReadonlyArray<components["schemas"]["RefundStatus"]> = ["pending", "succeeded", "failed", "canceled"];
-export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "admin", "web_default", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notification_recipients:read", "notification_recipients:write"];
+export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "admin", "web_default", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notification_recipients:read", "notification_recipients:write"];
 export const statusValues: ReadonlyArray<components["schemas"]["Status"]> = ["created", "onboarding_started", "under_review", "denied", "active"];
 export const subTypeValues: ReadonlyArray<components["schemas"]["SubType"]> = ["user", "organization"];
 export const subscriptionProrationBehaviorValues: ReadonlyArray<components["schemas"]["SubscriptionProrationBehavior"]> = ["invoice", "prorate"];

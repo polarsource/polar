@@ -1,9 +1,12 @@
 import uuid
 
+from sqlalchemy.orm import joinedload
+
 from polar.account.repository import AccountRepository
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.plain.service import plain as plain_service
+from polar.models import Account
 from polar.notifications.notification import (
     MaintainerAccountReviewedNotificationPayload,
     MaintainerAccountUnderReviewNotificationPayload,
@@ -28,9 +31,13 @@ class AccountDoesNotExist(AccountTaskError):
 async def account_under_review(account_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = AccountRepository.from_session(session)
-        account = await repository.get_by_id(account_id)
+        account = await repository.get_by_id(
+            account_id, options=(joinedload(Account.organizations),)
+        )
         if account is None:
             raise AccountDoesNotExist(account_id)
+
+        await plain_service.create_account_review_thread(session, account)
 
         await notification_service.send_to_user(
             session=session,
@@ -42,8 +49,6 @@ async def account_under_review(account_id: uuid.UUID) -> None:
                 ),
             ),
         )
-
-        await plain_service.create_account_review_thread(session, account)
 
 
 @actor(actor_name="account.reviewed")

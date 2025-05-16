@@ -29,20 +29,23 @@ export const GET = Checkout({
   {
     name: 'BetterAuth',
     code: `import { betterAuth } from "better-auth";
-import { polar } from "@polar-sh/better-auth";
+import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
 import { Polar } from "@polar-sh/sdk";
 
 const client = new Polar({ accessToken: 'xxx' });
 
 const auth = betterAuth({
+    // ... Better Auth config
     plugins: [
         polar({
-            client,
+            client: polarClient,
             createCustomerOnSignUp: true,
-            enableCustomerPortal: true,
-            checkout: {
-                enabled: true
-            },
+            use: [
+                checkout(...),
+                portal(),
+                usage(),
+                webhooks(...)
+            ],
         })
     ]
 });`,

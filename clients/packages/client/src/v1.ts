@@ -55,23 +55,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/users/me/account": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Set Account */
-        patch: operations["users:set_account"];
-        trace?: never;
-    };
     "/v1/users/me/stripe_customer_portal": {
         parameters: {
             query?: never;
@@ -1621,7 +1604,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/license-keys": {
+    "/v1/license-keys/": {
         parameters: {
             query?: never;
             header?: never;
@@ -3343,7 +3326,7 @@ export interface webhooks {
         put?: never;
         /**
          * subscription.revoked
-         * @description Sent when a subscription is revoked, the user looses access immediately.
+         * @description Sent when a subscription is revoked, the user loses access immediately.
          *     Happens when the subscription is canceled, or payment is past due.
          *
          *     **Discord & Slack support:** Full
@@ -3629,9 +3612,11 @@ export interface components {
         };
         /** AccountCreate */
         AccountCreate: {
-            account_type: components["schemas"]["AccountType"];
-            /** Open Collective Slug */
-            open_collective_slug?: string | null;
+            /**
+             * Account Type
+             * @constant
+             */
+            account_type: "stripe";
             /**
              * Country
              * @description Two letter uppercase country code
@@ -4700,6 +4685,8 @@ export interface components {
              * @description The ID of the benefit concerned by this grant.
              */
             benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
             customer: components["schemas"]["Customer"];
             /** Properties */
             properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
@@ -4719,6 +4706,15 @@ export interface components {
         BenefitGrantDownloadablesProperties: {
             /** Files */
             files?: string[];
+        };
+        /** BenefitGrantError */
+        BenefitGrantError: {
+            /** Message */
+            message: string;
+            /** Type */
+            type: string;
+            /** Timestamp */
+            timestamp: string;
         };
         /** BenefitGrantGitHubRepositoryProperties */
         BenefitGrantGitHubRepositoryProperties: {
@@ -4811,6 +4807,8 @@ export interface components {
              * @description The ID of the benefit concerned by this grant.
              */
             benefit_id: string;
+            /** @description The error information if the benefit grant failed with an unrecoverable error. */
+            error?: components["schemas"]["BenefitGrantError"] | null;
             customer: components["schemas"]["Customer"];
             /** Properties */
             properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
@@ -15324,14 +15322,6 @@ export interface components {
             /** Scopes */
             scopes: components["schemas"]["Scope"][];
         };
-        /** UserSetAccount */
-        UserSetAccount: {
-            /**
-             * Account Id
-             * Format: uuid4
-             */
-            account_id: string;
-        };
         /** UserSignupAttribution */
         UserSignupAttribution: {
             /** Intent */
@@ -15975,7 +15965,7 @@ export interface components {
         };
         /**
          * WebhookSubscriptionRevokedPayload
-         * @description Sent when a subscription is revoked, the user looses access immediately.
+         * @description Sent when a subscription is revoked, the user loses access immediately.
          *     Happens when the subscription is canceled, or payment is past due.
          *
          *     **Discord & Slack support:** Full
@@ -16155,39 +16145,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserIdentityVerification"];
-                };
-            };
-        };
-    };
-    "users:set_account": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UserSetAccount"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -17138,15 +17095,6 @@ export interface operations {
                     "application/json": components["schemas"]["Account"];
                 };
             };
-            /** @description You don't have the permission to update this organization. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotPermitted"];
-                };
-            };
             /** @description Organization not found or account not set. */
             404: {
                 headers: {
@@ -17225,7 +17173,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                id: string | null;
+                id: string;
             };
             cookie?: never;
         };
@@ -17270,6 +17218,8 @@ export interface operations {
                 limit?: number;
                 /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
                 sorting?: components["schemas"]["SubscriptionSortProperty"][] | null;
+                /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+                metadata?: components["schemas"]["MetadataQuery"];
             };
             header?: never;
             path?: never;
@@ -18794,6 +18744,8 @@ export interface operations {
                 limit?: number;
                 /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
                 sorting?: components["schemas"]["OrderSortProperty"][] | null;
+                /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+                metadata?: components["schemas"]["MetadataQuery"];
             };
             header?: never;
             path?: never;
@@ -19404,9 +19356,10 @@ export interface operations {
     "files:list": {
         parameters: {
             query?: {
-                organization_id?: string | null;
-                /** @description List of file IDs to get.  */
-                ids?: string[] | null;
+                /** @description Filter by organization ID. */
+                organization_id?: string | string[] | null;
+                /** @description Filter by file ID. */
+                ids?: string | string[] | null;
                 /** @description Page number, defaults to 1. */
                 page?: number;
                 /** @description Size of a page, defaults to 10. Maximum is 100. */

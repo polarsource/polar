@@ -803,6 +803,7 @@ async def create_order(
     subscription: Subscription | None = None,
     stripe_invoice_id: str | None = "INVOICE_ID",
     billing_reason: OrderBillingReason = OrderBillingReason.purchase,
+    user_metadata: dict[str, Any] | None = None,
     created_at: datetime | None = None,
     custom_field_data: dict[str, Any] | None = None,
 ) -> Order:
@@ -829,6 +830,7 @@ async def create_order(
         product=product,
         subscription=subscription,
         custom_field_data=custom_field_data or {},
+        user_metadata=user_metadata or {},
     )
     await save_fixture(order)
     return order
@@ -908,6 +910,7 @@ async def create_subscription(
     stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
     cancel_at_period_end: bool = False,
     revoke: bool = False,
+    user_metadata: dict[str, Any] | None = None,
 ) -> Subscription:
     prices = prices or product.prices
     now = datetime.now(UTC)
@@ -948,6 +951,7 @@ async def create_subscription(
             SubscriptionProductPrice.from_price(price) for price in prices
         ],
         discount=discount,
+        user_metadata=user_metadata or {},
     )
     await save_fixture(subscription)
 
@@ -964,6 +968,7 @@ async def create_active_subscription(
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
     stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
+    user_metadata: dict[str, Any] | None = None,
 ) -> Subscription:
     return await create_subscription(
         save_fixture,
@@ -974,6 +979,7 @@ async def create_active_subscription(
         started_at=started_at or utc_now(),
         ended_at=ended_at,
         stripe_subscription_id=stripe_subscription_id,
+        user_metadata=user_metadata or {},
     )
 
 

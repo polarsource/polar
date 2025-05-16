@@ -301,6 +301,54 @@ class TestList:
         assert len(orders) == 1
         assert orders[0].id == order2.id
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_metadata_filter(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order1 = await create_order(
+            save_fixture,
+            user_metadata={"reference_id": "ABC"},
+            product=product,
+            customer=customer,
+            stripe_invoice_id="INVOICE_1",
+        )
+        order2 = await create_order(
+            save_fixture,
+            user_metadata={"reference_id": "DEF"},
+            product=product,
+            customer=customer,
+            stripe_invoice_id="INVOICE_2",
+        )
+        await create_order(
+            save_fixture,
+            user_metadata={"reference_id": "GHI"},
+            product=product,
+            customer=customer,
+            stripe_invoice_id="INVOICE_3",
+        )
+
+        orders, total = await order_service.list(
+            session,
+            auth_subject,
+            metadata={"reference_id": ["ABC", "DEF"]},
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert len(orders) == 2
+        assert total == 2
+
+        assert order1 in orders
+        assert order2 in orders
+
 
 @pytest.mark.asyncio
 class TestCreateFromCheckout:

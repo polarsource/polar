@@ -231,6 +231,9 @@ async def get(
                         "created_at", "Created At"
                     ),
                     description_list.DescriptionListLinkItem("website", "Website"),
+                    description_list.DescriptionListAttrItem(
+                        "email", "Support email", clipboard=True
+                    ),
                 ).render(request, organization):
                     pass
                 with tag.div(classes="card card-border w-full shadow-sm"):

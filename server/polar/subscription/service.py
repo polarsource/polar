@@ -32,6 +32,7 @@ from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
@@ -210,6 +211,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         customer_id: Sequence[uuid.UUID] | None = None,
         discount_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
+        metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SubscriptionSortProperty]] = [
             (SubscriptionSortProperty.started_at, True)
@@ -240,6 +242,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 statement = statement.where(Subscription.active.is_(True))
             else:
                 statement = statement.where(Subscription.revoked.is_(True))
+
+        if metadata is not None:
+            statement = apply_metadata_clause(Subscription, statement, metadata)
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

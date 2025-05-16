@@ -73,6 +73,43 @@ class TestListSubscriptions:
             assert "customer" in item
             assert item["user"]["id"] == item["customer"]["id"]
 
+    @pytest.mark.auth
+    async def test_metadata(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "ABC"},
+        )
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "DEF"},
+        )
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "GHI"},
+        )
+
+        response = await client.get(
+            "/v1/subscriptions/", params={"metadata[reference_id]": ["ABC", "DEF"]}
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
+
 
 @pytest.mark.asyncio
 class TestSubscriptionProductUpdate:

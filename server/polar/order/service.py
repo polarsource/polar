@@ -28,6 +28,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
 from polar.logging import Logger
@@ -206,6 +207,7 @@ class OrderService:
         discount_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         checkout_id: Sequence[uuid.UUID] | None = None,
+        metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[OrderSortProperty]] = [
             (OrderSortProperty.created_at, True)
@@ -246,6 +248,9 @@ class OrderService:
 
         if checkout_id is not None:
             statement = statement.where(Order.checkout_id.in_(checkout_id))
+
+        if metadata is not None:
+            statement = apply_metadata_clause(Order, statement, metadata)
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

@@ -8,6 +8,7 @@ from fastapi.responses import StreamingResponse
 from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
+from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
@@ -44,12 +45,16 @@ SearchSorting = Annotated[
 
 
 @router.get(
-    "/", response_model=ListResource[SubscriptionSchema], summary="List Subscriptions"
+    "/",
+    response_model=ListResource[SubscriptionSchema],
+    summary="List Subscriptions",
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def list(
     auth_subject: auth.SubscriptionsRead,
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
+    metadata: MetadataQuery,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
@@ -76,6 +81,7 @@ async def list(
         customer_id=customer_id,
         discount_id=discount_id,
         active=active,
+        metadata=metadata,
         pagination=pagination,
         sorting=sorting,
     )

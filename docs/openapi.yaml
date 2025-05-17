@@ -168,7 +168,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$responses = $sdk->organizations->list(\n    slug: '<value>',\n    page: 1,\n    limit: 10,\n    sorting: [\n        Components\\OrganizationSortProperty::Name,\n    ]\n\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$responses = $sdk->organizations->list(\n    slug: '<value>',\n    page: 1,\n    limit: 10,\n    sorting: [\n        Components\\OrganizationSortProperty::CreatedAt,\n    ]\n\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
           }
         ]
       },
@@ -681,6 +681,16 @@
               "title": "Sorting"
             },
             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+          },
+          {
+            "name": "metadata",
+            "in": "query",
+            "required": false,
+            "style": "deepObject",
+            "schema": {
+              "$ref": "#/components/schemas/MetadataQuery"
+            },
+            "description": "Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`."
           }
         ],
         "responses": {
@@ -1058,7 +1068,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Subscriptions.Update(ctx, \"<value>\", components.CreateSubscriptionUpdateSubscriptionCancel(\n        components.SubscriptionCancel{\n            CancelAtPeriodEnd: false,\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Subscription != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Subscriptions.Update(ctx, \"<value>\", components.CreateSubscriptionUpdateSubscriptionUpdateProduct(\n        components.SubscriptionUpdateProduct{\n            ProductID: \"<value>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Subscription != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -1068,12 +1078,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.update({\n    id: \"<value>\",\n    subscriptionUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.update({\n    id: \"<value>\",\n    subscriptionUpdate: {\n      productId: \"<value>\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->subscriptions->update(\n    id: '<value>',\n    subscriptionUpdate: new Components\\SubscriptionRevoke()\n\n);\n\nif ($response->subscription !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->subscriptions->update(\n    id: '<value>',\n    subscriptionUpdate: new Components\\SubscriptionUpdateProduct(\n        productId: '<value>',\n    )\n\n);\n\nif ($response->subscription !== null) {\n    // handle response\n}"
           }
         ]
       },
@@ -1342,7 +1352,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Clients.Create(ctx, components.OAuth2ClientConfiguration{\n        RedirectUris: []string{\n            \"https://inferior-chainstay.com\",\n        },\n        ClientName: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Clients.Create(ctx, components.OAuth2ClientConfiguration{\n        RedirectUris: []string{\n            \"https://impolite-hippodrome.com/\",\n            \"https://acidic-tomography.net/\",\n        },\n        ClientName: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -1352,12 +1362,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.create({\n    redirectUris: [\n      \"https://inferior-chainstay.com\",\n    ],\n    clientName: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.create({\n    redirectUris: [\n      \"https://impolite-hippodrome.com/\",\n      \"https://acidic-tomography.net/\",\n    ],\n    clientName: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\OAuth2ClientConfiguration(\n    redirectUris: [\n        'https://probable-heating.com/',\n    ],\n    clientName: '<value>',\n);\n\n$response = $sdk->oauth2->clients->create(\n    request: $request\n);\n\nif ($response->any !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\OAuth2ClientConfiguration(\n    redirectUris: [\n        'https://expert-guidance.info',\n    ],\n    clientName: '<value>',\n);\n\n$response = $sdk->oauth2->clients->create(\n    request: $request\n);\n\nif ($response->any !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -1498,7 +1508,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Clients.Update(ctx, \"<id>\", components.OAuth2ClientConfigurationUpdate{\n        RedirectUris: []string{\n            \"https://grown-worth.name\",\n            \"https://worthwhile-avalanche.org/\",\n            \"https://general-digit.com/\",\n        },\n        ClientName: \"<value>\",\n        ClientID: \"<id>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Oauth2.Clients.Update(ctx, \"<id>\", components.OAuth2ClientConfigurationUpdate{\n        RedirectUris: []string{\n            \"https://classic-cantaloupe.org\",\n            \"https://corrupt-status.biz/\",\n        },\n        ClientName: \"<value>\",\n        ClientID: \"<id>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -1508,12 +1518,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.update({\n    clientId: \"<id>\",\n    oAuth2ClientConfigurationUpdate: {\n      redirectUris: [\n        \"https://grown-worth.name\",\n        \"https://worthwhile-avalanche.org/\",\n        \"https://general-digit.com/\",\n      ],\n      clientName: \"<value>\",\n      clientId: \"<id>\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.update({\n    clientId: \"<id>\",\n    oAuth2ClientConfigurationUpdate: {\n      redirectUris: [\n        \"https://classic-cantaloupe.org\",\n        \"https://corrupt-status.biz/\",\n      ],\n      clientName: \"<value>\",\n      clientId: \"<id>\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$oAuth2ClientConfigurationUpdate = new Components\\OAuth2ClientConfigurationUpdate(\n    redirectUris: [\n        'https://passionate-flu.org',\n    ],\n    clientName: '<value>',\n    clientId: '<id>',\n);\n\n$response = $sdk->oauth2->clients->update(\n    clientId: '<id>',\n    oAuth2ClientConfigurationUpdate: $oAuth2ClientConfigurationUpdate\n\n);\n\nif ($response->any !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$oAuth2ClientConfigurationUpdate = new Components\\OAuth2ClientConfigurationUpdate(\n    redirectUris: [\n        'https://putrid-cappelletti.com',\n    ],\n    clientName: '<value>',\n    clientId: '<id>',\n);\n\n$response = $sdk->oauth2->clients->update(\n    clientId: '<id>',\n    oAuth2ClientConfigurationUpdate: $oAuth2ClientConfigurationUpdate\n\n);\n\nif ($response->any !== null) {\n    // handle response\n}"
           }
         ]
       },
@@ -1709,7 +1719,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.Oauth2.Token(ctx, operations.CreateOauth2RequestTokenRequestBodyAuthorizationCodeTokenRequest(\n        components.AuthorizationCodeTokenRequest{\n            ClientID: \"<id>\",\n            ClientSecret: \"<value>\",\n            Code: \"<value>\",\n            RedirectURI: \"https://talkative-barracks.com\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.TokenResponse != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.Oauth2.Token(ctx, operations.CreateOauth2RequestTokenRequestBodyAuthorizationCodeTokenRequest(\n        components.AuthorizationCodeTokenRequest{\n            ClientID: \"<id>\",\n            ClientSecret: \"<value>\",\n            Code: \"<value>\",\n            RedirectURI: \"https://memorable-season.name\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.TokenResponse != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -1719,12 +1729,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.oauth2.token({\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n    code: \"<value>\",\n    redirectUri: \"https://old-fort.name\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.oauth2.token({\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n    code: \"<value>\",\n    redirectUri: \"https://memorable-season.name\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Components\\AuthorizationCodeTokenRequest(\n    clientId: '<id>',\n    clientSecret: '<value>',\n    code: '<value>',\n    redirectUri: 'https://old-fort.name',\n);\n\n$response = $sdk->oauth2->token(\n    request: $request\n);\n\nif ($response->tokenResponse !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Components\\AuthorizationCodeTokenRequest(\n    clientId: '<id>',\n    clientSecret: '<value>',\n    code: '<value>',\n    redirectUri: 'https://memorable-season.name',\n);\n\n$response = $sdk->oauth2->token(\n    request: $request\n);\n\nif ($response->tokenResponse !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -2191,7 +2201,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Create(ctx, components.CreateBenefitCreateGithubRepository(\n        components.BenefitGitHubRepositoryCreate{\n            Description: \"yuck forager beneath please shadowy foodstuffs welcome\",\n            OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n            Properties: components.BenefitGitHubRepositoryCreateProperties{\n                RepositoryOwner: \"polarsource\",\n                RepositoryName: \"private_repo\",\n                Permission: components.BenefitGitHubRepositoryCreatePropertiesPermissionTriage,\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Create(ctx, components.CreateBenefitCreateLicenseKeys(\n        components.BenefitLicenseKeysCreate{\n            Description: \"mature emergent at outside arrogantly gadzooks zealous equatorial notwithstanding\",\n            OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n            Properties: components.BenefitLicenseKeysCreateProperties{},\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -2201,12 +2211,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.create({\n    description: \"delightfully fumigate convection though zowie up bulky electronics\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    properties: {\n      files: [\n        \"<value>\",\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.create({\n    description: \"mature emergent at outside arrogantly gadzooks zealous equatorial notwithstanding\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    properties: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\BenefitDownloadablesCreate(\n    description: 'delightfully fumigate convection though zowie up bulky electronics',\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    properties: new Components\\BenefitDownloadablesCreateProperties(\n        files: [\n            '<value>',\n        ],\n    ),\n);\n\n$response = $sdk->benefits->create(\n    request: $request\n);\n\nif ($response->benefit !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\BenefitLicenseKeysCreate(\n    description: 'mature emergent at outside arrogantly gadzooks zealous equatorial notwithstanding',\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    properties: new Components\\BenefitLicenseKeysCreateProperties(),\n);\n\n$response = $sdk->benefits->create(\n    request: $request\n);\n\nif ($response->benefit !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -2405,7 +2415,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Update(ctx, \"<value>\", operations.CreateBenefitsUpdateBenefitUpdateBenefitDownloadablesUpdate(\n        components.BenefitDownloadablesUpdate{},\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Benefits.Update(ctx, \"<value>\", operations.CreateBenefitsUpdateBenefitUpdateBenefitCustomUpdate(\n        components.BenefitCustomUpdate{},\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Benefit != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -2996,7 +3006,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.List(ctx, operations.ProductsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateProductsListQueryParamOrganizationIDFilterArrayOfStr(\n            []string{\n                \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n            },\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceProduct != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.List(ctx, operations.ProductsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateProductsListQueryParamOrganizationIDFilterStr(\n            \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceProduct != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "python",
@@ -3006,12 +3016,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.list({\n    organizationId: [\n      \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ],\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.list({\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\ProductsListRequest(\n    organizationId: [\n        '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ],\n);\n\n$responses = $sdk->products->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\ProductsListRequest(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$responses = $sdk->products->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
           }
         ]
       },
@@ -3074,7 +3084,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.Create(ctx, components.ProductCreate{\n        Name: \"<value>\",\n        RecurringInterval: components.SubscriptionRecurringIntervalMonth.ToPointer(),\n        Prices: []components.ProductCreatePrices{\n            components.CreateProductCreatePricesProductPriceCustomCreate(\n                components.ProductPriceCustomCreate{},\n            ),\n            components.CreateProductCreatePricesProductPriceFixedCreate(\n                components.ProductPriceFixedCreate{\n                    PriceAmount: 69025,\n                },\n            ),\n        },\n        OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Product != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.Create(ctx, components.ProductCreate{\n        Name: \"<value>\",\n        RecurringInterval: components.SubscriptionRecurringIntervalYear.ToPointer(),\n        Prices: []components.ProductCreatePrices{\n            components.CreateProductCreatePricesProductPriceFixedCreate(\n                components.ProductPriceFixedCreate{\n                    PriceAmount: 677078,\n                },\n            ),\n            components.CreateProductCreatePricesProductPriceCustomCreate(\n                components.ProductPriceCustomCreate{},\n            ),\n        },\n        OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Product != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -3084,12 +3094,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.create({\n    name: \"<value>\",\n    recurringInterval: \"month\",\n    prices: [\n      {\n        priceCurrency: \"usd\",\n      },\n      {},\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.create({\n    name: \"<value>\",\n    recurringInterval: \"year\",\n    prices: [\n      {\n        priceAmount: 677078,\n        priceCurrency: \"usd\",\n      },\n      {\n        priceCurrency: \"usd\",\n      },\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\ProductCreate(\n    name: '<value>',\n    recurringInterval: Components\\SubscriptionRecurringInterval::Month,\n    prices: [\n        new Components\\ProductPriceFreeCreate(),\n    ],\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->products->create(\n    request: $request\n);\n\nif ($response->product !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\ProductCreate(\n    name: '<value>',\n    recurringInterval: Components\\SubscriptionRecurringInterval::Year,\n    prices: [\n        new Components\\ProductPriceFreeCreate(),\n    ],\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->products->create(\n    request: $request\n);\n\nif ($response->product !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -3406,7 +3416,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.UpdateBenefits(ctx, \"<value>\", components.ProductBenefitsUpdate{\n        Benefits: []string{\n            \"<value>\",\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Product != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Products.UpdateBenefits(ctx, \"<value>\", components.ProductBenefitsUpdate{\n        Benefits: []string{\n            \"<value 1>\",\n            \"<value 2>\",\n            \"<value 3>\",\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Product != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -3416,7 +3426,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.updateBenefits({\n    id: \"<value>\",\n    productBenefitsUpdate: {\n      benefits: [\n        \"<value>\",\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.updateBenefits({\n    id: \"<value>\",\n    productBenefitsUpdate: {\n      benefits: [\n        \"<value 1>\",\n        \"<value 2>\",\n        \"<value 3>\",\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -3672,6 +3682,16 @@
               "title": "Sorting"
             },
             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+          },
+          {
+            "name": "metadata",
+            "in": "query",
+            "required": false,
+            "style": "deepObject",
+            "schema": {
+              "$ref": "#/components/schemas/MetadataQuery"
+            },
+            "description": "Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`."
           }
         ],
         "responses": {
@@ -4227,7 +4247,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Refunds.List(ctx, operations.RefundsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateRefundsListQueryParamOrganizationIDFilterArrayOfStr(\n            []string{\n                \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n            },\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceRefund != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Refunds.List(ctx, operations.RefundsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateRefundsListQueryParamOrganizationIDFilterStr(\n            \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceRefund != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "python",
@@ -4237,12 +4257,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.refunds.list({\n    organizationId: [\n      \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ],\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.refunds.list({\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\RefundsListRequest(\n    organizationId: [\n        '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ],\n);\n\n$responses = $sdk->refunds->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\RefundsListRequest(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$responses = $sdk->refunds->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
           }
         ]
       },
@@ -4322,7 +4342,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Refunds.Create(ctx, components.RefundCreate{\n        OrderID: \"<value>\",\n        Reason: components.RefundReasonCustomerRequest,\n        Amount: 638424,\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Refund != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Refunds.Create(ctx, components.RefundCreate{\n        OrderID: \"<value>\",\n        Reason: components.RefundReasonCustomerRequest,\n        Amount: 90,\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Refund != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -4332,12 +4352,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.refunds.create({\n    orderId: \"<value>\",\n    reason: \"customer_request\",\n    amount: 638424,\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.refunds.create({\n    orderId: \"<value>\",\n    reason: \"customer_request\",\n    amount: 90,\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\RefundCreate(\n    orderId: '<value>',\n    reason: Components\\RefundReason::CustomerRequest,\n    amount: 638424,\n);\n\n$response = $sdk->refunds->create(\n    request: $request\n);\n\nif ($response->refund !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\RefundCreate(\n    orderId: '<value>',\n    reason: Components\\RefundReason::CustomerRequest,\n    amount: 90,\n);\n\n$response = $sdk->refunds->create(\n    request: $request\n);\n\nif ($response->refund !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -4610,7 +4630,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.List(ctx, operations.CheckoutsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateCheckoutsListQueryParamOrganizationIDFilterArrayOfStr(\n            []string{\n                \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n            },\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCheckout != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.List(ctx, operations.CheckoutsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateCheckoutsListQueryParamOrganizationIDFilterStr(\n            \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCheckout != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "python",
@@ -4620,12 +4640,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.list({\n    organizationId: [\n      \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ],\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.list({\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\CheckoutsListRequest(\n    organizationId: [\n        '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ],\n);\n\n$responses = $sdk->checkouts->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\CheckoutsListRequest(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$responses = $sdk->checkouts->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
           }
         ]
       },
@@ -4683,7 +4703,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Create(ctx, components.CheckoutCreate{\n        CustomerBillingAddress: &components.Address{\n            Country: \"SE\",\n        },\n        Products: []string{\n            \"<value>\",\n            \"<value>\",\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Create(ctx, components.CheckoutCreate{\n        CustomerBillingAddress: &components.Address{\n            Country: \"FR\",\n        },\n        Products: []string{\n            \"<value 1>\",\n            \"<value 2>\",\n            \"<value 3>\",\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -4693,12 +4713,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.create({\n    customerBillingAddress: {\n      country: \"SE\",\n    },\n    products: [\n      \"<value>\",\n      \"<value>\",\n    ],\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.create({\n    customerBillingAddress: {\n      country: \"FR\",\n    },\n    products: [\n      \"<value 1>\",\n      \"<value 2>\",\n      \"<value 3>\",\n    ],\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CheckoutCreate(\n    customerBillingAddress: new Components\\Address(\n        country: 'SE',\n    ),\n    products: [\n        '<value>',\n    ],\n);\n\n$response = $sdk->checkouts->create(\n    request: $request\n);\n\nif ($response->checkout !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CheckoutCreate(\n    customerBillingAddress: new Components\\Address(\n        country: 'FR',\n    ),\n    products: [\n        '<value>',\n    ],\n);\n\n$response = $sdk->checkouts->create(\n    request: $request\n);\n\nif ($response->checkout !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -4879,7 +4899,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Update(ctx, \"<value>\", components.CheckoutUpdate{\n        CustomerBillingAddress: &components.Address{\n            Country: \"FR\",\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.Update(ctx, \"<value>\", components.CheckoutUpdate{\n        CustomerBillingAddress: &components.Address{\n            Country: \"US\",\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Checkout != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -4889,7 +4909,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.update({\n    id: \"<value>\",\n    checkoutUpdate: {\n      customerBillingAddress: {\n        country: \"FR\",\n      },\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.update({\n    id: \"<value>\",\n    checkoutUpdate: {\n      customerBillingAddress: {\n        country: \"US\",\n      },\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           }
         ]
       }
@@ -5086,7 +5106,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.Checkouts.ClientUpdate(ctx, \"<value>\", components.CheckoutUpdatePublic{\n        CustomerBillingAddress: &components.Address{\n            Country: \"FR\",\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublic != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.Checkouts.ClientUpdate(ctx, \"<value>\", components.CheckoutUpdatePublic{\n        CustomerBillingAddress: &components.Address{\n            Country: \"US\",\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublic != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -5096,7 +5116,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.checkouts.clientUpdate({\n    clientSecret: \"<value>\",\n    checkoutUpdatePublic: {\n      customerBillingAddress: {\n        country: \"FR\",\n      },\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.checkouts.clientUpdate({\n    clientSecret: \"<value>\",\n    checkoutUpdatePublic: {\n      customerBillingAddress: {\n        country: \"US\",\n      },\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           }
         ]
       }
@@ -5209,7 +5229,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.ClientConfirm(ctx, \"<value>\", components.CheckoutConfirmStripe{\n        CustomerBillingAddress: &components.Address{\n            Country: \"FR\",\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublicConfirmed != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Checkouts.ClientConfirm(ctx, \"<value>\", components.CheckoutConfirmStripe{\n        CustomerBillingAddress: &components.Address{\n            Country: \"US\",\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutPublicConfirmed != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -5219,7 +5239,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.clientConfirm({\n    clientSecret: \"<value>\",\n    checkoutConfirmStripe: {\n      customerBillingAddress: {\n        country: \"FR\",\n      },\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.clientConfirm({\n    clientSecret: \"<value>\",\n    checkoutConfirmStripe: {\n      customerBillingAddress: {\n        country: \"US\",\n      },\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           }
         ]
       }
@@ -5254,11 +5274,29 @@
                   }
                 },
                 {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4",
+                    "examples": [
+                      "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                    ],
+                    "description": "The organization ID.",
+                    "x-polar-selector-widget": {
+                      "resourceRoot": "/v1/organizations",
+                      "resourceName": "Organization",
+                      "displayProperty": "name"
+                    }
+                  }
+                },
+                {
                   "type": "null"
                 }
               ],
-              "title": "Organization Id"
-            }
+              "title": "OrganizationID Filter",
+              "description": "Filter by organization ID."
+            },
+            "description": "Filter by organization ID."
           },
           {
             "name": "ids",
@@ -5266,6 +5304,10 @@
             "required": false,
             "schema": {
               "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4"
+                },
                 {
                   "type": "array",
                   "items": {
@@ -5277,10 +5319,10 @@
                   "type": "null"
                 }
               ],
-              "description": "List of file IDs to get. ",
-              "title": "Ids"
+              "title": "FileID Filter",
+              "description": "Filter by file ID."
             },
-            "description": "List of file IDs to get. "
+            "description": "Filter by file ID."
           },
           {
             "name": "page",
@@ -5363,12 +5405,12 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.List(ctx, polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"), nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceFileRead != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.List(ctx, polargo.Pointer(operations.CreateFilesListQueryParamOrganizationIDFilterStr(\n        \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    )), nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceFileRead != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.files.list(organization_id=\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\")\n\n    while res is not None:\n        # Handle items\n\n        res = res.next()"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.files.list(organization_id=[\n        \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ])\n\n    while res is not None:\n        # Handle items\n\n        res = res.next()"
           },
           {
             "lang": "typescript",
@@ -5378,7 +5420,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$responses = $sdk->files->list(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ids: [\n        '<value>',\n    ],\n    page: 1,\n    limit: 10\n\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$responses = $sdk->files->list(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ids: '<value>',\n    page: 1,\n    limit: 10\n\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
           }
         ]
       },
@@ -5435,7 +5477,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.Create(ctx, components.CreateFileCreateProductMedia(\n        components.ProductMediaFileCreate{\n            OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n            Name: \"<value>\",\n            MimeType: \"<value>\",\n            Size: 951062,\n            Upload: components.S3FileCreateMultipart{\n                Parts: []components.S3FileCreatePart{\n                    components.S3FileCreatePart{\n                        Number: 86,\n                        ChunkStart: 169727,\n                        ChunkEnd: 89964,\n                    },\n                },\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.FileUpload != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.Create(ctx, components.CreateFileCreateDownloadable(\n        components.DownloadableFileCreate{\n            OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n            Name: \"<value>\",\n            MimeType: \"<value>\",\n            Size: 612128,\n            Upload: components.S3FileCreateMultipart{\n                Parts: []components.S3FileCreatePart{},\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.FileUpload != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -5445,12 +5487,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.create({\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    name: \"<value>\",\n    mimeType: \"<value>\",\n    size: 638424,\n    upload: {\n      parts: [\n        {\n          number: 417458,\n          chunkStart: 134365,\n          chunkEnd: 69025,\n        },\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.create({\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    name: \"<value>\",\n    mimeType: \"<value>\",\n    size: 612128,\n    upload: {\n      parts: [],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\OrganizationAvatarFileCreate(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    name: '<value>',\n    mimeType: '<value>',\n    size: 638424,\n    upload: new Components\\S3FileCreateMultipart(\n        parts: [\n            new Components\\S3FileCreatePart(\n                number: 417458,\n                chunkStart: 134365,\n                chunkEnd: 69025,\n            ),\n        ],\n    ),\n);\n\n$response = $sdk->files->create(\n    request: $request\n);\n\nif ($response->fileUpload !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\DownloadableFileCreate(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    name: '<value>',\n    mimeType: '<value>',\n    size: 612128,\n    upload: new Components\\S3FileCreateMultipart(\n        parts: [\n            new Components\\S3FileCreatePart(\n                number: 3303,\n                chunkStart: 703026,\n                chunkEnd: 476601,\n            ),\n        ],\n    ),\n);\n\n$response = $sdk->files->create(\n    request: $request\n);\n\nif ($response->fileUpload !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -5562,7 +5604,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.Uploaded(ctx, \"<value>\", components.FileUploadCompleted{\n        ID: \"<id>\",\n        Path: \"/sys\",\n        Parts: []components.S3FileUploadCompletedPart{\n            components.S3FileUploadCompletedPart{\n                Number: 173116,\n                ChecksumEtag: \"<value>\",\n                ChecksumSha256Base64: polargo.String(\"<value>\"),\n            },\n            components.S3FileUploadCompletedPart{\n                Number: 894030,\n                ChecksumEtag: \"<value>\",\n                ChecksumSha256Base64: polargo.String(\"<value>\"),\n            },\n            components.S3FileUploadCompletedPart{\n                Number: 673715,\n                ChecksumEtag: \"<value>\",\n                ChecksumSha256Base64: polargo.String(\"<value>\"),\n            },\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ResponseFilesUploaded != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Files.Uploaded(ctx, \"<value>\", components.FileUploadCompleted{\n        ID: \"<id>\",\n        Path: \"/boot\",\n        Parts: []components.S3FileUploadCompletedPart{\n            components.S3FileUploadCompletedPart{\n                Number: 979613,\n                ChecksumEtag: \"<value>\",\n                ChecksumSha256Base64: polargo.String(\"<value>\"),\n            },\n            components.S3FileUploadCompletedPart{\n                Number: 979613,\n                ChecksumEtag: \"<value>\",\n                ChecksumSha256Base64: polargo.String(\"<value>\"),\n            },\n            components.S3FileUploadCompletedPart{\n                Number: 979613,\n                ChecksumEtag: \"<value>\",\n                ChecksumSha256Base64: polargo.String(\"<value>\"),\n            },\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ResponseFilesUploaded != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -5572,12 +5614,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.uploaded({\n    id: \"<value>\",\n    fileUploadCompleted: {\n      id: \"<id>\",\n      path: \"/sys\",\n      parts: [\n        {\n          number: 173116,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n        {\n          number: 894030,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n        {\n          number: 673715,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.uploaded({\n    id: \"<value>\",\n    fileUploadCompleted: {\n      id: \"<id>\",\n      path: \"/boot\",\n      parts: [\n        {\n          number: 979613,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n        {\n          number: 979613,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n        {\n          number: 979613,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$fileUploadCompleted = new Components\\FileUploadCompleted(\n    id: '<id>',\n    path: '/sys',\n    parts: [\n        new Components\\S3FileUploadCompletedPart(\n            number: 848922,\n            checksumEtag: '<value>',\n            checksumSha256Base64: '<value>',\n        ),\n    ],\n);\n\n$response = $sdk->files->uploaded(\n    id: '<value>',\n    fileUploadCompleted: $fileUploadCompleted\n\n);\n\nif ($response->responseFilesUploaded !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$fileUploadCompleted = new Components\\FileUploadCompleted(\n    id: '<id>',\n    path: '/boot',\n    parts: [\n        new Components\\S3FileUploadCompletedPart(\n            number: 859084,\n            checksumEtag: '<value>',\n            checksumSha256Base64: '<value>',\n        ),\n    ],\n);\n\n$response = $sdk->files->uploaded(\n    id: '<value>',\n    fileUploadCompleted: $fileUploadCompleted\n\n);\n\nif ($response->responseFilesUploaded !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -6015,7 +6057,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/types\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Metrics.Get(ctx, operations.MetricsGetRequest{\n        StartDate: types.MustDateFromString(\"2025-02-06\"),\n        EndDate: types.MustDateFromString(\"2024-09-04\"),\n        Interval: components.TimeIntervalWeek,\n        OrganizationID: polargo.Pointer(operations.CreateMetricsGetQueryParamOrganizationIDFilterArrayOfStr(\n            []string{\n                \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n            },\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.MetricsResponse != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/types\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Metrics.Get(ctx, operations.MetricsGetRequest{\n        StartDate: types.MustDateFromString(\"2025-03-14\"),\n        EndDate: types.MustDateFromString(\"2025-03-18\"),\n        Interval: components.TimeIntervalHour,\n        OrganizationID: polargo.Pointer(operations.CreateMetricsGetQueryParamOrganizationIDFilterStr(\n            \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.MetricsResponse != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -6025,12 +6067,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { RFCDate } from \"@polar-sh/sdk/types/rfcdate.js\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.get({\n    startDate: new RFCDate(\"2025-02-06\"),\n    endDate: new RFCDate(\"2024-09-04\"),\n    interval: \"week\",\n    organizationId: [\n      \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ],\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { RFCDate } from \"@polar-sh/sdk/types/rfcdate.js\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.get({\n    startDate: new RFCDate(\"2025-03-14\"),\n    endDate: new RFCDate(\"2025-03-18\"),\n    interval: \"hour\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Brick\\DateTime\\LocalDate;\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\MetricsGetRequest(\n    startDate: LocalDate::parse('2025-02-06'),\n    endDate: LocalDate::parse('2024-09-04'),\n    interval: Components\\TimeInterval::Week,\n    organizationId: [\n        '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ],\n);\n\n$response = $sdk->metrics->get(\n    request: $request\n);\n\nif ($response->metricsResponse !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Brick\\DateTime\\LocalDate;\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\MetricsGetRequest(\n    startDate: LocalDate::parse('2025-03-14'),\n    endDate: LocalDate::parse('2025-03-18'),\n    interval: Components\\TimeInterval::Hour,\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->metrics->get(\n    request: $request\n);\n\nif ($response->metricsResponse !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -6094,7 +6136,7 @@
         ]
       }
     },
-    "/v1/license-keys": {
+    "/v1/license-keys/": {
       "get": {
         "tags": [
           "license_keys",
@@ -6288,7 +6330,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.LicenseKeys.List(ctx, polargo.Pointer(operations.CreateLicenseKeysListQueryParamOrganizationIDFilterArrayOfStr(\n        []string{\n            \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        },\n    )), nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceLicenseKeyRead != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.LicenseKeys.List(ctx, polargo.Pointer(operations.CreateLicenseKeysListQueryParamOrganizationIDFilterStr(\n        \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    )), nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceLicenseKeyRead != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "python",
@@ -6298,12 +6340,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.list({\n    organizationId: [\n      \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ],\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.list({\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$responses = $sdk->licenseKeys->list(\n    organizationId: [\n        '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ],\n    benefitId: [\n        '<value>',\n    ],\n    page: 1,\n    limit: 10\n\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$responses = $sdk->licenseKeys->list(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    benefitId: '<value>',\n    page: 1,\n    limit: 10\n\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
           }
         ]
       }
@@ -6897,7 +6939,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CheckoutLinks.Create(ctx, operations.CreateCheckoutLinksCreateCheckoutLinkCreateCheckoutLinkCreateProduct(\n        components.CheckoutLinkCreateProduct{\n            ProductID: \"<value>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutLink != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CheckoutLinks.Create(ctx, operations.CreateCheckoutLinksCreateCheckoutLinkCreateCheckoutLinkCreateProductPrice(\n        components.CheckoutLinkCreateProductPrice{\n            ProductPriceID: \"<value>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CheckoutLink != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -6907,12 +6949,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.create({\n    allowDiscountCodes: true,\n    requireBillingAddress: false,\n    productId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.create({\n    allowDiscountCodes: true,\n    requireBillingAddress: false,\n    productPriceId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CheckoutLinkCreateProduct(\n    productId: '<value>',\n);\n\n$response = $sdk->checkoutLinks->create(\n    request: $request\n);\n\nif ($response->checkoutLink !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CheckoutLinkCreateProductPrice(\n    productPriceId: '<value>',\n);\n\n$response = $sdk->checkoutLinks->create(\n    request: $request\n);\n\nif ($response->checkoutLink !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -7382,7 +7424,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.List(ctx, operations.CustomFieldsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateCustomFieldsListQueryParamOrganizationIDFilterArrayOfStr(\n            []string{\n                \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n            },\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomField != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.List(ctx, operations.CustomFieldsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateCustomFieldsListQueryParamOrganizationIDFilterStr(\n            \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomField != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "python",
@@ -7392,12 +7434,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.list({\n    organizationId: [\n      \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ],\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.list({\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\CustomFieldsListRequest(\n    organizationId: [\n        '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ],\n);\n\n$responses = $sdk->customFields->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\CustomFieldsListRequest(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$responses = $sdk->customFields->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
           }
         ]
       },
@@ -7455,7 +7497,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.Create(ctx, components.CreateCustomFieldCreateSelect(\n        components.CustomFieldCreateSelect{\n            Slug: \"<value>\",\n            Name: \"<value>\",\n            OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n            Properties: components.CustomFieldSelectProperties{\n                Options: []components.CustomFieldSelectOption{\n                    components.CustomFieldSelectOption{\n                        Value: \"<value>\",\n                        Label: \"<value>\",\n                    },\n                },\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomField != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.Create(ctx, components.CreateCustomFieldCreateSelect(\n        components.CustomFieldCreateSelect{\n            Slug: \"<value>\",\n            Name: \"<value>\",\n            OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n            Properties: components.CustomFieldSelectProperties{\n                Options: []components.CustomFieldSelectOption{},\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomField != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -7465,12 +7507,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.create({\n    slug: \"<value>\",\n    name: \"<value>\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    properties: {},\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.create({\n    slug: \"<value>\",\n    name: \"<value>\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    properties: {\n      options: [],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CustomFieldCreateNumber(\n    slug: '<value>',\n    name: '<value>',\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    properties: new Components\\CustomFieldNumberProperties(),\n);\n\n$response = $sdk->customFields->create(\n    request: $request\n);\n\nif ($response->customField !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CustomFieldCreateSelect(\n    slug: '<value>',\n    name: '<value>',\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    properties: new Components\\CustomFieldSelectProperties(\n        options: [\n            new Components\\CustomFieldSelectOption(\n                value: '<value>',\n                label: '<value>',\n            ),\n        ],\n    ),\n);\n\n$response = $sdk->customFields->create(\n    request: $request\n);\n\nif ($response->customField !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -7641,7 +7683,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.Update(ctx, \"<value>\", components.CreateCustomFieldUpdateNumber(\n        components.CustomFieldUpdateNumber{},\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomField != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomFields.Update(ctx, \"<value>\", components.CreateCustomFieldUpdateDate(\n        components.CustomFieldUpdateDate{},\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomField != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -7656,7 +7698,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->customFields->update(\n    id: '<value>',\n    customFieldUpdate: new Components\\CustomFieldUpdateText()\n\n);\n\nif ($response->customField !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->customFields->update(\n    id: '<value>',\n    customFieldUpdate: new Components\\CustomFieldUpdateDate()\n\n);\n\nif ($response->customField !== null) {\n    // handle response\n}"
           }
         ]
       },
@@ -7918,7 +7960,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Discounts.List(ctx, operations.DiscountsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateDiscountsListQueryParamOrganizationIDFilterArrayOfStr(\n            []string{\n                \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n            },\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceDiscount != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Discounts.List(ctx, operations.DiscountsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateDiscountsListQueryParamOrganizationIDFilterStr(\n            \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceDiscount != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "python",
@@ -7928,12 +7970,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.discounts.list({\n    organizationId: [\n      \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ],\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.discounts.list({\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\DiscountsListRequest(\n    organizationId: [\n        '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ],\n);\n\n$responses = $sdk->discounts->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\DiscountsListRequest(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$responses = $sdk->discounts->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
           }
         ]
       },
@@ -7992,7 +8034,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Discounts.Create(ctx, components.CreateDiscountCreateDiscountFixedRepeatDurationCreate(\n        components.DiscountFixedRepeatDurationCreate{\n            Duration: components.DiscountDurationForever,\n            DurationInMonths: 417458,\n            Type: components.DiscountTypeFixed,\n            Amount: 69025,\n            Name: \"<value>\",\n            OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Discount != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Discounts.Create(ctx, components.CreateDiscountCreateDiscountPercentageOnceForeverDurationCreate(\n        components.DiscountPercentageOnceForeverDurationCreate{\n            Duration: components.DiscountDurationOnce,\n            Type: components.DiscountTypeFixed,\n            BasisPoints: 449604,\n            Name: \"<value>\",\n            OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Discount != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -8002,12 +8044,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.discounts.create({\n    duration: \"forever\",\n    durationInMonths: 417458,\n    type: \"fixed\",\n    amount: 69025,\n    currency: \"usd\",\n    name: \"<value>\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.discounts.create({\n    duration: \"once\",\n    type: \"fixed\",\n    basisPoints: 449604,\n    name: \"<value>\",\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\DiscountFixedRepeatDurationCreate(\n    duration: Components\\DiscountDuration::Forever,\n    durationInMonths: 417458,\n    type: Components\\DiscountType::Fixed,\n    amount: 69025,\n    name: '<value>',\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->discounts->create(\n    request: $request\n);\n\nif ($response->discount !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\DiscountPercentageOnceForeverDurationCreate(\n    duration: Components\\DiscountDuration::Once,\n    type: Components\\DiscountType::Fixed,\n    basisPoints: 449604,\n    name: '<value>',\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->discounts->create(\n    request: $request\n);\n\nif ($response->discount !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -8569,7 +8611,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Create(ctx, components.CustomerCreate{\n        ExternalID: polargo.String(\"usr_1337\"),\n        Email: \"customer@example.com\",\n        Name: polargo.String(\"John Doe\"),\n        BillingAddress: &components.Address{\n            Country: \"SE\",\n        },\n        TaxID: []*components.CustomerCreateTaxID{\n            polargo.Pointer(components.CreateCustomerCreateTaxIDStr(\n                \"FR61954506077\",\n            )),\n            polargo.Pointer(components.CreateCustomerCreateTaxIDStr(\n                \"eu_vat\",\n            )),\n        },\n        OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Create(ctx, components.CustomerCreate{\n        ExternalID: polargo.String(\"usr_1337\"),\n        Email: \"customer@example.com\",\n        Name: polargo.String(\"John Doe\"),\n        BillingAddress: &components.Address{\n            Country: \"FR\",\n        },\n        TaxID: []*components.CustomerCreateTaxID{\n            polargo.Pointer(components.CreateCustomerCreateTaxIDStr(\n                \"FR61954506077\",\n            )),\n            polargo.Pointer(components.CreateCustomerCreateTaxIDStr(\n                \"eu_vat\",\n            )),\n        },\n        OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -8579,12 +8621,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.create({\n    externalId: \"usr_1337\",\n    email: \"customer@example.com\",\n    name: \"John Doe\",\n    billingAddress: {\n      country: \"SE\",\n    },\n    taxId: [\n      \"FR61954506077\",\n      \"eu_vat\",\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.create({\n    externalId: \"usr_1337\",\n    email: \"customer@example.com\",\n    name: \"John Doe\",\n    billingAddress: {\n      country: \"FR\",\n    },\n    taxId: [\n      \"FR61954506077\",\n      \"eu_vat\",\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CustomerCreate(\n    externalId: 'usr_1337',\n    email: 'customer@example.com',\n    name: 'John Doe',\n    billingAddress: new Components\\Address(\n        country: 'SE',\n    ),\n    taxId: [\n        'FR61954506077',\n        'eu_vat',\n    ],\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->customers->create(\n    request: $request\n);\n\nif ($response->customer !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CustomerCreate(\n    externalId: 'usr_1337',\n    email: 'customer@example.com',\n    name: 'John Doe',\n    billingAddress: new Components\\Address(\n        country: 'FR',\n    ),\n    taxId: [\n        'FR61954506077',\n        'eu_vat',\n    ],\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->customers->create(\n    request: $request\n);\n\nif ($response->customer !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -8765,7 +8807,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Update(ctx, \"<value>\", components.CustomerUpdate{\n        Email: polargo.String(\"customer@example.com\"),\n        Name: polargo.String(\"John Doe\"),\n        BillingAddress: &components.Address{\n            Country: \"FR\",\n        },\n        TaxID: []*components.CustomerUpdateTaxID{\n            polargo.Pointer(components.CreateCustomerUpdateTaxIDStr(\n                \"FR61954506077\",\n            )),\n            polargo.Pointer(components.CreateCustomerUpdateTaxIDStr(\n                \"eu_vat\",\n            )),\n        },\n        ExternalID: polargo.String(\"usr_1337\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.Update(ctx, \"<value>\", components.CustomerUpdate{\n        Email: polargo.String(\"customer@example.com\"),\n        Name: polargo.String(\"John Doe\"),\n        BillingAddress: &components.Address{\n            Country: \"FR\",\n        },\n        TaxID: []*components.CustomerUpdateTaxID{\n            polargo.Pointer(components.CreateCustomerUpdateTaxIDStr(\n                \"911144442\",\n            )),\n            polargo.Pointer(components.CreateCustomerUpdateTaxIDStr(\n                \"us_ein\",\n            )),\n        },\n        ExternalID: polargo.String(\"usr_1337\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -8775,12 +8817,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.update({\n    id: \"<value>\",\n    customerUpdate: {\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: {\n        country: \"FR\",\n      },\n      taxId: [\n        \"FR61954506077\",\n        \"eu_vat\",\n      ],\n      externalId: \"usr_1337\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.update({\n    id: \"<value>\",\n    customerUpdate: {\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: {\n        country: \"FR\",\n      },\n      taxId: [\n        \"911144442\",\n        \"us_ein\",\n      ],\n      externalId: \"usr_1337\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$customerUpdate = new Components\\CustomerUpdate(\n    email: 'customer@example.com',\n    name: 'John Doe',\n    billingAddress: new Components\\Address(\n        country: 'FR',\n    ),\n    taxId: [\n        'FR61954506077',\n        'eu_vat',\n    ],\n    externalId: 'usr_1337',\n);\n\n$response = $sdk->customers->update(\n    id: '<value>',\n    customerUpdate: $customerUpdate\n\n);\n\nif ($response->customer !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$customerUpdate = new Components\\CustomerUpdate(\n    email: 'customer@example.com',\n    name: 'John Doe',\n    billingAddress: new Components\\Address(\n        country: 'FR',\n    ),\n    taxId: [\n        '911144442',\n        'us_ein',\n    ],\n    externalId: 'usr_1337',\n);\n\n$response = $sdk->customers->update(\n    id: '<value>',\n    customerUpdate: $customerUpdate\n\n);\n\nif ($response->customer !== null) {\n    // handle response\n}"
           }
         ]
       },
@@ -9044,7 +9086,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.UpdateExternal(ctx, \"<id>\", components.CustomerUpdateExternalID{\n        Email: polargo.String(\"customer@example.com\"),\n        Name: polargo.String(\"John Doe\"),\n        BillingAddress: &components.Address{\n            Country: \"US\",\n        },\n        TaxID: []*components.CustomerUpdateExternalIDTaxID{\n            polargo.Pointer(components.CreateCustomerUpdateExternalIDTaxIDStr(\n                \"FR61954506077\",\n            )),\n            polargo.Pointer(components.CreateCustomerUpdateExternalIDTaxIDStr(\n                \"eu_vat\",\n            )),\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Customers.UpdateExternal(ctx, \"<id>\", components.CustomerUpdateExternalID{\n        Email: polargo.String(\"customer@example.com\"),\n        Name: polargo.String(\"John Doe\"),\n        BillingAddress: &components.Address{\n            Country: \"US\",\n        },\n        TaxID: []*components.CustomerUpdateExternalIDTaxID{\n            polargo.Pointer(components.CreateCustomerUpdateExternalIDTaxIDStr(\n                \"911144442\",\n            )),\n            polargo.Pointer(components.CreateCustomerUpdateExternalIDTaxIDStr(\n                \"us_ein\",\n            )),\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Customer != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -9054,12 +9096,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.updateExternal({\n    externalId: \"<id>\",\n    customerUpdateExternalID: {\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: {\n        country: \"US\",\n      },\n      taxId: [\n        \"FR61954506077\",\n        \"eu_vat\",\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customers.updateExternal({\n    externalId: \"<id>\",\n    customerUpdateExternalID: {\n      email: \"customer@example.com\",\n      name: \"John Doe\",\n      billingAddress: {\n        country: \"US\",\n      },\n      taxId: [\n        \"911144442\",\n        \"us_ein\",\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$customerUpdateExternalID = new Components\\CustomerUpdateExternalID(\n    email: 'customer@example.com',\n    name: 'John Doe',\n    billingAddress: new Components\\Address(\n        country: 'US',\n    ),\n    taxId: [\n        'FR61954506077',\n        'eu_vat',\n    ],\n);\n\n$response = $sdk->customers->updateExternal(\n    externalId: '<id>',\n    customerUpdateExternalID: $customerUpdateExternalID\n\n);\n\nif ($response->customer !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$customerUpdateExternalID = new Components\\CustomerUpdateExternalID(\n    email: 'customer@example.com',\n    name: 'John Doe',\n    billingAddress: new Components\\Address(\n        country: 'US',\n    ),\n    taxId: [\n        '911144442',\n        'us_ein',\n    ],\n);\n\n$response = $sdk->customers->updateExternal(\n    externalId: '<id>',\n    customerUpdateExternalID: $customerUpdateExternalID\n\n);\n\nif ($response->customer !== null) {\n    // handle response\n}"
           }
         ]
       },
@@ -9632,7 +9674,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"os\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.BenefitGrants.List(ctx, operations.CustomerPortalBenefitGrantsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateCustomerPortalBenefitGrantsListQueryParamOrganizationIDFilterArrayOfStr(\n            []string{\n                \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n            },\n        )),\n    }, operations.CustomerPortalBenefitGrantsListSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomerBenefitGrant != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"os\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.BenefitGrants.List(ctx, operations.CustomerPortalBenefitGrantsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateCustomerPortalBenefitGrantsListQueryParamOrganizationIDFilterStr(\n            \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        )),\n    }, operations.CustomerPortalBenefitGrantsListSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomerBenefitGrant != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "python",
@@ -9642,12 +9684,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.benefitGrants.list({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    organizationId: [\n      \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ],\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.benefitGrants.list({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Operations\\CustomerPortalBenefitGrantsListRequest(\n    organizationId: [\n        '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ],\n);\n$requestSecurity = new Operations\\CustomerPortalBenefitGrantsListSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$responses = $sdk->customerPortal->benefitGrants->list(\n    request: $request,\n    security: $requestSecurity\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Operations\\CustomerPortalBenefitGrantsListRequest(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n$requestSecurity = new Operations\\CustomerPortalBenefitGrantsListSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$responses = $sdk->customerPortal->benefitGrants->list(\n    request: $request,\n    security: $requestSecurity\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
           }
         ]
       }
@@ -9839,7 +9881,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.BenefitGrants.Update(ctx, operations.CustomerPortalBenefitGrantsUpdateSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    }, \"<value>\", components.CreateCustomerBenefitGrantUpdateGithubRepository(\n        components.CustomerBenefitGrantGitHubRepositoryUpdate{\n            Properties: components.CustomerBenefitGrantGitHubRepositoryPropertiesUpdate{\n                AccountID: \"<id>\",\n            },\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerBenefitGrant != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.BenefitGrants.Update(ctx, operations.CustomerPortalBenefitGrantsUpdateSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    }, \"<value>\", components.CreateCustomerBenefitGrantUpdateLicenseKeys(\n        components.CustomerBenefitGrantLicenseKeysUpdate{},\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerBenefitGrant != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -9854,7 +9896,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n\n$requestSecurity = new Operations\\CustomerPortalBenefitGrantsUpdateSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->benefitGrants->update(\n    security: $requestSecurity,\n    id: '<value>',\n    customerBenefitGrantUpdate: new Components\\CustomerBenefitGrantMeterCreditUpdate()\n\n);\n\nif ($response->customerBenefitGrant !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n\n$requestSecurity = new Operations\\CustomerPortalBenefitGrantsUpdateSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->benefitGrants->update(\n    security: $requestSecurity,\n    id: '<value>',\n    customerBenefitGrantUpdate: new Components\\CustomerBenefitGrantLicenseKeysUpdate()\n\n);\n\nif ($response->customerBenefitGrant !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -9975,7 +10017,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Customers.Update(ctx, components.CustomerPortalCustomerUpdate{\n        BillingAddress: &components.Address{\n            Country: \"FR\",\n        },\n    }, operations.CustomerPortalCustomersUpdateSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerPortalCustomer != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Customers.Update(ctx, components.CustomerPortalCustomerUpdate{\n        BillingAddress: &components.Address{\n            Country: \"US\",\n        },\n    }, operations.CustomerPortalCustomersUpdateSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerPortalCustomer != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -9985,12 +10027,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.customers.update({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    billingAddress: {\n      country: \"FR\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.customers.update({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    billingAddress: {\n      country: \"US\",\n    },\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Components\\CustomerPortalCustomerUpdate(\n    billingAddress: new Components\\Address(\n        country: 'FR',\n    ),\n);\n$requestSecurity = new Operations\\CustomerPortalCustomersUpdateSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->customers->update(\n    request: $request,\n    security: $requestSecurity\n);\n\nif ($response->customerPortalCustomer !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Components\\CustomerPortalCustomerUpdate(\n    billingAddress: new Components\\Address(\n        country: 'US',\n    ),\n);\n$requestSecurity = new Operations\\CustomerPortalCustomersUpdateSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->customers->update(\n    request: $request,\n    security: $requestSecurity\n);\n\nif ($response->customerPortalCustomer !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -10176,7 +10218,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Customers.AddPaymentMethod(ctx, components.CustomerPaymentMethodCreate{\n        ConfirmationTokenID: \"<id>\",\n        SetDefault: false,\n        ReturnURL: \"https://slight-digestive.info\",\n    }, operations.CustomerPortalCustomersAddPaymentMethodSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ResponseCustomerPortalCustomersAddPaymentMethod != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Customers.AddPaymentMethod(ctx, components.CustomerPaymentMethodCreate{\n        ConfirmationTokenID: \"<id>\",\n        SetDefault: false,\n        ReturnURL: \"https://yearly-custom.net/\",\n    }, operations.CustomerPortalCustomersAddPaymentMethodSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ResponseCustomerPortalCustomersAddPaymentMethod != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -10186,12 +10228,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.customers.addPaymentMethod({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    confirmationTokenId: \"<id>\",\n    setDefault: false,\n    returnUrl: \"https://slight-digestive.info\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.customers.addPaymentMethod({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    confirmationTokenId: \"<id>\",\n    setDefault: false,\n    returnUrl: \"https://yearly-custom.net/\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Components\\CustomerPaymentMethodCreate(\n    confirmationTokenId: '<id>',\n    setDefault: false,\n    returnUrl: 'https://probable-resource.biz',\n);\n$requestSecurity = new Operations\\CustomerPortalCustomersAddPaymentMethodSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->customers->addPaymentMethod(\n    request: $request,\n    security: $requestSecurity\n);\n\nif ($response->responseCustomerPortalCustomersAddPaymentMethod !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Components\\CustomerPaymentMethodCreate(\n    confirmationTokenId: '<id>',\n    setDefault: false,\n    returnUrl: 'https://jubilant-worth.biz',\n);\n$requestSecurity = new Operations\\CustomerPortalCustomersAddPaymentMethodSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->customers->addPaymentMethod(\n    request: $request,\n    security: $requestSecurity\n);\n\nif ($response->responseCustomerPortalCustomersAddPaymentMethod !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -10738,7 +10780,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"os\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Downloadables.List(ctx, operations.CustomerPortalDownloadablesListSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    }, polargo.Pointer(operations.CreateCustomerPortalDownloadablesListQueryParamOrganizationIDFilterArrayOfStr(\n        []string{\n            \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        },\n    )), nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceDownloadableRead != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"os\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Downloadables.List(ctx, operations.CustomerPortalDownloadablesListSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    }, polargo.Pointer(operations.CreateCustomerPortalDownloadablesListQueryParamOrganizationIDFilterStr(\n        \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    )), nil, nil, nil)\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceDownloadableRead != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "python",
@@ -10748,12 +10790,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.downloadables.list({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    organizationId: [\n      \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ],\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.downloadables.list({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n\n$requestSecurity = new Operations\\CustomerPortalDownloadablesListSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$responses = $sdk->customerPortal->downloadables->list(\n    security: $requestSecurity,\n    organizationId: [\n        '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ],\n    benefitId: [\n        '<value>',\n    ],\n    page: 1,\n    limit: 10\n\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n\n$requestSecurity = new Operations\\CustomerPortalDownloadablesListSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$responses = $sdk->customerPortal->downloadables->list(\n    security: $requestSecurity,\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    benefitId: [\n        '<value>',\n    ],\n    page: 1,\n    limit: 10\n\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
           }
         ]
       }
@@ -11670,7 +11712,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"os\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Orders.List(ctx, operations.CustomerPortalOrdersListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateCustomerPortalOrdersListQueryParamOrganizationIDFilterArrayOfStr(\n            []string{\n                \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n            },\n        )),\n    }, operations.CustomerPortalOrdersListSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomerOrder != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"os\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Orders.List(ctx, operations.CustomerPortalOrdersListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateCustomerPortalOrdersListQueryParamOrganizationIDFilterStr(\n            \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        )),\n    }, operations.CustomerPortalOrdersListSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomerOrder != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "python",
@@ -11680,12 +11722,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.orders.list({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    organizationId: [\n      \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ],\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.orders.list({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Operations\\CustomerPortalOrdersListRequest(\n    organizationId: [\n        '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ],\n);\n$requestSecurity = new Operations\\CustomerPortalOrdersListSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$responses = $sdk->customerPortal->orders->list(\n    request: $request,\n    security: $requestSecurity\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Operations\\CustomerPortalOrdersListRequest(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n$requestSecurity = new Operations\\CustomerPortalOrdersListSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$responses = $sdk->customerPortal->orders->list(\n    request: $request,\n    security: $requestSecurity\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
           }
         ]
       }
@@ -12199,7 +12241,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"os\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Subscriptions.List(ctx, operations.CustomerPortalSubscriptionsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateCustomerPortalSubscriptionsListQueryParamOrganizationIDFilterArrayOfStr(\n            []string{\n                \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n            },\n        )),\n    }, operations.CustomerPortalSubscriptionsListSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomerSubscription != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"os\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Subscriptions.List(ctx, operations.CustomerPortalSubscriptionsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateCustomerPortalSubscriptionsListQueryParamOrganizationIDFilterStr(\n            \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        )),\n    }, operations.CustomerPortalSubscriptionsListSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomerSubscription != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "python",
@@ -12209,12 +12251,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.subscriptions.list({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    organizationId: [\n      \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ],\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.subscriptions.list({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Operations\\CustomerPortalSubscriptionsListRequest(\n    organizationId: [\n        '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ],\n);\n$requestSecurity = new Operations\\CustomerPortalSubscriptionsListSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$responses = $sdk->customerPortal->subscriptions->list(\n    request: $request,\n    security: $requestSecurity\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Operations\\CustomerPortalSubscriptionsListRequest(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n$requestSecurity = new Operations\\CustomerPortalSubscriptionsListSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$responses = $sdk->customerPortal->subscriptions->list(\n    request: $request,\n    security: $requestSecurity\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
           }
         ]
       }
@@ -12590,7 +12632,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerSessions.Create(ctx, operations.CreateCustomerSessionsCreateCustomerSessionCreateCustomerSessionCustomerIDCreate(\n        components.CustomerSessionCustomerIDCreate{\n            CustomerID: \"<value>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerSession != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerSessions.Create(ctx, operations.CreateCustomerSessionsCreateCustomerSessionCreateCustomerSessionCustomerExternalIDCreate(\n        components.CustomerSessionCustomerExternalIDCreate{\n            CustomerExternalID: \"<id>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerSession != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -12600,12 +12642,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerSessions.create({\n    customerId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerSessions.create({\n    customerExternalId: \"<id>\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CustomerSessionCustomerIDCreate(\n    customerId: '<value>',\n);\n\n$response = $sdk->customerSessions->create(\n    request: $request\n);\n\nif ($response->customerSession !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CustomerSessionCustomerExternalIDCreate(\n    customerExternalId: '<id>',\n);\n\n$response = $sdk->customerSessions->create(\n    request: $request\n);\n\nif ($response->customerSession !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -13394,7 +13436,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Events.Ingest(ctx, components.EventsIngest{\n        Events: []components.Events{\n            components.CreateEventsEventCreateCustomer(\n                components.EventCreateCustomer{\n                    Name: \"<value>\",\n                    OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n                    CustomerID: \"<value>\",\n                },\n            ),\n            components.CreateEventsEventCreateExternalCustomer(\n                components.EventCreateExternalCustomer{\n                    Name: \"<value>\",\n                    OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n                    ExternalCustomerID: \"<id>\",\n                },\n            ),\n        },\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.EventsIngestResponse != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Events.Ingest(ctx, components.EventsIngest{\n        Events: []components.Events{},\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.EventsIngestResponse != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -13404,12 +13446,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.events.ingest({\n    events: [\n      {\n        name: \"<value>\",\n        organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        customerId: \"<value>\",\n      },\n      {\n        name: \"<value>\",\n        organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        externalCustomerId: \"<id>\",\n      },\n    ],\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.events.ingest({\n    events: [],\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\EventsIngest(\n    events: [\n        new Components\\EventCreateExternalCustomer(\n            name: '<value>',\n            organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n            externalCustomerId: '<id>',\n        ),\n    ],\n);\n\n$response = $sdk->events->ingest(\n    request: $request\n);\n\nif ($response->eventsIngestResponse !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\EventsIngest(\n    events: [\n        new Components\\EventCreateCustomer(\n            name: '<value>',\n            organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n            customerId: '<value>',\n        ),\n    ],\n);\n\n$response = $sdk->events->ingest(\n    request: $request\n);\n\nif ($response->eventsIngestResponse !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -13602,7 +13644,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Meters.List(ctx, operations.MetersListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateMetersListQueryParamOrganizationIDFilterArrayOfStr(\n            []string{\n                \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n            },\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceMeter != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Meters.List(ctx, operations.MetersListRequest{\n        OrganizationID: polargo.Pointer(operations.CreateMetersListQueryParamOrganizationIDFilterStr(\n            \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceMeter != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "python",
@@ -13612,12 +13654,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.meters.list({\n    organizationId: [\n      \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ],\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.meters.list({\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\MetersListRequest(\n    organizationId: [\n        '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ],\n);\n\n$responses = $sdk->meters->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\MetersListRequest(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$responses = $sdk->meters->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
           }
         ]
       },
@@ -13675,7 +13717,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Meters.Create(ctx, components.MeterCreate{\n        Name: \"<value>\",\n        Filter: components.Filter{\n            Conjunction: components.FilterConjunctionAnd,\n            Clauses: []components.Clauses{\n                components.CreateClausesFilterClause(\n                    components.FilterClause{\n                        Property: \"<value>\",\n                        Operator: components.FilterOperatorNe,\n                        Value: components.CreateValueStr(\n                            \"<value>\",\n                        ),\n                    },\n                ),\n            },\n        },\n        Aggregation: components.CreateMeterCreateAggregationAvg(\n            components.PropertyAggregation{\n                Func: components.FuncSum,\n                Property: \"<value>\",\n            },\n        ),\n        OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Meter != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Meters.Create(ctx, components.MeterCreate{\n        Name: \"<value>\",\n        Filter: components.Filter{\n            Conjunction: components.FilterConjunctionOr,\n            Clauses: []components.Clauses{\n                components.CreateClausesFilterClause(\n                    components.FilterClause{\n                        Property: \"<value>\",\n                        Operator: components.FilterOperatorNe,\n                        Value: components.CreateValueStr(\n                            \"<value>\",\n                        ),\n                    },\n                ),\n            },\n        },\n        Aggregation: components.CreateMeterCreateAggregationAvg(\n            components.PropertyAggregation{\n                Func: components.FuncMax,\n                Property: \"<value>\",\n            },\n        ),\n        OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Meter != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -13685,12 +13727,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.meters.create({\n    name: \"<value>\",\n    filter: {\n      conjunction: \"and\",\n      clauses: [\n        {\n          property: \"<value>\",\n          operator: \"ne\",\n          value: \"<value>\",\n        },\n      ],\n    },\n    aggregation: {\n      func: \"sum\",\n      property: \"<value>\",\n    },\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.meters.create({\n    name: \"<value>\",\n    filter: {\n      conjunction: \"or\",\n      clauses: [\n        {\n          property: \"<value>\",\n          operator: \"ne\",\n          value: \"<value>\",\n        },\n      ],\n    },\n    aggregation: {\n      func: \"max\",\n      property: \"<value>\",\n    },\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\MeterCreate(\n    name: '<value>',\n    filter: new Components\\Filter(\n        conjunction: Components\\FilterConjunction::And,\n        clauses: [],\n    ),\n    aggregation: new Components\\PropertyAggregation(\n        func: Components\\Func::Max,\n        property: '<value>',\n    ),\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->meters->create(\n    request: $request\n);\n\nif ($response->meter !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\MeterCreate(\n    name: '<value>',\n    filter: new Components\\Filter(\n        conjunction: Components\\FilterConjunction::Or,\n        clauses: [],\n    ),\n    aggregation: new Components\\CountAggregation(),\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->meters->create(\n    request: $request\n);\n\nif ($response->meter !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -14036,7 +14078,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/types\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Meters.Quantities(ctx, operations.MetersQuantitiesRequest{\n        ID: \"<value>\",\n        StartTimestamp: types.MustTimeFromString(\"2023-09-17T00:45:34.608Z\"),\n        EndTimestamp: types.MustTimeFromString(\"2023-07-21T18:11:39.069Z\"),\n        Interval: components.TimeIntervalHour,\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.MeterQuantities != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/types\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Meters.Quantities(ctx, operations.MetersQuantitiesRequest{\n        ID: \"<value>\",\n        StartTimestamp: types.MustTimeFromString(\"2025-11-25T04:37:16.823Z\"),\n        EndTimestamp: types.MustTimeFromString(\"2025-11-26T17:06:00.727Z\"),\n        Interval: components.TimeIntervalDay,\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.MeterQuantities != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -14046,12 +14088,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.meters.quantities({\n    id: \"<value>\",\n    startTimestamp: new Date(\"2023-09-17T00:45:34.608Z\"),\n    endTimestamp: new Date(\"2023-07-21T18:11:39.069Z\"),\n    interval: \"hour\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.meters.quantities({\n    id: \"<value>\",\n    startTimestamp: new Date(\"2025-11-25T04:37:16.823Z\"),\n    endTimestamp: new Date(\"2025-11-26T17:06:00.727Z\"),\n    interval: \"day\",\n  });\n\n  // Handle the result\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\nuse Polar\\Utils;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\MetersQuantitiesRequest(\n    id: '<value>',\n    startTimestamp: Utils\\Utils::parseDateTime('2023-09-17T00:45:34.608Z'),\n    endTimestamp: Utils\\Utils::parseDateTime('2023-07-21T18:11:39.069Z'),\n    interval: Components\\TimeInterval::Hour,\n);\n\n$response = $sdk->meters->quantities(\n    request: $request\n);\n\nif ($response->meterQuantities !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\nuse Polar\\Utils;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\MetersQuantitiesRequest(\n    id: '<value>',\n    startTimestamp: Utils\\Utils::parseDateTime('2025-11-25T04:37:16.823Z'),\n    endTimestamp: Utils\\Utils::parseDateTime('2025-11-26T17:06:00.727Z'),\n    interval: Components\\TimeInterval::Day,\n);\n\n$response = $sdk->meters->quantities(\n    request: $request\n);\n\nif ($response->meterQuantities !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -14703,7 +14745,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Payments.List(ctx, operations.PaymentsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreatePaymentsListQueryParamOrganizationIDFilterArrayOfStr(\n            []string{\n                \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n            },\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResource != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Payments.List(ctx, operations.PaymentsListRequest{\n        OrganizationID: polargo.Pointer(operations.CreatePaymentsListQueryParamOrganizationIDFilterStr(\n            \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n        )),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResource != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "python",
@@ -14713,12 +14755,12 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.payments.list({\n    organizationId: [\n      \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    ],\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.payments.list({\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\PaymentsListRequest(\n    organizationId: [\n        '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    ],\n);\n\n$responses = $sdk->payments->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Operations\\PaymentsListRequest(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$responses = $sdk->payments->list(\n    request: $request\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
           }
         ]
       }
@@ -17944,6 +17986,17 @@
             "title": "Benefit Id",
             "description": "The ID of the benefit concerned by this grant."
           },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitGrantError"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The error information if the benefit grant failed with an unrecoverable error."
+          },
           "customer": {
             "$ref": "#/components/schemas/Customer"
           },
@@ -18019,6 +18072,29 @@
         },
         "type": "object",
         "title": "BenefitGrantDownloadablesProperties"
+      },
+      "BenefitGrantError": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "type",
+          "timestamp"
+        ],
+        "title": "BenefitGrantError"
       },
       "BenefitGrantGitHubRepositoryProperties": {
         "properties": {
@@ -18186,6 +18262,17 @@
             "format": "uuid4",
             "title": "Benefit Id",
             "description": "The ID of the benefit concerned by this grant."
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitGrantError"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The error information if the benefit grant failed with an unrecoverable error."
           },
           "customer": {
             "$ref": "#/components/schemas/Customer"

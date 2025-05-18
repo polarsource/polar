@@ -24,6 +24,7 @@ import {
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import type { MarkdownToJSX } from 'markdown-to-jsx'
 import Markdown from 'markdown-to-jsx'
+import { useCallback, useState } from 'react'
 import type { ControllerRenderProps } from 'react-hook-form'
 
 const markdownOptions: MarkdownToJSX.Options = {
@@ -214,10 +215,53 @@ const CustomFieldSelectInput: React.FC<CustomFieldSelectInputProps> = ({
   required,
   field,
 }) => {
+  const [isOtherSelected, setIsOtherSelected] = useState(
+    field.value === 'other',
+  )
+
+  const [otherValue, setOtherValue] = useState('')
+
+  const handleSelectChange = useCallback(
+    (value: string) => {
+      if (value === 'other') {
+        setIsOtherSelected(true)
+      } else {
+        setIsOtherSelected(false)
+        field.onChange(value)
+      }
+    },
+    [field],
+  )
+
+  const handleOtherInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value
+      setOtherValue(value)
+
+      if (value) {
+        field.onChange(value)
+      } else if (required) {
+        field.onChange('')
+      } else {
+        field.onChange('other')
+      }
+    },
+    [field, required],
+  )
+
+  const handleInputBlur = useCallback(() => {
+    if (!otherValue && required) {
+      field.onChange('')
+    }
+  }, [otherValue, field, required])
+
+  const displayValue = isOtherSelected ? 'other' : field.value
+
   return (
+  <div className="space-y-4">
     <Select
-      onValueChange={field.onChange}
-      defaultValue={field.value}
+      onValueChange={handleSelectChange}
+      value={displayValue || ''}
       required={required}
     >
       <SelectTrigger>
@@ -231,6 +275,18 @@ const CustomFieldSelectInput: React.FC<CustomFieldSelectInputProps> = ({
         ))}
       </SelectContent>
     </Select>
+
+    {isOtherSelected && (
+      <Input
+        type="text"
+        placeholder="Please specify"
+        value={otherValue}
+        onChange={handleOtherInputChange}
+        onBlur={handleInputBlur}
+        required={required}
+      />
+    )}
+  </div>
   )
 }
 

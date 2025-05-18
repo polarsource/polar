@@ -217,35 +217,35 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
       </PopoverTrigger>
       <PopoverContent className="w-[250px] p-0">
         <Command shouldFilter={false}>
-            <CommandInput
-              className="border-none focus:ring-transparent"
-              placeholder="Search product"
-              value={query}
-              onValueChange={setQuery}
-            />
-            <CommandList>
-              {queriedProducts?.items && queriedProducts.items.length ? (
-                <>
-                  <ProductsCommandGroup
-                    groupedProducts={groupedProducts}
-                    productPriceType="one_time"
-                    onSelectProduct={onSelectProduct}
-                    onSelectProductType={onSelectProductType}
-                    selectedProducts={selectedProducts || []}
-                  />
-                  <CommandSeparator />
-                  <ProductsCommandGroup
-                    groupedProducts={groupedProducts}
-                    productPriceType="recurring"
-                    onSelectProduct={onSelectProduct}
-                    onSelectProductType={onSelectProductType}
-                    selectedProducts={selectedProducts || []}
-                  />
-                </>
-              ) : (
-                <CommandEmpty>No product found</CommandEmpty>
-              )}
-            </CommandList>
+          <CommandInput
+            className="border-none focus:ring-transparent"
+            placeholder="Search product"
+            value={query}
+            onValueChange={setQuery}
+          />
+          <CommandList>
+            {queriedProducts?.items && queriedProducts.items.length ? (
+              <>
+                <ProductsCommandGroup
+                  groupedProducts={groupedProducts}
+                  productPriceType="one_time"
+                  onSelectProduct={onSelectProduct}
+                  onSelectProductType={onSelectProductType}
+                  selectedProducts={selectedProducts || []}
+                />
+                <CommandSeparator />
+                <ProductsCommandGroup
+                  groupedProducts={groupedProducts}
+                  productPriceType="recurring"
+                  onSelectProduct={onSelectProduct}
+                  onSelectProductType={onSelectProductType}
+                  selectedProducts={selectedProducts || []}
+                />
+              </>
+            ) : (
+              <CommandEmpty>No product found</CommandEmpty>
+            )}
+          </CommandList>
         </Command>
       </PopoverContent>
     </Popover>

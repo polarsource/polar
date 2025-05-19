@@ -591,6 +591,7 @@ class CheckoutService:
         embed_origin: str | None = None,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
         ip_address: str | None = None,
+        **query_metadata: str | None,
     ) -> Checkout:
         products: list[Product] = []
         for product in checkout_link.products:
@@ -651,6 +652,13 @@ class CheckoutService:
             success_url=checkout_link.success_url,
             user_metadata=checkout_link.user_metadata,
         )
+
+        for key, value in query_metadata.items():
+            if value is not None and key not in checkout.user_metadata:
+                checkout.user_metadata = {
+                    **(checkout.user_metadata or {}),
+                    key: value,
+                }
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             checkout.payment_processor_metadata = {

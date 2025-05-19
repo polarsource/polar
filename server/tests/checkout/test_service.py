@@ -1477,6 +1477,29 @@ class TestCheckoutLinkCreate:
 
         assert checkout.discount == discount_fixed_once
 
+    async def test_valid_with_metadata(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+    ) -> None:
+        price = product_one_time.prices[0]
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_one_time]
+        )
+
+        checkout = await checkout_service.checkout_link_create(
+            session,
+            checkout_link,
+            reference_id="test_reference_id",
+            utm_campaign="test_campaign",
+        )
+
+        assert checkout.user_metadata == {
+            "reference_id": "test_reference_id",
+            "utm_campaign": "test_campaign",
+        }
+
 
 @pytest.mark.asyncio
 class TestUpdate:

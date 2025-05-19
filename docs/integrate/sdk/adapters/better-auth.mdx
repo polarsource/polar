@@ -128,8 +128,10 @@ const auth = betterAuth({
     polar({
       client: polarClient,
       createCustomerOnSignUp: true,
-      getCustomerCreateParams: ({ user, session }, request) => ({
-        myCustomProperty: 123,
+      getCustomerCreateParams: ({ user }, request) => ({
+        metadata: {
+          myCustomProperty: 123,
+        },
       }),
       use: [
         // This is where you add Polar plugins
@@ -152,7 +154,7 @@ const auth = betterAuth({
 
 When `createCustomerOnSignUp` is enabled, a new Polar Customer is automatically created when a new User is added in the Better-Auth Database.
 
-All new customers are created with an associated `externalId`, which is the ID of your User in the Database. This allows us to skip any Polar to User mapping in your Database.
+All new customers are created with an associated `externalId`, which is the ID of your User in the Database. This allows us to skip any Polar <-> User mapping in your Database.
 
 ## Checkout Plugin
 
@@ -207,7 +209,7 @@ await authClient.checkout({
     // Any Polar Product ID can be passed here
     products: ["e651f46d-ac20-4f26-b769-ad088b123df2"],
     // Or, if you setup "products" in the Checkout Config, you can pass the slug
-    slug: 'my-pro-product',
+    slug: 'pro',
     // Reference ID will be saved as `referenceId` in the metadata of the checkout, order & subscription object
     referenceId: organizationId
 });
@@ -302,7 +304,7 @@ const { data: orders } = await authClient.customer.orders.list({
 This method lists the subscriptions associated with authenticated user/customer.
 
 ```typescript
-const { data: subscriptions } = await authClient.customer.orders.list({
+const { data: subscriptions } = await authClient.customer.subscriptions.list({
   query: {
     page: 1,
     limit: 10,
@@ -412,10 +414,10 @@ const auth = betterAuth({
             use: [
                 webhooks({
                     secret: process.env.POLAR_WEBHOOK_SECRET,
-                    onCustomerStateChanged: (payload) => {}, // Triggered when anything regarding a customer changes
-                    onOrderPaid: (payload) => {}, // Triggered when an order was paid (purchase, subscription renewal, etc.)
+                    onCustomerStateChanged: (payload) => // Triggered when anything regarding a customer changes
+                    onOrderPaid: (payload) => // Triggered when an order was paid (purchase, subscription renewal, etc.)
                     ...  // Over 25 granular webhook handlers
-                    onPayload: (payload) => {} // Catch-all for all events
+                    onPayload: (payload) => // Catch-all for all events
                 })
             ],
         })

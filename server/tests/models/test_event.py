@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 
 from polar.event.repository import EventRepository
 from polar.kit.utils import utc_now
@@ -9,7 +8,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_event
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 def repository(session: AsyncSession) -> EventRepository:
     return EventRepository.from_session(session)
 

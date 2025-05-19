@@ -8,7 +8,7 @@ from tagflow import attr, tag, text
 def modal(title: str, *, open: bool = False) -> Generator[None]:
     with tag.dialog(classes="modal modal-bottom sm:modal-middle"):
         if open:
-            attr("open")
+            attr("open", True)
         with tag.div(classes="modal-box"):
             with tag.form(method="dialog"):
                 with tag.button(

@@ -192,7 +192,7 @@ class ValidateSubAndPrompt:
         try:
             grant.sub_type = SubType(sub_type) if sub_type else SubType.user
         except ValueError as e:
-            raise InvalidRequestError('Invalid "sub_type"') from e
+            raise InvalidRequestError("Invalid sub_type") from e
 
         sub: str | None = grant.request.data.get("sub")
         user = grant.request.user
@@ -200,7 +200,7 @@ class ValidateSubAndPrompt:
         if grant.sub_type == SubType.user:
             grant.sub = user
             if sub is not None:
-                raise InvalidRequestError('Can\'t specify "sub" for "user" sub_type')
+                raise InvalidRequestError("Can't specify sub for user sub_type")
         elif (
             grant.sub_type == SubType.organization
             and sub is not None

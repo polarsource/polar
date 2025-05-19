@@ -3,10 +3,12 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
+from polar.checkout.repository import CheckoutRepository
 from polar.checkout.service import CHECKOUT_CLIENT_SECRET_PREFIX
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
-from polar.models import CheckoutLink, Product, ProductPrice, UserOrganization
+from polar.models import Checkout, CheckoutLink, Product, UserOrganization
+from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -197,23 +199,6 @@ class TestDeleteCheckoutLink:
 
 @pytest.mark.asyncio
 class TestRedirect:
-    def client_secret_from_redirect_url(self, url: str) -> str:
-        client_secret = url.split("/")[-1]
-        return client_secret
-
-    async def assert_checkout_price(
-        self, client: AsyncClient, link: CheckoutLink, price: ProductPrice
-    ) -> None:
-        response = await client.get(f"/v1/checkout-links/{link.client_secret}/redirect")
-        assert response.status_code == 307
-        client_secret = self.client_secret_from_redirect_url(
-            response.headers["location"]
-        )
-        assert CHECKOUT_CLIENT_SECRET_PREFIX in client_secret
-
-        response = await client.get(f"/v1/checkouts/client/{client_secret}")
-        assert response.status_code == 200
-
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.get("/v1/checkout-links/not-existing/redirect")
 
@@ -256,3 +241,31 @@ class TestRedirect:
 
         assert response.status_code == 307
         assert CHECKOUT_CLIENT_SECRET_PREFIX in response.headers["location"]
+
+    async def test_allowed_metadata(
+        self, session: AsyncSession, client: AsyncClient, checkout_link: CheckoutLink
+    ) -> None:
+        response = await client.get(
+            f"/v1/checkout-links/{checkout_link.client_secret}/redirect",
+            params={
+                "reference_id": "test_reference_id",
+                "utm_campaign": "test_campaign",
+                "disallowed_key": "test_value",
+            },
+        )
+
+        assert response.status_code == 307
+        assert CHECKOUT_CLIENT_SECRET_PREFIX in response.headers["location"]
+
+        checkout_repository = CheckoutRepository.from_session(session)
+        checkouts = await checkout_repository.get_all(
+            checkout_repository.get_base_statement().order_by(
+                Checkout.created_at.desc()
+            )
+        )
+        checkout = checkouts[0]
+        assert checkout.user_metadata == {
+            "key": "value",
+            "reference_id": "test_reference_id",
+            "utm_campaign": "test_campaign",
+        }

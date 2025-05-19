@@ -72,8 +72,6 @@ const deltaTimeIngestion = Ingestion({ accessToken: 'xxx' })
 
 export async function GET(request: Request) {
   const start = deltaTimeIngestion.client({
-    customerId: "<POLAR_CUSTOMER_ID>",
-    // or
     externalCustomerId: "<USER_ID_FROM_YOUR_DATABASE>",
   });
 

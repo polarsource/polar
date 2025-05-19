@@ -1,3 +1,4 @@
+import pytest
 import pytest_asyncio
 
 from polar.kit.db.postgres import AsyncSession
@@ -5,7 +6,7 @@ from polar.models import OAuth2Client, User
 from tests.fixtures.database import SaveFixture, save_fixture_factory
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 def save_fixture(session: AsyncSession) -> SaveFixture:
     return save_fixture_factory(session)
 

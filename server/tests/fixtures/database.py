@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator, Callable, Coroutine
 from pathlib import Path
 from uuid import UUID
 
+import pytest
 import pytest_asyncio
 from pydantic_core import Url
 from pytest_mock import MockerFixture
@@ -101,6 +102,6 @@ def save_fixture_factory(session: AsyncSession) -> SaveFixture:
     return _save_fixture
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 def save_fixture(session: AsyncSession) -> SaveFixture:
     return save_fixture_factory(session)

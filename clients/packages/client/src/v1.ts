@@ -3977,6 +3977,54 @@ export interface components {
             properties?: components["schemas"]["BenefitCustomProperties"] | null;
         };
         /**
+         * BenefitCycledEvent
+         * @description An event created by Polar when a benefit is cycled.
+         */
+        BenefitCycledEvent: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Timestamp
+             * Format: date-time
+             * @description The timestamp of the event.
+             */
+            timestamp: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the event.
+             */
+            organization_id: string;
+            /**
+             * Customer Id
+             * @description ID of the customer in your Polar organization associated with the event.
+             */
+            customer_id: string | null;
+            /** @description The customer associated with the event. */
+            customer: components["schemas"]["Customer"] | null;
+            /**
+             * External Customer Id
+             * @description ID of the customer in your system associated with the event.
+             */
+            external_customer_id: string | null;
+            /**
+             * Source
+             * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+             * @constant
+             */
+            source: "system";
+            /**
+             * @description The name of the event. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            name: "benefit.cycled";
+            metadata: components["schemas"]["BenefitGrantMetadata"];
+        };
+        /**
          * BenefitDiscord
          * @description A benefit of type `discord`.
          *
@@ -4737,6 +4785,14 @@ export interface components {
             /** Display Key */
             display_key?: string;
         };
+        /** BenefitGrantMetadata */
+        BenefitGrantMetadata: {
+            /** Benefit Id */
+            benefit_id: string;
+            /** Benefit Grant Id */
+            benefit_grant_id: string;
+            benefit_type: components["schemas"]["BenefitType"];
+        };
         /** BenefitGrantMeterCreditProperties */
         BenefitGrantMeterCreditProperties: {
             /** Last Credited Meter Id */
@@ -4816,6 +4872,54 @@ export interface components {
             benefit: components["schemas"]["Benefit"];
             /** Previous Properties */
             previous_properties?: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"] | null;
+        };
+        /**
+         * BenefitGrantedEvent
+         * @description An event created by Polar when a benefit is granted to a customer.
+         */
+        BenefitGrantedEvent: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Timestamp
+             * Format: date-time
+             * @description The timestamp of the event.
+             */
+            timestamp: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the event.
+             */
+            organization_id: string;
+            /**
+             * Customer Id
+             * @description ID of the customer in your Polar organization associated with the event.
+             */
+            customer_id: string | null;
+            /** @description The customer associated with the event. */
+            customer: components["schemas"]["Customer"] | null;
+            /**
+             * External Customer Id
+             * @description ID of the customer in your system associated with the event.
+             */
+            external_customer_id: string | null;
+            /**
+             * Source
+             * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+             * @constant
+             */
+            source: "system";
+            /**
+             * @description The name of the event. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            name: "benefit.granted";
+            metadata: components["schemas"]["BenefitGrantMetadata"];
         };
         /** BenefitLicenseKeyActivationCreateProperties */
         BenefitLicenseKeyActivationCreateProperties: {
@@ -5305,6 +5409,54 @@ export interface components {
             organization_id: string;
         };
         /**
+         * BenefitRevokedEvent
+         * @description An event created by Polar when a benefit is revoked from a customer.
+         */
+        BenefitRevokedEvent: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Timestamp
+             * Format: date-time
+             * @description The timestamp of the event.
+             */
+            timestamp: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the event.
+             */
+            organization_id: string;
+            /**
+             * Customer Id
+             * @description ID of the customer in your Polar organization associated with the event.
+             */
+            customer_id: string | null;
+            /** @description The customer associated with the event. */
+            customer: components["schemas"]["Customer"] | null;
+            /**
+             * External Customer Id
+             * @description ID of the customer in your system associated with the event.
+             */
+            external_customer_id: string | null;
+            /**
+             * Source
+             * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+             * @constant
+             */
+            source: "system";
+            /**
+             * @description The name of the event. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            name: "benefit.revoked";
+            metadata: components["schemas"]["BenefitGrantMetadata"];
+        };
+        /**
          * BenefitSortProperty
          * @enum {string}
          */
@@ -5314,6 +5466,54 @@ export interface components {
          * @enum {string}
          */
         BenefitType: "custom" | "discord" | "github_repository" | "downloadables" | "license_keys" | "meter_credit";
+        /**
+         * BenefitUpdatedEvent
+         * @description An event created by Polar when a benefit is updated.
+         */
+        BenefitUpdatedEvent: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Timestamp
+             * Format: date-time
+             * @description The timestamp of the event.
+             */
+            timestamp: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the event.
+             */
+            organization_id: string;
+            /**
+             * Customer Id
+             * @description ID of the customer in your Polar organization associated with the event.
+             */
+            customer_id: string | null;
+            /** @description The customer associated with the event. */
+            customer: components["schemas"]["Customer"] | null;
+            /**
+             * External Customer Id
+             * @description ID of the customer in your system associated with the event.
+             */
+            external_customer_id: string | null;
+            /**
+             * Source
+             * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+             * @constant
+             */
+            source: "system";
+            /**
+             * @description The name of the event. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            name: "benefit.updated";
+            metadata: components["schemas"]["BenefitGrantMetadata"];
+        };
         /** Body_email-update:verify_email_update */
         "Body_email-update_verify_email_update": {
             /** Token */
@@ -10620,50 +10820,7 @@ export interface components {
             /** Return To */
             return_to?: string | null;
         };
-        /** Event */
-        Event: {
-            /** Metadata */
-            metadata: {
-                [key: string]: string | number | boolean;
-            };
-            /**
-             * Id
-             * Format: uuid4
-             * @description The ID of the object.
-             */
-            id: string;
-            /**
-             * Timestamp
-             * Format: date-time
-             * @description The timestamp of the event.
-             */
-            timestamp: string;
-            /**
-             * Name
-             * @description The name of the event.
-             */
-            name: string;
-            /** @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API. */
-            source: components["schemas"]["EventSource"];
-            /**
-             * Organization Id
-             * Format: uuid4
-             * @description The ID of the organization owning the event.
-             */
-            organization_id: string;
-            /**
-             * Customer Id
-             * @description ID of the customer in your Polar organization associated with the event.
-             */
-            customer_id: string | null;
-            /** @description The customer associated with the event. */
-            customer: components["schemas"]["Customer"] | null;
-            /**
-             * External Customer Id
-             * @description ID of the customer in your system associated with the event.
-             */
-            external_customer_id: string | null;
-        };
+        Event: components["schemas"]["SystemEvent"] | components["schemas"]["UserEvent"];
         /** EventCreateCustomer */
         EventCreateCustomer: {
             /**
@@ -12064,6 +12221,63 @@ export interface components {
              */
             organization_id?: string | null;
         };
+        /**
+         * MeterCreditEvent
+         * @description An event created by Polar when credits are added to a customer meter.
+         */
+        MeterCreditEvent: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Timestamp
+             * Format: date-time
+             * @description The timestamp of the event.
+             */
+            timestamp: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the event.
+             */
+            organization_id: string;
+            /**
+             * Customer Id
+             * @description ID of the customer in your Polar organization associated with the event.
+             */
+            customer_id: string | null;
+            /** @description The customer associated with the event. */
+            customer: components["schemas"]["Customer"] | null;
+            /**
+             * External Customer Id
+             * @description ID of the customer in your system associated with the event.
+             */
+            external_customer_id: string | null;
+            /**
+             * Source
+             * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+             * @constant
+             */
+            source: "system";
+            /**
+             * @description The name of the event. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            name: "meter.credited";
+            metadata: components["schemas"]["MeterCreditedMetadata"];
+        };
+        /** MeterCreditedMetadata */
+        MeterCreditedMetadata: {
+            /** Meter Id */
+            meter_id: string;
+            /** Units */
+            units: number;
+            /** Rollover */
+            rollover: boolean;
+        };
         /** MeterQuantities */
         MeterQuantities: {
             /** Quantities */
@@ -12087,6 +12301,59 @@ export interface components {
              * @description The quantity for the current period.
              */
             quantity: number;
+        };
+        /**
+         * MeterResetEvent
+         * @description An event created by Polar when a customer meter is reset.
+         */
+        MeterResetEvent: {
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Timestamp
+             * Format: date-time
+             * @description The timestamp of the event.
+             */
+            timestamp: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the event.
+             */
+            organization_id: string;
+            /**
+             * Customer Id
+             * @description ID of the customer in your Polar organization associated with the event.
+             */
+            customer_id: string | null;
+            /** @description The customer associated with the event. */
+            customer: components["schemas"]["Customer"] | null;
+            /**
+             * External Customer Id
+             * @description ID of the customer in your system associated with the event.
+             */
+            external_customer_id: string | null;
+            /**
+             * Source
+             * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+             * @constant
+             */
+            source: "system";
+            /**
+             * @description The name of the event. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            name: "meter.reset";
+            metadata: components["schemas"]["MeterResetMetadata"];
+        };
+        /** MeterResetMetadata */
+        MeterResetMetadata: {
+            /** Meter Id */
+            meter_id: string;
         };
         /**
          * MeterSortProperty
@@ -14908,6 +15175,7 @@ export interface components {
             /** Github Username */
             github_username?: string | null;
         };
+        SystemEvent: components["schemas"]["MeterCreditEvent"] | components["schemas"]["MeterResetEvent"] | components["schemas"]["BenefitGrantedEvent"] | components["schemas"]["BenefitCycledEvent"] | components["schemas"]["BenefitUpdatedEvent"] | components["schemas"]["BenefitRevokedEvent"];
         /**
          * TaxIDFormat
          * @description List of supported tax ID formats.
@@ -15256,6 +15524,56 @@ export interface components {
             avatar_url: string | null;
             /** Account Id */
             account_id: string | null;
+        };
+        /**
+         * UserEvent
+         * @description An event you created through the ingestion API.
+         */
+        UserEvent: {
+            /** Metadata */
+            metadata: {
+                [key: string]: string | number | boolean;
+            };
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
+             * Timestamp
+             * Format: date-time
+             * @description The timestamp of the event.
+             */
+            timestamp: string;
+            /**
+             * Organization Id
+             * Format: uuid4
+             * @description The ID of the organization owning the event.
+             */
+            organization_id: string;
+            /**
+             * Customer Id
+             * @description ID of the customer in your Polar organization associated with the event.
+             */
+            customer_id: string | null;
+            /** @description The customer associated with the event. */
+            customer: components["schemas"]["Customer"] | null;
+            /**
+             * External Customer Id
+             * @description ID of the customer in your system associated with the event.
+             */
+            external_customer_id: string | null;
+            /**
+             * Name
+             * @description The name of the event.
+             */
+            name: string;
+            /**
+             * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            source: "user";
         };
         /** UserIdentityVerification */
         UserIdentityVerification: {
@@ -23887,24 +24205,28 @@ export interface operations {
 type ReadonlyArray<T> = [
     Exclude<T, undefined>
 ] extends [
-    any[]
+    unknown[]
 ] ? Readonly<Exclude<T, undefined>> : Readonly<Exclude<T, undefined>[]>;
 export const accountTypeValues: ReadonlyArray<components["schemas"]["AccountType"]> = ["stripe", "open_collective"];
 export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseOrganization"]["sub_type"]> = ["organization"];
 export const authorizeResponseUserSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseUser"]["sub_type"]> = ["user"];
 export const availableScopeValues: ReadonlyArray<components["schemas"]["AvailableScope"]> = ["openid", "profile", "email", "user:read", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notification_recipients:read", "notification_recipients:write"];
 export const benefitCustomCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitCustomCreate"]["type"]> = ["custom"];
+export const benefitCycledEventNameValues: ReadonlyArray<components["schemas"]["BenefitCycledEvent"]["name"]> = ["benefit.cycled"];
 export const benefitDiscordCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitDiscordCreate"]["type"]> = ["discord"];
 export const benefitDownloadablesCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitDownloadablesCreate"]["type"]> = ["downloadables"];
 export const benefitGitHubRepositoryCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitGitHubRepositoryCreate"]["type"]> = ["github_repository"];
 export const benefitGitHubRepositoryCreatePropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGitHubRepositoryCreateProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
 export const benefitGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGitHubRepositoryProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
 export const benefitGrantGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<components["schemas"]["BenefitGrantGitHubRepositoryProperties"]["permission"]> = ["pull", "triage", "push", "maintain", "admin"];
+export const benefitGrantedEventNameValues: ReadonlyArray<components["schemas"]["BenefitGrantedEvent"]["name"]> = ["benefit.granted"];
 export const benefitLicenseKeyExpirationPropertiesTimeframeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeyExpirationProperties"]["timeframe"]> = ["year", "month", "day"];
 export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitLicenseKeysCreate"]["type"]> = ["license_keys"];
 export const benefitMeterCreditCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitMeterCreditCreate"]["type"]> = ["meter_credit"];
+export const benefitRevokedEventNameValues: ReadonlyArray<components["schemas"]["BenefitRevokedEvent"]["name"]> = ["benefit.revoked"];
 export const benefitSortPropertyValues: ReadonlyArray<components["schemas"]["BenefitSortProperty"]> = ["created_at", "-created_at", "description", "-description"];
 export const benefitTypeValues: ReadonlyArray<components["schemas"]["BenefitType"]> = ["custom", "discord", "github_repository", "downloadables", "license_keys", "meter_credit"];
+export const benefitUpdatedEventNameValues: ReadonlyArray<components["schemas"]["BenefitUpdatedEvent"]["name"]> = ["benefit.updated"];
 export const body_oauth2_consentActionValues: ReadonlyArray<components["schemas"]["Body_oauth2_consent"]["action"]> = ["allow", "deny"];
 export const checkoutLinkSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutLinkSortProperty"]> = ["created_at", "-created_at", "label", "-label", "success_url", "-success_url", "allow_discount_codes", "-allow_discount_codes"];
 export const checkoutSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutSortProperty"]> = ["created_at", "-created_at", "expires_at", "-expires_at", "status", "-status"];
@@ -23963,6 +24285,8 @@ export const maintainerAccountUnderReviewNotificationTypeValues: ReadonlyArray<c
 export const maintainerCreateAccountNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerCreateAccountNotification"]["type"]> = ["MaintainerCreateAccountNotification"];
 export const maintainerNewPaidSubscriptionNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerNewPaidSubscriptionNotification"]["type"]> = ["MaintainerNewPaidSubscriptionNotification"];
 export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerNewProductSaleNotification"]["type"]> = ["MaintainerNewProductSaleNotification"];
+export const meterCreditEventNameValues: ReadonlyArray<components["schemas"]["MeterCreditEvent"]["name"]> = ["meter.credited"];
+export const meterResetEventNameValues: ReadonlyArray<components["schemas"]["MeterResetEvent"]["name"]> = ["meter.reset"];
 export const meterSortPropertyValues: ReadonlyArray<components["schemas"]["MeterSortProperty"]> = ["created_at", "-created_at", "name", "-name"];
 export const metricTypeValues: ReadonlyArray<components["schemas"]["MetricType"]> = ["scalar", "currency", "percentage"];
 export const notificationRecipientPlatformValues: ReadonlyArray<components["schemas"]["NotificationRecipientPlatform"]> = ["ios", "android"];
@@ -24012,6 +24336,7 @@ export const taxIDFormatValues: ReadonlyArray<components["schemas"]["TaxIDFormat
 export const timeIntervalValues: ReadonlyArray<components["schemas"]["TimeInterval"]> = ["year", "month", "week", "day", "hour"];
 export const transactionSortPropertyValues: ReadonlyArray<components["schemas"]["TransactionSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
 export const transactionTypeValues: ReadonlyArray<components["schemas"]["TransactionType"]> = ["payment", "processor_fee", "refund", "refund_reversal", "dispute", "dispute_reversal", "balance", "payout"];
+export const userEventSourceValues: ReadonlyArray<components["schemas"]["UserEvent"]["source"]> = ["user"];
 export const userSignupAttributionIntentValues: ReadonlyArray<components["schemas"]["UserSignupAttribution"]["intent"]> = ["creator", "pledge", "purchase", "subscription", "newsletter_subscription"];
 export const webhookEventTypeValues: ReadonlyArray<components["schemas"]["WebhookEventType"]> = ["checkout.created", "checkout.updated", "customer.created", "customer.updated", "customer.deleted", "customer.state_changed", "order.created", "order.updated", "order.paid", "order.refunded", "subscription.created", "subscription.updated", "subscription.active", "subscription.canceled", "subscription.uncanceled", "subscription.revoked", "refund.created", "refund.updated", "product.created", "product.updated", "benefit.created", "benefit.updated", "benefit_grant.created", "benefit_grant.cycled", "benefit_grant.updated", "benefit_grant.revoked", "organization.updated"];
 export const webhookFormatValues: ReadonlyArray<components["schemas"]["WebhookFormat"]> = ["raw", "discord", "slack"];

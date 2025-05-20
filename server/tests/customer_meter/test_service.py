@@ -8,6 +8,7 @@ import pytest_asyncio
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
+from polar.locker import Locker
 from polar.meter.aggregation import (
     AggregationFunction,
     PropertyAggregation,
@@ -122,10 +123,10 @@ async def events(
 @pytest.mark.asyncio
 class TestUpdateCustomerMeter:
     async def test_no_matching_event_not_existing_customer_meter(
-        self, session: AsyncSession, customer: Customer, meter: Meter
+        self, session: AsyncSession, locker: Locker, customer: Customer, meter: Meter
     ) -> None:
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, locker, customer, meter
         )
 
         assert customer_meter is None
@@ -135,6 +136,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        locker: Locker,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -150,7 +152,9 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+        ) = await customer_meter_service.update_customer_meter(
+            session, locker, customer, meter
+        )
 
         assert updated_customer_meter is not None
         assert updated_customer_meter == customer_meter
@@ -163,12 +167,13 @@ class TestUpdateCustomerMeter:
     async def test_new_customer_meter(
         self,
         session: AsyncSession,
+        locker: Locker,
         customer: Customer,
         events: list[Event],
         meter: Meter,
     ) -> None:
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, locker, customer, meter
         )
 
         assert customer_meter is not None
@@ -185,6 +190,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        locker: Locker,
         customer: Customer,
         events: list[Event],
         meter: Meter,
@@ -202,7 +208,9 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+        ) = await customer_meter_service.update_customer_meter(
+            session, locker, customer, meter
+        )
 
         assert updated_customer_meter is not None
         assert customer_meter.consumed_units == Decimal(20)
@@ -216,6 +224,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        locker: Locker,
         customer: Customer,
         events: list[Event],
         meter: Meter,
@@ -233,7 +242,9 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+        ) = await customer_meter_service.update_customer_meter(
+            session, locker, customer, meter
+        )
 
         assert updated_customer_meter is not None
         assert customer_meter.consumed_units == Decimal(20)
@@ -247,6 +258,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        locker: Locker,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -282,7 +294,9 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+        ) = await customer_meter_service.update_customer_meter(
+            session, locker, customer, meter
+        )
 
         assert updated_customer_meter is not None
         assert customer_meter.consumed_units == Decimal(0)

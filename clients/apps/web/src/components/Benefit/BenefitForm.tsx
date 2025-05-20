@@ -140,7 +140,7 @@ export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
                 <TextArea
                   {...field}
                   value={field.value || ''}
-                  placeholder="Write a secret note here. Like your private email address for premium support, Cal.com link to book consultation, etc."
+                  placeholder="Write a secret note here. Like your private email address for premium support or link to premium content."
                 />
               </FormControl>
               <FormMessage />

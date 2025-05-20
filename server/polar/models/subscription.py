@@ -252,7 +252,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         )
 
     def can_cancel(self, immediately: bool = False) -> bool:
-        if not SubscriptionStatus.is_active(self.status):
+        if not SubscriptionStatus.is_billable(self.status):
             return False
 
         if self.ended_at:

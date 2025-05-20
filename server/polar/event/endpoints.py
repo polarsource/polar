@@ -18,7 +18,13 @@ from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import Event as EventSchema
-from .schemas import EventID, EventName, EventsIngest, EventsIngestResponse
+from .schemas import (
+    EventID,
+    EventName,
+    EventsIngest,
+    EventsIngestResponse,
+    EventTypeAdapter,
+)
 from .service import event as event_service
 
 router = APIRouter(
@@ -104,7 +110,9 @@ async def list(
     )
 
     return ListResource.from_paginated_results(
-        [EventSchema.model_validate(result) for result in results], count, pagination
+        [EventTypeAdapter.validate_python(result) for result in results],
+        count,
+        pagination,
     )
 
 

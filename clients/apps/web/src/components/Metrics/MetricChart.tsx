@@ -1,5 +1,5 @@
 import { ParsedMetricPeriod } from '@/hooks/queries'
-import { getFormattedMetricValue, getMetricFormatter } from '@/utils/metrics'
+import { getFormattedMetricValue, getTickFormatter } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import {
   CartesianGrid,
@@ -132,7 +132,7 @@ const MetricChart: React.FC<MetricChartProps> = ({
           tickLine={false}
           axisLine={false}
           tickMargin={8}
-          tickFormatter={getMetricFormatter(metric)}
+          tickFormatter={getTickFormatter(metric)}
         />
         <ChartTooltip
           cursor={false}

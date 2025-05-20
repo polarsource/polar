@@ -1,6 +1,7 @@
 import { AccessTimeOutlined, CancelOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Pill from '@polar-sh/ui/components/atoms/Pill'
+import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { subscriptionStatusDisplayNames } from './utils'
 
@@ -52,35 +53,29 @@ export const SubscriptionStatus = ({
 }: {
   subscription: schemas['Subscription']
 }) => {
-  switch (subscription.status) {
-    case 'active':
-      if (!subscription.ends_at) {
-        return <StatusLabel color="border-emerald-500">Active</StatusLabel>
-      }
-      return (
-        <StatusLabel
-          color="border-yellow-500"
-          dt={subscription.ends_at}
-          icon={<AccessTimeOutlined fontSize="inherit" />}
-        >
-          Ending
-        </StatusLabel>
-      )
-    case 'canceled':
-      return (
-        <StatusLabel
-          color="border-red-500"
-          dt={subscription.ended_at}
-          icon={<CancelOutlined fontSize="inherit" />}
-        >
-          Canceled
-        </StatusLabel>
-      )
-    default:
-      return (
-        <StatusLabel color="border-red-500">
-          {subscriptionStatusDisplayNames[subscription.status]}
-        </StatusLabel>
-      )
-  }
+  const { status, ends_at } = subscription
+  const isEnding = useMemo(() => ends_at !== null, [ends_at])
+
+  const color = useMemo(() => {
+    if (status === 'active') {
+      return isEnding ? 'border-yellow-500' : 'border-emerald-500'
+    }
+    return 'border-red-500'
+  }, [status, isEnding])
+
+  const icon = useMemo(() => {
+    if (!isEnding) {
+      return null
+    }
+    if (status === 'canceled') {
+      return <CancelOutlined fontSize="inherit" />
+    }
+    return <AccessTimeOutlined fontSize="inherit" />
+  }, [isEnding, status])
+
+  return (
+    <StatusLabel color={color} dt={ends_at} icon={icon}>
+      {subscriptionStatusDisplayNames[subscription.status]}
+    </StatusLabel>
+  )
 }

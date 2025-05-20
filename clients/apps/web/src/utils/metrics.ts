@@ -7,35 +7,47 @@ export const toISODate = (date: Date) => format(date, 'yyyy-MM-dd')
 export const fromISODate = (date: string) =>
   parse(date, 'yyyy-MM-dd', new Date('1970-01-01T12:00:00Z'))
 
-const scalarFormatter = Intl.NumberFormat('en-US', {
+const scalarTickFormatter = Intl.NumberFormat('en-US', {
   notation: 'compact',
   maximumFractionDigits: 2,
 })
 
-const percentageFormatter = Intl.NumberFormat('en-US', {
+const percentageTickFormatter = Intl.NumberFormat('en-US', {
   style: 'percent',
   maximumFractionDigits: 2,
 })
 
-export const getMetricFormatter = (
+export const getTickFormatter = (
   metric: schemas['Metric'],
 ): ((value: number) => string) => {
   switch (metric.type) {
     case 'scalar':
-      return scalarFormatter.format
+      return scalarTickFormatter.format
     case 'currency':
       return (value: number) =>
-        formatCurrencyAndAmount(value, 'USD', 0, 'compact')
+        formatCurrencyAndAmount(value, 'usd', 0, 'compact')
     case 'percentage':
-      return percentageFormatter.format
+      return percentageTickFormatter.format
   }
 }
+
+const scalarFormatter = Intl.NumberFormat('en-US', {})
+const percentageFormatter = Intl.NumberFormat('en-US', {
+  style: 'percent',
+})
 
 export const getFormattedMetricValue = (
   metric: schemas['Metric'],
   value: number,
 ): string => {
-  return getMetricFormatter(metric)(value)
+  switch (metric.type) {
+    case 'scalar':
+      return scalarFormatter.format(value)
+    case 'currency':
+      return formatCurrencyAndAmount(value, 'usd')
+    case 'percentage':
+      return percentageFormatter.format(value)
+  }
 }
 
 export const getTimestampFormatter = (

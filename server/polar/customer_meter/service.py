@@ -12,6 +12,7 @@ from polar.event.system import is_meter_credit_event
 from polar.kit.math import non_negative_running_sum
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
+from polar.locker import Locker
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Customer, CustomerMeter, Event, Meter
@@ -78,14 +79,16 @@ class CustomerMeterService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def update_customer(self, session: AsyncSession, customer: Customer) -> None:
+    async def update_customer(
+        self, session: AsyncSession, locker: Locker, customer: Customer
+    ) -> None:
         repository = MeterRepository.from_session(session)
         statement = repository.get_base_statement().order_by(Meter.created_at.asc())
 
         updated = False
         async for meter in repository.stream(statement):
             _, meter_updated = await self.update_customer_meter(
-                session, customer, meter
+                session, locker, customer, meter
             )
             updated = updated or meter_updated
 
@@ -95,42 +98,47 @@ class CustomerMeterService:
             )
 
     async def update_customer_meter(
-        self, session: AsyncSession, customer: Customer, meter: Meter
+        self, session: AsyncSession, locker: Locker, customer: Customer, meter: Meter
     ) -> tuple[CustomerMeter | None, bool]:
-        repository = CustomerMeterRepository.from_session(session)
-        customer_meter = await repository.get_by_customer_and_meter(
-            customer.id, meter.id
-        )
-        events = await self._get_current_window_events(session, customer, meter)
-
-        if not events:
-            return customer_meter, False
-
-        if customer_meter is None:
-            customer_meter = await repository.create(
-                CustomerMeter(customer=customer, meter=meter)
+        async with locker.lock(
+            f"customer_meter:{customer.id}:{meter.id}",
+            timeout=5.0,
+            blocking_timeout=5.0,
+        ):
+            repository = CustomerMeterRepository.from_session(session)
+            customer_meter = await repository.get_by_customer_and_meter(
+                customer.id, meter.id
             )
+            events = await self._get_current_window_events(session, customer, meter)
 
-        if customer_meter.last_balanced_event_id == events[-1].id:
-            return customer_meter, False
+            if not events:
+                return customer_meter, False
 
-        usage_events = [
-            event.id for event in events if event.source == EventSource.user
-        ]
-        usage_units = await meter_service.get_quantity(session, meter, usage_events)
-        customer_meter.consumed_units = Decimal(usage_units)
+            if customer_meter is None:
+                customer_meter = await repository.create(
+                    CustomerMeter(customer=customer, meter=meter)
+                )
 
-        credit_events = [event for event in events if is_meter_credit_event(event)]
-        credited_units = non_negative_running_sum(
-            event.user_metadata["units"] for event in credit_events
-        )
-        customer_meter.credited_units = credited_units
-        customer_meter.balance = (
-            customer_meter.credited_units - customer_meter.consumed_units
-        )
-        customer_meter.last_balanced_event = events[-1]
+            if customer_meter.last_balanced_event_id == events[-1].id:
+                return customer_meter, False
 
-        return await repository.update(customer_meter), True
+            usage_events = [
+                event.id for event in events if event.source == EventSource.user
+            ]
+            usage_units = await meter_service.get_quantity(session, meter, usage_events)
+            customer_meter.consumed_units = Decimal(usage_units)
+
+            credit_events = [event for event in events if is_meter_credit_event(event)]
+            credited_units = non_negative_running_sum(
+                event.user_metadata["units"] for event in credit_events
+            )
+            customer_meter.credited_units = credited_units
+            customer_meter.balance = (
+                customer_meter.credited_units - customer_meter.consumed_units
+            )
+            customer_meter.last_balanced_event = events[-1]
+
+            return await repository.update(customer_meter), True
 
     async def get_rollover_units(
         self, session: AsyncSession, customer: Customer, meter: Meter

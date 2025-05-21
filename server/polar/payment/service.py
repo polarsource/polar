@@ -210,10 +210,23 @@ class PaymentService:
             )
         payment.checkout = checkout
 
-        if checkout is None:
+        order: Order | None = None
+        order_repository = OrderRepository.from_session(session)
+        if payment_intent.invoice is not None:
+            invoice_id = get_expandable_id(payment_intent.invoice)
+            order = await order_repository.get_by_stripe_invoice_id(
+                invoice_id,
+                options=(joinedload(Order.customer).joinedload(Customer.organization),),
+            )
+        payment.order = order
+
+        if checkout is None and order is None:
             raise UnlinkedPaymentError(payment_intent.id)
 
-        payment.organization = checkout.organization
+        if checkout is not None:
+            payment.organization = checkout.organization
+        elif order is not None:
+            payment.organization = order.organization
 
         repository = PaymentRepository.from_session(session)
         return await repository.create(payment)

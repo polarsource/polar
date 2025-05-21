@@ -5758,6 +5758,11 @@ export interface components {
             /** Customer Id */
             customer_id: string | null;
             /**
+             * Is Business Customer
+             * @description Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
+             */
+            is_business_customer: boolean;
+            /**
              * Customer Name
              * @description Name of the customer.
              */
@@ -5769,6 +5774,8 @@ export interface components {
             customer_email: string | null;
             /** Customer Ip Address */
             customer_ip_address: string | null;
+            /** Customer Billing Name */
+            customer_billing_name: string | null;
             customer_billing_address: components["schemas"]["Address"] | null;
             /** Customer Tax Id */
             customer_tax_id: string | null;
@@ -5835,10 +5842,14 @@ export interface components {
             product_price_id?: string | null;
             /** Amount */
             amount?: number | null;
+            /** Is Business Customer */
+            is_business_customer?: boolean | null;
             /** Customer Name */
             customer_name?: string | null;
             /** Customer Email */
             customer_email?: string | null;
+            /** Customer Billing Name */
+            customer_billing_name?: string | null;
             customer_billing_address?: components["schemas"]["Address"] | null;
             /** Customer Tax Id */
             customer_tax_id?: string | null;
@@ -6421,6 +6432,12 @@ export interface components {
              */
             customer_id?: string | null;
             /**
+             * Is Business Customer
+             * @description Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
+             * @default false
+             */
+            is_business_customer: boolean;
+            /**
              * Customer External Id
              * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
              */
@@ -6431,6 +6448,8 @@ export interface components {
             customer_email?: string | null;
             /** Customer Ip Address */
             customer_ip_address?: string | null;
+            /** Customer Billing Name */
+            customer_billing_name?: string | null;
             customer_billing_address?: components["schemas"]["Address"] | null;
             /** Customer Tax Id */
             customer_tax_id?: string | null;
@@ -6598,6 +6617,12 @@ export interface components {
              */
             customer_id?: string | null;
             /**
+             * Is Business Customer
+             * @description Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
+             * @default false
+             */
+            is_business_customer: boolean;
+            /**
              * Customer External Id
              * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
              */
@@ -6608,6 +6633,8 @@ export interface components {
             customer_email?: string | null;
             /** Customer Ip Address */
             customer_ip_address?: string | null;
+            /** Customer Billing Name */
+            customer_billing_name?: string | null;
             customer_billing_address?: components["schemas"]["Address"] | null;
             /** Customer Tax Id */
             customer_tax_id?: string | null;
@@ -6708,6 +6735,12 @@ export interface components {
              */
             customer_id?: string | null;
             /**
+             * Is Business Customer
+             * @description Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
+             * @default false
+             */
+            is_business_customer: boolean;
+            /**
              * Customer External Id
              * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
              */
@@ -6718,6 +6751,8 @@ export interface components {
             customer_email?: string | null;
             /** Customer Ip Address */
             customer_ip_address?: string | null;
+            /** Customer Billing Name */
+            customer_billing_name?: string | null;
             customer_billing_address?: components["schemas"]["Address"] | null;
             /** Customer Tax Id */
             customer_tax_id?: string | null;
@@ -6903,6 +6938,11 @@ export interface components {
             /** Customer Id */
             customer_id: string | null;
             /**
+             * Is Business Customer
+             * @description Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
+             */
+            is_business_customer: boolean;
+            /**
              * Customer Name
              * @description Name of the customer.
              */
@@ -6914,6 +6954,8 @@ export interface components {
             customer_email: string | null;
             /** Customer Ip Address */
             customer_ip_address: string | null;
+            /** Customer Billing Name */
+            customer_billing_name: string | null;
             customer_billing_address: components["schemas"]["Address"] | null;
             /** Customer Tax Id */
             customer_tax_id: string | null;
@@ -7091,6 +7133,11 @@ export interface components {
             /** Customer Id */
             customer_id: string | null;
             /**
+             * Is Business Customer
+             * @description Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
+             */
+            is_business_customer: boolean;
+            /**
              * Customer Name
              * @description Name of the customer.
              */
@@ -7102,6 +7149,8 @@ export interface components {
             customer_email: string | null;
             /** Customer Ip Address */
             customer_ip_address: string | null;
+            /** Customer Billing Name */
+            customer_billing_name: string | null;
             customer_billing_address: components["schemas"]["Address"] | null;
             /** Customer Tax Id */
             customer_tax_id: string | null;
@@ -7166,10 +7215,14 @@ export interface components {
             product_price_id?: string | null;
             /** Amount */
             amount?: number | null;
+            /** Is Business Customer */
+            is_business_customer?: boolean | null;
             /** Customer Name */
             customer_name?: string | null;
             /** Customer Email */
             customer_email?: string | null;
+            /** Customer Billing Name */
+            customer_billing_name?: string | null;
             customer_billing_address?: components["schemas"]["Address"] | null;
             /** Customer Tax Id */
             customer_tax_id?: string | null;
@@ -7260,10 +7313,14 @@ export interface components {
             product_price_id?: string | null;
             /** Amount */
             amount?: number | null;
+            /** Is Business Customer */
+            is_business_customer?: boolean | null;
             /** Customer Name */
             customer_name?: string | null;
             /** Customer Email */
             customer_email?: string | null;
+            /** Customer Billing Name */
+            customer_billing_name?: string | null;
             customer_billing_address?: components["schemas"]["Address"] | null;
             /** Customer Tax Id */
             customer_tax_id?: string | null;

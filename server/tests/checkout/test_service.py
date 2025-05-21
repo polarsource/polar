@@ -2447,6 +2447,58 @@ class TestConfirm:
             )
 
     @pytest.mark.parametrize(
+        "payload",
+        [
+            pytest.param(
+                {
+                    "customer_billing_name": "Example Inc",
+                    "customer_billing_address": {"country": "US"},
+                },
+                id="incomplete address",
+            ),
+            pytest.param(
+                {
+                    "customer_billing_address": {
+                        "line1": "123 Main St",
+                        "postal_code": "12345",
+                        "city": "New York",
+                        "state": "US-NY",
+                        "country": "US",
+                    },
+                },
+                id="missing billing name",
+            ),
+        ],
+    )
+    async def test_business_customer_missing_fields(
+        self,
+        payload: dict[str, Any],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        checkout_one_time_fixed.is_business_customer = True
+        await save_fixture(checkout_one_time_fixed)
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.confirm(
+                session,
+                locker,
+                auth_subject,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        **payload,
+                    }
+                ),
+            )
+
+    @pytest.mark.parametrize(
         "customer_billing_address,expected_tax_metadata",
         [
             ({"country": "FR"}, {"tax_country": "FR"}),
@@ -2862,6 +2914,49 @@ class TestConfirm:
             stripe_service_mock.create_payment_intent.call_args[1]["amount"]
             == checkout.total_amount
         )
+
+    async def test_valid_stripe_business_customer(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            locker,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "is_business_customer": True,
+                    "customer_billing_name": "Example Inc",
+                    "customer_billing_address": {
+                        "line1": "123 Main St",
+                        "postal_code": "12345",
+                        "city": "New York",
+                        "state": "US-NY",
+                        "country": "US",
+                    },
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer is not None
+        assert checkout.customer.billing_name == "Example Inc"
 
 
 def build_stripe_payment_intent(

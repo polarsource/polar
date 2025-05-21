@@ -95,6 +95,9 @@ class Customer(MetadataMixin, RecordModel):
     )
 
     name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    _billing_name: Mapped[str | None] = mapped_column(
+        "billing_name", String, nullable=True, default=None
+    )
     billing_address: Mapped[Address | None] = mapped_column(
         AddressType, nullable=True, default=None
     )
@@ -196,3 +199,11 @@ class Customer(MetadataMixin, RecordModel):
     @active_meters.setter
     def active_meters(self, value: Sequence["CustomerMeter"]) -> None:
         self._active_meters = value
+
+    @property
+    def billing_name(self) -> str | None:
+        return self._billing_name or self.name
+
+    @billing_name.setter
+    def billing_name(self, value: str | None) -> None:
+        self._billing_name = value

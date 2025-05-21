@@ -1,5 +1,4 @@
 import { useDeleteBenefit } from '@/hooks/queries'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import {
   AddOutlined,
@@ -17,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useSearchParams } from 'next/navigation'
-import { useCallback, useContext, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CreateBenefitModalContent from '../Benefit/CreateBenefitModalContent'
 import UpdateBenefitModalContent from '../Benefit/UpdateBenefitModalContent'
@@ -205,6 +204,7 @@ const ProductBenefitsForm = ({
           .map((type) => (
             <BenefitsContainer
               key={type}
+              organization={organization}
               title={benefitsDisplayNames[type]}
               type={type}
               handleCheckedChange={handleCheckedChange}
@@ -239,6 +239,7 @@ const ProductBenefitsForm = ({
 }
 
 interface BenefitsContainerProps {
+  organization: schemas['Organization']
   title: string
   benefits: schemas['Benefit'][]
   enabledBenefits: schemas['Benefit'][]
@@ -250,6 +251,7 @@ interface BenefitsContainerProps {
 }
 
 const BenefitsContainer = ({
+  organization,
   title,
   benefits,
   enabledBenefits,
@@ -261,8 +263,6 @@ const BenefitsContainer = ({
     return enabledBenefits.some((b) => b.id === benefit.id)
   })
   const [open, setOpen] = useState(hasEnabledBenefits)
-
-  const { organization } = useContext(OrganizationContext)
 
   if (benefits.length === 0 && !onCreateNewBenefit) {
     return null

@@ -38,11 +38,9 @@ export default async function Page({
       await revalidate(`storefront:${organization.slug}`)
       const currentUser = await getAuthenticatedUser()
       await revalidate(`users:${currentUser?.id}:organizations`)
-      return redirect(`/dashboard/${organization.slug}`)
+      return redirect(`/dashboard/${organization.slug}/onboarding/product`)
     }
   }
 
-  return (
-    <ClientPage slug={slug} validationErrors={validationErrors} error={error} />
-  )
+  return <ClientPage validationErrors={validationErrors} error={error} />
 }

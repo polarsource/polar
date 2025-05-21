@@ -124,6 +124,11 @@ _require_billing_address_description = (
     "If you preset the billing address, this setting will be automatically set to "
     "`true`."
 )
+_is_business_customer_description = (
+    "Whether the customer is a business or an individual. "
+    "If `true`, the customer will be required to fill their full billing address "
+    "and billing name."
+)
 _customer_metadata_description = METADATA_DESCRIPTION.format(
     heading=(
         "Key-value object allowing you to store additional information "
@@ -158,12 +163,16 @@ class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
             "The resulting order will be linked to this customer."
         ),
     )
+    is_business_customer: bool = Field(
+        default=False, description=_is_business_customer_description
+    )
     customer_external_id: str | None = Field(
         default=None, description=_external_customer_id_description
     )
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
+    customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_billing_address: CustomerBillingAddress | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_metadata: MetadataField = Field(
@@ -272,8 +281,10 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
         ),
     )
     amount: Amount | None = None
+    is_business_customer: bool | None = None
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
+    customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_billing_address: CustomerBillingAddress | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
 
@@ -337,7 +348,9 @@ class CheckoutCustomerBillingAddressFields(Schema):
         address = checkout.customer_billing_address
         country = address.country if address else None
         is_us = country == "US"
-        require_billing_address = checkout.require_billing_address or is_us
+        require_billing_address = (
+            checkout.require_billing_address or checkout.is_business_customer or is_us
+        )
         return cls(
             country=True,
             state=require_billing_address or country in {"US", "CA"},
@@ -424,9 +437,11 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     )
 
     customer_id: UUID4 | None
+    is_business_customer: bool = Field(description=_is_business_customer_description)
     customer_name: str | None = Field(description="Name of the customer.")
     customer_email: str | None = Field(description="Email address of the customer.")
     customer_ip_address: CustomerIPAddress | None
+    customer_billing_name: str | None
     customer_billing_address: CustomerBillingAddress | None
     customer_tax_id: str | None = Field(
         validation_alias=AliasChoices("customer_tax_id_number", "customer_tax_id")

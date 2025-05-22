@@ -35,5 +35,11 @@
       "host"
     ],
     "outputPath": "bin"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
   }
 }

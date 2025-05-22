@@ -284,6 +284,7 @@ export const OrganizationDetailsForm: React.FC<
             <FormLabel>Website</FormLabel>
             <FormControl>
               <Input
+                type="url"
                 {...field}
                 value={field.value || ''}
                 placeholder="https://"
@@ -301,6 +302,7 @@ export const OrganizationDetailsForm: React.FC<
             <FormLabel>Support Email</FormLabel>
             <FormControl>
               <Input
+                type="email"
                 {...field}
                 value={field.value || ''}
                 placeholder="support@example.com"

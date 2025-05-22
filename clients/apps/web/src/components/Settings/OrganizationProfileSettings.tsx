@@ -204,7 +204,7 @@ export const OrganizationDetailsForm: React.FC<
         return
       }
       const lastFile = files[files.length - 1]
-      setValue('avatar_url', lastFile.public_url)
+      setValue('avatar_url', lastFile.public_url, { shouldDirty: true })
     },
     [setValue],
   )
@@ -251,52 +251,31 @@ export const OrganizationDetailsForm: React.FC<
           </FormItem>
         )}
       />
-      <FormField
-        control={control}
-        name="avatar_url"
-        render={({ field }) => (
-          <div className="flex flex-col gap-y-4">
-            <FormLabel>Logotype</FormLabel>
-            <div className="flex flex-row items-center gap-4">
-              <div
-                {...getRootProps()}
-                className={twMerge(
-                  'group relative',
-                  isDragActive && 'opacity-50',
-                )}
-              >
-                <input {...getInputProps()} />
-                <Avatar
-                  avatar_url={avatarURL ?? ''}
-                  name={name ?? ''}
-                  className={twMerge(
-                    'h-16 w-16 group-hover:opacity-50',
-                    isDragActive && 'opacity-50',
-                  )}
-                />
-                <div
-                  className={twMerge(
-                    'absolute left-0 top-0 h-16 w-16 cursor-pointer items-center justify-center group-hover:flex',
-                    isDragActive ? 'flex' : 'hidden',
-                  )}
-                >
-                  <AddPhotoAlternateOutlined />
-                </div>
-              </div>
-              <FormItem className="grow">
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value || ''}
-                    placeholder="Logo URL"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            </div>
+      <FormItem>
+        <FormLabel htmlFor="logo-input">Logotype</FormLabel>
+        <div
+          {...getRootProps()}
+          className={twMerge('group relative', isDragActive && 'opacity-50')}
+        >
+          <input id="logo-input" {...getInputProps()} />
+          <Avatar
+            avatar_url={avatarURL ?? ''}
+            name={name ?? ''}
+            className={twMerge(
+              'h-16 w-16 group-hover:opacity-50',
+              isDragActive && 'opacity-50',
+            )}
+          />
+          <div
+            className={twMerge(
+              'absolute left-0 top-0 h-16 w-16 cursor-pointer items-center justify-center group-hover:flex',
+              isDragActive ? 'flex' : 'hidden',
+            )}
+          >
+            <AddPhotoAlternateOutlined />
           </div>
-        )}
-      />
+        </div>
+      </FormItem>
       <FormField
         control={control}
         name="website"

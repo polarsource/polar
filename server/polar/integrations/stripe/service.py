@@ -713,6 +713,7 @@ class StripeService:
             idempotency_key=(
                 f"{idempotency_key}_finalize_invoice" if idempotency_key else None
             ),
+            expand=["total_tax_amounts.tax_rate"],
         )
 
         if invoice.status == "open":
@@ -815,6 +816,9 @@ class StripeService:
             client_reference_id=str(user.id),
             metadata={"user_id": str(user.id)},
         )
+
+    async def get_tax_rate(self, id: str) -> stripe_lib.TaxRate:
+        return await stripe_lib.TaxRate.retrieve_async(id)
 
 
 stripe = StripeService()

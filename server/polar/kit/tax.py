@@ -2,7 +2,7 @@ import hashlib
 import json
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import Annotated, Any, LiteralString, Protocol
+from typing import Annotated, Any, Literal, LiteralString, Protocol, TypedDict
 
 import stdnum.ca.bn
 import stdnum.exceptions
@@ -384,3 +384,52 @@ async def calculate_tax(
         raise InvalidTaxLocation(e) from e
     else:
         return calculation.tax_amount_exclusive
+
+
+class TaxabilityReason(StrEnum):
+    standard_rated = "standard_rated"
+    """Purchases that are subject to the standard rate of tax."""
+
+    not_collecting = "not_collecting"
+    """Purchases for countries where we don't collect tax."""
+
+    product_exempt = "product_exempt"
+    """Purchases for products that are exempt from tax."""
+
+    reverse_charge = "reverse_charge"
+    """Purchases where the customer is responsible for paying tax, e.g. B2B transactions with provided tax ID."""
+
+    not_subject_to_tax = "not_subject_to_tax"
+    """Purchases where the customer provided a tax ID, but on countries where we don't collect tax."""
+
+
+class TaxRate(TypedDict):
+    stripe_id: str
+    rate_type: Literal["percentage"] | Literal["fixed"]
+    basis_points: int | None
+    amount: int | None
+    amount_currency: str | None
+    display_name: str
+    country: str | None
+    state: str | None
+
+
+def from_stripe_tax_rate(tax_rate: stripe_lib.TaxRate) -> TaxRate:
+    rate_type = tax_rate.rate_type
+    if rate_type is None:
+        raise ValueError()
+
+    return {
+        "stripe_id": tax_rate.id,
+        "rate_type": "fixed" if rate_type == "flat_amount" else "percentage",
+        "basis_points": int(tax_rate.percentage * 100)
+        if tax_rate.percentage is not None
+        else None,
+        "amount": tax_rate.flat_amount.amount if tax_rate.flat_amount else None,
+        "amount_currency": tax_rate.flat_amount.currency
+        if tax_rate.flat_amount
+        else None,
+        "display_name": tax_rate.display_name,
+        "country": tax_rate.country,
+        "state": tax_rate.state,
+    }

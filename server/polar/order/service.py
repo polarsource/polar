@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import stripe as stripe_lib
 import structlog
@@ -31,6 +31,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
+from polar.kit.tax import TaxabilityReason, TaxRate, from_stripe_tax_rate
 from polar.logging import Logger
 from polar.models import (
     Checkout,
@@ -369,17 +370,36 @@ class OrderService:
             for stripe_discount_amount in stripe_invoice.total_discount_amounts:
                 discount_amount += stripe_discount_amount.amount
 
+        # Retrieve tax data
+        tax_amount = stripe_invoice.tax or 0
+        taxability_reason: TaxabilityReason = TaxabilityReason.not_collecting
+        tax_id = customer.tax_id
+        tax_rate: TaxRate | None = None
+        for total_tax_amount in stripe_invoice.total_tax_amounts:
+            if total_tax_amount.taxability_reason is not None:
+                taxability_reason = TaxabilityReason(total_tax_amount.taxability_reason)
+            stripe_tax_rate = cast(stripe_lib.TaxRate, total_tax_amount.tax_rate)
+            try:
+                tax_rate = from_stripe_tax_rate(stripe_tax_rate)
+            except ValueError:
+                continue
+            else:
+                break
+
         repository = OrderRepository.from_session(session)
         order = await repository.create(
             Order(
                 subtotal_amount=stripe_invoice.subtotal,
                 discount_amount=discount_amount,
-                tax_amount=stripe_invoice.tax or 0,
+                tax_amount=tax_amount,
                 currency=stripe_invoice.currency,
                 billing_reason=OrderBillingReason.purchase,
                 billing_name=customer.billing_name,
                 billing_address=customer.billing_address,
                 stripe_invoice_id=stripe_invoice.id,
+                taxability_reason=taxability_reason,
+                tax_id=tax_id,
+                tax_rate=tax_rate,
                 customer=customer,
                 product=product,
                 discount=checkout.discount,
@@ -565,6 +585,24 @@ class OrderService:
             for stripe_discount_amount in invoice.total_discount_amounts:
                 discount_amount += stripe_discount_amount.amount
 
+        # Retrieve tax data
+        tax_amount = invoice.tax or 0
+        taxability_reason: TaxabilityReason = TaxabilityReason.not_collecting
+        tax_id = customer.tax_id
+        tax_rate: TaxRate | None = None
+        for total_tax_amount in invoice.total_tax_amounts:
+            if total_tax_amount.taxability_reason is not None:
+                taxability_reason = TaxabilityReason(total_tax_amount.taxability_reason)
+            stripe_tax_rate = await stripe_service.get_tax_rate(
+                get_expandable_id(total_tax_amount.tax_rate)
+            )
+            try:
+                tax_rate = from_stripe_tax_rate(stripe_tax_rate)
+            except ValueError:
+                continue
+            else:
+                break
+
         # Ensure it inherits original metadata and custom fields
         user_metadata = (
             checkout.user_metadata
@@ -585,12 +623,15 @@ class OrderService:
                 else OrderStatus.pending,
                 subtotal_amount=invoice.subtotal,
                 discount_amount=discount_amount,
-                tax_amount=invoice.tax or 0,
+                tax_amount=tax_amount,
                 currency=invoice.currency,
                 billing_reason=billing_reason,
                 billing_name=customer.billing_name,
                 billing_address=billing_address,
                 stripe_invoice_id=invoice.id,
+                taxability_reason=taxability_reason,
+                tax_id=tax_id,
+                tax_rate=tax_rate,
                 customer=customer,
                 product=subscription.product,
                 discount=discount,

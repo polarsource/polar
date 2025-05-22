@@ -1,7 +1,7 @@
-const NodeJsIcon = () => (
+const NodeJsIcon = ({ size = 32 }: { size?: number }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    width="32"
+    width={size}
     viewBox="0 0 32 32"
     preserveAspectRatio="xMidYMid"
     fill="currentColor"

@@ -209,6 +209,10 @@ module.exports = {
           from: { transform: 'translateX(0)' },
           to: { transform: 'translateX(-25%)' },
         },
+        'infinite-vertical-scroll': {
+          from: { transform: 'translateY(0)' },
+          to: { transform: 'translateY(-25%)' },
+        },
         gradient: {
           '0%': { backgroundPosition: '0% 50%' },
           '50%': { backgroundPosition: '100% 50%' },

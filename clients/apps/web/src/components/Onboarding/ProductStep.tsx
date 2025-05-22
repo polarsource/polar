@@ -37,7 +37,7 @@ type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
     metadata: { key: string; value: string | number | boolean }[]
   }
 
-export default function ProductStep() {
+export const ProductStep = () => {
   const { organization } = useContext(OrganizationContext)
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
     schemas['Benefit']['id'][]

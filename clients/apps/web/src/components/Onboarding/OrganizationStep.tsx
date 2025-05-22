@@ -33,11 +33,11 @@ export interface OrganizationStepProps {
   error?: string
 }
 
-export default function OrganizationStep({
+export const OrganizationStep = ({
   slug: initialSlug,
   validationErrors,
   error,
-}: OrganizationStepProps) {
+}: OrganizationStepProps) => {
   const posthog = usePostHog()
   const { currentUser, setUserOrganizations, userOrganizations } = useAuth()
 

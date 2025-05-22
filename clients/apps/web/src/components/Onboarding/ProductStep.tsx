@@ -56,7 +56,14 @@ export default function ProductStep() {
 
   const form = useForm<ProductCreateForm>({
     defaultValues: {
-      recurring_interval: null,
+      name: 'SaaS Pro Subscription',
+      description: `My wonderful SaaS Pro subscription which includes...
+
+- Unlimited access to all features
+- 24/7 support
+- Cancel anytime
+`,
+      recurring_interval: 'month',
       ...{
         prices: [
           {
@@ -108,10 +115,17 @@ export default function ProductStep() {
       })
 
       router.push(
-        `/dashboard/${organization.slug}/onboarding/integrate/${product.id}`,
+        `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
       )
     },
-    [enabledBenefitIds, createProduct, updateBenefits, setError, organization],
+    [
+      enabledBenefitIds,
+      createProduct,
+      updateBenefits,
+      setError,
+      organization,
+      router,
+    ],
   )
 
   const onSelectBenefit = useCallback(
@@ -140,8 +154,8 @@ export default function ProductStep() {
 
   return (
     <Form {...form}>
-      <div className="flex h-full flex-col gap-12 lg:flex-row">
-        <div className="flex h-full min-h-0 max-w-lg flex-col gap-12 overflow-y-auto p-12">
+      <div className="flex h-full flex-col md:flex-row">
+        <div className="flex h-full min-h-0 w-full flex-col gap-12 overflow-y-auto p-12 md:max-w-lg">
           <div className="flex flex-col gap-y-12">
             <LogoIcon size={50} />
             <div className="flex flex-col gap-y-4">
@@ -201,13 +215,16 @@ export default function ProductStep() {
             </div>
           </div>
         </div>
-        <div className="dark:bg-polar-800 rounded-4xl mx-4 flex flex-1 flex-grow flex-col items-center gap-12 overflow-y-auto bg-gray-100 p-16 md:my-8 md:mr-8">
-          <div className="flex w-full max-w-6xl flex-col items-center gap-y-12">
-            <div className="flex flex-col items-center gap-y-4 text-center">
-              <h1 className="text-3xl">Product Preview</h1>
-              <p className="dark:text-polar-500 text-lg text-gray-500">
-                Product information will be shown on the checkout page.
-              </p>
+        <div className="dark:bg-polar-800 hidden flex-1 flex-grow flex-col items-center gap-12 overflow-y-auto bg-gray-100 p-16 md:flex">
+          <div className="dark:bg-polar-900 rounded-4xl flex w-full max-w-2xl flex-col gap-y-12 bg-gray-50 p-12">
+            <div className="flex flex-col items-center gap-y-6 text-center">
+              <LogoIcon size={40} />
+              <div className="flex flex-col gap-y-4">
+                <h1 className="text-3xl">Product Preview</h1>
+                <p className="dark:text-polar-500 text-lg text-gray-500">
+                  Product information will be shown on your checkout page.
+                </p>
+              </div>
             </div>
 
             <CheckoutPreview
@@ -268,7 +285,7 @@ const CheckoutPreview = memo(
     const themePreset = useThemePreset('polar')
 
     return (
-      <ShadowBox className="dark:bg-polar-900 flex w-full max-w-xl flex-col gap-y-8 bg-white">
+      <ShadowBox className="dark:bg-polar-900 flex w-full flex-col gap-y-8 bg-white">
         <CheckoutProductInfo
           organization={checkoutPreview.organization}
           product={checkoutPreview.product}

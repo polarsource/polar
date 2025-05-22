@@ -7,7 +7,6 @@ import { useCreateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { FormControl } from '@mui/material'
 import { schemas } from '@polar-sh/client'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
@@ -17,6 +16,7 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -24,7 +24,7 @@ import { useForm } from 'react-hook-form'
 import slugify from 'slugify'
 import { twMerge } from 'tailwind-merge'
 import LogoIcon from '../Brand/LogoIcon'
-import { Well, WellContent, WellHeader } from '../Shared/Well'
+import { Testamonial, testimonials } from '../Landing/Testimonials'
 import { getStatusRedirect } from '../Toast/utils'
 
 export interface OrganizationStepProps {
@@ -62,7 +62,7 @@ export default function OrganizationStep({
   const [editedSlug, setEditedSlug] = useState(false)
 
   const router = useRouter()
-
+  const { resolvedTheme } = useTheme()
   useEffect(() => {
     posthog.capture('dashboard:organizations:create:view')
   }, [])
@@ -128,8 +128,8 @@ export default function OrganizationStep({
   }
 
   return (
-    <div className="flex h-full flex-col gap-12 lg:flex-row">
-      <div className="flex h-full min-h-0 max-w-lg flex-col gap-12 overflow-y-auto p-12">
+    <div className="flex h-full flex-col md:flex-row">
+      <div className="flex h-full min-h-0 w-full flex-shrink-0 flex-col gap-12 overflow-y-auto p-12 md:max-w-lg">
         <div className="flex flex-col gap-y-12">
           <LogoIcon size={50} />
           <div className="flex flex-col gap-y-4">
@@ -286,7 +286,7 @@ export default function OrganizationStep({
                 </Button>
                 {userOrganizations.length > 0 && (
                   <Link href={`/dashboard`} className="w-full">
-                    <Button variant="ghost" fullWidth>
+                    <Button variant="secondary" fullWidth>
                       Back to Dashboard
                     </Button>
                   </Link>
@@ -296,24 +296,38 @@ export default function OrganizationStep({
           </Form>
         </div>
       </div>
-      <div className="dark:bg-polar-800 rounded-4xl my-12 mr-12 flex flex-1 flex-grow flex-col items-center justify-center gap-12 bg-gray-100 p-12">
-        <Well className="dark:bg-polar-900 w-full max-w-sm items-center bg-white text-center">
-          <WellHeader>
-            <Avatar
-              className="h-24 w-24"
-              name={name}
-              avatar_url={`https://ui-avatars.com/api/?name=${slug}`}
-            />
-          </WellHeader>
-          <WellContent>
-            <h3 className="whitespace-pre-wrap text-2xl">
-              {name.length > 0 ? name : 'Organization Name'}
-            </h3>
-            <span className="dark:text-polar-500 text-sm text-gray-500">
-              {slug.length > 0 ? slug : 'organization-slug'}
-            </span>
-          </WellContent>
-        </Well>
+      <div className="dark:bg-polar-950 relative hidden flex-1 flex-grow flex-col items-center justify-center gap-12 overflow-hidden bg-gray-100 p-12 md:flex">
+        <div className="absolute inset-0 flex flex-col items-center">
+          <TestimonialsWrapper />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const TestimonialsWrapper = () => {
+  const thirdLength = Math.ceil(testimonials.length / 3)
+  const firstRow = testimonials.slice(0, thirdLength)
+  const secondRow = testimonials.slice(thirdLength, thirdLength * 2)
+  const thirdRow = testimonials.slice(thirdLength * 2)
+
+  return (
+    <div className="flex flex-col items-center gap-y-12 px-4 md:gap-y-24">
+      <div className="flex flex-col gap-4 md:relative md:w-full md:overflow-hidden">
+        <div className="flex flex-row gap-4">
+          {[firstRow, secondRow, thirdRow].map((row, rowIndex) => (
+            <div
+              key={`row-${rowIndex}`}
+              className="min-w-1/3 flex w-full max-w-[400px] flex-col gap-4 md:h-max md:animate-[infinite-vertical-scroll_50s_linear_infinite_forwards]"
+            >
+              {[...row, ...row, ...row].map((testimonial, index) => (
+                <div key={`row${rowIndex}-${index}`}>
+                  <Testamonial {...testimonial} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

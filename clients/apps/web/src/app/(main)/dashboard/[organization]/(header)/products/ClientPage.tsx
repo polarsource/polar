@@ -356,25 +356,6 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
                 align="end"
                 className="dark:bg-polar-800 bg-gray-50 shadow-lg"
               >
-                {product.prices.length > 0 && (
-                  <>
-                    {product.prices.map((price) => (
-                      <DropdownMenuItem
-                        key={price.id}
-                        onClick={handleContextMenuCallback(() => {
-                          onCopyPriceID(price)
-                        })}
-                      >
-                        {generateCopyPriceLabel(
-                          price,
-                          product.prices.length,
-                          'Copy Price ID',
-                        )}
-                      </DropdownMenuItem>
-                    ))}
-                  </>
-                )}
-                <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
                 <DropdownMenuItem
                   onClick={handleContextMenuCallback(() => {
                     if (typeof navigator !== 'undefined') {
@@ -383,6 +364,16 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
                   })}
                 >
                   Copy Product ID
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
+                <DropdownMenuItem
+                  onClick={handleContextMenuCallback(() => {
+                    router.push(
+                      `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
+                    )
+                  })}
+                >
+                  Integrate Checkout
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="dark:bg-polar-600 bg-gray-200" />
                 <DropdownMenuItem

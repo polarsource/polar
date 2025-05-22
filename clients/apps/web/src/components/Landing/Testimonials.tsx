@@ -1,7 +1,7 @@
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Link from 'next/link'
 
-const testimonials = [
+export const testimonials = [
   {
     link: 'https://x.com/mitchellh/status/1775925951668552005',
     name: 'Mitchell Hashimoto',
@@ -272,7 +272,7 @@ interface TestamonialProps {
   verified?: boolean
 }
 
-const Testamonial = ({
+export const Testamonial = ({
   name,
   username,
   avatar,

@@ -347,7 +347,7 @@ class OrderService:
             prices=list(price_id_map.values()),
             coupon=(checkout.discount.stripe_coupon_id if checkout.discount else None),
             # Disable automatic tax for free purchases, since we don't collect customer address in that case
-            automatic_tax=checkout.is_payment_required,
+            automatic_tax=checkout.is_payment_required and product.is_tax_applicable,
             metadata=metadata,
         )
 

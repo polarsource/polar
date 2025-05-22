@@ -88,6 +88,9 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     refunded_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     refunded_tax_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
+    billing_name: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
     billing_address: Mapped[Address | None] = mapped_column(AddressType, nullable=True)
     stripe_invoice_id: Mapped[str | None] = mapped_column(
         String, nullable=True, unique=True

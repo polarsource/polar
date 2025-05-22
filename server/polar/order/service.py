@@ -377,6 +377,7 @@ class OrderService:
                 tax_amount=stripe_invoice.tax or 0,
                 currency=stripe_invoice.currency,
                 billing_reason=OrderBillingReason.purchase,
+                billing_name=customer.billing_name,
                 billing_address=customer.billing_address,
                 stripe_invoice_id=stripe_invoice.id,
                 customer=customer,
@@ -448,7 +449,9 @@ class OrderService:
 
         # Retrieve billing address
         billing_address: Address | None = None
-        if not _is_empty_customer_address(invoice.customer_address):
+        if customer.billing_address is not None:
+            billing_address = customer.billing_address
+        elif not _is_empty_customer_address(invoice.customer_address):
             billing_address = Address.model_validate(invoice.customer_address)
         # Try to retrieve the country from the payment method
         elif invoice.charge is not None:
@@ -585,6 +588,7 @@ class OrderService:
                 tax_amount=invoice.tax or 0,
                 currency=invoice.currency,
                 billing_reason=billing_reason,
+                billing_name=customer.billing_name,
                 billing_address=billing_address,
                 stripe_invoice_id=invoice.id,
                 customer=customer,

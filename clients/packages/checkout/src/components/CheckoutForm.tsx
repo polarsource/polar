@@ -8,6 +8,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
 import Input from '@polar-sh/ui/components/atoms/Input'
+import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -29,13 +30,7 @@ import {
   StripeElements,
   StripeElementsOptions,
 } from '@stripe/stripe-js'
-import {
-  PropsWithChildren,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { PropsWithChildren, useCallback, useEffect, useMemo } from 'react'
 import { UseFormReturn, WatchObserver } from 'react-hook-form'
 import { useDebouncedCallback } from '../hooks/debounce'
 import { getDiscountDisplay } from '../utils/discount'
@@ -119,7 +114,7 @@ const BaseCheckoutForm = ({
   const discount = checkout.discount
   const isDiscountWithoutCode = discount && discount.code === null
 
-  const { product, productPrice } = checkout
+  const { product, productPrice, isBusinessCustomer } = checkout
   const meteredPrices = useMemo(() => getMeteredPrices(product), [product])
   const onlyMeteredPrices = useMemo(
     () => meteredPrices.length === product.prices.length,
@@ -161,6 +156,12 @@ const BaseCheckoutForm = ({
           }
           clearErrors('customerBillingAddress')
         }
+      } else if (name === 'isBusinessCustomer') {
+        const { isBusinessCustomer } = value
+        payload = {
+          ...payload,
+          isBusinessCustomer,
+        }
       }
 
       if (Object.keys(payload).length === 0) {
@@ -199,7 +200,6 @@ const BaseCheckoutForm = ({
   }, [watch, debouncedWatcher])
 
   const taxId = watch('customerTaxId')
-  const [showTaxId, setShowTaxID] = useState(false)
   const addTaxID = useCallback(async () => {
     if (!taxId) {
       return
@@ -216,11 +216,6 @@ const BaseCheckoutForm = ({
       resetField('customerTaxId')
     } catch {}
   }, [update, clearErrors, resetField])
-  useEffect(() => {
-    if (taxId) {
-      setShowTaxID(true)
-    }
-  }, [taxId])
 
   const onSubmit = async (data: CheckoutUpdatePublic) => {
     // Don't send undefined/null data in the custom field object to please the SDK
@@ -312,68 +307,54 @@ const BaseCheckoutForm = ({
                     )}
                   />
 
+                  <FormField
+                    control={control}
+                    name="isBusinessCustomer"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex flex-row items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value ? field.value : false}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormLabel>
+                            I&apos;m purchasing as a business
+                          </FormLabel>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {isBusinessCustomer && (
+                    <FormField
+                      control={control}
+                      name="customerBillingName"
+                      rules={{
+                        required: 'This field is required',
+                      }}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Business name</FormLabel>
+                          <FormControl>
+                            <Input
+                              className={themePresetProps.polar.input}
+                              type="text"
+                              autoComplete="billing organization"
+                              {...field}
+                              value={field.value || ''}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
                   <FormItem>
                     <FormLabel>Billing address</FormLabel>
-                    {checkout.customerBillingAddressFields.country && (
-                      <FormControl>
-                        <FormField
-                          control={control}
-                          name="customerBillingAddress.country"
-                          rules={{
-                            required: 'This field is required',
-                          }}
-                          render={({ field }) => (
-                            <>
-                              <CountryPicker
-                                autoComplete="billing country"
-                                value={field.value || undefined}
-                                onChange={field.onChange}
-                                className={themePresetProps.polar.dropdown}
-                                itemClassName={
-                                  themePresetProps.polar.dropdownItem
-                                }
-                                contentClassName={
-                                  themePresetProps.polar.dropdownContent
-                                }
-                              />
-                              <FormMessage />
-                            </>
-                          )}
-                        />
-                      </FormControl>
-                    )}
-                    {checkout.customerBillingAddressFields.state && (
-                      <FormControl>
-                        <FormField
-                          control={control}
-                          name="customerBillingAddress.state"
-                          rules={{
-                            required:
-                              country === 'US' || country === 'CA'
-                                ? 'This field is required'
-                                : false,
-                          }}
-                          render={({ field }) => (
-                            <>
-                              <CountryStatePicker
-                                autoComplete="billing address-level1"
-                                country={country}
-                                value={field.value || ''}
-                                onChange={field.onChange}
-                                className={themePresetProps.polar.dropdown}
-                                itemClassName={
-                                  themePresetProps.polar.dropdownItem
-                                }
-                                contentClassName={
-                                  themePresetProps.polar.dropdownContent
-                                }
-                              />
-                              <FormMessage />
-                            </>
-                          )}
-                        />
-                      </FormControl>
-                    )}
                     {checkout.customerBillingAddressFields.line1 && (
                       <FormControl>
                         <FormField
@@ -469,6 +450,66 @@ const BaseCheckoutForm = ({
                         </FormControl>
                       )}
                     </div>
+                    {checkout.customerBillingAddressFields.state && (
+                      <FormControl>
+                        <FormField
+                          control={control}
+                          name="customerBillingAddress.state"
+                          rules={{
+                            required:
+                              country === 'US' || country === 'CA'
+                                ? 'This field is required'
+                                : false,
+                          }}
+                          render={({ field }) => (
+                            <>
+                              <CountryStatePicker
+                                autoComplete="billing address-level1"
+                                country={country}
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                className={themePresetProps.polar.dropdown}
+                                itemClassName={
+                                  themePresetProps.polar.dropdownItem
+                                }
+                                contentClassName={
+                                  themePresetProps.polar.dropdownContent
+                                }
+                              />
+                              <FormMessage />
+                            </>
+                          )}
+                        />
+                      </FormControl>
+                    )}
+                    {checkout.customerBillingAddressFields.country && (
+                      <FormControl>
+                        <FormField
+                          control={control}
+                          name="customerBillingAddress.country"
+                          rules={{
+                            required: 'This field is required',
+                          }}
+                          render={({ field }) => (
+                            <>
+                              <CountryPicker
+                                autoComplete="billing country"
+                                value={field.value || undefined}
+                                onChange={field.onChange}
+                                className={themePresetProps.polar.dropdown}
+                                itemClassName={
+                                  themePresetProps.polar.dropdownItem
+                                }
+                                contentClassName={
+                                  themePresetProps.polar.dropdownContent
+                                }
+                              />
+                              <FormMessage />
+                            </>
+                          )}
+                        />
+                      </FormControl>
+                    )}
                     {errors.customerBillingAddress?.message && (
                       <p className="text-destructive-foreground text-sm">
                         {errors.customerBillingAddress.message}
@@ -476,26 +517,18 @@ const BaseCheckoutForm = ({
                     )}
                   </FormItem>
 
-                  {!showTaxId && (
-                    <Button
-                      type="button"
-                      variant="link"
-                      onClick={() => setShowTaxID(true)}
-                      className="flex w-full justify-end text-xs hover:no-underline"
-                    >
-                      Add Tax ID
-                    </Button>
-                  )}
-
-                  {showTaxId && (
+                  {isBusinessCustomer && (
                     <FormField
                       control={control}
                       name="customerTaxId"
                       render={({ field }) => (
                         <FormItem>
-                          <div className="flex flex-row items-center justify-between">
-                            <FormLabel>Tax ID</FormLabel>
-                          </div>
+                          <FormLabel className="flex flex-row items-center justify-between">
+                            <div>Tax ID</div>
+                            <div className="dark:text-polar-500 text-xs text-gray-500">
+                              Optional
+                            </div>
+                          </FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Input
@@ -545,12 +578,10 @@ const BaseCheckoutForm = ({
                   name="discountCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        <div className="flex flex-row items-center justify-between">
-                          <div>Discount Code</div>
-                          <span className="dark:text-polar-500 text-xs text-gray-500">
-                            Optional
-                          </span>
+                      <FormLabel className="flex flex-row items-center justify-between">
+                        <div>Discount Code</div>
+                        <div className="dark:text-polar-500 text-xs text-gray-500">
+                          Optional
                         </div>
                       </FormLabel>
                       <FormControl>

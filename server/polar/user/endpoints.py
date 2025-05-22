@@ -6,20 +6,13 @@ from polar.customer_portal.endpoints.downloadables import router as downloadable
 from polar.customer_portal.endpoints.license_keys import router as license_keys_router
 from polar.customer_portal.endpoints.order import router as order_router
 from polar.customer_portal.endpoints.subscription import router as subscription_router
-from polar.exceptions import InternalServerError
-from polar.integrations.stripe.service import stripe as stripe_service
 from polar.models import User
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.user.service import user as user_service
 
-from .schemas import (
-    UserIdentityVerification,
-    UserRead,
-    UserScopes,
-    UserStripePortalSession,
-)
+from .schemas import UserIdentityVerification, UserRead, UserScopes
 
 router = APIRouter(prefix="/users", tags=["users", APITag.private])
 
@@ -50,20 +43,3 @@ async def create_identity_verification(
     return await user_service.create_identity_verification(
         session, user=auth_subject.subject
     )
-
-
-@router.post(
-    "/me/stripe_customer_portal",
-    response_model=UserStripePortalSession,
-)
-async def create_stripe_customer_portal(
-    auth_subject: WebUser,
-    session: AsyncSession = Depends(get_db_session),
-) -> UserStripePortalSession:
-    portal = await stripe_service.create_user_portal_session(
-        session, auth_subject.subject
-    )
-    if not portal:
-        raise InternalServerError()
-
-    return UserStripePortalSession(url=portal.url)

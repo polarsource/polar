@@ -4,18 +4,16 @@ from typing import TYPE_CHECKING, Literal, Unpack, cast
 
 import stripe as stripe_lib
 
-from polar.account.schemas import AccountCreate
 from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import PolarError
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import utc_now
 from polar.logfire import instrument_httpx
-from polar.models.user import User
-from polar.postgres import AsyncSession, sql
 
 if TYPE_CHECKING:
-    from polar.models import Product, ProductPrice
+    from polar.account.schemas import AccountCreate
+    from polar.models import Product, ProductPrice, User
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 
@@ -68,7 +66,7 @@ class StripeService:
         return await stripe_lib.PaymentIntent.retrieve_async(id)
 
     async def create_account(
-        self, account: AccountCreate, name: str | None
+        self, account: "AccountCreate", name: str | None
     ) -> stripe_lib.Account:
         create_params: stripe_lib.Account.CreateParams = {
             "country": account.country,
@@ -153,50 +151,6 @@ class StripeService:
 
     async def get_customer(self, customer_id: str) -> stripe_lib.Customer:
         return await stripe_lib.Customer.retrieve_async(customer_id)
-
-    async def get_or_create_user_customer(
-        self,
-        session: AsyncSession,
-        user: User,
-    ) -> stripe_lib.Customer | None:
-        if user.stripe_customer_id:
-            return await self.get_customer(user.stripe_customer_id)
-
-        customer = await stripe_lib.Customer.create_async(
-            email=user.email,
-            metadata={
-                "user_id": str(user.id),
-                "email": user.email,
-            },
-        )
-
-        if not customer:
-            return None
-
-        # Save customer ID
-        stmt = (
-            sql.Update(User)
-            .where(User.id == user.id)
-            .values(stripe_customer_id=customer.id)
-        )
-        await session.execute(stmt)
-        await session.flush()
-
-        return customer
-
-    async def create_user_portal_session(
-        self,
-        session: AsyncSession,
-        user: User,
-    ) -> stripe_lib.billing_portal.Session | None:
-        customer = await self.get_or_create_user_customer(session, user)
-        if not customer:
-            return None
-
-        return await stripe_lib.billing_portal.Session.create_async(
-            customer=customer.id,
-            return_url=f"{settings.FRONTEND_BASE_URL}/settings",
-        )
 
     async def create_product(
         self,
@@ -844,7 +798,7 @@ class StripeService:
         return await stripe_lib.identity.VerificationSession.retrieve_async(id)
 
     async def create_verification_session(
-        self, user: User
+        self, user: "User"
     ) -> stripe_lib.identity.VerificationSession:
         return await stripe_lib.identity.VerificationSession.create_async(
             type="document",

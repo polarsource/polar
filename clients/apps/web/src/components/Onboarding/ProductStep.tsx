@@ -6,32 +6,32 @@ import {
 import { useMeters } from '@/hooks/queries/meters'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { setValidationErrors } from '@/utils/api/errors'
+import {
+  CheckoutProductSwitcher,
+  CheckoutPWYWForm,
+} from '@polar-sh/checkout/components'
 import { schemas } from '@polar-sh/client'
+import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { memo, useCallback, useContext, useMemo, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import LogoIcon from '../Brand/LogoIcon'
+import { CheckoutCard } from '../Checkout/CheckoutCard'
+import CheckoutProductInfo from '../Checkout/CheckoutProductInfo'
 import { createCheckoutPreview } from '../Customization/utils'
 import ProductBenefitsForm from '../Products/ProductBenefitsForm'
 import { ProductFullMediasMixin } from '../Products/ProductForm/ProductForm'
 import { ProductInfoSection } from '../Products/ProductForm/ProductInfoSection'
+import { ProductMediaSection } from '../Products/ProductForm/ProductMediaSection'
 import { ProductPricingSection } from '../Products/ProductForm/ProductPricingSection'
 import { productCreateToProduct } from '../Products/utils'
 
-import {
-  CheckoutProductSwitcher,
-  CheckoutPWYWForm,
-} from '@polar-sh/checkout/components'
-import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
-import Link from 'next/link'
-import { CheckoutCard } from '../Checkout/CheckoutCard'
-import CheckoutProductInfo from '../Checkout/CheckoutProductInfo'
-import { ProductMediaSection } from '../Products/ProductForm/ProductMediaSection'
 type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
   ProductFullMediasMixin & {
     metadata: { key: string; value: string | number | boolean }[]

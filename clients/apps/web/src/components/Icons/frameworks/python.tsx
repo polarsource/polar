@@ -1,4 +1,4 @@
-const PythonIcon = ({ size = 60 }: { size?: number }) => (
+const PythonIcon = ({ size = 35 }: { size?: number }) => (
   <svg
     width={size}
     viewBox="16 16 36 36"

@@ -1,6 +1,6 @@
 'use client'
 
-import OrganizationStep from '@/components/Onboarding/OrganizationStep'
+import { OrganizationStep } from '@/components/Onboarding/OrganizationStep'
 import { schemas } from '@polar-sh/client'
 
 export interface ClientPageProps {

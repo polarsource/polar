@@ -2,6 +2,7 @@
 
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
+import type { ProductPrice } from '@polar-sh/sdk/models/components/productprice'
 import { useMemo } from 'react'
 import { getDiscountDisplay } from '../utils/discount'
 import { formatCurrencyNumber } from '../utils/money'
@@ -117,7 +118,10 @@ const CheckoutPricing = ({
                 className="dark:text-polar-500 flex flex-row items-center gap-x-2 text-sm text-gray-400"
               >
                 <GaugeIcon className="h-4 w-4" />
-                <ProductPriceLabel product={product} price={price} />
+                <ProductPriceLabel
+                  product={product}
+                  price={price as ProductPrice}
+                />
               </div>
             ))}
           </div>

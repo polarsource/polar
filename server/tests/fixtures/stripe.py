@@ -165,6 +165,7 @@ def construct_stripe_invoice(
     tax = sum(line["tax_amount"] for line in lines)
     subtotal = sum(line["amount"] for line in lines)
     total = subtotal - (discount_amount or 0) + tax
+
     return stripe_lib.Invoice.construct_from(
         {
             "id": id,
@@ -210,6 +211,23 @@ def construct_stripe_invoice(
             "total_discount_amounts": [{"amount": discount_amount}]
             if discount_amount is not None
             else None,
+            "total_tax_amounts": [
+                {
+                    "amount": tax,
+                    "taxability_reason": "standard_rated"
+                    if tax > 0
+                    else "not_collecting",
+                    "tax_rate": {
+                        "id": "STRIPE_TAX_RATE_ID",
+                        "rate_type": "percentage",
+                        "percentage": 20.0,
+                        "flat_amount": None,
+                        "display_name": "VAT",
+                        "country": "FR",
+                        "state": None,
+                    },
+                }
+            ],
             "created": created or int(time.time()),
         },
         None,

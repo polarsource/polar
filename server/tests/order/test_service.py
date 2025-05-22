@@ -16,6 +16,7 @@ from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
+from polar.kit.tax import TaxabilityReason
 from polar.models import (
     Account,
     Customer,
@@ -94,6 +95,19 @@ def stripe_service_mock(mocker: MockerFixture, customer: Customer) -> MagicMock:
         email=customer.email,
         name=customer.name,
         address=customer.billing_address,
+    )
+
+    mock.get_tax_rate.return_value = stripe_lib.TaxRate.construct_from(
+        {
+            "id": "STRIPE_TAX_RATE_ID",
+            "rate_type": "percentage",
+            "percentage": 20.0,
+            "flat_amount": None,
+            "display_name": "VAT",
+            "country": "FR",
+            "state": None,
+        },
+        key=None,
     )
 
     return mock
@@ -926,6 +940,39 @@ class TestCreateOrderFromStripe:
         publish_checkout_event_mock.assert_awaited_once_with(
             checkout.client_secret, CheckoutEvent.order_created
         )
+
+    async def test_tax(
+        self,
+        stripe_service_mock: MagicMock,
+        enqueue_job_mock: AsyncMock,
+        session: AsyncSession,
+        subscription: Subscription,
+        product: Product,
+        event_creation_time: tuple[datetime, int],
+    ) -> None:
+        created_datetime, created_unix_timestamp = event_creation_time
+
+        invoice = construct_stripe_invoice(
+            amount_paid=100,
+            subscription_id=subscription.stripe_subscription_id,
+            lines=[
+                {
+                    "price_id": price.stripe_price_id,
+                    "amount": cast(ProductPriceFixed, price).price_amount,
+                    "tax_amount": 1,
+                }
+                for price in product.prices
+                if is_static_price(price)
+            ],
+            created=created_unix_timestamp,
+            customer_id=cast(str, subscription.customer.stripe_customer_id),
+        )
+
+        order = await order_service.create_order_from_stripe(session, invoice)
+
+        assert order.tax_amount == 1
+        assert order.tax_rate is not None
+        assert order.taxability_reason == TaxabilityReason.standard_rated
 
 
 @pytest.mark.asyncio

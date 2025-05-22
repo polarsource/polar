@@ -12,6 +12,7 @@ from sqlalchemy import (
     Uuid,
     text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -21,6 +22,7 @@ from polar.exceptions import PolarError
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
+from polar.kit.tax import TaxabilityReason, TaxID, TaxIDType, TaxRate
 from polar.models.order_item import OrderItem
 
 if TYPE_CHECKING:
@@ -95,6 +97,12 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     stripe_invoice_id: Mapped[str | None] = mapped_column(
         String, nullable=True, unique=True
     )
+
+    taxability_reason: Mapped[TaxabilityReason] = mapped_column(
+        String, nullable=False, default=TaxabilityReason.standard_rated
+    )
+    tax_id: Mapped[TaxID | None] = mapped_column(TaxIDType, nullable=True, default=None)
+    tax_rate: Mapped[TaxRate | None] = mapped_column(JSONB, nullable=True, default=None)
 
     customer_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("customers.id"), nullable=False, index=True

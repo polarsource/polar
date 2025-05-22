@@ -54,7 +54,7 @@ import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useQueryState } from 'nuqs'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export default function ClientPage({
@@ -69,7 +69,6 @@ export default function ClientPage({
   query: string | undefined
 }) {
   const [query, setQuery] = useState(_query)
-
   const [show, setShow] = useQueryState('show', {
     defaultValue: 'active',
   })
@@ -113,13 +112,29 @@ export default function ClientPage({
     [debouncedQueryChange],
   )
 
-  const products = useProducts(org.id, {
+  const { data: products } = useProducts(org.id, {
     query,
     page: pagination.pageIndex + 1,
     limit: pagination.pageSize,
     sorting: sortingStateToQueryParam(sorting),
     is_archived: show === 'all' ? null : show === 'active' ? false : true,
   })
+
+  const sortedProducts = useMemo(
+    () =>
+      products
+        ? products.items.toSorted((a, b) => {
+            if (a.is_archived !== b.is_archived) {
+              return a.is_archived ? 1 : -1
+            }
+            return a.name.localeCompare(b.name, undefined, {
+              numeric: true,
+              sensitivity: 'base',
+            })
+          })
+        : [],
+    [products],
+  )
 
   return (
     <DashboardBody wide>
@@ -151,27 +166,22 @@ export default function ClientPage({
             </Button>
           </Link>
         </div>
-        {products.data && products.data.items.length > 0 ? (
+        {sortedProducts.length > 0 ? (
           <Pagination
             currentPage={pagination.pageIndex + 1}
             pageSize={pagination.pageSize}
-            totalCount={products.data?.pagination.total_count || 0}
+            totalCount={products?.pagination.total_count || 0}
             currentURL={serializeSearchParams(pagination, sorting)}
             onPageChange={onPageChange}
           >
             <List size="small">
-              {products.data.items
-                .sort((a, b) => {
-                  if (a.is_archived === b.is_archived) return 0
-                  return a.is_archived ? 1 : -1
-                })
-                .map((product) => (
-                  <ProductListItem
-                    key={product.id}
-                    organization={org}
-                    product={product}
-                  />
-                ))}
+              {sortedProducts.map((product) => (
+                <ProductListItem
+                  key={product.id}
+                  organization={org}
+                  product={product}
+                />
+              ))}
             </List>
           </Pagination>
         ) : (

@@ -16,7 +16,6 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -62,7 +61,7 @@ export const OrganizationStep = ({
   const [editedSlug, setEditedSlug] = useState(false)
 
   const router = useRouter()
-  const { resolvedTheme } = useTheme()
+
   useEffect(() => {
     posthog.capture('dashboard:organizations:create:view')
   }, [])

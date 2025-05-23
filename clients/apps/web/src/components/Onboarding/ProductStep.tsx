@@ -314,3 +314,5 @@ const CheckoutPreview = memo(
     )
   },
 )
+
+CheckoutPreview.displayName = 'CheckoutPreview'

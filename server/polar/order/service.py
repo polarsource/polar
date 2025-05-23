@@ -59,8 +59,6 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
-from polar.order.repository import OrderRepository
-from polar.order.sorting import OrderSortProperty
 from polar.organization.repository import OrganizationRepository
 from polar.product.guard import is_custom_price, is_static_price
 from polar.product.repository import ProductPriceRepository
@@ -74,6 +72,10 @@ from polar.transaction.service.platform_fee import (
 )
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
+
+from .repository import OrderRepository
+from .schemas import OrderUpdate
+from .sorting import OrderSortProperty
 
 log: Logger = structlog.get_logger()
 
@@ -300,6 +302,18 @@ class OrderService:
             raise InvoiceNotAvailable(order)
 
         return stripe_invoice.hosted_invoice_url
+
+    async def update(
+        self, session: AsyncSession, order: Order, order_update: OrderUpdate
+    ) -> Order:
+        repository = OrderRepository.from_session(session)
+        order = await repository.update(
+            order, update_dict=order_update.model_dump(exclude_unset=True)
+        )
+
+        await self.send_webhook(session, order, WebhookEventType.order_updated)
+
+        return order
 
     async def create_from_checkout(
         self,
@@ -884,45 +898,7 @@ class OrderService:
             session, balance_transactions=balance_transactions
         )
 
-    async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
-        await self._send_webhook(session, order, WebhookEventType.order_created)
-        enqueue_job("order.discord_notification", order_id=order.id)
-
-        if order.paid:
-            await self._on_order_paid(session, order)
-
-        # Notify checkout channel that an order has been created from it
-        if order.checkout:
-            await publish_checkout_event(
-                order.checkout.client_secret, CheckoutEvent.order_created
-            )
-
-    async def _on_order_updated(
-        self, session: AsyncSession, order: Order, previous_status: OrderStatus
-    ) -> None:
-        await self._send_webhook(session, order, WebhookEventType.order_updated)
-
-        became_paid = (
-            order.status == OrderStatus.paid and previous_status != OrderStatus.paid
-        )
-        if became_paid:
-            await self._on_order_paid(session, order)
-
-    async def _on_order_paid(self, session: AsyncSession, order: Order) -> None:
-        assert order.paid
-
-        await self._send_webhook(session, order, WebhookEventType.order_paid)
-
-        if (
-            order.subscription_id is not None
-            and order.billing_reason == OrderBillingReason.subscription_cycle
-        ):
-            enqueue_job(
-                "benefit.enqueue_benefit_grant_cycles",
-                subscription_id=order.subscription_id,
-            )
-
-    async def _send_webhook(
+    async def send_webhook(
         self,
         session: AsyncSession,
         order: Order,
@@ -940,6 +916,44 @@ class OrderService:
         )
         if organization is not None:
             await webhook_service.send(session, organization, event_type, order)
+
+    async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
+        await self.send_webhook(session, order, WebhookEventType.order_created)
+        enqueue_job("order.discord_notification", order_id=order.id)
+
+        if order.paid:
+            await self._on_order_paid(session, order)
+
+        # Notify checkout channel that an order has been created from it
+        if order.checkout:
+            await publish_checkout_event(
+                order.checkout.client_secret, CheckoutEvent.order_created
+            )
+
+    async def _on_order_updated(
+        self, session: AsyncSession, order: Order, previous_status: OrderStatus
+    ) -> None:
+        await self.send_webhook(session, order, WebhookEventType.order_updated)
+
+        became_paid = (
+            order.status == OrderStatus.paid and previous_status != OrderStatus.paid
+        )
+        if became_paid:
+            await self._on_order_paid(session, order)
+
+    async def _on_order_paid(self, session: AsyncSession, order: Order) -> None:
+        assert order.paid
+
+        await self.send_webhook(session, order, WebhookEventType.order_paid)
+
+        if (
+            order.subscription_id is not None
+            and order.billing_reason == OrderBillingReason.subscription_cycle
+        ):
+            enqueue_job(
+                "benefit.enqueue_benefit_grant_cycles",
+                subscription_id=order.subscription_id,
+            )
 
 
 order = OrderService()

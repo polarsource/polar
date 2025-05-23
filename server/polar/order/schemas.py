@@ -180,3 +180,16 @@ class OrderInvoice(Schema):
     """Order's invoice data."""
 
     url: str = Field(..., description="The URL to the invoice.")
+
+
+class OrderUpdateBase(Schema):
+    billing_name: str | None = Field(
+        description="The name of the customer that should appear on the invoice"
+    )
+    billing_address: Address | None = Field(
+        description="The address of the customer that should appear on the invoice"
+    )
+
+
+class OrderUpdate(OrderUpdateBase):
+    """Schema to update an order."""

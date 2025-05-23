@@ -272,7 +272,7 @@ const FrameworkCard = ({
       className={twMerge(
         'dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-y-4 rounded-xl border border-transparent bg-gray-100 p-4',
         active
-          ? 'shadow-3xl border-gray-100 bg-blue-500 text-white'
+          ? 'shadow-3xl border-gray-100 bg-blue-500 text-white dark:bg-blue-500'
           : 'transition-opacity hover:opacity-70',
       )}
       role="button"

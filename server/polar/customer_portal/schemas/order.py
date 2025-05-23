@@ -2,7 +2,7 @@ from pydantic import UUID4, AliasChoices, AliasPath, Field
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import Schema
-from polar.order.schemas import OrderBase, OrderItemSchema
+from polar.order.schemas import OrderBase, OrderItemSchema, OrderUpdateBase
 from polar.organization.schemas import Organization
 from polar.product.schemas import (
     BenefitPublicList,
@@ -52,3 +52,7 @@ class CustomerOrderInvoice(Schema):
     """Order's invoice data."""
 
     url: str = Field(..., description="The URL to the invoice.")
+
+
+class CustomerOrderUpdate(OrderUpdateBase):
+    """Schema to update an order."""

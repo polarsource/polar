@@ -118,7 +118,7 @@ const BenefitGrantOAuth = ({
       <div className="flex flex-row gap-2">
         {account_id && (
           <a href={openButtonUrl} target="_blank" rel="noopener noreferrer">
-            <Button asChild size="lg">
+            <Button asChild fullWidth>
               {openButtonText}
             </Button>
           </a>
@@ -126,12 +126,7 @@ const BenefitGrantOAuth = ({
         {!account_id && (
           <>
             {accounts.length === 0 ? (
-              <Button
-                type="button"
-                onClick={authorize}
-                size="lg"
-                className="w-full"
-              >
+              <Button type="button" onClick={authorize} fullWidth>
                 {connectButtonText}
               </Button>
             ) : (
@@ -160,7 +155,7 @@ const BenefitGrantOAuth = ({
                     <SelectItem value="add">Connect new account</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button type="button" onClick={onAccountSubmit} size="lg">
+                <Button type="button" onClick={onAccountSubmit} fullWidth>
                   Request my invite
                 </Button>
               </>

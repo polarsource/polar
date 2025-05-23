@@ -119,7 +119,6 @@ async def tax_rates_import(stripe_api_key: str) -> None:
             select(Order)
             .where(Order.stripe_invoice_id.isnot(None))
             .order_by(Order.created_at.asc())
-            .limit(1000)
         )
         results = await session.stream_scalars(statement)
 

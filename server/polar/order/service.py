@@ -372,12 +372,13 @@ class OrderService:
 
         # Retrieve tax data
         tax_amount = stripe_invoice.tax or 0
-        taxability_reason: TaxabilityReason = TaxabilityReason.not_collecting
+        taxability_reason: TaxabilityReason | None = None
         tax_id = customer.tax_id
         tax_rate: TaxRate | None = None
         for total_tax_amount in stripe_invoice.total_tax_amounts:
-            if total_tax_amount.taxability_reason is not None:
-                taxability_reason = TaxabilityReason(total_tax_amount.taxability_reason)
+            taxability_reason = TaxabilityReason.from_stripe(
+                total_tax_amount.taxability_reason, tax_amount
+            )
             stripe_tax_rate = cast(stripe_lib.TaxRate, total_tax_amount.tax_rate)
             try:
                 tax_rate = from_stripe_tax_rate(stripe_tax_rate)
@@ -587,12 +588,13 @@ class OrderService:
 
         # Retrieve tax data
         tax_amount = invoice.tax or 0
-        taxability_reason: TaxabilityReason = TaxabilityReason.not_collecting
+        taxability_reason: TaxabilityReason | None = None
         tax_id = customer.tax_id
         tax_rate: TaxRate | None = None
         for total_tax_amount in invoice.total_tax_amounts:
-            if total_tax_amount.taxability_reason is not None:
-                taxability_reason = TaxabilityReason(total_tax_amount.taxability_reason)
+            taxability_reason = TaxabilityReason.from_stripe(
+                total_tax_amount.taxability_reason, tax_amount
+            )
             stripe_tax_rate = await stripe_service.get_tax_rate(
                 get_expandable_id(total_tax_amount.tax_rate)
             )

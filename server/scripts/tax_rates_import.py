@@ -78,28 +78,32 @@ async def migrate_order(order: Order, retry: int = 1) -> MigratedOrder:
             "tax_id": None,
         }
 
+    tax_id: TaxID | None = None
+    if invoice.customer_tax_ids:
+        customer_tax_id = invoice.customer_tax_ids[0]
+        if customer_tax_id.value:
+            tax_id = customer_tax_id.value, TaxIDFormat(customer_tax_id.type)
+
+    taxability_reason: TaxabilityReason | None = None
+    tax_rate: TaxRate | None = None
     for total_tax_amount in invoice.total_tax_amounts:
+        taxability_reason = TaxabilityReason.from_stripe(
+            total_tax_amount.taxability_reason, invoice.tax or 0
+        )
         stripe_tax_rate = cast(stripe_lib.TaxRate, total_tax_amount.tax_rate)
         try:
             tax_rate = from_stripe_tax_rate(stripe_tax_rate)
         except ValueError:
             continue
-        taxability_reason: TaxabilityReason | None = None
-        if total_tax_amount.taxability_reason is not None:
-            taxability_reason = TaxabilityReason(total_tax_amount.taxability_reason)
-        tax_id: TaxID | None = None
-        if invoice.customer_tax_ids:
-            customer_tax_id = invoice.customer_tax_ids[0]
-            if customer_tax_id.value:
-                tax_id = customer_tax_id.value, TaxIDFormat(customer_tax_id.type)
-        return {
-            "order": order,
-            "tax_rate": tax_rate,
-            "taxability_reason": taxability_reason,
-            "tax_id": tax_id,
-        }
+        else:
+            break
 
-    return {"order": order, "tax_rate": None, "taxability_reason": None, "tax_id": None}
+    return {
+        "order": order,
+        "tax_rate": tax_rate,
+        "taxability_reason": taxability_reason,
+        "tax_id": tax_id,
+    }
 
 
 @cli.command()
@@ -115,6 +119,7 @@ async def tax_rates_import(stripe_api_key: str) -> None:
             select(Order)
             .where(Order.stripe_invoice_id.isnot(None))
             .order_by(Order.created_at.asc())
+            .limit(1000)
         )
         results = await session.stream_scalars(statement)
 
@@ -144,18 +149,10 @@ async def tax_rates_import(stripe_api_key: str) -> None:
             for task in tasks:
                 migrated_order = task.result()
                 order = migrated_order["order"]
-                updated = False
-                if migrated_order["tax_rate"] is not None:
-                    order.tax_rate = migrated_order["tax_rate"]
-                    updated = True
-                if migrated_order["taxability_reason"] is not None:
-                    order.taxability_reason = migrated_order["taxability_reason"]
-                    updated = True
-                if migrated_order["tax_id"] is not None:
-                    order.tax_id = migrated_order["tax_id"]
-                    updated = True
-                if updated:
-                    session.add(order)
+                order.tax_rate = migrated_order["tax_rate"]
+                order.taxability_reason = migrated_order["taxability_reason"]
+                order.tax_id = migrated_order["tax_id"]
+                session.add(order)
                 progress.update(update_progress, advance=1)
 
         await session.commit()

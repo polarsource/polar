@@ -144,6 +144,8 @@ export default function ClientPage({
               value={productId || []}
               onChange={onProductSelect}
               className="w-auto"
+              wrapperClassName="md:w-[200px]"
+              popOverContentLength="w-[250px]"
             />
           </div>
         </div>

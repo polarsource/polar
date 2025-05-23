@@ -405,6 +405,18 @@ class TaxabilityReason(StrEnum):
     not_supported = "not_supported"
     """Purchases from countries where we don't support tax."""
 
+    @classmethod
+    def from_stripe(
+        cls, stripe_reason: str | None, tax_amount: int
+    ) -> "TaxabilityReason | None":
+        if stripe_reason is None or stripe_reason == "not_available":
+            # Stripe sometimes returns `None` or `not_available` even if taxes are collected.
+            if tax_amount != 0:
+                return TaxabilityReason.standard_rated
+            return None
+
+        return cls(stripe_reason)
+
 
 class TaxRate(TypedDict):
     stripe_id: str

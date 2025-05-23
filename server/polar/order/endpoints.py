@@ -16,7 +16,7 @@ from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import Order as OrderSchema
-from .schemas import OrderID, OrderInvoice, OrderNotFound
+from .schemas import OrderID, OrderInvoice, OrderNotFound, OrderUpdate
 from .service import order as order_service
 
 router = APIRouter(prefix="/orders", tags=["orders", APITag.documented, APITag.mcp])
@@ -122,3 +122,24 @@ async def invoice(
     invoice_url = await order_service.get_order_invoice_url(order)
 
     return OrderInvoice(url=invoice_url)
+
+
+@router.patch(
+    "/{id}",
+    summary="Update Order",
+    response_model=OrderSchema,
+    responses={404: OrderNotFound},
+)
+async def update(
+    id: OrderID,
+    order_update: OrderUpdate,
+    auth_subject: auth.OrdersWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Order:
+    """Update an order."""
+    order = await order_service.get(session, auth_subject, id)
+
+    if order is None:
+        raise ResourceNotFound()
+
+    return await order_service.update(session, order, order_update)

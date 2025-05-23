@@ -81,8 +81,15 @@ Your browser will open a new page and you'll be prompted to **create a GitHub Ap
 > The script will automatically use your external GitHub Codespace URL.
 
 **Optional: setup Stripe**
+> [!NOTE]
+> Some functions, such as product creation, may not work as expected due to missing Stripe environment variables.
 
-Currently, this setup script doesn't support to create a [Stripe Sandbox](https://docs.stripe.com/sandboxes). If you want a ready-to-use Stripe Sandbox, contact us and we'll happily provide you one.
+You can create your own Stripe account and set up a sandbox environment for testing. Visit [Stripe](https://stripe.com) to sign up and access the sandbox. The minimal environment variables needed are:
+
+- `POLAR_STRIPE_SECRET_KEY`: Located in your Stripe Dashboard under Developers > API Keys.
+- `POLAR_STRIPE_PUBLISHABLE_KEY`: Located in your Stripe Dashboard under Developers > API Keys.
+
+Currently, this setup script doesn't support creating a [Stripe Sandbox](https://docs.stripe.com/sandboxes) automatically. If you want a ready-to-use Stripe Sandbox, contact us, and we'll happily provide one.
 
 ### Setup backend
 
@@ -147,7 +154,7 @@ cd server
 uv run task emails
 ```
 > [!NOTE]
-> If you're in local development, you should build the email renderer binary ,as it's reuquired for first time.
+> If you're in local development, you should build the email renderer binary ,as it's required for first time.
 
 **2. Apply the database migrations**
 
@@ -182,7 +189,7 @@ cd clients
 ```
 
 ```sh
-pnpm run dev
+pnpm dev
 ```
 
 By default, the web client will be available at [http://127.0.0.1:3000](http://127.0.0.1:3000).
@@ -192,6 +199,18 @@ By default, the web client will be available at [http://127.0.0.1:3000](http://1
 
 > [!NOTE]
 > On **GitHub Codespaces**, both API backend and web frontend will be routed on the 8080 port.
+
+## Login using email
+
+To log in for the first time, follow these steps:
+
+1. Navigate to the login page.
+2. Enter your email address in the provided field.
+3. Click the "Login" button.
+4. Check the terminal where the API is running (`uv run task api`) for a magic link.
+> [!TIP]
+> Search for `/login/magic-link/authenticate` in the terminal to easily find the magic link within the HTML output.
+5. Click the URL provided in the terminal to complete the login process.
 
 ## Work with emails
 

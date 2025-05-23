@@ -29,7 +29,7 @@ const frameworks = (product: schemas['Product']) =>
 
 export const GET = Checkout({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
-  successUrl: process.env.SUCCESS_URL
+  successUrl: process.env.POLAR_SUCCESS_URL
 });`,
     },
     {
@@ -43,8 +43,7 @@ import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth"
 import { Polar } from "@polar-sh/sdk";
 
 const polarClient = new Polar({
-    accessToken: process.env.POLAR_ACCESS_TOKEN,
-    server: 'sandbox'
+    accessToken: process.env.POLAR_ACCESS_TOKEN
 });
 
 const auth = betterAuth({
@@ -61,7 +60,7 @@ const auth = betterAuth({
                             slug: "${slugify(product.name)}" // Custom slug for easy reference in Checkout URL, e.g. /checkout/${slugify(product.name)}
                         }
                     ],
-                    successUrl: "/success?checkout_id={CHECKOUT_ID}",
+                    successUrl: process.env.POLAR_SUCCESS_URL,
                     authenticatedUsersOnly: true
                 })
             ],
@@ -78,11 +77,12 @@ const auth = betterAuth({
       code: `import { Polar } from "@polar-sh/sdk";
 
 const polar = new Polar({
-  accessToken: 'xxx',
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
 });
 
 const checkout = await polar.checkouts.create({
-  products: ["${product.id}"]
+  products: ["${product.id}"],
+  successUrl: process.env.POLAR_SUCCESS_URL
 });
 
 redirect(checkout.url)`,
@@ -93,17 +93,18 @@ redirect(checkout.url)`,
       link: 'https://docs.polar.sh/integrate/sdk/python',
       icon: <PythonIcon size={24} />,
       install: 'pip install polar-sdk',
-      code: `from polar_sdk import Polar
-
+      code: `import os
+from polar_sdk import Polar
 
 with Polar(
-    access_token="<YOUR_BEARER_TOKEN_HERE>",
+    access_token=os.environ.get("POLAR_ACCESS_TOKEN"),
 ) as polar:
 
     res = polar.checkouts.create(request={
         "products": [
             "${product.id}"
         ],
+        "success_url": os.environ.get("POLAR_SUCCESS_URL")
     })
 
     # Handle response

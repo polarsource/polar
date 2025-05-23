@@ -337,6 +337,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         checkout: Checkout,
         intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent | None,
     ) -> Subscription:
+        idempotency_key = (
+            f"subscription_{checkout.id}{'' if intent is None else f'_{intent.id}'}"
+        )
         product = checkout.product
         if not product.is_recurring:
             raise NotARecurringProduct(checkout, product)
@@ -377,7 +380,11 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
             if is_custom_price(price):
                 ad_hoc_price = await stripe_service.create_ad_hoc_custom_price(
-                    product, price, amount=checkout.amount, currency=checkout.currency
+                    product,
+                    price,
+                    amount=checkout.amount,
+                    currency=checkout.currency,
+                    idempotency_key=f"{idempotency_key}_{price.id}",
                 )
                 stripe_price_ids.append(ad_hoc_price.id)
                 subscription_product_prices.append(
@@ -396,7 +403,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         # It happens if we only have metered prices on the product
         if len(stripe_price_ids) == 0:
             placeholder_price = await stripe_service.create_placeholder_price(
-                product, checkout.currency
+                product,
+                checkout.currency,
+                idempotency_key=f"{idempotency_key}_placeholder",
             )
             stripe_price_ids.append(placeholder_price.id)
 
@@ -424,6 +433,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 automatic_tax=automatic_tax,
                 metadata=metadata,
                 invoice_metadata=invoice_metadata,
+                idempotency_key=f"{idempotency_key}_create",
             )
             subscription = Subscription()
             new_subscription = True
@@ -442,10 +452,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 automatic_tax=automatic_tax,
                 metadata=metadata,
                 invoice_metadata=invoice_metadata,
+                idempotency_key=f"{idempotency_key}_update",
             )
         await stripe_service.set_automatically_charged_subscription(
             stripe_subscription.id,
             stripe_payment_method_id,
+            idempotency_key=f"{idempotency_key}_payment_method",
         )
 
         subscription.stripe_subscription_id = stripe_subscription.id

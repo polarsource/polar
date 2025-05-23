@@ -402,6 +402,9 @@ class TaxabilityReason(StrEnum):
     not_subject_to_tax = "not_subject_to_tax"
     """Purchases where the customer provided a tax ID, but on countries where we don't collect tax."""
 
+    not_supported = "not_supported"
+    """Purchases from countries where we don't support tax."""
+
 
 class TaxRate(TypedDict):
     stripe_id: str

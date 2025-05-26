@@ -543,30 +543,31 @@ class OrderService:
                 )
             )
 
-        # Add pending billing entries
-        stripe_customer_id = customer.stripe_customer_id
-        assert stripe_customer_id is not None
-        pending_items = await billing_entry_service.create_order_items_from_pending(
-            session,
-            subscription,
-            stripe_invoice_id=invoice.id,
-            stripe_customer_id=stripe_customer_id,
-        )
-        items.extend(pending_items)
-        # Reload the invoice to get totals with added pending items
-        if len(pending_items) > 0:
-            invoice = await stripe_service.get_invoice(invoice.id)
+        if invoice.status == "draft":
+            # Add pending billing entries
+            stripe_customer_id = customer.stripe_customer_id
+            assert stripe_customer_id is not None
+            pending_items = await billing_entry_service.create_order_items_from_pending(
+                session,
+                subscription,
+                stripe_invoice_id=invoice.id,
+                stripe_customer_id=stripe_customer_id,
+            )
+            items.extend(pending_items)
+            # Reload the invoice to get totals with added pending items
+            if len(pending_items) > 0:
+                invoice = await stripe_service.get_invoice(invoice.id)
 
-        # Update statement descriptor
-        # Stripe doesn't allow to set statement descriptor on the subscription itself,
-        # so we need to set it manually on each new invoice.
-        assert invoice.id is not None
-        await stripe_service.update_invoice(
-            invoice.id,
-            statement_descriptor=subscription.organization.name[
-                : settings.stripe_descriptor_suffix_max_length
-            ],
-        )
+            # Update statement descriptor
+            # Stripe doesn't allow to set statement descriptor on the subscription itself,
+            # so we need to set it manually on each new invoice.
+            assert invoice.id is not None
+            await stripe_service.update_invoice(
+                invoice.id,
+                statement_descriptor=subscription.organization.name[
+                    : settings.stripe_descriptor_suffix_max_length
+                ],
+            )
 
         # Determine billing reason
         billing_reason = OrderBillingReason.subscription_cycle

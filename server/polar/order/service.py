@@ -319,6 +319,8 @@ class OrderService:
         if stripe_customer_id is None:
             raise MissingStripeCustomerID(checkout, customer)
 
+        idempotency_key = f"order_{checkout.id}{'' if payment_intent is None else f'_{payment_intent.id}'}"
+
         metadata = {
             "type": ProductType.product,
             "product_id": str(checkout.product_id),
@@ -333,7 +335,11 @@ class OrderService:
             # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
             if is_custom_price(price):
                 ad_hoc_price = await stripe_service.create_ad_hoc_custom_price(
-                    product, price, checkout.amount, checkout.currency
+                    product,
+                    price,
+                    checkout.amount,
+                    checkout.currency,
+                    idempotency_key=f"{idempotency_key}_{price.id}",
                 )
                 price_id_map[price.stripe_price_id] = ad_hoc_price.id
             elif is_static_price(price):
@@ -350,6 +356,7 @@ class OrderService:
             # Disable automatic tax for free purchases, since we don't collect customer address in that case
             automatic_tax=checkout.is_payment_required and product.is_tax_applicable,
             metadata=metadata,
+            idempotency_key=idempotency_key,
         )
 
         items: list[OrderItem] = []

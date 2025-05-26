@@ -468,6 +468,7 @@ class TestCreateFromCheckout:
             coupon=None,
             automatic_tax=True,
             metadata=ANY,
+            idempotency_key=ANY,
         )
 
         enqueue_job_mock.assert_any_call(
@@ -541,6 +542,7 @@ class TestCreateFromCheckout:
             coupon=None,
             automatic_tax=True,
             metadata=ANY,
+            idempotency_key=ANY,
         )
 
         enqueue_job_mock.assert_any_call(
@@ -613,6 +615,7 @@ class TestCreateFromCheckout:
             coupon=None,
             automatic_tax=False,
             metadata=ANY,
+            idempotency_key=ANY,
         )
 
         enqueue_job_mock.assert_any_call(
@@ -691,6 +694,7 @@ class TestCreateFromCheckout:
             coupon=discount_percentage_100.stripe_coupon_id,
             automatic_tax=False,
             metadata=ANY,
+            idempotency_key=ANY,
         )
 
         enqueue_job_mock.assert_any_call(

@@ -55,23 +55,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/users/me/stripe_customer_portal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create Stripe Customer Portal */
-        post: operations["users:create_stripe_customer_portal"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/integrations/github/authorize": {
         parameters: {
             query?: never;
@@ -9274,6 +9257,12 @@ export interface components {
          */
         CustomerStateMeter: {
             /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp of the object.
@@ -15722,11 +15711,6 @@ export interface components {
             /** Campaign */
             campaign?: string | null;
         };
-        /** UserStripePortalSession */
-        UserStripePortalSession: {
-            /** Url */
-            url: string;
-        };
         /** ValidatedLicenseKey */
         ValidatedLicenseKey: {
             /**
@@ -16520,26 +16504,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserIdentityVerification"];
-                };
-            };
-        };
-    };
-    "users:create_stripe_customer_portal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserStripePortalSession"];
                 };
             };
         };

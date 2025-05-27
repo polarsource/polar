@@ -1,18 +1,15 @@
 'use client'
 
 import { BenefitGrant } from '@/components/Benefit/BenefitGrant'
-import {
-  useCustomerBenefitGrants,
-  useCustomerOrderInvoice,
-} from '@/hooks/queries'
+import { useCustomerBenefitGrants } from '@/hooks/queries'
 import { Client, schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
 import { DetailRow } from '../Shared/DetailRow'
 
 const statusColors = {
@@ -28,10 +25,12 @@ const statusColors = {
 const CustomerPortalOrder = ({
   api,
   order,
+  customerSessionToken,
   themingPreset,
 }: {
   api: Client
   order: schemas['CustomerOrder']
+  customerSessionToken: string
   themingPreset: ThemingPresetProps
 }) => {
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
@@ -39,12 +38,6 @@ const CustomerPortalOrder = ({
     limit: 100,
     sorting: ['type'],
   })
-
-  const orderInvoiceMutation = useCustomerOrderInvoice(api)
-  const openInvoice = useCallback(async () => {
-    const { url } = await orderInvoiceMutation.mutateAsync({ id: order.id })
-    window.open(url, '_blank')
-  }, [orderInvoiceMutation, order])
 
   const isPartiallyOrFullyRefunded = useMemo(() => {
     return order.status === 'partially_refunded' || order.status === 'refunded'
@@ -138,18 +131,15 @@ const CustomerPortalOrder = ({
               />
             )}
           </div>
-          <div className="flex flex-col gap-2">
-            <Button
-              size="lg"
-              fullWidth
-              onClick={openInvoice}
-              loading={orderInvoiceMutation.isPending}
-              disabled={orderInvoiceMutation.isPending}
-              className={themingPreset.polar.button}
-            >
-              Download Invoice
-            </Button>
-          </div>
+          {order.paid && (
+            <div className="flex flex-col gap-2">
+              <DownloadInvoicePortal
+                customerSessionToken={customerSessionToken}
+                order={order}
+                onInvoiceGenerated={() => {}}
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex w-full flex-col gap-4">

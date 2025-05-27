@@ -88,7 +88,7 @@ export default async function Page({
     <ClientPage
       organization={organization}
       orders={orders}
-      customerSessionToken={searchParams.customer_session_token}
+      customerSessionToken={searchParams.customer_session_token as string}
     />
   )
 }

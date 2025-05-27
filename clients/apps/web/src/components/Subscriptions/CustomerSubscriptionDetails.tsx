@@ -34,7 +34,7 @@ const CustomerSubscriptionDetails = ({
   onUserSubscriptionUpdate: (
     subscription: schemas['CustomerSubscription'],
   ) => void
-  customerSessionToken?: string
+  customerSessionToken: string
 }) => {
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
@@ -262,6 +262,7 @@ const CustomerSubscriptionDetails = ({
           <div className="flex flex-col overflow-y-auto p-8">
             <CustomerPortalSubscription
               api={api}
+              customerSessionToken={customerSessionToken}
               subscription={subscription}
               themingPreset={themePreset}
             />

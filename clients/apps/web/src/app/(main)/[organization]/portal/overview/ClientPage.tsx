@@ -15,7 +15,7 @@ const ClientPage = ({
   products: schemas['CustomerProduct'][]
   subscriptions: schemas['ListResource_CustomerSubscription_']
   benefitGrants: schemas['ListResource_CustomerBenefitGrant_']
-  customerSessionToken?: string
+  customerSessionToken: string
 }) => {
   return (
     <NuqsAdapter>

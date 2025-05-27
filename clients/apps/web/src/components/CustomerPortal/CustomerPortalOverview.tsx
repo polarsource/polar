@@ -13,7 +13,7 @@ export interface CustomerPortalProps {
   products: schemas['CustomerProduct'][]
   subscriptions: schemas['CustomerSubscription'][]
   benefitGrants: schemas['CustomerBenefitGrant'][]
-  customerSessionToken?: string
+  customerSessionToken: string
 }
 
 export const CustomerPortalOverview = ({
@@ -63,6 +63,7 @@ export const CustomerPortalOverview = ({
           organization={organization}
           subscriptions={inactiveSubscriptions}
           api={api}
+          customerSessionToken={customerSessionToken}
           products={products}
         />
       )}

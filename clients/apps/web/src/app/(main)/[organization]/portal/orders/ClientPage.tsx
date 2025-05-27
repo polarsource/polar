@@ -11,7 +11,7 @@ const ClientPage = ({
 }: {
   organization: schemas['Organization']
   orders: schemas['ListResource_CustomerOrder_']
-  customerSessionToken?: string
+  customerSessionToken: string
 }) => {
   return (
     <NuqsAdapter>

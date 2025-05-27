@@ -5,6 +5,7 @@ import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
+import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
 import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
 import PaymentStatus from '@/components/PaymentStatus/PaymentStatus'
 import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
@@ -90,7 +91,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   organization,
   order: _order,
 }) => {
-  const { data: order } = useOrder(_order.id, _order)
+  const { data: order, refetch: refetchOrder } = useOrder(_order.id, _order)
   const { data: product } = useProduct(_order.product.id)
   const { data: customFields } = useCustomFields(organization.id)
   const { data: payments, isLoading: paymentsLoading } = usePayments(
@@ -162,7 +163,16 @@ const ClientPage: React.FC<ClientPageProps> = ({
           </div>
         </div>
         <div className="flex flex-col gap-6 p-8">
-          <h2 className="text-xl">Order Details</h2>
+          <div className="flex flex-row items-center justify-between">
+            <h2 className="text-xl">Order Details</h2>
+            {order.paid && (
+              <DownloadInvoiceDashboard
+                order={order}
+                organization={organization}
+                onInvoiceGenerated={refetchOrder}
+              />
+            )}
+          </div>
           <div className="flex flex-col gap-1">
             <DetailRow title="Order ID">
               <span className="dark:text-polar-500 font-mono text-sm text-gray-500">

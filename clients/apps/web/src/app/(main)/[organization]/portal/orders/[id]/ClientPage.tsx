@@ -12,7 +12,7 @@ const ClientPage = ({
 }: {
   organization: schemas['Organization']
   order: schemas['CustomerOrder']
-  customerSessionToken?: string
+  customerSessionToken: string
 }) => {
   const themingPreset = useThemePreset(
     organization.slug === 'midday' ? 'midday' : 'polar',
@@ -23,6 +23,7 @@ const ClientPage = ({
     <CustomerPortalOrder
       api={api}
       order={order}
+      customerSessionToken={customerSessionToken}
       themingPreset={themingPreset}
     />
   )

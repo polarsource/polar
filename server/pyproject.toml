@@ -50,6 +50,7 @@ dependencies = [
   "tagflow>=0.7.0",
   "exponent-server-sdk>=2.1.0",
   "dramatiq[redis,watch]>=1.17.1",
+  "fpdf2>=2.8.3",
 ]
 
 [dependency-groups]

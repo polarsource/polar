@@ -134,4 +134,5 @@ playground.py
 
 .jwks.json
 *.mmdb
+server/tests/invoice/test_invoice.pdf
 supervisord.pid

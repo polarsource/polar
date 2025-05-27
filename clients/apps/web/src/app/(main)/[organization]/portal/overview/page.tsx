@@ -120,7 +120,7 @@ export default async function Page({
       products={products}
       subscriptions={subscriptions}
       benefitGrants={benefitGrants}
-      customerSessionToken={searchParams.customer_session_token}
+      customerSessionToken={searchParams.customer_session_token as string}
     />
   )
 }

@@ -15,7 +15,7 @@ interface SubscriptionsOverviewProps {
   subscriptions: schemas['CustomerSubscription'][]
   products: schemas['CustomerProduct'][]
   api: Client
-  customerSessionToken?: string
+  customerSessionToken: string
 }
 
 export const ActiveSubscriptionsOverview = ({
@@ -62,6 +62,7 @@ export const InactiveSubscriptionsOverview = ({
   organization,
   subscriptions,
   api,
+  customerSessionToken,
 }: SubscriptionsOverviewProps) => {
   const themingPreset = useThemePreset(
     organization.slug === 'midday' ? 'midday' : 'polar',
@@ -152,6 +153,7 @@ export const InactiveSubscriptionsOverview = ({
             <div className="flex flex-col overflow-y-auto p-8">
               <CustomerPortalSubscription
                 api={api}
+                customerSessionToken={customerSessionToken}
                 subscription={selectedSubscription}
                 themingPreset={themingPreset}
               />

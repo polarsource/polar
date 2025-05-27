@@ -15,7 +15,7 @@ import CustomerPortalOrder from './CustomerPortalOrder'
 export interface CustomerPortalOrdersProps {
   organization: schemas['Organization']
   orders: schemas['CustomerOrder'][]
-  customerSessionToken?: string
+  customerSessionToken: string
 }
 
 export const CustomerPortalOrders = ({
@@ -120,6 +120,7 @@ export const CustomerPortalOrders = ({
               <CustomerPortalOrder
                 api={api}
                 order={selectedOrder}
+                customerSessionToken={customerSessionToken}
                 themingPreset={themingPreset}
               />
             </div>

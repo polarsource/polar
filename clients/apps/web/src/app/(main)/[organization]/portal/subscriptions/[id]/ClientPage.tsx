@@ -10,7 +10,7 @@ const ClientPage = ({
   customerSessionToken,
 }: {
   subscription: schemas['CustomerSubscription']
-  customerSessionToken?: string
+  customerSessionToken: string
 }) => {
   const themingPreset = useThemePreset(
     subscription.product.organization.slug === 'midday' ? 'midday' : 'polar',
@@ -20,6 +20,7 @@ const ClientPage = ({
   return (
     <CustomerPortalSubscription
       api={api}
+      customerSessionToken={customerSessionToken}
       subscription={subscription}
       themingPreset={themingPreset}
     />

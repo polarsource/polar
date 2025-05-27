@@ -189,6 +189,23 @@ export const useCustomerDownloadables = (
     retry: defaultRetry,
   })
 
+export const useCustomerOrder = (
+  api: Client,
+  id: string,
+  initialData?: schemas['CustomerOrder'],
+) =>
+  useQuery({
+    queryKey: ['customer_order', { id }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/orders/{id}', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    initialData,
+  })
+
 export const useCustomerOrders = (
   api: Client,
   parameters?: operations['customer_portal:orders:list']['parameters']['query'],
@@ -202,16 +219,6 @@ export const useCustomerOrders = (
         }),
       ),
     retry: defaultRetry,
-  })
-
-export const useCustomerOrderInvoice = (api: Client) =>
-  useMutation({
-    mutationFn: (variables: { id: string }) =>
-      unwrap(
-        api.GET('/v1/customer-portal/orders/{id}/invoice', {
-          params: { path: { id: variables.id } },
-        }),
-      ),
   })
 
 export const useCustomerSubscriptions = (

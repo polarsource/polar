@@ -1254,7 +1254,13 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Order
+         * @description Update an order.
+         *
+         *     **Scopes**: `orders:write`
+         */
+        patch: operations["orders:update"];
         trace?: never;
     };
     "/v1/orders/{id}/invoice": {
@@ -1272,7 +1278,13 @@ export interface paths {
          */
         get: operations["orders:invoice"];
         put?: never;
-        post?: never;
+        /**
+         * Generate Order Invoice
+         * @description Trigger generation of an order's invoice.
+         *
+         *     **Scopes**: `orders:read`
+         */
+        post: operations["orders:generate_invoice"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2477,7 +2489,13 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Order
+         * @description Update an order for the authenticated customer.
+         *
+         *     **Scopes**: `customer_portal:write`
+         */
+        patch: operations["customer_portal:orders:update"];
         trace?: never;
     };
     "/v1/customer-portal/orders/{id}/invoice": {
@@ -2495,7 +2513,13 @@ export interface paths {
          */
         get: operations["customer_portal:orders:invoice"];
         put?: never;
-        post?: never;
+        /**
+         * Generate Order Invoice
+         * @description Trigger generation of an order's invoice.
+         *
+         *     **Scopes**: `customer_portal:read` `customer_portal:write`
+         */
+        post: operations["customer_portal:orders:generate_invoice"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3754,7 +3778,7 @@ export interface components {
          * AvailableScope
          * @enum {string}
          */
-        AvailableScope: "openid" | "profile" | "email" | "user:read" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "refunds:read" | "refunds:write" | "payments:read" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notification_recipients:read" | "notification_recipients:write";
+        AvailableScope: "openid" | "profile" | "email" | "user:read" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "orders:write" | "refunds:read" | "refunds:write" | "payments:read" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notification_recipients:read" | "notification_recipients:write";
         Benefit: components["schemas"]["BenefitCustom"] | components["schemas"]["BenefitDiscord"] | components["schemas"]["BenefitGitHubRepository"] | components["schemas"]["BenefitDownloadables"] | components["schemas"]["BenefitLicenseKeys"] | components["schemas"]["BenefitMeterCredit"];
         BenefitCreate: components["schemas"]["BenefitCustomCreate"] | components["schemas"]["BenefitDiscordCreate"] | components["schemas"]["BenefitGitHubRepositoryCreate"] | components["schemas"]["BenefitDownloadablesCreate"] | components["schemas"]["BenefitLicenseKeysCreate"] | components["schemas"]["BenefitMeterCreditCreate"];
         /**
@@ -8698,7 +8722,17 @@ export interface components {
             /** Currency */
             currency: string;
             billing_reason: components["schemas"]["OrderBillingReason"];
+            /**
+             * Billing Name
+             * @description The name of the customer that should appear on the invoice.
+             */
+            billing_name: string | null;
             billing_address: components["schemas"]["Address"] | null;
+            /**
+             * Is Invoice Generated
+             * @description Whether an invoice has been generated for this order.
+             */
+            is_invoice_generated: boolean;
             /**
              * Customer Id
              * Format: uuid4
@@ -8900,6 +8934,19 @@ export interface components {
             customer_cancellation_reason: components["schemas"]["CustomerCancellationReason"] | null;
             /** Customer Cancellation Comment */
             customer_cancellation_comment: string | null;
+        };
+        /**
+         * CustomerOrderUpdate
+         * @description Schema to update an order.
+         */
+        CustomerOrderUpdate: {
+            /**
+             * Billing Name
+             * @description The name of the customer that should appear on the invoice. Can't be updated after the invoice is generated.
+             */
+            billing_name: string | null;
+            /** @description The address of the customer that should appear on the invoice. Can't be updated after the invoice is generated. */
+            billing_address: components["schemas"]["Address"] | null;
         };
         /**
          * CustomerOrganization
@@ -11288,6 +11335,16 @@ export interface components {
             /** Iat */
             iat: number;
         };
+        /** InvoiceAlreadyExists */
+        InvoiceAlreadyExists: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "InvoiceAlreadyExists";
+            /** Detail */
+            detail: string;
+        };
         LegacyRecurringProductPrice: components["schemas"]["LegacyRecurringProductPriceFixed"] | components["schemas"]["LegacyRecurringProductPriceCustom"] | components["schemas"]["LegacyRecurringProductPriceFree"];
         /**
          * LegacyRecurringProductPriceCustom
@@ -12607,6 +12664,16 @@ export interface components {
             /** Checkouts Conversion */
             checkouts_conversion: number;
         };
+        /** MissingInvoiceBillingDetails */
+        MissingInvoiceBillingDetails: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "MissingInvoiceBillingDetails";
+            /** Detail */
+            detail: string;
+        };
         /** NotOpenCheckout */
         NotOpenCheckout: {
             /**
@@ -12614,6 +12681,16 @@ export interface components {
              * @constant
              */
             error: "NotOpenCheckout";
+            /** Detail */
+            detail: string;
+        };
+        /** NotPaidOrder */
+        NotPaidOrder: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "NotPaidOrder";
             /** Detail */
             detail: string;
         };
@@ -12716,7 +12793,7 @@ export interface components {
             response_types: "code"[];
             /**
              * Scope
-             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
+             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
              */
             scope: string;
             /** Client Name */
@@ -12776,7 +12853,7 @@ export interface components {
             response_types: "code"[];
             /**
              * Scope
-             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
+             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
              */
             scope: string;
             /** Client Name */
@@ -12817,7 +12894,7 @@ export interface components {
             response_types: "code"[];
             /**
              * Scope
-             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
+             * @default openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notification_recipients:read notification_recipients:write
              */
             scope: string;
             /** Client Name */
@@ -12954,7 +13031,17 @@ export interface components {
             /** Currency */
             currency: string;
             billing_reason: components["schemas"]["OrderBillingReason"];
+            /**
+             * Billing Name
+             * @description The name of the customer that should appear on the invoice.
+             */
+            billing_name: string | null;
             billing_address: components["schemas"]["Address"] | null;
+            /**
+             * Is Invoice Generated
+             * @description Whether an invoice has been generated for this order.
+             */
+            is_invoice_generated: boolean;
             /**
              * Customer Id
              * Format: uuid4
@@ -13283,6 +13370,19 @@ export interface components {
             customer_cancellation_reason: components["schemas"]["CustomerCancellationReason"] | null;
             /** Customer Cancellation Comment */
             customer_cancellation_comment: string | null;
+        };
+        /**
+         * OrderUpdate
+         * @description Schema to update an order.
+         */
+        OrderUpdate: {
+            /**
+             * Billing Name
+             * @description The name of the customer that should appear on the invoice. Can't be updated after the invoice is generated.
+             */
+            billing_name: string | null;
+            /** @description The address of the customer that should appear on the invoice. Can't be updated after the invoice is generated. */
+            billing_address: components["schemas"]["Address"] | null;
         };
         /** OrderUser */
         OrderUser: {
@@ -14832,7 +14932,7 @@ export interface components {
          * Scope
          * @enum {string}
          */
-        Scope: "openid" | "profile" | "email" | "user:read" | "admin" | "web_default" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "refunds:read" | "refunds:write" | "payments:read" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notification_recipients:read" | "notification_recipients:write";
+        Scope: "openid" | "profile" | "email" | "user:read" | "admin" | "web_default" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "orders:write" | "refunds:read" | "refunds:write" | "payments:read" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notification_recipients:read" | "notification_recipients:write";
         /**
          * Status
          * @enum {string}
@@ -19153,6 +19253,51 @@ export interface operations {
             };
         };
     };
+    "orders:update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The order ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Order not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "orders:invoice": {
         parameters: {
             query?: never;
@@ -19190,6 +19335,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "orders:generate_invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The order ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Order already has an invoice. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceAlreadyExists"];
+                };
+            };
+            /** @description Order is not paid or is missing billing name or address. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MissingInvoiceBillingDetails"] | components["schemas"]["NotPaidOrder"];
                 };
             };
         };
@@ -22261,6 +22447,51 @@ export interface operations {
             };
         };
     };
+    "customer_portal:orders:update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The order ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerOrderUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerOrder"];
+                };
+            };
+            /** @description Order not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "customer_portal:orders:invoice": {
         parameters: {
             query?: never;
@@ -22298,6 +22529,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "customer_portal:orders:generate_invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The order ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Order already has an invoice. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceAlreadyExists"];
+                };
+            };
+            /** @description Order is not paid or is missing billing name or address. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MissingInvoiceBillingDetails"] | components["schemas"]["NotPaidOrder"];
                 };
             };
         };
@@ -24231,7 +24503,7 @@ type ReadonlyArray<T> = [
 export const accountTypeValues: ReadonlyArray<components["schemas"]["AccountType"]> = ["stripe", "open_collective"];
 export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseOrganization"]["sub_type"]> = ["organization"];
 export const authorizeResponseUserSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseUser"]["sub_type"]> = ["user"];
-export const availableScopeValues: ReadonlyArray<components["schemas"]["AvailableScope"]> = ["openid", "profile", "email", "user:read", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notification_recipients:read", "notification_recipients:write"];
+export const availableScopeValues: ReadonlyArray<components["schemas"]["AvailableScope"]> = ["openid", "profile", "email", "user:read", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "orders:write", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notification_recipients:read", "notification_recipients:write"];
 export const benefitCustomCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitCustomCreate"]["type"]> = ["custom"];
 export const benefitCycledEventNameValues: ReadonlyArray<components["schemas"]["BenefitCycledEvent"]["name"]> = ["benefit.cycled"];
 export const benefitDiscordCreateTypeValues: ReadonlyArray<components["schemas"]["BenefitDiscordCreate"]["type"]> = ["discord"];
@@ -24346,7 +24618,7 @@ export const propertyAggregationFuncValues: ReadonlyArray<components["schemas"][
 export const refundReasonValues: ReadonlyArray<components["schemas"]["RefundReason"]> = ["duplicate", "fraudulent", "customer_request", "service_disruption", "satisfaction_guarantee", "other"];
 export const refundSortPropertyValues: ReadonlyArray<components["schemas"]["RefundSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
 export const refundStatusValues: ReadonlyArray<components["schemas"]["RefundStatus"]> = ["pending", "succeeded", "failed", "canceled"];
-export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "admin", "web_default", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notification_recipients:read", "notification_recipients:write"];
+export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "admin", "web_default", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "orders:write", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notification_recipients:read", "notification_recipients:write"];
 export const statusValues: ReadonlyArray<components["schemas"]["Status"]> = ["created", "onboarding_started", "under_review", "denied", "active"];
 export const subTypeValues: ReadonlyArray<components["schemas"]["SubType"]> = ["user", "organization"];
 export const subscriptionProrationBehaviorValues: ReadonlyArray<components["schemas"]["SubscriptionProrationBehavior"]> = ["invoice", "prorate"];

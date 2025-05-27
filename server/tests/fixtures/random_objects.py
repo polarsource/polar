@@ -806,6 +806,8 @@ async def create_order(
     user_metadata: dict[str, Any] | None = None,
     created_at: datetime | None = None,
     custom_field_data: dict[str, Any] | None = None,
+    billing_name: str | None = None,
+    billing_address: Address | None = None,
 ) -> Order:
     order = Order(
         created_at=created_at or utc_now(),
@@ -826,6 +828,8 @@ async def create_order(
         currency="usd",
         billing_reason=billing_reason,
         stripe_invoice_id=stripe_invoice_id,
+        billing_name=billing_name,
+        billing_address=billing_address,
         customer=customer,
         product=product,
         subscription=subscription,

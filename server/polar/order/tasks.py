@@ -144,3 +144,16 @@ async def order_discord_notification(order_id: uuid.UUID) -> None:
                 ],
             }
         )
+
+
+@actor(actor_name="order.invoice")
+async def order_invoice(order_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrderRepository.from_session(session)
+        order = await repository.get_by_id(
+            order_id, options=repository.get_eager_options()
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        await order_service.generate_invoice(session, order)

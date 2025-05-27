@@ -11,6 +11,11 @@ from polar.models import Order
 from polar.models.product import ProductBillingType
 from polar.openapi import APITag
 from polar.order.schemas import OrderID
+from polar.order.service import (
+    InvoiceAlreadyExists,
+    MissingInvoiceBillingDetails,
+    NotPaidOrder,
+)
 from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
@@ -101,28 +106,6 @@ async def get(
     return order
 
 
-@router.get(
-    "/{id}/invoice",
-    summary="Get Order Invoice",
-    response_model=CustomerOrderInvoice,
-    responses={404: OrderNotFound},
-)
-async def invoice(
-    id: OrderID,
-    auth_subject: auth.CustomerPortalRead,
-    session: AsyncSession = Depends(get_db_session),
-) -> CustomerOrderInvoice:
-    """Get an order's invoice data."""
-    order = await customer_order_service.get_by_id(session, auth_subject, id)
-
-    if order is None:
-        raise ResourceNotFound()
-
-    invoice_url = await customer_order_service.get_order_invoice_url(order)
-
-    return CustomerOrderInvoice(url=invoice_url)
-
-
 @router.patch(
     "/{id}",
     summary="Update Order",
@@ -142,3 +125,52 @@ async def update(
         raise ResourceNotFound()
 
     return await customer_order_service.update(session, order, order_update)
+
+
+@router.post(
+    "/{id}/invoice",
+    status_code=202,
+    summary="Generate Order Invoice",
+    responses={
+        409: {
+            "description": "Order already has an invoice.",
+            "model": InvoiceAlreadyExists.schema(),
+        },
+        422: {
+            "description": "Order is not paid or is missing billing name or address.",
+            "model": MissingInvoiceBillingDetails.schema() | NotPaidOrder.schema(),
+        },
+    },
+)
+async def generate_invoice(
+    id: OrderID,
+    auth_subject: auth.CustomerPortalRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Trigger generation of an order's invoice."""
+    order = await customer_order_service.get_by_id(session, auth_subject, id)
+
+    if order is None:
+        raise ResourceNotFound()
+
+    await customer_order_service.trigger_invoice_generation(order)
+
+
+@router.get(
+    "/{id}/invoice",
+    summary="Get Order Invoice",
+    response_model=CustomerOrderInvoice,
+    responses={404: OrderNotFound},
+)
+async def invoice(
+    id: OrderID,
+    auth_subject: auth.CustomerPortalRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> CustomerOrderInvoice:
+    """Get an order's invoice data."""
+    order = await customer_order_service.get_by_id(session, auth_subject, id)
+
+    if order is None:
+        raise ResourceNotFound()
+
+    return await customer_order_service.get_order_invoice(order)

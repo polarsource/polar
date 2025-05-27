@@ -60,7 +60,7 @@ class FilterClause(BaseModel):
             (
                 func.jsonb_typeof(attr) == "number",
                 # Compare it with the value if it's an integer
-                self._get_comparison_clause(attr.as_integer(), self.value)
+                self._get_comparison_clause(attr.as_integer(), self._get_number_value())
                 if isinstance(self.value, int)
                 # Otherwise return false
                 else false(),
@@ -99,6 +99,13 @@ class FilterClause(BaseModel):
         if isinstance(self.value, bool):
             return "t" if self.value else "f"
         return str(self.value)
+
+    def _get_number_value(self) -> int:
+        if isinstance(self.value, str):
+            raise ValueError("Cannot convert string to number")
+        if isinstance(self.value, bool):
+            return 1 if self.value else 0
+        return self.value
 
 
 class FilterConjunction(StrEnum):

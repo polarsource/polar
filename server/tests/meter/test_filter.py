@@ -116,3 +116,42 @@ class TestFilter:
         matching_events = await repository.get_all(statement)
 
         assert len(matching_events) == 2
+
+    async def test_boolean_clause_number_value(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        events = [
+            await create_event(
+                save_fixture,
+                organization=organization,
+                external_customer_id="customer_1",
+                metadata={"value": 1},
+            ),
+            await create_event(
+                save_fixture,
+                organization=organization,
+                external_customer_id="customer_1",
+                metadata={"value": 0},
+            ),
+            await create_event(
+                save_fixture,
+                organization=organization,
+                external_customer_id="customer_1",
+                metadata={"value": 1},
+            ),
+        ]
+        filter = Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(property="value", operator=FilterOperator.eq, value=True)
+            ],
+        )
+
+        repository = EventRepository.from_session(session)
+        statement = repository.get_base_statement().where(filter.get_sql_clause(Event))
+        matching_events = await repository.get_all(statement)
+
+        assert len(matching_events) == 2

@@ -6,6 +6,7 @@ from pydantic_extra_types.country import CountryAlpha2
 
 from polar.invoice.generator import Invoice, InvoiceGenerator, InvoiceItem
 from polar.kit.address import Address
+from polar.kit.tax import TaxabilityReason
 
 
 @pytest.fixture
@@ -21,6 +22,7 @@ def invoice() -> Invoice:
             postal_code="94107",
             country=CountryAlpha2("US"),
         ),
+        seller_additional_info="[support@polar.sh](mailto:support@polar.sh)",
         customer_name="John Doe",
         customer_address=Address(
             line1="456 Customer Ave",
@@ -29,9 +31,21 @@ def invoice() -> Invoice:
             postal_code="90001",
             country=CountryAlpha2("US"),
         ),
+        customer_additional_info="FR61954506077",
         subtotal_amount=100_00,
         discount_amount=10_00,
-        tax_amount=5_00,
+        taxability_reason=TaxabilityReason.standard_rated,
+        tax_amount=18_00,
+        tax_rate={
+            "stripe_id": "STRIPE_ID",
+            "rate_type": "percentage",
+            "display_name": "VAT",
+            "basis_points": 2000,
+            "country": "FR",
+            "amount": None,
+            "amount_currency": None,
+            "state": None,
+        },
         currency="usd",
         items=[
             InvoiceItem(

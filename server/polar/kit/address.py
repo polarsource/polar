@@ -1,6 +1,7 @@
 from enum import StrEnum
 from typing import Any, NotRequired, Self, TypedDict, cast
 
+import pycountry
 from pydantic import BaseModel, Field, model_validator
 from pydantic_extra_types.country import CountryAlpha2
 from sqlalchemy.dialects.postgresql import JSONB
@@ -132,6 +133,36 @@ class Address(BaseModel):
             or self.city is not None
             or self.postal_code is not None
         )
+
+    def to_text(self) -> str:
+        lines = []
+        if self.line1:
+            lines.append(self.line1)
+        if self.line2:
+            lines.append(self.line2)
+
+        city_line = ""
+        if self.city:
+            city_line += self.city
+        if self.state:
+            state = pycountry.subdivisions.get(code=self.state)
+            if state is not None:
+                city_line += f", {cast(Any, state.name)}"
+            else:
+                city_line += f", {self.get_unprefixed_state()}"
+        if self.postal_code:
+            city_line += f" {self.postal_code}"
+        if city_line:
+            lines.append(city_line)
+
+        if self.country:
+            country = pycountry.countries.get(alpha_2=self.country)
+            if country is not None:
+                lines.append(country.name)
+            else:
+                lines.append(self.country)
+
+        return "\n".join(lines)
 
 
 class AddressType(TypeDecorator[Any]):

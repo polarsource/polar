@@ -202,6 +202,9 @@ class Settings(BaseSettings):
     MINIO_USER: str = "polar"
     MINIO_PWD: str = "polarpolar"
 
+    # Invoices
+    S3_CUSTOMER_INVOICES_BUCKET_NAME: str = "polar-customer-invoices"
+
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100
 

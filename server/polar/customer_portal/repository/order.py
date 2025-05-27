@@ -11,7 +11,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Order, OrderItem, Product, ProductPrice
+from polar.models import Order, OrderItem, Product, ProductPrice, Subscription
 
 if TYPE_CHECKING:
     from sqlalchemy.orm.strategy_options import _AbstractLoad
@@ -38,7 +38,8 @@ class CustomerOrderRepository(
             product_load = joinedload(Order.product)
         return (
             joinedload(Order.customer),
-            joinedload(Order.subscription),
+            joinedload(Order.discount),
+            joinedload(Order.subscription).joinedload(Subscription.customer),
             product_load.options(
                 selectinload(Product.product_medias),
                 joinedload(Product.organization),

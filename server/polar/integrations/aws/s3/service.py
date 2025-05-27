@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, cast
 import botocore
 import structlog
 from botocore.client import ClientError
+from mypy_boto3_s3.type_defs import PutObjectRequestTypeDef
 
 from polar.kit.utils import generate_uuid, utc_now
 
@@ -37,6 +38,34 @@ class S3Service:
         self.bucket = bucket
         self.presign_ttl = presign_ttl
         self.client = client
+
+    def upload(
+        self,
+        data: bytes,
+        path: str,
+        mime_type: str,
+        checksum_sha256_base64: str | None = None,
+    ) -> str:
+        """
+        Uploads a file directly to S3.
+
+        Mostly useful for files we generate on the backend, like invoices or exports.
+        """
+        request: PutObjectRequestTypeDef = {
+            "Bucket": self.bucket,
+            "Key": path,
+            "Body": data,
+            "ContentType": mime_type,
+        }
+        if checksum_sha256_base64 is not None:
+            request["ChecksumAlgorithm"] = "SHA256"
+            request["ChecksumSHA256"] = checksum_sha256_base64
+
+        if checksum_sha256_base64:
+            request["ChecksumSHA256"] = checksum_sha256_base64
+
+        response = self.client.put_object(**request)
+        return path
 
     def create_multipart_upload(
         self, data: S3FileCreate, namespace: str = ""

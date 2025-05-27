@@ -8,17 +8,17 @@ from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError
-from polar.integrations.stripe.service import stripe as stripe_service
+from polar.invoice.service import invoice as invoice_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Customer, Order, Product
 from polar.models.product import ProductBillingType
-from polar.models.webhook_endpoint import WebhookEventType
+from polar.order.service import InvoiceDoesNotExist
 from polar.order.service import order as order_service
 
 from ..repository.order import CustomerOrderRepository
-from ..schemas.order import CustomerOrderUpdate
+from ..schemas.order import CustomerOrderInvoice, CustomerOrderUpdate
 
 
 class CustomerOrderError(PolarError): ...
@@ -115,28 +115,20 @@ class CustomerOrderService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def get_order_invoice_url(self, order: Order) -> str:
-        if order.stripe_invoice_id is None:
-            raise InvoiceNotAvailable(order)
-
-        stripe_invoice = await stripe_service.get_invoice(order.stripe_invoice_id)
-
-        if stripe_invoice.hosted_invoice_url is None:
-            raise InvoiceNotAvailable(order)
-
-        return stripe_invoice.hosted_invoice_url
-
     async def update(
         self, session: AsyncSession, order: Order, order_update: CustomerOrderUpdate
     ) -> Order:
-        repository = CustomerOrderRepository.from_session(session)
-        order = await repository.update(
-            order, update_dict=order_update.model_dump(exclude_unset=True)
-        )
+        return await order_service.update(session, order, order_update)
 
-        await order_service.send_webhook(session, order, WebhookEventType.order_updated)
+    async def trigger_invoice_generation(self, order: Order) -> None:
+        return await order_service.trigger_invoice_generation(order)
 
-        return order
+    async def get_order_invoice(self, order: Order) -> CustomerOrderInvoice:
+        if order.invoice_path is None:
+            raise InvoiceDoesNotExist(order)
+
+        url, _ = await invoice_service.get_order_invoice_url(order)
+        return CustomerOrderInvoice(url=url)
 
 
 customer_order = CustomerOrderService()

@@ -106,9 +106,8 @@ class Invoice(BaseModel):
 
     @classmethod
     def from_order(cls, order: Order) -> Self:
-        # TODO: proper error
-        assert order.billing_name is not None, "Order must have a billing name"
-        assert order.billing_address is not None, "Order must have a billing address"
+        assert order.billing_name is not None
+        assert order.billing_address is not None
 
         return cls(
             number=str(order.id),  # TODO

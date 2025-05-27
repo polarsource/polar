@@ -50,7 +50,13 @@ class OrderBase(TimestampedSchema, IDSchema):
     refunded_tax_amount: int = Field(description="Sales tax refunded in cents.")
     currency: str
     billing_reason: OrderBillingReason
+    billing_name: str | None = Field(
+        description="The name of the customer that should appear on the invoice. "
+    )
     billing_address: Address | None
+    is_invoice_generated: bool = Field(
+        description="Whether an invoice has been generated for this order."
+    )
 
     customer_id: UUID4
     product_id: UUID4
@@ -176,20 +182,26 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
     items: list[OrderItemSchema] = Field(description="Line items composing the order.")
 
 
-class OrderInvoice(Schema):
-    """Order's invoice data."""
-
-    url: str = Field(..., description="The URL to the invoice.")
-
-
 class OrderUpdateBase(Schema):
     billing_name: str | None = Field(
-        description="The name of the customer that should appear on the invoice"
+        description=(
+            "The name of the customer that should appear on the invoice. "
+            "Can't be updated after the invoice is generated."
+        )
     )
     billing_address: Address | None = Field(
-        description="The address of the customer that should appear on the invoice"
+        description=(
+            "The address of the customer that should appear on the invoice. "
+            "Can't be updated after the invoice is generated."
+        )
     )
 
 
 class OrderUpdate(OrderUpdateBase):
     """Schema to update an order."""
+
+
+class OrderInvoice(Schema):
+    """Order's invoice data."""
+
+    url: str = Field(..., description="The URL to the invoice.")

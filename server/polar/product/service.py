@@ -550,10 +550,11 @@ class ProductService:
 
         session.add(product)
 
-        enqueue_job(
-            "subscription.subscription.update_product_benefits_grants", product.id
-        )
-        enqueue_job("order.update_product_benefits_grants", product.id)
+        if added_benefits or deleted_benefits:
+            enqueue_job(
+                "subscription.subscription.update_product_benefits_grants", product.id
+            )
+            enqueue_job("order.update_product_benefits_grants", product.id)
 
         await self._after_product_updated(session, product)
 

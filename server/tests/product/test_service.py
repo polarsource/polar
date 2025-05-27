@@ -1636,15 +1636,8 @@ class TestUpdateBenefits:
         assert len(added) == 0
         assert len(deleted) == 0
 
-        enqueue_job_mock.assert_has_calls(
-            [
-                call(
-                    "subscription.subscription.update_product_benefits_grants",
-                    product.id,
-                ),
-                call("order.update_product_benefits_grants", product.id),
-            ]
-        )
+        # Reordering the same set of benefits should not trigger grants update
+        enqueue_job_mock.assert_not_called()
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

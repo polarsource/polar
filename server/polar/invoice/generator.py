@@ -2,9 +2,11 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Self
 
+import pycountry
 from babel.dates import format_date as _format_date
 from babel.numbers import format_currency as _format_currency
 from babel.numbers import format_number as _format_number
+from babel.numbers import format_percent as _format_percent
 from fontTools.misc.configTools import ClassVar
 from fpdf import FPDF
 from fpdf.enums import Align, TableBordersLayout, XPos, YPos
@@ -13,6 +15,7 @@ from pydantic import BaseModel
 from pydantic_extra_types.country import CountryAlpha2
 
 from polar.kit.address import Address
+from polar.kit.tax import TaxabilityReason, TaxRate
 from polar.models import Order
 
 
@@ -22,6 +25,10 @@ def format_currency(amount: int, currency: str) -> str:
 
 def format_number(n: int) -> str:
     return _format_number(n, locale="en_US")
+
+
+def format_percent(basis_points: int) -> str:
+    return _format_percent(basis_points / 10000, locale="en_US")
 
 
 def format_date(date: date | datetime) -> str:
@@ -40,11 +47,15 @@ class Invoice(BaseModel):
     date: datetime
     seller_name: str
     seller_address: Address
+    seller_additional_info: str | None = None
     customer_name: str
     customer_address: Address
+    customer_additional_info: str | None = None
     subtotal_amount: int
     discount_amount: int
+    taxability_reason: TaxabilityReason | None
     tax_amount: int
+    tax_rate: TaxRate | None
     currency: str
     items: list[InvoiceItem]
     notes: str | None = None
@@ -65,6 +76,33 @@ class Invoice(BaseModel):
     def formatted_total_amount(self) -> str:
         total = self.subtotal_amount - self.discount_amount + self.tax_amount
         return format_currency(total, self.currency)
+
+    @property
+    def tax_displayed(self) -> bool:
+        return self.taxability_reason is not None and self.taxability_reason in {
+            TaxabilityReason.standard_rated,
+            TaxabilityReason.reverse_charge,
+        }
+
+    @property
+    def tax_label(self) -> str:
+        if self.tax_rate is None:
+            return "Tax"
+
+        label = self.tax_rate["display_name"]
+
+        if self.taxability_reason == TaxabilityReason.reverse_charge:
+            return f"{label} (0% Reverse Charge)"
+
+        if self.tax_rate["country"] is not None:
+            country = pycountry.countries.get(alpha_2=self.tax_rate["country"])
+            if country is not None:
+                label += f" — {country.name}"
+
+        if self.tax_rate["basis_points"] is not None:
+            label += f" ({format_percent(self.tax_rate['basis_points'])})"
+
+        return label
 
     @classmethod
     def from_order(cls, order: Order) -> Self:
@@ -87,7 +125,9 @@ class Invoice(BaseModel):
             customer_address=order.billing_address,
             subtotal_amount=order.subtotal_amount,
             discount_amount=order.discount_amount,
+            taxability_reason=order.taxability_reason,
             tax_amount=order.tax_amount,
+            tax_rate=order.tax_rate,
             currency=order.currency,
             items=[
                 InvoiceItem(
@@ -215,7 +255,20 @@ class InvoiceGenerator(FPDF):
             new_y=YPos.NEXT,
         )
         self.set_font(style="")
-        self.multi_cell(80, self.cell_height(), text=self.data.seller_address.to_text())
+        self.multi_cell(
+            80,
+            self.cell_height(),
+            text=self.data.seller_address.to_text(),
+            new_x=XPos.LEFT,
+            new_y=YPos.NEXT,
+        )
+        if self.data.seller_additional_info:
+            self.multi_cell(
+                80,
+                self.cell_height(),
+                text=self.data.seller_additional_info,
+                markdown=True,
+            )
 
         # Customer on right column
         self.set_xy(110, addresses_y_start)
@@ -231,7 +284,20 @@ class InvoiceGenerator(FPDF):
             new_y=YPos.NEXT,
         )
         self.set_font(style="")
-        self.multi_cell(80, self.cell_height(), self.data.customer_address.to_text())
+        self.multi_cell(
+            80,
+            self.cell_height(),
+            self.data.customer_address.to_text(),
+            new_x=XPos.LEFT,
+            new_y=YPos.NEXT,
+        )
+        if self.data.customer_additional_info:
+            self.multi_cell(
+                80,
+                self.cell_height(),
+                text=self.data.customer_additional_info,
+                markdown=True,
+            )
 
         # Add spacing before table
         self.set_y(self.get_y() + self.elements_y_margin)
@@ -287,11 +353,12 @@ class InvoiceGenerator(FPDF):
                 discount_row.cell(self.data.formatted_discount_amount)
 
             # Tax row
-            self.set_font(style="B")
-            tax_row = totals_table.row()
-            tax_row.cell("Tax (TODO%)")
-            self.set_font(style="")
-            tax_row.cell(self.data.formatted_tax_amount)
+            if self.data.tax_displayed:
+                self.set_font(style="B")
+                tax_row = totals_table.row()
+                tax_row.cell(self.data.tax_label)
+                self.set_font(style="")
+                tax_row.cell(self.data.formatted_tax_amount)
 
             # Total row
             self.set_font(style="B")

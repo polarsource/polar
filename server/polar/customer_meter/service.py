@@ -83,7 +83,11 @@ class CustomerMeterService:
         self, session: AsyncSession, locker: Locker, customer: Customer
     ) -> None:
         repository = MeterRepository.from_session(session)
-        statement = repository.get_base_statement().order_by(Meter.created_at.asc())
+        statement = (
+            repository.get_base_statement()
+            .where(Meter.organization_id == customer.organization_id)
+            .order_by(Meter.created_at.asc())
+        )
 
         updated = False
         async for meter in repository.stream(statement):

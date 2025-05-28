@@ -27,6 +27,7 @@ from polar.discount.schemas import (
 )
 from polar.enums import PaymentProcessor
 from polar.kit.address import Address
+from polar.kit.email import EmailStrDNS
 from polar.kit.metadata import (
     METADATA_DESCRIPTION,
     MetadataField,
@@ -34,7 +35,6 @@ from polar.kit.metadata import (
     MetadataOutputMixin,
 )
 from polar.kit.schemas import (
-    EmailStrDNS,
     EmptyStrToNoneValidator,
     IDSchema,
     Schema,

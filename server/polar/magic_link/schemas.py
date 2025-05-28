@@ -2,8 +2,9 @@ import datetime
 
 from pydantic import UUID4, EmailStr, field_validator
 
+from polar.kit.email import EmailStrDNS
 from polar.kit.http import get_safe_return_url
-from polar.kit.schemas import EmailStrDNS, Schema
+from polar.kit.schemas import Schema
 from polar.user.schemas import (
     UserSignupAttribution,
 )

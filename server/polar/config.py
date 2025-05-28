@@ -6,8 +6,10 @@ from typing import Annotated, Literal
 
 from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
+from pydantic_extra_types.country import CountryAlpha2
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from polar.kit.address import Address
 from polar.kit.jwk import JWKSFile
 
 
@@ -204,6 +206,15 @@ class Settings(BaseSettings):
 
     # Invoices
     S3_CUSTOMER_INVOICES_BUCKET_NAME: str = "polar-customer-invoices"
+    CUSTOMER_INVOICES_SELLER_NAME: str = "Polar Software, Inc."
+    CUSTOMER_INVOICES_SELLER_ADDRESS: Address = Address(
+        line1="548 Market St",
+        line2="PMB 61301",
+        postal_code="94104",
+        city="San Francisco",
+        state="CA",
+        country=CountryAlpha2("US"),
+    )
 
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100

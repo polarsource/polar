@@ -9,7 +9,6 @@ from pydantic import (
     AfterValidator,
     BaseModel,
     ConfigDict,
-    EmailStr,
     Field,
     GetCoreSchemaHandler,
     GetJsonSchemaHandler,
@@ -17,10 +16,8 @@ from pydantic import (
     PlainSerializer,
 )
 from pydantic.json_schema import JsonSchemaValue
-from pydantic_core import CoreSchema, PydanticCustomError, core_schema
+from pydantic_core import CoreSchema, core_schema
 from slugify import slugify
-
-from .email import EmailNotValidError, validate_email
 
 
 class Schema(BaseModel):
@@ -54,22 +51,6 @@ def empty_str_to_none(value: str | None) -> str | None:
 
 EmptyStrToNoneValidator = AfterValidator(empty_str_to_none)
 EmptyStrToNone = Annotated[str | None, EmptyStrToNoneValidator]
-
-
-def _validate_email_dns(email: str) -> str:
-    try:
-        validate_email(email)
-    except EmailNotValidError as e:
-        raise PydanticCustomError(
-            "value_error",
-            "value is not a valid email address: {reason}",
-            {"reason": str(e)},
-        ) from e
-    else:
-        return email
-
-
-EmailStrDNS = Annotated[EmailStr, AfterValidator(_validate_email_dns)]
 
 
 def _validate_slug(value: str) -> str:

@@ -4,6 +4,7 @@ import json
 import threading
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
+from enum import IntEnum
 from typing import Any, ParamSpec, TypeAlias, TypeVar
 
 import dramatiq
@@ -393,6 +394,13 @@ broker.add_middleware(LogfireMiddleware())
 dramatiq.set_broker(broker)
 dramatiq.set_encoder(JSONEncoder())
 
+
+class TaskPriority(IntEnum):
+    HIGH = 0
+    MEDIUM = 50
+    LOW = 100
+
+
 P = ParamSpec("P")
 R = TypeVar("R")
 
@@ -401,7 +409,7 @@ def actor(
     actor_class: Callable[..., dramatiq.Actor[Any, Any]] = dramatiq.Actor,
     actor_name: str | None = None,
     queue_name: str = "default",
-    priority: int = 0,
+    priority: TaskPriority = TaskPriority.LOW,
     broker: dramatiq.Broker | None = None,
     **options: Any,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:

@@ -10,7 +10,13 @@ from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.benefit_grant import BenefitGrantScopeArgs
 from polar.product.repository import ProductRepository
-from polar.worker import AsyncSessionMaker, RedisMiddleware, actor, get_retries
+from polar.worker import (
+    AsyncSessionMaker,
+    RedisMiddleware,
+    TaskPriority,
+    actor,
+    get_retries,
+)
 
 from .grant.scope import resolve_scope
 from .grant.service import benefit_grant as benefit_grant_service
@@ -57,7 +63,7 @@ class OrganizationDoesNotExist(BenefitTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="benefit.enqueue_benefits_grants")
+@actor(actor_name="benefit.enqueue_benefits_grants", priority=TaskPriority.MEDIUM)
 async def enqueue_benefits_grants(
     task: Literal["grant", "revoke"],
     customer_id: uuid.UUID,
@@ -86,7 +92,7 @@ async def enqueue_benefits_grants(
         )
 
 
-@actor(actor_name="benefit.grant")
+@actor(actor_name="benefit.grant", priority=TaskPriority.MEDIUM)
 async def benefit_grant(
     customer_id: uuid.UUID,
     benefit_id: uuid.UUID,
@@ -127,7 +133,7 @@ async def benefit_grant(
             raise Retry(delay=e.defer_milliseconds) from e
 
 
-@actor(actor_name="benefit.revoke")
+@actor(actor_name="benefit.revoke", priority=TaskPriority.MEDIUM)
 async def benefit_revoke(
     customer_id: uuid.UUID,
     benefit_id: uuid.UUID,
@@ -172,7 +178,7 @@ async def benefit_revoke(
             raise Retry(delay=e.defer_milliseconds) from e
 
 
-@actor(actor_name="benefit.update")
+@actor(actor_name="benefit.update", priority=TaskPriority.MEDIUM)
 async def benefit_update(benefit_grant_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         benefit_grant = await benefit_grant_service.get(
@@ -195,7 +201,7 @@ async def benefit_update(benefit_grant_id: uuid.UUID) -> None:
             raise Retry(delay=e.defer_milliseconds) from e
 
 
-@actor(actor_name="benefit.enqueue_benefit_grant_cycles")
+@actor(actor_name="benefit.enqueue_benefit_grant_cycles", priority=TaskPriority.MEDIUM)
 async def enqueue_benefit_grant_cycles(**scope: Unpack[BenefitGrantScopeArgs]) -> None:
     async with AsyncSessionMaker() as session:
         resolved_scope = await resolve_scope(session, scope)
@@ -204,7 +210,7 @@ async def enqueue_benefit_grant_cycles(**scope: Unpack[BenefitGrantScopeArgs]) -
         )
 
 
-@actor(actor_name="benefit.cycle")
+@actor(actor_name="benefit.cycle", priority=TaskPriority.MEDIUM)
 async def benefit_cycle(benefit_grant_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         benefit_grant = await benefit_grant_service.get(
@@ -227,7 +233,7 @@ async def benefit_cycle(benefit_grant_id: uuid.UUID) -> None:
             raise Retry(delay=e.defer_milliseconds) from e
 
 
-@actor(actor_name="benefit.delete")
+@actor(actor_name="benefit.delete", priority=TaskPriority.MEDIUM)
 async def benefit_delete(benefit_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         benefit_repository = BenefitRepository.from_session(session)
@@ -242,7 +248,7 @@ async def benefit_delete(benefit_id: uuid.UUID) -> None:
         await benefit_grant_service.enqueue_benefit_grant_deletions(session, benefit)
 
 
-@actor(actor_name="benefit.revoke_customer")
+@actor(actor_name="benefit.revoke_customer", priority=TaskPriority.MEDIUM)
 async def benefit_revoke_customer(customer_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         customer_repository = CustomerRepository.from_session(session)
@@ -255,7 +261,7 @@ async def benefit_revoke_customer(customer_id: uuid.UUID) -> None:
         await benefit_grant_service.enqueue_customer_grant_deletions(session, customer)
 
 
-@actor(actor_name="benefit.delete_grant")
+@actor(actor_name="benefit.delete_grant", priority=TaskPriority.MEDIUM)
 async def benefit_delete_grant(benefit_grant_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         benefit_grant = await benefit_grant_service.get(

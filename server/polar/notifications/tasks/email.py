@@ -5,12 +5,12 @@ import structlog
 from polar.email.sender import enqueue_email
 from polar.notifications.service import notifications
 from polar.user.repository import UserRepository
-from polar.worker import AsyncSessionMaker, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 log = structlog.get_logger()
 
 
-@actor(actor_name="notifications.send")
+@actor(actor_name="notifications.send", priority=TaskPriority.LOW)
 async def notifications_send(notification_id: UUID) -> None:
     async with AsyncSessionMaker() as session:
         notif = await notifications.get(session, notification_id)

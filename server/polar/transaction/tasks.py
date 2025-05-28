@@ -8,7 +8,7 @@ from polar.integrations.discord.internal_webhook import (
     send_internal_webhook,
 )
 from polar.kit.money import get_cents_in_dollar_string
-from polar.worker import AsyncSessionMaker, CronTrigger, actor
+from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
 from .service.payout import payout_transaction as payout_transaction_service
 from .service.processor_fee import (
@@ -29,13 +29,14 @@ class PayoutDoesNotExist(TransactionTaskError):
 @actor(
     actor_name="processor_fee.sync_stripe_fees",
     cron_trigger=CronTrigger(hour=0, minute=0),
+    priority=TaskPriority.LOW,
 )
 async def sync_stripe_fees() -> None:
     async with AsyncSessionMaker() as session:
         await processor_fee_transaction_service.sync_stripe_fees(session)
 
 
-@actor(actor_name="payout.created")
+@actor(actor_name="payout.created", priority=TaskPriority.LOW)
 async def payout_created(payout_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         payout = await payout_transaction_service.get(session, payout_id)
@@ -76,13 +77,17 @@ async def payout_created(payout_id: uuid.UUID) -> None:
         )
 
 
-@actor(actor_name="payout.trigger_stripe_payouts", cron_trigger=CronTrigger(minute=15))
+@actor(
+    actor_name="payout.trigger_stripe_payouts",
+    cron_trigger=CronTrigger(minute=15),
+    priority=TaskPriority.LOW,
+)
 async def trigger_stripe_payouts() -> None:
     async with AsyncSessionMaker() as session:
         await payout_transaction_service.trigger_stripe_payouts(session)
 
 
-@actor(actor_name="payout.trigger_stripe_payout")
+@actor(actor_name="payout.trigger_stripe_payout", priority=TaskPriority.LOW)
 async def trigger_payout(payout_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         payout = await payout_transaction_service.get(session, payout_id)

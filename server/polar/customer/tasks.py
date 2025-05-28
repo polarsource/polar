@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 from polar.exceptions import PolarTaskError
 from polar.models import Customer
 from polar.models.webhook_endpoint import CustomerWebhookEventType
-from polar.worker import AsyncSessionMaker, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .repository import CustomerRepository
 from .service import customer as customer_service
@@ -21,7 +21,7 @@ class CustomerDoesNotExist(CustomerTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="customer.webhook")
+@actor(actor_name="customer.webhook", priority=TaskPriority.MEDIUM)
 async def customer_webhook(
     event_type: CustomerWebhookEventType, customer_id: uuid.UUID
 ) -> None:

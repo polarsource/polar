@@ -13,7 +13,7 @@ from polar.notification_recipient.service import (
     notification_recipient as notification_recipient_service,
 )
 from polar.notifications.service import notifications
-from polar.worker import AsyncSessionMaker, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 log = structlog.get_logger()
 
@@ -62,7 +62,7 @@ def send_push_message(
         raise
 
 
-@actor(actor_name="notifications.push")
+@actor(actor_name="notifications.push", priority=TaskPriority.LOW)
 async def notifications_push(notification_id: UUID) -> None:
     async with AsyncSessionMaker() as session:
         notif = await notifications.get(session, notification_id)

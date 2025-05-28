@@ -2,7 +2,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Numeric, Uuid
+from sqlalchemy import ForeignKey, Numeric, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Integer
 
@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 class SubscriptionMeter(RecordModel):
     __tablename__ = "subscription_meters"
+    __table_args__ = (UniqueConstraint("subscription_id", "meter_id"),)
 
     consumed_units: Mapped[Decimal] = mapped_column(Numeric, nullable=False, default=0)
     credited_units: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -30,7 +31,10 @@ class SubscriptionMeter(RecordModel):
     @declared_attr
     def subscription(cls) -> Mapped["Subscription"]:
         return relationship(
-            "Subscription", lazy="raise_on_sql", back_populates="meters"
+            "Subscription",
+            lazy="raise_on_sql",
+            back_populates="meters",
+            # cascade="all, delete-orphan",
         )
 
     @declared_attr

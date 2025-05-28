@@ -303,7 +303,11 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             if is_metered_price(price.product_price)
         ]
         for price_meter in price_meters:
-            if self.get_meter(price_meter) is None:
+            try:
+                # Check if the meter already exists in the subscription
+                next(sm for sm in subscription_meters if sm.meter == price_meter)
+            except StopIteration:
+                # If it doesn't, create a new SubscriptionMeter
                 subscription_meters.append(SubscriptionMeter(meter=price_meter))
 
         # Remove old ones

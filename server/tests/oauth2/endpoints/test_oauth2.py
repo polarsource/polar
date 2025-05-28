@@ -357,6 +357,34 @@ class TestOAuth2Authorize:
         assert response.status_code == 401
 
     @pytest.mark.auth
+    async def test_new_scope(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_grant(
+            save_fixture,
+            client=oauth2_client,
+            user=user,
+            scopes=["openid", "profile"],
+        )
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+        }
+        response = await client.get("/v1/oauth2/authorize", params=params)
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["client"]["client_id"] == oauth2_client.client_id
+        assert set(json["scopes"]) == {"openid", "profile", "email"}
+
+    @pytest.mark.auth
     @pytest.mark.parametrize("scope", ["openid", "openid profile email"])
     async def test_granted(
         self,
@@ -413,9 +441,22 @@ class TestOAuth2Authorize:
         assert set(json["scopes"]) == {"openid", "profile", "email"}
 
     @pytest.mark.auth
+    @pytest.mark.parametrize("granted_scope", [None, ["openid", "profile"]])
     async def test_not_granted_prompt_none(
-        self, client: AsyncClient, oauth2_client: OAuth2Client
+        self,
+        save_fixture: SaveFixture,
+        granted_scope: list[str],
+        client: AsyncClient,
+        oauth2_client: OAuth2Client,
     ) -> None:
+        if granted_scope is not None:
+            await create_oauth2_grant(
+                save_fixture,
+                client=oauth2_client,
+                user=oauth2_client.user,
+                scopes=granted_scope,
+            )
+
         params = {
             "client_id": oauth2_client.client_id,
             "response_type": "code",

@@ -11,10 +11,10 @@ from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.kit.email import EmailStrDNS
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import (
     METER_ID_EXAMPLE,
-    EmailStrDNS,
     IDSchema,
     MergeJSONSchema,
     Schema,

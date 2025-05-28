@@ -16,9 +16,9 @@ from pydantic.networks import HttpUrl
 
 from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
+from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import (
     ORGANIZATION_ID_EXAMPLE,
-    EmailStrDNS,
     EmptyStrToNoneValidator,
     HttpUrlToStr,
     IDSchema,

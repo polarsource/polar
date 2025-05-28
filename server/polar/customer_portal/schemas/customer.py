@@ -4,9 +4,9 @@ from typing import Annotated, Literal
 from pydantic import AfterValidator, AliasPath, Field, TypeAdapter
 
 from polar.kit.address import Address
+from polar.kit.email import EmailStrDNS
 from polar.kit.http import get_safe_return_url
 from polar.kit.schemas import (
-    EmailStrDNS,
     EmptyStrToNoneValidator,
     IDSchema,
     Schema,

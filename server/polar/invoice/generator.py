@@ -12,8 +12,8 @@ from fpdf import FPDF
 from fpdf.enums import Align, TableBordersLayout, XPos, YPos
 from fpdf.fonts import FontFace
 from pydantic import BaseModel
-from pydantic_extra_types.country import CountryAlpha2
 
+from polar.config import settings
 from polar.kit.address import Address
 from polar.kit.tax import TaxabilityReason, TaxRate
 from polar.models import Order
@@ -113,14 +113,8 @@ class Invoice(BaseModel):
         return cls(
             number=order.invoice_number,
             date=order.created_at,
-            seller_name="Polar Software Inc",  # TODO: in settings
-            seller_address=Address(  # TODO: in settings
-                line1="123 Polar St",
-                city="San Francisco",
-                state="CA",
-                postal_code="94103",
-                country=CountryAlpha2("US"),
-            ),
+            seller_name=settings.CUSTOMER_INVOICES_SELLER_NAME,
+            seller_address=settings.CUSTOMER_INVOICES_SELLER_ADDRESS,
             customer_name=order.billing_name,
             customer_address=order.billing_address,
             subtotal_amount=order.subtotal_amount,

@@ -6,6 +6,7 @@ from fastapi import Path
 from pydantic import UUID4, Field, computed_field
 
 from polar.kit.address import Address
+from polar.kit.email import EmailStrDNS
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
@@ -13,7 +14,6 @@ from polar.kit.metadata import (
 from polar.kit.schemas import (
     CUSTOMER_ID_EXAMPLE,
     ORGANIZATION_ID_EXAMPLE,
-    EmailStrDNS,
     IDSchema,
     Schema,
     TimestampedSchema,

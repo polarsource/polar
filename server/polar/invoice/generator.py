@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from polar.config import settings
 from polar.kit.address import Address
 from polar.kit.tax import TaxabilityReason, TaxRate
+from polar.kit.utils import utc_now
 from polar.models import Order
 
 
@@ -198,6 +199,7 @@ class InvoiceGenerator(FPDF):
         self.cell(self.epw / 2, 10, f"Page {self.page_no()} of {{nb}}", align=Align.R)
 
     def generate(self) -> None:
+        self.set_metadata()
         self.add_page()
 
         # Title
@@ -370,6 +372,13 @@ class InvoiceGenerator(FPDF):
                 text=self.data.notes,
                 markdown=True,
             )
+
+    def set_metadata(self) -> None:
+        """Set metadata for the PDF document."""
+        self.set_title(f"Invoice {self.data.number}")
+        self.set_creator("Polar")
+        self.set_author(settings.CUSTOMER_INVOICES_SELLER_NAME)
+        self.set_creation_date(utc_now())
 
 
 __all__ = ["InvoiceGenerator", "Invoice", "InvoiceItem"]

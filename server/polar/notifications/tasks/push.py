@@ -76,6 +76,7 @@ async def notifications_push(notification_id: UUID) -> None:
             expo_push_token=None,
             platform=None,
         )
+
         if not notification_recipients:
             log.warning("notifications.push.devices_not_found", user_id=notif.user_id)
             return

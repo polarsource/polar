@@ -120,8 +120,10 @@ class CustomerOrderService:
     ) -> Order:
         return await order_service.update(session, order, order_update)
 
-    async def trigger_invoice_generation(self, order: Order) -> None:
-        return await order_service.trigger_invoice_generation(order)
+    async def trigger_invoice_generation(
+        self, session: AsyncSession, order: Order
+    ) -> None:
+        return await order_service.trigger_invoice_generation(session, order)
 
     async def get_order_invoice(self, order: Order) -> CustomerOrderInvoice:
         if order.invoice_path is None:

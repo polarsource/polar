@@ -150,7 +150,7 @@ async def generate_invoice(
     if order is None:
         raise ResourceNotFound()
 
-    await order_service.trigger_invoice_generation(order)
+    await order_service.trigger_invoice_generation(session, order)
 
 
 @router.get(

@@ -63,6 +63,7 @@ from polar.notifications.notification import (
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.repository import OrganizationRepository
+from polar.organization.service import organization as organization_service
 from polar.product.guard import is_custom_price, is_static_price
 from polar.product.repository import ProductPriceRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -312,7 +313,10 @@ class OrderService:
             repository.get_readable_statement(auth_subject)
             .options(
                 *repository.get_eager_options(
-                    customer_load=contains_eager(Order.customer)
+                    customer_load=contains_eager(Order.customer),
+                    product_load=joinedload(Order.product).joinedload(
+                        Product.organization
+                    ),
                 )
             )
             .where(Order.id == id)
@@ -353,7 +357,9 @@ class OrderService:
 
         return order
 
-    async def trigger_invoice_generation(self, order: Order) -> None:
+    async def trigger_invoice_generation(
+        self, session: AsyncSession, order: Order
+    ) -> None:
         if order.invoice_path is not None:
             raise InvoiceAlreadyExists(order)
 
@@ -362,6 +368,16 @@ class OrderService:
 
         if order.billing_name is None or order.billing_address is None:
             raise MissingInvoiceBillingDetails(order)
+
+        if order.invoice_number is None:
+            organization = order.product.organization
+            order.invoice_number = await organization_service.get_next_invoice_number(
+                session, organization
+            )
+            repository = OrderRepository.from_session(session)
+            order = await repository.update(
+                order, update_dict={"invoice_number": order.invoice_number}
+            )
 
         enqueue_job("order.invoice", order_id=order.id)
 

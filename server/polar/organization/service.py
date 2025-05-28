@@ -96,7 +96,8 @@ class OrganizationService:
 
         organization = await repository.create(
             Organization(
-                **create_schema.model_dump(exclude_unset=True, exclude_none=True)
+                **create_schema.model_dump(exclude_unset=True, exclude_none=True),
+                customer_invoice_prefix=create_schema.slug.upper(),
             )
         )
         await self.add_user(session, organization, auth_subject.subject)
@@ -229,6 +230,22 @@ class OrganizationService:
         await self._after_update(session, organization)
 
         return organization
+
+    async def get_next_invoice_number(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> str:
+        invoice_number = f"{organization.customer_invoice_prefix}-{organization.customer_invoice_next_number:04d}"
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.update(
+            organization,
+            update_dict={
+                "customer_invoice_next_number": organization.customer_invoice_next_number
+                + 1
+            },
+        )
+        return invoice_number
 
     async def _after_update(
         self,

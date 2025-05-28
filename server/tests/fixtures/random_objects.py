@@ -113,6 +113,7 @@ async def create_organization(
     organization = Organization(
         name=name,
         slug=name,
+        customer_invoice_prefix=name.upper(),
         avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
         **kwargs,
     )
@@ -808,6 +809,7 @@ async def create_order(
     custom_field_data: dict[str, Any] | None = None,
     billing_name: str | None = None,
     billing_address: Address | None = None,
+    invoice_number: str | None = None,
 ) -> Order:
     order = Order(
         created_at=created_at or utc_now(),
@@ -830,6 +832,7 @@ async def create_order(
         stripe_invoice_id=stripe_invoice_id,
         billing_name=billing_name,
         billing_address=billing_address,
+        invoice_number=invoice_number,
         customer=customer,
         product=product,
         subscription=subscription,

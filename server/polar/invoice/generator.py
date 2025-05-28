@@ -108,9 +108,10 @@ class Invoice(BaseModel):
     def from_order(cls, order: Order) -> Self:
         assert order.billing_name is not None
         assert order.billing_address is not None
+        assert order.invoice_number is not None
 
         return cls(
-            number=str(order.id),  # TODO
+            number=order.invoice_number,
             date=order.created_at,
             seller_name="Polar Software Inc",  # TODO: in settings
             seller_address=Address(  # TODO: in settings

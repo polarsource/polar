@@ -117,3 +117,18 @@ class TestCreate:
         )
 
         assert organization.subscription_settings is not None
+
+
+@pytest.mark.asyncio
+async def test_get_next_invoice_number(
+    session: AsyncSession,
+    organization: Organization,
+) -> None:
+    assert organization.customer_invoice_next_number == 1
+
+    next_invoice_number = await organization_service.get_next_invoice_number(
+        session, organization
+    )
+
+    assert next_invoice_number == f"{organization.customer_invoice_prefix}-0001"
+    assert organization.customer_invoice_next_number == 2

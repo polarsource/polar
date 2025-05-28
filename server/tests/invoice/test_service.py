@@ -24,6 +24,7 @@ async def test_create_order_invoice(
             postal_code="90001",
             country=CountryAlpha2("US"),
         ),
+        invoice_number="POLAR-0001",
     )
 
     invoice_path = await invoice_service.create_order_invoice(order)

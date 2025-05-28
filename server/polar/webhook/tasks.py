@@ -16,14 +16,18 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
-from polar.worker import AsyncSessionMaker, actor, can_retry, enqueue_job
+from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry, enqueue_job
 
 from .service import webhook as webhook_service
 
 log: Logger = structlog.get_logger()
 
 
-@actor(actor_name="webhook_event.send", max_retries=settings.WEBHOOK_MAX_RETRIES)
+@actor(
+    actor_name="webhook_event.send",
+    max_retries=settings.WEBHOOK_MAX_RETRIES,
+    priority=TaskPriority.MEDIUM,
+)
 async def webhook_event_send(webhook_event_id: UUID) -> None:
     async with AsyncSessionMaker() as session:
         return await _webhook_event_send(session, webhook_event_id=webhook_event_id)
@@ -135,7 +139,7 @@ async def _webhook_event_send(session: AsyncSession, *, webhook_event_id: UUID) 
         await session.commit()
 
 
-@actor(actor_name="webhook_event.success")
+@actor(actor_name="webhook_event.success", priority=TaskPriority.HIGH)
 async def webhook_event_success(webhook_event_id: UUID) -> None:
     async with AsyncSessionMaker() as session:
         return await webhook_service.on_event_success(session, webhook_event_id)

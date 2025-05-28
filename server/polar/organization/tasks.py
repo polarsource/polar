@@ -3,7 +3,7 @@ import uuid
 from polar.account.repository import AccountRepository
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
-from polar.worker import AsyncSessionMaker, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .repository import OrganizationRepository
 
@@ -34,7 +34,7 @@ class AccountDoesNotExist(OrganizationTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="organization.created")
+@actor(actor_name="organization.created", priority=TaskPriority.LOW)
 async def organization_created(organization_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
@@ -43,7 +43,7 @@ async def organization_created(organization_id: uuid.UUID) -> None:
             raise OrganizationDoesNotExist(organization_id)
 
 
-@actor(actor_name="organization.account_set")
+@actor(actor_name="organization.account_set", priority=TaskPriority.LOW)
 async def organization_account_set(organization_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)

@@ -14,7 +14,7 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notification_service
-from polar.worker import AsyncSessionMaker, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 
 class AccountTaskError(PolarTaskError): ...
@@ -27,7 +27,7 @@ class AccountDoesNotExist(AccountTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="account.under_review")
+@actor(actor_name="account.under_review", priority=TaskPriority.LOW)
 async def account_under_review(account_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = AccountRepository.from_session(session)
@@ -51,7 +51,7 @@ async def account_under_review(account_id: uuid.UUID) -> None:
         )
 
 
-@actor(actor_name="account.reviewed")
+@actor(actor_name="account.reviewed", priority=TaskPriority.LOW)
 async def account_reviewed(account_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = AccountRepository.from_session(session)

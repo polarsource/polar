@@ -7,7 +7,7 @@ from polar.exceptions import PolarTaskError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Meter
-from polar.worker import AsyncSessionMaker, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 
 class MeterTaskError(PolarTaskError): ...
@@ -23,13 +23,14 @@ class MeterDoesNotExist(MeterTaskError):
 @actor(
     actor_name="meter.enqueue_billing",
     cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
+    priority=TaskPriority.LOW,
 )
 async def meter_enqueue_billing() -> None:
     async with AsyncSessionMaker() as session:
         await meter_service.enqueue_billing(session)
 
 
-@actor(actor_name="meter.billing_entries")
+@actor(actor_name="meter.billing_entries", priority=TaskPriority.LOW)
 async def meter_billing_entries(meter_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = MeterRepository.from_session(session)

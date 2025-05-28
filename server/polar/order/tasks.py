@@ -16,7 +16,7 @@ from polar.models import Customer, Order
 from polar.models.order import OrderBillingReason
 from polar.product.repository import ProductRepository
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
-from polar.worker import AsyncSessionMaker, actor, can_retry
+from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry
 
 from .repository import OrderRepository
 from .service import order as order_service
@@ -43,7 +43,7 @@ class OrderDoesNotExist(OrderTaskError):
         super().__init__(message)
 
 
-@actor(actor_name="order.balance")
+@actor(actor_name="order.balance", priority=TaskPriority.LOW)
 async def create_order_balance(order_id: uuid.UUID, charge_id: str) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
@@ -67,7 +67,7 @@ async def create_order_balance(order_id: uuid.UUID, charge_id: str) -> None:
                 raise
 
 
-@actor(actor_name="order.update_product_benefits_grants")
+@actor(actor_name="order.update_product_benefits_grants", priority=TaskPriority.MEDIUM)
 async def update_product_benefits_grants(product_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         product_repository = ProductRepository.from_session(session)
@@ -78,7 +78,7 @@ async def update_product_benefits_grants(product_id: uuid.UUID) -> None:
         await order_service.update_product_benefits_grants(session, product)
 
 
-@actor(actor_name="order.discord_notification")
+@actor(actor_name="order.discord_notification", priority=TaskPriority.LOW)
 async def order_discord_notification(order_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         order_repository = OrderRepository.from_session(session)

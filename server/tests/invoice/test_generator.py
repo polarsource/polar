@@ -60,7 +60,8 @@ def invoice() -> Invoice:
                 unit_amount=1_00,
                 amount=50_00,
             ),
-        ],
+        ]
+        * 100,
         notes=(
             """
 Thank you for your business!

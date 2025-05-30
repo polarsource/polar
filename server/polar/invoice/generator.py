@@ -13,7 +13,7 @@ from fpdf.enums import Align, TableBordersLayout, XPos, YPos
 from fpdf.fonts import FontFace
 from pydantic import BaseModel
 
-from polar.config import settings
+from polar.config import Environment, settings
 from polar.kit.address import Address
 from polar.kit.tax import TaxabilityReason, TaxRate
 from polar.kit.utils import utc_now
@@ -175,7 +175,11 @@ class InvoiceGenerator(FPDF):
     totals_table_row_height: ClassVar[int] = 6
     """Height of each row in the totals table in points."""
 
-    def __init__(self, data: Invoice) -> None:
+    def __init__(
+        self,
+        data: Invoice,
+        add_sandbox_warning: bool = settings.ENV == Environment.sandbox,
+    ) -> None:
         super().__init__()
 
         self.add_font(self.font_name, fname=self.regular_font_file)
@@ -184,10 +188,24 @@ class InvoiceGenerator(FPDF):
 
         self.alias_nb_pages()
         self.data = data
+        self.add_sandbox_warning = add_sandbox_warning
 
     def cell_height(self, font_size: float | None = None) -> float:
         font_size = font_size or self.base_font_size
         return font_size * 0.35 * self.line_height_percentage
+
+    def header(self) -> None:
+        if self.add_sandbox_warning:
+            self.set_xy(0, 0)
+            self.set_fill_color(239, 177, 0)
+            self.cell(
+                self.w,
+                10,
+                "SANDBOX ENVIRONMENT: This invoice is for testing purposes only. No actual payment has been processed.",
+                align=Align.C,
+                fill=True,
+            )
+            self.ln(10)
 
     def footer(self) -> None:
         # Position footer at 15mm from bottom

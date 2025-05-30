@@ -182,6 +182,7 @@ class CustomerMeterService:
         statement = (
             event_repository.get_base_statement()
             .where(
+                Event.organization_id == meter.organization_id,
                 Event.customer == customer,
                 or_(
                     # Events matching meter definitions

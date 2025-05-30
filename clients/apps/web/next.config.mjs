@@ -56,16 +56,23 @@ const baseCSP = `
     font-src 'self';
     object-src 'none';
     base-uri 'self';
-    form-action 'self' ${process.env.NEXT_PUBLIC_API_URL};
     ${ENVIRONMENT !== 'development' ? 'upgrade-insecure-requests;' : ''}
 `
 const nonEmbeddedCSP = `
   ${baseCSP}
+  form-action 'self' ${process.env.NEXT_PUBLIC_API_URL};
   frame-ancestors 'none';
 `
 const embeddedCSP = `
   ${baseCSP}
+  form-action 'self' ${process.env.NEXT_PUBLIC_API_URL};
   frame-ancestors *;
+`
+// Don't add form-action to the OAuth2 authorize page, as it blocks the OAuth2 redirection
+// 10-years old debate about whether to block redirects with form-action or not: https://github.com/w3c/webappsec-csp/issues/8
+const oauth2CSP = `
+  ${baseCSP}
+  frame-ancestors 'none';
 `
 
 /** @type {import('next').NextConfig} */
@@ -443,11 +450,29 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/((?!checkout).*)',
+        source: '/((?!checkout|oauth2).*)',
         headers: [
           {
             key: 'Content-Security-Policy',
             value: nonEmbeddedCSP.replace(/\n/g, ''),
+          },
+          {
+            key: 'Permissions-Policy',
+            value:
+              'payment=(), publickey-credentials-get=(), camera=(), microphone=(), geolocation=()',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+        ],
+      },
+      {
+        source: '/oauth2/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: oauth2CSP.replace(/\n/g, ''),
           },
           {
             key: 'Permissions-Policy',

@@ -1,6 +1,7 @@
 import contextlib
 from collections.abc import AsyncGenerator
 
+import logfire
 import structlog
 from fastapi import Depends
 from redis.asyncio.lock import Lock
@@ -75,32 +76,44 @@ class Locker:
             thread_local=thread_local,
         )
 
-        log.debug("try to acquire lock", name=name)
-        acquired = await lock.acquire()
+        with logfire.span(
+            "Acquire distributed lock {name}",
+            name=name,
+            timeout=timeout,
+            blocking_timeout=blocking_timeout,
+        ):
+            log.debug("try to acquire lock", name=name)
+            acquired = await lock.acquire()
 
-        if not acquired:
-            log.error(
-                "could not acquire lock before set limit",
-                name=name,
-                blocking_timeout=blocking_timeout,
-            )
-            raise TimeoutLockError()
-        else:
-            log.debug("acquired lock", name=name)
-
-        try:
-            yield lock
-        finally:
-            try:
-                await lock.release()
-            except LockNotOwnedError as e:
+            if not acquired:
                 log.error(
-                    "could not release lock as it already expired",
+                    "could not acquire lock before set limit",
                     name=name,
-                    timeout=timeout,
+                    blocking_timeout=blocking_timeout,
                 )
-                raise ExpiredLockError() from e
-            log.debug("released lock", name=name)
+                raise TimeoutLockError()
+            else:
+                log.debug("acquired lock", name=name)
+
+        with logfire.span(
+            "Distributed lock {name} acquired",
+            name=name,
+            timeout=timeout,
+            blocking_timeout=blocking_timeout,
+        ):
+            try:
+                yield lock
+            finally:
+                try:
+                    await lock.release()
+                except LockNotOwnedError as e:
+                    log.error(
+                        "could not release lock as it already expired",
+                        name=name,
+                        timeout=timeout,
+                    )
+                    raise ExpiredLockError() from e
+                log.debug("released lock", name=name)
 
     async def is_locked(self, name: str) -> bool:
         """

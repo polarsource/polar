@@ -142,6 +142,8 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.webhooks_write: "Create or modify webhooks",
     Scope.customer_portal_read: "Read your orders, subscriptions and benefits",
     Scope.customer_portal_write: "Create or modify your orders, subscriptions and benefits",
+    Scope.notifications_read: "Read notifications",
+    Scope.notifications_write: "Mark notifications as read",
     Scope.notification_recipients_read: "Read notification recipients",
     Scope.notification_recipients_write: "Create or modify notification recipients",
 }

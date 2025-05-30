@@ -140,6 +140,6 @@ def apply_metadata_clause(
     for key, values in query.items():
         clauses = []
         for value in values:
-            clauses.append(model.user_metadata[key].astext == value)
+            clauses.append(model.user_metadata[key].as_string() == value)
         statement = statement.where(or_(*clauses))
     return statement

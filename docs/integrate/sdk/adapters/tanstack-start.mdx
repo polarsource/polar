@@ -47,7 +47,7 @@ import { getSupabaseServerClient } from "~/servers/supabase-server";
 export const APIRoute = createAPIFileRoute("/api/portal")({
   GET: CustomerPortal({
     accessToken: process.env.POLAR_ACCESS_TOKEN,
-    getCustomerId: async (request: Request) => "", // Fuction to resolve a Polar Customer ID
+    getCustomerId: async (request: Request) => "", // Function to resolve a Polar Customer ID
     server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
   }),
 });

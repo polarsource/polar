@@ -71,7 +71,7 @@ The `access_token` will allow you to make authenticated API requests on behalf o
 
 We support the concept of access tokens at **organization level**. Contrary to the standard access tokens, those tokens are not tied to a user but to an organization. They can be used to make requests operating only on a specific organization data, improving privacy and security.
 
-To ask for a organization access token, you need to add the parameter `sub_type=organization` to the authorization URL:
+To ask for an organization access token, you need to add the parameter `sub_type=organization` to the authorization URL:
 
 ```
 https://polar.sh/oauth2/authorize?response_type=code&client_id=polar_ci_j3X95_MgfdSCeCd2qkFnUw&redirect_uri=https%3A%2F%2Fexample.com%2Fcallback&scope=openid%20email&sub_type=organization

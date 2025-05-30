@@ -41,7 +41,7 @@ import { CustomerPortal } from "@polar-sh/remix";
 
 export const loader = CustomerPortal({
   accessToken: "xxx", // Or set an environment variable to POLAR_ACCESS_TOKEN
-  getCustomerId: (event) => "", // Fuction to resolve a Polar Customer ID
+  getCustomerId: (event) => "", // Function to resolve a Polar Customer ID
   server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
 });
 ```

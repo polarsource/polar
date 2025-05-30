@@ -43,7 +43,7 @@ import { CustomerPortal } from "@polar-sh/nextjs";
 
 export const GET = CustomerPortal({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
-  getCustomerId: (req: NextRequest) => "", // Fuction to resolve a Polar Customer ID
+  getCustomerId: (req: NextRequest) => "", // Function to resolve a Polar Customer ID
   server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
 });
 ```

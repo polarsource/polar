@@ -266,6 +266,7 @@ class MeterService:
                 ),
             )
             .order_by(Event.ingested_at.asc())
+            .options(*event_repository.get_eager_options())
         )
         last_billed_event = meter.last_billed_event
         if last_billed_event is not None:

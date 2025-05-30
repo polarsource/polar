@@ -53,7 +53,9 @@ class EventService:
         ],
     ) -> tuple[Sequence[Event], int]:
         repository = EventRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        statement = repository.get_readable_statement(auth_subject).options(
+            *repository.get_eager_options()
+        )
 
         if filter is not None:
             statement = statement.where(filter.get_sql_clause(Event))
@@ -120,8 +122,10 @@ class EventService:
         id: uuid.UUID,
     ) -> Event | None:
         repository = EventRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
-            Event.id == id
+        statement = (
+            repository.get_readable_statement(auth_subject)
+            .where(Event.id == id)
+            .options(*repository.get_eager_options())
         )
         return await repository.get_one_or_none(statement)
 
@@ -247,8 +251,10 @@ class EventService:
         self, session: AsyncSession, event_ids: Sequence[uuid.UUID]
     ) -> None:
         repository = EventRepository.from_session(session)
-        statement = repository.get_base_statement().where(
-            Event.id.in_(event_ids), Event.customer.is_not(None)
+        statement = (
+            repository.get_base_statement()
+            .where(Event.id.in_(event_ids), Event.customer.is_not(None))
+            .options(*repository.get_eager_options())
         )
         events = await repository.get_all(statement)
         customers: set[Customer] = set()

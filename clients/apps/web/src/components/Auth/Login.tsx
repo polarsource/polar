@@ -63,9 +63,9 @@ const Login = ({
     loginProps = { signup }
   }
 
-  if (returnTo) {
+  if (returnTo && returnParams) {
     const returnToParams = new URLSearchParams(returnParams)
-    if (returnToParams) {
+    if (returnToParams.size) {
       returnTo = `${returnTo || ''}?${returnToParams}`
     }
 

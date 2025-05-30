@@ -7,9 +7,6 @@ export const getGitHubAuthorizeURL = (
   >,
 ): string => {
   const searchParams = new URLSearchParams()
-  if (params.payment_intent_id) {
-    searchParams.set('payment_intent_id', params.payment_intent_id)
-  }
   if (params.return_to) {
     searchParams.set('return_to', params.return_to)
   }

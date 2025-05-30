@@ -13,9 +13,11 @@ from sqlalchemy import (
     or_,
     select,
 )
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
+from polar.kit.repository.base import Options
 from polar.models import Customer, Event, Meter, UserOrganization
 from polar.models.event import EventSource
 
@@ -131,3 +133,6 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             Event.organization_id == meter.organization_id,
             self.get_meter_clause(meter),
         )
+
+    def get_eager_options(self) -> Options:
+        return (joinedload(Event.customer),)

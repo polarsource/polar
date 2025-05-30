@@ -129,7 +129,7 @@ class Event(Model, MetadataMixin):
                 ")"
             ),
             comparator_factory=CustomerComparator,
-            lazy="joined",
+            lazy="raise",
             viewonly=True,
         )
 

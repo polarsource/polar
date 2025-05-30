@@ -124,6 +124,7 @@ services:
       - fromGroup: backend-production
       - fromGroup: stripe-production
       - fromGroup: logfire-worker
+      - fromGroup: aws-s3-production
 
   - type: redis
     name: redis
@@ -250,6 +251,7 @@ services:
       - fromGroup: github-sandbox
       - fromGroup: backend-sandbox
       - fromGroup: stripe-sandbox
+      - fromGroup: aws-s3-sandbox
 
 databases:
   - name: db

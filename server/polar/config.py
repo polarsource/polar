@@ -215,7 +215,9 @@ class Settings(BaseSettings):
         state="CA",
         country=CountryAlpha2("US"),
     )
-
+    CUSTOMER_INVOICES_ADDITIONAL_INFO: str | None = (
+        "[support@polar.sh](mailto:support@polar.sh)\n"
+    )
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100
 

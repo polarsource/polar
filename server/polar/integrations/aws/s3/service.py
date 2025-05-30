@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, cast
 import botocore
 import structlog
 from botocore.client import ClientError
-from mypy_boto3_s3.type_defs import PutObjectRequestTypeDef
 
 from polar.kit.utils import generate_uuid, utc_now
 
@@ -24,6 +23,7 @@ from .schemas import (
 
 if TYPE_CHECKING:
     from mypy_boto3_s3.client import S3Client
+    from mypy_boto3_s3.type_defs import PutObjectRequestTypeDef
 
 log = structlog.get_logger()
 

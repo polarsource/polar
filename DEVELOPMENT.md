@@ -147,7 +147,7 @@ cd server
 uv run task emails
 ```
 > [!NOTE]
-> If you're in local development, you should build the email renderer binary ,as it's reuquired for first time.
+> If you're in local development, you should build the email renderer binary, as it's required for first time.
 
 **2. Apply the database migrations**
 

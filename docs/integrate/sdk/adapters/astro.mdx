@@ -41,7 +41,7 @@ import { POLAR_ACCESS_TOKEN } from "astro:env/server";
 
 export const GET = CustomerPortal({
   accessToken: POLAR_ACCESS_TOKEN,
-  getCustomerId: (event) => "", // Fuction to resolve a Polar Customer ID
+  getCustomerId: (event) => "", // Function to resolve a Polar Customer ID
   server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
 });
 ```

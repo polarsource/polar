@@ -47,7 +47,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 Event.customer == customer,
                 Event.source == EventSource.system,
                 Event.name == SystemEvent.meter_reset,
-                Event.user_metadata["meter_id"].astext == str(meter_id),
+                Event.user_metadata["meter_id"].as_string() == str(meter_id),
             )
             .order_by(Event.timestamp.desc())
             .limit(1)
@@ -125,7 +125,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         return and_(
             Event.source == EventSource.system,
             Event.name.in_((SystemEvent.meter_credited, SystemEvent.meter_reset)),
-            Event.user_metadata["meter_id"].astext == str(meter.id),
+            Event.user_metadata["meter_id"].as_string() == str(meter.id),
         )
 
     def get_meter_statement(self, meter: Meter) -> Select[tuple[Event]]:

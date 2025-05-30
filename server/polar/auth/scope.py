@@ -80,6 +80,9 @@ class Scope(StrEnum):
     customer_portal_read = "customer_portal:read"
     customer_portal_write = "customer_portal:write"
 
+    notifications_read = "notifications:read"
+    notifications_write = "notifications:write"
+
     notification_recipients_read = "notification_recipients:read"
     notification_recipients_write = "notification_recipients:write"
 

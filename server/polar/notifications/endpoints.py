@@ -3,9 +3,10 @@ from typing import Annotated
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
-from polar.auth.dependencies import WebUser
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.notification_recipient import auth
+from polar.notification_recipient import (
+    auth as notification_recipient_auth,
+)
 from polar.notification_recipient.schemas import (
     NotificationRecipientCreate,
     NotificationRecipientPlatform,
@@ -13,6 +14,9 @@ from polar.notification_recipient.schemas import (
 )
 from polar.notification_recipient.service import (
     notification_recipient as notification_recipient_service,
+)
+from polar.notifications import (
+    auth as notifications_auth,
 )
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
@@ -30,7 +34,7 @@ router = APIRouter(tags=["notifications", APITag.private])
 
 @router.get("/notifications", response_model=NotificationsList)
 async def get(
-    auth_subject: WebUser,
+    auth_subject: notifications_auth.NotificationsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> NotificationsList:
     notifs = await notifications.get_for_user(session, auth_subject.subject.id)
@@ -47,7 +51,7 @@ async def get(
 @router.post("/notifications/read")
 async def mark_read(
     read: NotificationsMarkRead,
-    auth_subject: WebUser,
+    auth_subject: notifications_auth.NotificationsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     await notifications.set_user_last_read(
@@ -65,7 +69,7 @@ async def mark_read(
 )
 async def create(
     notification_recipient_create: NotificationRecipientCreate,
-    auth_subject: auth.NotificationRecipientWrite,
+    auth_subject: notification_recipient_auth.NotificationRecipientWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> NotificationRecipientSchema:
     """Create a notification recipient."""
@@ -82,7 +86,7 @@ async def create(
     summary="Lists all notification recipients subscribed to notifications",
 )
 async def list(
-    auth_subject: auth.NotificationRecipientRead,
+    auth_subject: notification_recipient_auth.NotificationRecipientRead,
     pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
     expo_push_token: str | None = Query(None, description="Filter by Expo push token."),
@@ -115,7 +119,7 @@ async def list(
 )
 async def delete(
     id: NotificationRecipientID,
-    auth_subject: auth.NotificationRecipientWrite,
+    auth_subject: notification_recipient_auth.NotificationRecipientWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Delete a notification recipient."""

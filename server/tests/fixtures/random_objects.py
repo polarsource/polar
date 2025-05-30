@@ -832,7 +832,7 @@ async def create_order(
         stripe_invoice_id=stripe_invoice_id,
         billing_name=billing_name,
         billing_address=billing_address,
-        invoice_number=invoice_number,
+        invoice_number=invoice_number or rstr("INV-"),
         customer=customer,
         product=product,
         subscription=subscription,

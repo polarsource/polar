@@ -369,16 +369,6 @@ class OrderService:
         if order.billing_name is None or order.billing_address is None:
             raise MissingInvoiceBillingDetails(order)
 
-        if order.invoice_number is None:
-            organization = order.product.organization
-            order.invoice_number = await organization_service.get_next_invoice_number(
-                session, organization
-            )
-            repository = OrderRepository.from_session(session)
-            order = await repository.update(
-                order, update_dict={"invoice_number": order.invoice_number}
-            )
-
         enqueue_job("order.invoice", order_id=order.id)
 
     async def generate_invoice(self, session: AsyncSession, order: Order) -> Order:
@@ -499,6 +489,11 @@ class OrderService:
             else:
                 break
 
+        organization = checkout.organization
+        invoice_number = await organization_service.get_next_invoice_number(
+            session, organization
+        )
+
         repository = OrderRepository.from_session(session)
         order = await repository.create(
             Order(
@@ -513,6 +508,7 @@ class OrderService:
                 taxability_reason=taxability_reason,
                 tax_id=tax_id,
                 tax_rate=tax_rate,
+                invoice_number=invoice_number,
                 customer=customer,
                 product=product,
                 discount=checkout.discount,
@@ -545,7 +541,6 @@ class OrderService:
         )
 
         # Trigger notifications
-        organization = checkout.organization
         await self.send_admin_notification(session, organization, order)
         await self.send_confirmation_email(session, organization, order)
         await self._on_order_created(session, order)
@@ -730,6 +725,10 @@ class OrderService:
             else subscription.custom_field_data
         )
 
+        invoice_number = await organization_service.get_next_invoice_number(
+            session, subscription.organization
+        )
+
         repository = OrderRepository.from_session(session)
         order = await repository.create(
             Order(
@@ -747,6 +746,7 @@ class OrderService:
                 taxability_reason=taxability_reason,
                 tax_id=tax_id,
                 tax_rate=tax_rate,
+                invoice_number=invoice_number,
                 customer=customer,
                 product=subscription.product,
                 discount=discount,

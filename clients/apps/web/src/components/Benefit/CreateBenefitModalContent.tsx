@@ -46,6 +46,7 @@ const CreateBenefitModalContent = ({
   const createSubscriptionBenefit = useCreateBenefit(organization.id)
 
   const form = useForm<schemas['BenefitCreate']>({
+    mode: 'onChange',
     defaultValues: {
       organization_id: organization.id,
       type: type ? type : 'custom',
@@ -121,7 +122,10 @@ const CreateBenefitModalContent = ({
                 className="self-start"
                 type="button"
                 loading={createSubscriptionBenefit.isPending}
-                disabled={createSubscriptionBenefit.isPending}
+                disabled={
+                  createSubscriptionBenefit.isPending ||
+                  !form.formState.isValid
+                }
                 onClick={handleSubmit(handleCreateNewBenefit)}
               >
                 Create

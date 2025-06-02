@@ -124,17 +124,17 @@ export default function ClientPage({
   return (
     <DashboardBody wide>
       <div className="flex flex-col gap-y-8">
-        <div className="flex flex-row items-center justify-between gap-6">
-          <div className="flex flex-row items-center gap-x-4">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <Input
-              className="w-full max-w-64"
+              className="w-full md:max-w-64"
               preSlot={<Search fontSize="small" />}
               placeholder="Search Products"
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
             />
             <Select value={show} onValueChange={setShow}>
-              <SelectTrigger className="w-full max-w-fit">
+              <SelectTrigger className="w-full md:max-w-fit">
                 <SelectValue placeholder="Show archived products" />
               </SelectTrigger>
               <SelectContent>
@@ -144,8 +144,15 @@ export default function ClientPage({
               </SelectContent>
             </Select>
           </div>
-          <Link href={`/dashboard/${org.slug}/products/new`}>
-            <Button role="link" wrapperClassNames="gap-x-2">
+          <Link
+            href={`/dashboard/${org.slug}/products/new`}
+            className="w-full md:w-fit"
+          >
+            <Button
+              role="link"
+              wrapperClassNames="gap-x-2 md:w-fit"
+              className="w-full"
+            >
               <AddOutlined className="h-4 w-4" />
               <span>New Product</span>
             </Button>
@@ -263,7 +270,7 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
           {product.description && (
             <div
               className={twMerge(
-                'prose dark:prose-invert dark:text-polar-500 flex-shrink text-sm leading-normal text-gray-500',
+                'prose dark:prose-invert dark:text-polar-500 hidden flex-shrink text-sm leading-normal text-gray-500 md:flex',
                 'max-w-96 truncate',
               )}
             >
@@ -274,7 +281,7 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
           )}
         </div>
       </div>
-      <div className="flex flex-row items-center gap-x-6">
+      <div className="flex flex-row items-center gap-x-4 md:gap-x-6">
         {product.is_archived ? (
           <Tooltip>
             <TooltipTrigger>

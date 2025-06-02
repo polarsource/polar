@@ -74,7 +74,7 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
     >
       <div
         className={twMerge(
-          'flex flex-row justify-between',
+          'flex flex-col gap-6 md:flex-row md:justify-between',
           compact ? 'p-4' : 'p-6',
         )}
       >

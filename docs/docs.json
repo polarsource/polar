@@ -71,6 +71,7 @@
                   "features/checkout/session"
                 ]
               },
+              "features/custom-fields",
               "features/discounts",
               "features/orders",
               "features/refunds",

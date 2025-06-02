@@ -197,14 +197,18 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
               </a>
             </WellFooter>
           </Well>
-          <Button
-            type="submit"
-            className="self-start"
-            disabled={!canRefund}
-            loading={createRefund.isPending}
-          >
-            Refund Order
-          </Button>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <Button
+              type="submit"
+              disabled={!canRefund}
+              loading={createRefund.isPending}
+            >
+              Refund Order
+            </Button>
+            <Button variant="secondary" onClick={hide}>
+              Cancel
+            </Button>
+          </div>
         </form>
       </Form>
     </div>

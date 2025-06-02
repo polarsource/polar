@@ -162,7 +162,7 @@ export const CustomerContextView = ({
           </div>
         )}
       </ShadowBox>
-      <ShadowBox className="dark:border-polar-800 flex flex-col p-6 lg:rounded-2xl">
+      <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 p-6 md:gap-0 lg:rounded-2xl">
         {!customer.deleted_at && <DetailRow label="ID" value={customer.id} />}
         <DetailRow label="Email" value={customer.email} />
         <DetailRow label="Name" value={customer.name} />
@@ -174,7 +174,7 @@ export const CustomerContextView = ({
       </ShadowBox>
       <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 p-6 lg:rounded-2xl">
         <h4 className="text-lg">Billing Address</h4>
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-4 md:gap-0">
           <DetailRow label="Line 1" value={customer.billing_address?.line1} />
           <DetailRow label="Line 2" value={customer.billing_address?.line2} />
           <DetailRow label="City" value={customer.billing_address?.city} />
@@ -198,12 +198,7 @@ export const CustomerContextView = ({
             </Button>
           </div>
           {Object.entries(customer.metadata).map(([key, value]) => (
-            <DetailRow
-              key={key}
-              label={key}
-              value={value}
-              valueClassName="dark:bg-polar-800 bg-gray-100"
-            />
+            <DetailRow key={key} label={key} value={value} />
           ))}
         </ShadowBox>
       )}

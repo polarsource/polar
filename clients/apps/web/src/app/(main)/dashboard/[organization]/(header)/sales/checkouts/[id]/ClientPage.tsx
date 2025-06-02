@@ -11,8 +11,7 @@ import { schemas } from '@polar-sh/client'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List } from '@polar-sh/ui/components/atoms/List'
-import React, { PropsWithChildren } from 'react'
-import { twMerge } from 'tailwind-merge'
+import React from 'react'
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -105,28 +104,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, checkout }) => {
         />
       </div>
     </DashboardBody>
-  )
-}
-
-const DetailRow = ({
-  title,
-  children,
-  className,
-  titleClassName,
-}: PropsWithChildren<{
-  title: string
-  className?: string
-  titleClassName?: string
-}>) => {
-  return (
-    <div className={twMerge('flex flex-row justify-between gap-8', className)}>
-      <span
-        className={twMerge('dark:text-polar-500 text-gray-500', titleClassName)}
-      >
-        {title}
-      </span>
-      {children}
-    </div>
   )
 }
 

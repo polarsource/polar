@@ -283,30 +283,33 @@ const BaseCheckoutForm = ({
               {children}
 
               {checkout.isPaymentFormRequired && (
-                <>
-                  <FormField
-                    control={control}
-                    name="customerName"
-                    rules={{
-                      required: 'This field is required',
-                    }}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cardholder name</FormLabel>
-                        <FormControl>
-                          <Input
-                            className={themePresetProps.polar.input}
-                            type="text"
-                            autoComplete="name"
-                            {...field}
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <FormField
+                  control={control}
+                  name="customerName"
+                  rules={{
+                    required: 'This field is required',
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cardholder name</FormLabel>
+                      <FormControl>
+                        <Input
+                          className={themePresetProps.polar.input}
+                          type="text"
+                          autoComplete="name"
+                          {...field}
+                          value={field.value || ''}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
+              {(checkout.isPaymentFormRequired ||
+                checkout.requireBillingAddress) && (
+                <>
                   <FormField
                     control={control}
                     name="isBusinessCustomer"

@@ -98,7 +98,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
   const cardClassName = 'flex w-full flex-col'
 
   return (
-    <DashboardBody className="gap-y-16 pb-16">
+    <DashboardBody className="gap-y-8 pb-16 md:gap-y-16">
       <UsageBasedBillingBanner />
       <HeroChart organization={organization} />
       <motion.div
@@ -109,7 +109,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
         transition={{ staggerChildren: 0.1 }}
       >
         <motion.div
-          className={twMerge(cardClassName, 'col-span-2')}
+          className={twMerge(cardClassName, 'col-span-2 hidden md:flex')}
           {...motionVariants}
         >
           <ActivityWidget />
@@ -150,7 +150,7 @@ const UsageBasedBillingBanner = () => {
   }
 
   return (
-    <Well className="shadow-3xl flex flex-row items-center justify-between gap-x-6 bg-white p-6">
+    <Well className="shadow-3xl flex items-start gap-6 bg-white p-6 md:flex-row md:items-center md:justify-between">
       <div className="flex flex-col gap-y-2">
         <WellHeader className="flex flex-row items-center gap-x-2">
           <DonutLargeOutlined fontSize="small" className="text-blue-500" />
@@ -165,7 +165,7 @@ const UsageBasedBillingBanner = () => {
           </p>
         </WellContent>
       </div>
-      <div className="flex flex-row items-center gap-x-4">
+      <div className="flex flex-row-reverse gap-x-4 md:flex-row md:items-center">
         <Link
           href="https://docs.polar.sh/features/usage-based-billing/introduction"
           target="_blank"

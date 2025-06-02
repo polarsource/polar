@@ -19,7 +19,7 @@ export const ProductThumbnail = ({
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-800 dark:border-polar-700 flex aspect-square h-10 flex-col items-center justify-center border border-transparent bg-gray-100 text-center',
+        'dark:bg-polar-800 dark:border-polar-700 hidden aspect-square h-10 flex-col items-center justify-center border border-transparent bg-gray-100 text-center md:flex',
         sizeClassName,
       )}
     >

@@ -4,6 +4,17 @@ sidebarTitle: API
 description: Stay up to date with the latest changes, improvements and deprecations to the Polar API.
 ---
 
+<Update label="2025-06-02">
+  ## Order invoice generation and retrieval
+
+Until now, the invoice was generated automatically when the order was created, allowing you to call [`GET /v1/orders/{id}/invoice`](/api-reference/orders/get-invoice) and [`GET /v1/customer-portal/orders/{id}/invoice`](/api-reference/customer-portal/orders/get-invoice) endpoints without any prior action.
+
+We now require you to explicitly generate the invoice by calling the [`POST /v1/orders/{id}/invoice`](/api-reference/orders/post-invoice) or [`POST /v1/customer-portal/orders/{id}/invoice`](/api-reference/customer-portal/orders/post-invoice) endpoints.
+
+This change allows us to better handle the invoice generation process, and to allow the customer to change the billing details (name and address) before generating the invoice. This can be done through the [`PATCH /v1/orders/{id}`](/api-reference/orders/patch) or [`PATCH /v1/customer-portal/orders/{id}`](/api-reference/customer-portal/orders/patch) endpoints.
+
+</Update>
+
 <Update label="2025-04-16">
   ## Benefit metadata support and floating point numbers in metadata
 

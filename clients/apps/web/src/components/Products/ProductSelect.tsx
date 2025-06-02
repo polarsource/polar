@@ -207,7 +207,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
             'ring-offset-background placeholder:text-muted-foreground focus:ring-ring dark:bg-polar-800 dark:hover:bg-polar-700 dark:border-polar-700 flex h-10 !w-full flex-row items-center justify-between gap-x-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
             className,
           )}
-          wrapperClassNames="justify-between w-full md:w-[200px]"
+          wrapperClassNames="justify-between w-full min-w-[200px]"
         >
           <div className="overflow-hidden text-ellipsis whitespace-nowrap">
             {buttonLabel}
@@ -215,7 +215,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
           <ExpandMoreOutlined className="ml-2 h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[250px] p-0">
+      <PopoverContent className="p-0" side="bottom" align="start">
         <Command shouldFilter={false}>
           <CommandInput
             className="border-none focus:ring-transparent"

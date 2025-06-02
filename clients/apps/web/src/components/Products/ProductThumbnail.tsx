@@ -7,7 +7,7 @@ export const ProductThumbnail = ({
   product,
 }: {
   size?: 'small' | 'medium'
-  product: schemas['Product']
+  product: schemas['Product'] | schemas['CheckoutProduct']
 }) => {
   let coverUrl = null
   if (product.medias.length > 0) {

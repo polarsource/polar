@@ -142,7 +142,7 @@ const DownloadInvoice = ({
         size={size}
         className={className}
       >
-        Download invoice
+        Download Invoice
       </Button>
       <InlineModal
         isShown={isShown}
@@ -297,7 +297,12 @@ const DownloadInvoice = ({
                   />
                 </FormControl>
               </FormItem>
-              <Button type="submit" loading={loading} disabled={loading} className={className}>
+              <Button
+                type="submit"
+                loading={loading}
+                disabled={loading}
+                className={className}
+              >
                 Generate invoice
               </Button>
               {errors.root && (

@@ -1,6 +1,6 @@
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
-import { UseQueryResult, useMutation, useQuery } from '@tanstack/react-query'
+import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useSearchTransactions = (variables: {
@@ -43,12 +43,4 @@ export const useTransactionsSummary = (
       ),
     retry: defaultRetry,
     enabled: !!accountId,
-  })
-
-export const usePayoutEstimate = (accountId: string) =>
-  useMutation({
-    mutationFn: () =>
-      api.GET('/v1/transactions/payouts', {
-        params: { query: { account_id: accountId } },
-      }),
   })

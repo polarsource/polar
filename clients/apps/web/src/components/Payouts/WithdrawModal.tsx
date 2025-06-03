@@ -1,4 +1,3 @@
-import { usePayoutEstimate } from '@/hooks/queries'
 import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -20,15 +19,15 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   hide,
   onSuccess,
 }) => {
-  const payoutEstimateMutation = usePayoutEstimate(account.id)
-
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [payoutEstimate, setPayoutEstimate] = useState<
     schemas['PayoutEstimate'] | null
   >(null)
 
   const getPayoutEstimate = useCallback(async () => {
-    const { data, response } = await payoutEstimateMutation.mutateAsync()
+    const { data, response } = await api.GET('/v1/payouts/estimate', {
+      params: { query: { account_id: account.id } },
+    })
     if (!response.ok) {
       const errorBody = await response.json()
       if (errorBody.error === 'InsufficientBalance') {
@@ -46,7 +45,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     if (data) {
       setPayoutEstimate(data)
     }
-  }, [])
+  }, [account])
 
   useEffect(() => {
     if (isShown) {
@@ -57,7 +56,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const [loading, setLoading] = useState(false)
   const onConfirm = useCallback(async () => {
     setLoading(true)
-    const { data, error } = await api.POST('/v1/transactions/payouts', {
+    const { data, error } = await api.POST('/v1/payouts/', {
       body: { account_id: account.id },
     })
     setLoading(false)

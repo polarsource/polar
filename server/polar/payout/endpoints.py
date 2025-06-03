@@ -1,4 +1,4 @@
-from fastapi import Depends
+from fastapi import Depends, Query
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
@@ -6,17 +6,49 @@ from polar.account.service import account as account_service
 from polar.auth.dependencies import WebUser
 from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSessionMaker
+from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.schemas import MultipleQueryFilter
 from polar.locker import Locker, get_locker
 from polar.models import Payout
+from polar.models.payout import PayoutStatus
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
 from polar.routing import APIRouter
 
+from . import sorting
 from .schemas import Payout as PayoutSchema
 from .schemas import PayoutCreate, PayoutEstimate
 from .service import payout as payout_service
 
 router = APIRouter(prefix="/payouts", tags=["payouts", APITag.private])
+
+
+@router.get("/", response_model=ListResource[PayoutSchema])
+async def list(
+    auth_subject: WebUser,
+    pagination: PaginationParamsQuery,
+    sorting: sorting.ListSorting,
+    account_id: MultipleQueryFilter[UUID4] | None = Query(
+        None, title="Account ID Filter", description="Filter by account ID."
+    ),
+    status: MultipleQueryFilter[PayoutStatus] | None = Query(
+        None, title="Status Filter", description="Filter by payout status."
+    ),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[PayoutSchema]:
+    """List payouts."""
+    results, count = await payout_service.list(
+        session,
+        auth_subject,
+        account_id=account_id,
+        status=status,
+        pagination=pagination,
+        sorting=sorting,
+    )
+
+    return ListResource.from_paginated_results(
+        [PayoutSchema.model_validate(result) for result in results], count, pagination
+    )
 
 
 @router.get("/estimate", response_model=PayoutEstimate)

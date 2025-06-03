@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterable, Sequence
 
 import stripe as stripe_lib
 import structlog
@@ -12,6 +12,8 @@ from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.db.postgres import AsyncSessionMaker
+from polar.kit.pagination import PaginationParams
+from polar.kit.sorting import Sorting
 from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import Account, Payout
@@ -30,6 +32,7 @@ from polar.worker import enqueue_job
 
 from .repository import PayoutRepository
 from .schemas import PayoutEstimate
+from .sorting import PayoutSortProperty
 
 log: Logger = structlog.get_logger()
 
@@ -83,6 +86,35 @@ class PayoutDoesNotExist(PayoutError):
 
 
 class PayoutService:
+    async def list(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        *,
+        account_id: Sequence[uuid.UUID] | None = None,
+        status: Sequence[PayoutStatus] | None = None,
+        pagination: PaginationParams,
+        sorting: list[Sorting[PayoutSortProperty]] = [
+            (PayoutSortProperty.created_at, False)
+        ],
+    ) -> tuple[Sequence[Payout], int]:
+        repository = PayoutRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).options(
+            *repository.get_eager_options()
+        )
+
+        if account_id is not None:
+            statement = statement.where(Payout.account_id.in_(account_id))
+
+        if status is not None:
+            statement = statement.where(Payout.status.in_(status))
+
+        statement = repository.apply_sorting(statement, sorting)
+
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
+
     async def get(
         self,
         session: AsyncSession,

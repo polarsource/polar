@@ -13,18 +13,23 @@ from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
+    RepositorySortingMixin,
+    SortingClause,
 )
 from polar.kit.utils import utc_now
 from polar.models import Account, Payout
 from polar.models.payout import PayoutStatus
+from polar.payout.sorting import PayoutSortProperty
 
 
 class PayoutRepository(
     RepositorySoftDeletionIDMixin[Payout, UUID],
     RepositorySoftDeletionMixin[Payout],
+    RepositorySortingMixin[Payout, PayoutSortProperty],
     RepositoryBase[Payout],
 ):
     model = Payout
+    sorting_enum = PayoutSortProperty
 
     async def get_by_processor_id(
         self,
@@ -77,3 +82,14 @@ class PayoutRepository(
             statement = statement.where(false())
 
         return statement
+
+    def get_sorting_clause(self, property: PayoutSortProperty) -> SortingClause:
+        match property:
+            case PayoutSortProperty.created_at:
+                return Payout.created_at
+            case PayoutSortProperty.amount:
+                return Payout.amount
+            case PayoutSortProperty.status:
+                return Payout.status
+            case PayoutSortProperty.account_id:
+                return Payout.account_id

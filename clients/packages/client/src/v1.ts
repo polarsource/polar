@@ -709,41 +709,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/transactions/payouts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Payout Estimate */
-        get: operations["transactions:get_payout_estimate"];
-        put?: never;
-        /** Create Payout */
-        post: operations["transactions:create_payout"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/transactions/payouts/{id}/csv": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Payout Csv */
-        get: operations["transactions:get_payout_csv"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/auth/logout": {
         parameters: {
             query?: never;
@@ -2949,6 +2914,61 @@ export interface paths {
          *     **Scopes**: `payments:read`
          */
         get: operations["payments:get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payouts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List
+         * @description List payouts.
+         */
+        get: operations["payouts:list"];
+        put?: never;
+        /** Create */
+        post: operations["payouts:create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payouts/estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Estimate */
+        get: operations["payouts:get_estimate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payouts/{id}/csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Csv */
+        get: operations["payouts:get_csv"];
         put?: never;
         post?: never;
         delete?: never;
@@ -12050,6 +12070,12 @@ export interface components {
             items: components["schemas"]["Organization"][];
             pagination: components["schemas"]["Pagination"];
         };
+        /** ListResource[Payout] */
+        ListResource_Payout_: {
+            /** Items */
+            items: components["schemas"]["Payout"][];
+            pagination: components["schemas"]["Pagination"];
+        };
         /** ListResource[PersonalAccessToken] */
         ListResource_PersonalAccessToken_: {
             /** Items */
@@ -13912,6 +13938,52 @@ export interface components {
          * @enum {string}
          */
         PaymentStatus: "pending" | "succeeded" | "failed";
+        /** Payout */
+        Payout: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
+            id: string;
+            processor: components["schemas"]["AccountType"];
+            status: components["schemas"]["PayoutStatus"];
+            /** Currency */
+            currency: string;
+            /** Amount */
+            amount: number;
+            /** Fees Amount */
+            fees_amount: number;
+            /** Gross Amount */
+            gross_amount: number;
+            /** Account Currency */
+            account_currency: string;
+            /** Account Amount */
+            account_amount: number;
+            /**
+             * Account Id
+             * Format: uuid4
+             */
+            account_id: string;
+            /**
+             * Transaction Id
+             * Format: uuid4
+             */
+            transaction_id: string;
+            /** Fees Transactions */
+            fees_transactions: components["schemas"]["TransactionEmbedded"][];
+        };
         /** PayoutCreate */
         PayoutCreate: {
             /**
@@ -13934,6 +14006,16 @@ export interface components {
             /** Net Amount */
             net_amount: number;
         };
+        /**
+         * PayoutSortProperty
+         * @enum {string}
+         */
+        PayoutSortProperty: "created_at" | "-created_at" | "amount" | "-amount" | "fees_amount" | "-fees_amount" | "status" | "-status" | "account_id" | "-account_id";
+        /**
+         * PayoutStatus
+         * @enum {string}
+         */
+        PayoutStatus: "pending" | "in_transit" | "succeeded";
         /** PersonalAccessToken */
         PersonalAccessToken: {
             /**
@@ -17960,101 +18042,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TransactionsSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "transactions:get_payout_estimate": {
-        parameters: {
-            query: {
-                account_id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PayoutEstimate"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "transactions:create_payout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PayoutCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Transaction"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "transactions:get_payout_csv": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -23609,6 +23596,141 @@ export interface operations {
             };
         };
     };
+    "payouts:list": {
+        parameters: {
+            query?: {
+                /** @description Filter by account ID. */
+                account_id?: string | string[] | null;
+                /** @description Filter by payout status. */
+                status?: components["schemas"]["PayoutStatus"] | components["schemas"]["PayoutStatus"][] | null;
+                /** @description Page number, defaults to 1. */
+                page?: number;
+                /** @description Size of a page, defaults to 10. Maximum is 100. */
+                limit?: number;
+                /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+                sorting?: components["schemas"]["PayoutSortProperty"][] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResource_Payout_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "payouts:create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayoutCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Payout"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "payouts:get_estimate": {
+        parameters: {
+            query: {
+                account_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutEstimate"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "payouts:get_csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     _endpointcheckout_created_post: {
         parameters: {
             query?: never;
@@ -24504,7 +24626,7 @@ export interface operations {
 type ReadonlyArray<T> = [
     Exclude<T, undefined>
 ] extends [
-    any[]
+    unknown[]
 ] ? Readonly<Exclude<T, undefined>> : Readonly<Exclude<T, undefined>[]>;
 export const accountTypeValues: ReadonlyArray<components["schemas"]["AccountType"]> = ["stripe", "open_collective"];
 export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseOrganization"]["sub_type"]> = ["organization"];
@@ -24608,6 +24730,8 @@ export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]
 export const paymentProcessorValues: ReadonlyArray<components["schemas"]["PaymentProcessor"]> = ["stripe"];
 export const paymentSortPropertyValues: ReadonlyArray<components["schemas"]["PaymentSortProperty"]> = ["created_at", "-created_at", "status", "-status", "amount", "-amount", "method", "-method"];
 export const paymentStatusValues: ReadonlyArray<components["schemas"]["PaymentStatus"]> = ["pending", "succeeded", "failed"];
+export const payoutSortPropertyValues: ReadonlyArray<components["schemas"]["PayoutSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "fees_amount", "-fees_amount", "status", "-status", "account_id", "-account_id"];
+export const payoutStatusValues: ReadonlyArray<components["schemas"]["PayoutStatus"]> = ["pending", "in_transit", "succeeded"];
 export const platformFeeTypeValues: ReadonlyArray<components["schemas"]["PlatformFeeType"]> = ["payment", "international_payment", "subscription", "invoice", "cross_border_transfer", "payout", "account", "dispute", "platform"];
 export const pledgeStateValues: ReadonlyArray<components["schemas"]["PledgeState"]> = ["initiated", "created", "pending", "refunded", "disputed", "charge_disputed", "cancelled"];
 export const processorValues: ReadonlyArray<components["schemas"]["Processor"]> = ["stripe", "open_collective"];

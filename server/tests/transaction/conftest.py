@@ -67,6 +67,7 @@ async def create_transaction(
         charge_id=charge_id,
         refund_id=refund_id,
         dispute_id=dispute_id,
+        incurred_transactions=[],
     )
     await save_fixture(transaction)
     return transaction

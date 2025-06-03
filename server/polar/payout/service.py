@@ -19,7 +19,10 @@ from polar.logging import Logger
 from polar.models import Account, Payout
 from polar.models.payout import PayoutStatus
 from polar.postgres import AsyncSession
-from polar.transaction.repository import PayoutTransactionRepository
+from polar.transaction.repository import (
+    PayoutTransactionRepository,
+    TransactionRepository,
+)
 from polar.transaction.service.payout import (
     payout_transaction as payout_transaction_service,
 )
@@ -197,6 +200,7 @@ class PayoutService:
                     processor=account.account_type,
                     currency="usd",  # FIXME: Main Polar currency
                     amount=balance_amount_after_fees,
+                    fees_amount=balance_amount - balance_amount_after_fees,
                     account_currency=account.currency,
                     account_amount=balance_amount_after_fees,
                     account=account,
@@ -293,7 +297,8 @@ class PayoutService:
         )
         assert payout_transaction is not None
 
-        statement = payout_transaction_repository.get_paid_transactions_statement(
+        transaction_repository = TransactionRepository.from_session(session)
+        statement = transaction_repository.get_paid_transactions_statement(
             payout_transaction.id
         )
 

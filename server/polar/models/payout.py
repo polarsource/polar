@@ -12,6 +12,7 @@ from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
     from .account import Account
+    from .transaction import Transaction
 
 
 class PayoutStatus(StrEnum):
@@ -50,6 +51,8 @@ class Payout(RecordModel):
     """Currency of this transaction from Polar's perspective. Should be `usd`."""
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
     """Amount in cents of this transaction from Polar's perspective."""
+    fees_amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    """Fees amount in cents of this transaction from Polar's perspective."""
     account_currency: Mapped[str] = mapped_column(String(3), nullable=False)
     """Currency of this transaction from user's account perspective. Might not be `usd`."""
     account_amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
@@ -75,3 +78,26 @@ class Payout(RecordModel):
 
     Might be `None` if not yet created.
     """
+
+    transaction: Mapped["Transaction"] = relationship(
+        "Transaction",
+        back_populates="payout",
+        lazy="raise",
+        uselist=False,
+        foreign_keys="Transaction.payout_id",
+    )
+    """Transaction associated with this payout."""
+
+    @property
+    def gross_amount(self) -> int:
+        """Gross amount of this payout in cents."""
+        return self.amount + self.fees_amount
+
+    @property
+    def fees_transactions(self) -> list["Transaction"]:
+        """List of transactions that are fees for this payout."""
+        return [
+            transaction
+            for transaction in self.transaction.incurred_transactions
+            if transaction.account_id is not None
+        ]

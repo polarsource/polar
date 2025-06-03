@@ -221,7 +221,7 @@ class Settings(BaseSettings):
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100
 
-    ACCOUNT_PAYOUT_DELAY: timedelta = timedelta(days=1)
+    ACCOUNT_PAYOUT_DELAY: timedelta = timedelta(seconds=1)
     ACCOUNT_PAYOUT_MINIMUM_BALANCE: int = 1000
 
     PLATFORM_FEE_BASIS_POINTS: int = 400

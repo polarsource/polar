@@ -84,14 +84,3 @@ class TransactionsBalance(Schema):
 class TransactionsSummary(Schema):
     balance: TransactionsBalance
     payout: TransactionsBalance
-
-
-class PayoutCreate(Schema):
-    account_id: UUID4
-
-
-class PayoutEstimate(Schema):
-    account_id: UUID4
-    gross_amount: int
-    fees_amount: int
-    net_amount: int

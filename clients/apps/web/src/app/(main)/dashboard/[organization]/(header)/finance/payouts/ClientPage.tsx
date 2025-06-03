@@ -2,6 +2,7 @@
 
 import AccountBalance from '@/components/Payouts/AccountBalance'
 import { PayoutStatus } from '@/components/Payouts/PayoutStatus'
+import AccountBanner from '@/components/Transactions/AccountBanner'
 import { platformFeesDisplayNames } from '@/components/Transactions/TransactionsList'
 import { useOrganizationAccount } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
@@ -228,6 +229,7 @@ export default function ClientPage({
 
   return (
     <div className="flex flex-col gap-y-6">
+      <AccountBanner organization={organization} />
       {account && <AccountBalance account={account} />}
       <DataTable
         columns={columns}

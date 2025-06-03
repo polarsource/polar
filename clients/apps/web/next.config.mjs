@@ -375,7 +375,7 @@ const nextConfig = {
       },
       {
         source: '/finance',
-        destination: '/finance/incoming',
+        destination: '/finance/income',
         permanent: false,
       },
       {
@@ -410,7 +410,7 @@ const nextConfig = {
       },
       {
         source: '/dashboard/:organization/finance',
-        destination: '/dashboard/:organization/finance/incoming',
+        destination: '/dashboard/:organization/finance/income',
         permanent: false,
       },
 

@@ -125,11 +125,6 @@ export const useBackerRoutes = (): RouteWithActive[] => {
     .map(applyIsActive(path))
 }
 
-export const usePersonalFinanceSubRoutes = (): SubRouteWithActive[] => {
-  const path = usePathname()
-  return personalFinanceSubRoutesList().map(applySubRouteIsActive(path))
-}
-
 // internals below
 
 const generalRoutesList = (org: schemas['Organization']): Route[] => [
@@ -261,14 +256,6 @@ const dashboardRoutesList = (org: schemas['Organization']): Route[] => [
 
 const backerRoutesList = (): Route[] => [
   {
-    id: 'finance',
-    title: 'Finance',
-    link: `/finance`,
-    icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
-    if: true,
-    subs: personalFinanceSubRoutesList(),
-  },
-  {
     id: 'settings',
     title: 'Settings',
     link: `/settings`,
@@ -278,32 +265,17 @@ const backerRoutesList = (): Route[] => [
   },
 ]
 
-const personalFinanceSubRoutesList = (): SubRoute[] => [
-  {
-    title: 'Incoming',
-    link: `/finance/incoming`,
-  },
-  {
-    title: 'Outgoing',
-    link: `/finance/outgoing`,
-  },
-  {
-    title: 'Payout Account',
-    link: `/finance/account`,
-  },
-]
-
 const orgFinanceSubRoutesList = (org: schemas['Organization']): SubRoute[] => [
   {
-    title: 'Incoming',
-    link: `/dashboard/${org.slug}/finance/incoming`,
+    title: 'Income',
+    link: `/dashboard/${org.slug}/finance/income`,
   },
   {
-    title: 'Outgoing',
-    link: `/dashboard/${org.slug}/finance/outgoing`,
+    title: 'Payouts',
+    link: `/dashboard/${org.slug}/finance/payouts`,
   },
   {
-    title: 'Payout Account',
+    title: 'Account',
     link: `/dashboard/${org.slug}/finance/account`,
   },
 ]

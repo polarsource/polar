@@ -3,10 +3,6 @@ import {
   DataTablePaginationState,
   DataTableSortingState,
 } from '@/utils/datatable'
-import {
-  KeyboardArrowDownOutlined,
-  KeyboardArrowRightOutlined,
-} from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
@@ -65,16 +61,11 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
   return (
     <div className="flex items-start gap-2">
       {transactionMeta.organization && (
-        <Link
-          className="hidden flex-shrink-0 md:block"
-          href={`/${transactionMeta.organization.slug}`}
-        >
-          <Avatar
-            className="h-6 w-6"
-            name={transactionMeta.organization.name}
-            avatar_url={transactionMeta.organization.avatar_url}
-          />
-        </Link>
+        <Avatar
+          className="h-6 w-6"
+          name={transactionMeta.organization.name}
+          avatar_url={transactionMeta.organization.avatar_url}
+        />
       )}
 
       <div className="flex flex-row gap-2">
@@ -149,28 +140,6 @@ const TransactionsList = ({
   const columns: DataTableColumnDef<
     schemas['Transaction'] | schemas['TransactionEmbedded']
   >[] = [
-    {
-      id: 'expand',
-      enableSorting: false,
-      cell: ({ row }) => {
-        if (!row.getCanExpand()) return null
-
-        return (
-          <button
-            {...{
-              onClick: row.getToggleExpandedHandler(),
-              style: { cursor: 'pointer' },
-            }}
-          >
-            {row.getIsExpanded() ? (
-              <KeyboardArrowDownOutlined />
-            ) : (
-              <KeyboardArrowRightOutlined />
-            )}
-          </button>
-        )
-      },
-    },
     {
       accessorKey: 'created_at',
       enableSorting: true,
@@ -297,6 +266,7 @@ const TransactionsList = ({
         isTransaction(row) ? row.account_incurred_transactions : undefined
       }
       isLoading={isLoading}
+      onRowClick={(row) => row.getToggleExpandedHandler()()}
     />
   )
 }

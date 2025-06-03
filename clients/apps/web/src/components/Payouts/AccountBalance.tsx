@@ -3,10 +3,7 @@ import { Skeleton } from '@mui/material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
-import {
-  formatCurrencyAndAmount,
-  getCentsInDollarString,
-} from '@polar-sh/ui/lib/money'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import React, { useCallback, useState } from 'react'
 import WithdrawModal from './WithdrawModal'
 
@@ -56,11 +53,9 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
                 <Skeleton />
               ) : (
                 <>
-                  $
-                  {getCentsInDollarString(
+                  {formatCurrencyAndAmount(
                     summary?.balance.amount ?? 0,
-                    true,
-                    true,
+                    summary?.balance.currency,
                   )}
                 </>
               )}

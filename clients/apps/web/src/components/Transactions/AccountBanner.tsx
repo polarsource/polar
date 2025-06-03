@@ -27,8 +27,8 @@ const GenericAccountBanner: React.FC<{
         >
           <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
           <span className="text-sm">
-            You need to set up <strong>Stripe Connect Express</strong> to
-            receive payouts
+            You need to set up a <strong>payout account</strong> to receive
+            payouts
           </span>
         </Banner>
       </>
@@ -47,11 +47,7 @@ const GenericAccountBanner: React.FC<{
         }
       >
         <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
-        <span className="text-sm">
-          Your{' '}
-          <strong>{ACCOUNT_TYPE_DISPLAY_NAMES[account.account_type]}</strong>{' '}
-          account is under review
-        </span>
+        <span className="text-sm">Your payout account is under review</span>
       </Banner>
     )
   }
@@ -71,7 +67,7 @@ const GenericAccountBanner: React.FC<{
         <span className="text-sm">
           Continue the setup of your{' '}
           <strong>{ACCOUNT_TYPE_DISPLAY_NAMES[account.account_type]}</strong>{' '}
-          account to receive transfers
+          account to receive payouts
         </span>
       </Banner>
     )

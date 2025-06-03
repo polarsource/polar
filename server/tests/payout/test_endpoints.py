@@ -5,12 +5,13 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.models import Organization, User, UserOrganization
+from polar.models.transaction import TransactionType
 from polar.payout.endpoints import payout_service  # type: ignore[attr-defined]
 from polar.payout.service import PayoutService
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_payout
-from tests.transaction.conftest import create_account
+from tests.transaction.conftest import create_account, create_transaction
 
 
 @pytest.mark.asyncio
@@ -57,7 +58,12 @@ class TestCreate:
         account = await create_account(
             save_fixture, user_organization.organization, user_organization.user
         )
-        payout = await create_payout(save_fixture, account=account)
+        transaction = await create_transaction(
+            save_fixture, account=account, type=TransactionType.payout
+        )
+        payout = await create_payout(
+            save_fixture, account=account, transaction=transaction
+        )
 
         mocker.patch.object(
             payout_service,

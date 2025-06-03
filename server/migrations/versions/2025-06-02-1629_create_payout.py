@@ -35,6 +35,7 @@ def upgrade() -> None:
         sa.Column("status", sa.String(), nullable=False),
         sa.Column("currency", sa.String(length=3), nullable=False),
         sa.Column("amount", sa.BigInteger(), nullable=False),
+        sa.Column("fees_amount", sa.BigInteger(), nullable=False),
         sa.Column("account_currency", sa.String(length=3), nullable=False),
         sa.Column("account_amount", sa.BigInteger(), nullable=False),
         sa.Column("account_id", sa.Uuid(), nullable=False),
@@ -87,6 +88,7 @@ def upgrade() -> None:
             status,
             currency,
             amount,
+            fees_amount,
             account_currency,
             account_amount,
             account_id
@@ -103,12 +105,25 @@ def upgrade() -> None:
                 ELSE 'succeeded'
             END,
             currency,
-            amount,
+            -amount,
+            0,
             account_currency,
-            account_amount,
+            -account_amount,
             account_id
         FROM transactions
         WHERE type = 'payout'
+        """
+    )
+
+    op.execute(
+        """
+        UPDATE payouts
+        SET fees_amount = (
+            SELECT SUM(amount)
+            FROM transactions
+            WHERE transactions.incurred_by_transaction_id = payouts.tmp_transaction_id
+            AND transactions.account_id IS NULL
+        )
         """
     )
 

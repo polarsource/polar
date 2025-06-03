@@ -391,7 +391,7 @@ class Transaction(RecordModel):
 
     @declared_attr
     def payout(cls) -> Mapped["Payout | None"]:
-        return relationship("Payout", lazy="raise")
+        return relationship("Payout", lazy="raise", back_populates="transaction")
 
     @declared_attr
     def balance_transactions(cls) -> Mapped[list["Transaction"]]:

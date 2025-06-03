@@ -17,7 +17,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.utils import utc_now
-from polar.models import Account, Payout
+from polar.models import Account, Payout, Transaction
 from polar.models.payout import PayoutStatus
 from polar.payout.sorting import PayoutSortProperty
 
@@ -65,7 +65,12 @@ class PayoutRepository(
         return await self.get_all(statement)
 
     def get_eager_options(self) -> Options:
-        return (joinedload(Payout.account),)
+        return (
+            joinedload(Payout.account),
+            joinedload(Payout.transaction).selectinload(
+                Transaction.incurred_transactions
+            ),
+        )
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
@@ -89,6 +94,8 @@ class PayoutRepository(
                 return Payout.created_at
             case PayoutSortProperty.amount:
                 return Payout.amount
+            case PayoutSortProperty.fees_amount:
+                return Payout.fees_amount
             case PayoutSortProperty.status:
                 return Payout.status
             case PayoutSortProperty.account_id:

@@ -9,6 +9,7 @@ from polar.kit.sorting import Sorting, SortingGetter
 class PayoutSortProperty(StrEnum):
     created_at = "created_at"
     amount = "amount"
+    fees_amount = "fees_amount"
     status = "status"
     account_id = "account_id"
 

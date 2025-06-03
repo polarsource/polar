@@ -133,6 +133,7 @@ class TestCreate:
         assert payout.processor == account.account_type
         assert payout.currency == "usd"
         assert payout.amount > 0
+        assert payout.fees_amount > 0
         assert payout.account_currency == "usd"
         assert payout.account_amount > 0
 

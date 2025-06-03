@@ -1623,7 +1623,9 @@ async def create_payout(
     save_fixture: SaveFixture,
     *,
     account: Account,
+    transaction: Transaction | None = None,
     amount: int = 1000,
+    fees_amount: int = 0,
     currency: str = "usd",
     account_currency: str = "usd",
     account_amount: int = 1000,
@@ -1635,8 +1637,10 @@ async def create_payout(
         processor=account.account_type,
         currency=currency,
         amount=amount,
+        fees_amount=fees_amount,
         account_currency=account_currency,
         account_amount=account_amount,
+        transaction=transaction,
     )
     await save_fixture(payout)
     return payout

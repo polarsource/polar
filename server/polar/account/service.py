@@ -178,6 +178,7 @@ class AccountService:
             raise AccountExternalIdDoesNotExist(stripe_account.id)
 
         account.email = stripe_account.email
+        assert stripe_account.default_currency is not None
         account.currency = stripe_account.default_currency
         account.is_details_submitted = stripe_account.details_submitted or False
         account.is_charges_enabled = stripe_account.charges_enabled or False

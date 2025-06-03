@@ -14,6 +14,7 @@ if TYPE_CHECKING:
         IssueReward,
         Order,
         Organization,
+        Payout,
         Pledge,
         Refund,
         User,
@@ -245,8 +246,6 @@ class Transaction(RecordModel):
         String, nullable=True, index=True
     )
     """ID of the transfer reversal in the payment processor system."""
-    payout_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
-    """ID of the payout in the payment processor system."""
     fee_balance_transaction_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True
     )
@@ -384,6 +383,15 @@ class Transaction(RecordModel):
     @declared_attr
     def refund(cls) -> Mapped["Refund | None"]:
         return relationship("Refund", lazy="raise")
+
+    payout_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("payouts.id"), nullable=True, index=True
+    )
+    """ID of the `Payout` related to this transaction."""
+
+    @declared_attr
+    def payout(cls) -> Mapped["Payout | None"]:
+        return relationship("Payout", lazy="raise")
 
     @declared_attr
     def balance_transactions(cls) -> Mapped[list["Transaction"]]:

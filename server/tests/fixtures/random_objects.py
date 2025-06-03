@@ -44,6 +44,7 @@ from polar.models import (
     Order,
     OrderItem,
     Organization,
+    Payout,
     Product,
     ProductBenefit,
     ProductCustomField,
@@ -273,10 +274,7 @@ async def user_organization(
     organization: Organization,
     user: User,
 ) -> UserOrganization:
-    user_organization = UserOrganization(
-        user_id=user.id,
-        organization_id=organization.id,
-    )
+    user_organization = UserOrganization(user=user, organization=organization)
     await save_fixture(user_organization)
     return user_organization
 
@@ -287,10 +285,7 @@ async def user_organization_second(
     organization: Organization,
     user_second: User,
 ) -> UserOrganization:
-    user_organization = UserOrganization(
-        user_id=user_second.id,
-        organization_id=organization.id,
-    )
+    user_organization = UserOrganization(user=user_second, organization=organization)
     await save_fixture(user_organization)
     return user_organization
 
@@ -301,10 +296,7 @@ async def user_organization_blocked(
     organization_blocked: Organization,
     user: User,
 ) -> UserOrganization:
-    user_organization = UserOrganization(
-        user_id=user.id,
-        organization_id=organization_blocked.id,
-    )
+    user_organization = UserOrganization(user=user, organization=organization_blocked)
     await save_fixture(user_organization)
     return user_organization
 
@@ -1322,7 +1314,7 @@ async def organization_second_members(
     for _ in range(5):
         user = await create_user(save_fixture)
         user_organization = UserOrganization(
-            user_id=user.id, organization_id=organization_second.id
+            user=user, organization=organization_second
         )
         await save_fixture(user_organization)
         users.append(user)
@@ -1625,3 +1617,26 @@ async def create_notification_recipient(
     )
     await save_fixture(notification_recipient)
     return notification_recipient
+
+
+async def create_payout(
+    save_fixture: SaveFixture,
+    *,
+    account: Account,
+    amount: int = 1000,
+    currency: str = "usd",
+    account_currency: str = "usd",
+    account_amount: int = 1000,
+    created_at: datetime | None = None,
+) -> Payout:
+    payout = Payout(
+        created_at=created_at,
+        account=account,
+        processor=account.account_type,
+        currency=currency,
+        amount=amount,
+        account_currency=account_currency,
+        account_amount=account_amount,
+    )
+    await save_fixture(payout)
+    return payout

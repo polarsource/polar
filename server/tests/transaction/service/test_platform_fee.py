@@ -546,10 +546,18 @@ class TestCreateDisputeFeesBalances:
 @pytest.mark.asyncio
 class TestCreatePayoutFeesBalances:
     async def test_not_processor_fees_applicable(
-        self, session: AsyncSession, account: Account
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
     ) -> None:
-        # then
-        session.expunge_all()
+        account = await create_account(
+            save_fixture,
+            organization,
+            user,
+            processor_fees_applicable=False,
+        )
 
         (
             balance_amount,

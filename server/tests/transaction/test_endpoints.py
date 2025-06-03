@@ -2,24 +2,11 @@ import uuid
 
 import pytest
 from httpx import AsyncClient
-from pytest_mock import MockerFixture
 
-from polar.models import (
-    Account,
-    Organization,
-    Pledge,
-    Transaction,
-    User,
-    UserOrganization,
-)
-from polar.models.transaction import Processor, TransactionType
-from polar.postgres import AsyncSession
-from polar.transaction.endpoints import (  # type: ignore[attr-defined]
-    payout_transaction_service,
-)
-from polar.transaction.service.payout import PayoutTransactionService
+from polar.models import Account, Pledge, Transaction, UserOrganization
+from polar.models.transaction import TransactionType
 from tests.fixtures.database import SaveFixture
-from tests.transaction.conftest import create_account, create_transaction
+from tests.transaction.conftest import create_transaction
 
 
 @pytest.mark.asyncio
@@ -126,78 +113,3 @@ class TestGetSummary:
         json = response.json()
         assert "balance" in json
         assert "payout" in json
-
-
-@pytest.mark.asyncio
-class TestCreatePayout:
-    async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/v1/transactions/payouts", json={"account_id": str(uuid.uuid4())}
-        )
-
-        assert response.status_code == 401
-
-    @pytest.mark.auth
-    async def test_not_existing_account(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/v1/transactions/payouts", json={"account_id": str(uuid.uuid4())}
-        )
-
-        assert response.status_code == 404
-
-    @pytest.mark.auth
-    async def test_not_permitted(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_second: User,
-    ) -> None:
-        account = await create_account(save_fixture, organization, user_second)
-        response = await client.post(
-            "/v1/transactions/payouts", json={"account_id": str(account.id)}
-        )
-        assert response.status_code == 404
-
-    @pytest.mark.auth
-    async def test_valid(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        mocker: MockerFixture,
-        client: AsyncClient,
-        account: Account,
-        user_organization: UserOrganization,
-    ) -> None:
-        payout = Transaction(
-            type=TransactionType.payout,
-            processor=Processor.open_collective,
-            currency="usd",  # FIXME: Main Polar currency
-            amount=-1000,
-            account_currency=account.currency,
-            account_amount=-1000,
-            tax_amount=0,
-            account=account,
-            pledge=None,
-            issue_reward=None,
-            order=None,
-            account_incurred_transactions=[],
-        )
-        await save_fixture(payout)
-
-        mocker.patch.object(
-            payout_transaction_service,
-            "create_payout",
-            spec=PayoutTransactionService.create_payout,
-            return_value=payout,
-        )
-
-        # then
-        session.expunge_all()
-
-        response = await client.post(
-            "/v1/transactions/payouts", json={"account_id": str(account.id)}
-        )
-
-        assert response.status_code == 201

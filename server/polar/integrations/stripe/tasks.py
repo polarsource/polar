@@ -25,6 +25,7 @@ from polar.order.service import (
 from polar.order.service import order as order_service
 from polar.payment.service import UnhandledPaymentIntent
 from polar.payment.service import payment as payment_service
+from polar.payout.service import payout as payout_service
 from polar.pledge.service import pledge as pledge_service
 from polar.refund.service import refund as refund_service
 from polar.subscription.service import SubscriptionDoesNotExist
@@ -37,9 +38,6 @@ from polar.transaction.service.dispute import (
 )
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
-)
-from polar.transaction.service.payout import (
-    payout_transaction as payout_transaction_service,
 )
 from polar.user.service import user as user_service
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry, get_retries
@@ -72,16 +70,6 @@ def stripe_api_connection_error_retry(
 
 
 class StripeTaskError(PolarTaskError): ...
-
-
-class UnsetAccountOnPayoutEvent(StripeTaskError):
-    def __init__(self, event_id: uuid.UUID) -> None:
-        self.event_id = event_id
-        message = (
-            f"Received the payout.paid event {event_id}, "
-            "but the connected account is not set"
-        )
-        super().__init__(message)
 
 
 @actor(actor_name="stripe.webhook.account.updated", priority=TaskPriority.HIGH)
@@ -401,18 +389,22 @@ async def invoice_paid(event_id: uuid.UUID) -> None:
                     raise
 
 
-@actor(actor_name="stripe.webhook.payout.paid", priority=TaskPriority.HIGH)
+@actor(actor_name="stripe.webhook.payout.updated", priority=TaskPriority.LOW)
+@stripe_api_connection_error_retry
+async def payout_updated(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            payout = cast(stripe_lib.Payout, event.stripe_data.data.object)
+            await payout_service.update_from_stripe(session, payout)
+
+
+@actor(actor_name="stripe.webhook.payout.paid", priority=TaskPriority.LOW)
 @stripe_api_connection_error_retry
 async def payout_paid(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
-            account = event.stripe_data.account
-            if account is None:
-                raise UnsetAccountOnPayoutEvent(event.id)
             payout = cast(stripe_lib.Payout, event.stripe_data.data.object)
-            await payout_transaction_service.create_payout_from_stripe(
-                session, payout=payout, stripe_account_id=account
-            )
+            await payout_service.update_from_stripe(session, payout)
 
 
 @actor(

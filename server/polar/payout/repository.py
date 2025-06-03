@@ -1,0 +1,79 @@
+from collections.abc import Sequence
+from datetime import timedelta
+from uuid import UUID
+
+from sqlalchemy import Select, false
+from sqlalchemy.orm import joinedload
+
+from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
+from polar.config import settings
+from polar.enums import AccountType
+from polar.kit.repository import (
+    Options,
+    RepositoryBase,
+    RepositorySoftDeletionIDMixin,
+    RepositorySoftDeletionMixin,
+)
+from polar.kit.utils import utc_now
+from polar.models import Account, Payout
+from polar.models.payout import PayoutStatus
+
+
+class PayoutRepository(
+    RepositorySoftDeletionIDMixin[Payout, UUID],
+    RepositorySoftDeletionMixin[Payout],
+    RepositoryBase[Payout],
+):
+    model = Payout
+
+    async def get_by_processor_id(
+        self,
+        processor: AccountType,
+        processor_id: str,
+        *,
+        options: Options = (),
+    ) -> Payout | None:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Payout.processor == processor,
+                Payout.processor_id == processor_id,
+            )
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_all_stripe_pending(
+        self, delay: timedelta = settings.ACCOUNT_PAYOUT_DELAY
+    ) -> Sequence[Payout]:
+        statement = (
+            self.get_base_statement()
+            .distinct(Payout.account_id)
+            .where(
+                Payout.processor == AccountType.stripe,
+                Payout.status == PayoutStatus.pending,
+                Payout.processor_id.is_(None),
+                Payout.created_at < utc_now() - delay,
+            )
+            .order_by(Payout.account_id.asc(), Payout.created_at.asc())
+        )
+        return await self.get_all(statement)
+
+    def get_eager_options(self) -> Options:
+        return (joinedload(Payout.account),)
+
+    def get_readable_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[tuple[Payout]]:
+        statement = self.get_base_statement()
+
+        if is_user(auth_subject):
+            user = auth_subject.subject
+            statement = statement.join(Payout.account).where(
+                Account.admin_id == user.id
+            )
+        elif is_organization(auth_subject):
+            # Only the admin of the account can access it
+            statement = statement.where(false())
+
+        return statement

@@ -773,7 +773,10 @@ class CheckoutService:
 
         required_fields = self._get_required_confirm_fields(checkout)
         for required_field in required_fields:
-            if getattr(checkout, required_field) is None:
+            if (
+                getattr(checkout, required_field) is None
+                and getattr(checkout_confirm, required_field, None) is None
+            ):
                 errors.append(
                     {
                         "type": "missing",

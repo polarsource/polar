@@ -2958,6 +2958,101 @@ class TestConfirm:
         assert checkout.customer is not None
         assert checkout.customer.billing_name == "Example Inc"
 
+    async def test_existing_email_external_id_provided(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """
+        Customer exists, no external ID set.
+
+        Checkout should link to the existing customer by email, but not set the external ID.
+        """
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer1@example.com",
+        )
+        checkout = await create_checkout(
+            save_fixture, products=[product], customer_external_id="external_id_1"
+        )
+
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            locker,
+            auth_subject,
+            checkout,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer1@example.com",
+                    "customer_billing_address": {
+                        "country": "FR",
+                    },
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer is not None
+        assert checkout.customer == customer
+        assert checkout.customer.email == customer.email
+        assert checkout.customer.external_id is None
+
+    async def test_existing_customer_email_changed(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """
+        Customer exists and linked to checkout. Email shouldn't be updated.
+        """
+        customer = await create_customer(save_fixture, organization=organization)
+        checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            locker,
+            auth_subject,
+            checkout,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer.updated@example.com",
+                    "customer_billing_address": {
+                        "country": "FR",
+                    },
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer is not None
+        assert checkout.customer == customer
+        assert checkout.customer.email == customer.email
+
 
 def build_stripe_payment_intent(
     *,

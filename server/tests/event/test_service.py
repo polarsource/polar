@@ -418,9 +418,11 @@ class TestIngest:
         errors = e.value.errors()
         assert len(errors) == 2
 
+    @pytest.mark.parametrize("count", [0, 1, 500])
     @pytest.mark.auth
     async def test_valid_user(
         self,
+        count: int,
         enqueue_events_mock: AsyncMock,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
@@ -434,7 +436,7 @@ class TestIngest:
                     external_customer_id="test",
                     organization_id=organization.id,
                 )
-                for _ in range(500)
+                for _ in range(count)
             ]
         )
 
@@ -442,16 +444,18 @@ class TestIngest:
 
         event_repository = EventRepository.from_session(session)
         events = await event_repository.get_all_by_organization(organization.id)
-        assert len(events) == 500
+        assert len(events) == count
 
         for event in events:
             assert event.source == EventSource.user
 
         enqueue_events_mock.assert_called_once_with(*(event.id for event in events))
 
+    @pytest.mark.parametrize("count", [0, 1, 500])
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_valid_organization(
         self,
+        count: int,
         enqueue_events_mock: AsyncMock,
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
@@ -462,7 +466,7 @@ class TestIngest:
                     name="test",
                     external_customer_id="test",
                 )
-                for _ in range(500)
+                for _ in range(count)
             ]
         )
 
@@ -470,7 +474,7 @@ class TestIngest:
 
         event_repository = EventRepository.from_session(session)
         events = await event_repository.get_all_by_organization(auth_subject.subject.id)
-        assert len(events) == 500
+        assert len(events) == count
 
         for event in events:
             assert event.source == EventSource.user

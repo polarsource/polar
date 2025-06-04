@@ -345,6 +345,8 @@ envVarGroups:
         value: polar-public-files
       - key: POLAR_S3_CUSTOMER_INVOICES_BUCKET_NAME
         value: polar-customer-invoices
+      - key: POLAR_S3_PAYOUT_INVOICES_BUCKET_NAME
+        value: polar-payout-invoices
 
   - name: github-production
     envVars:
@@ -450,6 +452,8 @@ envVarGroups:
         value: polar-public-sandbox-files
       - key: POLAR_S3_CUSTOMER_INVOICES_BUCKET_NAME
         value: polar-sandbox-customer-invoices
+      - key: POLAR_S3_PAYOUT_INVOICES_BUCKET_NAME
+        value: polar-sandbox-payout-invoices
 
   - name: github-sandbox
     envVars:

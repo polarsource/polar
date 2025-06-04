@@ -420,6 +420,24 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /** Patch */
+        patch: operations["accounts:patch"];
+        trace?: never;
+    };
+    "/v1/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create */
+        post: operations["accounts:create"];
+        delete?: never;
+        options?: never;
+        head?: never;
         patch?: never;
         trace?: never;
     };
@@ -451,23 +469,6 @@ export interface paths {
         put?: never;
         /** Dashboard Link */
         post: operations["accounts:dashboard_link"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/accounts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create */
-        post: operations["accounts:create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2977,6 +2978,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payouts/{id}/invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Invoice
+         * @description Get an order's invoice data.
+         */
+        get: operations["payouts:invoice"];
+        put?: never;
+        /**
+         * Generate Invoice
+         * @description Trigger generation of an order's invoice.
+         */
+        post: operations["payouts:generate_invoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export interface webhooks {
     "checkout.created": {
@@ -3638,6 +3663,13 @@ export interface components {
             is_payouts_enabled: boolean;
             /** Country */
             country: string;
+            /** Billing Name */
+            billing_name: string | null;
+            billing_address: components["schemas"]["Address"] | null;
+            /** Billing Additional Info */
+            billing_additional_info: string | null;
+            /** Billing Notes */
+            billing_notes: string | null;
             /** Users */
             users: components["schemas"]["UserBase"][];
             /** Organizations */
@@ -3666,6 +3698,26 @@ export interface components {
          * @enum {string}
          */
         AccountType: "stripe" | "open_collective";
+        /** AccountUpdate */
+        AccountUpdate: {
+            /**
+             * Billing Name
+             * @description Billing name that should appear on the reverse invoice.
+             */
+            billing_name?: string | null;
+            /** @description Billing address that should appear on the reverse invoice. */
+            billing_address?: components["schemas"]["Address"] | null;
+            /**
+             * Billing Additional Info
+             * @description Additional information that should appear on the reverse invoice.
+             */
+            billing_additional_info?: string | null;
+            /**
+             * Billing Notes
+             * @description Notes that should appear on the reverse invoice.
+             */
+            billing_notes?: string | null;
+        };
         /** Address */
         Address: {
             /** Line1 */
@@ -13976,6 +14028,10 @@ export interface components {
              * Format: uuid4
              */
             account_id: string;
+            /** Invoice Number */
+            invoice_number?: string | null;
+            /** Is Invoice Generated */
+            is_invoice_generated: boolean;
             /**
              * Transaction Id
              * Format: uuid4
@@ -14005,6 +14061,16 @@ export interface components {
             fees_amount: number;
             /** Net Amount */
             net_amount: number;
+        };
+        /** PayoutGenerateInvoice */
+        PayoutGenerateInvoice: {
+            /** Invoice Number */
+            invoice_number?: string | null;
+        };
+        /** PayoutInvoice */
+        PayoutInvoice: {
+            /** Url */
+            url: string;
         };
         /**
          * PayoutSortProperty
@@ -17341,6 +17407,74 @@ export interface operations {
             };
         };
     };
+    "accounts:patch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "accounts:create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "accounts:onboarding_link": {
         parameters: {
             query: {
@@ -17392,39 +17526,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AccountLink"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "accounts:create": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AccountCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Account"];
                 };
             };
             /** @description Validation Error */
@@ -23713,6 +23814,72 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "payouts:invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayoutInvoice"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "payouts:generate_invoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayoutGenerateInvoice"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };

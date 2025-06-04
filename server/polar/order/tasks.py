@@ -146,7 +146,7 @@ async def order_discord_notification(order_id: uuid.UUID) -> None:
         )
 
 
-@actor(actor_name="order.invoice")
+@actor(actor_name="order.invoice", priority=TaskPriority.LOW)
 async def order_invoice(order_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)

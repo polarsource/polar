@@ -20,6 +20,12 @@ class TransactionRepository(
 ):
     model = Transaction
 
+    async def get_all_paid_transactions_by_payout(
+        self, payout_transaction_id: UUID
+    ) -> Sequence[Transaction]:
+        statement = self.get_paid_transactions_statement(payout_transaction_id)
+        return await self.get_all(statement)
+
     def get_paid_transactions_statement(
         self, payout_transaction_id: UUID
     ) -> Select[tuple[Transaction]]:

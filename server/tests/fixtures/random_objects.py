@@ -1613,6 +1613,7 @@ async def create_payout(
     account_currency: str = "usd",
     account_amount: int = 1000,
     created_at: datetime | None = None,
+    invoice_number: str | None = None,
 ) -> Payout:
     payout = Payout(
         created_at=created_at,
@@ -1624,6 +1625,7 @@ async def create_payout(
         account_currency=account_currency,
         account_amount=account_amount,
         transaction=transaction,
+        invoice_number=invoice_number or rstr("POLAR-"),
     )
     await save_fixture(payout)
     return payout

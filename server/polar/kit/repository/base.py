@@ -129,6 +129,11 @@ class RepositoryBase(Generic[M]):
 
         return object
 
+    async def count(self, statement: Select[tuple[M]]) -> int:
+        count_statement = statement.with_only_columns(func.count())
+        result = await self.session.execute(count_statement)
+        return result.scalar_one()
+
     @classmethod
     def from_session(cls, session: AsyncSession) -> Self:
         return cls(session)

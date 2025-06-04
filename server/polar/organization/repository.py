@@ -60,6 +60,13 @@ class OrganizationRepository(
         )
         return await self.get_all(statement)
 
+    async def get_all_by_account(self, account: UUID) -> Sequence[Organization]:
+        statement = self.get_base_statement().where(
+            Organization.account_id == account,
+            Organization.blocked_at.is_(None),
+        )
+        return await self.get_all(statement)
+
     def get_sorting_clause(self, property: OrganizationSortProperty) -> SortingClause:
         match property:
             case OrganizationSortProperty.created_at:

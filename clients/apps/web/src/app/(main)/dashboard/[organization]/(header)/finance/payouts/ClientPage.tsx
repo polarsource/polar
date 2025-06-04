@@ -1,6 +1,10 @@
 'use client'
 
 import AccountBalance from '@/components/Payouts/AccountBalance'
+import DownloadInvoice, {
+  InvoiceModal,
+} from '@/components/Payouts/DownloadInvoice'
+import { PayoutProvider } from '@/components/Payouts/PayoutContext'
 import { PayoutStatus } from '@/components/Payouts/PayoutStatus'
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import { platformFeesDisplayNames } from '@/components/Transactions/TransactionsList'
@@ -212,6 +216,13 @@ export default function ClientPage({
                 align="end"
                 className="dark:bg-polar-800 bg-gray-50 shadow-lg"
               >
+                {original.status === 'succeeded' && account && (
+                  <DownloadInvoice
+                    organization={organization}
+                    account={account}
+                    payout={original}
+                  />
+                )}
                 <DropdownMenuItem>
                   <Link
                     href={`${getServerURL()}/v1/payouts/${original.id}/csv`}
@@ -228,23 +239,28 @@ export default function ClientPage({
   ]
 
   return (
-    <div className="flex flex-col gap-y-6">
-      <AccountBanner organization={organization} />
-      {account && <AccountBalance account={account} />}
-      <DataTable
-        columns={columns}
-        data={payouts?.items ?? []}
-        pageCount={payouts?.pagination.max_page ?? 0}
-        pagination={pagination}
-        onPaginationChange={setPagination}
-        sorting={sorting}
-        onSortingChange={setSorting}
-        isLoading={isLoading}
-        getSubRows={(row) =>
-          isPayout(row) ? row.fees_transactions : undefined
-        }
-        onRowClick={(row) => row.getToggleExpandedHandler()()}
-      />
-    </div>
+    <PayoutProvider>
+      <div className="flex flex-col gap-y-6">
+        <AccountBanner organization={organization} />
+        {account && <AccountBalance account={account} />}
+        <DataTable
+          columns={columns}
+          data={payouts?.items ?? []}
+          pageCount={payouts?.pagination.max_page ?? 0}
+          pagination={pagination}
+          onPaginationChange={setPagination}
+          sorting={sorting}
+          onSortingChange={setSorting}
+          isLoading={isLoading}
+          getSubRows={(row) =>
+            isPayout(row) ? row.fees_transactions : undefined
+          }
+          onRowClick={(row) => row.getToggleExpandedHandler()()}
+        />
+        {account && (
+          <InvoiceModal organization={organization} account={account} />
+        )}
+      </div>
+    </PayoutProvider>
   )
 }

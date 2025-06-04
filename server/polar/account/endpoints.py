@@ -6,34 +6,36 @@ from polar.auth.dependencies import WebUser
 from polar.enums import AccountType
 from polar.exceptions import InternalServerError, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.models import Account
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
-from .schemas import Account, AccountCreate, AccountLink
+from .schemas import Account as AccountSchema
+from .schemas import AccountCreate, AccountLink, AccountUpdate
 from .service import account as account_service
 
 router = APIRouter(tags=["accounts", APITag.private])
 
 
-@router.get("/accounts/search", response_model=ListResource[Account])
+@router.get("/accounts/search", response_model=ListResource[AccountSchema])
 async def search(
     auth_subject: WebUser,
     pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
-) -> ListResource[Account]:
+) -> ListResource[AccountSchema]:
     results, count = await account_service.search(
         session, auth_subject, pagination=pagination
     )
 
     return ListResource.from_paginated_results(
-        [Account.from_db(result) for result in results],
+        [AccountSchema.model_validate(result) for result in results],
         count,
         pagination,
     )
 
 
-@router.get("/accounts/{id}", response_model=Account)
+@router.get("/accounts/{id}", response_model=AccountSchema)
 async def get(
     id: UUID,
     auth_subject: WebUser,
@@ -43,7 +45,32 @@ async def get(
     if account is None:
         raise ResourceNotFound()
 
-    return Account.from_db(account)
+    return account
+
+
+@router.post("/accounts", response_model=AccountSchema)
+async def create(
+    account_create: AccountCreate,
+    auth_subject: WebUser,
+    session: AsyncSession = Depends(get_db_session),
+) -> Account:
+    return await account_service.create_account(
+        session, admin=auth_subject.subject, account_create=account_create
+    )
+
+
+@router.patch("/accounts/{id}", response_model=AccountSchema)
+async def patch(
+    id: UUID,
+    account_update: AccountUpdate,
+    auth_subject: WebUser,
+    session: AsyncSession = Depends(get_db_session),
+) -> Account:
+    account = await account_service.get(session, auth_subject, id)
+    if account is None:
+        raise ResourceNotFound()
+
+    return await account_service.update(session, account, account_update)
 
 
 @router.post("/accounts/{id}/onboarding_link", response_model=AccountLink)
@@ -83,17 +110,3 @@ async def dashboard_link(
         raise InternalServerError("Failed to create link")
 
     return link
-
-
-@router.post("/accounts", response_model=Account)
-async def create(
-    account_create: AccountCreate,
-    auth_subject: WebUser,
-    session: AsyncSession = Depends(get_db_session),
-) -> Account:
-    created = await account_service.create_account(
-        session, admin=auth_subject.subject, account_create=account_create
-    )
-
-    await session.flush()
-    return Account.from_db(created)

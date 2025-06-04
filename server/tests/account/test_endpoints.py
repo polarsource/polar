@@ -64,19 +64,6 @@ async def test_create_personal_stripe(
 
 @pytest.mark.asyncio
 @pytest.mark.auth
-async def test_onboarding_link_open_collective(
-    open_collective_account: Account, client: AsyncClient
-) -> None:
-    response = await client.post(
-        f"/v1/accounts/{open_collective_account.id}/onboarding_link",
-        params={"return_path": "/finance/account"},
-    )
-
-    assert response.status_code == 404
-
-
-@pytest.mark.asyncio
-@pytest.mark.auth
 async def test_dashboard_link_not_existing_account(
     user: User,
     organization: Organization,
@@ -92,16 +79,25 @@ async def test_dashboard_link_not_existing_account(
 
 @pytest.mark.asyncio
 @pytest.mark.auth
-async def test_dashboard_link_open_collective(
-    open_collective_account: Account, client: AsyncClient
-) -> None:
-    response = await client.post(
-        f"/v1/accounts/{open_collective_account.id}/dashboard_link"
+async def test_update(account: Account, client: AsyncClient) -> None:
+    response = await client.patch(
+        f"/v1/accounts/{account.id}",
+        json={
+            "billing_name": "John Doe",
+            "billing_address": {
+                "line1": "123 Main St",
+                "postal_code": "10001",
+                "city": "New York",
+                "state": "NY",
+                "country": "US",
+            },
+            "billing_notes": "This is a test billing note.",
+        },
     )
 
     assert response.status_code == 200
 
     json = response.json()
-    assert json == {
-        "url": "https://opencollective.com/polar",
-    }
+    assert json["billing_name"] == "John Doe"
+    assert json["billing_address"]["city"] == "New York"
+    assert json["billing_notes"] == "This is a test billing note."

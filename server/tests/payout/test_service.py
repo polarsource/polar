@@ -21,10 +21,7 @@ from polar.transaction.service.payout import (
 )
 from tests.fixtures import random_objects as ro
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_payout
-from tests.transaction.conftest import (
-    create_account,
-)
+from tests.fixtures.random_objects import create_account, create_payout
 
 
 @pytest.fixture(autouse=True)

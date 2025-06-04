@@ -30,7 +30,7 @@ from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
 from tests.fixtures.database import SaveFixture
-from tests.transaction.conftest import create_account
+from tests.fixtures.random_objects import create_account
 
 
 async def create_balance_transactions(

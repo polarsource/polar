@@ -301,23 +301,6 @@ async def user_organization_blocked(
     return user_organization
 
 
-@pytest_asyncio.fixture
-async def open_collective_account(save_fixture: SaveFixture, user: User) -> Account:
-    account = Account(
-        account_type=AccountType.open_collective,
-        admin_id=user.id,
-        open_collective_slug="polar",
-        country="US",
-        currency="USD",
-        is_details_submitted=True,
-        is_charges_enabled=True,
-        is_payouts_enabled=True,
-        business_type="fiscal_host",
-    )
-    await save_fixture(account)
-    return account
-
-
 @typing.overload
 async def create_custom_field(
     save_fixture: SaveFixture,
@@ -1644,3 +1627,45 @@ async def create_payout(
     )
     await save_fixture(payout)
     return payout
+
+
+async def create_account(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    user: User,
+    *,
+    status: Account.Status = Account.Status.ACTIVE,
+    country: str = "US",
+    currency: str = "usd",
+    account_type: AccountType = AccountType.stripe,
+    stripe_id: str = "STRIPE_ID",
+    processor_fees_applicable: bool = True,
+    fee_basis_points: int | None = None,
+    fee_fixed: int | None = None,
+    is_payouts_enabled: bool = True,
+) -> Account:
+    account = Account(
+        status=status,
+        account_type=account_type,
+        admin_id=user.id,
+        country=country,
+        currency=currency,
+        is_details_submitted=True,
+        is_charges_enabled=True,
+        is_payouts_enabled=is_payouts_enabled,
+        processor_fees_applicable=processor_fees_applicable,
+        stripe_id=stripe_id,
+        _platform_fee_percent=fee_basis_points,
+        _platform_fee_fixed=fee_fixed,
+    )
+    await save_fixture(account)
+    organization.account = account
+    await save_fixture(organization)
+    return account
+
+
+@pytest_asyncio.fixture
+async def account(
+    save_fixture: SaveFixture, organization: Organization, user: User
+) -> Account:
+    return await create_account(save_fixture, organization, user)

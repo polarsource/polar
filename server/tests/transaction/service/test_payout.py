@@ -20,10 +20,8 @@ from polar.transaction.service.platform_fee import (
 from polar.transaction.service.transaction import transaction as transaction_service
 from tests.fixtures import random_objects as ro
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_account
 from tests.fixtures.random_objects import create_payout as _create_payout
-from tests.transaction.conftest import (
-    create_account,
-)
 
 
 @pytest.fixture(autouse=True)

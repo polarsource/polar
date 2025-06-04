@@ -1,10 +1,25 @@
 'use client'
 
 import { CalendarIcon } from '@heroicons/react/24/outline'
-import { format } from 'date-fns'
+import {
+  endOfMonth,
+  endOfToday,
+  endOfWeek,
+  endOfYear,
+  endOfYesterday,
+  format,
+  startOfMonth,
+  startOfToday,
+  startOfWeek,
+  startOfYear,
+  startOfYesterday,
+  subMonths,
+  subYears,
+} from 'date-fns'
 import * as React from 'react'
-import { useEffect } from 'react'
+import { useContext, useEffect } from 'react'
 
+import { OrganizationContext } from '@/providers/maintainerOrganization'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Calendar,
@@ -39,6 +54,9 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const [internalDate, setInternalDate] = React.useState<
     InternalDateRange | undefined
   >(date)
+  const [interval, setInterval] = React.useState<DateRangeInterval | undefined>(
+    undefined,
+  )
 
   useEffect(() => {
     if (internalDate && internalDate.from && internalDate.to) {
@@ -79,7 +97,20 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent
+          className="flex w-auto flex-col p-0 md:flex-row"
+          align="start"
+        >
+          <DateRangeIntervals
+            interval={interval}
+            onIntervalChange={(int) => {
+              setInterval(int)
+              setInternalDate({
+                from: int.value[0],
+                to: int.value[1],
+              })
+            }}
+          />
           <Calendar
             initialFocus
             mode="range"
@@ -87,11 +118,114 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             selected={internalDate}
             max={maxDaysRange}
             disabled={minDate ? { before: minDate } : undefined}
-            onSelect={setInternalDate}
-            numberOfMonths={2}
+            onSelect={(v) => {
+              setInternalDate(v)
+              setInterval(undefined)
+            }}
           />
         </PopoverContent>
       </Popover>
+    </div>
+  )
+}
+
+interface DateRangeInterval {
+  slug:
+    | 'today'
+    | 'yesterday'
+    | 'thisWeek'
+    | 'lastWeek'
+    | 'thisMonth'
+    | 'lastMonth'
+    | 'last3Months'
+    | 'thisYear'
+    | 'lastYear'
+    | 'allTime'
+  label: string
+  value: [Date, Date]
+}
+
+interface DateRangeIntervalProps {
+  interval: DateRangeInterval | undefined
+  onIntervalChange: (interval: DateRangeInterval) => void
+}
+
+const DateRangeIntervals = ({
+  interval,
+  onIntervalChange,
+}: DateRangeIntervalProps) => {
+  const { organization } = useContext(OrganizationContext)
+
+  const intervals: DateRangeInterval[] = [
+    {
+      slug: 'today',
+      label: 'Today',
+      value: [startOfToday(), endOfToday()],
+    },
+    {
+      slug: 'yesterday',
+      label: 'Yesterday',
+      value: [startOfYesterday(), endOfYesterday()],
+    },
+    {
+      slug: 'thisWeek',
+      label: 'This Week',
+      value: [startOfWeek(new Date()), endOfWeek(new Date())],
+    },
+    {
+      slug: 'thisMonth',
+      label: 'This Month',
+      value: [startOfMonth(new Date()), endOfMonth(new Date())],
+    },
+    {
+      slug: 'lastMonth',
+      label: 'Last Month',
+      value: [
+        startOfMonth(subMonths(new Date(), 1)),
+        endOfMonth(subMonths(new Date(), 1)),
+      ],
+    },
+    {
+      slug: 'last3Months',
+      label: 'Last 3 Months',
+      value: [startOfMonth(subMonths(new Date(), 3)), new Date()],
+    },
+    {
+      slug: 'thisYear',
+      label: 'This Year',
+      value: [startOfYear(new Date()), endOfYear(new Date())],
+    },
+    {
+      slug: 'lastYear',
+      label: 'Last Year',
+      value: [
+        startOfYear(subYears(new Date(), 1)),
+        endOfYear(subYears(new Date(), 1)),
+      ],
+    },
+    {
+      slug: 'allTime',
+      label: 'All Time',
+      value: [new Date(organization.created_at), new Date()],
+    },
+  ]
+
+  return (
+    <div className="flex w-48 flex-col gap-1 p-4">
+      {intervals.map((int) => (
+        <div
+          key={int.slug}
+          onClick={() => onIntervalChange(int)}
+          role="button"
+          className={twMerge(
+            'dark:hover:bg-polar-800 dark:text-polar-500 flex w-full items-center justify-between rounded-sm border border-transparent px-2 py-1 text-sm text-gray-500 hover:bg-gray-100',
+            interval?.slug === int.slug &&
+              'dark:bg-polar-800 dark:border-polar-700 bg-gray-100 text-black dark:text-white',
+          )}
+        >
+          {int.label}
+        </div>
+      ))}
     </div>
   )
 }

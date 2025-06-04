@@ -1,6 +1,16 @@
 import { schemas } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import { format, parse } from 'date-fns'
+import {
+  format,
+  parse,
+  startOfDay,
+  startOfMonth,
+  startOfYear,
+  startOfYesterday,
+  subDays,
+  subMonths,
+  subYears,
+} from 'date-fns'
 
 export const toISODate = (date: Date) => format(date, 'yyyy-MM-dd')
 
@@ -104,14 +114,14 @@ const dateToInterval = (startDate: Date) => {
   }
 }
 
-export type ChartRange = 'all_time' | '12m' | '3m' | '30d' | '24h'
+export type ChartRange = 'all_time' | '12m' | '3m' | '30d' | 'today'
 
 export const CHART_RANGES: Record<ChartRange, string> = {
   all_time: 'All Time',
   '12m': '12m',
   '3m': '3m',
   '30d': '30d',
-  '24h': '24h',
+  today: 'Today',
 }
 
 export const getChartRangeParams = (
@@ -126,13 +136,13 @@ export const getChartRangeParams = (
       case 'all_time':
         return parsedCreatedAt
       case '12m':
-        return new Date(new Date().setFullYear(now.getFullYear() - 1))
+        return startOfYear(now)
       case '3m':
-        return new Date(new Date().setMonth(now.getMonth() - 3))
+        return startOfMonth(subMonths(now, 3))
       case '30d':
-        return new Date(new Date().setDate(now.getDate() - 30))
-      case '24h':
-        return new Date(new Date().setHours(now.getHours() - 24))
+        return startOfDay(subDays(now, 30))
+      case 'today':
+        return startOfDay(now)
     }
   }
   const startDate = _getStartDate(range)
@@ -145,29 +155,16 @@ export const getPreviousParams = (
   startDate: Date,
   range: ChartRange,
 ): [Date, Date] | null => {
-  const startDateCopy = new Date(startDate)
   switch (range) {
     case 'all_time':
       return null
     case '12m':
-      return [
-        new Date(startDateCopy.setFullYear(startDateCopy.getFullYear() - 1)),
-        startDate,
-      ]
+      return [startOfYear(subYears(startDate, 1)), startDate]
     case '3m':
-      return [
-        new Date(startDateCopy.setMonth(startDateCopy.getMonth() - 3)),
-        startDate,
-      ]
+      return [startOfMonth(subMonths(startDate, 3)), startDate]
     case '30d':
-      return [
-        new Date(startDateCopy.setDate(startDateCopy.getDate() - 30)),
-        startDate,
-      ]
-    case '24h':
-      return [
-        new Date(startDateCopy.setHours(startDateCopy.getHours() - 24)),
-        startDate,
-      ]
+      return [startOfDay(subDays(startDate, 30)), startDate]
+    case 'today':
+      return [startOfYesterday(), startDate]
   }
 }

@@ -63,7 +63,7 @@ def upgrade() -> None:
         op.f("ix_payouts_modified_at"), "payouts", ["modified_at"], unique=False
     )
     op.create_index(
-        op.f("ix_payouts_processor_id"), "payouts", ["processor_id"], unique=True
+        op.f("ix_payouts_processor_id"), "payouts", ["processor_id"], unique=False
     )
     op.create_index(op.f("ix_payouts_status"), "payouts", ["status"], unique=False)
 

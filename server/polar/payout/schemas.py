@@ -28,5 +28,16 @@ class Payout(IDSchema, TimestampedSchema):
     account_amount: int
     account_id: UUID4
 
+    invoice_number: str | None = None
+    is_invoice_generated: bool
+
     transaction_id: UUID4 = Field(validation_alias=AliasPath("transaction", "id"))
     fees_transactions: list[TransactionEmbedded]
+
+
+class PayoutGenerateInvoice(Schema):
+    invoice_number: str | None = None
+
+
+class PayoutInvoice(Schema):
+    url: str

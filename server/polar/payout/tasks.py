@@ -49,3 +49,16 @@ async def trigger_payout(payout_id: uuid.UUID) -> None:
             raise PayoutDoesNotExist(payout_id)
 
         await payout_service.trigger_stripe_payout(session, payout)
+
+
+@actor(actor_name="payout.invoice", priority=TaskPriority.LOW)
+async def order_invoice(payout_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = PayoutRepository(session)
+        payout = await repository.get_by_id(
+            payout_id, options=repository.get_eager_options()
+        )
+        if payout is None:
+            raise PayoutDoesNotExist(payout_id)
+
+        await payout_service.generate_invoice(session, payout)

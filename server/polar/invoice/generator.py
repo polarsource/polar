@@ -43,6 +43,11 @@ class InvoiceItem(BaseModel):
     amount: int
 
 
+class InvoiceHeadingItem(BaseModel):
+    label: str
+    value: str
+
+
 class Invoice(BaseModel):
     number: str
     date: datetime
@@ -60,6 +65,7 @@ class Invoice(BaseModel):
     currency: str
     items: list[InvoiceItem]
     notes: str | None = None
+    extra_heading_items: list[InvoiceHeadingItem] | None = None
 
     @property
     def formatted_subtotal_amount(self) -> str:
@@ -105,6 +111,14 @@ class Invoice(BaseModel):
 
         return label
 
+    @property
+    def heading_items(self) -> list[InvoiceHeadingItem]:
+        return [
+            InvoiceHeadingItem(label="Invoice number", value=self.number),
+            InvoiceHeadingItem(label="Date of issue", value=format_date(self.date)),
+            *(self.extra_heading_items or []),
+        ]
+
     @classmethod
     def from_order(cls, order: Order) -> Self:
         assert order.billing_name is not None
@@ -114,9 +128,9 @@ class Invoice(BaseModel):
         return cls(
             number=order.invoice_number,
             date=order.created_at,
-            seller_name=settings.CUSTOMER_INVOICES_SELLER_NAME,
-            seller_address=settings.CUSTOMER_INVOICES_SELLER_ADDRESS,
-            seller_additional_info=settings.CUSTOMER_INVOICES_ADDITIONAL_INFO,
+            seller_name=settings.INVOICES_NAME,
+            seller_address=settings.INVOICES_ADDRESS,
+            seller_additional_info=settings.INVOICES_ADDITIONAL_INFO,
             customer_name=order.billing_name,
             customer_additional_info=order.tax_id[0] if order.tax_id else None,
             customer_address=order.billing_address,
@@ -180,6 +194,7 @@ class InvoiceGenerator(FPDF):
     def __init__(
         self,
         data: Invoice,
+        heading_title: str = "Invoice",
         add_sandbox_warning: bool = settings.ENV == Environment.sandbox,
     ) -> None:
         super().__init__()
@@ -190,6 +205,7 @@ class InvoiceGenerator(FPDF):
 
         self.alias_nb_pages()
         self.data = data
+        self.heading_title = heading_title
         self.add_sandbox_warning = add_sandbox_warning
 
     def cell_height(self, font_size: float | None = None) -> float:
@@ -225,7 +241,7 @@ class InvoiceGenerator(FPDF):
         # Title
         self.set_font(style="B", size=18)
         self.cell(
-            text="Invoice",
+            text=self.heading_title,
             new_x=XPos.LMARGIN,
             new_y=YPos.NEXT,
         )
@@ -235,28 +251,21 @@ class InvoiceGenerator(FPDF):
 
         self.set_y(self.get_y() + self.elements_y_margin)
 
-        # Invoice number and date
+        # Heading items
         label_width = 30
         self.set_font(size=self.base_font_size)
-        self.set_font(style="B")
-        self.cell(label_width, self.cell_height(), text="Invoice number", align=Align.L)
-        self.set_font(style="")
-        self.cell(
-            h=self.cell_height(),
-            text=self.data.number,
-            new_x=XPos.LMARGIN,
-            new_y=YPos.NEXT,
-        )
-
-        self.set_font(style="B")
-        self.cell(label_width, self.cell_height(), text="Date of issue", align=Align.L)
-        self.set_font(style="")
-        self.cell(
-            h=self.cell_height(),
-            text=format_date(self.data.date),
-            new_x=XPos.LMARGIN,
-            new_y=YPos.NEXT,
-        )
+        for heading_item in self.data.heading_items:
+            self.set_font(style="B")
+            self.cell(
+                label_width, self.cell_height(), text=heading_item.label, align=Align.L
+            )
+            self.set_font(style="")
+            self.cell(
+                h=self.cell_height(),
+                text=heading_item.value,
+                new_x=XPos.LMARGIN,
+                new_y=YPos.NEXT,
+            )
 
         # Billing addresses
         self.set_y(self.get_y() + self.elements_y_margin)
@@ -397,7 +406,7 @@ class InvoiceGenerator(FPDF):
         """Set metadata for the PDF document."""
         self.set_title(f"Invoice {self.data.number}")
         self.set_creator("Polar")
-        self.set_author(settings.CUSTOMER_INVOICES_SELLER_NAME)
+        self.set_author(settings.INVOICES_NAME)
         self.set_creation_date(utc_now())
 
 

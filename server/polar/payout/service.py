@@ -8,8 +8,10 @@ import structlog
 from polar.auth.models import AuthSubject, User
 from polar.config import settings
 from polar.enums import AccountType
+from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.invoice.service import invoice as invoice_service
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import PaginationParams
@@ -18,6 +20,7 @@ from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import Account, Payout
 from polar.models.payout import PayoutStatus
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.transaction.repository import (
     PayoutTransactionRepository,
@@ -34,7 +37,7 @@ from polar.transaction.service.transaction import transaction as transaction_ser
 from polar.worker import enqueue_job
 
 from .repository import PayoutRepository
-from .schemas import PayoutEstimate
+from .schemas import PayoutEstimate, PayoutGenerateInvoice, PayoutInvoice
 from .sorting import PayoutSortProperty
 
 log: Logger = structlog.get_logger()
@@ -85,6 +88,39 @@ class PayoutDoesNotExist(PayoutError):
             f"Received payout {payout_id} from Stripe, "
             "but it's not associated to a Payout."
         )
+        super().__init__(message, 404)
+
+
+class InvoiceAlreadyExists(PayoutError):
+    def __init__(self, payout: Payout) -> None:
+        self.payout = payout
+        message = f"An invoice already exists for payout {payout.id}."
+        super().__init__(message, 409)
+
+
+class PayoutNotSucceeded(PayoutError):
+    def __init__(self, payout: Payout) -> None:
+        self.payout = payout
+        message = (
+            f"Can't generate an invoice for payout {payout.id} because "
+            "it has not succeeded yet."
+        )
+        super().__init__(message, 400)
+
+
+class MissingInvoiceBillingDetails(PayoutError):
+    def __init__(self, payout: Payout) -> None:
+        self.payout = payout
+        message = (
+            "You must provide billing details for the account to generate an invoice."
+        )
+        super().__init__(message, 400)
+
+
+class InvoiceDoesNotExist(PayoutError):
+    def __init__(self, payout: Payout) -> None:
+        self.payout = payout
+        message = f"Invoice does not exist for payout {payout.id}."
         super().__init__(message, 404)
 
 
@@ -204,6 +240,9 @@ class PayoutService:
                     account_currency=account.currency,
                     account_amount=balance_amount_after_fees,
                     account=account,
+                    invoice_number=await self._get_next_invoice_number(
+                        session, account
+                    ),
                 )
             )
             transaction = await payout_transaction_service.create(
@@ -286,6 +325,58 @@ class PayoutService:
             update_dict={"processor_id": stripe_payout.id},
         )
 
+    async def trigger_invoice_generation(
+        self,
+        session: AsyncSession,
+        payout: Payout,
+        payout_generate_invoice: PayoutGenerateInvoice,
+    ) -> None:
+        if payout.is_invoice_generated:
+            raise InvoiceAlreadyExists(payout)
+
+        if payout.status != PayoutStatus.succeeded:
+            raise PayoutNotSucceeded(payout)
+
+        account = payout.account
+        if account.billing_name is None or account.billing_address is None:
+            raise MissingInvoiceBillingDetails(payout)
+
+        repository = PayoutRepository.from_session(session)
+        if payout_generate_invoice.invoice_number is not None:
+            payout = await repository.update(
+                payout,
+                update_dict={"invoice_number": payout_generate_invoice.invoice_number},
+            )
+
+        enqueue_job("payout.invoice", payout_id=payout.id)
+
+    async def generate_invoice(self, session: AsyncSession, payout: Payout) -> Payout:
+        invoice_path = await invoice_service.create_payout_invoice(session, payout)
+        repository = PayoutRepository.from_session(session)
+        payout = await repository.update(
+            payout, update_dict={"invoice_path": invoice_path}
+        )
+
+        organization_repository = OrganizationRepository.from_session(session)
+        account_organizations = await organization_repository.get_all_by_account(
+            payout.account_id
+        )
+        for organization in account_organizations:
+            await eventstream_publish(
+                "payout.invoice_generated",
+                {"payout_id": payout.id},
+                organization_id=organization.id,
+            )
+
+        return payout
+
+    async def get_invoice(self, payout: Payout) -> PayoutInvoice:
+        if not payout.is_invoice_generated:
+            raise InvoiceDoesNotExist(payout)
+
+        url, _ = await invoice_service.get_payout_invoice_url(payout)
+        return PayoutInvoice(url=url)
+
     async def get_csv(
         self, session: AsyncSession, sessionmaker: AsyncSessionMaker, payout: Payout
     ) -> AsyncIterable[str]:
@@ -360,6 +451,13 @@ class PayoutService:
                         abs(payout.account_amount / 100),
                     )
                 )
+
+    async def _get_next_invoice_number(
+        self, session: AsyncSession, account: Account
+    ) -> str:
+        repository = PayoutRepository.from_session(session)
+        payouts_count = await repository.count_by_account(account.id)
+        return f"{settings.PAYOUT_INVOICES_PREFIX}-{payouts_count + 1:04d}"
 
 
 payout = PayoutService()

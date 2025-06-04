@@ -64,10 +64,8 @@ class Payout(RecordModel):
     """ID of the `Account` concerned by this payout."""
     account: Mapped["Account"] = relationship("Account", lazy="raise")
 
-    invoice_number: Mapped[str | None] = mapped_column(
-        String, nullable=True, default=None
-    )
-    """Reverse invoice number for this payout. Might be `None` if not yet created."""
+    invoice_number: Mapped[str] = mapped_column(String, nullable=False)
+    """Reverse invoice number for this payout."""
     invoice_path: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )
@@ -99,3 +97,7 @@ class Payout(RecordModel):
             for transaction in self.transaction.incurred_transactions
             if transaction.account_id is not None
         ]
+
+    @property
+    def is_invoice_generated(self) -> bool:
+        return self.invoice_path is not None

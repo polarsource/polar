@@ -206,8 +206,9 @@ class Settings(BaseSettings):
 
     # Invoices
     S3_CUSTOMER_INVOICES_BUCKET_NAME: str = "polar-customer-invoices"
-    CUSTOMER_INVOICES_SELLER_NAME: str = "Polar Software, Inc."
-    CUSTOMER_INVOICES_SELLER_ADDRESS: Address = Address(
+    S3_PAYOUT_INVOICES_BUCKET_NAME: str = "polar-payout-invoices"
+    INVOICES_NAME: str = "Polar Software, Inc."
+    INVOICES_ADDRESS: Address = Address(
         line1="548 Market St",
         line2="PMB 61301",
         postal_code="94104",
@@ -215,9 +216,11 @@ class Settings(BaseSettings):
         state="CA",
         country=CountryAlpha2("US"),
     )
-    CUSTOMER_INVOICES_ADDITIONAL_INFO: str | None = (
+    INVOICES_ADDITIONAL_INFO: str | None = (
         "[support@polar.sh](mailto:support@polar.sh)\n"
     )
+    PAYOUT_INVOICES_PREFIX: str = "POLAR-"
+
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100
 

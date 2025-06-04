@@ -31,6 +31,10 @@ class PayoutRepository(
     model = Payout
     sorting_enum = PayoutSortProperty
 
+    async def count_by_account(self, account: UUID) -> int:
+        statement = self.get_base_statement().where(Payout.account_id == account)
+        return await self.count(statement)
+
     async def get_by_processor_id(
         self,
         processor: AccountType,

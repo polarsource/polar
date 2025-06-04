@@ -34,6 +34,8 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         return await self.get_all(statement)
 
     async def insert_batch(self, events: Sequence[dict[str, Any]]) -> Sequence[UUID]:
+        if not events:
+            return []
         statement = insert(Event).returning(Event.id)
         result = await self.session.execute(statement, events)
         return result.scalars().all()

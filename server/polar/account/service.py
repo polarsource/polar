@@ -21,7 +21,7 @@ from polar.postgres import AsyncSession
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.worker import enqueue_job
 
-from .schemas import AccountCreate, AccountLink
+from .schemas import AccountCreate, AccountLink, AccountUpdate
 
 
 class AccountServiceError(PolarError):
@@ -73,6 +73,14 @@ class AccountService:
             )
         )
         return await repository.get_one_or_none(statement)
+
+    async def update(
+        self, session: AsyncSession, account: Account, account_update: AccountUpdate
+    ) -> Account:
+        repository = AccountRepository.from_session(session)
+        return await repository.update(
+            account, update_dict=account_update.model_dump(exclude_unset=True)
+        )
 
     async def create_account(
         self,

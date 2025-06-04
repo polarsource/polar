@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, Text, Uuid
+from sqlalchemy import ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import BigInteger
 
@@ -68,8 +68,6 @@ class Payout(RecordModel):
         String, nullable=True, default=None
     )
     """Reverse invoice number for this payout. Might be `None` if not yet created."""
-    invoice_notes: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
-    """Optional notes to be added at the bottom of the invoice for this payout."""
     invoice_path: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )

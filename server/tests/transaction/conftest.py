@@ -4,7 +4,7 @@ from typing import TypeVar
 
 import pytest_asyncio
 
-from polar.enums import AccountType, SubscriptionRecurringInterval
+from polar.enums import SubscriptionRecurringInterval
 from polar.models import (
     Account,
     Customer,
@@ -71,48 +71,6 @@ async def create_transaction(
     )
     await save_fixture(transaction)
     return transaction
-
-
-async def create_account(
-    save_fixture: SaveFixture,
-    organization: Organization,
-    user: User,
-    *,
-    status: Account.Status = Account.Status.ACTIVE,
-    country: str = "US",
-    currency: str = "usd",
-    account_type: AccountType = AccountType.stripe,
-    stripe_id: str = "STRIPE_ID",
-    processor_fees_applicable: bool = True,
-    fee_basis_points: int | None = None,
-    fee_fixed: int | None = None,
-    is_payouts_enabled: bool = True,
-) -> Account:
-    account = Account(
-        status=status,
-        account_type=account_type,
-        admin_id=user.id,
-        country=country,
-        currency=currency,
-        is_details_submitted=True,
-        is_charges_enabled=True,
-        is_payouts_enabled=is_payouts_enabled,
-        processor_fees_applicable=processor_fees_applicable,
-        stripe_id=stripe_id,
-        _platform_fee_percent=fee_basis_points,
-        _platform_fee_fixed=fee_fixed,
-    )
-    await save_fixture(account)
-    organization.account = account
-    await save_fixture(organization)
-    return account
-
-
-@pytest_asyncio.fixture
-async def account(
-    save_fixture: SaveFixture, organization: Organization, user: User
-) -> Account:
-    return await create_account(save_fixture, organization, user)
 
 
 @pytest_asyncio.fixture

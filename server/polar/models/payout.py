@@ -37,7 +37,7 @@ class Payout(RecordModel):
     )
     """Payment processor used for this payout."""
     processor_id: Mapped[str | None] = mapped_column(
-        String, nullable=True, index=True, unique=True
+        String, nullable=True, index=True, unique=False
     )
     """ID of the payout in the payment processor. Might be `None` if not yet created."""
     status: Mapped[PayoutStatus] = mapped_column(

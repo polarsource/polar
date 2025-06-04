@@ -119,7 +119,7 @@ def upgrade() -> None:
         """
         UPDATE payouts
         SET fees_amount = (
-            SELECT SUM(amount)
+            SELECT COALESCE(SUM(amount), 0)
             FROM transactions
             WHERE transactions.incurred_by_transaction_id = payouts.tmp_transaction_id
             AND transactions.account_id IS NULL

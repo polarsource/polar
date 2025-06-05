@@ -147,6 +147,11 @@ class UserService:
         if user is None:
             raise IdentityVerificationDoesNotExist(verification_session.id)
 
+        # If the user is already verified, we don't need to update their status.
+        # Might happen if the webhook was delayed
+        if user.identity_verified:
+            return user
+
         assert verification_session.status == "processing"
         return await repository.update(
             user,

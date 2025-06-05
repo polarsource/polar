@@ -87,6 +87,7 @@ from polar.models.discount import (
 from polar.models.event import EventSource
 from polar.models.notification_recipient import NotificationRecipient
 from polar.models.order import OrderBillingReason, OrderStatus
+from polar.models.payout import PayoutStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import (
     ProductPriceAmountType,
@@ -1607,6 +1608,7 @@ async def create_payout(
     *,
     account: Account,
     transaction: Transaction | None = None,
+    status: PayoutStatus = PayoutStatus.pending,
     amount: int = 1000,
     fees_amount: int = 0,
     currency: str = "usd",
@@ -1618,6 +1620,7 @@ async def create_payout(
     payout = Payout(
         created_at=created_at,
         account=account,
+        status=status,
         processor=account.account_type,
         currency=currency,
         amount=amount,
@@ -1645,6 +1648,8 @@ async def create_account(
     fee_basis_points: int | None = None,
     fee_fixed: int | None = None,
     is_payouts_enabled: bool = True,
+    billing_name: str | None = None,
+    billing_address: Address | None = None,
 ) -> Account:
     account = Account(
         status=status,
@@ -1659,6 +1664,8 @@ async def create_account(
         stripe_id=stripe_id,
         _platform_fee_percent=fee_basis_points,
         _platform_fee_fixed=fee_fixed,
+        billing_name=billing_name,
+        billing_address=billing_address,
     )
     await save_fixture(account)
     organization.account = account

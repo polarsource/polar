@@ -9,7 +9,7 @@ from polar.auth.models import AuthSubject, User
 from polar.config import settings
 from polar.enums import AccountType
 from polar.eventstream.service import publish as eventstream_publish
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.csv import IterableCSVWriter
@@ -330,7 +330,7 @@ class PayoutService:
         session: AsyncSession,
         payout: Payout,
         payout_generate_invoice: PayoutGenerateInvoice,
-    ) -> None:
+    ) -> Payout:
         if payout.is_invoice_generated:
             raise InvoiceAlreadyExists(payout)
 
@@ -343,12 +343,28 @@ class PayoutService:
 
         repository = PayoutRepository.from_session(session)
         if payout_generate_invoice.invoice_number is not None:
+            existing_payout = await repository.get_by_account_and_invoice_number(
+                account.id, payout_generate_invoice.invoice_number
+            )
+            if existing_payout is not None and existing_payout.id != payout.id:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "invoice_number"),
+                            "msg": "An invoice with this number already exists.",
+                            "input": payout_generate_invoice.invoice_number,
+                        }
+                    ]
+                )
             payout = await repository.update(
                 payout,
                 update_dict={"invoice_number": payout_generate_invoice.invoice_number},
             )
 
         enqueue_job("payout.invoice", payout_id=payout.id)
+
+        return payout
 
     async def generate_invoice(self, session: AsyncSession, payout: Payout) -> Payout:
         invoice_path = await invoice_service.create_payout_invoice(session, payout)

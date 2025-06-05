@@ -68,6 +68,15 @@ class PayoutRepository(
         )
         return await self.get_all(statement)
 
+    async def get_by_account_and_invoice_number(
+        self, account: UUID, invoice_number: str
+    ) -> Payout | None:
+        statement = self.get_base_statement().where(
+            Payout.account_id == account,
+            Payout.invoice_number == invoice_number,
+        )
+        return await self.get_one_or_none(statement)
+
     def get_eager_options(self) -> Options:
         return (
             joinedload(Payout.account),

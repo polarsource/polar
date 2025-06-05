@@ -473,7 +473,7 @@ class PayoutService:
     ) -> str:
         repository = PayoutRepository.from_session(session)
         payouts_count = await repository.count_by_account(account.id)
-        return f"{settings.PAYOUT_INVOICES_PREFIX}-{payouts_count + 1:04d}"
+        return f"{settings.PAYOUT_INVOICES_PREFIX}{payouts_count + 1:04d}"
 
 
 payout = PayoutService()

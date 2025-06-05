@@ -6,16 +6,14 @@ description: "Easily withdraw money from your Polar account at any time"
 
 You can issue a withdrawal, i.e payout, at any time once there is at least **$10 on your balance**. We will then transfer the balance minus Stripe payout fees (see below) to your Stripe account & issue a payout on their side.
 
-Manual Withdrawal
-------------------------
+## Manual Withdrawal
 
 We require this to be done manually since:
 
 1. Users have requested control for easier accounting vs. frequent & small payouts
 2. Giving users control of Stripe payout fees
 
-**Stripe Payout Fees**
------------------------------
+## **Stripe Payout Fees**
 
 1. $2 per month of active payout(s)
 2. 0.25% + $0.25 per payout
@@ -23,3 +21,46 @@ We require this to be done manually since:
 
 Given the fixed costs, we want to default to manual payouts so you can control when you want to incur them and do it once vs. per each individual transaction in order to reduce the overall fees.
 
+## Reverse invoices
+
+Since we're the Merchant of Record, your customers get an invoice from Polar. Thus, for your accounting, you need to issue an invoice to Polar for the amount we paid out to you. To ease this process, we can automatically generate a **reverse invoice** for you, detailing the sells we made on your behalf, minus our fees.
+
+You can generate them from the **Payouts** page under **Finance** in your Polar dashboard. Click on the ellipsis next to the payout you want to generate a reverse invoice for, and select **Generate Reverse Invoice**.
+
+<img
+  className="block dark:hidden"
+  src="/assets/features/finance/payouts/download.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/finance/payouts/download.dark.png"
+/>
+
+A modal will open, allowing you to:
+
+- Set tour billing name and address
+- Add information shown below your billing address
+- Add notes shown at the bottom of the invoice
+- Customize the invoice number. By default, we generate one like `POLAR-0001`, but you can change it to your own format and sequence.
+
+<img
+  className="block dark:hidden"
+  src="/assets/features/finance/payouts/generate.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/finance/payouts/generate.dark.png"
+/>
+
+<Warning>
+  Once the reverse invoice is generated, it cannot be changed. Make sure to
+  double-check the information before generating it.
+</Warning>
+
+### Sample Reverse Invoice
+
+<iframe
+  src="https://polar-public-assets.s3.us-east-2.amazonaws.com/sample-reverse-invoice.pdf"
+  width="100%"
+  height="600px"
+></iframe>

@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, Uuid
+from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import BigInteger
 
@@ -31,6 +31,7 @@ class PayoutStatus(StrEnum):
 
 class Payout(RecordModel):
     __tablename__ = "payouts"
+    __table_args__ = (UniqueConstraint("account_id", "invoice_number"),)
 
     processor: Mapped[AccountType] = mapped_column(
         StringEnum(AccountType), nullable=False
@@ -59,7 +60,7 @@ class Payout(RecordModel):
     """Amount in cents of this transaction from user's account perspective."""
 
     account_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("accounts.id", ondelete="restrict"), nullable=False, index=True
+        Uuid, ForeignKey("accounts.id", ondelete="restrict"), nullable=False
     )
     """ID of the `Account` concerned by this payout."""
     account: Mapped["Account"] = relationship("Account", lazy="raise")

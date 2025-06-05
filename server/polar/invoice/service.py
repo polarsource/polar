@@ -134,7 +134,7 @@ class InvoiceService:
         s3 = S3Service(settings.S3_PAYOUT_INVOICES_BUCKET_NAME)
         return s3.upload(
             bytes(invoice_bytes),
-            f"Payout-{payout.invoice_number}.pdf",
+            f"{account.id}/Payout-{payout.invoice_number}.pdf",
             "application/pdf",
         )
 

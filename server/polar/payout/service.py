@@ -54,14 +54,14 @@ class InsufficientBalance(PayoutError):
             f"The account {account.id} has an insufficient balance "
             f"of {balance} to make a payout."
         )
-        super().__init__(message)
+        super().__init__(message, 400)
 
 
 class UnderReviewAccount(PayoutError):
     def __init__(self, account: Account) -> None:
         self.account = account
         message = f"The account {account.id} is under review and can't receive payouts."
-        super().__init__(message)
+        super().__init__(message, 400)
 
 
 class NotReadyAccount(PayoutError):
@@ -71,7 +71,7 @@ class NotReadyAccount(PayoutError):
             f"The account {account.id} is not ready."
             f"The owner should go through the onboarding on {account.account_type}"
         )
-        super().__init__(message)
+        super().__init__(message, 400)
 
 
 class PendingPayoutCreation(PayoutError):

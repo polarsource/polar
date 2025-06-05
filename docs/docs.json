@@ -171,6 +171,10 @@
         "icon": "rectangle-terminal",
         "groups": [
           {
+            "group": "General",
+            "pages": ["api-reference/rate-limits"]
+          },
+          {
             "group": "Core API",
             "pages": [
               {

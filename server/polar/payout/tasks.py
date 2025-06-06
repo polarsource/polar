@@ -4,6 +4,7 @@ from polar.exceptions import PolarTaskError
 from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
 from .repository import PayoutRepository
+from .service import PayoutAlreadyTriggered
 from .service import payout as payout_service
 
 
@@ -48,7 +49,12 @@ async def trigger_payout(payout_id: uuid.UUID) -> None:
         if payout is None:
             raise PayoutDoesNotExist(payout_id)
 
-        await payout_service.trigger_stripe_payout(session, payout)
+        try:
+            await payout_service.trigger_stripe_payout(session, payout)
+        except PayoutAlreadyTriggered:
+            # Swallow it, since it's likely a task that's being retried
+            # while the payout has already been triggered.
+            pass
 
 
 @actor(actor_name="payout.invoice", priority=TaskPriority.LOW)

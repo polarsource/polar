@@ -124,6 +124,13 @@ class InvoiceDoesNotExist(PayoutError):
         super().__init__(message, 404)
 
 
+class PayoutAlreadyTriggered(PayoutError):
+    def __init__(self, payout: Payout) -> None:
+        self.payout = payout
+        message = f"Payout {payout.id} has already been triggered."
+        super().__init__(message)
+
+
 class PayoutService:
     async def list(
         self,
@@ -290,7 +297,8 @@ class PayoutService:
     async def trigger_stripe_payout(
         self, session: AsyncSession, payout: Payout
     ) -> Payout:
-        assert payout.processor_id is None
+        if payout.processor_id is None:
+            raise PayoutAlreadyTriggered(payout)
 
         account = payout.account
         assert account.stripe_id is not None

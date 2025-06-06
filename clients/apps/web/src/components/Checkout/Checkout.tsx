@@ -10,7 +10,9 @@ import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
+import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
+import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
 import ShadowBox, {
   ShadowBoxOnMd,
 } from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -32,7 +34,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const {
     checkout,
     form,
-    update,
+    update: _update,
     confirm: _confirm,
     loading: confirmLoading,
     loadingLabel,
@@ -65,6 +67,20 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     listenFulfillment,
   )
 
+  const update = useCallback(
+    async (data: CheckoutUpdatePublic) => {
+      try {
+        return await _update(data)
+      } catch (error) {
+        if (error instanceof ExpiredCheckoutError) {
+          window.location.reload()
+        }
+        throw error
+      }
+    },
+    [_update],
+  )
+
   const confirm = useCallback(
     async (
       data: CheckoutConfirmStripe,
@@ -76,6 +92,9 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
       try {
         confirmedCheckout = await _confirm(data, stripe, elements)
       } catch (error) {
+        if (error instanceof ExpiredCheckoutError) {
+          window.location.reload()
+        }
         setFullLoading(false)
         throw error
       }

@@ -333,14 +333,17 @@ class LogfireMiddleware(dramatiq.Middleware):
         self._logfire_span_stack.set(contextlib.ExitStack())
 
 
+def _json_obj_serializer(obj: Any) -> Any:
+    if isinstance(obj, uuid.UUID):
+        return str(obj)
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+
 class JSONEncoder(dramatiq.JSONEncoder):
     def encode(self, data: dict[str, Any]) -> bytes:
-        def default(obj: Any) -> Any:
-            if isinstance(obj, uuid.UUID):
-                return str(obj)
-            raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
-
-        return json.dumps(data, separators=(",", ":"), default=default).encode("utf-8")
+        return json.dumps(
+            data, separators=(",", ":"), default=_json_obj_serializer
+        ).encode("utf-8")
 
 
 broker = RedisBroker(

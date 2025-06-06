@@ -123,7 +123,7 @@ class RedisMiddleware(dramatiq.Middleware):
         self._redis_context.set(self.redis)
 
     async def _open(self) -> None:
-        self.redis = await self._stack.enter_async_context(create_redis())
+        self.redis = await self._stack.enter_async_context(create_redis("worker"))
 
     async def _close(self) -> None:
         await self._stack.aclose()

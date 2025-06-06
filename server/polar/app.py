@@ -98,7 +98,7 @@ class State(TypedDict):
 async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     log.info("Starting Polar API")
 
-    async with create_redis() as redis:
+    async with create_redis("app") as redis:
         async_engine = create_async_engine("app")
         async_sessionmaker = create_async_sessionmaker(async_engine)
         instrument_sqlalchemy(async_engine.sync_engine)

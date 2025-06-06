@@ -65,9 +65,6 @@ async def publish(
     organization_id: UUID | None = None,
     checkout_client_secret: str | None = None,
     customer_id: UUID | None = None,
-    *,
-    run_in_worker: bool = True,
-    redis: Redis | None = None,
 ) -> None:
     receivers = Receivers(
         user_id=user_id,
@@ -82,22 +79,11 @@ async def publish(
         payload=payload,
     ).model_dump_json()
 
-    if run_in_worker:
-        enqueue_job("eventstream.publish", event, channels)
-    else:
-        if redis is None:
-            raise RuntimeError("Redis instance is required when run_in_worker is False")
-        await send_event(redis, event, channels)
+    enqueue_job("eventstream.publish", event, channels)
 
 
 async def publish_members(
-    session: AsyncSession,
-    key: str,
-    payload: dict[str, Any],
-    organization_id: UUID,
-    *,
-    run_in_worker: bool = True,
-    redis: Redis | None = None,
+    session: AsyncSession, key: str, payload: dict[str, Any], organization_id: UUID
 ) -> None:
     members = await user_organization_service.list_by_org(
         session, org_id=organization_id
@@ -112,11 +98,4 @@ async def publish_members(
             payload=payload,
         ).model_dump_json()
 
-        if run_in_worker:
-            enqueue_job("eventstream.publish", event, channels)
-        else:
-            if redis is None:
-                raise RuntimeError(
-                    "Redis instance is required when run_in_worker is False"
-                )
-            await send_event(redis, event, channels)
+        enqueue_job("eventstream.publish", event, channels)

@@ -9,6 +9,7 @@ from typing import Any, ParamSpec, TypeAlias, TypeVar
 
 import dramatiq
 import logfire
+import redis
 import structlog
 from apscheduler.triggers.cron import CronTrigger
 from dramatiq import actor as _actor
@@ -343,8 +344,10 @@ class JSONEncoder(dramatiq.JSONEncoder):
 
 
 broker = RedisBroker(
-    url=settings.redis_url,
-    client_name=f"{settings.ENV.value}.worker.dramatiq",
+    connection_pool=redis.ConnectionPool.from_url(
+        settings.redis_url,
+        client_name=f"{settings.ENV.value}.worker.dramatiq",
+    ),
     # Override default middlewares
     middleware=[
         m()

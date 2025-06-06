@@ -344,6 +344,7 @@ class JSONEncoder(dramatiq.JSONEncoder):
 
 broker = RedisBroker(
     url=settings.redis_url,
+    client_name=f"{settings.ENV.value}.worker.dramatiq",
     # Override default middlewares
     middleware=[
         m()

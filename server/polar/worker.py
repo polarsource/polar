@@ -32,9 +32,9 @@ class SQLAlchemyMiddleware(dramatiq.Middleware):
     Middleware managing the lifecycle of the database engine and sessionmaker.
     """
 
-    _get_async_sessionmaker_context: contextvars.ContextVar[
-        AsyncSessionMakerType | None
-    ] = contextvars.ContextVar("polar.get_async_sessionmaker", default=None)
+    _get_async_sessionmaker_context: contextvars.ContextVar[AsyncSessionMakerType] = (
+        contextvars.ContextVar("polar.get_async_sessionmaker")
+    )
 
     def __init__(self) -> None:
         self.logger = dramatiq.get_logger(__name__, type(self))
@@ -42,7 +42,6 @@ class SQLAlchemyMiddleware(dramatiq.Middleware):
     @classmethod
     def get_async_session(cls) -> contextlib.AbstractAsyncContextManager[AsyncSession]:
         _get_async_session_context = cls._get_async_sessionmaker_context.get()
-        assert _get_async_session_context is not None
         return _get_async_session_context()
 
     def before_worker_boot(
@@ -58,18 +57,12 @@ class SQLAlchemyMiddleware(dramatiq.Middleware):
     ) -> None:
         event_loop_thread = get_event_loop_thread()
         assert event_loop_thread is not None
-        self._get_async_sessionmaker_context.set(None)
         event_loop_thread.run_coroutine(self._dispose_engine())
 
     def after_worker_thread_boot(
         self, broker: dramatiq.Broker, thread: threading.Thread
     ) -> None:
         self._get_async_sessionmaker_context.set(self.async_sessionmaker)
-
-    def before_worker_thread_shutdown(
-        self, broker: dramatiq.Broker, thread: threading.Thread
-    ) -> None:
-        self._get_async_sessionmaker_context.set(None)
 
     async def _dispose_engine(self) -> None:
         await self.engine.dispose()
@@ -96,8 +89,8 @@ class RedisMiddleware(dramatiq.Middleware):
     Middleware managing the lifecycle of the Redis connection.
     """
 
-    _redis_context: contextvars.ContextVar[Redis | None] = contextvars.ContextVar(
-        "polar.redis", default=None
+    _redis_context: contextvars.ContextVar[Redis] = contextvars.ContextVar(
+        "polar.redis"
     )
 
     def __init__(self) -> None:
@@ -106,9 +99,7 @@ class RedisMiddleware(dramatiq.Middleware):
 
     @classmethod
     def get(cls) -> Redis:
-        _redis_context = cls._redis_context.get()
-        assert _redis_context is not None
-        return _redis_context
+        return cls._redis_context.get()
 
     def before_worker_boot(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
@@ -123,7 +114,6 @@ class RedisMiddleware(dramatiq.Middleware):
     ) -> None:
         event_loop_thread = get_event_loop_thread()
         assert event_loop_thread is not None
-        self._redis_context.set(None)
         event_loop_thread.run_coroutine(self._close())
         self.logger.info("Closed Redis connection")
 
@@ -131,11 +121,6 @@ class RedisMiddleware(dramatiq.Middleware):
         self, broker: dramatiq.Broker, thread: threading.Thread
     ) -> None:
         self._redis_context.set(self.redis)
-
-    def before_worker_thread_shutdown(
-        self, broker: dramatiq.Broker, thread: threading.Thread
-    ) -> None:
-        self._redis_context.set(None)
 
     async def _open(self) -> None:
         self.redis = await self._stack.enter_async_context(create_redis())
@@ -165,12 +150,8 @@ class EnqueuedJobsMiddleware(dramatiq.Middleware):
     and flushing them to Redis when the message is processed.
     """
 
-    _enqueued_jobs = contextvars.ContextVar[list[JobToEnqueue]](
-        "polar.enqueued_jobs", default=[]
-    )
-    _ingested_events = contextvars.ContextVar[list[uuid.UUID]](
-        "polar.ingested_events", default=[]
-    )
+    _enqueued_jobs = contextvars.ContextVar[list[JobToEnqueue]]("polar.enqueued_jobs")
+    _ingested_events = contextvars.ContextVar[list[uuid.UUID]]("polar.ingested_events")
 
     @classmethod
     def get_enqueued_jobs_context(
@@ -193,11 +174,11 @@ class EnqueuedJobsMiddleware(dramatiq.Middleware):
     def before_process_message(
         self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
     ) -> None:
-        enqueued_jobs = self._enqueued_jobs.get()
+        enqueued_jobs = self._enqueued_jobs.get([])
         assert enqueued_jobs == [], (
             "Enqueued jobs should be empty before processing a message"
         )
-        ingested_events = self._ingested_events.get()
+        ingested_events = self._ingested_events.get([])
         assert ingested_events == [], (
             "Ingested events should be empty before processing a message"
         )

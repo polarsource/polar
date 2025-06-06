@@ -3,7 +3,6 @@ from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, Any, cast
 
 import structlog
-from githubkit import AppInstallationAuthStrategy, GitHub
 from githubkit.exception import (
     RateLimitExceeded,
     RequestError,
@@ -33,7 +32,9 @@ from .properties import (
 )
 
 if TYPE_CHECKING:
+    from githubkit import AppInstallationAuthStrategy, GitHub
     from githubkit.versions.latest.models import RepositoryInvitation
+
 
 log: Logger = structlog.get_logger()
 
@@ -317,7 +318,7 @@ class BenefitGitHubRepositoryService(
 
     async def _get_invitation(
         self,
-        client: github.GitHub[Any],
+        client: "GitHub[Any]",
         *,
         repository_owner: str,
         repository_name: str,
@@ -336,7 +337,7 @@ class BenefitGitHubRepositoryService(
     @contextlib.asynccontextmanager
     async def _get_github_app_client(
         self, benefit: Benefit
-    ) -> AsyncIterator[GitHub[AppInstallationAuthStrategy]]:
+    ) -> AsyncIterator["GitHub[AppInstallationAuthStrategy]"]:
         properties = self._get_properties(benefit)
         repository_owner = properties["repository_owner"]
         repository_name = properties["repository_name"]

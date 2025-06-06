@@ -294,14 +294,13 @@ class GitHubRepositoryBenefitUserService:
     async def get_repository_installation(
         self, *, owner: str, name: str
     ) -> "types.Installation | None":
-        app_client = github.get_app_client()
-
-        repo_install = await app_client.rest.apps.async_get_repo_installation(
-            owner, name
-        )
-        if repo_install.status_code == 200:
-            return repo_install.parsed_data
-        return None
+        with github.get_app_client() as app_client:
+            repo_install = await app_client.rest.apps.async_get_repo_installation(
+                owner, name
+            )
+            if repo_install.status_code == 200:
+                return repo_install.parsed_data
+            return None
 
     async def user_has_access_to_repository(
         self, oauth: OAuthAccount, *, owner: str, name: str

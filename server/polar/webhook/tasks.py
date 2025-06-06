@@ -105,8 +105,8 @@ async def _webhook_event_send(session: AsyncSession, *, webhook_event_id: UUID) 
         webhook_event_id=webhook_event_id, webhook_endpoint_id=event.webhook_endpoint_id
     )
 
-    try:
-        async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient() as client:
+        try:
             response = await client.post(
                 event.webhook_endpoint.url,
                 content=event.payload,
@@ -116,27 +116,27 @@ async def _webhook_event_send(session: AsyncSession, *, webhook_event_id: UUID) 
             delivery.http_code = response.status_code
             event.last_http_code = response.status_code
             response.raise_for_status()
-    # Error
-    except (httpx.HTTPError, SSLError) as e:
-        log.debug("An errror occurred while sending a webhook", error=e)
-        delivery.succeeded = False
-        # Permanent failure
-        if not can_retry():
-            event.succeeded = False
-        # Retry
+        # Error
+        except (httpx.HTTPError, SSLError) as e:
+            log.debug("An errror occurred while sending a webhook", error=e)
+            delivery.succeeded = False
+            # Permanent failure
+            if not can_retry():
+                event.succeeded = False
+            # Retry
+            else:
+                raise Retry() from e
+        # Success
         else:
-            raise Retry() from e
-    # Success
-    else:
-        delivery.succeeded = True
-        event.succeeded = True
-        enqueue_job("webhook_event.success", webhook_event_id=webhook_event_id)
-    # Either way, save the delivery
-    finally:
-        assert delivery.succeeded is not None
-        session.add(delivery)
-        session.add(event)
-        await session.commit()
+            delivery.succeeded = True
+            event.succeeded = True
+            enqueue_job("webhook_event.success", webhook_event_id=webhook_event_id)
+        # Either way, save the delivery
+        finally:
+            assert delivery.succeeded is not None
+            session.add(delivery)
+            session.add(event)
+            await session.commit()
 
 
 @actor(actor_name="webhook_event.success", priority=TaskPriority.HIGH)

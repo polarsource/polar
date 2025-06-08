@@ -2,8 +2,6 @@
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { motion } from 'framer-motion'
-import { useTheme } from 'next-themes'
-import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
 export const Hero = ({ className }: { className?: string }) => {
   const containerVariants = {
@@ -21,8 +19,6 @@ export const Hero = ({ className }: { className?: string }) => {
     visible: { opacity: 1, transition: { duration: 1 } },
   }
 
-  const { resolvedTheme } = useTheme()
-
   return (
     <motion.div
       className={twMerge(
@@ -34,15 +30,15 @@ export const Hero = ({ className }: { className?: string }) => {
       whileInView="visible"
       viewport={{ once: true }}
     >
-      <div className="absolute inset-0 -z-10">
-        <Image
-          src="/assets/landing/hero.jpg"
-          alt="Hero background"
-          className="object-cover"
-          width={1920}
-          height={1080}
-        />
-      </div>
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          backgroundImage: 'url(/assets/landing/hero.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: '50% 70%',
+          backgroundRepeat: 'no-repeat',
+        }}
+      />
       <motion.h1
         className="text-balance text-5xl !leading-tight tracking-tight text-gray-950 md:px-0 md:text-7xl dark:text-white"
         variants={itemVariants}

@@ -40,13 +40,13 @@ export const Hero = ({ className }: { className?: string }) => {
         }}
       />
       <motion.h1
-        className="text-balance text-5xl !leading-tight tracking-tight text-gray-950 md:px-0 md:text-7xl dark:text-white"
+        className="text-balance text-5xl !leading-tight tracking-tight text-white md:px-0 md:text-7xl dark:text-white"
         variants={itemVariants}
       >
         Payment infrastructure for the 21st century
       </motion.h1>
       <motion.p
-        className="text-pretty text-2xl leading-relaxed md:px-0"
+        className="text-pretty text-2xl leading-relaxed text-white md:px-0"
         variants={itemVariants}
       >
         The modern way to sell your SaaS and digital products
@@ -58,7 +58,7 @@ export const Hero = ({ className }: { className?: string }) => {
         <GetStartedButton
           size="lg"
           text="Get Started"
-          className="rounded-full bg-black font-medium text-white hover:bg-gray-900 dark:bg-white dark:text-black"
+          className="rounded-full bg-white font-medium text-black hover:bg-gray-100 dark:bg-white dark:text-black"
         />
       </motion.div>
     </motion.div>

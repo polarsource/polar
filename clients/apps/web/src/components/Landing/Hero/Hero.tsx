@@ -1,11 +1,10 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import Dither from '@/src/components/Dither/Dither'
 import { motion } from 'framer-motion'
 import { useTheme } from 'next-themes'
+import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
-
 export const Hero = ({ className }: { className?: string }) => {
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -36,16 +35,13 @@ export const Hero = ({ className }: { className?: string }) => {
       viewport={{ once: true }}
     >
       <div className="absolute inset-0 -z-10">
-        <Dither
-          waveAmplitude={0}
-          waveFrequency={0}
-          waveColor={
-            resolvedTheme === 'dark' ? [0.35, 0.35, 0.35] : [0.8, 0.8, 0.8]
-          }
-          enableMouseInteraction={false}
-          invert={resolvedTheme === 'light'}
+        <Image
+          src="/assets/landing/hero.jpg"
+          alt="Hero background"
+          className="object-cover"
+          width={1920}
+          height={1080}
         />
-        <div className="absolute inset-0 bg-white/70 dark:bg-black/30" />
       </div>
       <motion.h1
         className="text-balance text-5xl !leading-tight tracking-tight text-gray-950 md:px-0 md:text-7xl dark:text-white"

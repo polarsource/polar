@@ -323,7 +323,10 @@ class MeterService:
     ) -> float:
         statement = select(
             func.coalesce(meter.aggregation.get_sql_column(Event), 0)
-        ).where(Event.id.in_(events))
+        ).where(
+            # Quick fix
+            Event.id.in_(events[:3200])
+        )
         result = await session.scalar(statement)
         return result or 0.0
 

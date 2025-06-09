@@ -22,7 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -81,20 +81,32 @@ export const DashboardSidebar = ({
         </motion.div>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarContent>
-          <div className="dark:bg-polar-900 dark:border-polar-800 flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-3 text-sm">
-            <LogoIcon size={24} />
-            <span>Polar for iOS is now available on TestFlight!</span>
-            <Link
-              href="https://testflight.apple.com/join/CwVdc1Jt"
-              target="_blank"
-              className="dark:bg-polar-800 dark:hover:bg-polar-700 self-start rounded-sm bg-gray-100 p-1 text-xs transition-colors hover:bg-gray-200"
+        {!isCollapsed && (
+          <AnimatePresence>
+            <motion.div
+              key={isCollapsed ? 'nav-collapsed' : 'nav-expanded'}
+              className={`flex ${isCollapsed ? 'flex-col' : 'flex-row'} items-center gap-2`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 1 }}
             >
-              <span>Join Beta</span>
-              <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
-            </Link>
-          </div>
-        </SidebarContent>
+              <SidebarContent>
+                <div className="dark:bg-polar-900 dark:border-polar-800 flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-3 text-sm">
+                  <LogoIcon size={24} />
+                  <span>Polar for iOS is now available on TestFlight!</span>
+                  <Link
+                    href="https://testflight.apple.com/join/CwVdc1Jt"
+                    target="_blank"
+                    className="dark:bg-polar-800 dark:hover:bg-polar-700 self-start rounded-sm bg-gray-100 p-1 text-xs transition-colors hover:bg-gray-200"
+                  >
+                    <span>Join Beta</span>
+                    <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
+                  </Link>
+                </div>
+              </SidebarContent>
+            </motion.div>
+          </AnimatePresence>
+        )}
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>

@@ -22,7 +22,7 @@ export const Hero = ({ className }: { className?: string }) => {
   return (
     <motion.div
       className={twMerge(
-        'dark:border-polar-800 relative flex flex-col items-center justify-center gap-12 overflow-hidden rounded-3xl px-6 py-16 text-center md:py-24 dark:border',
+        'dark:border-polar-800 relative flex flex-col items-center justify-center gap-12 overflow-hidden rounded-3xl px-12 py-16 text-center md:py-24 dark:border',
         className,
       )}
       variants={containerVariants}
@@ -46,7 +46,7 @@ export const Hero = ({ className }: { className?: string }) => {
         Payment infrastructure for the 21st century
       </motion.h1>
       <motion.p
-        className="text-pretty text-2xl leading-relaxed text-white md:px-0"
+        className="text-pretty text-2xl !leading-tight text-white md:px-0 md:text-3xl"
         variants={itemVariants}
       >
         The modern way to sell your SaaS and digital products

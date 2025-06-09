@@ -19,6 +19,10 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DiscordIcon } from '../Benefit/utils'
 import GitHubIcon from '../Icons/GitHubIcon'
+import {
+  SyntaxHighlighterClient,
+  SyntaxHighlighterProvider,
+} from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
 
 type FeatureCardProps = {
   icon: React.ReactNode
@@ -27,6 +31,7 @@ type FeatureCardProps = {
   linkHref: string
   className?: string
   children?: React.ReactNode
+  wide?: boolean
 }
 
 const FeatureCard = ({
@@ -36,6 +41,7 @@ const FeatureCard = ({
   linkHref,
   className,
   children,
+  wide,
 }: FeatureCardProps) => {
   return (
     <motion.div
@@ -48,7 +54,12 @@ const FeatureCard = ({
       <Link
         href={linkHref}
         target="_blank"
-        className="dark:border-polar-700 dark:bg-polar-900 flex h-full flex-col justify-between gap-y-8 rounded-2xl border border-transparent bg-white p-8 transition-transform hover:translate-y-[-4px]"
+        className={twMerge(
+          'dark:border-polar-700 dark:bg-polar-900 flex h-full gap-x-6 gap-y-8 rounded-2xl border border-transparent bg-white p-8 transition-transform hover:translate-y-[-4px]',
+          wide
+            ? 'flex-col justify-between xl:flex-row xl:justify-start'
+            : 'flex-col justify-between',
+        )}
       >
         <div className="flex flex-col gap-y-6">
           <span>{icon}</span>
@@ -97,49 +108,33 @@ type FeaturesProps = {
 const Features = ({ className }: FeaturesProps) => {
   const features = [
     {
-      icon: <HiveOutlined fontSize="medium" />,
-      title: 'Digital Products & SaaS Billing',
-      description:
-        'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
-      linkHref: 'https://docs.polar.sh/features/products',
-      children: (
-        <ul className="flex flex-col gap-y-1">
-          <li className="flex flex-row items-center gap-x-2">
-            <Check className="text-emerald-500" fontSize="small" />
-            <p className="text-pretty leading-relaxed">
-              Digital & Subscription Products
-            </p>
-          </li>
-          <li className="flex flex-row items-center gap-x-2">
-            <Check className="text-emerald-500" fontSize="small" />
-            <p className="text-pretty leading-relaxed">
-              Multiple Pricing Models
-            </p>
-          </li>
-          <li className="flex flex-row items-center gap-x-2">
-            <Check className="text-emerald-500" fontSize="small" />
-            <p className="text-pretty leading-relaxed">
-              Discounts, Checkout Links & Benefits
-            </p>
-          </li>
-        </ul>
-      ),
-    },
-    {
       icon: <DonutLargeOutlined fontSize="medium" />,
       title: 'Usage Based Billing',
       description:
-        'Robust event ingestion API that enables precise usage-based billing.',
+        'Robust Event Ingestion API that enables precise usage-based billing with the use of Ingestion Strategies.',
       linkHref:
         'https://docs.polar.sh/features/usage-based-billing/introduction',
       children: (
-        <div className="flex flex-col gap-y-2">
-          <div className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-4 overflow-auto rounded-lg border border-gray-200 bg-gray-100 p-4">
-            <pre className="font-mono text-xs">
-              {`Ingestion()
+        <div className="flex flex-1 flex-col gap-y-2">
+          <div className="dark:bg-polar-800 dark:border-polar-700 flex items-center gap-x-4 overflow-auto rounded-lg border border-gray-200 bg-gray-100 p-4 font-mono text-xs">
+            <SyntaxHighlighterProvider>
+              <SyntaxHighlighterClient
+                lang="typescript"
+                code={`const llmIngestion = Ingestion()
   .strategy(new LLM(openai('gpt-4o')))
-  .ingest('openai-usage')`}
-            </pre>
+  .ingest('openai-usage')
+  
+const model = llmIngestion.client({
+  externalCustomerId: "john_doe_123"
+});
+
+const { text } = await streamText({
+  model,
+  prompt,
+  system: "You are a helpful assistant"
+});`}
+              />
+            </SyntaxHighlighterProvider>
           </div>
           <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-col gap-x-4 gap-y-4 rounded-lg border border-gray-200 bg-gray-100 p-4">
             <div className="flex flex-row items-center gap-x-2">
@@ -168,6 +163,35 @@ const Features = ({ className }: FeaturesProps) => {
             </div>
           </div>
         </div>
+      ),
+    },
+    {
+      icon: <HiveOutlined fontSize="medium" />,
+      title: 'Digital Products & SaaS Billing',
+      description:
+        'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
+      linkHref: 'https://docs.polar.sh/features/products',
+      children: (
+        <ul className="flex flex-col gap-y-1">
+          <li className="flex flex-row items-center gap-x-2">
+            <Check className="text-emerald-500" fontSize="small" />
+            <p className="text-pretty leading-relaxed">
+              Digital & Subscription Products
+            </p>
+          </li>
+          <li className="flex flex-row items-center gap-x-2">
+            <Check className="text-emerald-500" fontSize="small" />
+            <p className="text-pretty leading-relaxed">
+              Multiple Pricing Models
+            </p>
+          </li>
+          <li className="flex flex-row items-center gap-x-2">
+            <Check className="text-emerald-500" fontSize="small" />
+            <p className="text-pretty leading-relaxed">
+              Discounts, Checkout Links & Benefits
+            </p>
+          </li>
+        </ul>
       ),
     },
     {
@@ -289,6 +313,7 @@ const Features = ({ className }: FeaturesProps) => {
             title={feature.title}
             description={feature.description}
             linkHref={feature.linkHref}
+            wide={index === 0}
           >
             {feature.children}
           </FeatureCard>

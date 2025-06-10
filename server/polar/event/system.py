@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 
 from sqlalchemy.orm import Mapped
 from sqlalchemy.util.typing import TypedDict
-from typing_extensions import TypeIs
 
 from polar.models import Customer, Event, Organization
 from polar.models.benefit import BenefitType
@@ -143,10 +142,4 @@ def build_system_event(
         customer_id=customer.id,
         organization=organization,
         user_metadata=metadata,
-    )
-
-
-def is_meter_credit_event(event: Event) -> TypeIs[MeterCreditedEvent]:
-    return (
-        event.source == EventSource.system and event.name == SystemEvent.meter_credited
     )

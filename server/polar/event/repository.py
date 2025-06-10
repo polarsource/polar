@@ -18,7 +18,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
-from polar.models import Customer, Event, Meter, UserOrganization
+from polar.models import BillingEntry, Customer, Event, Meter, UserOrganization
 from polar.models.event import EventSource
 
 from .system import SystemEvent
@@ -134,6 +134,20 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         return self.get_base_statement().where(
             Event.organization_id == meter.organization_id,
             self.get_meter_clause(meter),
+        )
+
+    def get_by_pending_entries_statement(
+        self, subscription: UUID, price: UUID
+    ) -> Select[tuple[Event]]:
+        return (
+            self.get_base_statement()
+            .join(BillingEntry, Event.id == BillingEntry.event_id)
+            .where(
+                BillingEntry.subscription_id == subscription,
+                BillingEntry.order_item_id.is_(None),
+                BillingEntry.product_price_id == price,
+            )
+            .order_by(Event.ingested_at.asc())
         )
 
     def get_eager_options(self) -> Options:

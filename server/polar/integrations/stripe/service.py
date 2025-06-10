@@ -708,13 +708,21 @@ class StripeService:
             )
             item_map[invoice_item.id] = (price, invoice_item)
 
-        invoice = await stripe_lib.Invoice.finalize_invoice_async(
-            invoice_id,
-            idempotency_key=(
-                f"{idempotency_key}_finalize_invoice" if idempotency_key else None
-            ),
-            expand=["total_tax_amounts.tax_rate"],
+        # Manually retrieve the invoice, as we've seen cases where finalization below
+        # failed because the idempotency request returned us a draft invoice,
+        # but the invoice was actually already finalized.
+        invoice = await stripe_lib.Invoice.retrieve_async(
+            invoice_id, expand=["total_tax_amounts.tax_rate"]
         )
+
+        if invoice.status == "draft":
+            invoice = await stripe_lib.Invoice.finalize_invoice_async(
+                invoice_id,
+                idempotency_key=(
+                    f"{idempotency_key}_finalize_invoice" if idempotency_key else None
+                ),
+                expand=["total_tax_amounts.tax_rate"],
+            )
 
         if invoice.status == "open":
             await stripe_lib.Invoice.pay_async(

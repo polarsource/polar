@@ -129,7 +129,7 @@ class BillingEntryService:
 
         meter = price.meter
         units = await meter_service.get_quantity(
-            session, meter, select(Event.id).where(Event.id.in_(meter_events))
+            session, meter, select(Event.id).where(Event.id.in_(meter_events[:32760]))
         )
         credited_units = non_negative_running_sum(
             event.user_metadata["units"] for event in credit_events

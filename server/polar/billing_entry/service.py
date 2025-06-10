@@ -4,13 +4,13 @@ import uuid
 from collections.abc import Sequence
 from datetime import datetime
 
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from polar.event.system import is_meter_credit_event
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.math import non_negative_running_sum
 from polar.meter.service import meter as meter_service
-from polar.models import BillingEntry, OrderItem, Subscription
+from polar.models import BillingEntry, Event, OrderItem, Subscription
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.product.guard import MeteredPrice, is_metered_price
@@ -123,12 +123,14 @@ class BillingEntryService:
             if entry.event.source == EventSource.user
         ]
         credit_events = sorted(
-            [entry.event for entry in entries if is_meter_credit_event(entry.event)],
+            [entry.event for entry in entries if entry.event.is_meter_credit],
             key=lambda event: event.timestamp,
         )
 
         meter = price.meter
-        units = await meter_service.get_quantity(session, meter, meter_events)
+        units = await meter_service.get_quantity(
+            session, meter, select(Event.id).where(Event.id.in_(meter_events))
+        )
         credited_units = non_negative_running_sum(
             event.user_metadata["units"] for event in credit_events
         )

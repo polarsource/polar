@@ -2,13 +2,12 @@ import uuid
 from collections.abc import Sequence
 from decimal import Decimal
 
-from sqlalchemy import or_
+from sqlalchemy import Select, or_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.event.repository import EventRepository
-from polar.event.system import is_meter_credit_event
 from polar.kit.math import non_negative_running_sum
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -113,9 +112,18 @@ class CustomerMeterService:
             customer_meter = await repository.get_by_customer_and_meter(
                 customer.id, meter.id
             )
-            events = await self._get_current_window_events(session, customer, meter)
 
-            if not events:
+            event_repository = EventRepository.from_session(session)
+            events_statement = await self._get_current_window_events_statement(
+                session, customer, meter
+            )
+            last_event = await event_repository.get_one_or_none(
+                events_statement.order_by(None)
+                .order_by(Event.ingested_at.desc())
+                .limit(1)
+            )
+
+            if last_event is None:
                 return customer_meter, False
 
             if customer_meter is None:
@@ -123,16 +131,21 @@ class CustomerMeterService:
                     CustomerMeter(customer=customer, meter=meter)
                 )
 
-            if customer_meter.last_balanced_event_id == events[-1].id:
+            if customer_meter.last_balanced_event_id == last_event.id:
                 return customer_meter, False
 
-            usage_events = [
-                event.id for event in events if event.source == EventSource.user
-            ]
-            usage_units = await meter_service.get_quantity(session, meter, usage_events)
+            usage_events_statement = events_statement.with_only_columns(Event.id).where(
+                Event.source == EventSource.user
+            )
+            usage_units = await meter_service.get_quantity(
+                session, meter, usage_events_statement
+            )
             customer_meter.consumed_units = Decimal(usage_units)
 
-            credit_events = [event for event in events if is_meter_credit_event(event)]
+            credit_events_statement = events_statement.where(
+                Event.is_meter_credit.is_(True)
+            )
+            credit_events = await event_repository.get_all(credit_events_statement)
             credited_units = non_negative_running_sum(
                 event.user_metadata["units"] for event in credit_events
             )
@@ -140,24 +153,35 @@ class CustomerMeterService:
             customer_meter.balance = (
                 customer_meter.credited_units - customer_meter.consumed_units
             )
-            customer_meter.last_balanced_event = events[-1]
+            customer_meter.last_balanced_event = last_event
 
             return await repository.update(customer_meter), True
 
     async def get_rollover_units(
         self, session: AsyncSession, customer: Customer, meter: Meter
     ) -> int:
-        events = await self._get_current_window_events(session, customer, meter)
+        event_repository = EventRepository.from_session(session)
+        events_statement = await self._get_current_window_events_statement(
+            session, customer, meter
+        )
+        last_event = await event_repository.get_one_or_none(
+            events_statement.order_by(None).order_by(Event.ingested_at.desc()).limit(1)
+        )
 
-        if not events:
+        if last_event is None:
             return 0
 
-        usage_events = [
-            event.id for event in events if event.source == EventSource.user
-        ]
-        usage_units = await meter_service.get_quantity(session, meter, usage_events)
+        usage_events_statement = events_statement.with_only_columns(Event.id).where(
+            Event.source == EventSource.user
+        )
+        usage_units = await meter_service.get_quantity(
+            session, meter, usage_events_statement
+        )
 
-        credit_events = [event for event in events if is_meter_credit_event(event)]
+        credit_events_statement = events_statement.where(
+            Event.is_meter_credit.is_(True)
+        )
+        credit_events = await event_repository.get_all(credit_events_statement)
         non_rollover_units = non_negative_running_sum(
             event.user_metadata["units"]
             for event in credit_events
@@ -172,9 +196,9 @@ class CustomerMeterService:
 
         return max(0, min(int(balance), rollover_units))
 
-    async def _get_current_window_events(
+    async def _get_current_window_events_statement(
         self, session: AsyncSession, customer: Customer, meter: Meter
-    ) -> Sequence[Event]:
+    ) -> Select[tuple[Event]]:
         event_repository = EventRepository.from_session(session)
         meter_reset_event = await event_repository.get_latest_meter_reset(
             customer, meter.id
@@ -198,7 +222,7 @@ class CustomerMeterService:
                 Event.ingested_at >= meter_reset_event.ingested_at
             )
 
-        return await event_repository.get_all(statement)
+        return statement
 
 
 customer_meter = CustomerMeterService()

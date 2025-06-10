@@ -1651,7 +1651,7 @@ class CheckoutService:
             .join(Product, onclause=Product.id == Subscription.product_id)
             .where(
                 Product.organization_id == organization.id,
-                Subscription.active.is_(True),
+                Subscription.billable.is_(True),
             )
         )
         if checkout.customer is not None:

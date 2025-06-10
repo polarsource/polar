@@ -59,6 +59,7 @@ from polar.models.product_price import (
     ProductPriceFixed,
     ProductPriceFree,
 )
+from polar.models.subscription import SubscriptionStatus
 from polar.order.service import OrderService
 from polar.postgres import AsyncSession
 from polar.product.guard import is_fixed_price, is_metered_price
@@ -2255,8 +2256,16 @@ class TestUpdate:
 
         assert checkout.customer_email == customer.email
 
+    @pytest.mark.parametrize(
+        "subscription_status",
+        [
+            SubscriptionStatus.active,
+            SubscriptionStatus.past_due,
+        ],
+    )
     async def test_multiple_subscriptions_forbidden(
         self,
+        subscription_status: SubscriptionStatus,
         save_fixture: SaveFixture,
         session: AsyncSession,
         locker: Locker,
@@ -2270,8 +2279,11 @@ class TestUpdate:
         }
         await save_fixture(organization)
 
-        await create_active_subscription(
-            save_fixture, product=checkout_recurring_fixed.product, customer=customer
+        await create_subscription(
+            save_fixture,
+            status=subscription_status,
+            product=checkout_recurring_fixed.product,
+            customer=customer,
         )
 
         # With email update

@@ -56,13 +56,6 @@ export const ProductStep = () => {
 
   const form = useForm<ProductCreateForm>({
     defaultValues: {
-      name: 'SaaS Pro Subscription',
-      description: `My wonderful SaaS Pro subscription which includes...
-
-- Unlimited access to all features
-- 24/7 support
-- Cancel anytime
-`,
       recurring_interval: 'month',
       ...{
         prices: [

@@ -415,6 +415,7 @@ class DiscountService(ResourceServiceReader[Discount]):
 
             session.add(discount_redemption)
             await session.flush()
+            await session.refresh(discount, {"redemptions_count"})
 
     async def remove_checkout_redemption(
         self, session: AsyncSession, checkout: Checkout

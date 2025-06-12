@@ -212,6 +212,16 @@ class SubscriptionUpdateProduct(Schema):
     )
 
 
+class SubscriptionUpdateDiscount(Schema):
+    discount_id: UUID4 | None = Field(
+        description=(
+            "Update the subscription to apply a new discount. "
+            "If set to `null`, the discount will be removed."
+            " The change will be applied on the next billing cycle."
+        ),
+    )
+
+
 class SubscriptionCancelBase(Schema):
     customer_cancellation_reason: CustomerCancellationReason | None = Field(
         None,
@@ -274,6 +284,9 @@ class SubscriptionRevoke(SubscriptionCancelBase):
 
 
 SubscriptionUpdate = Annotated[
-    SubscriptionUpdateProduct | SubscriptionCancel | SubscriptionRevoke,
+    SubscriptionUpdateProduct
+    | SubscriptionUpdateDiscount
+    | SubscriptionCancel
+    | SubscriptionRevoke,
     SetSchemaReference("SubscriptionUpdate"),
 ]

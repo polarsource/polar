@@ -19,6 +19,8 @@ from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.config import settings
 from polar.customer_session.service import customer_session as customer_session_service
+from polar.discount.repository import DiscountRedemptionRepository
+from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import enqueue_email, get_email_sender
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
@@ -78,6 +80,7 @@ from .schemas import (
     SubscriptionCancel,
     SubscriptionRevoke,
     SubscriptionUpdate,
+    SubscriptionUpdateDiscount,
     SubscriptionUpdateProduct,
 )
 
@@ -498,6 +501,15 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 previous_ends_at=previous_ends_at,
             )
 
+        # Link potential discount redemption to the subscription
+        if subscription.discount is not None:
+            discount_redemption_repository = DiscountRedemptionRepository.from_session(
+                session
+            )
+            await discount_redemption_repository.set_subscription_by_checkout(
+                checkout.id, subscription.id
+            )
+
         # Notify checkout channel that a subscription has been created from it
         await publish_checkout_event(
             checkout.client_secret, CheckoutEvent.subscription_created
@@ -560,6 +572,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     subscription,
                     product_id=update.product_id,
                     proration_behavior=update.proration_behavior,
+                )
+
+            if isinstance(update, SubscriptionUpdateDiscount):
+                return await self.update_discount(
+                    session,
+                    locker,
+                    subscription,
+                    discount_id=update.discount_id,
                 )
 
             if isinstance(update, SubscriptionCancel):
@@ -695,6 +715,81 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         session.add(subscription)
         return subscription
+
+    async def update_discount(
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        subscription: Subscription,
+        *,
+        discount_id: uuid.UUID | None = None,
+    ) -> Subscription:
+        discount: Discount | None = None
+
+        if discount_id is not None:
+            discount = await discount_service.get_by_id_and_organization(
+                session,
+                discount_id,
+                subscription.organization,
+                products=[subscription.product],
+            )
+            if discount is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "discount_id"),
+                            "msg": (
+                                "Discount does not exist, "
+                                "is not applicable to this product "
+                                "or is not redeemable."
+                            ),
+                            "input": discount_id,
+                        }
+                    ]
+                )
+            if discount == subscription.discount:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "discount_id"),
+                            "msg": "This discount is already applied to the subscription.",
+                            "input": discount_id,
+                        }
+                    ]
+                )
+
+        async def _update_discount(
+            session: AsyncSession,
+            subscription: Subscription,
+            discount: Discount | None,
+        ) -> Subscription:
+            if subscription.stripe_subscription_id is not None:
+                old_coupon_id = (
+                    subscription.discount.stripe_coupon_id
+                    if subscription.discount is not None
+                    else None
+                )
+                new_coupon_id = (
+                    discount.stripe_coupon_id if discount is not None else None
+                )
+                await stripe_service.update_subscription_discount(
+                    subscription.stripe_subscription_id, old_coupon_id, new_coupon_id
+                )
+            repository = SubscriptionRepository.from_session(session)
+            return await repository.update(
+                subscription, update_dict={"discount": discount}, flush=True
+            )
+
+        if discount is None:
+            return await _update_discount(session, subscription, None)
+
+        async with discount_service.redeem_discount(
+            session, locker, discount
+        ) as discount_redemption:
+            discount_redemption.subscription = subscription
+            return await _update_discount(session, subscription, discount)
 
     async def uncancel(
         self,
@@ -1227,6 +1322,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             query = query.options(
                 joinedload(Subscription.customer),
                 joinedload(Subscription.product).options(
+                    joinedload(Product.organization),
                     selectinload(Product.product_medias),
                     selectinload(Product.attached_custom_fields),
                 ),

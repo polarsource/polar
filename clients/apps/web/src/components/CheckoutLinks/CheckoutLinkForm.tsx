@@ -26,6 +26,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { XIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo } from 'react'
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form'
 import ProductSelect from '../Products/ProductSelect'
@@ -304,7 +305,7 @@ export const CheckoutLinkForm = ({
                           type="button"
                           onClick={() => field.onChange(null)}
                         >
-                          <ClearOutlined className="h-4 w-4" />
+                          <XIcon className="h-4 w-4" />
                         </Button>
                       )}
                     </div>

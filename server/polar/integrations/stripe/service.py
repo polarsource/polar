@@ -298,6 +298,20 @@ class StripeService:
                 raise MissingPaymentMethod(id)
             raise
 
+    async def update_subscription_discount(
+        self, id: str, old_coupon: str | None, new_coupon: str | None
+    ) -> stripe_lib.Subscription:
+        if old_coupon is not None:
+            await stripe_lib.Subscription.delete_discount_async(id)
+
+        modify_discount_params: list[stripe_lib.Subscription.ModifyParamsDiscount] = []
+        if new_coupon is not None:
+            modify_discount_params.append({"coupon": new_coupon})
+
+        return await stripe_lib.Subscription.modify_async(
+            id, discounts=modify_discount_params
+        )
+
     async def uncancel_subscription(self, id: str) -> stripe_lib.Subscription:
         return await stripe_lib.Subscription.modify_async(
             id,

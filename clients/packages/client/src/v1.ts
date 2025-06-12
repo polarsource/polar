@@ -15447,7 +15447,15 @@ export interface components {
          * @enum {string}
          */
         SubscriptionStatus: "incomplete" | "incomplete_expired" | "trialing" | "active" | "past_due" | "canceled" | "unpaid";
-        SubscriptionUpdate: components["schemas"]["SubscriptionUpdateProduct"] | components["schemas"]["SubscriptionCancel"] | components["schemas"]["SubscriptionRevoke"];
+        SubscriptionUpdate: components["schemas"]["SubscriptionUpdateProduct"] | components["schemas"]["SubscriptionUpdateDiscount"] | components["schemas"]["SubscriptionCancel"] | components["schemas"]["SubscriptionRevoke"];
+        /** SubscriptionUpdateDiscount */
+        SubscriptionUpdateDiscount: {
+            /**
+             * Discount Id
+             * @description Update the subscription to apply a new discount. If set to `null`, the discount will be removed. The change will be applied on the next billing cycle.
+             */
+            discount_id: string | null;
+        };
         /** SubscriptionUpdateProduct */
         SubscriptionUpdateProduct: {
             /**

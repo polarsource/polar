@@ -29,6 +29,9 @@ class Scope(StrEnum):
     checkouts_read = "checkouts:read"
     checkouts_write = "checkouts:write"
 
+    transactions_read = "transactions:read"
+    transactions_write = "transactions:write"
+
     products_read = "products:read"
     products_write = "products:write"
 
@@ -114,6 +117,8 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.checkout_links_write: "Create or modify checkout links",
     Scope.checkouts_read: "Read checkout sessions",
     Scope.checkouts_write: "Create or modify checkout sessions",
+    Scope.transactions_read: "Read transactions",
+    Scope.transactions_write: "Create or modify transactions",
     Scope.products_read: "Read products",
     Scope.products_write: "Create or modify products",
     Scope.benefits_read: "Read benefits",
@@ -130,6 +135,8 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     ),
     Scope.customers_read: "Read customers",
     Scope.customers_write: "Create or modify customers",
+    Scope.customer_meters_read: "Read customer meters",
+    Scope.customer_sessions_write: "Create or modify customer sessions",
     Scope.orders_read: "Read orders made on your organizations",
     Scope.orders_write: "Modify orders made on your organizations",
     Scope.refunds_read: "Read refunds made on your organizations",
@@ -137,9 +144,10 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.payments_read: "Read payments made on your organizations",
     Scope.metrics_read: "Read metrics",
     Scope.webhooks_read: "Read webhooks",
+    Scope.webhooks_write: "Create or modify webhooks",
+    Scope.external_organizations_read: "Read external organizations",
     Scope.license_keys_read: "Read license keys",
     Scope.license_keys_write: "Modify license keys",
-    Scope.webhooks_write: "Create or modify webhooks",
     Scope.customer_portal_read: "Read your orders, subscriptions and benefits",
     Scope.customer_portal_write: "Create or modify your orders, subscriptions and benefits",
     Scope.notifications_read: "Read notifications",

@@ -3,7 +3,6 @@ from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
 from polar.account.service import account as account_service
-from polar.auth.dependencies import WebUser
 from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -15,6 +14,7 @@ from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
 from polar.routing import APIRouter
 
+from . import auth as payouts_auth
 from . import sorting
 from .schemas import Payout as PayoutSchema
 from .schemas import PayoutCreate, PayoutEstimate, PayoutGenerateInvoice, PayoutInvoice
@@ -25,7 +25,7 @@ router = APIRouter(prefix="/payouts", tags=["payouts", APITag.private])
 
 @router.get("/", response_model=ListResource[PayoutSchema])
 async def list(
-    auth_subject: WebUser,
+    auth_subject: payouts_auth.PayoutsRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     account_id: MultipleQueryFilter[UUID4] | None = Query(
@@ -53,7 +53,7 @@ async def list(
 
 @router.get("/estimate", response_model=PayoutEstimate)
 async def get_estimate(
-    auth_subject: WebUser,
+    auth_subject: payouts_auth.PayoutsRead,
     account_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> PayoutEstimate:
@@ -66,7 +66,7 @@ async def get_estimate(
 
 @router.post("/", response_model=PayoutSchema, status_code=201)
 async def create(
-    auth_subject: WebUser,
+    auth_subject: payouts_auth.PayoutsWrite,
     payout_create: PayoutCreate,
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
@@ -82,7 +82,7 @@ async def create(
 @router.get("/{id}/csv")
 async def get_csv(
     id: UUID4,
-    auth_subject: WebUser,
+    auth_subject: payouts_auth.PayoutsRead,
     session: AsyncSession = Depends(get_db_session),
     sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
 ) -> StreamingResponse:
@@ -105,7 +105,7 @@ async def get_csv(
 async def generate_invoice(
     id: UUID4,
     payout_generate_invoice: PayoutGenerateInvoice,
-    auth_subject: WebUser,
+    auth_subject: payouts_auth.PayoutsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Trigger generation of an order's invoice."""
@@ -122,7 +122,7 @@ async def generate_invoice(
 @router.get("/{id}/invoice")
 async def invoice(
     id: UUID4,
-    auth_subject: WebUser,
+    auth_subject: payouts_auth.PayoutsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> PayoutInvoice:
     """Get an order's invoice data."""

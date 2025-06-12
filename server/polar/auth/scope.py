@@ -32,6 +32,9 @@ class Scope(StrEnum):
     transactions_read = "transactions:read"
     transactions_write = "transactions:write"
 
+    payouts_read = "payouts:read"
+    payouts_write = "payouts:write"
+
     products_read = "products:read"
     products_write = "products:write"
 
@@ -119,6 +122,8 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.checkouts_write: "Create or modify checkout sessions",
     Scope.transactions_read: "Read transactions",
     Scope.transactions_write: "Create or modify transactions",
+    Scope.payouts_read: "Read payouts",
+    Scope.payouts_write: "Create or modify payouts",
     Scope.products_read: "Read products",
     Scope.products_write: "Create or modify products",
     Scope.benefits_read: "Read benefits",

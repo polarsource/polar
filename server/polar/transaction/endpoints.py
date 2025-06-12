@@ -4,7 +4,6 @@ from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.account.service import account as account_service
-from polar.auth.dependencies import WebUser
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
@@ -12,6 +11,9 @@ from polar.models.transaction import TransactionType
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
+from polar.transaction import (
+    auth as transactions_auth,
+)
 
 from .schemas import Transaction, TransactionDetails, TransactionsSummary
 from .service.transaction import TransactionSortProperty
@@ -30,7 +32,7 @@ SearchSorting = Annotated[
 async def search_transactions(
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
-    auth_subject: WebUser,
+    auth_subject: transactions_auth.TransactionsRead,
     type: TransactionType | None = Query(None),
     account_id: UUID4 | None = Query(None),
     payment_customer_id: UUID4 | None = Query(None),
@@ -62,7 +64,7 @@ async def search_transactions(
 @router.get("/lookup", response_model=TransactionDetails)
 async def lookup_transaction(
     transaction_id: UUID4,
-    auth_subject: WebUser,
+    auth_subject: transactions_auth.TransactionsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> TransactionDetails:
     return TransactionDetails.model_validate(
@@ -72,7 +74,7 @@ async def lookup_transaction(
 
 @router.get("/summary", response_model=TransactionsSummary)
 async def get_summary(
-    auth_subject: WebUser,
+    auth_subject: transactions_auth.TransactionsRead,
     account_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> TransactionsSummary:

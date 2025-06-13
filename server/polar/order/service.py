@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 import stripe as stripe_lib
 import structlog
@@ -34,7 +34,12 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
-from polar.kit.tax import TaxabilityReason, TaxRate, from_stripe_tax_rate
+from polar.kit.tax import (
+    TaxabilityReason,
+    TaxRate,
+    from_stripe_tax_rate,
+    from_stripe_tax_rate_details,
+)
 from polar.logging import Logger
 from polar.models import (
     Checkout,
@@ -44,6 +49,7 @@ from polar.models import (
     Order,
     OrderItem,
     Organization,
+    Payment,
     Product,
     ProductPrice,
     Subscription,
@@ -64,7 +70,8 @@ from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
-from polar.product.guard import is_custom_price, is_static_price
+from polar.payment.repository import PaymentRepository
+from polar.product.guard import is_custom_price
 from polar.product.repository import ProductPriceRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
@@ -397,10 +404,7 @@ class OrderService:
         return OrderInvoice(url=url)
 
     async def create_from_checkout(
-        self,
-        session: AsyncSession,
-        checkout: Checkout,
-        payment_intent: stripe_lib.PaymentIntent | None,
+        self, session: AsyncSession, checkout: Checkout, payment: Payment | None = None
     ) -> Order:
         product = checkout.product
         if product.is_recurring:
@@ -410,84 +414,34 @@ class OrderService:
         if customer is None:
             raise MissingCheckoutCustomer(checkout)
 
-        stripe_customer_id = customer.stripe_customer_id
-        if stripe_customer_id is None:
-            raise MissingStripeCustomerID(checkout, customer)
-
-        idempotency_key = f"order_{checkout.id}{'' if payment_intent is None else f'_{payment_intent.id}'}"
-
-        metadata = {
-            "type": ProductType.product,
-            "product_id": str(checkout.product_id),
-            "checkout_id": str(checkout.id),
-        }
-        if payment_intent is not None:
-            metadata["payment_intent_id"] = payment_intent.id
-
-        price_id_map: dict[str, str] = {}
         prices = product.prices
-        for price in prices:
-            # For pay-what-you-want prices, we need to generate a dedicated price in Stripe
-            if is_custom_price(price):
-                ad_hoc_price = await stripe_service.create_ad_hoc_custom_price(
-                    product,
-                    price,
-                    checkout.amount,
-                    checkout.currency,
-                    idempotency_key=f"{idempotency_key}_{price.id}",
-                )
-                price_id_map[price.stripe_price_id] = ad_hoc_price.id
-            elif is_static_price(price):
-                price_id_map[price.stripe_price_id] = price.stripe_price_id
-
-        (
-            stripe_invoice,
-            price_line_item_map,
-        ) = await stripe_service.create_out_of_band_invoice(
-            customer=stripe_customer_id,
-            currency=checkout.currency,
-            prices=list(price_id_map.values()),
-            coupon=(checkout.discount.stripe_coupon_id if checkout.discount else None),
-            # Disable automatic tax for free purchases, since we don't collect customer address in that case
-            automatic_tax=checkout.is_payment_required and product.is_tax_applicable,
-            metadata=metadata,
-            idempotency_key=idempotency_key,
-        )
 
         items: list[OrderItem] = []
         for price in prices:
-            if is_static_price(price):
-                stripe_price_id = price_id_map[price.stripe_price_id]
-                line_item = price_line_item_map[stripe_price_id]
-                items.append(
-                    OrderItem.from_price(
-                        price,
-                        sum(t.amount for t in line_item.tax_amounts),
-                        line_item.amount,
-                    )
-                )
+            if is_custom_price(price):
+                item = OrderItem.from_price(price, 0, checkout.amount)
+            else:
+                item = OrderItem.from_price(price, 0)
+            items.append(item)
 
-        discount_amount = 0
-        if stripe_invoice.total_discount_amounts:
-            for stripe_discount_amount in stripe_invoice.total_discount_amounts:
-                discount_amount += stripe_discount_amount.amount
+        discount_amount = checkout.discount_amount
 
         # Retrieve tax data
-        tax_amount = stripe_invoice.tax or 0
-        taxability_reason: TaxabilityReason | None = None
-        tax_id = customer.tax_id
+        tax_amount = checkout.tax_amount or 0
+        taxability_reason = None
         tax_rate: TaxRate | None = None
-        for total_tax_amount in stripe_invoice.total_tax_amounts:
-            taxability_reason = TaxabilityReason.from_stripe(
-                total_tax_amount.taxability_reason, tax_amount
+        tax_id = customer.tax_id
+        if checkout.tax_processor_id is not None:
+            calculation = await stripe_service.get_tax_calculation(
+                checkout.tax_processor_id
             )
-            stripe_tax_rate = cast(stripe_lib.TaxRate, total_tax_amount.tax_rate)
-            try:
-                tax_rate = from_stripe_tax_rate(stripe_tax_rate)
-            except ValueError:
-                continue
-            else:
-                break
+            assert tax_amount == calculation.tax_amount_exclusive
+            assert len(calculation.tax_breakdown) == 1
+            breakdown = calculation.tax_breakdown[0]
+            taxability_reason = TaxabilityReason.from_stripe(
+                breakdown.taxability_reason, tax_amount
+            )
+            tax_rate = from_stripe_tax_rate_details(breakdown.tax_rate_details)
 
         organization = checkout.organization
         invoice_number = await organization_service.get_next_invoice_number(
@@ -497,14 +451,14 @@ class OrderService:
         repository = OrderRepository.from_session(session)
         order = await repository.create(
             Order(
-                subtotal_amount=stripe_invoice.subtotal,
+                status=OrderStatus.paid,
+                subtotal_amount=checkout.amount,
                 discount_amount=discount_amount,
                 tax_amount=tax_amount,
-                currency=stripe_invoice.currency,
+                currency=checkout.currency,
                 billing_reason=OrderBillingReason.purchase,
                 billing_name=customer.billing_name,
                 billing_address=customer.billing_address,
-                stripe_invoice_id=stripe_invoice.id,
                 taxability_reason=taxability_reason,
                 tax_id=tax_id,
                 tax_rate=tax_rate,
@@ -521,14 +475,22 @@ class OrderService:
             flush=True,
         )
 
-        # Sanity check to make sure we didn't mess up the amount.
-        # Don't raise an error so the order can be successfully completed nonetheless.
-        if payment_intent and order.total_amount != payment_intent.amount:
-            log.error(
-                "Mismatch between payment intent and invoice amount",
-                checkout=checkout.id,
-                payment_intent=payment_intent.id,
-                invoice=stripe_invoice.id,
+        # Link payment and balance transaction to the order
+        if payment is not None:
+            payment_repository = PaymentRepository.from_session(session)
+            assert payment.amount == order.total_amount
+            await payment_repository.update(payment, update_dict={"order": order})
+            enqueue_job(
+                "order.balance", order_id=order.id, charge_id=payment.processor_id
+            )
+
+        # Record tax transaction
+        if checkout.tax_processor_id is not None:
+            transaction = await stripe_service.create_tax_transaction(
+                checkout.tax_processor_id, str(order.id)
+            )
+            await repository.update(
+                order, update_dict={"tax_transaction_processor_id": transaction.id}
             )
 
         # Enqueue benefits grants

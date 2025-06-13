@@ -146,15 +146,6 @@ async def payment_intent_payment_failed(event_id: uuid.UUID) -> None:
             )
             metadata = payment_intent.metadata or {}
 
-            # Payment for Polar Checkout Session
-            if (
-                metadata.get("type") == ProductType.product
-                and (checkout_id := metadata.get("checkout_id")) is not None
-            ):
-                await checkout_service.handle_stripe_failure(
-                    session, uuid.UUID(checkout_id), payment_intent
-                )
-
             try:
                 await payment_service.create_from_stripe_payment_intent(
                     session, payment_intent
@@ -206,8 +197,8 @@ async def setup_intent_setup_failed(event_id: uuid.UUID) -> None:
                 metadata.get("type") == ProductType.product
                 and (checkout_id := metadata.get("checkout_id")) is not None
             ):
-                await checkout_service.handle_stripe_failure(
-                    session, uuid.UUID(checkout_id), setup_intent
+                await checkout_service.handle_payment_failed(
+                    session, uuid.UUID(checkout_id)
                 )
 
 

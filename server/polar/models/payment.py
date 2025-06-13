@@ -2,8 +2,9 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal, Self
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, SmallInteger, String, Uuid
+from sqlalchemy import ColumnElement, ForeignKey, SmallInteger, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import Integer
 
@@ -77,7 +78,7 @@ class Payment(RecordModel):
     )
 
     @declared_attr
-    def checkout(cls) -> Mapped["Checkout"]:
+    def checkout(cls) -> Mapped["Checkout | None"]:
         return relationship("Checkout", lazy="raise")
 
     order_id: Mapped[UUID | None] = mapped_column(
@@ -88,5 +89,23 @@ class Payment(RecordModel):
     )
 
     @declared_attr
-    def order(cls) -> Mapped["Order"]:
+    def order(cls) -> Mapped["Order | None"]:
         return relationship("Order", lazy="raise")
+
+    @hybrid_property
+    def is_succeeded(self) -> bool:
+        return self.status == PaymentStatus.succeeded
+
+    @is_succeeded.inplace.expression
+    @classmethod
+    def _is_succeeded_expression(cls) -> ColumnElement[bool]:
+        return cls.status == PaymentStatus.succeeded
+
+    @hybrid_property
+    def is_failed(self) -> bool:
+        return self.status == PaymentStatus.failed
+
+    @is_failed.inplace.expression
+    @classmethod
+    def _is_failed_expression(cls) -> ColumnElement[bool]:
+        return cls.status == PaymentStatus.failed

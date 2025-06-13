@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import AsyncGenerator, AsyncIterator, Sequence
-from typing import TYPE_CHECKING, Literal, Unpack, cast
+from typing import TYPE_CHECKING, Literal, Unpack, cast, overload
 
 import stripe as stripe_lib
 
@@ -781,6 +781,49 @@ class StripeService:
         **params: Unpack[stripe_lib.tax.Calculation.CreateParams],
     ) -> stripe_lib.tax.Calculation:
         return await stripe_lib.tax.Calculation.create_async(**params)
+
+    async def get_tax_calculation(self, id: str) -> stripe_lib.tax.Calculation:
+        return await stripe_lib.tax.Calculation.retrieve_async(id)
+
+    async def create_tax_transaction(
+        self, calculation_id: str, reference: str
+    ) -> stripe_lib.tax.Transaction:
+        return await stripe_lib.tax.Transaction.create_from_calculation_async(
+            calculation=calculation_id,
+            reference=reference,
+            idempotency_key=f"polar:tax_transaction:{reference}",
+        )
+
+    @overload
+    async def revert_tax_transaction(
+        self, original_transaction_id: str, mode: Literal["full"], reference: str
+    ) -> stripe_lib.tax.Transaction: ...
+
+    @overload
+    async def revert_tax_transaction(
+        self,
+        original_transaction_id: str,
+        mode: Literal["partial"],
+        reference: str,
+        amount: int,
+    ) -> stripe_lib.tax.Transaction: ...
+
+    async def revert_tax_transaction(
+        self,
+        original_transaction_id: str,
+        mode: Literal["full", "partial"],
+        reference: str,
+        amount: int | None = None,
+    ) -> stripe_lib.tax.Transaction:
+        params: stripe_lib.tax.Transaction.CreateReversalParams = {
+            "mode": mode,
+            "original_transaction": original_transaction_id,
+            "reference": reference,
+            "idempotency_key": f"polar:tax_transaction_revert:{reference}",
+        }
+        if mode == "partial" and amount is not None:
+            params["flat_amount"] = amount
+        return await stripe_lib.tax.Transaction.create_reversal_async(**params)
 
     async def create_coupon(
         self, **params: Unpack[stripe_lib.Coupon.CreateParams]

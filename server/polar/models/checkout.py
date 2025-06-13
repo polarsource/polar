@@ -84,8 +84,12 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
+
+    tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    tax_processor_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
 
     product_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=False

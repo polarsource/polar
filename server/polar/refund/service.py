@@ -541,6 +541,29 @@ class RefundService(ResourceServiceReader[Refund]):
                 refunded_amount=refund.amount,
                 refunded_tax_amount=refund.tax_amount,
             )
+
+            # Revert the tax transaction in the tax processor ledger
+            if order.tax_transaction_processor_id:
+                if refund.total_amount == order.total_amount:
+                    tax_transaction_processor = (
+                        await stripe_service.revert_tax_transaction(
+                            order.tax_transaction_processor_id,
+                            mode="full",
+                            reference=str(refund.id),
+                        )
+                    )
+                else:
+                    tax_transaction_processor = (
+                        await stripe_service.revert_tax_transaction(
+                            order.tax_transaction_processor_id,
+                            mode="partial",
+                            reference=str(refund.id),
+                            amount=-refund.total_amount,
+                        )
+                    )
+                refund.tax_transaction_processor_id = tax_transaction_processor.id
+                session.add(refund)
+
         elif pledge and pledge.payment_id and payment.charge_id:
             await pledge_service.refund_by_payment_id(
                 session=session,

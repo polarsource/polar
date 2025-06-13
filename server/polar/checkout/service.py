@@ -62,6 +62,7 @@ from polar.models.product_price import ProductPriceAmountType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
+from polar.payment.repository import PaymentRepository
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_currency_price,
@@ -134,6 +135,13 @@ class NotConfirmedCheckout(CheckoutError):
         self.checkout = checkout
         self.status = checkout.status
         message = f"Checkout {checkout.id} is not confirmed: {checkout.status}"
+        super().__init__(message)
+
+
+class PaymentDoesNotExist(CheckoutError):
+    def __init__(self, payment_id: uuid.UUID) -> None:
+        self.payment_id = payment_id
+        message = f"Payment {payment_id} does not exist."
         super().__init__(message)
 
 
@@ -919,11 +927,8 @@ class CheckoutService:
 
         return checkout
 
-    async def handle_stripe_success(
-        self,
-        session: AsyncSession,
-        checkout_id: uuid.UUID,
-        intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent,
+    async def handle_payment_success(
+        self, session: AsyncSession, checkout_id: uuid.UUID, payment_id: uuid.UUID
     ) -> Checkout:
         repository = CheckoutRepository.from_session(session)
         checkout = await repository.get_by_id(
@@ -936,41 +941,33 @@ class CheckoutService:
         if checkout.status != CheckoutStatus.confirmed:
             raise NotConfirmedCheckout(checkout)
 
+        payment_repository = PaymentRepository.from_session(session)
+        payment = await payment_repository.get_by_id(payment_id)
+        if payment is None:
+            raise PaymentDoesNotExist(payment_id)
+
         product_price = checkout.product_price
         if product_price.is_archived:
             raise ArchivedPriceCheckout(checkout)
 
-        if intent.status != "succeeded":
-            raise IntentNotSucceeded(checkout, intent.id)
-
-        if intent.payment_method is None:
-            raise NoPaymentMethodOnIntent(checkout, intent.id)
-
+        # Legacy code path for recurring checkouts
         product = checkout.product
         if product.is_recurring:
-            s = await subscription_service.create_or_update_from_checkout(
-                session, checkout, intent
-            )
-        else:
-            assert isinstance(intent, stripe_lib.PaymentIntent)
-            await order_service.create_from_checkout(session, checkout, intent)
+            return checkout
 
-        checkout.status = CheckoutStatus.succeeded
-        checkout.payment_processor_metadata = {
-            **checkout.payment_processor_metadata,
-            "intent_status": intent.status,
-        }
-        session.add(checkout)
+        await order_service.create_from_checkout(session, checkout, payment)
+
+        repository = CheckoutRepository.from_session(session)
+        checkout = await repository.update(
+            checkout, update_dict={"status": CheckoutStatus.succeeded}
+        )
 
         await self._after_checkout_updated(session, checkout)
 
         return checkout
 
-    async def handle_stripe_failure(
-        self,
-        session: AsyncSession,
-        checkout_id: uuid.UUID,
-        intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent,
+    async def handle_payment_failed(
+        self, session: AsyncSession, checkout_id: uuid.UUID
     ) -> Checkout:
         repository = CheckoutRepository.from_session(session)
         checkout = await repository.get_by_id(
@@ -988,6 +985,11 @@ class CheckoutService:
         }:
             return checkout
 
+        # Legacy code path for recurring checkouts
+        product = checkout.product
+        if product.is_recurring:
+            return checkout
+
         # Put back checkout in open state so the customer can try another payment method
         checkout.status = CheckoutStatus.open
         payment_processor_metadata = checkout.payment_processor_metadata
@@ -1001,6 +1003,54 @@ class CheckoutService:
         # the Checkout.
         # However, if it ultimately fails, we need to free up the Discount Redemption.
         await discount_service.remove_checkout_redemption(session, checkout)
+
+        await self._after_checkout_updated(session, checkout)
+
+        return checkout
+
+    async def handle_stripe_success(
+        self,
+        session: AsyncSession,
+        checkout_id: uuid.UUID,
+        intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent,
+    ) -> Checkout:
+        repository = CheckoutRepository.from_session(session)
+        checkout = await repository.get_by_id(
+            checkout_id, options=repository.get_eager_options()
+        )
+
+        if checkout is None:
+            raise CheckoutDoesNotExist(checkout_id)
+
+        if checkout.status != CheckoutStatus.confirmed:
+            raise NotConfirmedCheckout(checkout)
+
+        # Legacy code path for non-recurring checkouts
+        if not checkout.product.is_recurring:
+            return checkout
+
+        product_price = checkout.product_price
+        if product_price.is_archived:
+            raise ArchivedPriceCheckout(checkout)
+
+        if intent.status != "succeeded":
+            raise IntentNotSucceeded(checkout, intent.id)
+
+        if intent.payment_method is None:
+            raise NoPaymentMethodOnIntent(checkout, intent.id)
+
+        product = checkout.product
+        assert product.is_recurring
+        await subscription_service.create_or_update_from_checkout(
+            session, checkout, intent
+        )
+
+        checkout.status = CheckoutStatus.succeeded
+        checkout.payment_processor_metadata = {
+            **checkout.payment_processor_metadata,
+            "intent_status": intent.status,
+        }
+        session.add(checkout)
 
         await self._after_checkout_updated(session, checkout)
 
@@ -1029,7 +1079,7 @@ class CheckoutService:
                 session, checkout, None
             )
         else:
-            await order_service.create_from_checkout(session, checkout, None)
+            await order_service.create_from_checkout(session, checkout)
 
         checkout.status = CheckoutStatus.succeeded
         session.add(checkout)
@@ -1568,6 +1618,7 @@ class CheckoutService:
     ) -> Checkout:
         if not (checkout.is_payment_required and checkout.product.is_tax_applicable):
             checkout.tax_amount = 0
+            checkout.tax_processor_id = None
             return checkout
 
         if (
@@ -1575,7 +1626,8 @@ class CheckoutService:
             and checkout.product.stripe_product_id is not None
         ):
             try:
-                tax_amount = await calculate_tax(
+                tax_processor_id, tax_amount = await calculate_tax(
+                    checkout.id,
                     checkout.currency,
                     checkout.net_amount,
                     checkout.product.stripe_product_id,
@@ -1587,8 +1639,10 @@ class CheckoutService:
                     ),
                 )
                 checkout.tax_amount = tax_amount
+                checkout.tax_processor_id = tax_processor_id
             except TaxCalculationError:
                 checkout.tax_amount = None
+                checkout.tax_processor_id = None
                 raise
             finally:
                 session.add(checkout)

@@ -436,7 +436,13 @@ class OrderService:
                 checkout.tax_processor_id
             )
             assert tax_amount == calculation.tax_amount_exclusive
-            assert len(calculation.tax_breakdown) == 1
+            assert len(calculation.tax_breakdown) > 0
+            if len(calculation.tax_breakdown) > 1:
+                log.warning(
+                    "Multiple tax breakdowns found for checkout",
+                    checkout_id=checkout.id,
+                    calculation_id=calculation.id,
+                )
             breakdown = calculation.tax_breakdown[0]
             taxability_reason = TaxabilityReason.from_stripe(
                 breakdown.taxability_reason, tax_amount

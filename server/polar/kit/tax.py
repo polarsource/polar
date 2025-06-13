@@ -429,10 +429,10 @@ class TaxRate(TypedDict):
     state: str | None
 
 
-def from_stripe_tax_rate(tax_rate: stripe_lib.TaxRate) -> TaxRate:
+def from_stripe_tax_rate(tax_rate: stripe_lib.TaxRate) -> TaxRate | None:
     rate_type = tax_rate.rate_type
     if rate_type is None:
-        raise ValueError()
+        return None
 
     return {
         "rate_type": "fixed" if rate_type == "flat_amount" else "percentage",
@@ -451,10 +451,10 @@ def from_stripe_tax_rate(tax_rate: stripe_lib.TaxRate) -> TaxRate:
 
 def from_stripe_tax_rate_details(
     tax_rate_details: stripe_lib.tax.Calculation.TaxBreakdown.TaxRateDetails,
-) -> TaxRate:
+) -> TaxRate | None:
     rate_type = tax_rate_details.rate_type
     if rate_type is None:
-        raise ValueError()
+        return None
 
     basis_points = None
     if tax_rate_details.percentage_decimal is not None:

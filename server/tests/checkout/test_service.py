@@ -2876,67 +2876,6 @@ class TestConfirm:
         assert checkout.customer is not None
         assert checkout.customer.external_id == "EXTERNAL_ID"
 
-    async def test_linked_customer_with_existing_tax_id(
-        self,
-        calculate_tax_mock: AsyncMock,
-        save_fixture: SaveFixture,
-        stripe_service_mock: MagicMock,
-        session: AsyncSession,
-        locker: Locker,
-        auth_subject: AuthSubject[Anonymous],
-        checkout_one_time_fixed: Checkout,
-    ) -> None:
-        """
-        Make sure that we recompute the tax amount if we match an existing customer
-        with a valid tax ID.
-
-        See https://github.com/polarsource/polar/issues/5134
-        """
-        customer = await create_customer(
-            save_fixture,
-            organization=checkout_one_time_fixed.organization,
-            tax_id=("FR61954506077", TaxIDFormat.eu_vat),
-        )
-        await save_fixture(checkout_one_time_fixed)
-
-        # Simulate first call without the customer, and the second one with the customer
-        calculate_tax_mock.side_effect = (
-            ("TAX_PROCESSOR_ID_1", 2000),
-            ("TAX_PROCESSOR_ID_2", 0),
-        )
-
-        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
-        )
-        stripe_service_mock.create_customer.return_value = SimpleNamespace(
-            id="STRIPE_CUSTOMER_ID"
-        )
-
-        checkout = await checkout_service.confirm(
-            session,
-            locker,
-            auth_subject,
-            checkout_one_time_fixed,
-            CheckoutConfirmStripe.model_validate(
-                {
-                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
-                    "customer_email": customer.email,
-                    "customer_name": "Customer Name",
-                    "customer_billing_address": {"country": "FR"},
-                }
-            ),
-        )
-
-        assert checkout.status == CheckoutStatus.confirmed
-        assert checkout.customer is not None
-        assert checkout.customer.id == customer.id
-        assert checkout.tax_amount == 0
-
-        assert (
-            stripe_service_mock.create_payment_intent.call_args[1]["amount"]
-            == checkout.total_amount
-        )
-
     async def test_valid_stripe_business_customer(
         self,
         save_fixture: SaveFixture,

@@ -44,6 +44,7 @@ from polar.models import (
     Order,
     OrderItem,
     Organization,
+    Payment,
     Payout,
     Product,
     ProductBenefit,
@@ -87,6 +88,7 @@ from polar.models.discount import (
 from polar.models.event import EventSource
 from polar.models.notification_recipient import NotificationRecipient
 from polar.models.order import OrderBillingReason, OrderStatus
+from polar.models.payment import PaymentStatus
 from polar.models.payout import PayoutStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import (
@@ -788,6 +790,7 @@ async def create_order(
     billing_name: str | None = None,
     billing_address: Address | None = None,
     invoice_number: str | None = None,
+    checkout: Checkout | None = None,
 ) -> Order:
     order = Order(
         created_at=created_at or utc_now(),
@@ -814,6 +817,7 @@ async def create_order(
         customer=customer,
         product=product,
         subscription=subscription,
+        checkout=checkout,
         custom_field_data=custom_field_data or {},
         user_metadata=user_metadata or {},
     )
@@ -1682,3 +1686,48 @@ async def account(
     save_fixture: SaveFixture, organization: Organization, user: User
 ) -> Account:
     return await create_account(save_fixture, organization, user)
+
+
+async def create_payment(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    *,
+    processor: PaymentProcessor = PaymentProcessor.stripe,
+    status: PaymentStatus = PaymentStatus.succeeded,
+    amount: int = 1000,
+    currency: str = "usd",
+    method: str = "card",
+    method_metadata: dict[str, Any] = {},
+    customer_email: str | None = "customer@example.com",
+    processor_id: str | None = None,
+    decline_reason: str | None = None,
+    decline_message: str | None = None,
+    risk_level: str | None = None,
+    risk_score: int | None = None,
+    checkout: Checkout | None = None,
+    order: Order | None = None,
+) -> Payment:
+    payment = Payment(
+        processor=processor,
+        status=status,
+        amount=amount,
+        currency=currency,
+        method=method,
+        method_metadata=method_metadata,
+        customer_email=customer_email,
+        processor_id=processor_id or rstr("PAYMENT_PROCESSOR_ID"),
+        decline_reason=decline_reason,
+        decline_message=decline_message,
+        risk_level=risk_level,
+        risk_score=risk_score,
+        organization=organization,
+        checkout=checkout,
+        order=order,
+    )
+    await save_fixture(payment)
+    return payment
+
+
+@pytest_asyncio.fixture
+async def payment(save_fixture: SaveFixture, organization: Organization) -> Payment:
+    return await create_payment(save_fixture, organization)

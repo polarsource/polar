@@ -1,5 +1,6 @@
 import hashlib
 import json
+import uuid
 from collections.abc import Sequence
 from enum import StrEnum
 from typing import Annotated, Any, Literal, LiteralString, Protocol, TypedDict
@@ -338,18 +339,17 @@ class InvalidTaxLocation(TaxCalculationError):
 
 
 async def calculate_tax(
+    checkout_id: uuid.UUID,
     currency: str,
     amount: int,
     stripe_product_id: str,
     address: Address,
     tax_ids: list[TaxID],
-) -> int:
+) -> tuple[str, int]:
     # Compute an idempotency key based on the input parameters to work as a sort of cache
     address_str = address.model_dump_json()
     tax_ids_str = ",".join(f"{tax_id[0]}:{tax_id[1]}" for tax_id in tax_ids)
-    idempotency_key_str = (
-        f"{currency}:{amount}:{stripe_product_id}:{address_str}:{tax_ids_str}"
-    )
+    idempotency_key_str = f"{checkout_id}:{currency}:{amount}:{stripe_product_id}:{address_str}:{tax_ids_str}"
     idempotency_key = hashlib.sha256(idempotency_key_str.encode()).hexdigest()
 
     try:
@@ -383,7 +383,8 @@ async def calculate_tax(
             raise
         raise InvalidTaxLocation(e) from e
     else:
-        return calculation.tax_amount_exclusive
+        assert calculation.id is not None
+        return calculation.id, calculation.tax_amount_exclusive
 
 
 class TaxabilityReason(StrEnum):
@@ -419,7 +420,6 @@ class TaxabilityReason(StrEnum):
 
 
 class TaxRate(TypedDict):
-    stripe_id: str
     rate_type: Literal["percentage"] | Literal["fixed"]
     basis_points: int | None
     amount: int | None
@@ -435,7 +435,6 @@ def from_stripe_tax_rate(tax_rate: stripe_lib.TaxRate) -> TaxRate:
         raise ValueError()
 
     return {
-        "stripe_id": tax_rate.id,
         "rate_type": "fixed" if rate_type == "flat_amount" else "percentage",
         "basis_points": int(tax_rate.percentage * 100)
         if tax_rate.percentage is not None
@@ -447,4 +446,40 @@ def from_stripe_tax_rate(tax_rate: stripe_lib.TaxRate) -> TaxRate:
         "display_name": tax_rate.display_name,
         "country": tax_rate.country,
         "state": tax_rate.state,
+    }
+
+
+def from_stripe_tax_rate_details(
+    tax_rate_details: stripe_lib.tax.Calculation.TaxBreakdown.TaxRateDetails,
+) -> TaxRate:
+    rate_type = tax_rate_details.rate_type
+    if rate_type is None:
+        raise ValueError()
+
+    basis_points = None
+    if tax_rate_details.percentage_decimal is not None:
+        basis_points = int(float(tax_rate_details.percentage_decimal) * 100)
+
+    amount = None
+    amount_currency = None
+    if tax_rate_details.flat_amount is not None:
+        amount = tax_rate_details.flat_amount.amount
+        amount_currency = tax_rate_details.flat_amount.currency
+
+    tax_type = tax_rate_details.tax_type
+    display_name = "Tax"
+    if tax_type is not None:
+        if tax_type in {"gst", "hst", "igst", "jct", "pst", "qct", "rst", "vat"}:
+            display_name = tax_type.upper()
+        else:
+            display_name = tax_type.replace("_", " ").title()
+
+    return {
+        "rate_type": "fixed" if rate_type == "flat_amount" else "percentage",
+        "basis_points": basis_points,
+        "amount": amount,
+        "amount_currency": amount_currency,
+        "display_name": display_name,
+        "country": tax_rate_details.country,
+        "state": tax_rate_details.state,
     }

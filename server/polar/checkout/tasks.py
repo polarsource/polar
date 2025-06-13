@@ -16,6 +16,18 @@ async def handle_free_success(checkout_id: uuid.UUID) -> None:
         await checkout_service.handle_free_success(session, checkout_id)
 
 
+@actor(actor_name="checkout.payment_success", priority=TaskPriority.HIGH)
+async def payment_success(checkout_id: uuid.UUID, payment_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        await checkout_service.handle_payment_success(session, checkout_id, payment_id)
+
+
+@actor(actor_name="checkout.payment_failed", priority=TaskPriority.HIGH)
+async def payment_failed(checkout_id: uuid.UUID, payment_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        await checkout_service.handle_payment_failed(session, checkout_id)
+
+
 @actor(
     actor_name="checkout.expire_open_checkouts",
     cron_trigger=CronTrigger.from_crontab("0,15,30,45 * * * *"),

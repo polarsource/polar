@@ -206,6 +206,10 @@ class Refund(MetadataMixin, RecordModel):
         String, nullable=True
     )
 
+    tax_transaction_processor_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
+
     @hybrid_property
     def succeeded(self) -> bool:
         return self.status == RefundStatus.succeeded
@@ -217,3 +221,12 @@ class Refund(MetadataMixin, RecordModel):
             cls.status.in_(RefundStatus.succeeded),
             Boolean,
         )
+
+    @hybrid_property
+    def total_amount(self) -> int:
+        return self.amount + self.tax_amount
+
+    @total_amount.inplace.expression
+    @classmethod
+    def _total_amount_expression(cls) -> ColumnElement[int]:
+        return cls.amount + cls.tax_amount

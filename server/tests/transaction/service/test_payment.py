@@ -99,8 +99,10 @@ class TestCreatePayment:
             customer=customer.stripe_customer_id,
             payment_intent=pledge.payment_id,
             balance_transaction=stripe_balance_transaction.id,
-            risk_level=risk_level,
-            risk_score=risk_score,
+            outcome={
+                "risk_level": risk_level,
+                "risk_score": risk_score,
+            },
         )
 
         stripe_service_mock.get_balance_transaction.return_value = (

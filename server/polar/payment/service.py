@@ -11,10 +11,12 @@ from polar.exceptions import PolarError
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
+from polar.kit.utils import generate_uuid
 from polar.models import Checkout, Customer, Order, Payment, Product
 from polar.models.payment import PaymentStatus
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
+from polar.worker import enqueue_job
 
 from .repository import PaymentRepository
 from .sorting import PaymentSortProperty
@@ -106,7 +108,7 @@ class PaymentService:
 
         payment = await repository.get_by_processor_id(charge.id)
         if payment is None:
-            payment = Payment(processor_id=charge.id)
+            payment = Payment(id=generate_uuid(), processor_id=charge.id)
 
         payment.processor = PaymentProcessor.stripe
         payment.status = PaymentStatus.from_stripe_charge(charge.status)
@@ -164,6 +166,18 @@ class PaymentService:
 
         if checkout is not None:
             payment.organization = checkout.organization
+            if payment.is_succeeded:
+                enqueue_job(
+                    "checkout.payment_success",
+                    checkout_id=checkout.id,
+                    payment_id=payment.id,
+                )
+            elif payment.is_failed:
+                enqueue_job(
+                    "checkout.payment_failed",
+                    checkout_id=checkout.id,
+                    payment_id=payment.id,
+                )
         elif order is not None:
             payment.organization = order.organization
 
@@ -225,6 +239,12 @@ class PaymentService:
 
         if checkout is not None:
             payment.organization = checkout.organization
+            if payment.is_failed:
+                enqueue_job(
+                    "checkout.payment_failed",
+                    checkout_id=checkout.id,
+                    payment_id=payment.id,
+                )
         elif order is not None:
             payment.organization = order.organization
 

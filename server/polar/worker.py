@@ -38,7 +38,7 @@ class SQLAlchemyMiddleware(dramatiq.Middleware):
     )
 
     def __init__(self) -> None:
-        self.logger = dramatiq.get_logger(__name__, type(self))
+        self.logger: Logger = structlog.get_logger()
 
     @classmethod
     def get_async_session(cls) -> contextlib.AbstractAsyncContextManager[AsyncSession]:
@@ -95,7 +95,7 @@ class RedisMiddleware(dramatiq.Middleware):
     )
 
     def __init__(self) -> None:
-        self.logger = dramatiq.get_logger(__name__, type(self))
+        self.logger: Logger = structlog.get_logger()
         self._stack = contextlib.AsyncExitStack()
 
     @classmethod
@@ -331,6 +331,11 @@ class LogfireMiddleware(dramatiq.Middleware):
         logfire_span_stack = self._logfire_span_stack.get()
         logfire_span_stack.close()
         self._logfire_span_stack.set(contextlib.ExitStack())
+
+    def after_skip_message(
+        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
+    ) -> None:
+        return self.after_process_message(broker, message)
 
 
 def _json_obj_serializer(obj: Any) -> Any:

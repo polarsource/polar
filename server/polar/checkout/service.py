@@ -829,12 +829,6 @@ class CheckoutService:
                 session, auth_subject, checkout
             )
 
-            # We might have matched with an existing customer with a valid tax ID
-            # but they didn't provide it in the current checkout
-            # Thus, we need to recompute the tax with that customer's tax ID
-            if customer.tax_id != checkout.customer_tax_id:
-                checkout = await self._update_checkout_tax(session, checkout)
-
             checkout.customer = customer
             stripe_customer_id = customer.stripe_customer_id
             assert stripe_customer_id is not None

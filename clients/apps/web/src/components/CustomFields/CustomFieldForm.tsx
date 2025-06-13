@@ -24,7 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import React from 'react'
+import React, { useCallback } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import CustomFieldTypeLabel from './CustomFieldTypeLabel'
 
@@ -125,7 +125,7 @@ const CustomFieldComparableProperties = () => {
 }
 
 const CustomFieldSelectProperties = () => {
-  const { control } = useFormContext<
+  const { control, watch } = useFormContext<
     (schemas['CustomFieldCreate'] | schemas['CustomFieldUpdate']) & {
       type: 'select'
     }
@@ -137,11 +137,34 @@ const CustomFieldSelectProperties = () => {
       minLength: 1,
     },
   })
+  const options = watch('properties.options') || []
+  const hasOtherOption = options.some((option) => option.value === 'other')
+
+  const handleOtherOptionToggle = useCallback(
+    (checked: boolean) => {
+      if (checked && !hasOtherOption) {
+        append({ value: 'other', label: 'Other' })
+      } else if (!checked && hasOtherOption) {
+        const otherIndex = options.findIndex(
+          (option) => option.value === 'other',
+        )
+        if (otherIndex !== -1) {
+          remove(otherIndex)
+        }
+      }
+    },
+    [append, remove, options, hasOtherOption],
+  )
+
   return (
+    <>
     <FormItem>
       <FormLabel>Select options</FormLabel>
       <div className="flex flex-col gap-2">
-        {fields.map((field, index) => (
+        {fields.map((field, index) => {
+        const isOtherOption = options[index]?.value === 'other'
+
+        return (
           <div key={field.id} className="flex flex-row items-center gap-2">
             <FormField
               control={control}
@@ -153,6 +176,7 @@ const CustomFieldSelectProperties = () => {
                       {...field}
                       value={field.value || ''}
                       placeholder="Value"
+                      disabled={isOtherOption}
                     />
                   </FormControl>
                   <FormMessage />
@@ -187,7 +211,8 @@ const CustomFieldSelectProperties = () => {
               <ClearOutlined fontSize="inherit" />
             </Button>
           </div>
-        ))}
+        )
+      })}
         <Button
           size="sm"
           variant="secondary"
@@ -201,6 +226,17 @@ const CustomFieldSelectProperties = () => {
         </Button>
       </div>
     </FormItem>
+    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+      <FormControl>
+        <Switch
+          checked={hasOtherOption}
+          onCheckedChange={handleOtherOptionToggle}
+        />
+      </FormControl>
+      <FormLabel>Add Other Option</FormLabel>
+      <FormMessage />
+    </FormItem>
+  </>
   )
 }
 

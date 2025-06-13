@@ -297,7 +297,7 @@ class PayoutService:
     async def trigger_stripe_payout(
         self, session: AsyncSession, payout: Payout
     ) -> Payout:
-        if payout.processor_id is not None:
+        if payout.processor_id is None:
             raise PayoutAlreadyTriggered(payout)
 
         account = payout.account

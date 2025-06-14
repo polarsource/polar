@@ -383,7 +383,8 @@ broker.add_middleware(SQLAlchemyMiddleware())
 broker.add_middleware(RedisMiddleware())
 broker.add_middleware(EnqueuedJobsMiddleware())
 broker.add_middleware(scheduler_middleware)
-broker.add_middleware(LogfireMiddleware())
+# Temporary disable LogfireMiddleware because I suspect it's the one causing memory leaks
+# broker.add_middleware(LogfireMiddleware())
 dramatiq.set_broker(broker)
 dramatiq.set_encoder(JSONEncoder())
 

@@ -119,7 +119,7 @@ exclude_lines = [
 target-version = "py312"
 
 [tool.ruff.lint]
-extend-select = ["I", "UP", "T20"]
+extend-select = ["I", "UP", "T20", "B039"]
 ignore = [
   "F841",  # remove unused variables
   "UP040", # new type alias syntax not supported by mypy yet

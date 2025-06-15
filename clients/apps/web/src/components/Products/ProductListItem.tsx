@@ -98,10 +98,10 @@ export const ProductListItem = ({
             <div
               className={twMerge(
                 'prose dark:prose-invert dark:text-polar-500 hidden flex-shrink text-sm leading-normal text-gray-500 md:flex',
-                'max-w-96 truncate',
+                'w-full max-w-sm',
               )}
             >
-              <Markdown options={markdownOptionsJustText}>
+              <Markdown className="truncate" options={markdownOptionsJustText}>
                 {product.description}
               </Markdown>
             </div>

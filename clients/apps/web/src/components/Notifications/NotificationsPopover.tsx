@@ -123,7 +123,7 @@ export const List = ({
     <div className="h-full max-h-[800px] space-y-5 overflow-x-scroll">
       {notifications.length === 0 && (
         <div className="dark:text-polar-400 flex w-full flex-row items-center justify-center p-4 text-center text-sm text-black/60">
-          You don&apos;t have any notifications... yet!
+          You don&apos;t have any notifications
         </div>
       )}
       {notifications.map((n) => {

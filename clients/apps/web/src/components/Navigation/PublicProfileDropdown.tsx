@@ -4,7 +4,6 @@ import { useListOrganizations } from '@/hooks/queries'
 import { CONFIG } from '@/utils/config'
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import {
-  AttachMoneyOutlined,
   Face,
   LogoutOutlined,
   SpaceDashboardOutlined,
@@ -87,13 +86,7 @@ const PublicProfileDropdown = ({
                 </LinkItem>
               )}
               <LinkItem
-                href={`${CONFIG.FRONTEND_BASE_URL}/finance`}
-                icon={<AttachMoneyOutlined fontSize="inherit" />}
-              >
-                <span className="mx-2 text-sm">Finance</span>
-              </LinkItem>
-              <LinkItem
-                href={`${CONFIG.FRONTEND_BASE_URL}/settings`}
+                href={`${CONFIG.FRONTEND_BASE_URL}/dashboard/account`}
                 icon={<Face fontSize="inherit" />}
               >
                 <span className="mx-2 text-sm">Account</span>

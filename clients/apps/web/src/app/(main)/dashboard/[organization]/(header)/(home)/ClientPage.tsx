@@ -99,7 +99,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
   const cardClassName = 'flex w-full flex-col'
 
   return (
-    <DashboardBody className="gap-y-8 pb-16 md:gap-y-16">
+    <DashboardBody className="gap-y-8 pb-16 md:gap-y-12">
       <UsageBasedBillingBanner />
       <div className="dark:bg-polar-900 dark:border-polar-800 flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-3 text-sm md:hidden">
         <LogoIcon size={24} />

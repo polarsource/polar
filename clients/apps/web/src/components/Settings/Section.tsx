@@ -1,5 +1,3 @@
-import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
-
 export const Section = ({
   id,
   children,
@@ -8,12 +6,12 @@ export const Section = ({
   children: React.ReactNode
 }) => {
   return (
-    <ShadowBoxOnMd
-      className="relative flex flex-col gap-12 md:flex-row md:gap-24 md:p-12"
+    <div
+      className="relative flex flex-col gap-12 xl:flex-row xl:gap-24"
       id={id}
     >
       {children}
-    </ShadowBoxOnMd>
+    </div>
   )
 }
 
@@ -25,12 +23,10 @@ export const SectionDescription = ({
   description?: string
 }) => {
   return (
-    <div className="flex w-full flex-col gap-y-2 md:w-1/3">
-      <h2 className="font-medium">{title}</h2>
+    <div className="flex w-full flex-col gap-y-2 xl:w-1/3">
+      <h2 className="text-lg font-medium">{title}</h2>
       {description && (
-        <p className="dark:text-polar-500 text-sm text-gray-500">
-          {description}
-        </p>
+        <p className="dark:text-polar-500 text-gray-500">{description}</p>
       )}
     </div>
   )

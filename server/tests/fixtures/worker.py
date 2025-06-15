@@ -2,13 +2,19 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 import dramatiq
+import pytest
 import pytest_asyncio
 from dramatiq.middleware.current_message import CurrentMessage
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
 from polar.redis import Redis
-from polar.worker import RedisMiddleware, SQLAlchemyMiddleware
+from polar.worker import RedisMiddleware, SQLAlchemyMiddleware, set_job_queue_manager
+
+
+@pytest.fixture(autouse=True)
+def set_job_queue_manager_context() -> None:
+    set_job_queue_manager()
 
 
 @pytest_asyncio.fixture(autouse=True)

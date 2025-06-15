@@ -136,49 +136,93 @@ JSONSerializable: TypeAlias = (
     | uuid.UUID
     | None
 )
-JobToEnqueue: TypeAlias = tuple[
-    str, tuple[JSONSerializable, ...], dict[str, JSONSerializable]
-]
 
 
-class EnqueuedJobsMiddleware(dramatiq.Middleware):
-    """
-    Middleware to enqueue jobs in the current thread,
-    and flushing them to Redis when the message is processed.
-    """
+class JobQueueManager:
+    __slots__ = ("_enqueued_jobs", "_ingested_events")
 
-    _enqueued_jobs = contextvars.ContextVar[list[JobToEnqueue]]("polar.enqueued_jobs")
-    _ingested_events = contextvars.ContextVar[list[uuid.UUID]]("polar.ingested_events")
+    def __init__(self) -> None:
+        self._enqueued_jobs: list[
+            tuple[str, tuple[JSONSerializable, ...], dict[str, JSONSerializable]]
+        ] = []
+        self._ingested_events: list[uuid.UUID] = []
 
-    @classmethod
-    def get_enqueued_jobs_context(
-        cls,
-    ) -> contextvars.ContextVar[list[JobToEnqueue]]:
-        return cls._enqueued_jobs
-
-    @classmethod
-    def get_ingested_events_context(
-        cls,
-    ) -> contextvars.ContextVar[list[uuid.UUID]]:
-        return cls._ingested_events
-
-    def after_worker_thread_boot(
-        self, broker: dramatiq.Broker, thread: threading.Thread
+    def enqueue_job(
+        self, actor: str, *args: JSONSerializable, **kwargs: JSONSerializable
     ) -> None:
-        self._enqueued_jobs.set([])
-        self._ingested_events.set([])
+        self._enqueued_jobs.append((actor, args, kwargs))
+        log.debug("polar.worker.job_enqueued", actor=actor)
 
+    def enqueue_events(self, *event_ids: uuid.UUID) -> None:
+        self._ingested_events.extend(event_ids)
+
+    async def flush(self, broker: dramatiq.Broker, redis: Redis) -> None:
+        if len(self._ingested_events) > 0:
+            self.enqueue_job("event.ingested", self._ingested_events)
+
+        for actor_name, args, kwargs in self._enqueued_jobs:
+            fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
+            redis_message_id = str(uuid.uuid4())
+            message = fn.message_with_options(
+                args=args, kwargs=kwargs, redis_message_id=redis_message_id
+            )
+            await redis.hset(
+                f"dramatiq:{message.queue_name}.msgs",
+                redis_message_id,
+                message.encode(),
+            )
+            await redis.rpush(f"dramatiq:{message.queue_name}", redis_message_id)
+            log.debug(
+                "polar.worker.job_flushed",
+                actor=fn.actor_name,
+                message=message.encode(),
+            )
+
+        self.reset()
+
+    def reset(self) -> None:
+        self._enqueued_jobs = []
+        self._ingested_events = []
+
+
+_job_queue_manager: contextvars.ContextVar[JobQueueManager] = contextvars.ContextVar(
+    "polar.job_queue_manager"
+)
+
+
+def set_job_queue_manager() -> None:
+    _job_queue_manager.set(JobQueueManager())
+
+
+def get_job_queue_manager() -> JobQueueManager:
+    return _job_queue_manager.get()
+
+
+def enqueue_job(
+    actor: str, *args: JSONSerializable, **kwargs: JSONSerializable
+) -> None:
+    """Enqueue a job by actor name."""
+    job_queue_manager = get_job_queue_manager()
+    job_queue_manager.enqueue_job(actor, *args, **kwargs)
+
+
+def enqueue_events(*event_ids: uuid.UUID) -> None:
+    """Enqueue events to be ingested."""
+    job_queue_manager = get_job_queue_manager()
+    job_queue_manager.enqueue_events(*event_ids)
+
+
+async def flush_enqueued_jobs(broker: dramatiq.Broker, redis: Redis) -> None:
+    """Flush enqueued jobs to Redis."""
+    job_queue_manager = get_job_queue_manager()
+    await job_queue_manager.flush(broker, redis)
+
+
+class JobQueueMiddleware(dramatiq.Middleware):
     def before_process_message(
         self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
     ) -> None:
-        enqueued_jobs = self._enqueued_jobs.get([])
-        assert enqueued_jobs == [], (
-            "Enqueued jobs should be empty before processing a message"
-        )
-        ingested_events = self._ingested_events.get([])
-        assert ingested_events == [], (
-            "Ingested events should be empty before processing a message"
-        )
+        set_job_queue_manager()
 
     def after_process_message(
         self,
@@ -188,70 +232,19 @@ class EnqueuedJobsMiddleware(dramatiq.Middleware):
         result: Any | None = None,
         exception: Exception | None = None,
     ) -> None:
-        current_thread = threading.current_thread()
+        job_queue_manager = get_job_queue_manager()
         if not settings.is_testing() and exception is None:
             redis = RedisMiddleware.get()
             event_loop_thread = get_event_loop_thread()
             assert event_loop_thread is not None
-            event_loop_thread.run_coroutine(flush_ingested_events())
-            event_loop_thread.run_coroutine(flush_enqueued_jobs(broker, redis))
-        self._enqueued_jobs.set([])
-        self._ingested_events.set([])
+            event_loop_thread.run_coroutine(job_queue_manager.flush(broker, redis))
+        job_queue_manager.reset()
 
     def after_skip_message(
         self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
     ) -> None:
-        self._enqueued_jobs.set([])
-        self._ingested_events.set([])
-
-
-def enqueue_job(
-    actor: str, *args: JSONSerializable, **kwargs: JSONSerializable
-) -> None:
-    """Enqueue a job by actor name."""
-    enqueued_jobs_context = EnqueuedJobsMiddleware.get_enqueued_jobs_context()
-    enqueued_jobs_list = enqueued_jobs_context.get([])
-    enqueued_jobs_list.append((actor, args, kwargs))
-    enqueued_jobs_context.set(enqueued_jobs_list)
-    log.debug("polar.worker.job_enqueued", actor=actor)
-
-
-async def flush_enqueued_jobs(broker: dramatiq.Broker, redis: Redis) -> None:
-    """Flush enqueued jobs to Redis."""
-    enqueued_jobs_context = EnqueuedJobsMiddleware.get_enqueued_jobs_context()
-
-    for actor_name, args, kwargs in enqueued_jobs_context.get([]):
-        fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
-        redis_message_id = str(uuid.uuid4())
-        message = fn.message_with_options(
-            args=args, kwargs=kwargs, redis_message_id=redis_message_id
-        )
-        await redis.hset(
-            f"dramatiq:{message.queue_name}.msgs", redis_message_id, message.encode()
-        )
-        await redis.rpush(f"dramatiq:{message.queue_name}", redis_message_id)
-        log.debug(
-            "polar.worker.job_flushed", actor=fn.actor_name, message=message.encode()
-        )
-
-    enqueued_jobs_context.set([])
-
-
-def enqueue_events(*event_ids: uuid.UUID) -> None:
-    """Enqueue events to be ingested."""
-    ingested_events_context = EnqueuedJobsMiddleware.get_ingested_events_context()
-    ingested_events_list = ingested_events_context.get([])
-    ingested_events_list.extend(event_ids)
-    ingested_events_context.set(ingested_events_list)
-
-
-async def flush_ingested_events() -> None:
-    """Trigger the `event.ingested` job for all ingested events."""
-    ingested_events_context = EnqueuedJobsMiddleware.get_ingested_events_context()
-    ingested_events = ingested_events_context.get([])
-    if len(ingested_events) > 0:
-        enqueue_job("event.ingested", ingested_events)
-    ingested_events_context.set([])
+        job_queue_manager = get_job_queue_manager()
+        job_queue_manager.reset()
 
 
 class MaxRetriesMiddleware(dramatiq.Middleware):
@@ -381,7 +374,7 @@ broker.add_middleware(middleware.CurrentMessage())
 broker.add_middleware(MaxRetriesMiddleware())
 broker.add_middleware(SQLAlchemyMiddleware())
 broker.add_middleware(RedisMiddleware())
-broker.add_middleware(EnqueuedJobsMiddleware())
+broker.add_middleware(JobQueueMiddleware())
 broker.add_middleware(scheduler_middleware)
 broker.add_middleware(LogfireMiddleware())
 dramatiq.set_broker(broker)

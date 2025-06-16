@@ -24,6 +24,8 @@ from polar.logging import Logger
 from polar.postgres import AsyncEngine, AsyncSession, create_async_engine
 from polar.redis import Redis, create_redis
 
+from .health import HealthMiddleware
+
 log: Logger = structlog.get_logger()
 
 _sqlalchemy_engine: AsyncEngine | None = None
@@ -351,7 +353,6 @@ broker = RedisBroker(
     middleware=[
         m()
         for m in (
-            middleware.Prometheus,
             middleware.AgeLimit,
             middleware.TimeLimit,
             middleware.ShutdownNotifications,
@@ -367,6 +368,7 @@ broker.add_middleware(
         min_backoff=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
     )
 )
+broker.add_middleware(HealthMiddleware())
 broker.add_middleware(middleware.AsyncIO())
 broker.add_middleware(middleware.CurrentMessage())
 broker.add_middleware(MaxRetriesMiddleware())

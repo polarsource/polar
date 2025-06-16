@@ -33,7 +33,7 @@ import { XIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
-import ProrationBehaviorRadioGroup from '../Settings/ProrationBehavior'
+import { ProrationBehavior } from '../Settings/ProrationBehavior'
 import { toast } from '../Toast/use-toast'
 
 const UpdateProduct = ({
@@ -164,8 +164,8 @@ const UpdateProduct = ({
                   <FormLabel>Proration behavior</FormLabel>
                 </div>
                 <FormControl>
-                  <ProrationBehaviorRadioGroup
-                    value={field.value || ''}
+                  <ProrationBehavior
+                    value={field.value || 'prorate'}
                     onValueChange={field.onChange}
                   />
                 </FormControl>

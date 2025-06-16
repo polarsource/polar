@@ -1,5 +1,3 @@
-import contextlib
-from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Literal, TypeAlias, cast
 
 import redis.asyncio as _async_redis
@@ -24,9 +22,8 @@ REDIS_RETRY = Retry(default_backoff(), retries=50)
 ProcessName: TypeAlias = Literal["app", "worker", "script"]
 
 
-@contextlib.asynccontextmanager
-async def create_redis(process_name: ProcessName) -> AsyncGenerator[Redis, None]:
-    redis = cast(
+def create_redis(process_name: ProcessName) -> Redis:
+    return cast(
         Redis,
         _async_redis.Redis.from_url(
             settings.redis_url,
@@ -36,8 +33,6 @@ async def create_redis(process_name: ProcessName) -> AsyncGenerator[Redis, None]
             client_name=f"{settings.ENV.value}.{process_name}",
         ),
     )
-    yield redis
-    await redis.close(True)
 
 
 async def get_redis(request: Request) -> Redis:

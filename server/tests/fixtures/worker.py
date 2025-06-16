@@ -1,10 +1,10 @@
-from collections.abc import AsyncIterator
+from collections.abc import Iterator
 from typing import Any
 
 import dramatiq
 import pytest
-import pytest_asyncio
 from dramatiq.middleware.current_message import CurrentMessage
+from pytest_mock import MockerFixture
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
@@ -17,16 +17,16 @@ def set_job_queue_manager_context() -> None:
     set_job_queue_manager()
 
 
-@pytest_asyncio.fixture(autouse=True)
-async def set_middleware_context(session: AsyncSession, redis: Redis) -> None:
-    SQLAlchemyMiddleware._get_async_sessionmaker_context.set(
-        lambda: session,  # type: ignore[arg-type]
-    )
-    RedisMiddleware._redis_context.set(redis)
+@pytest.fixture(autouse=True)
+def patch_middlewares(
+    mocker: MockerFixture, session: AsyncSession, redis: Redis
+) -> None:
+    mocker.patch.object(SQLAlchemyMiddleware, "get_async_session", new=lambda: session)
+    mocker.patch.object(RedisMiddleware, "get", new=lambda: redis)
 
 
-@pytest_asyncio.fixture(autouse=True)
-async def current_message() -> AsyncIterator[dramatiq.Message[Any]]:
+@pytest.fixture(autouse=True)
+def current_message() -> Iterator[dramatiq.Message[Any]]:
     message = dramatiq.Message[Any](
         queue_name="default",
         actor_name="actor",

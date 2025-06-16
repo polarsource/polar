@@ -356,8 +356,6 @@ broker = RedisBroker(
             middleware.AgeLimit,
             middleware.TimeLimit,
             middleware.ShutdownNotifications,
-            middleware.Callbacks,
-            middleware.Pipelines,
         )
     ],
 )

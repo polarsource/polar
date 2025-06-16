@@ -1016,12 +1016,12 @@ class CheckoutService:
         if checkout is None:
             raise CheckoutDoesNotExist(checkout_id)
 
-        if checkout.status != CheckoutStatus.confirmed:
-            raise NotConfirmedCheckout(checkout)
-
         # Legacy code path for non-recurring checkouts
         if not checkout.product.is_recurring:
             return checkout
+
+        if checkout.status != CheckoutStatus.confirmed:
+            raise NotConfirmedCheckout(checkout)
 
         product_price = checkout.product_price
         if product_price.is_archived:

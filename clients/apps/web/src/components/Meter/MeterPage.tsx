@@ -66,25 +66,23 @@ export const MeterPage = ({
         </TabsList>
         <TabsContent value="overview" className="flex flex-col gap-y-12 pb-12">
           {chartLoading ? (
-            <div className="flex h-[350px] flex-col items-center justify-center">
+            <div className="flex h-[300px] flex-col items-center justify-center">
               <Spinner />
             </div>
           ) : chartQuantities ? (
-            <div className="flex h-[350px] flex-col">
-              <MetricChart
-                data={
-                  chartQuantities.quantities as unknown as ParsedMetricPeriod[]
-                }
-                interval="day"
-                metric={{
-                  slug: 'quantity',
-                  display_name: 'Quantity',
-                  type: 'scalar',
-                }}
-              />
-            </div>
+            <MetricChart
+              data={
+                chartQuantities.quantities as unknown as ParsedMetricPeriod[]
+              }
+              interval="day"
+              metric={{
+                slug: 'quantity',
+                display_name: 'Quantity',
+                type: 'scalar',
+              }}
+            />
           ) : (
-            <div className="flex h-[350px] flex-col items-center justify-center">
+            <div className="flex h-[300px] flex-col items-center justify-center">
               <span className="text-lg">No data available</span>
             </div>
           )}

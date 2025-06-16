@@ -186,8 +186,10 @@ _job_queue_manager: contextvars.ContextVar[JobQueueManager] = contextvars.Contex
 )
 
 
-def set_job_queue_manager() -> None:
-    _job_queue_manager.set(JobQueueManager())
+def set_job_queue_manager() -> JobQueueManager:
+    job_queue_manager = JobQueueManager()
+    _job_queue_manager.set(job_queue_manager)
+    return job_queue_manager
 
 
 def get_job_queue_manager() -> JobQueueManager:
@@ -206,41 +208,6 @@ def enqueue_events(*event_ids: uuid.UUID) -> None:
     """Enqueue events to be ingested."""
     job_queue_manager = get_job_queue_manager()
     job_queue_manager.enqueue_events(*event_ids)
-
-
-async def flush_enqueued_jobs(broker: dramatiq.Broker, redis: Redis) -> None:
-    """Flush enqueued jobs to Redis."""
-    job_queue_manager = get_job_queue_manager()
-    await job_queue_manager.flush(broker, redis)
-
-
-class JobQueueMiddleware(dramatiq.Middleware):
-    def before_process_message(
-        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
-    ) -> None:
-        set_job_queue_manager()
-
-    def after_process_message(
-        self,
-        broker: dramatiq.Broker,
-        message: dramatiq.Message[Any],
-        *,
-        result: Any | None = None,
-        exception: Exception | None = None,
-    ) -> None:
-        job_queue_manager = get_job_queue_manager()
-        if not settings.is_testing() and exception is None:
-            redis = RedisMiddleware.get()
-            event_loop_thread = get_event_loop_thread()
-            assert event_loop_thread is not None
-            event_loop_thread.run_coroutine(job_queue_manager.flush(broker, redis))
-        job_queue_manager.reset()
-
-    def after_skip_message(
-        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
-    ) -> None:
-        job_queue_manager = get_job_queue_manager()
-        job_queue_manager.reset()
 
 
 class MaxRetriesMiddleware(dramatiq.Middleware):
@@ -372,7 +339,6 @@ broker.add_middleware(middleware.CurrentMessage())
 broker.add_middleware(MaxRetriesMiddleware())
 broker.add_middleware(SQLAlchemyMiddleware())
 broker.add_middleware(RedisMiddleware())
-broker.add_middleware(JobQueueMiddleware())
 broker.add_middleware(scheduler_middleware)
 broker.add_middleware(LogfireMiddleware())
 dramatiq.set_broker(broker)
@@ -400,8 +366,14 @@ def actor(
     def decorator(
         fn: Callable[P, Awaitable[R]],
     ) -> Callable[P, Awaitable[R]]:
+        async def _wrapped_fn(*args: P.args, **kwargs: P.kwargs) -> R:
+            job_queue_manager = set_job_queue_manager()
+            r = await fn(*args, **kwargs)
+            await job_queue_manager.flush(dramatiq.get_broker(), RedisMiddleware.get())
+            return r
+
         _actor(
-            fn,  # type: ignore
+            _wrapped_fn,  # type: ignore
             actor_class=actor_class,
             actor_name=actor_name,
             queue_name=queue_name,
@@ -410,7 +382,7 @@ def actor(
             **options,
         )
 
-        return fn
+        return _wrapped_fn
 
     return decorator
 

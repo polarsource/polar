@@ -16,7 +16,11 @@ import {
   getChartRangeParams,
   getPreviousParams,
 } from '@/utils/metrics'
-import { ArrowOutwardOutlined, DonutLargeOutlined } from '@mui/icons-material'
+import {
+  ArrowForward,
+  ArrowOutwardOutlined,
+  DonutLargeOutlined,
+} from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
@@ -100,7 +104,19 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
 
   return (
     <DashboardBody className="gap-y-8 pb-16 md:gap-y-12">
+      <Link
+        className="flex w-full flex-col items-center rounded-lg bg-indigo-50 py-4 text-indigo-400 transition-opacity hover:opacity-50 md:rounded-2xl dark:bg-indigo-950"
+        href="/blog/polar-seed-announcement"
+        target="_blank"
+        prefetch
+      >
+        <div className="flex flex-row items-center gap-x-2 text-sm md:text-base">
+          <span>Announcing our $10M Seed Round, led by Accel</span>
+          <ArrowForward fontSize="inherit" />
+        </div>
+      </Link>
       <UsageBasedBillingBanner />
+
       <div className="dark:bg-polar-900 dark:border-polar-800 flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-3 text-sm md:hidden">
         <LogoIcon size={24} />
         <span>Polar for iOS is now available on TestFlight!</span>

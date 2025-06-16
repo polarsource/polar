@@ -303,13 +303,17 @@ class LogfireMiddleware(dramatiq.Middleware):
     def before_process_message(
         self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
     ) -> None:
-        logfire_span_stack = contextlib.ExitStack()
-        logfire_span = logfire_span_stack.enter_context(
-            logfire.span(
-                "TASK {actor}", actor=message.actor_name, message=message.asdict()
+        logfire_stack = contextlib.ExitStack()
+        actor_name = message.actor_name
+        if actor_name in settings.LOGFIRE_IGNORED_ACTORS:
+            logfire_span = logfire_stack.enter_context(
+                logfire.suppress_instrumentation()
             )
-        )
-        message.options["logfire_span_stack"] = logfire_span_stack
+        else:
+            logfire_span = logfire_stack.enter_context(
+                logfire.span("TASK {actor}", actor=actor_name, message=message.asdict())
+            )
+        message.options["logfire_stack"] = logfire_stack
 
     def after_process_message(
         self,
@@ -319,11 +323,11 @@ class LogfireMiddleware(dramatiq.Middleware):
         result: Any | None = None,
         exception: Exception | None = None,
     ) -> None:
-        logfire_span_stack: contextlib.ExitStack | None = message.options.pop(
-            "logfire_span_stack", None
+        logfire_stack: contextlib.ExitStack | None = message.options.pop(
+            "logfire_stack", None
         )
-        if logfire_span_stack is not None:
-            logfire_span_stack.close()
+        if logfire_stack is not None:
+            logfire_stack.close()
 
     def after_skip_message(
         self, broker: dramatiq.Broker, message: dramatiq.Message[Any]

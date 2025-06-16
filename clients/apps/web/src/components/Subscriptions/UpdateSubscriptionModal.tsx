@@ -33,7 +33,7 @@ import { XIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
-import ProrationBehaviorRadioGroup from '../Settings/ProrationBehaviorRadioGroup'
+import ProrationBehaviorRadioGroup from '../Settings/ProrationBehavior'
 import { toast } from '../Toast/use-toast'
 
 const UpdateProduct = ({

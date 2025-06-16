@@ -6,16 +6,19 @@ import Switch from '@polar-sh/ui/components/atoms/Switch'
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
-import ProrationBehaviorRadioGroup from './ProrationBehaviorRadioGroup'
+import { ProrationBehavior } from './ProrationBehavior'
+import {
+  SettingsGroup,
+  SettingsGroupActions,
+  SettingsGroupItem,
+} from './SettingsGroup'
 
 interface OrganizationSubscriptionSettingsProps {
   organization: schemas['Organization']
@@ -27,9 +30,7 @@ const OrganizationSubscriptionSettings: React.FC<
   const form = useForm<schemas['OrganizationSubscriptionSettings']>({
     defaultValues: organization.subscription_settings,
   })
-  const { control, handleSubmit, setError, watch, reset, formState } = form
-
-  const allowCustomerUpdates = watch('allow_customer_updates')
+  const { control, handleSubmit, setError, reset, formState } = form
 
   const updateOrganization = useUpdateOrganization()
   const onSubmit = async (
@@ -61,78 +62,83 @@ const OrganizationSubscriptionSettings: React.FC<
 
   return (
     <Form {...form}>
-      <form
-        className="dark:divide-polar-700 flex w-full flex-col gap-y-8"
-        onSubmit={handleSubmit(onSubmit)}
-      >
-        <FormField
-          control={control}
-          name="allow_multiple_subscriptions"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <FormLabel>
-                Allow customers to have several active subscriptions
-              </FormLabel>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <SettingsGroup>
+          <SettingsGroupItem
+            title="Allow multiple subscriptions"
+            description="Customers can have multiple active subscriptions at the same time."
+          >
+            <FormField
+              control={control}
+              name="allow_multiple_subscriptions"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
 
-        <FormField
-          control={control}
-          name="allow_customer_updates"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <FormLabel>
-                Allow customers to switch their subscription&apos;s price from
-                the customer portal
-              </FormLabel>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={control}
-          name="proration_behavior"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Default proration setting</FormLabel>
-              <ProrationBehaviorRadioGroup
-                value={field.value}
-                onValueChange={field.onChange}
-              />
-              <FormMessage />
-              {allowCustomerUpdates && (
-                <FormDescription>
-                  This setting will be applied when customers switch their
-                  subscription&apos;s price from the customer portal
-                </FormDescription>
+                  <FormMessage />
+                </FormItem>
               )}
-            </FormItem>
-          )}
-        />
+            />
+          </SettingsGroupItem>
 
-        <Button
-          className="self-start"
-          type="submit"
-          disabled={!formState.isDirty}
-          loading={updateOrganization.isPending}
-        >
-          Save
-        </Button>
+          <SettingsGroupItem
+            title="Allow price changes"
+            description="Customers can switch their subscription's price from the customer portal"
+          >
+            <FormField
+              control={control}
+              name="allow_customer_updates"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </SettingsGroupItem>
+
+          <SettingsGroupItem
+            title="Proration"
+            description="Determines how to bill customers when they change their subscription"
+          >
+            <FormField
+              control={control}
+              name="proration_behavior"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <ProrationBehavior
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </SettingsGroupItem>
+          <SettingsGroupActions>
+            <Button
+              className="self-start"
+              type="submit"
+              size="sm"
+              disabled={!formState.isDirty}
+              loading={updateOrganization.isPending}
+            >
+              Save
+            </Button>
+          </SettingsGroupActions>
+        </SettingsGroup>
       </form>
     </Form>
   )

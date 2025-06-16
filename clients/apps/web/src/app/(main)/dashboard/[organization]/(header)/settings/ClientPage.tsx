@@ -14,21 +14,18 @@ export default function ClientPage({
   organization: schemas['Organization']
 }) {
   return (
-    <DashboardBody>
+    <DashboardBody
+      wrapperClassName="!max-w-screen-sm"
+      title="Organization Settings"
+    >
       <div className="flex flex-col gap-y-12">
         <Section id="organization">
-          <SectionDescription
-            title="Organization"
-            description="Configure your organization settings"
-          />
+          <SectionDescription title="Profile" />
           <OrganizationProfileSettings organization={org} />
         </Section>
 
         <Section id="subscriptions">
-          <SectionDescription
-            title="Subscriptions"
-            description="Configure how subscriptions are managed"
-          />
+          <SectionDescription title="Subscriptions" />
           <OrganizationSubscriptionSettings organization={org} />
         </Section>
 

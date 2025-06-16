@@ -1,7 +1,6 @@
 import contextlib
 import contextvars
 import json
-import threading
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 from enum import IntEnum
@@ -22,10 +21,21 @@ from polar.kit.db.postgres import AsyncSessionMaker as AsyncSessionMakerType
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.logfire import instrument_httpx, instrument_sqlalchemy
 from polar.logging import Logger
-from polar.postgres import AsyncSession, create_async_engine
+from polar.postgres import AsyncEngine, AsyncSession, create_async_engine
 from polar.redis import Redis, create_redis
 
 log: Logger = structlog.get_logger()
+
+_sqlalchemy_engine: AsyncEngine | None = None
+_sqlalchemy_async_sessionmaker: AsyncSessionMakerType | None = None
+
+
+async def dispose_sqlalchemy_engine() -> None:
+    global _sqlalchemy_engine
+    if _sqlalchemy_engine is not None:
+        await _sqlalchemy_engine.dispose()
+        log.info("Disposed SQLAlchemy engine")
+        _sqlalchemy_engine = None
 
 
 class SQLAlchemyMiddleware(dramatiq.Middleware):
@@ -33,21 +43,20 @@ class SQLAlchemyMiddleware(dramatiq.Middleware):
     Middleware managing the lifecycle of the database engine and sessionmaker.
     """
 
-    _get_async_sessionmaker_context: contextvars.ContextVar[AsyncSessionMakerType] = (
-        contextvars.ContextVar("polar.get_async_sessionmaker")
-    )
-
     @classmethod
     def get_async_session(cls) -> contextlib.AbstractAsyncContextManager[AsyncSession]:
-        _get_async_session_context = cls._get_async_sessionmaker_context.get()
-        return _get_async_session_context()
+        global _sqlalchemy_async_sessionmaker
+        if _sqlalchemy_async_sessionmaker is None:
+            raise RuntimeError("SQLAlchemy not initialized")
+        return _sqlalchemy_async_sessionmaker()
 
     def before_worker_boot(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:
-        self.engine = create_async_engine("worker")
-        self.async_sessionmaker = create_async_sessionmaker(self.engine)
-        instrument_sqlalchemy(self.engine.sync_engine)
+        global _sqlalchemy_engine, _sqlalchemy_async_sessionmaker
+        _sqlalchemy_engine = create_async_engine("worker")
+        _sqlalchemy_async_sessionmaker = create_async_sessionmaker(_sqlalchemy_engine)
+        instrument_sqlalchemy(_sqlalchemy_engine.sync_engine)
         log.info("Created database engine")
 
     def after_worker_shutdown(
@@ -55,16 +64,7 @@ class SQLAlchemyMiddleware(dramatiq.Middleware):
     ) -> None:
         event_loop_thread = get_event_loop_thread()
         assert event_loop_thread is not None
-        event_loop_thread.run_coroutine(self._dispose_engine())
-
-    def after_worker_thread_boot(
-        self, broker: dramatiq.Broker, thread: threading.Thread
-    ) -> None:
-        self._get_async_sessionmaker_context.set(self.async_sessionmaker)
-
-    async def _dispose_engine(self) -> None:
-        await self.engine.dispose()
-        log.info("Database engine disposed")
+        event_loop_thread.run_coroutine(dispose_sqlalchemy_engine())
 
 
 @contextlib.asynccontextmanager
@@ -82,48 +82,42 @@ async def AsyncSessionMaker() -> AsyncIterator[AsyncSession]:
             await session.commit()
 
 
+_redis: Redis | None = None
+
+
+async def _close_redis() -> None:
+    global _redis
+    if _redis is not None:
+        await _redis.close(True)
+        log.info("Closed Redis client")
+        _redis = None
+
+
 class RedisMiddleware(dramatiq.Middleware):
     """
     Middleware managing the lifecycle of the Redis connection.
     """
 
-    _redis_context: contextvars.ContextVar[Redis] = contextvars.ContextVar(
-        "polar.redis"
-    )
-
-    def __init__(self) -> None:
-        self._stack = contextlib.AsyncExitStack()
-
     @classmethod
     def get(cls) -> Redis:
-        return cls._redis_context.get()
+        global _redis
+        if _redis is None:
+            raise RuntimeError("Redis not initialized")
+        return _redis
 
     def before_worker_boot(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:
-        event_loop_thread = get_event_loop_thread()
-        assert event_loop_thread is not None
-        event_loop_thread.run_coroutine(self._open())
-        log.info("Opened Redis connection")
+        global _redis
+        _redis = create_redis("worker")
+        log.info("Created Redis client")
 
     def after_worker_shutdown(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:
         event_loop_thread = get_event_loop_thread()
         assert event_loop_thread is not None
-        event_loop_thread.run_coroutine(self._close())
-        log.info("Closed Redis connection")
-
-    def after_worker_thread_boot(
-        self, broker: dramatiq.Broker, thread: threading.Thread
-    ) -> None:
-        self._redis_context.set(self.redis)
-
-    async def _open(self) -> None:
-        self.redis = await self._stack.enter_async_context(create_redis("worker"))
-
-    async def _close(self) -> None:
-        await self._stack.aclose()
+        event_loop_thread.run_coroutine(_close_redis())
 
 
 JSONSerializable: TypeAlias = (

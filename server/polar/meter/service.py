@@ -274,7 +274,6 @@ class MeterService:
             statement = statement.where(
                 Event.ingested_at > last_billed_event.ingested_at
             )
-        events = await event_repository.get_all(statement)
 
         subscription_product_price_repository = (
             SubscriptionProductPriceRepository.from_session(session)
@@ -284,7 +283,9 @@ class MeterService:
         billing_entry_repository = BillingEntryRepository.from_session(session)
         entries: list[BillingEntry] = []
         updated_subscriptions: set[Subscription] = set()
-        for event in events:
+        last_event: Event | None = None
+        async for event in event_repository.stream(statement):
+            last_event = event
             customer = event.customer
             assert customer is not None
 
@@ -310,7 +311,9 @@ class MeterService:
                 updated_subscriptions.add(entry.subscription)
 
         # Update the last billed event
-        meter.last_billed_event = events[-1] if events else last_billed_event
+        meter.last_billed_event = (
+            last_event if last_event is not None else last_billed_event
+        )
         session.add(meter)
 
         # Update subscription meters

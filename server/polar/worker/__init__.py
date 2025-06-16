@@ -394,7 +394,6 @@ __all__ = [
     "RedisMiddleware",
     "scheduler_middleware",
     "enqueue_job",
-    "flush_enqueued_jobs",
     "get_retries",
     "can_retry",
 ]

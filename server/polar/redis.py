@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Literal, TypeAlias
 
 import redis.asyncio as _async_redis
 from fastapi import Request
@@ -23,15 +23,12 @@ ProcessName: TypeAlias = Literal["app", "worker", "script"]
 
 
 def create_redis(process_name: ProcessName) -> Redis:
-    return cast(
-        Redis,
-        _async_redis.Redis.from_url(
-            settings.redis_url,
-            decode_responses=True,
-            retry_on_error=REDIS_RETRY_ON_ERRROR,
-            retry=REDIS_RETRY,
-            client_name=f"{settings.ENV.value}.{process_name}",
-        ),
+    return _async_redis.Redis.from_url(
+        settings.redis_url,
+        decode_responses=True,
+        retry_on_error=REDIS_RETRY_ON_ERRROR,
+        retry=REDIS_RETRY,
+        client_name=f"{settings.ENV.value}.{process_name}",
     )
 
 

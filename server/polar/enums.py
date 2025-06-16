@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Literal, cast
+from typing import Literal
 
 
 class Platforms(StrEnum):
@@ -26,7 +26,7 @@ class SubscriptionRecurringInterval(StrEnum):
     year = "year"
 
     def as_literal(self) -> Literal["month", "year"]:
-        return cast(Literal["month", "year"], self.value)
+        return self.value
 
 
 class SubscriptionProrationBehavior(StrEnum):

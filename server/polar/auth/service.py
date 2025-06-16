@@ -101,7 +101,6 @@ class AuthService:
     ) -> UserSession | None:
         token_hash = get_token_hash(token, secret=settings.SECRET)
         statement = select(UserSession).where(UserSession.token == token_hash)
-        result = await session.execute(statement)
         if not expired:
             statement = statement.where(UserSession.expires_at > utc_now())
         result = await session.execute(statement)

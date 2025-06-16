@@ -417,7 +417,7 @@ const nextConfig = {
       // Account Settings Redirects
       {
         source: '/settings',
-        destination: '/dashboard/account/general',
+        destination: '/dashboard/account/preferences',
         permanent: true,
       },
 

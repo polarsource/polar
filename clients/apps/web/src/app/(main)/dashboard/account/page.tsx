@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
 export default function Page() {
-  return redirect('/dashboard/account/general')
+  return redirect('/dashboard/account/preferences')
 }

@@ -261,9 +261,9 @@ const dashboardRoutesList = (org?: schemas['Organization']): Route[] => [
 
 const accountRoutesList = (): Route[] => [
   {
-    id: 'general',
-    title: 'General',
-    link: `/dashboard/account/general`,
+    id: 'preferences',
+    title: 'Preferences',
+    link: `/dashboard/account/preferences`,
     icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
     if: true,
     subs: undefined,

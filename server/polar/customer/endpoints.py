@@ -8,6 +8,7 @@ from polar.models import Customer
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
+from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from . import auth, sorting
@@ -121,6 +122,7 @@ async def get_state(
     id: CustomerID,
     auth_subject: auth.CustomerRead,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> CustomerState:
     """
     Get a customer state by ID.
@@ -136,7 +138,7 @@ async def get_state(
     if customer is None:
         raise ResourceNotFound()
 
-    return await customer_service.get_state(session, customer)
+    return await customer_service.get_state(session, redis, customer)
 
 
 @router.get(
@@ -149,6 +151,7 @@ async def get_state_external(
     external_id: CustomerExternalID,
     auth_subject: auth.CustomerRead,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> CustomerState:
     """
     Get a customer state by external ID.
@@ -164,7 +167,7 @@ async def get_state_external(
     if customer is None:
         raise ResourceNotFound()
 
-    return await customer_service.get_state(session, customer)
+    return await customer_service.get_state(session, redis, customer)
 
 
 @router.post(

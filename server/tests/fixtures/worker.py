@@ -9,12 +9,17 @@ from pytest_mock import MockerFixture
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
 from polar.redis import Redis
-from polar.worker import RedisMiddleware, SQLAlchemyMiddleware, set_job_queue_manager
+from polar.worker import (
+    JobQueueManager,
+    RedisMiddleware,
+    SQLAlchemyMiddleware,
+    _job_queue_manager,
+)
 
 
 @pytest.fixture(autouse=True)
 def set_job_queue_manager_context() -> None:
-    set_job_queue_manager()
+    _job_queue_manager.set(JobQueueManager())
 
 
 @pytest.fixture(autouse=True)

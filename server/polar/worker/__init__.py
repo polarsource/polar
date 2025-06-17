@@ -134,6 +134,11 @@ JSONSerializable: TypeAlias = (
 )
 
 
+_job_queue_manager: contextvars.ContextVar["JobQueueManager | None"] = (
+    contextvars.ContextVar("polar.job_queue_manager")
+)
+
+
 class JobQueueManager:
     __slots__ = ("_enqueued_jobs", "_ingested_events")
 
@@ -180,33 +185,39 @@ class JobQueueManager:
         self._enqueued_jobs = []
         self._ingested_events = []
 
+    @classmethod
+    @contextlib.asynccontextmanager
+    async def open(
+        cls, broker: dramatiq.Broker, redis: Redis
+    ) -> AsyncIterator["JobQueueManager"]:
+        job_queue_manager = JobQueueManager()
+        _job_queue_manager.set(job_queue_manager)
+        try:
+            yield job_queue_manager
+            await job_queue_manager.flush(broker, redis)
+        finally:
+            job_queue_manager.reset()
+            _job_queue_manager.set(None)
 
-_job_queue_manager: contextvars.ContextVar[JobQueueManager] = contextvars.ContextVar(
-    "polar.job_queue_manager"
-)
-
-
-def set_job_queue_manager() -> JobQueueManager:
-    job_queue_manager = JobQueueManager()
-    _job_queue_manager.set(job_queue_manager)
-    return job_queue_manager
-
-
-def get_job_queue_manager() -> JobQueueManager:
-    return _job_queue_manager.get()
+    @classmethod
+    def get(cls) -> "JobQueueManager":
+        job_queue_manager = _job_queue_manager.get()
+        if job_queue_manager is None:
+            raise RuntimeError("JobQueueManager not initialized")
+        return job_queue_manager
 
 
 def enqueue_job(
     actor: str, *args: JSONSerializable, **kwargs: JSONSerializable
 ) -> None:
     """Enqueue a job by actor name."""
-    job_queue_manager = get_job_queue_manager()
+    job_queue_manager = JobQueueManager.get()
     job_queue_manager.enqueue_job(actor, *args, **kwargs)
 
 
 def enqueue_events(*event_ids: uuid.UUID) -> None:
     """Enqueue events to be ingested."""
-    job_queue_manager = get_job_queue_manager()
+    job_queue_manager = JobQueueManager.get()
     job_queue_manager.enqueue_events(*event_ids)
 
 
@@ -367,10 +378,10 @@ def actor(
         fn: Callable[P, Awaitable[R]],
     ) -> Callable[P, Awaitable[R]]:
         async def _wrapped_fn(*args: P.args, **kwargs: P.kwargs) -> R:
-            job_queue_manager = set_job_queue_manager()
-            r = await fn(*args, **kwargs)
-            await job_queue_manager.flush(dramatiq.get_broker(), RedisMiddleware.get())
-            return r
+            async with JobQueueManager.open(
+                dramatiq.get_broker(), RedisMiddleware.get()
+            ):
+                return await fn(*args, **kwargs)
 
         _actor(
             _wrapped_fn,  # type: ignore

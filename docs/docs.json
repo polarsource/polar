@@ -477,10 +477,10 @@
             ]
           },
           {
-            "group": "OAuth 2.0 API",
+            "group": "Integrations",
             "pages": [
               {
-                "group": "Connect",
+                "group": "OpenID Connect",
                 "pages": [
                   "api-reference/oauth2/connect/authorize",
                   "api-reference/oauth2/connect/request-token",
@@ -490,13 +490,23 @@
                 ]
               },
               {
-                "group": "Clients",
+                "group": "OAuth 2.0 Clients",
                 "pages": [
                   "api-reference/oauth2/clients/create",
                   "api-reference/oauth2/clients/get",
                   "api-reference/oauth2/clients/list",
                   "api-reference/oauth2/clients/update",
                   "api-reference/oauth2/clients/delete"
+                ]
+              },
+              {
+                "group": "Webhooks",
+                "pages": [
+                  "api-reference/webhooks/endpoints/create",
+                  "api-reference/webhooks/endpoints/get",
+                  "api-reference/webhooks/endpoints/list",
+                  "api-reference/webhooks/endpoints/update",
+                  "api-reference/webhooks/endpoints/delete"
                 ]
               }
             ]

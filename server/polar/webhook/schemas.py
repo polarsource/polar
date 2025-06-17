@@ -1,14 +1,8 @@
 from typing import Annotated
 
-from pydantic import (
-    UUID4,
-    AnyUrl,
-    Field,
-    PlainSerializer,
-    UrlConstraints,
-)
+from pydantic import UUID4, AnyUrl, Field, PlainSerializer, UrlConstraints
 
-from polar.kit.schemas import Schema, TimestampedSchema
+from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.organization.schemas import OrganizationID
 
@@ -47,12 +41,11 @@ EndpointEvents = Annotated[
 ]
 
 
-class WebhookEndpoint(TimestampedSchema):
+class WebhookEndpoint(IDSchema, TimestampedSchema):
     """
     A webhook endpoint.
     """
 
-    id: UUID4 = Field(description="The webhook endpoint ID.")
     url: EndpointURL
     format: EndpointFormat
     organization_id: UUID4 = Field(
@@ -90,7 +83,7 @@ class WebhookEndpointUpdate(Schema):
     events: EndpointEvents | None = None
 
 
-class WebhookEvent(TimestampedSchema):
+class WebhookEvent(IDSchema, TimestampedSchema):
     """
     A webhook event.
 
@@ -101,7 +94,6 @@ class WebhookEvent(TimestampedSchema):
     each one creating a new delivery.
     """
 
-    id: UUID4 = Field(description="The webhook event ID.")
     last_http_code: int | None = Field(
         None,
         description="Last HTTP code returned by the URL. "
@@ -117,12 +109,11 @@ class WebhookEvent(TimestampedSchema):
     payload: str = Field(description="The payload of the webhook event.")
 
 
-class WebhookDelivery(TimestampedSchema):
+class WebhookDelivery(IDSchema, TimestampedSchema):
     """
     A webhook delivery for a webhook event.
     """
 
-    id: UUID4 = Field(description="The webhook delivery ID.")
     http_code: int | None = Field(
         None,
         description="The HTTP code returned by the URL."

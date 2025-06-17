@@ -27,7 +27,7 @@ export default function Page() {
 export const PageContent = () => {
   return (
     <>
-      <Section className="flex flex-col gap-y-24 md:pt-0">
+      <Section className="flex flex-col gap-y-24 pt-0 md:pt-0">
         <Hero className="relative z-10" />
         <Features />
         <Adapters />

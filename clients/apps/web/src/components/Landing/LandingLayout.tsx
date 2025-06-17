@@ -22,8 +22,8 @@ export default function Layout({ children }: PropsWithChildren) {
         <LandingPageDesktopNavigation />
         <div className="dark:bg-polar-950 relative flex flex-col px-4 md:w-full md:px-0">
           {children}
-          <LandingPageFooter />
         </div>
+        <LandingPageFooter />
       </div>
     </div>
   )
@@ -121,7 +121,7 @@ const LandingPageTopbar = () => {
       <BrandingMenu
         className="ml-2 mt-1 md:hidden"
         logoVariant="logotype"
-        size={80}
+        size={100}
       />
       <div className="flex flex-row items-center gap-x-4">
         <Button

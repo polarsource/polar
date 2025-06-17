@@ -2711,6 +2711,719 @@
         ]
       }
     },
+    "/v1/webhooks/endpoints": {
+      "get": {
+        "tags": [
+          "webhooks",
+          "documented"
+        ],
+        "summary": "List Webhook Endpoints",
+        "description": "List webhook endpoints.\n\n**Scopes**: `webhooks:read` `webhooks:write`",
+        "operationId": "webhooks:list_webhook_endpoints",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4",
+                  "examples": [
+                    "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                  ],
+                  "description": "The organization ID.",
+                  "x-polar-selector-widget": {
+                    "resourceRoot": "/v1/organizations",
+                    "resourceName": "Organization",
+                    "displayProperty": "name"
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4",
+                    "examples": [
+                      "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                    ],
+                    "description": "The organization ID.",
+                    "x-polar-selector-widget": {
+                      "resourceRoot": "/v1/organizations",
+                      "resourceName": "Organization",
+                      "displayProperty": "name"
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by organization ID.",
+              "title": "Organization Id"
+            },
+            "description": "Filter by organization ID."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Page number, defaults to 1.",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number, defaults to 1."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Size of a page, defaults to 10. Maximum is 100.",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Size of a page, defaults to 10. Maximum is 100."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListResource_WebhookEndpoint_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-pagination": {
+          "type": "offsetLimit",
+          "inputs": [
+            {
+              "name": "page",
+              "in": "parameters",
+              "type": "page"
+            },
+            {
+              "name": "limit",
+              "in": "parameters",
+              "type": "limit"
+            }
+          ],
+          "outputs": {
+            "results": "$.items",
+            "numPages": "$.pagination.max_page"
+          }
+        },
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "webhooks",
+        "x-speakeasy-name-override": "list_webhook_endpoints",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Webhooks.ListWebhookEndpoints(ctx, polargo.Pointer(operations.CreateQueryParamOrganizationIDStr(\n        \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    )), polargo.Int64(1), polargo.Int64(10))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceWebhookEndpoint != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.webhooks.list_webhook_endpoints(organization_id=\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\", page=1, limit=10)\n\n    while res is not None:\n        # Handle items\n\n        res = res.next()"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.webhooks.listWebhookEndpoints({\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  for await (const page of result) {\n    console.log(page);\n  }\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$responses = $sdk->webhooks->listWebhookEndpoints(\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    page: 1,\n    limit: 10\n\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "webhooks",
+          "documented"
+        ],
+        "summary": "Create Webhook Endpoint",
+        "description": "Create a webhook endpoint.\n\n**Scopes**: `webhooks:write`",
+        "operationId": "webhooks:create_webhook_endpoint",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookEndpointCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Webhook endpoint created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpoint"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "webhooks",
+        "x-speakeasy-name-override": "create_webhook_endpoint",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Webhooks.CreateWebhookEndpoint(ctx, components.WebhookEndpointCreate{\n        URL: \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n        Format: components.WebhookFormatSlack,\n        Secret: \"f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA\",\n        Events: []components.WebhookEventType{\n            components.WebhookEventTypeSubscriptionUncanceled,\n        },\n        OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.WebhookEndpoint != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.webhooks.create_webhook_endpoint(request={\n        \"url\": \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n        \"format_\": polar_sdk.WebhookFormat.SLACK,\n        \"secret\": \"f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA\",\n        \"events\": [\n            polar_sdk.WebhookEventType.SUBSCRIPTION_UNCANCELED,\n        ],\n        \"organization_id\": \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    })\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.webhooks.createWebhookEndpoint({\n    url: \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n    format: \"slack\",\n    secret: \"f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA\",\n    events: [\n      \"subscription.uncanceled\",\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\WebhookEndpointCreate(\n    url: 'https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0',\n    format: Components\\WebhookFormat::Slack,\n    secret: 'f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA',\n    events: [\n        Components\\WebhookEventType::SubscriptionUncanceled,\n    ],\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->webhooks->createWebhookEndpoint(\n    request: $request\n);\n\nif ($response->webhookEndpoint !== null) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
+    "/v1/webhooks/endpoints/{id}": {
+      "get": {
+        "tags": [
+          "webhooks",
+          "documented"
+        ],
+        "summary": "Get Webhook Endpoint",
+        "description": "Get a webhook endpoint by ID.\n\n**Scopes**: `webhooks:read` `webhooks:write`",
+        "operationId": "webhooks:get_webhook_endpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The webhook endpoint ID.",
+              "title": "Id"
+            },
+            "description": "The webhook endpoint ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpoint"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Webhook endpoint not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "webhooks",
+        "x-speakeasy-name-override": "get_webhook_endpoint",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Webhooks.GetWebhookEndpoint(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.WebhookEndpoint != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.webhooks.get_webhook_endpoint(id=\"<value>\")\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.webhooks.getWebhookEndpoint({\n    id: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->webhooks->getWebhookEndpoint(\n    id: '<value>'\n);\n\nif ($response->webhookEndpoint !== null) {\n    // handle response\n}"
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "webhooks",
+          "documented"
+        ],
+        "summary": "Update Webhook Endpoint",
+        "description": "Update a webhook endpoint.\n\n**Scopes**: `webhooks:write`",
+        "operationId": "webhooks:update_webhook_endpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The webhook endpoint ID.",
+              "title": "Id"
+            },
+            "description": "The webhook endpoint ID."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookEndpointUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook endpoint updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpoint"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Webhook endpoint not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "webhooks",
+        "x-speakeasy-name-override": "update_webhook_endpoint",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Webhooks.UpdateWebhookEndpoint(ctx, \"<value>\", components.WebhookEndpointUpdate{\n        URL: polargo.String(\"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\"),\n        Secret: polargo.String(\"f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.WebhookEndpoint != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.webhooks.update_webhook_endpoint(id=\"<value>\", webhook_endpoint_update={\n        \"url\": \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n        \"secret\": \"f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA\",\n    })\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.webhooks.updateWebhookEndpoint({\n    id: \"<value>\",\n    webhookEndpointUpdate: {\n      url: \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n      secret: \"f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$webhookEndpointUpdate = new Components\\WebhookEndpointUpdate(\n    url: 'https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0',\n    secret: 'f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA',\n);\n\n$response = $sdk->webhooks->updateWebhookEndpoint(\n    id: '<value>',\n    webhookEndpointUpdate: $webhookEndpointUpdate\n\n);\n\nif ($response->webhookEndpoint !== null) {\n    // handle response\n}"
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "webhooks",
+          "documented"
+        ],
+        "summary": "Delete Webhook Endpoint",
+        "description": "Delete a webhook endpoint.\n\n**Scopes**: `webhooks:write`",
+        "operationId": "webhooks:delete_webhook_endpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The webhook endpoint ID.",
+              "title": "Id"
+            },
+            "description": "The webhook endpoint ID."
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Webhook endpoint deleted."
+          },
+          "404": {
+            "description": "Webhook endpoint not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "webhooks",
+        "x-speakeasy-name-override": "delete_webhook_endpoint",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Webhooks.DeleteWebhookEndpoint(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    polar.webhooks.delete_webhook_endpoint(id=\"<value>\")\n\n    # Use the SDK ..."
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.webhooks.deleteWebhookEndpoint({\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->webhooks->deleteWebhookEndpoint(\n    id: '<value>'\n);\n\nif ($response->statusCode === 200) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
+    "/v1/webhooks/deliveries": {
+      "get": {
+        "tags": [
+          "webhooks",
+          "documented"
+        ],
+        "summary": "List Webhook Deliveries",
+        "description": "List webhook deliveries.\n\nDeliveries are all the attempts to deliver a webhook event to an endpoint.\n\n**Scopes**: `webhooks:read` `webhooks:write`",
+        "operationId": "webhooks:list_webhook_deliveries",
+        "parameters": [
+          {
+            "name": "endpoint_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by webhook endpoint ID.",
+              "title": "Endpoint Id"
+            },
+            "description": "Filter by webhook endpoint ID."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Page number, defaults to 1.",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number, defaults to 1."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Size of a page, defaults to 10. Maximum is 100.",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Size of a page, defaults to 10. Maximum is 100."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListResource_WebhookDelivery_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-pagination": {
+          "type": "offsetLimit",
+          "inputs": [
+            {
+              "name": "page",
+              "in": "parameters",
+              "type": "page"
+            },
+            {
+              "name": "limit",
+              "in": "parameters",
+              "type": "limit"
+            }
+          ],
+          "outputs": {
+            "results": "$.items",
+            "numPages": "$.pagination.max_page"
+          }
+        },
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "webhooks",
+        "x-speakeasy-name-override": "list_webhook_deliveries",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Webhooks.ListWebhookDeliveries(ctx, nil, polargo.Int64(1), polargo.Int64(10))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceWebhookDelivery != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.webhooks.list_webhook_deliveries(page=1, limit=10)\n\n    while res is not None:\n        # Handle items\n\n        res = res.next()"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.webhooks.listWebhookDeliveries({});\n\n  for await (const page of result) {\n    console.log(page);\n  }\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$responses = $sdk->webhooks->listWebhookDeliveries(\n    page: 1,\n    limit: 10\n\n);\n\n\nforeach ($responses as $response) {\n    if ($response->statusCode === 200) {\n        // handle response\n    }\n}"
+          }
+        ]
+      }
+    },
+    "/v1/webhooks/events/{id}/redeliver": {
+      "post": {
+        "tags": [
+          "webhooks",
+          "documented"
+        ],
+        "summary": "Redeliver Webhook Event",
+        "description": "Schedule the re-delivery of a webhook event.\n\n**Scopes**: `webhooks:write`",
+        "operationId": "webhooks:redeliver_webhook_event",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The webhook event ID.",
+              "title": "Id"
+            },
+            "description": "The webhook event ID."
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Webhook event re-delivery scheduled.",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Webhook event not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "webhooks",
+        "x-speakeasy-name-override": "redeliver_webhook_event",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Webhooks.RedeliverWebhookEvent(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.webhooks.redeliver_webhook_event(id=\"<value>\")\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.webhooks.redeliverWebhookEvent({\n    id: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->webhooks->redeliverWebhookEvent(\n    id: '<value>'\n);\n\nif ($response->any !== null) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
     "/v1/products/": {
       "get": {
         "tags": [
@@ -35150,6 +35863,46 @@
         ],
         "title": "ListResource[Union[PaymentMethodCard, PaymentMethodGeneric]]"
       },
+      "ListResource_WebhookDelivery_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WebhookDelivery"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "title": "ListResource[WebhookDelivery]"
+      },
+      "ListResource_WebhookEndpoint_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WebhookEndpoint"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "title": "ListResource[WebhookEndpoint]"
+      },
       "ListResource__": {
         "properties": {
           "items": {
@@ -36455,7 +37208,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write"
+            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write"
           },
           "client_name": {
             "type": "string",
@@ -36613,7 +37366,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write"
+            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write"
           },
           "client_name": {
             "type": "string",
@@ -36730,7 +37483,7 @@
           "scope": {
             "type": "string",
             "title": "Scope",
-            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write"
+            "default": "openid profile email user:read organizations:read organizations:write custom_fields:read custom_fields:write discounts:read discounts:write checkout_links:read checkout_links:write checkouts:read checkouts:write transactions:read transactions:write payouts:read payouts:write products:read products:write benefits:read benefits:write events:read events:write meters:read meters:write files:read files:write subscriptions:read subscriptions:write customers:read customers:write customer_meters:read customer_sessions:write orders:read orders:write refunds:read refunds:write payments:read metrics:read webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write customer_portal:read customer_portal:write notifications:read notifications:write notification_recipients:read notification_recipients:write"
           },
           "client_name": {
             "type": "string",
@@ -40803,6 +41556,8 @@
           "checkouts:write",
           "transactions:read",
           "transactions:write",
+          "payouts:read",
+          "payouts:write",
           "products:read",
           "products:write",
           "benefits:read",
@@ -40880,6 +41635,8 @@
           "organizations:read": "Read your organizations",
           "organizations:write": "Create or modify organizations",
           "payments:read": "Read payments made on your organizations",
+          "payouts:read": "Read payouts",
+          "payouts:write": "Create or modify payouts",
           "products:read": "Read products",
           "products:write": "Create or modify products",
           "profile": "Read your profile",
@@ -42531,6 +43288,379 @@
         ],
         "title": "WebhookCustomerUpdatedPayload",
         "description": "Sent when a customer is updated.\n\nThis event is fired when the customer details are updated.\n\nIf you want to be notified when a customer subscription or benefit state changes, you should listen to the `customer_state_changed` event.\n\n**Discord & Slack support:** Basic"
+      },
+      "WebhookDelivery": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "http_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Http Code",
+            "description": "The HTTP code returned by the URL. `null` if the endpoint was unreachable."
+          },
+          "succeeded": {
+            "type": "boolean",
+            "title": "Succeeded",
+            "description": "Whether the delivery was successful."
+          },
+          "webhook_event": {
+            "$ref": "#/components/schemas/WebhookEvent",
+            "description": "The webhook event sent by this delivery."
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "succeeded",
+          "webhook_event"
+        ],
+        "title": "WebhookDelivery",
+        "description": "A webhook delivery for a webhook event."
+      },
+      "WebhookEndpoint": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 2083,
+            "minLength": 1,
+            "format": "uri",
+            "title": "Url",
+            "description": "The URL where the webhook events will be sent.",
+            "examples": [
+              "https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0"
+            ]
+          },
+          "format": {
+            "$ref": "#/components/schemas/WebhookFormat",
+            "description": "The format of the webhook payload."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The organization ID associated with the webhook endpoint."
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/WebhookEventType"
+            },
+            "type": "array",
+            "title": "Events",
+            "description": "The events that will trigger the webhook."
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "url",
+          "format",
+          "organization_id",
+          "events"
+        ],
+        "title": "WebhookEndpoint",
+        "description": "A webhook endpoint."
+      },
+      "WebhookEndpointCreate": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2083,
+            "minLength": 1,
+            "format": "uri",
+            "title": "Url",
+            "description": "The URL where the webhook events will be sent.",
+            "examples": [
+              "https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0"
+            ]
+          },
+          "format": {
+            "$ref": "#/components/schemas/WebhookFormat",
+            "description": "The format of the webhook payload."
+          },
+          "secret": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Secret",
+            "description": "The secret used to sign the webhook events.",
+            "examples": [
+              "f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA"
+            ]
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/WebhookEventType"
+            },
+            "type": "array",
+            "title": "Events",
+            "description": "The events that will trigger the webhook."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "examples": [
+                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                ],
+                "x-polar-selector-widget": {
+                  "displayProperty": "name",
+                  "resourceName": "Organization",
+                  "resourceRoot": "/v1/organizations"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The organization ID associated with the webhook endpoint. **Required unless you use an organization token.**"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url",
+          "format",
+          "secret",
+          "events"
+        ],
+        "title": "WebhookEndpointCreate",
+        "description": "Schema to create a webhook endpoint."
+      },
+      "WebhookEndpointUpdate": {
+        "properties": {
+          "url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri",
+                "description": "The URL where the webhook events will be sent.",
+                "examples": [
+                  "https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WebhookFormat",
+                "description": "The format of the webhook payload."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "secret": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "The secret used to sign the webhook events.",
+                "examples": [
+                  "f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret"
+          },
+          "events": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WebhookEventType"
+                },
+                "type": "array",
+                "description": "The events that will trigger the webhook."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Events"
+          }
+        },
+        "type": "object",
+        "title": "WebhookEndpointUpdate",
+        "description": "Schema to update a webhook endpoint."
+      },
+      "WebhookEvent": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "last_http_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Http Code",
+            "description": "Last HTTP code returned by the URL. `null` if no delviery has been attempted or if the endpoint was unreachable."
+          },
+          "succeeded": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Succeeded",
+            "description": "Whether this event was successfully delivered. `null` if no delivery has been attempted."
+          },
+          "payload": {
+            "type": "string",
+            "title": "Payload",
+            "description": "The payload of the webhook event."
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "modified_at",
+          "id",
+          "payload"
+        ],
+        "title": "WebhookEvent",
+        "description": "A webhook event.\n\nAn event represent something that happened in the system\nthat should be sent to the webhook endpoint.\n\nIt can be delivered multiple times until it's marked as succeeded,\neach one creating a new delivery."
+      },
+      "WebhookEventType": {
+        "type": "string",
+        "enum": [
+          "checkout.created",
+          "checkout.updated",
+          "customer.created",
+          "customer.updated",
+          "customer.deleted",
+          "customer.state_changed",
+          "order.created",
+          "order.updated",
+          "order.paid",
+          "order.refunded",
+          "subscription.created",
+          "subscription.updated",
+          "subscription.active",
+          "subscription.canceled",
+          "subscription.uncanceled",
+          "subscription.revoked",
+          "refund.created",
+          "refund.updated",
+          "product.created",
+          "product.updated",
+          "benefit.created",
+          "benefit.updated",
+          "benefit_grant.created",
+          "benefit_grant.cycled",
+          "benefit_grant.updated",
+          "benefit_grant.revoked",
+          "organization.updated"
+        ],
+        "title": "WebhookEventType"
+      },
+      "WebhookFormat": {
+        "type": "string",
+        "enum": [
+          "raw",
+          "discord",
+          "slack"
+        ],
+        "title": "WebhookFormat"
       },
       "WebhookOrderCreatedPayload": {
         "properties": {

@@ -152,9 +152,7 @@ const LandingPageFooter = () => {
       whileInView="animate"
       viewport={{ once: true }}
     >
-      <div className="flex w-full flex-col gap-y-12 md:max-w-3xl xl:max-w-7xl">
-        <Footer />
-      </div>
+      <Footer />
     </motion.div>
   )
 }

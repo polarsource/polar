@@ -8,7 +8,7 @@ const Footer = () => {
     <div className="mt-16 flex w-full flex-col items-center gap-y-12 bg-white dark:bg-black">
       <div
         className={twMerge(
-          'flex w-full flex-col items-center py-16 md:max-w-3xl xl:max-w-7xl',
+          'flex w-full flex-col items-center px-6 py-16 md:max-w-3xl md:px-0 xl:max-w-7xl',
         )}
       >
         <div

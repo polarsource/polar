@@ -37,7 +37,7 @@ def configure_sentry() -> None:
         environment=settings.ENV,
         integrations=[
             FastApiIntegration(transaction_style="endpoint"),
-            DramatiqIntegration(),
+            # DramatiqIntegration(),
         ],
     )
 

@@ -12,6 +12,7 @@ from polar.kit.pagination import PaginationParams
 from polar.models import Customer, Organization, User, UserOrganization
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
@@ -337,11 +338,12 @@ class TestWebhook:
         event_type: CustomerWebhookEventType,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
     ) -> None:
         send_mock = mocker.patch("polar.webhook.service.webhook.send")
 
-        await customer_service.webhook(session, event_type, customer)
+        await customer_service.webhook(session, redis, event_type, customer)
 
         assert send_mock.call_count == 2
 
@@ -349,12 +351,13 @@ class TestWebhook:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
     ) -> None:
         send_mock = mocker.patch("polar.webhook.service.webhook.send")
 
         await customer_service.webhook(
-            session, WebhookEventType.customer_state_changed, customer
+            session, redis, WebhookEventType.customer_state_changed, customer
         )
 
         assert send_mock.call_count == 1

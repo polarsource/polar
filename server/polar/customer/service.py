@@ -4,6 +4,7 @@ from typing import Any
 
 from sqlalchemy import UnaryExpression, asc, desc, func, or_
 from sqlalchemy.orm import joinedload
+from sqlalchemy_utils.types.range import timedelta
 from stripe import Customer as StripeCustomer
 
 from polar.auth.models import AuthSubject
@@ -22,6 +23,7 @@ from polar.models import (
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
@@ -230,8 +232,20 @@ class CustomerService:
         return await repository.soft_delete(customer)
 
     async def get_state(
-        self, session: AsyncSession, customer: Customer
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        customer: Customer,
+        cache: bool = True,
     ) -> CustomerState:
+        cache_key = f"polar:customer_state:{customer.id}"
+
+        if cache:
+            raw_state = await redis.get(cache_key)
+            if raw_state is not None:
+                return CustomerState.model_validate_json(raw_state)
+
+        # If not cached, fetch from the database
         subscription_repository = SubscriptionRepository.from_session(session)
         customer.active_subscriptions = (
             await subscription_repository.list_active_by_customer(customer.id)
@@ -249,7 +263,15 @@ class CustomerService:
             customer.id
         )
 
-        return CustomerState.model_validate(customer)
+        state = CustomerState.model_validate(customer)
+
+        await redis.set(
+            cache_key,
+            state.model_dump_json(),
+            ex=int(timedelta(hours=1).total_seconds()),
+        )
+
+        return state
 
     async def get_or_create_from_stripe_customer(
         self,
@@ -301,12 +323,13 @@ class CustomerService:
     async def webhook(
         self,
         session: AsyncSession,
+        redis: Redis,
         event_type: CustomerWebhookEventType,
         customer: Customer,
     ) -> None:
         data: CustomerState | Customer
         if event_type == WebhookEventType.customer_state_changed:
-            data = await self.get_state(session, customer)
+            data = await self.get_state(session, redis, customer, cache=False)
             await webhook_service.send(
                 session,
                 customer.organization,
@@ -326,7 +349,7 @@ class CustomerService:
             WebhookEventType.customer_deleted,
         ):
             await self.webhook(
-                session, WebhookEventType.customer_state_changed, customer
+                session, redis, WebhookEventType.customer_state_changed, customer
             )
 
 

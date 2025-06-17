@@ -21,7 +21,6 @@ if TYPE_CHECKING:
     from opentelemetry.trace.span import TraceState
     from opentelemetry.util.types import Attributes
 
-
 from polar.config import settings
 from polar.kit.db.postgres import Engine
 
@@ -115,16 +114,8 @@ def instrument_sqlalchemy(engine: Engine) -> None:
     SQLAlchemyInstrumentor().instrument(engine=engine)
 
 
-def instrument_redis() -> None:
-    if settings.is_testing():
-        return
-
-    logfire.instrument_redis()
-
-
 __all__ = [
     "configure_logfire",
     "instrument_fastapi",
     "instrument_sqlalchemy",
-    "instrument_redis",
 ]

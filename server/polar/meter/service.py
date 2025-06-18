@@ -21,7 +21,7 @@ from polar.auth.models import AuthSubject, Organization, User
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.event.repository import EventRepository
 from polar.exceptions import PolarRequestValidationError, ValidationError
-from polar.kit.metadata import MetadataQuery, apply_metadata_clause
+from polar.kit.metadata import MetadataQuery, apply_metadata_clause, get_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
@@ -188,6 +188,7 @@ class MeterService:
         interval: TimeInterval,
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
+        metadata: MetadataQuery | None = None,
     ) -> MeterQuantities:
         timestamp_series = get_timestamp_series_cte(
             start_timestamp, end_timestamp, interval
@@ -208,6 +209,8 @@ class MeterService:
                     external_customer_id
                 )
             )
+        if metadata is not None:
+            event_clauses.append(get_metadata_clause(Event, metadata))
         event_clauses.append(event_repository.get_meter_clause(meter))
 
         statement = (

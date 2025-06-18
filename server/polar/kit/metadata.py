@@ -4,7 +4,7 @@ from typing import Annotated, Any, TypeVar
 
 from fastapi import Depends, Request
 from pydantic import AliasChoices, BaseModel, Field, StringConstraints
-from sqlalchemy import Select, or_
+from sqlalchemy import ColumnExpressionArgument, Select, and_, or_
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -134,12 +134,20 @@ MetadataQuery = Annotated[dict[str, list[str]], Depends(_get_metadata_query)]
 M = TypeVar("M", bound=MetadataMixin)
 
 
+def get_metadata_clause(  # noqa: UP047
+    model: type[M], query: MetadataQuery
+) -> ColumnExpressionArgument[bool]:
+    clauses: list[ColumnExpressionArgument[bool]] = []
+    for key, values in query.items():
+        sub_clauses: list[ColumnExpressionArgument[bool]] = []
+        for value in values:
+            sub_clauses.append(model.user_metadata[key].as_string() == value)
+        clauses.append(or_(*sub_clauses))
+    return and_(*clauses)
+
+
 def apply_metadata_clause(
     model: type[M], statement: Select[tuple[M]], query: MetadataQuery
 ) -> Select[tuple[M]]:
-    for key, values in query.items():
-        clauses = []
-        for value in values:
-            clauses.append(model.user_metadata[key].as_string() == value)
-        statement = statement.where(or_(*clauses))
-    return statement
+    clause = get_metadata_clause(model, query)
+    return statement.where(clause)

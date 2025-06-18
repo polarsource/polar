@@ -96,6 +96,7 @@ export interface CheckoutConfirmationProps {
   theme?: 'light' | 'dark'
   customerSessionToken?: string
   disabled?: boolean
+  maxWaitingTimeMs?: number
 }
 
 export const CheckoutConfirmation = ({
@@ -104,6 +105,7 @@ export const CheckoutConfirmation = ({
   theme,
   customerSessionToken,
   disabled,
+  maxWaitingTimeMs = 15000,
 }: CheckoutConfirmationProps) => {
   const router = useRouter()
   const client = useMemo(() => new PolarCore({ serverURL: getServerURL() }), [])
@@ -152,6 +154,14 @@ export const CheckoutConfirmation = ({
     customerSessionToken,
   ])
 
+  useEffect(() => {
+    if (checkout.status === 'open' || checkout.status === 'succeeded') {
+      return
+    }
+    let intervalId = setInterval(() => updateCheckout(), maxWaitingTimeMs)
+    return () => clearInterval(intervalId)
+  }, [checkout.status, maxWaitingTimeMs, updateCheckout])
+
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
       <div className="flex w-full max-w-md flex-col gap-y-8">
@@ -193,6 +203,7 @@ export const CheckoutConfirmation = ({
             <CheckoutBenefits
               checkout={checkout}
               customerSessionToken={customerSessionToken}
+              maxWaitingTimeMs={maxWaitingTimeMs}
             />
             <p className="dark:text-polar-500 text-center text-xs text-gray-500">
               This order was processed by our online reseller & Merchant of

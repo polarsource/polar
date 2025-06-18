@@ -10,12 +10,12 @@ import { createSSEListener } from '../utils/sse'
 export const useCheckoutFulfillmentListener = (
   client: PolarCore,
   checkout: CheckoutPublic,
-  maxWaitingTimeMs: number = 30000,
+  maxWaitingTimeMs: number = 15000,
 ): [() => Promise<void>, string | null] => {
   const [fulfillmentLabel, setFulfillmentLabel] = useState<string | null>(null)
 
   const fulfillmentListener = useCallback(async () => {
-    return await new Promise<void>((resolve) => {
+    return await new Promise<void>((resolve, reject) => {
       // @ts-ignore
       const baseURL = client._baseURL
       const url = `${baseURL}v1/checkouts/client/${checkout.clientSecret}/stream`
@@ -76,10 +76,10 @@ export const useCheckoutFulfillmentListener = (
         )
       }
 
-      const webhookEventDeliveredListener = (data?: {
+      const webhookEventDeliveredListener = (data: {
         status: CheckoutStatus
       }) => {
-        if (!data || data.status === 'succeeded') {
+        if (data.status === 'succeeded') {
           webhookEventDelivered = true
           checkoutEvents.off(
             'checkout.webhook_event_delivered',
@@ -92,8 +92,12 @@ export const useCheckoutFulfillmentListener = (
         'checkout.webhook_event_delivered',
         webhookEventDeliveredListener,
       )
-      // Wait webhook event to be delivered for 30 seconds max
-      setTimeout(() => webhookEventDeliveredListener(), maxWaitingTimeMs)
+
+      // Set a timeout to abort the listener if it takes too long
+      setTimeout(() => {
+        controller.abort()
+        reject()
+      }, maxWaitingTimeMs)
     })
   }, [client, checkout, maxWaitingTimeMs])
 

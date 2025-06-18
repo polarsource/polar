@@ -1,5 +1,6 @@
 import datetime
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pydantic_extra_types.country import CountryAlpha2
@@ -59,8 +60,7 @@ def invoice() -> Invoice:
                 unit_amount=1_00,
                 amount=50_00,
             ),
-        ]
-        * 100,
+        ],
         notes=(
             """
 Thank you for your business!
@@ -73,11 +73,23 @@ Thank you for your business!
     )
 
 
-def test_generator(invoice: Invoice) -> None:
-    path = Path(__file__).parent / "test_invoice.pdf"
+@pytest.mark.parametrize(
+    "overrides,id",
+    [
+        ({}, "basic"),
+        (
+            {
+                "customer_name": "Super Long Company Name That Doesn't Fit On A Single Line"
+            },
+            "long_customer_name",
+        ),
+    ],
+)
+def test_generator(overrides: dict[str, Any], id: str, invoice: Invoice) -> None:
+    path = Path(__file__).parent / f"test_invoice_{id}.pdf"
     path.unlink(missing_ok=True)
 
-    generator = InvoiceGenerator(invoice)
+    generator = InvoiceGenerator(invoice.copy(update=overrides))
     generator.generate()
     generator.output(str(path))
 

@@ -1,6 +1,6 @@
 import inspect
 import re
-from typing import Annotated, Any, TypeVar
+from typing import Annotated, Any, TypeAlias, TypeVar
 
 from fastapi import Depends, Request
 from pydantic import AliasChoices, BaseModel, Field, StringConstraints
@@ -66,8 +66,11 @@ class MetadataInputMixin(BaseModel):
     )
 
 
+MetadataOutputType: TypeAlias = dict[str, str | int | float | bool]
+
+
 class MetadataOutputMixin(BaseModel):
-    metadata: dict[str, str | int | float | bool] = Field(
+    metadata: MetadataOutputType = Field(
         validation_alias=AliasChoices("user_metadata", "metadata")
     )
 

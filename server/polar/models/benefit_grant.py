@@ -146,7 +146,9 @@ class BenefitGrant(RecordModel):
 
     @declared_attr
     def error(cls) -> Mapped[BenefitGrantError | None]:
-        return mapped_column("error", JSONB, nullable=True, default=None)
+        return mapped_column(
+            "error", JSONB(none_as_null=True), nullable=True, default=None
+        )
 
     @hybrid_property
     def is_granted(self) -> bool:

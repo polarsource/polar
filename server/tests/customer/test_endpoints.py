@@ -188,6 +188,10 @@ class TestGetState:
         assert len(json["granted_benefits"]) == 1
         assert json["granted_benefits"][0]["id"] == str(grant.id)
         assert json["granted_benefits"][0]["benefit_type"] == benefit_organization.type
+        assert (
+            json["granted_benefits"][0]["benefit_metadata"]
+            == benefit_organization.user_metadata
+        )
 
 
 @pytest.mark.asyncio

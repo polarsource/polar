@@ -1,5 +1,6 @@
 import contextlib
 import contextvars
+import functools
 import json
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
@@ -377,6 +378,7 @@ def actor(
     def decorator(
         fn: Callable[P, Awaitable[R]],
     ) -> Callable[P, Awaitable[R]]:
+        @functools.wraps(fn)
         async def _wrapped_fn(*args: P.args, **kwargs: P.kwargs) -> R:
             async with JobQueueManager.open(
                 dramatiq.get_broker(), RedisMiddleware.get()

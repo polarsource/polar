@@ -9,11 +9,11 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
 
 ## Features
 
-- Checkout Integration
+- [Checkout Integration](#checkout-plugin)
 - Customer Portal
 - Automatic Customer creation on signup
-- Event Ingestion & Customer Meters for flexible Usage Based Billing
-- Handle Polar Webhooks securely with signature verification
+- [Event Ingestion & Customer Meters for flexible Usage Based Billing](#usage-plugin)
+- [Handle Polar Webhooks securely with signature verification](#webhooks-plugin)
 - Reference System to associate purchases with organizations
 
 ## Installation
@@ -154,49 +154,66 @@ const auth = betterAuth({
 
 When `createCustomerOnSignUp` is enabled, a new Polar Customer is automatically created when a new User is added in the Better-Auth Database.
 
-All new customers are created with an associated `externalId`, which is the ID of your User in the Database. This allows us to skip any Polar <-> User mapping in your Database.
+All new customers are created with an associated `externalId`, which is the ID of your User in the Database. This allows us to skip any Polar to User mapping in your Database.
 
 ## Checkout Plugin
 
-To support checkouts in your app, simply pass the Checkout plugin to the use-property.
+[Source code](https://github.com/polarsource/polar-adapters/blob/main/packages/polar-betterauth/src/plugins/checkout.ts)
 
-```typescript
-import { polar, checkout } from "@polar-sh/better-auth";
+To support [checkouts](/features/checkout/links) in your app, you would pass the `checkout` plugin in the `use` property. 
 
-const auth = betterAuth({
-    // ... Better Auth config
-    plugins: [
-        polar({
-            ...
-            use: [
-                checkout({
-                    // Optional field - will make it possible to pass a slug to checkout instead of Product ID
-                    products: [ { productId: "123-456-789", slug: "pro" } ],
-                    // Relative URL to return to when checkout is successfully completed
-                    successUrl: "/success?checkout_id={CHECKOUT_ID}",
-                    // Whether you want to allow unauthenticated checkout sessions or not
-                    authenticatedUsersOnly: true
-                })
-            ],
-        })
-    ]
-});
-```
+The checkout plugin accepts the following configuration options:
 
-When checkouts are enabled, you're able to initialize Checkout Sessions using the checkout-method on the BetterAuth Client. This will redirect the user to the Product Checkout.
+- **`products`** (optional): An array of product mappings or a function that returns them asynchronously. Each mapping contains a `productId` and a `slug` that allows you to reference products by a friendly slug instead of their full ID.
 
-```typescript
-await authClient.checkout({
-  // Any Polar Product ID can be passed here
-  products: ["e651f46d-ac20-4f26-b769-ad088b123df2"],
-  // Or, if you setup "products" in the Checkout Config, you can pass the slug
-  slug: "pro",
-});
-```
+- **`successUrl`** (optional): The relative URL where customers will be redirected after a successful checkout completion. You can use the `{CHECKOUT_ID}` placeholder in the URL to include the checkout session ID in the redirect.
 
-Checkouts will automatically carry the authenticated User as the customer to the checkout. Email-address will be "locked-in".
+- **`authenticatedUsersOnly`** (optional): A boolean flag that controls whether checkout sessions require user authentication. When set to `true`, only authenticated users can initiate checkouts and the customer information will be automatically associated with the authenticated user. When `false`, anonymous checkouts are allowed.
 
-If `authenticatedUsersOnly` is `false` - then it will be possible to trigger checkout sessions without any associated customer.
+<Steps>
+  <Step title="Use Checkout Plugin">
+    Update the `use` property of the Polar plugin for BetterAuth client to have the `checkout` plugin.
+
+    ```typescript icon="square-js" Checkout Plugin Example
+    import { 
+      polar,
+      checkout // [!code ++]
+    } from "@polar-sh/better-auth";
+
+    const auth = betterAuth({
+        // ... Better Auth config
+        plugins: [
+            polar({
+                ...
+                use: [
+                    checkout({ // [!code ++]
+                        // Optional field - will make it possible to pass a slug to checkout instead of Product ID
+                        products: [ { productId: "123-456-789", slug: "pro" } ], // [!code ++]
+                        // Relative URL to return to when checkout is successfully completed
+                        successUrl: "/success?checkout_id={CHECKOUT_ID}", // [!code ++]
+                        // Wheather you want to allow unauthenticated checkout sessions or not
+                        authenticatedUsersOnly: true // [!code ++]
+                    }) // [!code ++]
+                ],
+            })
+        ]
+    });
+    ```
+  </Step>
+  <Step title="Create checkouts using BetterAuth client">
+    When the `checkout` plugin is passed, you are then able to initialize Checkout Sessions using the `checkout` method on the BetterAuth client. This will redirect the user to the product's checkout link.
+
+    ```typescript icon="square-js" BetterAuth Checkout with Polar Example
+    await authClient.checkout({
+      // Polar Product IDs
+      products: ["e651f46d-ac20-4f26-b769-ad088b123df2"], // [!code ++]
+      // OR
+      // if "products" in passed in the checkout plugin's config, you may pass the slug
+      // slug: "pro", // [!code ++]
+    });
+    ```
+  </Step>
+</Steps>
 
 ### Organization Support
 
@@ -324,12 +341,13 @@ So in order to figure out if a user should have access, pass the user's organiza
 ```typescript
 const organizationId = (await authClient.organization.list())?.data?.[0]?.id,
 
-const { data: subscriptions } = await authClient.customer.subscriptions.list({
+const { data: subscriptions } = await authClient.customer.orders.list({
     query: {
-	  page: 1,
+	    page: 1,
 		limit: 10,
 		active: true,
-    referenceId: organizationId
+        referenceId: organizationId
+    },
 });
 
 const userShouldHaveAccess = subscriptions.some(
@@ -339,10 +357,17 @@ const userShouldHaveAccess = subscriptions.some(
 
 ## Usage Plugin
 
-A simple plugin for Usage Based Billing.
+[Source code](https://github.com/polarsource/polar-adapters/blob/main/packages/polar-betterauth/src/plugins/usage.ts)
 
-```typescript
-import { polar, checkout, portal, usage } from "@polar-sh/better-auth";
+A plugin for Usage Based Billing that allows you to [ingest events](#event-ingestion) from your application and list the [authenticated user's Usage Meter](#customer-meters).
+
+To enable [usage based billing](/integrate/sdk/adapters/better-auth) in your app, you would pass the `usage` plugin in the `use` property.
+
+```typescript icon="square-js" Usage Plugin Example
+import {
+  polar, checkout, portal,
+  usage // [!code ++]
+} from "@polar-sh/better-auth";
 
 const auth = betterAuth({
     // ... Better Auth config
@@ -352,7 +377,7 @@ const auth = betterAuth({
             use: [
                 checkout(...),
                 portal(),
-                usage()
+                usage() // [!code ++]
             ],
         })
     ]
@@ -363,10 +388,18 @@ const auth = betterAuth({
 
 Polar's Usage Based Billing builds entirely on event ingestion. Ingest events from your application, create Meters to represent that usage, and add metered prices to Products to charge for it.
 
-[Learn more about Usage Based Billing in the Polar Docs.](https://docs.polar.sh/features/usage-based-billing/introduction)
+The `ingestion` method of the `usage` plugin accepts the following parameters:
 
-```typescript
-const { data: ingested } = await authClient.usage.ingest({
+- `event` (string): The name of the event to ingest. For example, `ai_usage`, `video_streamed` or `file_uploaded`.
+
+- `metadata` (object): A record containing key-value pairs that provide additional context about the event. Values can be strings, numbers, or booleans. This is useful for storing information that can be used to filter the events or compute the actual usage. For example, you can store the duration of the video streamed or the size of the file uploaded.
+
+<Info>
+  The authenticated user is automatically associated with the ingested event.
+</Info>
+
+```typescript icon="square-js" Event Ingestion with Usage Plugin Example
+const { data: ingested } = await authClient.usage.ingestion({
   event: "file-uploads",
   metadata: {
     uploadedFiles: 12,
@@ -374,22 +407,17 @@ const { data: ingested } = await authClient.usage.ingest({
 });
 ```
 
-The authenticated user is automatically associated with the ingested event.
-
 ### Customer Meters
 
-A simple method for listing the authenticated user's Usage Meters, or as we call them, Customer Meters.
+A method to list the authenticated user's Usage Meters (aka Customer Meters). A Customer Meter contains all the information about their consumption on your defined meters.
 
-Customer Meter's contains all information about their consumtion on your defined meters.
+The `meters` method of the `usage` plugin accepts the following parameters:
 
-- Customer Information
-- Meter Information
-- Customer Meter Information
-  - Consumed Units
-  - Credited Units
-  - Balance
+- `page` (number): The page number for pagination (starts from 1).
 
-```typescript
+- `limit` (number): The maximum number of meters to return per page.
+
+```typescript icon="square-js" Customer Meters with Usage Plugin Example
 const { data: customerMeters } = await authClient.usage.meters.list({
   query: {
     page: 1,
@@ -398,42 +426,67 @@ const { data: customerMeters } = await authClient.usage.meters.list({
 });
 ```
 
+The `meters` method returns the following fields in the response object:
+
+(TODO verify with Birk)
+
+- **Customer Information**: Details about the authenticated customer
+- **Meter Information**: Configuration and settings of the usage meter
+- **Customer Meter Information**:
+  - **Consumed Units**: Total units consumed by the customer
+  - **Credited Units**: Units credited back to the customer
+  - **Balance**: Current balance of consumed vs credited units
+
 ## Webhooks Plugin
 
-The Webhooks plugin can be used to capture incoming events from your Polar organization.
+[Source code](https://github.com/polarsource/polar-adapters/blob/main/packages/polar-betterauth/src/plugins/webhooks.ts)
 
-```typescript
-import { polar, webhooks } from "@polar-sh/better-auth";
+The `webhooks` plugin can be used to capture incoming events from your Polar organization.
 
-const auth = betterAuth({
-    // ... Better Auth config
-    plugins: [
-        polar({
-            ...
-            use: [
-                webhooks({
-                    secret: process.env.POLAR_WEBHOOK_SECRET,
-                    onCustomerStateChanged: (payload) => // Triggered when anything regarding a customer changes
-                    onOrderPaid: (payload) => // Triggered when an order was paid (purchase, subscription renewal, etc.)
-                    ...  // Over 25 granular webhook handlers
-                    onPayload: (payload) => // Catch-all for all events
-                })
-            ],
-        })
-    ]
-});
-```
+To set up the Polar `webhooks` plugin with the BetterAuth client, follow the steps below:
 
-Configure a Webhook endpoint in your Polar Organization Settings page. Webhook endpoint is configured at /polar/webhooks.
+<Steps>
+  <Step title="Configure Webhook Endpoints in Polar">
+    Configure a Webhook endpoint in your Polar Organization Settings page by following [this guide](/integrate/webhooks/endpoints). Webhook endpoint is configured at /polar/webhooks.
+  </Step>
+  <Step title="Add the Webhook Secret">
+    Add the obtained webhook secret to your application environment as an environment variable (to be used as `process.env.POLAR_WEBHOOK_SECRET`):
+  
+    ```bash .env
+    POLAR_WEBHOOK_SECRET="..."
+    ```
+  </Step>
+  <Step title="Use Webhooks Plugin in BetterAuth client">
+    Pass the `webhooks` plugin in the `use` property.
+    
+    ```typescript icon="square-js" Webhooks Plugin Example
+    import {
+      polar,
+      webhooks // [!code ++]
+    } from "@polar-sh/better-auth";
 
-Add the secret to your environment.
+    const auth = betterAuth({
+        // ... Better Auth config
+        plugins: [
+            polar({
+                ...
+                use: [
+                    webhooks({ // [!code ++]
+                        secret: process.env.POLAR_WEBHOOK_SECRET, // [!code ++]
+                        onCustomerStateChanged: (payload) => // Triggered when anything regarding a customer changes // [!code ++]
+                        onOrderPaid: (payload) => // Triggered when an order was paid (purchase, subscription renewal, etc.) // [!code ++]
+                        ...  // Over 25 granular webhook handlers // [!code ++]
+                        onPayload: (payload) => // Catch-all for all events // [!code ++]
+                    }) // [!code ++]
+                ],
+            })
+        ]
+    });
+    ```
+  </Step>
+</Steps>
 
-```bash
-# .env
-POLAR_WEBHOOK_SECRET=...
-```
-
-The plugin supports handlers for all Polar webhook events:
+The `webhooks` plugin allows you to invoke handlers for all Polar webhook events:
 
 - `onPayload` - Catch-all handler for any incoming Webhook event
 - `onCheckoutCreated` - Triggered when a checkout is created
@@ -461,3 +514,4 @@ The plugin supports handlers for all Polar webhook events:
 - `onCustomerUpdated` - Triggered when a customer is updated
 - `onCustomerDeleted` - Triggered when a customer is deleted
 - `onCustomerStateChanged` - Triggered when a customer is created
+

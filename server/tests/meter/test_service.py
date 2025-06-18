@@ -529,6 +529,81 @@ class TestGetQuantities:
         assert quantity.quantity == 0
         assert result.total == 0
 
+    async def test_metadata_filter(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        timestamp = utc_now()
+        events = [
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 20, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 10, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 10, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 0, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 100, "model": "pro"},
+            ),
+        ]
+
+        meter = await create_meter(
+            save_fixture,
+            name="Lite Model Usage",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="name", operator=FilterOperator.eq, value="test"
+                    )
+                ],
+            ),
+            aggregation=CountAggregation(),
+            organization=customer.organization,
+        )
+
+        result = await meter_service.get_quantities(
+            session,
+            meter,
+            customer_id=[customer.id],
+            start_timestamp=timestamp,
+            end_timestamp=timestamp,
+            interval=TimeInterval.day,
+            metadata={"model": ["lite"]},
+        )
+
+        assert len(result.quantities) == 1
+        quantity = result.quantities[0]
+        assert quantity.quantity == 4
+        assert result.total == 4
+
 
 @pytest_asyncio.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:

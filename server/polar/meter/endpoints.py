@@ -93,6 +93,7 @@ async def get(
 async def quantities(
     id: MeterID,
     auth_subject: auth.MeterRead,
+    metadata: MetadataQuery,
     start_timestamp: AwareDatetime = Query(
         ...,
         description="Start timestamp.",
@@ -139,6 +140,7 @@ async def quantities(
         interval=interval,
         customer_id=customer_id,
         external_customer_id=external_customer_id,
+        metadata=metadata,
     )
 
 

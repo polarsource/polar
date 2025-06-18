@@ -59,24 +59,28 @@ const itemVariants = {
 export default function FrameworkSelector() {
   return (
     <motion.div
-      className="flex w-full flex-row items-center justify-center gap-x-4 md:w-3/4 md:gap-x-24 md:self-center"
+      className="flex h-24 w-full flex-row items-center justify-center gap-x-4 md:w-3/4 md:gap-x-24 md:self-center"
       variants={containerVariants}
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true }}
     >
       {frameworks.map((framework) => (
-        <motion.div
+        <Link
           key={framework.name}
-          className="dark:hover:bg-polar-950 group flex flex-1 flex-col items-center justify-center hover:bg-gray-100"
-          variants={itemVariants}
+          href={framework.href}
+          className="h-full w-full"
         >
-          <Link key={framework.name} href={framework.href}>
+          <motion.div
+            key={framework.name}
+            className="dark:hover:bg-polar-900 group flex h-full w-full flex-1 flex-col items-center justify-center rounded-md hover:bg-gray-100"
+            variants={itemVariants}
+          >
             <div className="flex flex-col opacity-50 transition-all duration-200 group-hover:opacity-100">
               {framework.icon}
             </div>
-          </Link>
-        </motion.div>
+          </motion.div>
+        </Link>
       ))}
     </motion.div>
   )

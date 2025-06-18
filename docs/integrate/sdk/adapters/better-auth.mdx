@@ -9,8 +9,8 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
 
 ## Features
 
-- Automatic Customer creation on signup
-- Reference System to associate purchases with organizations
+- [Automatic Customer creation on signup](#automatic-customer-creation-on-signup)
+- [Reference System to associate purchases with organizations](#3-2-orders)
 - [Checkout Integration](#checkout-plugin)
 - [Event Ingestion & Customer Meters for flexible Usage Based Billing](#usage-plugin)
 - [Handle Polar Webhooks securely with signature verification](#webhooks-plugin)
@@ -18,142 +18,140 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
 
 ## Installation
 
-```bash
-pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk
-```
+<Tabs>
+  <Tab title="npm">
+    Install the BetterAuth and Polar required libraries using the following command:
+    ```bash
+    npm install better-auth @polar-sh/better-auth @polar-sh/sdk
+    ```
+  </Tab>
+  <Tab title="yarn">
+    Install the BetterAuth and Polar required libraries using the following command:
+    ```bash
+    yarn add better-auth @polar-sh/better-auth @polar-sh/sdk
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    Install the BetterAuth and Polar required libraries using the following command:
+    ```bash
+    pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk
+    ```
+  </Tab>
+</Tabs>
 
-## Preparation
+## Integrate Polar with BetterAuth
 
-Go to your Polar Organization Settings, create an Organization Access Token, and add it to the environment variables of your application.
+<Steps>
+  <Step title="Configure Polar Access Token">
+    Go to your Polar Organization Settings, create an Organization Access Token, and add it to the environment variables of your application.
 
-```bash .env
-POLAR_ACCESS_TOKEN=...
-```
+    ```bash .env
+    POLAR_ACCESS_TOKEN=...
+    ```
+  </Step>
+  <Step title="Configure BetterAuth Server">
+    The Polar plugin comes with it's own set of plugins to add functionality to your stack:
 
-### Configuring BetterAuth Server
+    - **checkout** - Enable seamless checkout integration
+    - **portal** - Make it possible for your customers to manage their orders, subscriptions & benefits
+    - **usage** - List customer meters & ingest events for Usage Based Billing
+    - **webhooks** - Listen for relevant Polar webhooks
 
-The Polar plugin comes with a handful additional plugins which adds functionality to your stack.
+    ```typescript icon="square-js" BetterAuth Server with Polar Example
+    import { betterAuth } from "better-auth";
+    import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth"; // [!code ++]
+    import { Polar } from "@polar-sh/sdk"; // [!code ++]
 
-- Checkout - Enables a seamless checkout integration
-- Portal - Makes it possible for your customers to manage their orders, subscriptions & granted benefits
-- Usage - Simple extension for listing customer meters & ingesting events for Usage Based Billing
-- Webhooks - Listen for relevant Polar webhooks
+    const polarClient = new Polar({ // [!code ++]
+        accessToken: process.env.POLAR_ACCESS_TOKEN, // [!code ++]
+        // Use 'sandbox' if you're using the Polar Sandbox environment
+        // Remember that access tokens, products, etc. are completely separated between environments.
+        // Access tokens obtained in Production are for instance not usable in the Sandbox environment.
+        server: 'sandbox' // [!code ++]
+    }); // [!code ++]
 
-```typescript
-import { betterAuth } from "better-auth";
-import { polar, checkout, portal, usage, webhooks } from "@polar-sh/better-auth";
-import { Polar } from "@polar-sh/sdk";
+    const auth = betterAuth({
+        // ... Better Auth config
+        plugins: [
+            polar({ // [!code ++]
+                client: polarClient, // [!code ++]
+                createCustomerOnSignUp: true, // [!code ++]
+                use: [ // [!code ++]
+                    checkout({ // [!code ++]
+                        products: [ // [!code ++]
+                            { // [!code ++]
+                                productId: "123-456-789", // ID of Product from Polar Dashboard // [!code ++]
+                                slug: "pro" // Custom slug for easy reference in Checkout URL, e.g. /checkout/pro // [!code ++]
+                            } // [!code ++]
+                        ], // [!code ++]
+                        successUrl: "/success?checkout_id={CHECKOUT_ID}", // [!code ++]
+                        authenticatedUsersOnly: true // [!code ++]
+                    }), // [!code ++]
+                    portal(), // [!code ++]
+                    usage(), // [!code ++]
+                    webhooks({ // [!code ++]
+                        secret: process.env.POLAR_WEBHOOK_SECRET, // [!code ++]
+                        onCustomerStateChanged: (payload) => // Triggered when anything regarding a customer changes // [!code ++]
+                        onOrderPaid: (payload) => // Triggered when an order was paid (purchase, subscription renewal, etc.) // [!code ++]
+                        ...  // Over 25 granular webhook handlers // [!code ++]
+                        onPayload: (payload) => // Catch-all for all events // [!code ++]
+                    }) // [!code ++]
+                ], // [!code ++]
+            }) // [!code ++]
+        ]
+    });
+    ```
 
-const polarClient = new Polar({
-    accessToken: process.env.POLAR_ACCESS_TOKEN,
-    // Use 'sandbox' if you're using the Polar Sandbox environment
-    // Remember that access tokens, products, etc. are completely separated between environments.
-    // Access tokens obtained in Production are for instance not usable in the Sandbox environment.
-    server: 'sandbox'
-});
+    #### Polar Plugin Configuration Options
 
-const auth = betterAuth({
-    // ... Better Auth config
-    plugins: [
+    ```typescript
+    // ...
+
+    const auth = betterAuth({
+      // ... Better Auth config
+      plugins: [
         polar({
-            client: polarClient,
-            createCustomerOnSignUp: true,
-            use: [
-                checkout({
-                    products: [
-                        {
-                            productId: "123-456-789", // ID of Product from Polar Dashboard
-                            slug: "pro" // Custom slug for easy reference in Checkout URL, e.g. /checkout/pro
-                        }
-                    ],
-                    successUrl: "/success?checkout_id={CHECKOUT_ID}",
-                    authenticatedUsersOnly: true
-                }),
-                portal(),
-                usage(),
-                webhooks({
-                    secret: process.env.POLAR_WEBHOOK_SECRET,
-                    onCustomerStateChanged: (payload) => // Triggered when anything regarding a customer changes
-                    onOrderPaid: (payload) => // Triggered when an order was paid (purchase, subscription renewal, etc.)
-                    ...  // Over 25 granular webhook handlers
-                    onPayload: (payload) => // Catch-all for all events
-                })
-            ],
-        })
-    ]
-});
-```
-
-### Configuring BetterAuth Client
-
-You will be using the BetterAuth Client to interact with the Polar functionalities.
-
-```typescript
-import { createAuthClient } from "better-auth/react";
-import { polarClient } from "@polar-sh/better-auth";
-import { organizationClient } from "better-auth/client/plugins";
-
-// This is all that is needed
-// All Polar plugins, etc. should be attached to the server-side BetterAuth config
-export const authClient = createAuthClient({
-  plugins: [polarClient()],
-});
-```
-
-## Configuration Options
-
-```typescript
-import { betterAuth } from "better-auth";
-import {
-  polar,
-  checkout,
-  portal,
-  usage,
-  webhooks,
-} from "@polar-sh/better-auth";
-import { Polar } from "@polar-sh/sdk";
-
-const polarClient = new Polar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN,
-  // Use 'sandbox' if you're using the Polar Sandbox environment
-  // Remember that access tokens, products, etc. are completely separated between environments.
-  // Access tokens obtained in Production are for instance not usable in the Sandbox environment.
-  server: "sandbox",
-});
-
-const auth = betterAuth({
-  // ... Better Auth config
-  plugins: [
-    polar({
-      client: polarClient,
-      createCustomerOnSignUp: true,
-      getCustomerCreateParams: ({ user }, request) => ({
-        metadata: {
-          myCustomProperty: 123,
-        },
-      }),
-      use: [
-        // This is where you add Polar plugins
+          client: polarClient, // [!code ++]
+          createCustomerOnSignUp: true, // [!code ++]
+          getCustomerCreateParams: ({ user }, request) => ({ // [!code ++]
+            metadata: { // [!code ++]
+              myCustomProperty: 123, // [!code ++]
+            }, // [!code ++]
+          }), // [!code ++]
+          use: [ // [!code ++]
+            // This is where you add Polar plugins // [!code ++]
+          ], // [!code ++]
+        }),
       ],
-    }),
-  ],
-});
-```
+    });
+    ```
 
-### Required Options
+    - `client` (required): Polar SDK client instance
+    - `createCustomerOnSignUp` (optional): Automatically create a Polar customer when a user signs up
+    - `getCustomerCreateParams` (optional): Custom function to provide additional customer creation metadata
+    - `use` (optional): Array of Polar plugins to enable specific functionality (checkout, portal, usage, and webhooks)
+  </Step>
+  <Step title="Configure BetterAuth Client">
+    You will be using the BetterAuth Client to interact with the Polar functionalities.
 
-- `client`: Polar SDK client instance
+    ```typescript icon="square-js" BetterAuth Client with Polar Example
+    import { createAuthClient } from "better-auth/react";
+    import { polarClient } from "@polar-sh/better-auth"; // [!code ++]
+    import { organizationClient } from "better-auth/client/plugins"; // [!code ++]
 
-### Optional Options
+    // All Polar plugins, etc. should be attached to BetterAuth server
+    export const authClient = createAuthClient({ // [!code ++]
+      plugins: [polarClient()], // [!code ++]
+    }); // [!code ++]
+    ```
+  </Step>
+</Steps>
 
-- `createCustomerOnSignUp`: Automatically create a Polar customer when a user signs up
-- `getCustomerCreateParams`: Custom function to provide additional customer creation metadata
+## Automatic Customer creation on signup
 
-### Customers
+Enable the `createCustomerOnSignUp` [Polar plugin configuration option](#polar-plugin-configuration-options) to automatically create a new Polar Customer when a new User is added in the BetterAuth database.
 
-When `createCustomerOnSignUp` is enabled, a new Polar Customer is automatically created when a new User is added in the Better-Auth Database.
-
-All new customers are created with an associated `externalId`, which is the ID of your User in the Database. This allows us to skip any Polar to User mapping in your Database.
+All new customers are created with an associated `externalId`, i.e. the ID of your User in the Database. This skips any Polar to User mapping in your database.
 
 ## Checkout Plugin
 

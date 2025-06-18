@@ -208,7 +208,7 @@ services:
       creds:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
-    plan: standard
+    plan: pro
     dockerCommand: uv run dramatiq -p 2 -t 4 -f scheduler:start run_worker
     healthCheckPath: /
     region: ohio

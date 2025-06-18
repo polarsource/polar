@@ -166,8 +166,10 @@ class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
     is_business_customer: bool = Field(
         default=False, description=_is_business_customer_description
     )
-    customer_external_id: str | None = Field(
-        default=None, description=_external_customer_id_description
+    external_customer_id: str | None = Field(
+        default=None,
+        description=_external_customer_id_description,
+        validation_alias=AliasChoices("external_customer_id", "customer_external_id"),
     )
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
@@ -533,8 +535,13 @@ CheckoutDiscount = Annotated[
 class Checkout(MetadataOutputMixin, CheckoutBase):
     """Checkout session data retrieved using an access token."""
 
+    external_customer_id: str | None = Field(
+        description=_external_customer_id_description,
+        validation_alias=AliasChoices("external_customer_id", "customer_external_id"),
+    )
     customer_external_id: str | None = Field(
-        description=_external_customer_id_description
+        validation_alias=AliasChoices("external_customer_id", "customer_external_id"),
+        deprecated="Use `external_customer_id` instead.",
     )
     products: list[CheckoutProduct] = Field(
         description="List of products available to select."

@@ -76,7 +76,7 @@ dev = [
   "pytest-xdist[psutil]>=3.6.1",
   "sqlalchemy-utils>=0.41.2",
   "minio>=7.2.9",
-  "polar-sdk==0.13.5",
+  "polar-sdk==0.16.13",
 ]
 
 [tool.taskipy.tasks]

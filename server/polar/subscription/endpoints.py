@@ -65,7 +65,9 @@ async def list(
         None, title="CustomerID Filter", description="Filter by customer ID."
     ),
     customer_external_id: MultipleQueryFilter[CustomerExternalID] | None = Query(
-        None, title="CustomerExternalID Filter", description="Filter by customer external ID.",
+        None,
+        title="CustomerExternalID Filter",
+        description="Filter by customer external ID.",
     ),
     discount_id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="DiscountID Filter", description="Filter by discount ID."

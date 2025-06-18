@@ -147,9 +147,9 @@ async def platform_fees_migration(
                         actual_percentage = abs(
                             outgoing_reversal.amount / outgoing.amount * 100
                         )
-                        assert actual_percentage == polar_fee_percentage, (
-                            f"Nope: {actual_percentage} != {polar_fee_percentage}"
-                        )
+                        assert (
+                            actual_percentage == polar_fee_percentage
+                        ), f"Nope: {actual_percentage} != {polar_fee_percentage}"
 
                         typer.echo(
                             typer.style(

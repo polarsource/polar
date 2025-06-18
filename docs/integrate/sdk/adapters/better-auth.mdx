@@ -306,14 +306,12 @@ const { data: customerMeters } = await authClient.usage.meters.list({
 
 The `meters` method returns the following fields in the response object:
 
-(TODO verify with Birk)
-
 - **Customer Information**: Details about the authenticated customer
 - **Meter Information**: Configuration and settings of the usage meter
 - **Customer Meter Information**:
   - **Consumed Units**: Total units consumed by the customer
-  - **Credited Units**: Units credited back to the customer
-  - **Balance**: Current balance of consumed vs credited units
+  - **Credited Units**: Total units credited to the customer
+  - **Balance**: The balance of the meter, i.e. the difference between credited and consumed units.
 
 ## Webhooks Plugin
 
@@ -520,4 +518,3 @@ const { data: subscriptions } = await authClient.customer.subscriptions.list({
 <Danger>
   This will not return subscriptions made by a parent organization to the authenticated user.
 </Danger>
-

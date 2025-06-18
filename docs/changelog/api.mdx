@@ -4,6 +4,21 @@ sidebarTitle: API
 description: Stay up to date with the latest changes, improvements and deprecations to the Polar API.
 ---
 
+<Update label="2025-06-18">
+  ## Checkout API and Customer Session API changes
+
+To be more consistent across our API, we've renamed `customer_external_id` field to `external_customer_id` in the Checkout API and Customer Session API.
+
+- <Icon icon="circle-exclamation" size={16} color="orange" /> **Deprecated**:
+  `customer_external_id` field in the Checkout API and Customer Session API. Use
+  `external_customer_id` instead.
+
+## Benefit metadata in Customer State
+
+The customer state now includes the [benefit metadata](/api-reference/customers/state#response-benefit-metadata) in the `granted_benefits` list.
+
+</Update>
+
 <Update label="2025-06-17">
   ## Webhook API endpoints are now documented
 

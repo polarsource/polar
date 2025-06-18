@@ -4,6 +4,7 @@ from fastapi import Depends, Query
 
 from polar.benefit.schemas import BenefitID
 from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.kit.metadata import MetadataQuery
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
@@ -41,6 +42,7 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
     auth_subject: auth.CreatorProductsRead,
+    metadata: MetadataQuery,
     id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="ProductID Filter", description="Filter by product ID."
     ),
@@ -74,6 +76,7 @@ async def list(
         is_archived=is_archived,
         is_recurring=is_recurring,
         benefit_id=benefit_id,
+        metadata=metadata,
         pagination=pagination,
         sorting=sorting,
     )

@@ -21,6 +21,7 @@ from polar.file.service import file as file_service
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
 from polar.meter.repository import MeterRepository
@@ -73,6 +74,7 @@ class ProductService:
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
         benefit_id: Sequence[uuid.UUID] | None = None,
+        metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[ProductSortProperty]] = [
             (ProductSortProperty.created_at, True)
@@ -119,6 +121,9 @@ class ProductService:
                 .where(ProductBenefit.benefit_id.in_(benefit_id))
                 .options(contains_eager(Product.product_benefits))
             )
+
+        if metadata is not None:
+            statement = apply_metadata_clause(Product, statement, metadata)
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

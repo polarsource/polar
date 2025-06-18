@@ -1,14 +1,14 @@
+'use client'
+
 import { useAuth, useGitHubAccount, useGoogleAccount } from '@/hooks'
 import { getGitHubAuthorizeURL, getGoogleAuthorizeURL } from '@/utils/auth'
 import { AlternateEmailOutlined, GitHub, Google } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import EmailUpdateForm from '../Form/EmailUpdateForm'
-
 interface AuthenticationMethodProps {
   icon: React.ReactNode
   title: React.ReactNode
@@ -23,11 +23,11 @@ const AuthenticationMethod: React.FC<AuthenticationMethodProps> = ({
   action,
 }) => {
   return (
-    <div className="flex flex-row items-center justify-center gap-5">
+    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-center">
       <div>{icon}</div>
       <div className="grow">
         <div className="font-medium">{title}</div>
-        <div className="dark:text-polar-400 text-sm text-gray-500">
+        <div className="dark:text-polar-500 text-sm text-gray-500">
           {subtitle}
         </div>
       </div>
@@ -72,15 +72,6 @@ const GitHubAuthenticationMethod: React.FC<GitHubAuthenticationMethodProps> = ({
       }
       action={
         <>
-          {oauthAccount && (
-            <div className="text-sm">
-              Connected{' '}
-              <FormattedDateTime
-                datetime={oauthAccount.created_at}
-                dateStyle="medium"
-              />
-            </div>
-          )}
           {!oauthAccount && (
             <Button asChild>
               <a href={authorizeURL}>Connect</a>
@@ -114,15 +105,6 @@ const GoogleAuthenticationMethod: React.FC<GoogleAuthenticationMethodProps> = ({
       }
       action={
         <>
-          {oauthAccount && (
-            <div className="text-sm">
-              Connected{' '}
-              <FormattedDateTime
-                datetime={oauthAccount.created_at}
-                dateStyle="medium"
-              />
-            </div>
-          )}
           {!oauthAccount && (
             <Button asChild>
               <a href={authorizeURL}>Connect</a>
@@ -161,18 +143,9 @@ const AuthenticationSettings = () => {
     off: (
       <div className="flex flex-row items-center gap-4">
         {currentUser && (
-          <>
-            <div className="text-sm">
-              Connected{' '}
-              <FormattedDateTime
-                datetime={currentUser?.created_at}
-                dateStyle="medium"
-              />
-            </div>
-            <Button onClick={() => setUpdateEmailStage('form')}>
-              Change Email
-            </Button>
-          </>
+          <Button onClick={() => setUpdateEmailStage('form')}>
+            Change Email
+          </Button>
         )}
       </div>
     ),
@@ -202,32 +175,30 @@ const AuthenticationSettings = () => {
   }
 
   return (
-    <>
-      {currentUser && (
-        <ShadowListGroup>
-          <ShadowListGroup.Item>
-            <GitHubAuthenticationMethod
-              oauthAccount={githubAccount}
-              returnTo={pathname || '/start'}
-            />
-          </ShadowListGroup.Item>
-          <ShadowListGroup.Item>
-            <GoogleAuthenticationMethod
-              oauthAccount={googleAccount}
-              returnTo={pathname || '/start'}
-            />
-          </ShadowListGroup.Item>
-          <ShadowListGroup.Item>
-            <AuthenticationMethod
-              icon={<AlternateEmailOutlined />}
-              title={currentUser.email}
-              subtitle="You can sign in with magic links sent to your email."
-              action={updateEmailContent[updateEmailStage]}
-            />
-          </ShadowListGroup.Item>
-        </ShadowListGroup>
-      )}
-    </>
+    <ShadowListGroup>
+      <ShadowListGroup.Item>
+        <GitHubAuthenticationMethod
+          oauthAccount={githubAccount}
+          returnTo={pathname || '/start'}
+        />
+      </ShadowListGroup.Item>
+
+      <ShadowListGroup.Item>
+        <GoogleAuthenticationMethod
+          oauthAccount={googleAccount}
+          returnTo={pathname || '/start'}
+        />
+      </ShadowListGroup.Item>
+
+      <ShadowListGroup.Item>
+        <AuthenticationMethod
+          icon={<AlternateEmailOutlined />}
+          title={currentUser?.email}
+          subtitle="You can sign in with magic links sent to your email"
+          action={updateEmailContent[updateEmailStage]}
+        />
+      </ShadowListGroup.Item>
+    </ShadowListGroup>
   )
 }
 

@@ -13,7 +13,7 @@ from sqlalchemy.util.typing import TypeAlias
 
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.exceptions import (
     BadRequest,
     PolarRequestValidationError,
@@ -1247,6 +1247,49 @@ class TestList:
 
         assert subscription_1 in results
         assert subscription_2 in results
+
+
+@pytest.mark.asyncio
+class TestUpdateProduct:
+    async def test_meters(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        meter: Meter,
+        product_recurring_fixed_and_metered: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product_recurring_fixed_and_metered, customer=customer
+        )
+        assert len(subscription.meters) == 1
+        subscription_meter = subscription.meters[0]
+        assert subscription_meter.meter == meter
+        assert subscription_meter.subscription == subscription
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            # Same meter, but the price comes after the fixed price
+            # It's important to test that the order of prices does not matter
+            prices=[(3000,), (meter, Decimal(50), None)],
+        )
+
+        updated_subscription = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=new_product.id,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        assert updated_subscription.product == new_product
+        assert len(updated_subscription.meters) == 1
+        updated_subscription_meter = updated_subscription.meters[0]
+        assert updated_subscription_meter.meter == meter
+        assert updated_subscription_meter.subscription == updated_subscription
 
 
 @pytest.mark.asyncio

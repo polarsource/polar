@@ -23,7 +23,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     },
     InnerHeaderWrapper(props) {
       return (
-        <div className="prose-headings:font-normal prose-h1:leading-tight prose-headings:text-balance pt-12 text-center md:max-w-2xl md:pb-12 md:pt-0">
+        <div className="prose-headings:font-normal prose-h1:leading-tight prose-headings:text-balance pt-6 text-center md:max-w-3xl md:pb-6 md:pt-0">
           {props.children}
         </div>
       )

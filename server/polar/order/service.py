@@ -279,7 +279,7 @@ class OrderService:
             statement = statement.where(Order.discount_id.in_(discount_id))
 
         # TODO:
-        # Once we add `customer_external_id` be sure to filter for non-deleted.
+        # Once we add `external_customer_id` be sure to filter for non-deleted.
         # Since it could be shared across soft deleted records whereas the unique ID cannot.
         if customer_id is not None:
             statement = statement.where(Order.customer_id.in_(customer_id))
@@ -436,7 +436,13 @@ class OrderService:
                 checkout.tax_processor_id
             )
             assert tax_amount == calculation.tax_amount_exclusive
-            assert len(calculation.tax_breakdown) == 1
+            assert len(calculation.tax_breakdown) > 0
+            if len(calculation.tax_breakdown) > 1:
+                log.warning(
+                    "Multiple tax breakdowns found for checkout",
+                    checkout_id=checkout.id,
+                    calculation_id=calculation.id,
+                )
             breakdown = calculation.tax_breakdown[0]
             taxability_reason = TaxabilityReason.from_stripe(
                 breakdown.taxability_reason, tax_amount

@@ -162,14 +162,20 @@ class TestSDK:
         customer: Customer,
         user_organization: UserOrganization,
     ) -> None:
-        response = await polar.checkouts.custom.create_async(
+        response = await polar.checkouts.create_async(
             request={
                 "product_id": str(product.id),
+                # Test deprecated field for backward compatibility
+                # The current field is `external_customer_id`
+                "customer_external_id": "EXTERNAL_CUSTOMER_ID",
             }
         )
         assert response is not None
 
         assert response.product_id == str(product.id)
+        # Test deprecated field for backward compatibility
+        # The current field is `external_customer_id`
+        assert response.customer_external_id == "EXTERNAL_CUSTOMER_ID"
 
     async def test_create_checkout_link(
         self,

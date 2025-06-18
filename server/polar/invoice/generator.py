@@ -273,8 +273,9 @@ class InvoiceGenerator(FPDF):
 
         # Seller on left column
         self.set_font(style="B")
-        self.cell(
-            h=self.cell_height(),
+        self.multi_cell(
+            80,
+            self.cell_height(),
             text=self.data.seller_name,
             new_x=XPos.LMARGIN,
             new_y=YPos.NEXT,
@@ -302,8 +303,9 @@ class InvoiceGenerator(FPDF):
             h=self.cell_height(), text="Bill to", new_x=XPos.LEFT, new_y=YPos.NEXT
         )
         self.set_font(style="B")
-        self.cell(
-            h=self.cell_height(),
+        self.multi_cell(
+            80,
+            self.cell_height(),
             text=self.data.customer_name,
             new_x=XPos.LEFT,
             new_y=YPos.NEXT,

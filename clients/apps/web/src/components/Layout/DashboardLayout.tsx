@@ -23,23 +23,31 @@ import TopbarRight from './Public/TopbarRight'
 
 const DashboardLayout = (
   props: PropsWithChildren<{
+    type?: 'organization' | 'account'
     className?: string
   }>,
 ) => {
   const { organization, organizations } = useContext(OrganizationContext)
 
   useEffect(() => {
-    setLastVisitedOrg(organization.slug)
+    if (organization) {
+      setLastVisitedOrg(organization.slug)
+    }
   }, [organization])
 
   return (
     <DashboardProvider organization={organization}>
-      <div className="relative flex h-full w-full flex-col bg-gray-100 md:flex-row md:p-2 dark:bg-transparent">
-        <MobileNav organization={organization} organizations={organizations} />
+      <div className="relative flex h-full w-full flex-col bg-white md:flex-row md:bg-gray-100 md:p-2 dark:bg-transparent">
+        <MobileNav
+          organization={organization}
+          organizations={organizations ?? []}
+          type={props.type}
+        />
         <div className="hidden md:flex">
           <DashboardSidebar
             organization={organization}
-            organizations={organizations}
+            organizations={organizations ?? []}
+            type={props.type}
           />
         </div>
         <div
@@ -61,9 +69,11 @@ const DashboardLayout = (
 export default DashboardLayout
 
 const MobileNav = ({
+  type = 'organization',
   organization,
   organizations,
 }: {
+  type?: 'organization' | 'account'
   organization: schemas['Organization']
   organizations: schemas['Organization'][]
 }) => {
@@ -100,6 +110,7 @@ const MobileNav = ({
             <DashboardSidebar
               organization={organization}
               organizations={organizations}
+              type={type}
             />
           </div>
         </div>

@@ -1,6 +1,6 @@
 from polar.worker import TaskPriority, actor
 
-from .sender import get_email_sender
+from .sender import email_sender
 
 
 @actor(actor_name="email.send", priority=TaskPriority.HIGH)
@@ -14,7 +14,6 @@ async def email_send(
     reply_to_name: str | None,
     reply_to_email_addr: str | None,
 ) -> None:
-    email_sender = get_email_sender()
     await email_sender.send(
         to_email_addr=to_email_addr,
         subject=subject,

@@ -81,6 +81,7 @@ async def get_db_session(
 
 
 __all__ = [
+    "AsyncEngine",
     "AsyncSession",
     "sql",
     "create_async_engine",

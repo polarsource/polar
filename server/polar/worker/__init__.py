@@ -1,7 +1,7 @@
 import contextlib
 import contextvars
+import functools
 import json
-import threading
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 from enum import IntEnum
@@ -22,10 +22,23 @@ from polar.kit.db.postgres import AsyncSessionMaker as AsyncSessionMakerType
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.logfire import instrument_httpx, instrument_sqlalchemy
 from polar.logging import Logger
-from polar.postgres import AsyncSession, create_async_engine
+from polar.postgres import AsyncEngine, AsyncSession, create_async_engine
 from polar.redis import Redis, create_redis
 
+from .health import HealthMiddleware
+
 log: Logger = structlog.get_logger()
+
+_sqlalchemy_engine: AsyncEngine | None = None
+_sqlalchemy_async_sessionmaker: AsyncSessionMakerType | None = None
+
+
+async def dispose_sqlalchemy_engine() -> None:
+    global _sqlalchemy_engine
+    if _sqlalchemy_engine is not None:
+        await _sqlalchemy_engine.dispose()
+        log.info("Disposed SQLAlchemy engine")
+        _sqlalchemy_engine = None
 
 
 class SQLAlchemyMiddleware(dramatiq.Middleware):
@@ -33,41 +46,28 @@ class SQLAlchemyMiddleware(dramatiq.Middleware):
     Middleware managing the lifecycle of the database engine and sessionmaker.
     """
 
-    _get_async_sessionmaker_context: contextvars.ContextVar[AsyncSessionMakerType] = (
-        contextvars.ContextVar("polar.get_async_sessionmaker")
-    )
-
-    def __init__(self) -> None:
-        self.logger: Logger = structlog.get_logger()
-
     @classmethod
     def get_async_session(cls) -> contextlib.AbstractAsyncContextManager[AsyncSession]:
-        _get_async_session_context = cls._get_async_sessionmaker_context.get()
-        return _get_async_session_context()
+        global _sqlalchemy_async_sessionmaker
+        if _sqlalchemy_async_sessionmaker is None:
+            raise RuntimeError("SQLAlchemy not initialized")
+        return _sqlalchemy_async_sessionmaker()
 
     def before_worker_boot(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:
-        self.engine = create_async_engine("worker")
-        self.async_sessionmaker = create_async_sessionmaker(self.engine)
-        instrument_sqlalchemy(self.engine.sync_engine)
-        self.logger.info("Created database engine")
+        global _sqlalchemy_engine, _sqlalchemy_async_sessionmaker
+        _sqlalchemy_engine = create_async_engine("worker")
+        _sqlalchemy_async_sessionmaker = create_async_sessionmaker(_sqlalchemy_engine)
+        instrument_sqlalchemy(_sqlalchemy_engine.sync_engine)
+        log.info("Created database engine")
 
     def after_worker_shutdown(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:
         event_loop_thread = get_event_loop_thread()
         assert event_loop_thread is not None
-        event_loop_thread.run_coroutine(self._dispose_engine())
-
-    def after_worker_thread_boot(
-        self, broker: dramatiq.Broker, thread: threading.Thread
-    ) -> None:
-        self._get_async_sessionmaker_context.set(self.async_sessionmaker)
-
-    async def _dispose_engine(self) -> None:
-        await self.engine.dispose()
-        self.logger.info("Database engine disposed")
+        event_loop_thread.run_coroutine(dispose_sqlalchemy_engine())
 
 
 @contextlib.asynccontextmanager
@@ -85,49 +85,42 @@ async def AsyncSessionMaker() -> AsyncIterator[AsyncSession]:
             await session.commit()
 
 
+_redis: Redis | None = None
+
+
+async def _close_redis() -> None:
+    global _redis
+    if _redis is not None:
+        await _redis.close(True)
+        log.info("Closed Redis client")
+        _redis = None
+
+
 class RedisMiddleware(dramatiq.Middleware):
     """
     Middleware managing the lifecycle of the Redis connection.
     """
 
-    _redis_context: contextvars.ContextVar[Redis] = contextvars.ContextVar(
-        "polar.redis"
-    )
-
-    def __init__(self) -> None:
-        self.logger: Logger = structlog.get_logger()
-        self._stack = contextlib.AsyncExitStack()
-
     @classmethod
     def get(cls) -> Redis:
-        return cls._redis_context.get()
+        global _redis
+        if _redis is None:
+            raise RuntimeError("Redis not initialized")
+        return _redis
 
     def before_worker_boot(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:
-        event_loop_thread = get_event_loop_thread()
-        assert event_loop_thread is not None
-        event_loop_thread.run_coroutine(self._open())
-        self.logger.info("Opened Redis connection")
+        global _redis
+        _redis = create_redis("worker")
+        log.info("Created Redis client")
 
     def after_worker_shutdown(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:
         event_loop_thread = get_event_loop_thread()
         assert event_loop_thread is not None
-        event_loop_thread.run_coroutine(self._close())
-        self.logger.info("Closed Redis connection")
-
-    def after_worker_thread_boot(
-        self, broker: dramatiq.Broker, thread: threading.Thread
-    ) -> None:
-        self._redis_context.set(self.redis)
-
-    async def _open(self) -> None:
-        self.redis = await self._stack.enter_async_context(create_redis("worker"))
-
-    async def _close(self) -> None:
-        await self._stack.aclose()
+        event_loop_thread.run_coroutine(_close_redis())
 
 
 JSONSerializable: TypeAlias = (
@@ -140,115 +133,93 @@ JSONSerializable: TypeAlias = (
     | uuid.UUID
     | None
 )
-JobToEnqueue: TypeAlias = tuple[
-    str, tuple[JSONSerializable, ...], dict[str, JSONSerializable]
-]
 
 
-class EnqueuedJobsMiddleware(dramatiq.Middleware):
-    """
-    Middleware to enqueue jobs in the current thread,
-    and flushing them to Redis when the message is processed.
-    """
+_job_queue_manager: contextvars.ContextVar["JobQueueManager | None"] = (
+    contextvars.ContextVar("polar.job_queue_manager")
+)
 
-    _enqueued_jobs = contextvars.ContextVar[list[JobToEnqueue]]("polar.enqueued_jobs")
-    _ingested_events = contextvars.ContextVar[list[uuid.UUID]]("polar.ingested_events")
+
+class JobQueueManager:
+    __slots__ = ("_enqueued_jobs", "_ingested_events")
+
+    def __init__(self) -> None:
+        self._enqueued_jobs: list[
+            tuple[str, tuple[JSONSerializable, ...], dict[str, JSONSerializable]]
+        ] = []
+        self._ingested_events: list[uuid.UUID] = []
+
+    def enqueue_job(
+        self, actor: str, *args: JSONSerializable, **kwargs: JSONSerializable
+    ) -> None:
+        self._enqueued_jobs.append((actor, args, kwargs))
+        log.debug("polar.worker.job_enqueued", actor=actor)
+
+    def enqueue_events(self, *event_ids: uuid.UUID) -> None:
+        self._ingested_events.extend(event_ids)
+
+    async def flush(self, broker: dramatiq.Broker, redis: Redis) -> None:
+        if len(self._ingested_events) > 0:
+            self.enqueue_job("event.ingested", self._ingested_events)
+
+        for actor_name, args, kwargs in self._enqueued_jobs:
+            fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
+            redis_message_id = str(uuid.uuid4())
+            message = fn.message_with_options(
+                args=args, kwargs=kwargs, redis_message_id=redis_message_id
+            )
+            await redis.hset(
+                f"dramatiq:{message.queue_name}.msgs",
+                redis_message_id,
+                message.encode(),
+            )
+            await redis.rpush(f"dramatiq:{message.queue_name}", redis_message_id)
+            log.debug(
+                "polar.worker.job_flushed",
+                actor=fn.actor_name,
+                message=message.encode(),
+            )
+
+        self.reset()
+
+    def reset(self) -> None:
+        self._enqueued_jobs = []
+        self._ingested_events = []
 
     @classmethod
-    def get_enqueued_jobs_context(
-        cls,
-    ) -> contextvars.ContextVar[list[JobToEnqueue]]:
-        return cls._enqueued_jobs
+    @contextlib.asynccontextmanager
+    async def open(
+        cls, broker: dramatiq.Broker, redis: Redis
+    ) -> AsyncIterator["JobQueueManager"]:
+        job_queue_manager = JobQueueManager()
+        _job_queue_manager.set(job_queue_manager)
+        try:
+            yield job_queue_manager
+            await job_queue_manager.flush(broker, redis)
+        finally:
+            job_queue_manager.reset()
+            _job_queue_manager.set(None)
 
     @classmethod
-    def get_ingested_events_context(
-        cls,
-    ) -> contextvars.ContextVar[list[uuid.UUID]]:
-        return cls._ingested_events
-
-    def after_worker_thread_boot(
-        self, broker: dramatiq.Broker, thread: threading.Thread
-    ) -> None:
-        self._enqueued_jobs.set([])
-        self._ingested_events.set([])
-
-    def before_process_message(
-        self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
-    ) -> None:
-        enqueued_jobs = self._enqueued_jobs.get([])
-        assert enqueued_jobs == [], (
-            "Enqueued jobs should be empty before processing a message"
-        )
-        ingested_events = self._ingested_events.get([])
-        assert ingested_events == [], (
-            "Ingested events should be empty before processing a message"
-        )
-
-    def after_process_message(
-        self,
-        broker: dramatiq.Broker,
-        message: dramatiq.Message[Any],
-        *,
-        result: Any | None = None,
-        exception: Exception | None = None,
-    ) -> None:
-        current_thread = threading.current_thread()
-        if not settings.is_testing() and exception is None:
-            redis = RedisMiddleware.get()
-            event_loop_thread = get_event_loop_thread()
-            assert event_loop_thread is not None
-            event_loop_thread.run_coroutine(flush_ingested_events())
-            event_loop_thread.run_coroutine(flush_enqueued_jobs(broker, redis))
-        self._enqueued_jobs.set([])
-        self._ingested_events.set([])
+    def get(cls) -> "JobQueueManager":
+        job_queue_manager = _job_queue_manager.get()
+        if job_queue_manager is None:
+            raise RuntimeError("JobQueueManager not initialized")
+        return job_queue_manager
 
 
 def enqueue_job(
     actor: str, *args: JSONSerializable, **kwargs: JSONSerializable
 ) -> None:
     """Enqueue a job by actor name."""
-    enqueued_jobs_context = EnqueuedJobsMiddleware.get_enqueued_jobs_context()
-    enqueued_jobs_list = enqueued_jobs_context.get([])
-    enqueued_jobs_list.append((actor, args, kwargs))
-    enqueued_jobs_context.set(enqueued_jobs_list)
-    log.debug("polar.worker.job_enqueued", actor=actor, args=args, kwargs=kwargs)
-
-
-async def flush_enqueued_jobs(broker: dramatiq.Broker, redis: Redis) -> None:
-    """Flush enqueued jobs to Redis."""
-    enqueued_jobs_context = EnqueuedJobsMiddleware.get_enqueued_jobs_context()
-
-    for actor_name, args, kwargs in enqueued_jobs_context.get([]):
-        fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
-        message = fn.message_with_options(args=args, kwargs=kwargs)
-        redis_message_id = str(uuid.uuid4())
-        message = message.copy(options={"redis_message_id": redis_message_id})
-        await redis.hset(
-            f"dramatiq:{message.queue_name}.msgs", redis_message_id, message.encode()
-        )
-        await redis.rpush(f"dramatiq:{message.queue_name}", redis_message_id)
-        log.debug(
-            "polar.worker.job_flushed", actor=fn.actor_name, args=args, kwargs=kwargs
-        )
-
-    enqueued_jobs_context.set([])
+    job_queue_manager = JobQueueManager.get()
+    job_queue_manager.enqueue_job(actor, *args, **kwargs)
 
 
 def enqueue_events(*event_ids: uuid.UUID) -> None:
     """Enqueue events to be ingested."""
-    ingested_events_context = EnqueuedJobsMiddleware.get_ingested_events_context()
-    ingested_events_list = ingested_events_context.get([])
-    ingested_events_list.extend(event_ids)
-    ingested_events_context.set(ingested_events_list)
-
-
-async def flush_ingested_events() -> None:
-    """Trigger the `event.ingested` job for all ingested events."""
-    ingested_events_context = EnqueuedJobsMiddleware.get_ingested_events_context()
-    ingested_events = ingested_events_context.get([])
-    if len(ingested_events) > 0:
-        enqueue_job("event.ingested", ingested_events)
-    ingested_events_context.set([])
+    job_queue_manager = JobQueueManager.get()
+    job_queue_manager.enqueue_events(*event_ids)
 
 
 class MaxRetriesMiddleware(dramatiq.Middleware):
@@ -299,12 +270,6 @@ scheduler_middleware = SchedulerMiddleware()
 class LogfireMiddleware(dramatiq.Middleware):
     """Middleware to manage a Logfire span when handling a message."""
 
-    _logfire_span_stack: contextvars.ContextVar[contextlib.ExitStack] = (
-        contextvars.ContextVar(
-            "polar.logfire_span_stack", default=contextlib.ExitStack()
-        )
-    )
-
     def before_worker_boot(
         self, broker: dramatiq.Broker, worker: dramatiq.Worker
     ) -> None:
@@ -313,12 +278,17 @@ class LogfireMiddleware(dramatiq.Middleware):
     def before_process_message(
         self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
     ) -> None:
-        logfire_span_stack = self._logfire_span_stack.get()
-        logfire_span = logfire_span_stack.enter_context(
-            logfire.span(
-                "TASK {actor}", actor=message.actor_name, message=message.asdict()
+        logfire_stack = contextlib.ExitStack()
+        actor_name = message.actor_name
+        if actor_name in settings.LOGFIRE_IGNORED_ACTORS:
+            logfire_span = logfire_stack.enter_context(
+                logfire.suppress_instrumentation()
             )
-        )
+        else:
+            logfire_span = logfire_stack.enter_context(
+                logfire.span("TASK {actor}", actor=actor_name, message=message.asdict())
+            )
+        message.options["logfire_stack"] = logfire_stack
 
     def after_process_message(
         self,
@@ -328,9 +298,11 @@ class LogfireMiddleware(dramatiq.Middleware):
         result: Any | None = None,
         exception: Exception | None = None,
     ) -> None:
-        logfire_span_stack = self._logfire_span_stack.get()
-        logfire_span_stack.close()
-        self._logfire_span_stack.set(contextlib.ExitStack())
+        logfire_stack: contextlib.ExitStack | None = message.options.pop(
+            "logfire_stack", None
+        )
+        if logfire_stack is not None:
+            logfire_stack.close()
 
     def after_skip_message(
         self, broker: dramatiq.Broker, message: dramatiq.Message[Any]
@@ -360,12 +332,9 @@ broker = RedisBroker(
     middleware=[
         m()
         for m in (
-            middleware.Prometheus,
             middleware.AgeLimit,
             middleware.TimeLimit,
             middleware.ShutdownNotifications,
-            middleware.Callbacks,
-            middleware.Pipelines,
         )
     ],
 )
@@ -376,12 +345,12 @@ broker.add_middleware(
         min_backoff=settings.WORKER_MIN_BACKOFF_MILLISECONDS,
     )
 )
+broker.add_middleware(HealthMiddleware())
 broker.add_middleware(middleware.AsyncIO())
 broker.add_middleware(middleware.CurrentMessage())
 broker.add_middleware(MaxRetriesMiddleware())
 broker.add_middleware(SQLAlchemyMiddleware())
 broker.add_middleware(RedisMiddleware())
-broker.add_middleware(EnqueuedJobsMiddleware())
 broker.add_middleware(scheduler_middleware)
 broker.add_middleware(LogfireMiddleware())
 dramatiq.set_broker(broker)
@@ -409,8 +378,15 @@ def actor(
     def decorator(
         fn: Callable[P, Awaitable[R]],
     ) -> Callable[P, Awaitable[R]]:
+        @functools.wraps(fn)
+        async def _wrapped_fn(*args: P.args, **kwargs: P.kwargs) -> R:
+            async with JobQueueManager.open(
+                dramatiq.get_broker(), RedisMiddleware.get()
+            ):
+                return await fn(*args, **kwargs)
+
         _actor(
-            fn,  # type: ignore
+            _wrapped_fn,  # type: ignore
             actor_class=actor_class,
             actor_name=actor_name,
             queue_name=queue_name,
@@ -419,7 +395,7 @@ def actor(
             **options,
         )
 
-        return fn
+        return _wrapped_fn
 
     return decorator
 
@@ -431,7 +407,6 @@ __all__ = [
     "RedisMiddleware",
     "scheduler_middleware",
     "enqueue_job",
-    "flush_enqueued_jobs",
     "get_retries",
     "can_retry",
 ]

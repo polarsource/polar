@@ -69,14 +69,14 @@ class WebhookService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
-        organization_id: UUID | None,
+        organization_id: Sequence[UUID] | None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookEndpoint], int]:
         statement = self._get_readable_endpoints_statement(auth_subject)
 
         if organization_id is not None:
             statement = statement.where(
-                WebhookEndpoint.organization_id == organization_id
+                WebhookEndpoint.organization_id.in_(organization_id)
             )
 
         statement = statement.order_by(WebhookEndpoint.created_at.desc())
@@ -143,7 +143,7 @@ class WebhookService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
-        endpoint_id: UUID | None = None,
+        endpoint_id: Sequence[UUID] | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookDelivery], int]:
         readable_endpoints_statement = self._get_readable_endpoints_statement(
@@ -164,7 +164,7 @@ class WebhookService:
 
         if endpoint_id is not None:
             statement = statement.where(
-                WebhookDelivery.webhook_endpoint_id == endpoint_id
+                WebhookDelivery.webhook_endpoint_id.in_(endpoint_id)
             )
 
         return await paginate(session, statement, pagination=pagination)

@@ -365,11 +365,11 @@ class CheckoutService:
                         }
                     ]
                 )
-        elif checkout_create.customer_external_id is not None:
+        elif checkout_create.external_customer_id is not None:
             # Link customer by external ID, if it exists.
             # It not, that's fine': we'll create a new customer on confirm.
             customer = await customer_repository.get_by_external_id_and_organization(
-                checkout_create.customer_external_id, product.organization_id
+                checkout_create.external_customer_id, product.organization_id
             )
 
         amount = checkout_create.amount
@@ -932,6 +932,11 @@ class CheckoutService:
         if checkout is None:
             raise CheckoutDoesNotExist(checkout_id)
 
+        # Legacy code path for recurring checkouts
+        product = checkout.product
+        if product.is_recurring:
+            return checkout
+
         if checkout.status != CheckoutStatus.confirmed:
             raise NotConfirmedCheckout(checkout)
 
@@ -943,11 +948,6 @@ class CheckoutService:
         product_price = checkout.product_price
         if product_price.is_archived:
             raise ArchivedPriceCheckout(checkout)
-
-        # Legacy code path for recurring checkouts
-        product = checkout.product
-        if product.is_recurring:
-            return checkout
 
         await order_service.create_from_checkout(session, checkout, payment)
 
@@ -1016,12 +1016,12 @@ class CheckoutService:
         if checkout is None:
             raise CheckoutDoesNotExist(checkout_id)
 
-        if checkout.status != CheckoutStatus.confirmed:
-            raise NotConfirmedCheckout(checkout)
-
         # Legacy code path for non-recurring checkouts
         if not checkout.product.is_recurring:
             return checkout
+
+        if checkout.status != CheckoutStatus.confirmed:
+            raise NotConfirmedCheckout(checkout)
 
         product_price = checkout.product_price
         if product_price.is_archived:
@@ -1746,7 +1746,7 @@ class CheckoutService:
             )
             if customer is None:
                 customer = Customer(
-                    external_id=checkout.customer_external_id,
+                    external_id=checkout.external_customer_id,
                     email=checkout.customer_email,
                     email_verified=False,
                     stripe_customer_id=None,

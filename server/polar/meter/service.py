@@ -21,7 +21,7 @@ from polar.auth.models import AuthSubject, Organization, User
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.event.repository import EventRepository
 from polar.exceptions import PolarRequestValidationError, ValidationError
-from polar.kit.metadata import MetadataQuery, apply_metadata_clause
+from polar.kit.metadata import MetadataQuery, apply_metadata_clause, get_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
@@ -188,6 +188,7 @@ class MeterService:
         interval: TimeInterval,
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
+        metadata: MetadataQuery | None = None,
     ) -> MeterQuantities:
         timestamp_series = get_timestamp_series_cte(
             start_timestamp, end_timestamp, interval
@@ -208,6 +209,8 @@ class MeterService:
                     external_customer_id
                 )
             )
+        if metadata is not None:
+            event_clauses.append(get_metadata_clause(Event, metadata))
         event_clauses.append(event_repository.get_meter_clause(meter))
 
         statement = (
@@ -274,7 +277,6 @@ class MeterService:
             statement = statement.where(
                 Event.ingested_at > last_billed_event.ingested_at
             )
-        events = await event_repository.get_all(statement)
 
         subscription_product_price_repository = (
             SubscriptionProductPriceRepository.from_session(session)
@@ -284,7 +286,9 @@ class MeterService:
         billing_entry_repository = BillingEntryRepository.from_session(session)
         entries: list[BillingEntry] = []
         updated_subscriptions: set[Subscription] = set()
-        for event in events:
+        last_event: Event | None = None
+        async for event in event_repository.stream(statement):
+            last_event = event
             customer = event.customer
             assert customer is not None
 
@@ -310,7 +314,9 @@ class MeterService:
                 updated_subscriptions.add(entry.subscription)
 
         # Update the last billed event
-        meter.last_billed_event = events[-1] if events else last_billed_event
+        meter.last_billed_event = (
+            last_event if last_event is not None else last_billed_event
+        )
         session.add(meter)
 
         # Update subscription meters

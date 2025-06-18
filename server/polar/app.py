@@ -98,41 +98,43 @@ class State(TypedDict):
 async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     log.info("Starting Polar API")
 
-    async with create_redis("app") as redis:
-        async_engine = create_async_engine("app")
-        async_sessionmaker = create_async_sessionmaker(async_engine)
-        instrument_sqlalchemy(async_engine.sync_engine)
+    async_engine = create_async_engine("app")
+    async_sessionmaker = create_async_sessionmaker(async_engine)
+    instrument_sqlalchemy(async_engine.sync_engine)
 
-        sync_engine = create_sync_engine("app")
-        sync_sessionmaker = create_sync_sessionmaker(sync_engine)
-        instrument_sqlalchemy(sync_engine)
+    sync_engine = create_sync_engine("app")
+    sync_sessionmaker = create_sync_sessionmaker(sync_engine)
+    instrument_sqlalchemy(sync_engine)
 
-        try:
-            ip_geolocation_client = ip_geolocation.get_client()
-        except FileNotFoundError:
-            log.info(
-                "IP geolocation database not found. "
-                "Checkout won't automatically geolocate IPs."
-            )
-            ip_geolocation_client = None
+    redis = create_redis("app")
 
-        log.info("Polar API started")
+    try:
+        ip_geolocation_client = ip_geolocation.get_client()
+    except FileNotFoundError:
+        log.info(
+            "IP geolocation database not found. "
+            "Checkout won't automatically geolocate IPs."
+        )
+        ip_geolocation_client = None
 
-        yield {
-            "async_engine": async_engine,
-            "async_sessionmaker": async_sessionmaker,
-            "sync_engine": sync_engine,
-            "sync_sessionmaker": sync_sessionmaker,
-            "redis": redis,
-            "ip_geolocation_client": ip_geolocation_client,
-        }
+    log.info("Polar API started")
 
-        await async_engine.dispose()
-        sync_engine.dispose()
-        if ip_geolocation_client is not None:
-            ip_geolocation_client.close()
+    yield {
+        "async_engine": async_engine,
+        "async_sessionmaker": async_sessionmaker,
+        "sync_engine": sync_engine,
+        "sync_sessionmaker": sync_sessionmaker,
+        "redis": redis,
+        "ip_geolocation_client": ip_geolocation_client,
+    }
 
-        log.info("Polar API stopped")
+    await redis.close(True)
+    await async_engine.dispose()
+    sync_engine.dispose()
+    if ip_geolocation_client is not None:
+        ip_geolocation_client.close()
+
+    log.info("Polar API stopped")
 
 
 def create_app() -> FastAPI:

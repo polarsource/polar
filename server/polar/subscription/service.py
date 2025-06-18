@@ -22,7 +22,7 @@ from polar.customer_session.service import customer_session as customer_session_
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
-from polar.email.sender import enqueue_email, get_email_sender
+from polar.email.sender import enqueue_email
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.exceptions import (
     BadRequest,
@@ -1267,7 +1267,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         template_path: str,
     ) -> None:
         email_renderer = get_email_renderer({"subscription": "polar.subscription"})
-        email_sender = get_email_sender()
 
         product = subscription.product
         organization_repository = OrganizationRepository.from_session(session)

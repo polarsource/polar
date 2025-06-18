@@ -5897,8 +5897,13 @@ export interface components {
                 [key: string]: string | number | boolean;
             };
             /**
-             * Customer External Id
+             * External Customer Id
              * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
+             */
+            external_customer_id: string | null;
+            /**
+             * Customer External Id
+             * @deprecated
              */
             customer_external_id: string | null;
             /**
@@ -6547,10 +6552,10 @@ export interface components {
              */
             is_business_customer: boolean;
             /**
-             * Customer External Id
+             * External Customer Id
              * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
              */
-            customer_external_id?: string | null;
+            external_customer_id?: string | null;
             /** Customer Name */
             customer_name?: string | null;
             /** Customer Email */
@@ -6732,10 +6737,10 @@ export interface components {
              */
             is_business_customer: boolean;
             /**
-             * Customer External Id
+             * External Customer Id
              * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
              */
-            customer_external_id?: string | null;
+            external_customer_id?: string | null;
             /** Customer Name */
             customer_name?: string | null;
             /** Customer Email */
@@ -6850,10 +6855,10 @@ export interface components {
              */
             is_business_customer: boolean;
             /**
-             * Customer External Id
+             * External Customer Id
              * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
              */
-            customer_external_id?: string | null;
+            external_customer_id?: string | null;
             /** Customer Name */
             customer_name?: string | null;
             /** Customer Email */
@@ -9254,10 +9259,10 @@ export interface components {
          */
         CustomerSessionCustomerExternalIDCreate: {
             /**
-             * Customer External Id
+             * External Customer Id
              * @description External ID of the customer to create a session for.
              */
-            customer_external_id: string;
+            external_customer_id: string;
         };
         /**
          * CustomerSessionCustomerIDCreate
@@ -16266,7 +16271,7 @@ export interface components {
             /**
              * Id
              * Format: uuid4
-             * @description The webhook delivery ID.
+             * @description The ID of the object.
              */
             id: string;
             /**
@@ -16301,7 +16306,7 @@ export interface components {
             /**
              * Id
              * Format: uuid4
-             * @description The webhook endpoint ID.
+             * @description The ID of the object.
              */
             id: string;
             /**
@@ -16391,7 +16396,7 @@ export interface components {
             /**
              * Id
              * Format: uuid4
-             * @description The webhook event ID.
+             * @description The ID of the object.
              */
             id: string;
             /**
@@ -18776,7 +18781,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Filter by organization ID. */
-                organization_id?: string | null;
+                organization_id?: string | string[] | null;
                 /** @description Page number, defaults to 1. */
                 page?: number;
                 /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -18901,15 +18906,6 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description You don't have the permission to delete this webhook endpoint. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotPermitted"];
-                };
-            };
             /** @description Webhook endpoint not found. */
             404: {
                 headers: {
@@ -18955,15 +18951,6 @@ export interface operations {
                     "application/json": components["schemas"]["WebhookEndpoint"];
                 };
             };
-            /** @description You don't have the permission to update this webhook endpoint. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotPermitted"];
-                };
-            };
             /** @description Webhook endpoint not found. */
             404: {
                 headers: {
@@ -18988,7 +18975,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Filter by webhook endpoint ID. */
-                endpoint_id?: string | null;
+                endpoint_id?: string | string[] | null;
                 /** @description Page number, defaults to 1. */
                 page?: number;
                 /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -24825,7 +24812,7 @@ export interface operations {
 type ReadonlyArray<T> = [
     Exclude<T, undefined>
 ] extends [
-    any[]
+    unknown[]
 ] ? Readonly<Exclude<T, undefined>> : Readonly<Exclude<T, undefined>[]>;
 export const accountTypeValues: ReadonlyArray<components["schemas"]["AccountType"]> = ["stripe", "open_collective"];
 export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseOrganization"]["sub_type"]> = ["organization"];

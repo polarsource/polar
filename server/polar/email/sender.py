@@ -78,8 +78,10 @@ class LoggingEmailSender(EmailSender):
 
 class ResendEmailSender(EmailSender):
     def __init__(self) -> None:
-        super().__init__()
-        self._api_key = settings.RESEND_API_KEY
+        self.client = httpx.AsyncClient(
+            base_url="https://api.resend.com",
+            headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"},
+        )
 
     async def send(
         self,
@@ -106,25 +108,18 @@ class ResendEmailSender(EmailSender):
                 f"{reply_to_name} <{to_ascii_email(reply_to_email_addr)}>"
             )
 
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.post(
-                    "https://api.resend.com/emails",
-                    headers={
-                        "Authorization": f"Bearer {self._api_key}",
-                    },
-                    json=payload,
-                )
-                response.raise_for_status()
-                email = response.json()
-            except httpx.HTTPError as e:
-                log.warning(
-                    "resend.send_error",
-                    to_email_addr=to_email_addr_ascii,
-                    subject=subject,
-                    error=e,
-                )
-                raise SendEmailError(str(e)) from e
+        try:
+            response = await self.client.post("/emails", json=payload)
+            response.raise_for_status()
+            email = response.json()
+        except httpx.HTTPError as e:
+            log.warning(
+                "resend.send_error",
+                to_email_addr=to_email_addr_ascii,
+                subject=subject,
+                error=e,
+            )
+            raise SendEmailError(str(e)) from e
 
         log.info(
             "resend.send",
@@ -132,14 +127,6 @@ class ResendEmailSender(EmailSender):
             subject=subject,
             email_id=email["id"],
         )
-
-
-def get_email_sender() -> EmailSender:
-    if settings.EMAIL_SENDER == EmailSenderType.resend:
-        return ResendEmailSender()
-
-    # Logging in development
-    return LoggingEmailSender()
 
 
 def enqueue_email(
@@ -163,3 +150,11 @@ def enqueue_email(
         reply_to_name=reply_to_name,
         reply_to_email_addr=reply_to_email_addr,
     )
+
+
+email_sender: EmailSender
+if settings.EMAIL_SENDER == EmailSenderType.resend:
+    email_sender = ResendEmailSender()
+else:
+    # Logging in development
+    email_sender = LoggingEmailSender()

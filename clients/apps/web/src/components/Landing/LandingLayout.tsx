@@ -4,6 +4,7 @@ import { TopbarNavigation } from '@/components/Landing/TopbarNavigation'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
+import { ArrowForward } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
@@ -16,14 +17,25 @@ import { useModal } from '../Modal/useModal'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
-    <div className="dark:bg-polar-950 relative flex flex-col gap-32 bg-gray-50 md:w-full md:flex-1 md:items-center">
+    <div className="dark:bg-polar-950 relative flex flex-col bg-gray-50 md:w-full md:flex-1 md:items-center">
+      <Link
+        className="flex w-full flex-col items-center bg-indigo-50 py-4 text-indigo-400 transition-opacity hover:opacity-50 dark:bg-indigo-950"
+        href="/blog/polar-seed-announcement"
+        prefetch
+      >
+        <div className="flex flex-row items-center gap-x-2 text-sm md:text-base">
+          <span>Announcing our $10M Seed Round, led by Accel</span>
+          <ArrowForward fontSize="inherit" />
+        </div>
+      </Link>
       <div className="flex flex-col gap-y-2 md:w-full">
         <LandingPageTopbar />
         <LandingPageDesktopNavigation />
+
         <div className="dark:bg-polar-950 relative flex flex-col px-4 md:w-full md:px-0">
           {children}
-          <LandingPageFooter />
         </div>
+        <LandingPageFooter />
       </div>
     </div>
   )
@@ -121,7 +133,7 @@ const LandingPageTopbar = () => {
       <BrandingMenu
         className="ml-2 mt-1 md:hidden"
         logoVariant="logotype"
-        size={80}
+        size={100}
       />
       <div className="flex flex-row items-center gap-x-4">
         <Button
@@ -152,9 +164,7 @@ const LandingPageFooter = () => {
       whileInView="animate"
       viewport={{ once: true }}
     >
-      <div className="flex w-full flex-col gap-y-12 md:max-w-3xl xl:max-w-7xl">
-        <Footer />
-      </div>
+      <Footer />
     </motion.div>
   )
 }

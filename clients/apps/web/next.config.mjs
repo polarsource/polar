@@ -414,10 +414,17 @@ const nextConfig = {
         permanent: false,
       },
 
+      // Account Settings Redirects
+      {
+        source: '/settings',
+        destination: '/dashboard/account/preferences',
+        permanent: true,
+      },
+
       // Access tokens redirect
       {
         source: '/settings/tokens',
-        destination: '/settings',
+        destination: '/account/developer',
         permanent: false,
       },
 

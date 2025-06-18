@@ -932,6 +932,11 @@ class CheckoutService:
         if checkout is None:
             raise CheckoutDoesNotExist(checkout_id)
 
+        # Legacy code path for recurring checkouts
+        product = checkout.product
+        if product.is_recurring:
+            return checkout
+
         if checkout.status != CheckoutStatus.confirmed:
             raise NotConfirmedCheckout(checkout)
 
@@ -943,11 +948,6 @@ class CheckoutService:
         product_price = checkout.product_price
         if product_price.is_archived:
             raise ArchivedPriceCheckout(checkout)
-
-        # Legacy code path for recurring checkouts
-        product = checkout.product
-        if product.is_recurring:
-            return checkout
 
         await order_service.create_from_checkout(session, checkout, payment)
 

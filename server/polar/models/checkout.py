@@ -146,7 +146,7 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     is_business_customer: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
-    customer_external_id: Mapped[str | None] = mapped_column(
+    external_customer_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )
     customer_name: Mapped[str | None] = mapped_column(

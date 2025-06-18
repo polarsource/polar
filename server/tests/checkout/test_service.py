@@ -1222,7 +1222,7 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_existing_customer_external_id(
+    async def test_existing_external_customer_id(
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -1239,7 +1239,7 @@ class TestCreate:
             session,
             CheckoutProductsCreate(
                 products=[product_one_time.id],
-                customer_external_id=customer_external_id.external_id,
+                external_customer_id=customer_external_id.external_id,
             ),
             auth_subject,
         )
@@ -1269,13 +1269,13 @@ class TestCreate:
             session,
             CheckoutProductsCreate(
                 products=[product_one_time.id],
-                customer_external_id="EXTERNAL_ID",
+                external_customer_id="EXTERNAL_ID",
             ),
             auth_subject,
         )
 
         assert checkout.customer is None
-        assert checkout.customer_external_id == "EXTERNAL_ID"
+        assert checkout.external_customer_id == "EXTERNAL_ID"
 
     @pytest.mark.parametrize(
         "address,require_billing_address",
@@ -2847,7 +2847,7 @@ class TestConfirm:
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        checkout_one_time_fixed.customer_external_id = "EXTERNAL_ID"
+        checkout_one_time_fixed.external_customer_id = "EXTERNAL_ID"
         await save_fixture(checkout_one_time_fixed)
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
@@ -2940,7 +2940,7 @@ class TestConfirm:
             email="customer1@example.com",
         )
         checkout = await create_checkout(
-            save_fixture, products=[product], customer_external_id="external_id_1"
+            save_fixture, products=[product], external_customer_id="external_id_1"
         )
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(

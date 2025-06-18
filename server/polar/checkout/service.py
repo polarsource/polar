@@ -365,11 +365,11 @@ class CheckoutService:
                         }
                     ]
                 )
-        elif checkout_create.customer_external_id is not None:
+        elif checkout_create.external_customer_id is not None:
             # Link customer by external ID, if it exists.
             # It not, that's fine': we'll create a new customer on confirm.
             customer = await customer_repository.get_by_external_id_and_organization(
-                checkout_create.customer_external_id, product.organization_id
+                checkout_create.external_customer_id, product.organization_id
             )
 
         amount = checkout_create.amount
@@ -1746,7 +1746,7 @@ class CheckoutService:
             )
             if customer is None:
                 customer = Customer(
-                    external_id=checkout.customer_external_id,
+                    external_id=checkout.external_customer_id,
                     email=checkout.customer_email,
                     email_verified=False,
                     stripe_customer_id=None,

@@ -5897,8 +5897,13 @@ export interface components {
                 [key: string]: string | number | boolean;
             };
             /**
-             * Customer External Id
+             * External Customer Id
              * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
+             */
+            external_customer_id: string | null;
+            /**
+             * Customer External Id
+             * @deprecated
              */
             customer_external_id: string | null;
             /**
@@ -6547,10 +6552,10 @@ export interface components {
              */
             is_business_customer: boolean;
             /**
-             * Customer External Id
+             * External Customer Id
              * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
              */
-            customer_external_id?: string | null;
+            external_customer_id?: string | null;
             /** Customer Name */
             customer_name?: string | null;
             /** Customer Email */
@@ -6732,10 +6737,10 @@ export interface components {
              */
             is_business_customer: boolean;
             /**
-             * Customer External Id
+             * External Customer Id
              * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
              */
-            customer_external_id?: string | null;
+            external_customer_id?: string | null;
             /** Customer Name */
             customer_name?: string | null;
             /** Customer Email */
@@ -6850,10 +6855,10 @@ export interface components {
              */
             is_business_customer: boolean;
             /**
-             * Customer External Id
+             * External Customer Id
              * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
              */
-            customer_external_id?: string | null;
+            external_customer_id?: string | null;
             /** Customer Name */
             customer_name?: string | null;
             /** Customer Email */
@@ -9254,10 +9259,10 @@ export interface components {
          */
         CustomerSessionCustomerExternalIDCreate: {
             /**
-             * Customer External Id
+             * External Customer Id
              * @description External ID of the customer to create a session for.
              */
-            customer_external_id: string;
+            external_customer_id: string;
         };
         /**
          * CustomerSessionCustomerIDCreate

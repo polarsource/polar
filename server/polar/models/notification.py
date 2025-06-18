@@ -30,4 +30,4 @@ class Notification(RecordModel):
         Uuid, ForeignKey("pledges.id"), nullable=True
     )
 
-    payload: Mapped[JSONDict | None] = mapped_column(JSONB, nullable=True, default=dict)
+    payload: Mapped[JSONDict] = mapped_column(JSONB, nullable=False, default=dict)

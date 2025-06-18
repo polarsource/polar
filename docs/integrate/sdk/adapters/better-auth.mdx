@@ -9,12 +9,12 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
 
 ## Features
 
-- [Checkout Integration](#checkout-plugin)
-- Customer Portal
 - Automatic Customer creation on signup
+- Reference System to associate purchases with organizations
+- [Checkout Integration](#checkout-plugin)
 - [Event Ingestion & Customer Meters for flexible Usage Based Billing](#usage-plugin)
 - [Handle Polar Webhooks securely with signature verification](#webhooks-plugin)
-- Reference System to associate purchases with organizations
+- [Customer Portal](#portal-plugin)
 
 ## Installation
 
@@ -24,10 +24,9 @@ pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk
 
 ## Preparation
 
-Go to your Polar Organization Settings, and create an Organization Access Token. Add it to your environment.
+Go to your Polar Organization Settings, create an Organization Access Token, and add it to the environment variables of your application.
 
-```bash
-# .env
+```bash .env
 POLAR_ACCESS_TOKEN=...
 ```
 
@@ -203,6 +202,12 @@ The checkout plugin accepts the following configuration options:
   <Step title="Create checkouts using BetterAuth client">
     When the `checkout` plugin is passed, you are then able to initialize Checkout Sessions using the `checkout` method on the BetterAuth client. This will redirect the user to the product's checkout link.
 
+    The `checkout` method accepts the following properties:
+
+    - **`products`** (optional): An array of Polar Product IDs.
+    - **`slug`** (optional): A string that can be used as a reference to the `products` defined in the Checkout config
+    - **`referenceId`** (optional): An identifier that will be saved in the metadata of the checkout, order & subscription object
+
     ```typescript icon="square-js" BetterAuth Checkout with Polar Example
     await authClient.checkout({
       // Polar Product IDs
@@ -212,148 +217,23 @@ The checkout plugin accepts the following configuration options:
       // slug: "pro", // [!code ++]
     });
     ```
+
+    This plugin supports the Organization plugin. If you pass the organization ID to the Checkout referenceId, you will be able to keep track of purchases made from organization members.
+
+    ```typescript icon="square-js" BetterAuth Checkout with Polar Organization Example
+    const organizationId = (await authClient.organization.list())?.data?.[0]?.id,
+
+    await authClient.checkout({
+        // Any Polar Product ID can be passed here
+        products: ["e651f46d-ac20-4f26-b769-ad088b123df2"],
+        // Or, if you setup "products" in the Checkout Config, you can pass the slug
+        slug: 'pro',
+        // Reference ID will be saved as `referenceId` in the metadata of the checkout, order & subscription object
+        referenceId: organizationId
+    });
+    ```
   </Step>
 </Steps>
-
-### Organization Support
-
-This plugin supports the Organization plugin. If you pass the organization ID to the Checkout referenceId, you will be able to keep track of purchases made from organization members.
-
-```typescript
-const organizationId = (await authClient.organization.list())?.data?.[0]?.id,
-
-await authClient.checkout({
-    // Any Polar Product ID can be passed here
-    products: ["e651f46d-ac20-4f26-b769-ad088b123df2"],
-    // Or, if you setup "products" in the Checkout Config, you can pass the slug
-    slug: 'pro',
-    // Reference ID will be saved as `referenceId` in the metadata of the checkout, order & subscription object
-    referenceId: organizationId
-});
-```
-
-## Portal Plugin
-
-A plugin which enables customer management of their purchases, orders and subscriptions.
-
-```typescript
-import { polar, checkout, portal } from "@polar-sh/better-auth";
-
-const auth = betterAuth({
-    // ... Better Auth config
-    plugins: [
-        polar({
-            ...
-            use: [
-                checkout(...),
-                portal()
-            ],
-        })
-    ]
-});
-```
-
-The portal-plugin gives the BetterAuth Client a set of customer management methods, scoped under `authClient.customer`.
-
-### Customer Portal Management
-
-The following method will redirect the user to the Polar Customer Portal, where they can see orders, purchases, subscriptions, benefits, etc.
-
-```typescript
-await authClient.customer.portal();
-```
-
-### Customer State
-
-The portal plugin also adds a convenient state-method for retrieving the general Customer State.
-
-```typescript
-const { data: customerState } = await authClient.customer.state();
-```
-
-The customer state object contains:
-
-- All the data about the customer.
-- The list of their active subscriptions
-  - Note: This does not include subscriptions done by a parent organization. See the subscription list-method below for more information.
-- The list of their granted benefits.
-- The list of their active meters, with their current balance.
-
-Thus, with that single object, you have all the required information to check if you should provision access to your service or not.
-
-[You can learn more about the Polar Customer State in the Polar Docs](https://docs.polar.sh/integrate/customer-state).
-
-### Benefits, Orders & Subscriptions
-
-The portal plugin adds 3 convenient methods for listing benefits, orders & subscriptions relevant to the authenticated user/customer.
-
-[All of these methods use the Polar CustomerPortal APIs](https://docs.polar.sh/api-reference/customer-portal)
-
-#### Benefits
-
-This method only lists granted benefits for the authenticated user/customer.
-
-```typescript
-const { data: benefits } = await authClient.customer.benefits.list({
-  query: {
-    page: 1,
-    limit: 10,
-  },
-});
-```
-
-#### Orders
-
-This method lists orders like purchases and subscription renewals for the authenticated user/customer.
-
-```typescript
-const { data: orders } = await authClient.customer.orders.list({
-  query: {
-    page: 1,
-    limit: 10,
-    productBillingType: "one_time", // or 'recurring'
-  },
-});
-```
-
-#### Subscriptions
-
-This method lists the subscriptions associated with authenticated user/customer.
-
-```typescript
-const { data: subscriptions } = await authClient.customer.subscriptions.list({
-  query: {
-    page: 1,
-    limit: 10,
-    active: true,
-  },
-});
-```
-
-**Important** - Organization Support
-
-This will **not** return subscriptions made by a parent organization to the authenticated user.
-
-However, you can pass a `referenceId` to this method. This will return all subscriptions associated with that referenceId instead of subscriptions associated with the user.
-
-So in order to figure out if a user should have access, pass the user's organization ID to see if there is an active subscription for that organization.
-
-```typescript
-const organizationId = (await authClient.organization.list())?.data?.[0]?.id,
-
-const { data: subscriptions } = await authClient.customer.orders.list({
-    query: {
-	    page: 1,
-		limit: 10,
-		active: true,
-        referenceId: organizationId
-    },
-});
-
-const userShouldHaveAccess = subscriptions.some(
-    sub => // Your logic to check subscription product or whatever.
-)
-```
 
 ## Usage Plugin
 
@@ -384,7 +264,7 @@ const auth = betterAuth({
 });
 ```
 
-### Event Ingestion
+### 1. Event Ingestion
 
 Polar's Usage Based Billing builds entirely on event ingestion. Ingest events from your application, create Meters to represent that usage, and add metered prices to Products to charge for it.
 
@@ -407,7 +287,7 @@ const { data: ingested } = await authClient.usage.ingestion({
 });
 ```
 
-### Customer Meters
+### 2. Customer Meters
 
 A method to list the authenticated user's Usage Meters (aka Customer Meters). A Customer Meter contains all the information about their consumption on your defined meters.
 
@@ -514,4 +394,132 @@ The `webhooks` plugin allows you to invoke handlers for all Polar webhook events
 - `onCustomerUpdated` - Triggered when a customer is updated
 - `onCustomerDeleted` - Triggered when a customer is deleted
 - `onCustomerStateChanged` - Triggered when a customer is created
+
+## Portal Plugin
+
+[Source code](https://github.com/polarsource/polar-adapters/blob/main/packages/polar-betterauth/src/plugins/portal.ts)
+
+A plugin which enables customer management of their purchases, orders and subscriptions.
+
+```typescript icon="square-js" Portal Plugin Example
+import {
+  polar, checkout,
+  portal // [!code ++]
+} from "@polar-sh/better-auth";
+
+const auth = betterAuth({
+    // ... Better Auth config
+    plugins: [
+        polar({
+            ...
+            use: [
+                checkout(...),
+                portal() // [!code ++]
+            ],
+        })
+    ]
+});
+```
+
+The `portal` plugin gives the BetterAuth Client a set of customer management methods, scoped under `authClient.customer` object.
+
+### 1. Customer Portal Management
+
+The following method will redirect the user to the Polar Customer Portal, where they can see their orders, purchases, subscriptions, benefits, etc.
+
+```typescript icon="square-js" Open Customer Portal Example
+await authClient.customer.portal();
+```
+
+### 2. Customer State
+
+The portal plugin also adds a convenient method to retrieve the Customer State.
+
+```typescript icon="square-js" Retrieve Customer State Example
+const { data: customerState } = await authClient.customer.state();
+```
+
+The customer state object contains:
+
+- All the data about the customer.
+- The list of their active subscriptions.
+  <Note>
+    This does not include subscriptions done by a parent organization. See the subscription list-method below for more information.
+  </Note>
+- The list of their granted benefits.
+- The list of their active meters, with their current balance.
+
+Using the customer state object, you can determine whether to provision access for the user to your service.
+
+Learn more about the Polar Customer State [in the Polar Docs](https://docs.polar.sh/integrate/customer-state).
+
+### 3. Benefits, Orders & Subscriptions
+
+The portal plugin adds the following 3 convenient methods for listing benefits, orders & subscriptions relevant to the authenticated user/customer.
+
+#### 3.1 Benefits
+
+This method only lists granted benefits for the authenticated user/customer.
+
+```typescript icon="square-js" List User Benefits Example
+const { data: benefits } = await authClient.customer.benefits.list({
+  query: {
+    page: 1,
+    limit: 10,
+  },
+});
+```
+
+#### 3.2 Orders
+
+This method lists orders like purchases and subscription renewals for the authenticated user/customer.
+
+```typescript icon="square-js" List User Orders Example
+const { data: orders } = await authClient.customer.orders.list({
+  query: {
+    page: 1,
+    limit: 10,
+    productBillingType: "one_time", // or 'recurring'
+  },
+});
+```
+
+Using the Organization ID as the `referenceId` you can retrieve all the subscriptions associated with that organization (instead of the user).
+
+To figure out if a user should have access, pass the user's organization ID to see if there is an active subscription for that organization.
+
+```typescript icon="square-js" List Organization Subscriptions Example
+const organizationId = (await authClient.organization.list())?.data?.[0]?.id,
+
+const { data: subscriptions } = await authClient.customer.orders.list({
+    query: {
+	    page: 1,
+		limit: 10,
+		active: true,
+        referenceId: organizationId
+    },
+});
+
+const userShouldHaveAccess = subscriptions.some(
+    sub => // Your logic to check subscription product or whatever.
+)
+```
+
+#### 3.3 Subscriptions
+
+This method lists the subscriptions associated with authenticated user/customer.
+
+```typescript icon="square-js" List User Subscriptions Example
+const { data: subscriptions } = await authClient.customer.subscriptions.list({
+  query: {
+    page: 1,
+    limit: 10,
+    active: true,
+  },
+});
+```
+
+<Danger>
+  This will not return subscriptions made by a parent organization to the authenticated user.
+</Danger>
 

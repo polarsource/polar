@@ -4,7 +4,7 @@ from fastapi import Depends, Query
 
 from polar.benefit.schemas import BenefitID
 from polar.exceptions import NotPermitted, ResourceNotFound
-from polar.kit.metadata import MetadataQuery
+from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
@@ -37,7 +37,12 @@ ListSorting = Annotated[
 ]
 
 
-@router.get("/", summary="List Products", response_model=ListResource[ProductSchema])
+@router.get(
+    "/",
+    summary="List Products",
+    response_model=ListResource[ProductSchema],
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+)
 async def list(
     pagination: PaginationParamsQuery,
     sorting: ListSorting,

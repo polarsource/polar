@@ -2,7 +2,7 @@ from fastapi import Depends, Query
 
 from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import NotPermitted, ResourceNotFound
-from polar.kit.metadata import MetadataQuery
+from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Benefit
@@ -33,7 +33,12 @@ BenefitNotFound = {
 }
 
 
-@router.get("/", summary="List Benefits", response_model=ListResource[BenefitSchema])
+@router.get(
+    "/",
+    summary="List Benefits",
+    response_model=ListResource[BenefitSchema],
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+)
 async def list(
     auth_subject: auth.BenefitsRead,
     pagination: PaginationParamsQuery,

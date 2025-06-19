@@ -2,18 +2,15 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
-from enum import StrEnum
-from typing import Any, Literal, overload
+from typing import Literal, cast, overload
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import Select, UnaryExpression, and_, asc, case, desc, select
-from sqlalchemy.orm import contains_eager, joinedload, selectinload
+from sqlalchemy import select
+from sqlalchemy.orm import contains_eager, selectinload
 
 from polar.auth.models import (
     AuthSubject,
-    is_organization,
-    is_user,
 )
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
@@ -23,7 +20,7 @@ from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import enqueue_email
-from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.enums import SubscriptionProrationBehavior
 from polar.exceptions import (
     BadRequest,
     PolarError,
@@ -35,8 +32,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
-from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceServiceReader
+from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.locker import Locker
@@ -54,7 +50,6 @@ from polar.models import (
     SubscriptionMeter,
     SubscriptionProductPrice,
     User,
-    UserOrganization,
 )
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -65,7 +60,6 @@ from polar.notifications.notification import (
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.repository import OrganizationRepository
-from polar.postgres import sql
 from polar.product.guard import (
     is_custom_price,
     is_free_price,
@@ -83,6 +77,7 @@ from .schemas import (
     SubscriptionUpdateDiscount,
     SubscriptionUpdateProduct,
 )
+from .sorting import SubscriptionSortProperty
 
 log: Logger = structlog.get_logger()
 
@@ -166,44 +161,7 @@ def _from_timestamp(t: int | None) -> datetime | None:
     return datetime.fromtimestamp(t, UTC)
 
 
-class SubscriptionSortProperty(StrEnum):
-    customer = "customer"
-    status = "status"
-    started_at = "started_at"
-    current_period_end = "current_period_end"
-    amount = "amount"
-    product = "product"
-    discount = "discount"
-
-
-class SubscriptionService(ResourceServiceReader[Subscription]):
-    async def get(
-        self,
-        session: AsyncSession,
-        id: uuid.UUID,
-        allow_deleted: bool = False,
-        *,
-        options: Sequence[sql.ExecutableOption] | None = None,
-    ) -> Subscription | None:
-        query = select(Subscription).where(Subscription.id == id)
-        if not allow_deleted:
-            query = query.where(Subscription.deleted_at.is_(None))
-
-        return await self._get_loaded(session, query, id, options=options)
-
-    async def user_get(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        id: uuid.UUID,
-        *,
-        options: Sequence[sql.ExecutableOption] | None = None,
-    ) -> Subscription | None:
-        query = self._get_readable_subscriptions_statement(auth_subject).where(
-            Subscription.started_at.is_not(None)
-        )
-        return await self._get_loaded(session, query, id, options=options)
-
+class SubscriptionService:
     async def list(
         self,
         session: AsyncSession,
@@ -220,12 +178,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             (SubscriptionSortProperty.started_at, True)
         ],
     ) -> tuple[Sequence[Subscription], int]:
-        statement = self._get_readable_subscriptions_statement(auth_subject).where(
-            Subscription.started_at.is_not(None)
-        )
-
-        statement = statement.join(Subscription.customer).join(
-            Subscription.discount, isouter=True
+        repository = SubscriptionRepository.from_session(session)
+        statement = (
+            repository.get_readable_statement(auth_subject)
+            .where(Subscription.started_at.is_not(None))
+            .join(Subscription.customer)
+            .join(Subscription.discount, isouter=True)
         )
 
         if organization_id is not None:
@@ -249,63 +207,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if metadata is not None:
             statement = apply_metadata_clause(Subscription, statement, metadata)
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
-        for criterion, is_desc in sorting:
-            clause_function = desc if is_desc else asc
-            if criterion == SubscriptionSortProperty.customer:
-                order_by_clauses.append(clause_function(Customer.email))
-            if criterion == SubscriptionSortProperty.status:
-                order_by_clauses.append(
-                    clause_function(
-                        case(
-                            (Subscription.status == SubscriptionStatus.incomplete, 1),
-                            (
-                                Subscription.status
-                                == SubscriptionStatus.incomplete_expired,
-                                2,
-                            ),
-                            (Subscription.status == SubscriptionStatus.trialing, 3),
-                            (
-                                Subscription.status == SubscriptionStatus.active,
-                                case(
-                                    (Subscription.cancel_at_period_end.is_(False), 4),
-                                    (Subscription.cancel_at_period_end.is_(True), 5),
-                                ),
-                            ),
-                            (Subscription.status == SubscriptionStatus.past_due, 6),
-                            (Subscription.status == SubscriptionStatus.canceled, 7),
-                            (Subscription.status == SubscriptionStatus.unpaid, 8),
-                        )
-                    )
-                )
-            if criterion == SubscriptionSortProperty.started_at:
-                order_by_clauses.append(clause_function(Subscription.started_at))
-            if criterion == SubscriptionSortProperty.current_period_end:
-                order_by_clauses.append(
-                    clause_function(Subscription.current_period_end)
-                )
-            if criterion == SubscriptionSortProperty.amount:
-                order_by_clauses.append(
-                    clause_function(
-                        case(
-                            (
-                                Subscription.recurring_interval
-                                == SubscriptionRecurringInterval.year,
-                                Subscription.amount / 12,
-                            ),
-                            (
-                                Subscription.recurring_interval
-                                == SubscriptionRecurringInterval.month,
-                                Subscription.amount,
-                            ),
-                        )
-                    ).nulls_last()
-                )
-            if criterion == SubscriptionSortProperty.product:
-                order_by_clauses.append(clause_function(Product.name))
-            if criterion == SubscriptionSortProperty.discount:
-                order_by_clauses.append(clause_function(Discount.name))
-        statement = statement.order_by(*order_by_clauses)
+        statement = repository.apply_sorting(statement, sorting)
 
         statement = statement.options(
             contains_eager(Subscription.product).options(
@@ -317,22 +219,30 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
         )
 
-        results, count = await paginate(session, statement, pagination=pagination)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
-        return results, count
-
-    async def get_by_stripe_subscription_id(
-        self, session: AsyncSession, stripe_subscription_id: str
+    async def get(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
     ) -> Subscription | None:
+        repository = SubscriptionRepository.from_session(session)
         statement = (
-            select(Subscription)
-            .where(Subscription.stripe_subscription_id == stripe_subscription_id)
+            repository.get_readable_statement(auth_subject)
+            .where(
+                Subscription.id == id,
+                Subscription.started_at.is_not(None),
+            )
             .options(
-                joinedload(Subscription.customer), joinedload(Subscription.product)
+                *repository.get_eager_options(
+                    product_load=contains_eager(Subscription.product)
+                )
             )
         )
-        result = await session.execute(statement)
-        return result.unique().scalar_one_or_none()
+        return await repository.get_one_or_none(statement)
 
     async def create_or_update_from_checkout(
         self,
@@ -878,8 +788,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         Since Stripe manages the billing cycle, listen for their webhooks and update the
         status and dates accordingly.
         """
-        subscription = await self.get_by_stripe_subscription_id(
-            session, stripe_subscription.id
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.get_by_stripe_subscription_id(
+            stripe_subscription.id, options=repository.get_eager_options()
         )
 
         if subscription is None:
@@ -904,7 +815,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         ):
             subscription.discount = None
 
-        repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)
 
         await self.enqueue_benefits_grants(session, subscription)
@@ -1175,17 +1085,20 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             WebhookEventType.subscription_revoked,
         ],
     ) -> None:
-        # load full subscription with relations
-        full_subscription = await self.get(session, subscription.id)
-        assert full_subscription
-
+        repository = SubscriptionRepository.from_session(session)
+        subscription = cast(
+            Subscription,
+            await repository.get_by_id(
+                subscription.id, options=repository.get_eager_options()
+            ),
+        )
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id(
             subscription.product_id, options=product_repository.get_eager_options()
         )
         if product is not None:
             await webhook_service.send(
-                session, product.organization, event_type, full_subscription
+                session, product.organization, event_type, subscription
             )
 
     async def enqueue_benefits_grants(
@@ -1305,61 +1218,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             html_content=body,
         )
 
-    async def _get_loaded(
-        self,
-        session: AsyncSession,
-        query: Select[Any],
-        id: uuid.UUID,
-        *,
-        options: Sequence[sql.ExecutableOption] | None = None,
-    ) -> Subscription | None:
-        query = query.where(Subscription.id == id)
-
-        if options is not None:
-            query = query.options(*options)
-        else:
-            query = query.options(
-                joinedload(Subscription.customer),
-                joinedload(Subscription.product).options(
-                    joinedload(Product.organization),
-                    selectinload(Product.product_medias),
-                    selectinload(Product.attached_custom_fields),
-                ),
-                selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
-            )
-
-        res = await session.execute(query)
-        return res.scalars().unique().one_or_none()
-
-    def _get_readable_subscriptions_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[Any]:
-        statement = (
-            select(Subscription)
-            .join(Subscription.product)
-            .where(
-                Subscription.deleted_at.is_(None),
-            )
-        )
-
-        if is_user(auth_subject):
-            statement = statement.join(
-                UserOrganization,
-                isouter=True,
-                onclause=and_(
-                    UserOrganization.organization_id == Product.organization_id,
-                    UserOrganization.user_id == auth_subject.subject.id,
-                ),
-            ).where(
-                UserOrganization.user_id == auth_subject.subject.id,
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(
-                Product.organization_id == auth_subject.subject.id,
-            )
-
-        return statement
-
     async def _get_outdated_grants(
         self,
         session: AsyncSession,
@@ -1383,4 +1241,4 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         return result.scalars().all()
 
 
-subscription = SubscriptionService(Subscription)
+subscription = SubscriptionService()

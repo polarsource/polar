@@ -5892,6 +5892,8 @@ export interface components {
             payment_processor_metadata: {
                 [key: string]: string;
             };
+            /** @description Determine which billing address fields should be shown in the checkout form. */
+            customer_billing_address_fields: components["schemas"]["CheckoutCustomerBillingAddressFields"];
             /** Metadata */
             metadata: {
                 [key: string]: string | number | boolean;
@@ -5928,8 +5930,6 @@ export interface components {
             customer_metadata: {
                 [key: string]: string | number | boolean;
             };
-            /** @description Determine which billing address fields should be shown in the checkout form. */
-            readonly customer_billing_address_fields: components["schemas"]["CheckoutCustomerBillingAddressFields"];
         };
         /**
          * CheckoutConfirmStripe
@@ -7077,6 +7077,8 @@ export interface components {
             payment_processor_metadata: {
                 [key: string]: string;
             };
+            /** @description Determine which billing address fields should be shown in the checkout form. */
+            customer_billing_address_fields: components["schemas"]["CheckoutCustomerBillingAddressFields"];
             /**
              * Products
              * @description List of products available to select.
@@ -7094,8 +7096,6 @@ export interface components {
             organization: components["schemas"]["Organization"];
             /** Attached Custom Fields */
             attached_custom_fields: components["schemas"]["AttachedCustomField"][];
-            /** @description Determine which billing address fields should be shown in the checkout form. */
-            readonly customer_billing_address_fields: components["schemas"]["CheckoutCustomerBillingAddressFields"];
         };
         /**
          * CheckoutPublicConfirmed
@@ -7272,6 +7272,8 @@ export interface components {
             payment_processor_metadata: {
                 [key: string]: string;
             };
+            /** @description Determine which billing address fields should be shown in the checkout form. */
+            customer_billing_address_fields: components["schemas"]["CheckoutCustomerBillingAddressFields"];
             /**
              * Products
              * @description List of products available to select.
@@ -7291,8 +7293,6 @@ export interface components {
             attached_custom_fields: components["schemas"]["AttachedCustomField"][];
             /** Customer Session Token */
             customer_session_token: string;
-            /** @description Determine which billing address fields should be shown in the checkout form. */
-            readonly customer_billing_address_fields: components["schemas"]["CheckoutCustomerBillingAddressFields"];
         };
         /**
          * CheckoutSortProperty
@@ -9402,6 +9402,13 @@ export interface components {
             benefit_id: string;
             /** @description The type of the benefit concerned by this grant. */
             benefit_type: components["schemas"]["BenefitType"];
+            /**
+             * Benefit Metadata
+             * @description The metadata of the benefit concerned by this grant.
+             */
+            benefit_metadata: {
+                [key: string]: string | number | boolean;
+            };
             /** Properties */
             properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
         };

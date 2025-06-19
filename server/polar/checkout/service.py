@@ -37,6 +37,7 @@ from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.address import Address
 from polar.kit.crypto import generate_token
+from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.tax import TaxID, to_stripe_tax_id, validate_tax_id
@@ -782,13 +783,13 @@ class CheckoutService:
         required_fields = self._get_required_confirm_fields(checkout)
         for required_field in required_fields:
             if (
-                getattr(checkout, required_field) is None
-                and getattr(checkout_confirm, required_field, None) is None
+                attrgetter(checkout, required_field) is None
+                and attrgetter(checkout_confirm, required_field) is None
             ):
                 errors.append(
                     {
                         "type": "missing",
-                        "loc": ("body", required_field),
+                        "loc": ("body", *required_field),
                         "msg": "Field is required.",
                         "input": None,
                     }
@@ -1720,12 +1721,18 @@ class CheckoutService:
         if len(existing_subscriptions) > 0:
             raise AlreadyActiveSubscriptionError()
 
-    def _get_required_confirm_fields(self, checkout: Checkout) -> set[str]:
-        fields = {"customer_email"}
+    def _get_required_confirm_fields(self, checkout: Checkout) -> set[tuple[str, ...]]:
+        fields: set[tuple[str, ...]] = {("customer_email",)}
         if checkout.is_payment_form_required:
-            fields.update({"customer_name", "customer_billing_address"})
+            fields.update({("customer_name",), ("customer_billing_address",)})
+            for (
+                address_field,
+                required,
+            ) in checkout.customer_billing_address_fields.items():
+                if required:
+                    fields.add(("customer_billing_address", address_field))
         if checkout.is_business_customer:
-            fields.update({"customer_billing_name", "customer_billing_address"})
+            fields.update({("customer_billing_name",), ("customer_billing_address",)})
         return fields
 
     async def _create_or_update_customer(

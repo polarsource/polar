@@ -79,7 +79,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: pro
-    dockerCommand: uv run dramatiq -p 2 -t 4 -f scheduler:start run_worker
+    dockerCommand: uv run dramatiq -p 2 -t 4 -f polar.worker.scheduler:start polar.worker.run
     healthCheckPath: /
     region: ohio
     numInstances: 1
@@ -209,7 +209,7 @@ services:
         fromRegistryCreds:
           name: Registry Credentials (by fvoron)
     plan: standard
-    dockerCommand: uv run dramatiq -p 2 -t 4 -f scheduler:start run_worker
+    dockerCommand: uv run dramatiq -p 2 -t 4 -f polar.worker.scheduler:start polar.worker.run
     healthCheckPath: /
     region: ohio
     numInstances: 1

@@ -14047,6 +14047,8 @@ export interface components {
             id: string;
             processor: components["schemas"]["AccountType"];
             status: components["schemas"]["PayoutStatus"];
+            /** Paid At */
+            paid_at: string | null;
             /** Currency */
             currency: string;
             /** Amount */
@@ -14112,7 +14114,7 @@ export interface components {
          * PayoutSortProperty
          * @enum {string}
          */
-        PayoutSortProperty: "created_at" | "-created_at" | "amount" | "-amount" | "fees_amount" | "-fees_amount" | "status" | "-status" | "account_id" | "-account_id";
+        PayoutSortProperty: "created_at" | "-created_at" | "amount" | "-amount" | "fees_amount" | "-fees_amount" | "status" | "-status" | "paid_at" | "-paid_at" | "account_id" | "-account_id";
         /**
          * PayoutStatus
          * @enum {string}
@@ -18544,6 +18546,8 @@ export interface operations {
                 limit?: number;
                 /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
                 sorting?: components["schemas"]["BenefitSortProperty"][] | null;
+                /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+                metadata?: components["schemas"]["MetadataQuery"];
             };
             header?: never;
             path?: never;
@@ -19076,6 +19080,8 @@ export interface operations {
                 limit?: number;
                 /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
                 sorting?: components["schemas"]["ProductSortProperty"][] | null;
+                /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+                metadata?: components["schemas"]["MetadataQuery"];
             };
             header?: never;
             path?: never;
@@ -23375,6 +23381,8 @@ export interface operations {
                 customer_id?: string | string[] | null;
                 /** @description Filter by external customer ID. */
                 external_customer_id?: string | string[] | null;
+                /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+                metadata?: components["schemas"]["MetadataQuery"];
             };
             header?: never;
             path: {
@@ -24923,7 +24931,7 @@ export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]
 export const paymentProcessorValues: ReadonlyArray<components["schemas"]["PaymentProcessor"]> = ["stripe"];
 export const paymentSortPropertyValues: ReadonlyArray<components["schemas"]["PaymentSortProperty"]> = ["created_at", "-created_at", "status", "-status", "amount", "-amount", "method", "-method"];
 export const paymentStatusValues: ReadonlyArray<components["schemas"]["PaymentStatus"]> = ["pending", "succeeded", "failed"];
-export const payoutSortPropertyValues: ReadonlyArray<components["schemas"]["PayoutSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "fees_amount", "-fees_amount", "status", "-status", "account_id", "-account_id"];
+export const payoutSortPropertyValues: ReadonlyArray<components["schemas"]["PayoutSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "fees_amount", "-fees_amount", "status", "-status", "paid_at", "-paid_at", "account_id", "-account_id"];
 export const payoutStatusValues: ReadonlyArray<components["schemas"]["PayoutStatus"]> = ["pending", "in_transit", "succeeded"];
 export const platformFeeTypeValues: ReadonlyArray<components["schemas"]["PlatformFeeType"]> = ["payment", "international_payment", "subscription", "invoice", "cross_border_transfer", "payout", "account", "dispute", "platform"];
 export const pledgeStateValues: ReadonlyArray<components["schemas"]["PledgeState"]> = ["initiated", "created", "pending", "refunded", "disputed", "charge_disputed", "cancelled"];

@@ -111,5 +111,7 @@ class PayoutRepository(
                 return Payout.fees_amount
             case PayoutSortProperty.status:
                 return Payout.status
+            case PayoutSortProperty.paid_at:
+                return Payout.paid_at
             case PayoutSortProperty.account_id:
                 return Payout.account_id

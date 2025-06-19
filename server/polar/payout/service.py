@@ -1,6 +1,7 @@
 import datetime
 import uuid
 from collections.abc import AsyncIterable, Sequence
+from typing import Any
 
 import stripe as stripe_lib
 import structlog
@@ -277,7 +278,12 @@ class PayoutService:
             raise PayoutDoesNotExist(stripe_payout.id)
 
         status = PayoutStatus.from_stripe(stripe_payout.status)
-        return await repository.update(payout, update_dict={"status": status})
+        update_dict: dict[str, Any] = {"status": status}
+        if status == PayoutStatus.succeeded and stripe_payout.arrival_date is not None:
+            update_dict["paid_at"] = datetime.datetime.fromtimestamp(
+                stripe_payout.arrival_date, datetime.UTC
+            )
+        return await repository.update(payout, update_dict=update_dict)
 
     async def trigger_stripe_payouts(self, session: AsyncSession) -> None:
         """

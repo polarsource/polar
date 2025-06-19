@@ -10,7 +10,12 @@ from polar.models.transaction import PlatformFeeType
 from polar.postgres import AsyncSession
 from polar.transaction.repository import TransactionRepository
 
-from .generator import Invoice, InvoiceGenerator, InvoiceHeadingItem, InvoiceItem
+from .generator import (
+    Invoice,
+    InvoiceGenerator,
+    InvoiceHeadingItem,
+    InvoiceItem,
+)
 
 
 class InvoiceError(PolarError): ...
@@ -78,6 +83,7 @@ class InvoiceService:
         # Sanity check to make sure the amounts add up correctly
         assert payout.fees_amount == abs(payout_fees_amount)
         assert payout.amount == gross_amount + payout_fees_amount + payment_fees_amount
+        assert payout.paid_at is not None
 
         invoice = Invoice(
             number=payout.invoice_number,
@@ -121,6 +127,7 @@ class InvoiceService:
                 "Payouts (reverse invoices) are therefore without taxes."
             ),
             extra_heading_items=[
+                InvoiceHeadingItem(label="Paid at", value=payout.paid_at),
                 InvoiceHeadingItem(
                     label="Payout Method", value=payout.processor.get_display_name()
                 ),

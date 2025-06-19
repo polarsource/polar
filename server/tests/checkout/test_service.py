@@ -2315,21 +2315,85 @@ class TestUpdate:
 @pytest.mark.asyncio
 class TestConfirm:
     @pytest.mark.parametrize(
-        "payload",
+        "payload,missing_fields",
         [
-            {},
-            {"confirmation_token_id": "CONFIRMATION_TOKEN_ID"},
+            (
+                {},
+                {
+                    ("customer_email",),
+                    ("customer_name",),
+                    ("customer_billing_address",),
+                    ("customer_billing_address", "country"),
+                    ("confirmation_token_id",),
+                },
+            ),
+            (
+                {"confirmation_token_id": "CONFIRMATION_TOKEN_ID"},
+                {
+                    ("customer_email",),
+                    ("customer_name",),
+                    ("customer_billing_address",),
+                    ("customer_billing_address", "country"),
+                },
+            ),
+            pytest.param(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {"country": "US"},
+                },
+                {
+                    ("customer_billing_address", "state"),
+                    ("customer_billing_address", "line1"),
+                    ("customer_billing_address", "city"),
+                    ("customer_billing_address", "postal_code"),
+                },
+                id="missing US state and address",
+            ),
+            pytest.param(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {
+                        "country": "US",
+                        "state": "NY",
+                    },
+                },
+                {
+                    ("customer_billing_address", "line1"),
+                    ("customer_billing_address", "city"),
+                    ("customer_billing_address", "postal_code"),
+                },
+                id="missing US address",
+            ),
+            pytest.param(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {
+                        "country": "CA",
+                    },
+                },
+                {
+                    ("customer_billing_address", "state"),
+                },
+                id="missing CA state",
+            ),
         ],
     )
     async def test_missing_required_field(
         self,
         payload: dict[str, str],
+        missing_fields: set[tuple[str, ...]],
         session: AsyncSession,
         locker: Locker,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        with pytest.raises(PolarRequestValidationError):
+        with pytest.raises(PolarRequestValidationError) as e:
             await checkout_service.confirm(
                 session,
                 locker,
@@ -2337,6 +2401,11 @@ class TestConfirm:
                 checkout_one_time_fixed,
                 CheckoutConfirmStripe.model_validate(payload),
             )
+
+        errors = e.value.errors()
+        error_locations = {error["loc"] for error in errors}
+        for missing_field in missing_fields:
+            assert ("body", *missing_field) in error_locations
 
     async def test_not_open(
         self,

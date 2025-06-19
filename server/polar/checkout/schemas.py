@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Any, Literal, Self
+from typing import Annotated, Any, Literal
 
 from annotated_types import Ge, Le
 from pydantic import (
@@ -10,7 +10,6 @@ from pydantic import (
     HttpUrl,
     IPvAnyAddress,
     Tag,
-    computed_field,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -41,7 +40,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.models.checkout import CheckoutStatus
+from polar.models.checkout import CheckoutCustomerBillingAddressFields, CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.organization.schemas import Organization
 from polar.product.schemas import (
@@ -337,32 +336,6 @@ class CheckoutConfirmStripe(CheckoutConfirmBase):
 CheckoutConfirm = CheckoutConfirmStripe
 
 
-class CheckoutCustomerBillingAddressFields(Schema):
-    country: bool
-    state: bool
-    city: bool
-    postal_code: bool
-    line1: bool
-    line2: bool
-
-    @classmethod
-    def from_checkout(cls, checkout: "CheckoutBase") -> Self:
-        address = checkout.customer_billing_address
-        country = address.country if address else None
-        is_us = country == "US"
-        require_billing_address = (
-            checkout.require_billing_address or checkout.is_business_customer or is_us
-        )
-        return cls(
-            country=True,
-            state=require_billing_address or country in {"US", "CA"},
-            line1=require_billing_address,
-            line2=require_billing_address,
-            city=require_billing_address,
-            postal_code=require_billing_address,
-        )
-
-
 class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     payment_processor: PaymentProcessor = Field(description="Payment processor used.")
     status: CheckoutStatus = Field(description="Status of the checkout session.")
@@ -455,10 +428,12 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
         deprecated="Use `net_amount`.", validation_alias="net_amount"
     )
 
-    @computed_field
-    def customer_billing_address_fields(self) -> CheckoutCustomerBillingAddressFields:
-        """Determine which billing address fields should be shown in the checkout form."""
-        return CheckoutCustomerBillingAddressFields.from_checkout(self)
+    customer_billing_address_fields: CheckoutCustomerBillingAddressFields = Field(
+        description=(
+            "Determine which billing address fields "
+            "should be shown in the checkout form."
+        )
+    )
 
 
 class CheckoutProduct(ProductBase):

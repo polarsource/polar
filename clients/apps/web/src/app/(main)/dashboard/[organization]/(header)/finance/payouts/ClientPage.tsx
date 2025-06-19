@@ -109,6 +109,21 @@ export default function ClientPage({
       },
     },
     {
+      accessorKey: 'paid_at',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Paid At" />
+      ),
+      cell: ({ getValue }) => {
+        const value = getValue()
+        return value ? (
+          <FormattedDateTime datetime={getValue() as string} resolution="day" />
+        ) : (
+          '—'
+        )
+      },
+    },
+    {
       accessorKey: 'status',
       enableSorting: true,
       header: ({ column }) => (

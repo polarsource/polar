@@ -2,6 +2,7 @@ import stripe as stripe_lib
 
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.models import Customer, PaymentMethod
 from polar.postgres import AsyncSession
 
@@ -28,6 +29,8 @@ class PaymentMethodService:
         session: AsyncSession,
         customer: Customer,
         stripe_payment_method: stripe_lib.PaymentMethod,
+        *,
+        flush: bool = False,
     ) -> PaymentMethod:
         repository = PaymentMethodRepository.from_session(session)
 
@@ -51,7 +54,18 @@ class PaymentMethodService:
             stripe_payment_method.type
         ]
 
-        return await repository.update(payment_method)
+        return await repository.update(payment_method, flush=flush)
+
+    async def delete(
+        self,
+        session: AsyncSession,
+        payment_method: PaymentMethod,
+    ) -> None:
+        if payment_method.processor == PaymentProcessor.stripe:
+            await stripe_service.delete_payment_method(payment_method.processor_id)
+
+        repository = PaymentMethodRepository.from_session(session)
+        await repository.soft_delete(payment_method)
 
 
 payment_method = PaymentMethodService()

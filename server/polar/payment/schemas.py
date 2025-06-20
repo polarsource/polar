@@ -60,7 +60,8 @@ class CardPaymentMetadata(Schema):
     """Additional metadata for a card payment method."""
 
     brand: str = Field(
-        description="The brand of the card used for the payment.", examples=["visa"]
+        description="The brand of the card used for the payment.",
+        examples=["visa", "amex"],
     )
     last4: str = Field(
         description="The last 4 digits of the card number.", examples=["4242"]

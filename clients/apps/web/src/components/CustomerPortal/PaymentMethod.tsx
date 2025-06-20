@@ -6,7 +6,7 @@ import { X } from 'lucide-react'
 import CreditCardBrandIcon from '../CreditCardBrandIcon'
 
 type PaymentMethodType =
-  operations['customer_portal:customers:get_payment_methods']['responses']['200']['content']['application/json']['items'][number]
+  operations['customer_portal:customers:list_payment_methods']['responses']['200']['content']['application/json']['items'][number]
 
 const isCardPaymentMethod = (
   paymentMethod: PaymentMethodType,

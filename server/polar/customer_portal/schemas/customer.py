@@ -1,7 +1,6 @@
-from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated
 
-from pydantic import AfterValidator, AliasPath, Field, TypeAdapter
+from pydantic import UUID4, AfterValidator, TypeAdapter
 
 from polar.kit.address import Address
 from polar.kit.email import EmailStrDNS
@@ -13,6 +12,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.kit.tax import TaxID
+from polar.payment_method.schemas import PaymentMethodCard, PaymentMethodGeneric
 
 
 class CustomerPortalOAuthAccount(Schema):
@@ -27,6 +27,7 @@ class CustomerPortalCustomer(IDSchema, TimestampedSchema):
     billing_address: Address | None
     tax_id: TaxID | None
     oauth_accounts: dict[str, CustomerPortalOAuthAccount]
+    default_payment_method_id: UUID4 | None = None
 
 
 class CustomerPortalCustomerUpdate(Schema):
@@ -34,28 +35,6 @@ class CustomerPortalCustomerUpdate(Schema):
     name: Annotated[str | None, EmptyStrToNoneValidator] = None
     billing_address: Address | None = None
     tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
-
-
-class PaymentMethodGeneric(Schema):
-    id: str
-    type: str
-    created_at: datetime = Field(validation_alias="created")
-    default: bool
-
-
-class PaymentMethodCardData(Schema):
-    brand: str
-    last4: str
-    exp_month: int
-    exp_year: int
-    wallet: str | None = Field(
-        default=None, validation_alias=AliasPath("wallet", "type")
-    )
-
-
-class PaymentMethodCard(PaymentMethodGeneric):
-    type: Literal["card"]
-    card: PaymentMethodCardData
 
 
 CustomerPaymentMethod = PaymentMethodCard | PaymentMethodGeneric

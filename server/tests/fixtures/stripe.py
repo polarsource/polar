@@ -66,6 +66,7 @@ def construct_stripe_subscription(
     metadata: dict[str, str] = {},
     discounts: list[str] | None = None,
     revoke: bool = False,
+    default_payment_method: str | None = None,
 ) -> stripe_lib.Subscription:
     now_timestamp = datetime.now(UTC).timestamp()
     prices = prices or product.prices
@@ -111,6 +112,7 @@ def construct_stripe_subscription(
             "latest_invoice": latest_invoice,
             "metadata": {**base_metadata, **metadata},
             "discounts": discounts or [],
+            "default_payment_method": default_payment_method,
         },
         None,
     )
@@ -259,6 +261,21 @@ def build_stripe_invoice(
         },
         None,
     )
+
+
+def build_stripe_payment_method(
+    *,
+    type: str = "card",
+    details: dict[str, Any] = {},
+    customer: str | None = None,
+) -> stripe_lib.PaymentMethod:
+    obj: dict[str, Any] = {
+        "id": "STRIPE_PAYMENT_METHOD_ID",
+        "type": type,
+        "customer": customer,
+    }
+    obj[type] = details
+    return stripe_lib.PaymentMethod.construct_from(obj, None)
 
 
 def build_stripe_charge(

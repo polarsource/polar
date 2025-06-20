@@ -44,6 +44,7 @@ from polar.models import (
     Customer,
     Discount,
     Organization,
+    PaymentMethod,
     Product,
     ProductBenefit,
     Subscription,
@@ -60,6 +61,7 @@ from polar.notifications.notification import (
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.repository import OrganizationRepository
+from polar.payment_method.service import payment_method as payment_method_service
 from polar.product.guard import (
     is_custom_price,
     is_free_price,
@@ -265,11 +267,19 @@ class SubscriptionService:
         if stripe_customer_id is None:
             raise MissingStripeCustomerID(checkout, customer)
 
-        stripe_payment_method_id = (
-            get_expandable_id(intent.payment_method)
+        stripe_payment_method = (
+            await stripe_service.get_payment_method(
+                get_expandable_id(intent.payment_method)
+            )
             if intent and intent.payment_method
             else None
         )
+        payment_method: PaymentMethod | None = None
+        if stripe_payment_method is not None:
+            payment_method = await payment_method_service.upsert_from_stripe(
+                session, customer, stripe_payment_method
+            )
+
         metadata = {
             "type": ProductType.product,
             "product_id": str(checkout.product_id),
@@ -369,7 +379,7 @@ class SubscriptionService:
             )
         await stripe_service.set_automatically_charged_subscription(
             stripe_subscription.id,
-            stripe_payment_method_id,
+            stripe_payment_method.id if stripe_payment_method else None,
             idempotency_key=f"{idempotency_key}_payment_method",
         )
 
@@ -383,6 +393,7 @@ class SubscriptionService:
         )
         subscription.discount = checkout.discount
         subscription.customer = customer
+        subscription.payment_method = payment_method
         subscription.product = product
         subscription.subscription_product_prices = subscription_product_prices
         subscription.checkout = checkout
@@ -781,7 +792,7 @@ class SubscriptionService:
         for subscription in subscriptions:
             await self._perform_cancellation(session, subscription, immediately=True)
 
-    async def update_subscription_from_stripe(
+    async def update_from_stripe(
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
     ) -> Subscription:
         """
@@ -814,6 +825,16 @@ class SubscriptionService:
             and subscription.discount is not None
         ):
             subscription.discount = None
+
+        # Update payment method
+        if stripe_subscription.default_payment_method is not None:
+            stripe_payment_method = await stripe_service.get_payment_method(
+                get_expandable_id(stripe_subscription.default_payment_method)
+            )
+            payment_method = await payment_method_service.upsert_from_stripe(
+                session, subscription.customer, stripe_payment_method
+            )
+            subscription.payment_method = payment_method
 
         subscription = await repository.update(subscription)
 

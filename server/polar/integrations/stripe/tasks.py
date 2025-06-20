@@ -301,7 +301,7 @@ async def customer_subscription_updated(event_id: uuid.UUID) -> None:
         async with external_event_service.handle_stripe(session, event_id) as event:
             subscription = cast(stripe_lib.Subscription, event.stripe_data.data.object)
             try:
-                await subscription_service.update_subscription_from_stripe(
+                await subscription_service.update_from_stripe(
                     session, stripe_subscription=subscription
                 )
             except SubscriptionDoesNotExist as e:
@@ -325,7 +325,7 @@ async def customer_subscription_deleted(event_id: uuid.UUID) -> None:
         async with external_event_service.handle_stripe(session, event_id) as event:
             subscription = cast(stripe_lib.Subscription, event.stripe_data.data.object)
             try:
-                await subscription_service.update_subscription_from_stripe(
+                await subscription_service.update_from_stripe(
                     session, stripe_subscription=subscription
                 )
             except SubscriptionDoesNotExist as e:

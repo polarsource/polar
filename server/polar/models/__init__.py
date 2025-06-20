@@ -39,6 +39,7 @@ from .order_item import OrderItem
 from .organization import Organization
 from .organization_access_token import OrganizationAccessToken
 from .payment import Payment
+from .payment_method import PaymentMethod
 from .payout import Payout
 from .personal_access_token import PersonalAccessToken
 from .pledge import Pledge
@@ -113,6 +114,7 @@ __all__ = [
     "Organization",
     "OrganizationAccessToken",
     "Payment",
+    "PaymentMethod",
     "Payout",
     "PersonalAccessToken",
     "Pledge",

@@ -847,11 +847,8 @@ class StripeService:
 
     async def get_payment_method(
         self, payment_method_id: str
-    ) -> stripe_lib.PaymentMethod | None:
-        try:
-            return await stripe_lib.PaymentMethod.retrieve_async(payment_method_id)
-        except stripe_lib.InvalidRequestError:
-            return None
+    ) -> stripe_lib.PaymentMethod:
+        return await stripe_lib.PaymentMethod.retrieve_async(payment_method_id)
 
     async def delete_payment_method(
         self, payment_method_id: str

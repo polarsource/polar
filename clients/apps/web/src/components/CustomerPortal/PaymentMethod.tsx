@@ -18,9 +18,7 @@ const PaymentMethodCard = ({
 }: {
   paymentMethod: schemas['PaymentMethodCard']
 }) => {
-  const {
-    card: { brand },
-  } = paymentMethod
+  const { brand, last4, exp_year, exp_month } = paymentMethod.method_metadata
 
   return (
     <div className="flex grow flex-row items-center gap-4">
@@ -30,11 +28,9 @@ const PaymentMethodCard = ({
         className="dark:border-polar-700 rounded-lg border border-gray-200 p-2"
       />
       <div className="flex flex-col">
-        <span className="capitalize">
-          {`${paymentMethod.card.brand} •••• ${paymentMethod.card.last4}`}
-        </span>
+        <span className="capitalize">{`${brand} •••• ${last4}`}</span>
         <span className="dark:text-polar-500 text-sm text-gray-500">
-          Expires {paymentMethod.card.exp_month}/{paymentMethod.card.exp_year}
+          Expires {exp_month}/{exp_year}
         </span>
       </div>
     </div>
@@ -43,10 +39,12 @@ const PaymentMethodCard = ({
 
 const PaymentMethod = ({
   api,
+  customer,
   paymentMethod,
   deletable,
 }: {
   api: Client
+  customer: schemas['CustomerPortalCustomer']
   paymentMethod: PaymentMethodType
   deletable: boolean
 }) => {
@@ -64,7 +62,7 @@ const PaymentMethod = ({
         <div>{paymentMethod.type}</div>
       )}
       <div className="flex flex-row items-center gap-x-4">
-        {paymentMethod.default && (
+        {paymentMethod.id === customer.default_payment_method_id && (
           <Status
             status="Default Method"
             className="bg-emerald-50 text-emerald-500 dark:bg-emerald-950"

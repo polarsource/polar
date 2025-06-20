@@ -106,11 +106,16 @@ class PaymentService:
     ) -> Payment:
         repository = PaymentRepository.from_session(session)
 
-        payment = await repository.get_by_processor_id(charge.id)
+        payment = await repository.get_by_processor_id(
+            PaymentProcessor.stripe, charge.id
+        )
         if payment is None:
-            payment = Payment(id=generate_uuid(), processor_id=charge.id)
+            payment = Payment(
+                id=generate_uuid(),
+                processor=PaymentProcessor.stripe,
+                processor_id=charge.id,
+            )
 
-        payment.processor = PaymentProcessor.stripe
         payment.status = PaymentStatus.from_stripe_charge(charge.status)
         payment.amount = charge.amount
         payment.currency = charge.currency

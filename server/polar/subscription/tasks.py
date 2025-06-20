@@ -7,6 +7,7 @@ from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models import Subscription, SubscriptionMeter
 from polar.product.repository import ProductRepository
+from polar.subscription.repository import SubscriptionRepository
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .service import subscription as subscription_service
@@ -52,8 +53,8 @@ async def subscription_update_product_benefits_grants(
 @actor(actor_name="subscription.update_meters", priority=TaskPriority.LOW)
 async def subscription_update_meters(subscription_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
-        subscription = await subscription_service.get(
-            session,
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.get_by_id(
             subscription_id,
             options=(
                 selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),

@@ -38,6 +38,7 @@ if TYPE_CHECKING:
         Discount,
         Meter,
         Organization,
+        PaymentMethod,
         Product,
         ProductPrice,
         SubscriptionProductPrice,
@@ -137,6 +138,14 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @declared_attr
     def customer(cls) -> Mapped["Customer"]:
         return relationship("Customer", lazy="raise")
+
+    payment_method_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("payment_methods.id", ondelete="set null"), nullable=True
+    )
+
+    @declared_attr
+    def payment_method(cls) -> Mapped["PaymentMethod | None"]:
+        return relationship("PaymentMethod", lazy="raise")
 
     product_id: Mapped[UUID] = mapped_column(
         Uuid,

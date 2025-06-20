@@ -135,6 +135,7 @@ export const AddPaymentMethodModal = ({
             >
               <PaymentElement
                 options={{
+                  layout: 'tabs',
                   fields: {
                     billingDetails: {
                       name: 'never',

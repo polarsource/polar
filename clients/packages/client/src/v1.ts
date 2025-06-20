@@ -2130,12 +2130,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Customer Payment Methods
+         * List Customer Payment Methods
          * @description Get saved payment methods of the authenticated customer.
          *
          *     **Scopes**: `customer_portal:read` `customer_portal:write`
          */
-        get: operations["customer_portal:customers:get_payment_methods"];
+        get: operations["customer_portal:customers:list_payment_methods"];
         put?: never;
         /**
          * Add Customer Payment Method
@@ -9108,6 +9108,8 @@ export interface components {
             oauth_accounts: {
                 [key: string]: components["schemas"]["CustomerPortalOAuthAccount"];
             };
+            /** Default Payment Method Id */
+            default_payment_method_id?: string | null;
         };
         /** CustomerPortalCustomerUpdate */
         CustomerPortalCustomerUpdate: {
@@ -13968,24 +13970,38 @@ export interface components {
         };
         /** PaymentMethodCard */
         PaymentMethodCard: {
-            /** Id */
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
             id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            processor: components["schemas"]["PaymentProcessor"];
+            /**
+             * Customer Id
+             * Format: uuid4
+             */
+            customer_id: string;
             /**
              * Type
              * @constant
              */
             type: "card";
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** Default */
-            default: boolean;
-            card: components["schemas"]["PaymentMethodCardData"];
+            method_metadata: components["schemas"]["PaymentMethodCardMetadata"];
         };
-        /** PaymentMethodCardData */
-        PaymentMethodCardData: {
+        /** PaymentMethodCardMetadata */
+        PaymentMethodCardMetadata: {
             /** Brand */
             brand: string;
             /** Last4 */
@@ -13999,17 +14015,31 @@ export interface components {
         };
         /** PaymentMethodGeneric */
         PaymentMethodGeneric: {
-            /** Id */
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
             id: string;
-            /** Type */
-            type: string;
             /**
              * Created At
              * Format: date-time
+             * @description Creation timestamp of the object.
              */
             created_at: string;
-            /** Default */
-            default: boolean;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            processor: components["schemas"]["PaymentProcessor"];
+            /**
+             * Customer Id
+             * Format: uuid4
+             */
+            customer_id: string;
+            /** Type */
+            type: string;
         };
         /**
          * PaymentProcessor
@@ -21842,7 +21872,7 @@ export interface operations {
             };
         };
     };
-    "customer_portal:customers:get_payment_methods": {
+    "customer_portal:customers:list_payment_methods": {
         parameters: {
             query?: {
                 /** @description Page number, defaults to 1. */

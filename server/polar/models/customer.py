@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from .benefit_grant import BenefitGrant
     from .customer_meter import CustomerMeter
     from .organization import Organization
+    from .payment_method import PaymentMethod
     from .subscription import Subscription
 
 
@@ -133,6 +134,32 @@ class Customer(MetadataMixin, RecordModel):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
+
+    @declared_attr
+    def payment_methods(cls) -> Mapped[Sequence["PaymentMethod"]]:
+        return relationship(
+            "PaymentMethod",
+            lazy="raise",
+            back_populates="customer",
+            cascade="all, delete-orphan",
+            foreign_keys="[PaymentMethod.customer_id]",
+        )
+
+    default_payment_method_id: Mapped[UUID | None] = mapped_column(
+        "default_payment_method_id",
+        Uuid,
+        ForeignKey("payment_methods.id", ondelete="set null"),
+        nullable=True,
+    )
+
+    @declared_attr
+    def default_payment_method(cls) -> Mapped["PaymentMethod | None"]:
+        return relationship(
+            "PaymentMethod",
+            lazy="raise",
+            uselist=False,
+            foreign_keys=[cls.default_payment_method_id],  # type: ignore
+        )
 
     def get_oauth_account(
         self, account_id: str, platform: CustomerOAuthPlatform

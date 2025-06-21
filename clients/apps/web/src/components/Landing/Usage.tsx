@@ -1,7 +1,7 @@
 'use client'
 
 import { ArrowOutwardOutlined, Check } from '@mui/icons-material'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { RawButton } from '@polar-sh/ui/components/atoms/Button'
 import {
   Tabs,
   TabsContent,
@@ -149,19 +149,24 @@ export const Usage = () => {
                   {strategy.name}
                 </TabsTrigger>
               ))}
-              <Link
-                href="https://docs.polar.sh/features/usage-based-billing/ingestion-strategies/ingestion-strategy"
-                target="_blank"
-              >
-                <Button className="rounded-full" variant="ghost">
+              <RawButton className="rounded-full" variant="ghost" asChild>
+                <Link
+                  href="https://docs.polar.sh/features/usage-based-billing/ingestion-strategies/ingestion-strategy"
+                  target="_blank"
+                  className="outline-none focus:ring-[3px] focus:ring-blue-100 focus-visible:ring-blue-100 md:text-sm dark:text-white dark:ring-offset-transparent dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
+                >
                   <span>All Ingestion Strategies</span>
-                  <ArrowOutwardOutlined className="ml-2" />
-                </Button>
-              </Link>
+                  <ArrowOutwardOutlined className="ml-2" aria-hidden="true" />
+                </Link>
+              </RawButton>
             </TabsList>
           </div>
           {strategies.map((strategy) => (
-            <TabsContent value={strategy.name} key={strategy.name}>
+            <TabsContent
+              value={strategy.name}
+              key={strategy.name}
+              className="rounded-2xl focus-within:ring-[3px] focus-within:ring-blue-100 md:text-sm dark:text-white dark:ring-offset-transparent dark:focus-within:border-blue-600 dark:focus-within:ring-blue-700/40"
+            >
               <motion.div
                 className={`dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row`}
                 variants={containerVariants}
@@ -193,6 +198,7 @@ export const Usage = () => {
                           <Check
                             className="text-emerald-500"
                             fontSize="small"
+                            aria-label="Check"
                           />
                           <p className="text-pretty leading-relaxed">
                             {bullet}
@@ -204,15 +210,20 @@ export const Usage = () => {
                       className="text-sm text-gray-400"
                       variants={itemVariants}
                     >
-                      <Link href={strategy.link} target="_blank">
-                        <Button variant="secondary" className="rounded-full">
+                      <RawButton
+                        variant="secondary"
+                        className="rounded-full"
+                        asChild
+                      >
+                        <Link href={strategy.link} target="_blank">
                           Learn More
                           <ArrowOutwardOutlined
                             fontSize="inherit"
                             className="ml-2"
+                            aria-hidden="true"
                           />
-                        </Button>
-                      </Link>
+                        </Link>
+                      </RawButton>
                     </motion.span>
                   </div>
                 </div>

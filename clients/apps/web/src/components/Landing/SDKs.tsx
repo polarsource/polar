@@ -16,27 +16,27 @@ interface Framework {
 const frameworks: Framework[] = [
   {
     name: 'Node.js',
-    icon: <NodeJsIcon />,
+    icon: <NodeJsIcon aria-hidden="true" />,
     href: 'https://docs.polar.sh/documentation/sdks/typescript-sdk',
   },
   {
     name: 'Python',
-    icon: <PythonIcon />,
+    icon: <PythonIcon aria-hidden="true" />,
     href: 'https://docs.polar.sh/documentation/sdks/python-sdk',
   },
   {
     name: 'PHP',
-    icon: <PhpIcon />,
+    icon: <PhpIcon aria-hidden="true" />,
     href: 'https://github.com/polarsource/polar-php',
   },
   {
     name: 'Go',
-    icon: <GoIcon />,
+    icon: <GoIcon aria-hidden="true" />,
     href: 'https://github.com/polarsource/polar-go',
   },
   {
     name: 'CURL',
-    icon: <CurlIcon />,
+    icon: <CurlIcon aria-hidden="true" />,
     href: 'https://docs.polar.sh/api-reference',
   },
 ]
@@ -69,7 +69,7 @@ export default function FrameworkSelector() {
         <Link
           key={framework.name}
           href={framework.href}
-          className="h-full w-full"
+          className="h-full w-full rounded-2xl outline-none focus:ring-[3px] focus:ring-blue-100 focus-visible:ring-blue-100 md:text-sm dark:text-white dark:ring-offset-transparent dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
         >
           <motion.div
             key={framework.name}

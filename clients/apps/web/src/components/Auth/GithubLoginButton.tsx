@@ -3,7 +3,7 @@
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { getGitHubAuthorizeURL } from '@/utils/auth'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { RawButton } from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 
@@ -38,14 +38,21 @@ const GithubLoginButton = (props: {
   const smallStyle = 'p-2 px-4 text-sm space-x-2'
 
   return (
-    <Link href={authorizeURL} onClick={onClick}>
-      <Button
-        wrapperClassNames={twMerge(
+    <RawButton
+      className={twMerge(
+        props.size == 'large' && 'text-md p-5',
+        props.fullWidth && 'w-full',
+      )}
+      asChild
+    >
+      <Link
+        href={authorizeURL}
+        onClick={onClick}
+        className={twMerge(
+          'flex items-center',
           props.size === 'large' ? largeStyle : smallStyle,
           props.className,
         )}
-        className={twMerge(props.size == 'large' && 'text-md p-5')}
-        fullWidth={props.fullWidth}
       >
         <svg
           className={twMerge(
@@ -63,8 +70,8 @@ const GithubLoginButton = (props: {
           />
         </svg>
         <span className="whitespace-nowrap">{props.text}</span>
-      </Button>
-    </Link>
+      </Link>
+    </RawButton>
   )
 }
 

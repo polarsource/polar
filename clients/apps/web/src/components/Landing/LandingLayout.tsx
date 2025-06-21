@@ -58,10 +58,12 @@ const NavLink = ({
     <Link
       href={href}
       target={isExternal ? '_blank' : undefined}
+      aria-current={isActive ? 'page' : undefined}
       prefetch
       className={twMerge(
-        'dark:text-polar-500 flex items-center gap-x-2 text-gray-500 transition-colors hover:text-black dark:hover:text-white',
+        'dark:text-polar-500 flex items-center gap-x-2 px-2 py-1 text-gray-500 transition-colors hover:text-black dark:hover:text-white',
         isActive && 'text-black dark:text-white',
+        'rounded-full outline-none focus:ring-[3px] focus:ring-blue-100 focus-visible:ring-blue-100 md:text-sm dark:text-white dark:ring-offset-transparent dark:focus:border-blue-600 dark:focus:ring-blue-700/40',
       )}
     >
       {children}
@@ -83,7 +85,7 @@ const LandingPageDesktopNavigation = () => {
       <div className="relative flex w-full flex-row items-center justify-between md:max-w-3xl xl:max-w-7xl">
         <BrandingMenu logoVariant="logotype" size={100} />
 
-        <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-6 font-medium">
+        <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-4 font-medium">
           <li>
             <NavLink href="/" isActive={(pathname) => pathname === '/'}>
               Features

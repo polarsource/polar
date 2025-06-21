@@ -1,21 +1,12 @@
 import Link, { LinkProps } from 'next/link'
 import { PropsWithChildren } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { BrandingMenu } from '../Layout/Public/BrandingMenu'
 
 const Footer = () => {
   return (
-    <div className="mt-16 flex w-full flex-col items-center gap-y-12 bg-white dark:bg-black">
-      <div
-        className={twMerge(
-          'flex w-full flex-col items-center px-6 py-16 md:max-w-3xl md:px-0 xl:max-w-7xl',
-        )}
-      >
-        <div
-          className={twMerge(
-            'grid w-full grid-cols-1 gap-12 md:grid-cols-2 md:justify-between md:gap-24 lg:grid-cols-6',
-          )}
-        >
+    <footer className="mt-16 flex w-full flex-col items-center gap-y-12 bg-white dark:bg-black">
+      <div className="flex w-full flex-col items-center px-6 py-16 md:max-w-3xl md:px-0 xl:max-w-7xl">
+        <div className="grid w-full grid-cols-1 gap-12 md:grid-cols-2 md:justify-between md:gap-24 lg:grid-cols-6">
           <div className="flex flex-1 flex-col gap-y-6 md:col-span-2">
             <span className="text-black md:ml-0 dark:text-white">
               <BrandingMenu
@@ -80,7 +71,7 @@ const Footer = () => {
           </div>
         </div>
       </div>
-    </div>
+    </footer>
   )
 }
 
@@ -89,7 +80,7 @@ export default Footer
 const FooterLink = (props: PropsWithChildren<LinkProps>) => {
   return (
     <Link
-      className="dark:text-polar-500 dark:hover:text-polar-50 flex flex-row items-center gap-x-1 text-gray-500 transition-colors hover:text-gray-500"
+      className="dark:text-polar-500 dark:hover:text-polar-50 flex flex-row items-center gap-x-1 rounded-2xl text-gray-500 outline-none transition-colors hover:text-gray-500 focus:ring-[3px] focus-visible:ring-blue-100 dark:ring-offset-transparent dark:focus-visible:border-blue-600 dark:focus-visible:ring-blue-700/40"
       {...props}
     >
       {props.children}

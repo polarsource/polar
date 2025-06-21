@@ -43,19 +43,21 @@ const FeatureCard = ({
   children,
   wide,
 }: FeatureCardProps) => {
+  const headingId = React.useId()
+  const descriptionId = React.useId()
   return (
-    <motion.div
+    <motion.li
       variants={{
         hidden: { opacity: 0 },
         visible: { opacity: 1, transition: { duration: 2 } },
       }}
-      className={twMerge('flex flex-col gap-y-6', className)}
+      className={twMerge('relative flex flex-col gap-y-6', className)}
+      aria-describedby={descriptionId}
     >
-      <Link
-        href={linkHref}
-        target="_blank"
+      <div
         className={twMerge(
-          'dark:border-polar-700 dark:bg-polar-900 flex h-full gap-x-6 gap-y-8 rounded-2xl border border-transparent bg-white p-8 transition-transform hover:translate-y-[-4px]',
+          'dark:border-polar-700 dark:bg-polar-900 flex h-full cursor-pointer gap-x-6 gap-y-8 rounded-2xl border border-transparent bg-white p-8 transition-transform focus-within:translate-y-[-4px] hover:translate-y-[-4px]',
+          'focus-within:ring-[3px] focus-within:ring-blue-100 md:text-sm dark:text-white dark:ring-offset-transparent dark:focus-within:border-blue-600 dark:focus-within:ring-blue-700/40',
           wide
             ? 'flex-col justify-between xl:flex-row xl:justify-start'
             : 'flex-col justify-between',
@@ -64,15 +66,26 @@ const FeatureCard = ({
         <div className="flex flex-col gap-y-6">
           <span>{icon}</span>
           <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl text-black dark:text-white">{title}</h3>
-            <p className="dark:text-polar-500 w-full flex-grow text-gray-500 md:max-w-96">
+            <h3 className="text-xl text-black dark:text-white" id={headingId}>
+              {title}
+            </h3>
+
+            <p
+              id={descriptionId}
+              className="dark:text-polar-500 w-full flex-grow text-gray-500 md:max-w-96"
+            >
               {description}
             </p>
           </div>
         </div>
         {children}
-      </Link>
-    </motion.div>
+        <Link
+          href={linkHref}
+          target="_blank"
+          className="absolute inset-0 outline-none"
+        />
+      </div>
+    </motion.li>
   )
 }
 
@@ -297,7 +310,7 @@ const { text } = await streamText({
 
   return (
     <section className={className}>
-      <motion.div
+      <motion.ul
         initial="hidden"
         animate="visible"
         transition={{
@@ -318,7 +331,7 @@ const { text } = await streamText({
             {feature.children}
           </FeatureCard>
         ))}
-      </motion.div>
+      </motion.ul>
     </section>
   )
 }

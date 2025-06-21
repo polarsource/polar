@@ -1,7 +1,7 @@
 'use client'
 
 import { ArrowOutwardOutlined, Check } from '@mui/icons-material'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { RawButton } from '@polar-sh/ui/components/atoms/Button'
 import {
   Tabs,
   TabsContent,
@@ -97,9 +97,9 @@ export const Adapters = () => {
             <span className="dark:text-polar-500 text-lg text-gray-400">
               Framework Adapters
             </span>
-            <h1 className="w-fit max-w-2xl text-pretty text-center text-3xl md:text-5xl md:leading-normal">
+            <h3 className="w-fit max-w-2xl text-pretty text-center text-3xl md:text-5xl md:leading-normal">
               Integrate in under a minute
-            </h1>
+            </h3>
             <TabsList>
               {adapters.map((adapter) => (
                 <TabsTrigger
@@ -110,21 +110,26 @@ export const Adapters = () => {
                   {adapter.name}
                 </TabsTrigger>
               ))}
-              <Link
-                href="https://docs.polar.sh/integrate/sdk/adapters/nextjs"
-                target="_blank"
-              >
-                <Button className="rounded-full" variant="ghost">
+              <RawButton className="rounded-full" variant="ghost" asChild>
+                <Link
+                  href="https://docs.polar.sh/integrate/sdk/adapters/nextjs"
+                  target="_blank"
+                  className="outline-none focus:ring-[3px] focus:ring-blue-100 focus-visible:ring-blue-100 md:text-sm dark:text-white dark:ring-offset-transparent dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
+                >
                   <span>All 13 Adapters</span>
-                  <ArrowOutwardOutlined className="ml-2" />
-                </Button>
-              </Link>
+                  <ArrowOutwardOutlined className="ml-2" aria-hidden="true" />
+                </Link>
+              </RawButton>
             </TabsList>
           </div>
           {adapters.map((adapter) => (
-            <TabsContent value={adapter.name} key={adapter.name}>
+            <TabsContent
+              value={adapter.name}
+              key={adapter.name}
+              className="rounded-2xl focus-within:ring-[3px] focus-within:ring-blue-100 md:text-sm dark:text-white dark:ring-offset-transparent dark:focus-within:border-blue-600 dark:focus-within:ring-blue-700/40"
+            >
               <motion.div
-                className={`dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row`}
+                className="dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-2xl bg-white md:flex-row"
                 variants={containerVariants}
                 initial="hidden"
                 whileInView="visible"
@@ -132,12 +137,12 @@ export const Adapters = () => {
               >
                 <div className="flex flex-col justify-center gap-y-8 p-8 md:w-1/2 md:p-16">
                   <div className="flex flex-col gap-y-8">
-                    <motion.h2
+                    <motion.h4
                       className="text-2xl !leading-normal md:text-3xl"
                       variants={itemVariants}
                     >
                       {adapter.name} Adapter
-                    </motion.h2>
+                    </motion.h4>
                     <motion.p
                       className="text-pretty text-lg leading-relaxed"
                       variants={itemVariants}
@@ -150,7 +155,11 @@ export const Adapters = () => {
                         className="flex flex-row items-center gap-x-2"
                         variants={itemVariants}
                       >
-                        <Check className="text-emerald-500" fontSize="small" />
+                        <Check
+                          className="text-emerald-500"
+                          fontSize="small"
+                          aria-label="Check"
+                        />
                         <p className="text-pretty leading-relaxed">
                           Secure & Simple Checkouts
                         </p>
@@ -159,7 +168,11 @@ export const Adapters = () => {
                         className="flex flex-row items-center gap-x-2"
                         variants={itemVariants}
                       >
-                        <Check className="text-emerald-500" fontSize="small" />
+                        <Check
+                          className="text-emerald-500"
+                          fontSize="small"
+                          aria-label="Check"
+                        />
                         <p className="text-pretty leading-relaxed">
                           Integrated Customer Portal
                         </p>
@@ -168,7 +181,11 @@ export const Adapters = () => {
                         className="flex flex-row items-center gap-x-2"
                         variants={itemVariants}
                       >
-                        <Check className="text-emerald-500" fontSize="small" />
+                        <Check
+                          className="text-emerald-500"
+                          fontSize="small"
+                          aria-label="Check"
+                        />
                         <p className="text-pretty leading-relaxed">
                           Granular & Reliable Webhook Handler
                         </p>
@@ -178,7 +195,11 @@ export const Adapters = () => {
                         className="flex flex-row items-center gap-x-2"
                         variants={itemVariants}
                       >
-                        <Check className="text-emerald-500" fontSize="small" />
+                        <Check
+                          className="text-emerald-500"
+                          fontSize="small"
+                          aria-label="Check"
+                        />
                         <p className="text-pretty leading-relaxed">
                           Global Merchant of Record
                         </p>
@@ -188,15 +209,20 @@ export const Adapters = () => {
                       className="text-sm text-gray-400"
                       variants={itemVariants}
                     >
-                      <Link href={adapter.link} target="_blank">
-                        <Button variant="secondary" className="rounded-full">
+                      <RawButton
+                        variant="secondary"
+                        className="rounded-full"
+                        asChild
+                      >
+                        <Link href={adapter.link} target="_blank">
                           Learn More
                           <ArrowOutwardOutlined
                             fontSize="inherit"
                             className="ml-2"
+                            aria-hidden="true"
                           />
-                        </Button>
-                      </Link>
+                        </Link>
+                      </RawButton>
                     </motion.span>
                   </div>
                 </div>

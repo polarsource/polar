@@ -263,7 +263,7 @@ export const testimonials = [
   },
 ]
 
-interface TestamonialProps {
+interface TestimonialProps {
   name: string
   username: string
   avatar: string
@@ -272,20 +272,16 @@ interface TestamonialProps {
   verified?: boolean
 }
 
-export const Testamonial = ({
+export const Testimonial = ({
   name,
   username,
   avatar,
   text,
   link,
   verified,
-}: TestamonialProps) => {
+}: TestimonialProps) => {
   return (
-    <Link
-      href={link}
-      target="_blank"
-      className="dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-row gap-x-4 rounded-2xl border border-transparent bg-white p-6 transition-colors hover:bg-white"
-    >
+    <div className="dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 relative my-1 flex h-full flex-row gap-x-4 rounded-2xl border border-transparent bg-white p-6 transition-colors focus-within:ring-[3px] focus-within:ring-blue-100 hover:bg-white hover:opacity-80 md:text-sm dark:ring-offset-transparent dark:focus-within:border-blue-600 dark:focus-within:ring-blue-700/40">
       <div className="flex flex-col gap-y-4 pt-1.5">
         <div className="flex flex-row items-center gap-x-3">
           <Avatar className="h-12 w-12" avatar_url={avatar} name={name} />
@@ -305,7 +301,12 @@ export const Testamonial = ({
           </div>
         </div>
       </div>
-    </Link>
+      <Link
+        href={link}
+        target="_blank"
+        className="absolute inset-0 outline-none"
+      />
+    </div>
   )
 }
 
@@ -317,33 +318,41 @@ export const Testimonials = () => {
   return (
     <div className="flex flex-col items-center gap-y-12 px-4 md:gap-y-24 md:px-0">
       <div className="flex flex-col gap-4 md:relative md:w-full md:overflow-hidden">
-        <div className="flex flex-col gap-y-4 md:hidden">
+        <ul role="marquee" className="flex flex-col gap-y-4 md:hidden">
           {firstRow.map((testimonial, index) => (
-            <Testamonial key={`testimonial-${index}`} {...testimonial} />
+            <li key={`testimonial-${index}`} className="contents">
+              <Testimonial {...testimonial} />
+            </li>
           ))}
-        </div>
+        </ul>
         <div className="hidden flex-col gap-y-4 md:flex md:w-screen">
           {/* First row */}
-          <div className="flex flex-col gap-y-4 md:w-max md:animate-[infinite-scroll_50s_linear_infinite_forwards] md:flex-row md:gap-x-4">
+          <ul
+            role="marquee"
+            className="flex flex-col gap-y-4 md:w-max md:animate-[infinite-scroll_50s_linear_infinite_forwards] md:flex-row md:gap-x-4"
+          >
             {[...firstRow, ...firstRow, ...firstRow].map(
               (testimonial, index) => (
-                <div key={`row1-${index}`} className="md:w-[400px]">
-                  <Testamonial {...testimonial} />
-                </div>
+                <li key={`row1-${index}`} className="md:w-[400px]">
+                  <Testimonial {...testimonial} />
+                </li>
               ),
             )}
-          </div>
+          </ul>
 
           {/* Second row */}
-          <div className="flex flex-col gap-y-4 md:w-max md:animate-[infinite-scroll_50s_linear_infinite_forwards] md:flex-row md:gap-x-4">
+          <ul
+            role="marquee"
+            className="flex flex-col gap-y-4 md:w-max md:animate-[infinite-scroll_50s_linear_infinite_forwards] md:flex-row md:gap-x-4"
+          >
             {[...secondRow, ...secondRow, ...secondRow].map(
               (testimonial, index) => (
-                <div key={`row2-${index}`} className="md:w-[400px]">
-                  <Testamonial {...testimonial} />
-                </div>
+                <li key={`row2-${index}`} className="md:w-[400px]">
+                  <Testimonial {...testimonial} />
+                </li>
               ),
             )}
-          </div>
+          </ul>
         </div>
       </div>
     </div>
@@ -364,6 +373,7 @@ const VerifiedBadge = () => {
         strokeLinecap="round"
         strokeLinejoin="round"
         className="fill-[#1D9BF0] text-[#1D9BF0]"
+        aria-label="X (Twitter) Verified badge"
       >
         <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path>
       </svg>

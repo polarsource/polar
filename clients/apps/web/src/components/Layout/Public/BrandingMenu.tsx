@@ -51,8 +51,11 @@ export const BrandingMenu = ({
   return (
     <div className={twMerge('relative flex flex-row items-center', className)}>
       <DropdownMenu open={brandingMenuOpen}>
-        <DropdownMenuTrigger onContextMenu={handleTriggerClick}>
-          <Link href="/">
+        <DropdownMenuTrigger onContextMenu={handleTriggerClick} asChild>
+          <Link
+            href="/"
+            className="rounded-full outline-none focus:ring-[3px] focus:ring-blue-100 focus-visible:ring-blue-100 md:text-sm dark:text-white dark:ring-offset-transparent dark:focus:border-blue-600 dark:focus:ring-blue-700/40"
+          >
             {logoVariant === 'logotype' ? (
               <LogoType
                 className={twMerge(
@@ -75,14 +78,14 @@ export const BrandingMenu = ({
             className="flex flex-row gap-x-3"
             onClick={handleCopyLogoToClipboard}
           >
-            <Clipboard className="h-3 w-3" />
+            <Clipboard aria-hidden="true" className="h-3 w-3" />
             <span>Copy Logo as SVG</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             className="flex flex-row gap-x-3"
             onClick={() => setBrandingMenuOpen(false)}
           >
-            <ArrowDown className="h-3 w-3" />
+            <ArrowDown aria-hidden="true" className="h-3 w-3" />
             <Link href="/assets/brand/polar_brand.zip">
               Download Branding Assets
             </Link>

@@ -96,6 +96,9 @@ const LandingPageDesktopNavigation = () => {
             <NavLink href="/company">Company</NavLink>
           </li>
           <li>
+            <NavLink href="/careers">Careers</NavLink>
+          </li>
+          <li>
             <NavLink href="/blog">Blog</NavLink>
           </li>
         </ul>

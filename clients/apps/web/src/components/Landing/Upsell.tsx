@@ -6,7 +6,7 @@ import {
   GitHub,
   ShoppingBagOutlined,
 } from '@mui/icons-material'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { RawButton } from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
 import { Box, Check, LucideIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -29,7 +29,10 @@ const UpsellCard = ({
   return (
     <motion.div className="dark:bg-polar-900 relative flex h-full flex-col gap-y-6 rounded-xl bg-white p-8">
       <div className="flex flex-row items-center gap-3">
-        <Icon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+        <Icon
+          className="h-5 w-5 text-gray-600 dark:text-gray-300"
+          aria-hidden="true"
+        />
         <h3 className="text-xl">{title}</h3>
       </div>
       <div className="flex flex-1 flex-col justify-start gap-2">
@@ -39,14 +42,14 @@ const UpsellCard = ({
       </div>
       {children && <div className="flex gap-4">{children}</div>}
       {link && (
-        <Link href={link} target="_blank">
-          <Button variant="ghost" className="rounded-full">
+        <RawButton variant="ghost" className="w-max rounded-full" asChild>
+          <Link href={link} target="_blank">
             Learn more
             <span className="ml-2">
-              <ArrowOutwardOutlined fontSize="inherit" />
+              <ArrowOutwardOutlined fontSize="inherit" aria-hidden="true" />
             </span>
-          </Button>
-        </Link>
+          </Link>
+        </RawButton>
       )}
     </motion.div>
   )
@@ -84,15 +87,15 @@ export const Upsell = () => {
         >
           <ul className="flex flex-col gap-y-1 text-gray-600 dark:text-gray-300">
             <li className="flex flex-row items-center gap-x-2">
-              <Check className="h-4 w-4 text-emerald-500" />
+              <Check className="h-4 w-4 text-emerald-500" aria-label="Check" />
               Flexible Pricing Models
             </li>
             <li className="flex flex-row items-center gap-x-2">
-              <Check className="h-4 w-4 text-emerald-500" />
+              <Check className="h-4 w-4 text-emerald-500" aria-label="Check" />
               Robust Analytics
             </li>
             <li className="flex flex-row items-center gap-x-2">
-              <Check className="h-4 w-4 text-emerald-500" />
+              <Check className="h-4 w-4 text-emerald-500" aria-label="Check" />
               Discount Codes
             </li>
           </ul>
@@ -108,15 +111,15 @@ export const Upsell = () => {
         >
           <ul className="flex flex-col gap-y-1 text-gray-600 dark:text-gray-300">
             <li className="flex flex-row items-center gap-x-2">
-              <Check className="h-4 w-4 text-emerald-500" />
+              <Check className="h-4 w-4 text-emerald-500" aria-label="Check" />
               Custom Checkout Fields
             </li>
             <li className="flex flex-row items-center gap-x-2">
-              <Check className="h-4 w-4 text-emerald-500" />
+              <Check className="h-4 w-4 text-emerald-500" aria-label="Check" />
               Automatic Tax Calculation
             </li>
             <li className="flex flex-row items-center gap-x-2">
-              <Check className="h-4 w-4 text-emerald-500" />
+              <Check className="h-4 w-4 text-emerald-500" aria-label="Check" />
               Checkout Links & Embeds
             </li>
           </ul>
@@ -132,15 +135,15 @@ export const Upsell = () => {
         >
           <ul className="flex flex-col gap-y-1 text-gray-600 dark:text-gray-300">
             <li className="flex flex-row items-center gap-x-2">
-              <Check className="h-4 w-4 text-emerald-500" />
+              <Check className="h-4 w-4 text-emerald-500" aria-label="Check" />
               Raycast Extension
             </li>
             <li className="flex flex-row items-center gap-x-2">
-              <Check className="h-4 w-4 text-emerald-500" />
+              <Check className="h-4 w-4 text-emerald-500" aria-label="Check" />
               Framer Plugin
             </li>
             <li className="flex flex-row items-center gap-x-2">
-              <Check className="h-4 w-4 text-emerald-500" />
+              <Check className="h-4 w-4 text-emerald-500" aria-label="Check" />
               Zapier Integration
             </li>
           </ul>

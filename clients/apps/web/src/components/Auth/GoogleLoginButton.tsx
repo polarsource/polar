@@ -2,7 +2,7 @@ import { usePostHog, type EventName } from '@/hooks/posthog'
 import { getGoogleAuthorizeURL } from '@/utils/auth'
 import { Google } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
+import { RawButton } from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 
 interface GoogleLoginButtonProps {
@@ -28,23 +28,19 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({
   }
 
   return (
-    <Link
-      href={getGoogleAuthorizeURL({
-        return_to: returnTo,
-        attribution: JSON.stringify(signup),
-      })}
-      onClick={onClick}
-    >
-      <Button
-        variant="secondary"
-        wrapperClassNames="space-x-3 p-2.5 px-5"
-        className="text-md p-5"
-        fullWidth
+    <RawButton variant="secondary" className="text-md w-full p-5" asChild>
+      <Link
+        href={getGoogleAuthorizeURL({
+          return_to: returnTo,
+          attribution: JSON.stringify(signup),
+        })}
+        onClick={onClick}
+        className="space-x-3 p-2.5 px-5"
       >
-        <Google />
+        <Google aria-hidden="true" />
         <div>Continue with Google</div>
-      </Button>
-    </Link>
+      </Link>
+    </RawButton>
   )
 }
 

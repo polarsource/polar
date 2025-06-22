@@ -207,6 +207,15 @@ export const OrganizationDetailsForm: React.FC<
         return
       }
       const lastFile = files[files.length - 1]
+      const fileName = lastFile.name
+      const isValidName = /^[a-zA-Z0-9_.-]+$/.test(fileName)
+      if (!isValidName) {
+        toast({
+          title: 'Invalid Filename',
+          description: 'Please rename your file using only English letters, numbers, dashes, underscores, and dots.',
+        })
+        return
+      }
       setValue('avatar_url', lastFile.public_url, { shouldDirty: true })
     },
     [setValue],

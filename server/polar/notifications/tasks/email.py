@@ -33,6 +33,7 @@ async def notifications_send(notification_id: UUID) -> None:
 
         notification_type = notifications.parse_payload(notif)
 
+        return
         (subject, body) = notification_type.render()
         if not subject or not body:
             log.error(

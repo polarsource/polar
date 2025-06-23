@@ -20,22 +20,7 @@ import {
 import { operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
-import {
-  endOfMonth,
-  endOfToday,
-  endOfYesterday,
-  startOfMonth,
-  startOfToday,
-  startOfYesterday,
-  subMonths,
-} from 'date-fns'
+import { endOfToday } from 'date-fns'
 import { useSearchParams } from 'next/navigation'
 import {
   parseAsInteger,
@@ -46,72 +31,6 @@ import {
 } from 'nuqs'
 import React, { useCallback, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-
-interface DatePresetDropdownProps {
-  organization: schemas['Organization']
-  setDateRange: (dateRange: { from: Date; to: Date }) => void
-}
-
-const DatePresetDropdown = ({
-  organization,
-  setDateRange,
-}: DatePresetDropdownProps) => {
-  const datePresets = {
-    today: {
-      from: startOfToday(),
-      to: endOfToday(),
-    },
-    yesterday: {
-      from: startOfYesterday(),
-      to: endOfYesterday(),
-    },
-    this_month: {
-      from: startOfMonth(new Date()),
-      to: endOfMonth(new Date()),
-    },
-    last_month: {
-      from: startOfMonth(subMonths(new Date(), 1)),
-      to: endOfMonth(subMonths(new Date(), 1)),
-    },
-    last_3_months: {
-      from: subMonths(new Date(), 3),
-      to: endOfToday(),
-    },
-    since_organization_creation: {
-      from: new Date(organization.created_at),
-      to: endOfToday(),
-    },
-  } as const
-
-  const datePresetDisplayNames = {
-    today: 'Today',
-    yesterday: 'Yesterday',
-    this_month: 'This Month',
-    last_month: 'Last Month',
-    last_3_months: 'Last 3 Months',
-    since_organization_creation: 'Since Organization Creation',
-  } as const
-
-  return (
-    <Select
-      defaultValue="since_organization_creation"
-      onValueChange={(value) => {
-        setDateRange(datePresets[value as keyof typeof datePresets])
-      }}
-    >
-      <SelectTrigger className="w-fit min-w-64">
-        <SelectValue placeholder="Date Range Preset" />
-      </SelectTrigger>
-      <SelectContent>
-        {Object.keys(datePresets).map((key) => (
-          <SelectItem key={key} value={key}>
-            {datePresetDisplayNames[key as keyof typeof datePresetDisplayNames]}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )
-}
 
 const PAGE_SIZE = 50
 
@@ -300,10 +219,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       {selectedEventName ? (
         <div className="flex flex-col gap-y-8">
           <div className="flex flex-row items-center gap-4">
-            <DatePresetDropdown
-              organization={organization}
-              setDateRange={onDateRangeChange}
-            />
             <DateRangePicker
               date={dateRange}
               onDateChange={onDateRangeChange}

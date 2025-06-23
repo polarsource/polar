@@ -1,14 +1,21 @@
+import DOMPurify from 'dompurify'
+import React from 'react'
+
 interface IssueBodyRendererProps {
-  html: string
+  body: string
+  className?: string
 }
 
-const IssueBodyRenderer: React.FC<IssueBodyRendererProps> = ({ html }) => {
-  /* See: https://tailwindcss.com/docs/typography-plugin */
+export const IssueBodyRenderer: React.FC<IssueBodyRendererProps> = ({
+  body,
+  className,
+}) => {
+  const sanitizedBody = DOMPurify.sanitize(body)
+  
   return (
-    <div className="prose dark:prose-invert prose-headings:my-2 prose-pre:bg-gray-100 prose-pre:text-black dark:prose-pre:bg-gray-700 dark:prose-pre:text-white prose-code:before:content-[''] prose-code:after:content-[''] prose-code:bg-gray-100 dark:prose-code:bg-gray-700 prose-code:font-normal prose-code:p-1 prose-code:rounded max-w-none">
-      <div dangerouslySetInnerHTML={{ __html: html }} />
-    </div>
+    <div
+      className={className}
+      dangerouslySetInnerHTML={{ __html: sanitizedBody }}
+    />
   )
 }
-
-export default IssueBodyRenderer

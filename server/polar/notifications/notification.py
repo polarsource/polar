@@ -107,7 +107,8 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
 
     @computed_field
     def formatted_price_amount(self) -> str:
-        assert self.tier_price_amount is not None
+        if self.tier_price_amount is None:
+            return ""
         return format_currency(self.tier_price_amount / 100, "USD", locale="en_US")
 
     @classmethod

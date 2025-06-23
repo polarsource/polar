@@ -110,7 +110,11 @@ export const CreateCustomerModal = ({
               render={() => <CustomerMetadataForm />}
             />
           </div>
-          <Button type="submit" className="self-start">
+          <Button
+            type="submit"
+            className="self-start"
+            loading={createCustomer.isPending}
+          >
             Create Customer
           </Button>
         </form>

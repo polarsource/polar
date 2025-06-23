@@ -78,11 +78,9 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     <Tabs defaultValue="overview" className="flex flex-col">
       <TabsList className="mb-8">
         <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="events">Events</TabsTrigger>
         {organization.feature_settings?.usage_based_billing_enabled && (
           <TabsTrigger value="usage">Usage</TabsTrigger>
-        )}
-        {organization.feature_settings?.usage_based_billing_enabled && (
-          <TabsTrigger value="events">Events</TabsTrigger>
         )}
       </TabsList>
       <TabsContent value="overview" className="flex flex-col gap-y-12">

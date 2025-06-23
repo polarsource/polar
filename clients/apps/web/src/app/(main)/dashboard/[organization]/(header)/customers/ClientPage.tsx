@@ -19,15 +19,20 @@ import {
   AddOutlined,
   ArrowDownward,
   ArrowUpward,
-  DeleteOutlined,
-  EditOutlined,
-  EmailOutlined,
+  MoreVert,
   Search,
 } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -101,26 +106,29 @@ const CustomerHeader = ({
   }, [deleteCustomer, customer])
 
   return (
-    <div className="flex flex-row gap-4">
-      <Button
-        className="w-full"
-        loading={customerSessionLoading}
-        onClick={createCustomerSession}
-        size="sm"
-      >
-        Copy Portal Link
-      </Button>
-      <a
-        href={`mailto:${customer.email}`}
-        className="text-blue-500 dark:text-blue-400"
-      >
-        <Button size="icon" variant="secondary">
-          <EmailOutlined fontSize="small" />
-        </Button>
-      </a>
-      <Button size="icon" variant="secondary" onClick={showEditCustomerModal}>
-        <EditOutlined fontSize="small" />
-      </Button>
+    <div className="flex flex-row gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="icon" variant="secondary">
+            <MoreVert fontSize="small" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={createCustomerSession}>
+            Copy Customer Portal
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <a href={`mailto:${customer.email}`}>Contact Customer</a>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={showEditCustomerModal}>
+            Edit Customer
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={showDeleteCustomerModal}>
+            Delete Customer
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <InlineModal
         isShown={isEditCustomerModalOpen}
         hide={hideEditCustomerModal}
@@ -131,13 +139,6 @@ const CustomerHeader = ({
           />
         }
       />
-      <Button
-        size="icon"
-        variant="destructive"
-        onClick={showDeleteCustomerModal}
-      >
-        <DeleteOutlined fontSize="small" />
-      </Button>
       <ConfirmModal
         isShown={isDeleteCustomerModalShown}
         hide={hideDeleteCustomerModal}

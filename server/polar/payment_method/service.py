@@ -45,8 +45,7 @@ class PaymentMethodService:
                 processor_id=stripe_payment_method.id,
                 customer=customer,
             )
-
-        if payment_method.customer != customer:
+        elif payment_method.customer != customer:
             raise DifferentCustomerError(payment_method, customer)
 
         payment_method.type = stripe_payment_method.type

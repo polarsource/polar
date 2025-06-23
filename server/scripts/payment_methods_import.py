@@ -4,6 +4,7 @@ import random
 from asyncio.tasks import Task
 from datetime import UTC, datetime
 from functools import wraps
+from itertools import batched
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -167,10 +168,7 @@ async def payment_methods_import(
                 progress.start_task(task_progress)
 
             progress.stop_task(task_progress)
-            insert_progress = progress.add_task(
-                "[yellow]Inserting payment methods...", total=len(tasks)
-            )
-            progress.start_task(insert_progress)
+
             # Prepare data for batch operations
             all_methods = []
             default_methods = []
@@ -200,49 +198,44 @@ async def payment_methods_import(
                             }
                         )
 
-                progress.update(insert_progress, advance=1)
+            # Batch insert with on_conflict_do_nothing in chunks to avoid parameter limit
+            insert_progress = progress.add_task(
+                "[yellow]Inserting payment methods...", total=len(all_methods)
+            )
+            progress.start_task(insert_progress)
 
-            # Batch insert with on_conflict_do_nothing
-            if all_methods:
+            # Process in chunks of 1000 to avoid PostgreSQL parameter limit
+            for methods_chunk in batched(all_methods, 1000):
                 insert_stmt = (
                     insert(PaymentMethod)
-                    .values(all_methods)
+                    .values(methods_chunk)
                     .on_conflict_do_nothing(
                         index_elements=["processor", "processor_id", "customer_id"]
                     )
                 )
                 await session.execute(insert_stmt)
-                await session.flush()
+                progress.update(insert_progress, advance=len(methods_chunk))
+
+            await session.flush()
 
             # Handle default payment methods with individual parameterized queries
-            if default_methods:
-                # Group default methods by customer_id to minimize updates
-                update_progress = progress.add_task(
-                    "[green]Updating default payment methods...",
-                    total=len(default_methods),
-                )
-                progress.start_task(update_progress)
-
-                for item in default_methods:
-                    await session.execute(
-                        text("""
-                            UPDATE customers c
-                            SET default_payment_method_id = (
-                                SELECT id FROM payment_methods pm
-                                WHERE pm.processor = :processor
-                                AND pm.processor_id = :processor_id
-                                AND pm.customer_id = :customer_id
-                            )
-                            WHERE c.id = :customer_id
-                        """).bindparams(
-                            processor=item["processor"],
-                            processor_id=item["processor_id"],
-                            customer_id=item["customer_id"],
+            for item in default_methods:
+                await session.execute(
+                    text("""
+                        UPDATE customers c
+                        SET default_payment_method_id = (
+                            SELECT id FROM payment_methods pm
+                            WHERE pm.processor = :processor
+                            AND pm.processor_id = :processor_id
+                            AND pm.customer_id = :customer_id
                         )
+                        WHERE c.id = :customer_id
+                    """).bindparams(
+                        processor=item["processor"],
+                        processor_id=item["processor_id"],
+                        customer_id=item["customer_id"],
                     )
-                    progress.update(update_progress, advance=1)
-
-                progress.stop_task(update_progress)
+                )
 
             await session.flush()
 

@@ -34,7 +34,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const CustomerHeader = ({
@@ -56,16 +56,11 @@ const CustomerHeader = ({
     isShown: isDeleteCustomerModalShown,
   } = useModal()
 
-  const [customerSessionLoading, setCustomerSessionLoading] = useState(false)
-
   const safeCopy = useSafeCopy(toast)
   const createCustomerSession = useCallback(async () => {
-    setCustomerSessionLoading(true)
     const { data: session, error } = await api.POST('/v1/customer-sessions/', {
       body: { customer_id: customer.id },
     })
-
-    setCustomerSessionLoading(false)
 
     if (error) {
       toast({

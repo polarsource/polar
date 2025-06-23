@@ -5,13 +5,14 @@ from asyncio.tasks import Task
 from datetime import UTC, datetime
 from functools import wraps
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import stripe as stripe_lib
 import structlog
 import typer
 from rich.progress import Progress
 from sqlalchemy import func, select, tablesample, text
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import aliased
 
 from polar.enums import PaymentProcessor
@@ -170,28 +171,78 @@ async def payment_methods_import(
                 "[yellow]Inserting payment methods...", total=len(tasks)
             )
             progress.start_task(insert_progress)
-            for task in tasks:
-                methods = task.result()
-                for method, _ in methods:
-                    session.add(method)
-                progress.update(insert_progress, advance=1)
-
-            await session.flush()
+            # Prepare data for batch operations
+            all_methods = []
+            default_methods = []
 
             for task in tasks:
                 methods = task.result()
                 for method, default in methods:
+                    # Add method to the batch insert list
+                    method_data = {
+                        "id": uuid4(),
+                        "created_at": method.created_at,
+                        "processor": method.processor,
+                        "processor_id": method.processor_id,
+                        "type": method.type,
+                        "method_metadata": method.method_metadata,
+                        "customer_id": method.customer.id,
+                    }
+                    all_methods.append(method_data)
+
+                    # Track default payment methods for later processing
                     if default:
-                        await session.execute(
-                            text("""
-                                UPDATE customers
-                                SET default_payment_method_id = :payment_method_id
-                                WHERE id = :customer_id
-                            """).bindparams(
-                                payment_method_id=method.id,
-                                customer_id=method.customer_id,
-                            )
+                        default_methods.append(
+                            {
+                                "processor": method.processor,
+                                "processor_id": method.processor_id,
+                                "customer_id": method.customer.id,
+                            }
                         )
+
+                progress.update(insert_progress, advance=1)
+
+            # Batch insert with on_conflict_do_nothing
+            if all_methods:
+                insert_stmt = (
+                    insert(PaymentMethod)
+                    .values(all_methods)
+                    .on_conflict_do_nothing(
+                        index_elements=["processor", "processor_id", "customer_id"]
+                    )
+                )
+                await session.execute(insert_stmt)
+                await session.flush()
+
+            # Handle default payment methods with individual parameterized queries
+            if default_methods:
+                # Group default methods by customer_id to minimize updates
+                update_progress = progress.add_task(
+                    "[green]Updating default payment methods...",
+                    total=len(default_methods),
+                )
+                progress.start_task(update_progress)
+
+                for item in default_methods:
+                    await session.execute(
+                        text("""
+                            UPDATE customers c
+                            SET default_payment_method_id = (
+                                SELECT id FROM payment_methods pm
+                                WHERE pm.processor = :processor
+                                AND pm.processor_id = :processor_id
+                                AND pm.customer_id = :customer_id
+                            )
+                            WHERE c.id = :customer_id
+                        """).bindparams(
+                            processor=item["processor"],
+                            processor_id=item["processor_id"],
+                            customer_id=item["customer_id"],
+                        )
+                    )
+                    progress.update(update_progress, advance=1)
+
+                progress.stop_task(update_progress)
 
             await session.flush()
 

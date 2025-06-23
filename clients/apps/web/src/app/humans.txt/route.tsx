@@ -48,7 +48,7 @@ export async function GET() {
 
                     https://github.com/polarsource/polar
 
-                Wanna work with us? https://polar.sh/careers
+                Wanna work with us? https://polar.sh/company#open-roles
 
     `,
     {

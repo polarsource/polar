@@ -313,6 +313,7 @@ class SubscriptionService:
                 subscription_product_prices.append(
                     SubscriptionProductPrice.from_price(price, checkout.amount)
                 )
+                free_pricing = False
             else:
                 if is_static_price(price):
                     stripe_price_ids.append(price.stripe_price_id)

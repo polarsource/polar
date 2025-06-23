@@ -288,6 +288,12 @@ class TestCreateOrUpdateFromCheckout:
         assert stripe_service_mock.create_out_of_band_subscription.call_args[1][
             "prices"
         ] == ["STRIPE_CUSTOM_PRICE_ID"]
+        assert (
+            stripe_service_mock.create_out_of_band_subscription.call_args[1][
+                "automatic_tax"
+            ]
+            is True
+        )
         stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
 
         publish_checkout_event_mock.assert_called_once_with(

@@ -45,7 +45,7 @@ def typer_async(f):  # type: ignore
     return wrapper
 
 
-semaphore = asyncio.Semaphore(64)
+semaphore = asyncio.Semaphore(16)
 
 
 async def migrate_customer(
@@ -69,18 +69,18 @@ async def migrate_customer(
             stripe_methods = await stripe_lib.PaymentMethod.list_async(
                 customer=customer.stripe_customer_id, limit=100
             )
-        for method in stripe_methods.data:
-            payment_method = PaymentMethod(
-                created_at=datetime.fromtimestamp(method.created, UTC),
-                processor=PaymentProcessor.stripe,
-                processor_id=method.id,
-                type=method.type,
-                method_metadata=method[method.type],
-                customer=customer,
-            )
-            default = method.id == default_payment_method_id
-            methods.append((payment_method, default))
-        return methods
+            for method in stripe_methods.data:
+                payment_method = PaymentMethod(
+                    created_at=datetime.fromtimestamp(method.created, UTC),
+                    processor=PaymentProcessor.stripe,
+                    processor_id=method.id,
+                    type=method.type,
+                    method_metadata=method[method.type],
+                    customer=customer,
+                )
+                default = method.id == default_payment_method_id
+                methods.append((payment_method, default))
+            return methods
     except stripe_lib.RateLimitError:
         await asyncio.sleep(retry + random.random())
         return await migrate_customer(customer, retry=retry + 1)
@@ -95,7 +95,6 @@ async def migrate_subscription(
     subscription: Subscription, retry: int = 1
 ) -> tuple[UUID, UUID, str | None]:
     assert subscription.stripe_subscription_id is not None
-    methods: list[tuple[PaymentMethod, bool]] = []
     try:
         async with semaphore:
             stripe_subscription = await stripe_lib.Subscription.retrieve_async(

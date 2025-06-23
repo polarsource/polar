@@ -9,6 +9,26 @@
 // from https://github.com/hashicorp/nextjs-bundle-analysis/issues/83
 
 const path = require('path')
+
+// Function to sanitize and validate file paths
+function sanitizePath(userPath, baseDir = process.cwd()) {
+  if (!userPath || typeof userPath !== "string") {
+    throw new Error("Invalid path provided");
+  }
+  
+  // Remove any path traversal sequences
+  const sanitized = userPath.replace(/../g, "").replace(//+/g, "/");
+  
+  // Resolve the path relative to base directory
+  const resolved = path.resolve(baseDir, sanitized);
+  
+  // Ensure the resolved path is still within the base directory
+  if (!resolved.startsWith(path.resolve(baseDir))) {
+    throw new Error("Path traversal attempt detected");
+  }
+  
+  return resolved;
+}
 const fs = require('fs')
 const gzSize = require('gzip-size')
 const mkdirp = require('mkdirp')
@@ -30,7 +50,47 @@ try {
 
 // if so, we can import the build manifest
 const buildMeta = require(path.join(nextMetaRoot, 'build-manifest.json'))
+
+// Function to sanitize and validate file paths
+function sanitizePath(userPath, baseDir = process.cwd()) {
+  if (!userPath || typeof userPath !== "string") {
+    throw new Error("Invalid path provided");
+  }
+  
+  // Remove any path traversal sequences
+  const sanitized = userPath.replace(/../g, "").replace(//+/g, "/");
+  
+  // Resolve the path relative to base directory
+  const resolved = path.resolve(baseDir, sanitized);
+  
+  // Ensure the resolved path is still within the base directory
+  if (!resolved.startsWith(path.resolve(baseDir))) {
+    throw new Error("Path traversal attempt detected");
+  }
+  
+  return resolved;
+}
 const appDirMeta = require(path.join(nextMetaRoot, 'app-build-manifest.json'))
+
+// Function to sanitize and validate file paths
+function sanitizePath(userPath, baseDir = process.cwd()) {
+  if (!userPath || typeof userPath !== "string") {
+    throw new Error("Invalid path provided");
+  }
+  
+  // Remove any path traversal sequences
+  const sanitized = userPath.replace(/../g, "").replace(//+/g, "/");
+  
+  // Resolve the path relative to base directory
+  const resolved = path.resolve(baseDir, sanitized);
+  
+  // Ensure the resolved path is still within the base directory
+  if (!resolved.startsWith(path.resolve(baseDir))) {
+    throw new Error("Path traversal attempt detected");
+  }
+  
+  return resolved;
+}
 
 // this memory cache ensures we dont read any script file more than once
 // bundles are often shared between pages
@@ -113,7 +173,7 @@ function getScriptSizes(scriptPaths) {
 // given an individual path to a script, return its file size
 function getScriptSize(scriptPath) {
   const encoding = 'utf8'
-  const p = path.join(nextMetaRoot, scriptPath)
+  const p = sanitizePath(nextMetaRoot, scriptPath, process.cwd())
 
   let rawSize, gzipSize
   if (Object.keys(memoryCache).includes(p)) {

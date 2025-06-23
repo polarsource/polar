@@ -38,7 +38,7 @@ jobs:
         run: pnpm turbo run build --filter=@polar-sh/*
 
       - name: Publish to Chromatic
-        uses: chromaui/action@v12
+        uses: chromaui/action@v13
         with:
           projectToken: ${{ secrets.CI_CHROMATIC_PROJECT_TOKEN }}
           workingDir: ./clients/apps/web

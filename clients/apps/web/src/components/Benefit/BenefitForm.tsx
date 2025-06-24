@@ -101,7 +101,7 @@ export const BenefitForm = ({
         }}
       />
 
-      {!update ? <BenefitTypeSelect organization={organization} /> : null}
+      {!update ? <BenefitTypeSelect /> : null}
       {type === 'custom' && <CustomBenefitForm update={update} />}
       {type === 'discord' && <DiscordBenefitForm />}
       {type === 'github_repository' && (
@@ -280,11 +280,7 @@ export const DiscordBenefitForm = () => {
   )
 }
 
-const BenefitTypeSelect = ({
-  organization,
-}: {
-  organization: schemas['Organization']
-}) => {
+const BenefitTypeSelect = () => {
   const { control } = useFormContext<schemas['BenefitCustomCreate']>()
 
   return (

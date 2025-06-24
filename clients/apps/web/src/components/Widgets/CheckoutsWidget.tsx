@@ -33,6 +33,12 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
     status: 'failed',
   })
 
+  const isLoading =
+    checkoutsInitiated.isLoading ||
+    checkoutsExpired.isLoading ||
+    checkoutsFailed.isLoading ||
+    checkoutsSucceeded.isLoading
+
   const stages = [
     {
       name: 'Initiated',
@@ -40,7 +46,6 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
       percentage: 100,
       color: 'dark:bg-indigo-500 bg-indigo-300',
       status: null,
-      loading: checkoutsInitiated.isLoading,
     },
     {
       name: 'Expired',
@@ -51,7 +56,6 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
         100,
       color: 'dark:bg-polar-600 bg-gray-300',
       status: 'expired',
-      loading: checkoutsExpired.isLoading,
     },
     {
       name: 'Failed',
@@ -62,7 +66,6 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
         100,
       color: 'dark:bg-red-500 bg-red-300',
       status: 'failed',
-      loading: checkoutsFailed.isLoading,
     },
     {
       name: 'Succeeded',
@@ -73,7 +76,6 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
         100,
       color: 'dark:bg-emerald-400 bg-emerald-300',
       status: 'succeeded',
-      loading: checkoutsSucceeded.isLoading,
     },
   ] as const
 
@@ -134,7 +136,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
               )`,
                 }}
               >
-                {stage.loading ? (
+                {isLoading ? (
                   <div className="dark:bg-polar-700 flex h-full w-full items-center justify-center rounded-2xl bg-gray-200">
                     <Spinner />
                   </div>

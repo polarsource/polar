@@ -97,21 +97,6 @@ class BenefitService:
             session, auth_subject, create_schema
         )
 
-        if (
-            create_schema.type == BenefitType.meter_credit
-            and not organization.feature_settings.get("usage_based_billing_enabled")
-        ):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "type"),
-                        "msg": "Usage based billing is not enabled on your organization.",
-                        "input": create_schema.type,
-                    }
-                ]
-            )
-
         try:
             is_tax_applicable = getattr(create_schema, "is_tax_applicable")
         except AttributeError:

@@ -6,7 +6,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
-import { endOfMonth, isBefore, isSameDay, startOfMonth } from 'date-fns'
+import {
+  addMonths,
+  endOfMonth,
+  isBefore,
+  isSameDay,
+  isThisMonth,
+  startOfMonth,
+  subMonths,
+} from 'date-fns'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { useCallback, useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -18,11 +26,11 @@ interface MonthWidgetProps {
 }
 
 export const MonthWidget = ({ className }: MonthWidgetProps) => {
-  const [activeMonth, setActiveMonth] = useState(new Date().getMonth())
+  const [activeMonth, setActiveMonth] = useState(new Date())
 
   const { organization } = useContext(OrganizationContext)
 
-  const startDate = startOfMonth(new Date().setMonth(activeMonth))
+  const startDate = startOfMonth(activeMonth)
   const endDate = endOfMonth(startDate)
 
   const orderMetrics = useMetrics({
@@ -62,19 +70,18 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setActiveMonth(activeMonth - 1)}
+            onClick={() => setActiveMonth(subMonths(activeMonth, 1))}
           >
             <ArrowLeft />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            disabled={activeMonth === new Date().getMonth()}
+            disabled={isThisMonth(activeMonth)}
             onClick={() => {
-              const currentMonth = new Date().getMonth()
-              const nextMonth = currentMonth + 1
+              const nextMonth = addMonths(activeMonth, 1)
 
-              setActiveMonth(Math.min(nextMonth, currentMonth))
+              setActiveMonth(nextMonth)
             }}
           >
             <ArrowRight />
@@ -89,14 +96,14 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
               style: 'decimal',
               compactDisplay: 'short',
               notation: 'compact',
-            })}
+            }) ?? 0}
           </h3>
           <span className="text-lg">
             {orderMetrics.data?.totals.orders === 1 ? 'Order' : 'Orders'}
           </span>
         </div>
       </div>
-      <div className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl bg-white px-2 py-4">
+      <div className="dark:bg-polar-900 flex min-h-[260px] flex-col gap-y-4 rounded-3xl bg-white px-2 py-4">
         <div className="grid grid-cols-7 justify-items-center">
           {weekDays.map((day, index) => (
             <div

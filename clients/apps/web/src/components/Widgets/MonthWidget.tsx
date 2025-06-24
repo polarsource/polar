@@ -165,7 +165,7 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
                             )}
                           >
                             {day.orders === 0 && isPreviousDay ? (
-                              <span className="dark:bg-polar-700 h-2 w-2 rounded-full bg-gray-200" />
+                              <span className="dark:bg-polar-700 h-1 w-1 rounded-full bg-gray-200" />
                             ) : isToday(day.timestamp) ? (
                               <span className="text-white">
                                 {day.orders.toLocaleString('en-US', {

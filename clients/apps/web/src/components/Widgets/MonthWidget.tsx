@@ -1,27 +1,29 @@
 import { useMetrics } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import { Check } from '@mui/icons-material'
-import { endOfMonth, startOfMonth } from 'date-fns'
-import { ArrowDown, Circle, CircleDashed } from 'lucide-react'
-import { useContext } from 'react'
+import Button from '@polar-sh/ui/components/atoms/Button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
+import { endOfMonth, isBefore, isSameDay, startOfMonth } from 'date-fns'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { useCallback, useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-interface Day {
-  date: number
-  tasks: number
-  completedTasks: number
-}
+const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
 interface MonthWidgetProps {
   className?: string
 }
 
 export const MonthWidget = ({ className }: MonthWidgetProps) => {
-  const { organization } = useContext(OrganizationContext)
-  const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+  const [activeMonth, setActiveMonth] = useState(new Date().getMonth())
 
-  const startDate = startOfMonth(new Date())
-  const endDate = endOfMonth(new Date())
+  const { organization } = useContext(OrganizationContext)
+
+  const startDate = startOfMonth(new Date().setMonth(activeMonth))
+  const endDate = endOfMonth(startDate)
 
   const orderMetrics = useMetrics({
     organization_id: organization.id,
@@ -30,110 +32,159 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
     endDate,
   })
 
-  const monthName = startDate.toLocaleString('default', { month: 'long' })
+  // Calculate weekday index for first day (Monday = 0, Sunday = 6)
+  const firstDayWeekday = (startDate.getDay() + 6) % 7
+  const days = orderMetrics.data?.periods ?? []
+  const leadingEmptyCells = Array(firstDayWeekday).fill(null)
+  const totalCells = leadingEmptyCells.length + days.length
+  const trailingEmptyCells = Array((7 - (totalCells % 7)) % 7).fill(null)
+  const calendarDays = [...leadingEmptyCells, ...days, ...trailingEmptyCells]
+
+  const monthName = startDate.toLocaleString('default', {
+    month: 'long',
+    year: 'numeric',
+  })
+
+  const isToday = useCallback((date: Date) => {
+    return isSameDay(date, new Date())
+  }, [])
 
   return (
     <div
       className={twMerge(
-        'dark:bg-polar-800 flex w-full flex-col gap-y-6 rounded-3xl bg-white p-6 text-white',
+        'dark:bg-polar-800 rounded-4xl flex w-full flex-col bg-gray-100 p-2 text-black dark:text-white',
         className,
       )}
     >
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl">
-          {monthName} <span className="font-light">totals</span>
-        </h2>
-        <ArrowDown />
+      <div className="flex items-center justify-between p-4">
+        <h2 className="text-xl">{monthName}</h2>
+        <div className="flex items-center gap-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setActiveMonth(activeMonth - 1)}
+          >
+            <ArrowLeft />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={activeMonth === new Date().getMonth()}
+            onClick={() => {
+              const currentMonth = new Date().getMonth()
+              const nextMonth = currentMonth + 1
+
+              setActiveMonth(Math.min(nextMonth, currentMonth))
+            }}
+          >
+            <ArrowRight />
+          </Button>
+        </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between px-4 pb-4">
         <div className="flex items-baseline gap-x-2">
           <h3 className="text-5xl font-light">
-            {orderMetrics.data?.periods.filter((d) => d.orders > 0).length}
+            {orderMetrics.data?.totals.orders.toLocaleString('en-US', {
+              style: 'decimal',
+              compactDisplay: 'short',
+              notation: 'compact',
+            })}
           </h3>
-          <span className="text-lg">Days</span>
-        </div>
-        <div className="flex items-center gap-x-2">
-          <div className="relative">
-            <Check
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-              fontSize="small"
-            />
-            <CircleDashed size={32} />
-            <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-xs text-[#F5694A]">
-              <span className="p-1">{orderMetrics.data?.totals.orders}</span>
-            </div>
-          </div>
-          <span className="text-lg">Completed</span>
+          <span className="text-lg">
+            {orderMetrics.data?.totals.orders === 1 ? 'Order' : 'Orders'}
+          </span>
         </div>
       </div>
-      <div className="flex flex-col gap-y-4">
+      <div className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl bg-white px-2 py-4">
         <div className="grid grid-cols-7 justify-items-center">
-          {weekDays.map((day) => (
-            <div key={day} className="text-sm font-light">
+          {weekDays.map((day, index) => (
+            <div
+              key={day + index}
+              className="dark:text-polar-600 text-sm text-gray-500"
+            >
               {day}
             </div>
           ))}
         </div>
         <div className="grid grid-cols-7 justify-items-center gap-y-2">
-          {orderMetrics.data?.periods.map((day, index) => (
-            <div
-              key={index}
-              className="relative flex h-8 w-8 items-center justify-center"
-            >
-              {day ? (
-                <>
-                  {day.orders > 0 ? (
-                    <div className="flex h-full w-full items-center justify-center rounded-full bg-white text-sm dark:text-black">
-                      <div className="flex flex-col items-center">
-                        <span>{day.orders}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <Circle
-                      className="dark:text-polar-700 text-gray-400"
-                      size={32}
-                    />
-                  )}
-                </>
-              ) : (
-                <Circle
-                  className="dark:text-polar-700 text-gray-400"
-                  size={32}
+          {calendarDays.map((day, index) => {
+            if (!day) {
+              // Render empty cell
+              return (
+                <div
+                  key={index}
+                  className="relative flex h-8 w-8 items-center justify-center"
                 />
-              )}
-            </div>
-          ))}
+              )
+            }
+            const isPreviousDay =
+              isBefore(day.timestamp, new Date()) && !isToday(day.timestamp)
+
+            return (
+              <div key={index}>
+                <Tooltip>
+                  <TooltipTrigger
+                    className={twMerge(
+                      'relative flex h-8 w-8 items-center justify-center rounded-full text-sm',
+                      day.orders > 0 &&
+                        'bg-black text-white dark:bg-white dark:text-black',
+                      isToday(day.timestamp) && 'bg-blue-500 text-white',
+                      isPreviousDay && '',
+                    )}
+                  >
+                    {day.orders > 0 ? (
+                      <span>
+                        {day.orders.toLocaleString('en-US', {
+                          style: 'decimal',
+                          compactDisplay: 'short',
+                          notation: 'compact',
+                        })}
+                      </span>
+                    ) : (
+                      <div
+                        className={twMerge(
+                          'dark:text-polar-700 relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 text-sm text-gray-200',
+                          isToday(day.timestamp)
+                            ? 'border-blue-500'
+                            : 'dark:border-polar-700 border-gray-200',
+                        )}
+                      >
+                        {day.orders === 0 && isPreviousDay ? (
+                          <span className="dark:bg-polar-700 h-2 w-2 rounded-full bg-gray-200" />
+                        ) : isToday(day.timestamp) ? (
+                          <span className="text-white">
+                            {day.orders.toLocaleString('en-US', {
+                              style: 'decimal',
+                              compactDisplay: 'short',
+                              notation: 'compact',
+                            })}
+                          </span>
+                        ) : undefined}
+                      </div>
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent className="flex flex-col gap-1">
+                    <span className="dark:text-polar-500 text-sm text-gray-500">
+                      {new Date(day.timestamp).toLocaleString('default', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </span>
+                    <span>
+                      {day.orders.toLocaleString('en-US', {
+                        style: 'decimal',
+                      })}{' '}
+                      {day.orders === 1 ? 'Order' : 'Orders'}
+                    </span>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            )
+          })}
         </div>
       </div>
-    </div>
-  )
-}
-
-// Mock data for demonstration purposes
-const mockDays: Day[] = [
-  { date: 4, tasks: 1, completedTasks: 0 },
-  { date: 8, tasks: 1, completedTasks: 0 },
-  { date: 10, tasks: 2, completedTasks: 1 },
-  { date: 13, tasks: 1, completedTasks: 0 },
-  { date: 14, tasks: 3, completedTasks: 3 },
-  { date: 15, tasks: 1, completedTasks: 0 },
-  { date: 17, tasks: 1, completedTasks: 0 },
-  { date: 18, tasks: 4, completedTasks: 4 },
-  { date: 19, tasks: 1, completedTasks: 0 },
-  { date: 20, tasks: 2, completedTasks: 1 },
-  { date: 21, tasks: 3, completedTasks: 2 },
-  { date: 22, tasks: 1, completedTasks: 0 },
-]
-
-export const MonthWidgetPreview = () => {
-  return (
-    <div className="w-96">
-      <MonthWidget
-        monthName="November"
-        days={mockDays}
-        completedThreshold={0.99}
-      />
     </div>
   )
 }

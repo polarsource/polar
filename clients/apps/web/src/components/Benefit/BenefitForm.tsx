@@ -304,18 +304,11 @@ const BenefitTypeSelect = ({
                   <SelectValue placeholder="Select a benefit type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {enums.benefitTypeValues
-                    .filter(
-                      (type) =>
-                        type !== 'meter_credit' ||
-                        organization.feature_settings
-                          ?.usage_based_billing_enabled,
-                    )
-                    .map((value) => (
-                      <SelectItem key={value} value={value}>
-                        {benefitsDisplayNames[value]}
-                      </SelectItem>
-                    ))}
+                  {enums.benefitTypeValues.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {benefitsDisplayNames[value]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </FormControl>

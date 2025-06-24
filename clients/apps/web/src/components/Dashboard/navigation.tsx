@@ -173,7 +173,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     title: 'Usage Billing',
     icon: <DonutLargeOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/usage-billing`,
-    if: org?.feature_settings?.usage_based_billing_enabled,
+    if: true,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org?.slug}/usage-billing`)
     },

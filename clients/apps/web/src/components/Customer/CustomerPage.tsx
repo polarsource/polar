@@ -79,9 +79,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       <TabsList className="mb-8">
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="events">Events</TabsTrigger>
-        {organization.feature_settings?.usage_based_billing_enabled && (
-          <TabsTrigger value="usage">Usage</TabsTrigger>
-        )}
+        <TabsTrigger value="usage">Usage</TabsTrigger>
       </TabsList>
       <TabsContent value="overview" className="flex flex-col gap-y-12">
         <MetricChartBox
@@ -271,9 +269,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           </ShadowBox>
         </div>
       </TabsContent>
-      {organization.feature_settings?.usage_based_billing_enabled && (
-        <CustomerUsageView customer={customer} />
-      )}
+      <CustomerUsageView customer={customer} />
       <TabsContent value="events">
         <CustomerEventsView customer={customer} organization={organization} />
       </TabsContent>

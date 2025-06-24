@@ -12,17 +12,6 @@ from .repository import PaymentMethodRepository
 class PaymentMethodError(PolarError): ...
 
 
-class DifferentCustomerError(PaymentMethodError):
-    def __init__(self, payment_method: PaymentMethod, customer: Customer) -> None:
-        self.payment_method = payment_method
-        self.customer = customer
-        message = (
-            f"Payment method {payment_method.id} is already linked to "
-            f"customer {payment_method.customer_id}, not {customer.id}."
-        )
-        super().__init__(message)
-
-
 class PaymentMethodService:
     async def upsert_from_stripe(
         self,
@@ -34,7 +23,8 @@ class PaymentMethodService:
     ) -> PaymentMethod:
         repository = PaymentMethodRepository.from_session(session)
 
-        payment_method = await repository.get_by_processor_id(
+        payment_method = await repository.get_by_customer_and_processor_id(
+            customer.id,
             PaymentProcessor.stripe,
             stripe_payment_method.id,
             options=repository.get_eager_options(),
@@ -45,8 +35,6 @@ class PaymentMethodService:
                 processor_id=stripe_payment_method.id,
                 customer=customer,
             )
-        elif payment_method.customer != customer:
-            raise DifferentCustomerError(payment_method, customer)
 
         payment_method.type = stripe_payment_method.type
         payment_method.method_metadata = stripe_payment_method[

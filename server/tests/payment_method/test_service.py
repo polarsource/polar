@@ -2,7 +2,6 @@ import pytest
 
 from polar.enums import PaymentProcessor
 from polar.models import Customer
-from polar.payment_method.service import DifferentCustomerError
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
 from tests.fixtures.stripe import build_stripe_payment_method
@@ -66,24 +65,3 @@ class TestUpsertFromStripe:
             "last4": "9999",
         }
         assert updated_payment_method.customer == customer
-
-    async def test_different_customer_error(
-        self,
-        session: AsyncSession,
-        customer: Customer,
-        customer_second: Customer,
-    ) -> None:
-        # First create a payment method for the first customer
-        stripe_payment_method = build_stripe_payment_method(
-            type="card",
-            details={"brand": "visa", "last4": "4242"},
-        )
-        await payment_method_service.upsert_from_stripe(
-            session, customer, stripe_payment_method
-        )
-
-        # Now try to use the same payment method for a different customer
-        with pytest.raises(DifferentCustomerError):
-            await payment_method_service.upsert_from_stripe(
-                session, customer_second, stripe_payment_method
-            )

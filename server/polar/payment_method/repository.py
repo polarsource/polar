@@ -20,12 +20,18 @@ class PaymentMethodRepository(
 ):
     model = PaymentMethod
 
-    async def get_by_processor_id(
-        self, processor: PaymentProcessor, processor_id: str, *, options: Options = ()
+    async def get_by_customer_and_processor_id(
+        self,
+        customer: UUID,
+        processor: PaymentProcessor,
+        processor_id: str,
+        *,
+        options: Options = (),
     ) -> PaymentMethod | None:
         statement = (
             self.get_base_statement()
             .where(
+                PaymentMethod.customer_id == customer,
                 PaymentMethod.processor == processor,
                 PaymentMethod.processor_id == processor_id,
             )

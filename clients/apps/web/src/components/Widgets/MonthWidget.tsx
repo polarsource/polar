@@ -18,6 +18,7 @@ import {
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { useCallback, useContext, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import Spinner from '../Shared/Spinner'
 
 const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
@@ -104,93 +105,101 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
         </div>
       </div>
       <div className="dark:bg-polar-900 flex min-h-[260px] flex-col gap-y-4 rounded-3xl bg-white px-2 py-4">
-        <div className="grid grid-cols-7 justify-items-center">
-          {weekDays.map((day, index) => (
-            <div
-              key={day + index}
-              className="dark:text-polar-600 text-sm text-gray-500"
-            >
-              {day}
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 justify-items-center gap-y-2">
-          {calendarDays.map((day, index) => {
-            if (!day) {
-              // Render empty cell
-              return (
+        {orderMetrics.isLoading ? (
+          <div className="flex h-full w-full items-center justify-center">
+            <Spinner />
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-7 justify-items-center">
+              {weekDays.map((day, index) => (
                 <div
-                  key={index}
-                  className="relative flex h-8 w-8 items-center justify-center"
-                />
-              )
-            }
-            const isPreviousDay =
-              isBefore(day.timestamp, new Date()) && !isToday(day.timestamp)
+                  key={day + index}
+                  className="dark:text-polar-600 text-sm text-gray-500"
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 justify-items-center gap-y-2">
+              {calendarDays.map((day, index) => {
+                if (!day) {
+                  // Render empty cell
+                  return (
+                    <div
+                      key={index}
+                      className="relative flex h-8 w-8 items-center justify-center"
+                    />
+                  )
+                }
+                const isPreviousDay =
+                  isBefore(day.timestamp, new Date()) && !isToday(day.timestamp)
 
-            return (
-              <div key={index}>
-                <Tooltip>
-                  <TooltipTrigger
-                    className={twMerge(
-                      'relative flex h-8 w-8 items-center justify-center rounded-full text-sm',
-                      day.orders > 0 &&
-                        'bg-black text-white dark:bg-white dark:text-black',
-                      isToday(day.timestamp) && 'bg-blue-500 text-white',
-                      isPreviousDay && '',
-                    )}
-                  >
-                    {day.orders > 0 ? (
-                      <span>
-                        {day.orders.toLocaleString('en-US', {
-                          style: 'decimal',
-                          compactDisplay: 'short',
-                          notation: 'compact',
-                        })}
-                      </span>
-                    ) : (
-                      <div
+                return (
+                  <div key={index}>
+                    <Tooltip>
+                      <TooltipTrigger
                         className={twMerge(
-                          'dark:text-polar-700 relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 text-sm text-gray-200',
-                          isToday(day.timestamp)
-                            ? 'border-blue-500'
-                            : 'dark:border-polar-700 border-gray-200',
+                          'relative flex h-8 w-8 items-center justify-center rounded-full text-sm',
+                          day.orders > 0 &&
+                            'bg-black text-white dark:bg-white dark:text-black',
+                          isToday(day.timestamp) && 'bg-blue-500 text-white',
+                          isPreviousDay && '',
                         )}
                       >
-                        {day.orders === 0 && isPreviousDay ? (
-                          <span className="dark:bg-polar-700 h-2 w-2 rounded-full bg-gray-200" />
-                        ) : isToday(day.timestamp) ? (
-                          <span className="text-white">
+                        {day.orders > 0 ? (
+                          <span>
                             {day.orders.toLocaleString('en-US', {
                               style: 'decimal',
                               compactDisplay: 'short',
                               notation: 'compact',
                             })}
                           </span>
-                        ) : undefined}
-                      </div>
-                    )}
-                  </TooltipTrigger>
-                  <TooltipContent className="flex flex-col gap-1">
-                    <span className="dark:text-polar-500 text-sm text-gray-500">
-                      {new Date(day.timestamp).toLocaleString('default', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </span>
-                    <span>
-                      {day.orders.toLocaleString('en-US', {
-                        style: 'decimal',
-                      })}{' '}
-                      {day.orders === 1 ? 'Order' : 'Orders'}
-                    </span>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            )
-          })}
-        </div>
+                        ) : (
+                          <div
+                            className={twMerge(
+                              'dark:text-polar-700 relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 text-sm text-gray-200',
+                              isToday(day.timestamp)
+                                ? 'border-blue-500'
+                                : 'dark:border-polar-700 border-gray-200',
+                            )}
+                          >
+                            {day.orders === 0 && isPreviousDay ? (
+                              <span className="dark:bg-polar-700 h-2 w-2 rounded-full bg-gray-200" />
+                            ) : isToday(day.timestamp) ? (
+                              <span className="text-white">
+                                {day.orders.toLocaleString('en-US', {
+                                  style: 'decimal',
+                                  compactDisplay: 'short',
+                                  notation: 'compact',
+                                })}
+                              </span>
+                            ) : undefined}
+                          </div>
+                        )}
+                      </TooltipTrigger>
+                      <TooltipContent className="flex flex-col gap-1">
+                        <span className="dark:text-polar-500 text-sm text-gray-500">
+                          {new Date(day.timestamp).toLocaleString('default', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                        <span>
+                          {day.orders.toLocaleString('en-US', {
+                            style: 'decimal',
+                          })}{' '}
+                          {day.orders === 1 ? 'Order' : 'Orders'}
+                        </span>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

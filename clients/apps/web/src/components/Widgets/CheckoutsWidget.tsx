@@ -5,6 +5,7 @@ import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
+import Spinner from '../Shared/Spinner'
 
 interface CheckoutsWidgetProps {
   className?: string
@@ -39,6 +40,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
       percentage: 100,
       color: 'dark:bg-polar-600 bg-gray-300',
       status: null,
+      loading: checkoutsInitiated.isLoading,
     },
     {
       name: 'Expired',
@@ -49,6 +51,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
         100,
       color: 'dark:bg-indigo-500 bg-indigo-300',
       status: 'expired',
+      loading: checkoutsExpired.isLoading,
     },
     {
       name: 'Failed',
@@ -59,6 +62,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
         100,
       color: 'dark:bg-red-500 bg-red-300',
       status: 'failed',
+      loading: checkoutsFailed.isLoading,
     },
     {
       name: 'Succeeded',
@@ -69,6 +73,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
         100,
       color: 'dark:bg-emerald-400 bg-emerald-300',
       status: 'succeeded',
+      loading: checkoutsSucceeded.isLoading,
     },
   ] as const
 
@@ -106,45 +111,53 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
       </div>
 
       <div className="grid h-full grid-cols-1 gap-8 lg:grid-cols-4">
-        {stages.map((stage) => (
-          <Link
-            key={stage.name}
-            className="flex h-full flex-col gap-y-2"
-            href={
-              stage.status
-                ? `/dashboard/${organization.slug}/sales/checkouts?status=${stage.status}`
-                : `/dashboard/${organization.slug}/sales/checkouts`
-            }
-          >
-            <div
-              className="relative h-full min-h-48 overflow-hidden rounded-2xl"
-              style={{
-                backgroundImage: `repeating-linear-gradient(
-              45deg,
-              ${isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'},
-              ${isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'} 10px,
-              transparent 10px,
-              transparent 20px
-            )`,
-              }}
+        {stages.map((stage) => {
+          return (
+            <Link
+              key={stage.name}
+              className="flex h-full flex-col gap-y-2"
+              href={
+                stage.status
+                  ? `/dashboard/${organization.slug}/sales/checkouts?status=${stage.status}`
+                  : `/dashboard/${organization.slug}/sales/checkouts`
+              }
             >
               <div
-                className={twMerge(
-                  'absolute bottom-0 w-full rounded-2xl transition-opacity hover:opacity-80',
-                  stage.color,
+                className="relative h-full min-h-48 overflow-hidden rounded-2xl"
+                style={{
+                  backgroundImage: `repeating-linear-gradient(
+                45deg,
+                ${isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'},
+                ${isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'} 10px,
+                transparent 10px,
+                transparent 20px
+              )`,
+                }}
+              >
+                {stage.loading ? (
+                  <div className="dark:bg-polar-700 flex h-full w-full items-center justify-center rounded-2xl bg-gray-200">
+                    <Spinner />
+                  </div>
+                ) : (
+                  <div
+                    className={twMerge(
+                      'absolute bottom-0 w-full rounded-2xl transition-opacity hover:opacity-80',
+                      stage.color,
+                    )}
+                    style={{ height: `${stage.percentage}%` }}
+                  />
                 )}
-                style={{ height: `${stage.percentage}%` }}
-              />
-            </div>
-            <div className="flex flex-col">
-              <span>{stage.name}</span>
-              <span className="dark:text-polar-500 text-sm text-gray-500">
-                {isNaN(stage.percentage) ? 0 : stage.percentage.toFixed(1)}% —{' '}
-                {stage.value.toLocaleString('en-US')}
-              </span>
-            </div>
-          </Link>
-        ))}
+              </div>
+              <div className="flex flex-col">
+                <span>{stage.name}</span>
+                <span className="dark:text-polar-500 text-sm text-gray-500">
+                  {isNaN(stage.percentage) ? 0 : stage.percentage.toFixed(1)}% —{' '}
+                  {stage.value.toLocaleString('en-US')}
+                </span>
+              </div>
+            </Link>
+          )
+        })}
       </div>
     </Card>
   )

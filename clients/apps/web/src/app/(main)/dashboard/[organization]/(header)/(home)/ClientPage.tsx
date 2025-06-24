@@ -5,10 +5,9 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import { Well, WellContent, WellHeader } from '@/components/Shared/Well'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
-import { ActivityWidget } from '@/components/Widgets/ActivityWidget'
+import CheckoutsWidget from '@/components/Widgets/CheckoutsWidget'
 import { MonthWidget } from '@/components/Widgets/MonthWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
-import { RevenueWidget } from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
 import { useMetrics, useUpdateOrganization } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
@@ -97,7 +96,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
       exit: { opacity: 0, transition: { duration: 0.3 } },
     },
   }
-  const cardClassName = 'flex w-full flex-col'
+  const cardClassName = 'flex w-full flex-col h-full'
 
   return (
     <DashboardBody className="gap-y-8 pb-16 md:gap-y-12">
@@ -117,26 +116,23 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
       </div>
       <HeroChart organization={organization} />
       <motion.div
-        className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-10"
+        className="grid grid-cols-1 gap-6 md:gap-10 xl:grid-cols-3"
         initial="initial"
         animate="animate"
         exit="exit"
         transition={{ staggerChildren: 0.1 }}
       >
+        <motion.div className={cardClassName} {...motionVariants}>
+          <MonthWidget />
+        </motion.div>
         <motion.div
-          className={twMerge(cardClassName, 'col-span-2 hidden md:flex')}
+          className={twMerge(cardClassName, 'h-full xl:col-span-2')}
           {...motionVariants}
         >
-          <ActivityWidget />
+          <CheckoutsWidget />
         </motion.div>
         <motion.div className={cardClassName} {...motionVariants}>
           <OrdersWidget />
-        </motion.div>
-        <motion.div className={cardClassName} {...motionVariants}>
-          <RevenueWidget />
-        </motion.div>
-        <motion.div className={cardClassName} {...motionVariants}>
-          <MonthWidget />
         </motion.div>
         <motion.div className={cardClassName} {...motionVariants}>
           <SubscribersWidget />

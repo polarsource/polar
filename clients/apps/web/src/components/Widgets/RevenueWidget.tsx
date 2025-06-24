@@ -58,21 +58,22 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
           const previousPeriodValue = array[index - 1]?.revenue ?? 0
 
           const percentageChangeComparedToPreviousPeriod =
-            previousPeriodValue === 0 && currentPeriodValue > 0
+            previousPeriodValue === 0 && currentPeriodValue === 0
               ? 0
-              : previousPeriodValue === 0 && currentPeriodValue === 0
-                ? 0
-                : ((currentPeriodValue - previousPeriodValue) /
-                    Math.abs(previousPeriodValue)) *
-                  100
+              : ((currentPeriodValue - previousPeriodValue) /
+                  Math.abs(previousPeriodValue)) *
+                100
 
           const isTrendFlat = percentageChangeComparedToPreviousPeriod === 0
           const isTrendingUp = percentageChangeComparedToPreviousPeriod > 0
 
           return (
-            <Tooltip key={period.timestamp}>
-              <TooltipTrigger className="flex h-full flex-col gap-y-2">
-                <div
+            <div
+              key={period.timestamp}
+              className="flex h-full flex-col gap-y-2"
+            >
+              <Tooltip>
+                <TooltipTrigger
                   className="relative h-full min-h-48 overflow-hidden rounded-2xl"
                   style={{
                     backgroundImage: `repeating-linear-gradient(
@@ -101,22 +102,30 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
                       }}
                     />
                   )}
-                </div>
-                <div className="flex flex-col text-left">
-                  <span>{format(period.timestamp, 'MMMM')}</span>
-                  <div className="flex flex-row items-center justify-between gap-x-2">
-                    <span className="dark:text-polar-500 text-sm text-gray-500">
-                      $
-                      {(period.revenue / 100).toLocaleString('en-US', {
-                        style: 'decimal',
-                        compactDisplay: 'short',
-                        notation: 'compact',
-                      })}
-                    </span>
-                    {!isTrendFlat ? (
-                      <div
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>
+                    {formatCurrencyAndAmount(period.revenue, 'usd', 0)} in{' '}
+                    {format(period.timestamp, 'MMMM')}
+                  </span>
+                </TooltipContent>
+              </Tooltip>
+              <div className="flex flex-col text-left">
+                <span>{format(period.timestamp, 'MMMM')}</span>
+                <div className="flex flex-row items-center justify-between gap-x-2">
+                  <span className="dark:text-polar-500 text-sm text-gray-500">
+                    $
+                    {(period.revenue / 100).toLocaleString('en-US', {
+                      style: 'decimal',
+                      compactDisplay: 'short',
+                      notation: 'compact',
+                    })}
+                  </span>
+                  {!isTrendFlat ? (
+                    <Tooltip>
+                      <TooltipTrigger
                         className={twMerge(
-                          'flex flex-row items-center gap-x-1 rounded-sm px-1.5 py-0.5 text-xs',
+                          'flex flex-row items-center gap-x-1 rounded-sm p-0.5 text-xs',
                           isTrendingUp
                             ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
                             : 'bg-red-100 text-red-500 dark:bg-red-950',
@@ -127,21 +136,21 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
                         ) : (
                           <KeyboardArrowDown fontSize="inherit" />
                         )}
+                      </TooltipTrigger>
+                      <TooltipContent>
                         <span className="text-xs">
-                          {percentageChangeComparedToPreviousPeriod.toFixed(0)}%
+                          {percentageChangeComparedToPreviousPeriod === Infinity
+                            ? 'Infinity'
+                            : percentageChangeComparedToPreviousPeriod.toFixed(
+                                0,
+                              ) + '%'}
                         </span>
-                      </div>
-                    ) : null}
-                  </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : null}
                 </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <span>
-                  {formatCurrencyAndAmount(period.revenue, 'usd', 0)} in{' '}
-                  {format(period.timestamp, 'MMMM')}
-                </span>
-              </TooltipContent>
-            </Tooltip>
+              </div>
+            </div>
           )
         })}
       </div>

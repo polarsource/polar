@@ -38,7 +38,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
       name: 'Initiated',
       value: checkoutsInitiated.data?.pagination.total_count ?? 0,
       percentage: 100,
-      color: 'dark:bg-polar-600 bg-gray-300',
+      color: 'dark:bg-indigo-500 bg-indigo-300',
       status: null,
       loading: checkoutsInitiated.isLoading,
     },
@@ -49,7 +49,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
         ((checkoutsExpired.data?.pagination.total_count ?? 0) /
           (checkoutsInitiated.data?.pagination.total_count ?? 1)) *
         100,
-      color: 'dark:bg-indigo-500 bg-indigo-300',
+      color: 'dark:bg-polar-600 bg-gray-300',
       status: 'expired',
       loading: checkoutsExpired.isLoading,
     },

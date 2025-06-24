@@ -6,6 +6,7 @@ import MetricChartBox from '@/components/Metrics/MetricChartBox'
 import { Well, WellContent, WellHeader } from '@/components/Shared/Well'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
 import { ActivityWidget } from '@/components/Widgets/ActivityWidget'
+import { MonthWidget } from '@/components/Widgets/MonthWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import { RevenueWidget } from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
@@ -133,6 +134,9 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
         </motion.div>
         <motion.div className={cardClassName} {...motionVariants}>
           <RevenueWidget />
+        </motion.div>
+        <motion.div className={cardClassName} {...motionVariants}>
+          <MonthWidget />
         </motion.div>
         <motion.div className={cardClassName} {...motionVariants}>
           <SubscribersWidget />

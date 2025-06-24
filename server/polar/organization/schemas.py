@@ -42,9 +42,6 @@ class OrganizationFeatureSettings(Schema):
     issue_funding_enabled: bool = Field(
         False, description="If this organization has issue funding enabled"
     )
-    usage_based_billing_enabled: bool = Field(
-        False, description="If this organization has usage-based billing enabled"
-    )
 
 
 class OrganizationSubscribePromoteSettings(Schema):

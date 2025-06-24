@@ -282,6 +282,37 @@ class TestCreateCheckout:
             == f"https://example.com/success?checkout_id={json['id']}"
         )
 
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    @pytest.mark.parametrize(
+        "external_customer_id_param",
+        [
+            "external_customer_id",
+            "customer_external_id",
+        ],
+    )
+    async def test_external_customer_id(
+        self,
+        api_prefix: str,
+        external_customer_id_param: str,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        body = {
+            "payment_processor": "stripe",
+            "product_price_id": str(product.prices[0].id),
+            "success_url": "https://example.com/success?checkout_id={CHECKOUT_ID}",
+        }
+        body[external_customer_id_param] = "external_customer_id_value"
+
+        response = await client.post(f"{api_prefix}/", json=body)
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["external_customer_id"] == "external_customer_id_value"
+        assert json["customer_external_id"] == "external_customer_id_value"
+
 
 @pytest.mark.asyncio
 class TestUpdateCheckout:

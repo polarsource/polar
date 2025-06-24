@@ -2,6 +2,7 @@ import { useCheckouts } from '@/hooks/queries/checkouts'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { Card } from '@polar-sh/ui/components/atoms/Card'
 import { useTheme } from 'next-themes'
+import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -37,6 +38,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
       value: checkoutsInitiated.data?.pagination.total_count ?? 0,
       percentage: 100,
       color: 'dark:bg-polar-600 bg-gray-300',
+      status: null,
     },
     {
       name: 'Expired',
@@ -46,6 +48,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
           (checkoutsInitiated.data?.pagination.total_count ?? 1)) *
         100,
       color: 'dark:bg-indigo-500 bg-indigo-300',
+      status: 'expired',
     },
     {
       name: 'Failed',
@@ -55,6 +58,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
           (checkoutsInitiated.data?.pagination.total_count ?? 1)) *
         100,
       color: 'dark:bg-red-500 bg-red-300',
+      status: 'failed',
     },
     {
       name: 'Succeeded',
@@ -64,8 +68,9 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
           (checkoutsInitiated.data?.pagination.total_count ?? 1)) *
         100,
       color: 'dark:bg-emerald-400 bg-emerald-300',
+      status: 'succeeded',
     },
-  ]
+  ] as const
 
   return (
     <Card
@@ -102,7 +107,15 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
 
       <div className="grid h-full grid-cols-1 gap-8 lg:grid-cols-4">
         {stages.map((stage) => (
-          <div key={stage.name} className="flex h-full flex-col gap-y-2">
+          <Link
+            key={stage.name}
+            className="flex h-full flex-col gap-y-2"
+            href={
+              stage.status
+                ? `/dashboard/${organization.slug}/sales/checkouts?status=${stage.status}`
+                : `/dashboard/${organization.slug}/sales/checkouts`
+            }
+          >
             <div
               className="relative h-full min-h-48 overflow-hidden rounded-2xl"
               style={{
@@ -117,7 +130,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
             >
               <div
                 className={twMerge(
-                  'absolute bottom-0 w-full rounded-2xl transition-all',
+                  'absolute bottom-0 w-full rounded-2xl transition-opacity hover:opacity-80',
                   stage.color,
                 )}
                 style={{ height: `${stage.percentage}%` }}
@@ -130,7 +143,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
                 {stage.value.toLocaleString('en-US')}
               </span>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </Card>

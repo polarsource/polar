@@ -51,11 +51,7 @@ export const Navigation = ({
     return `${path}?${searchParams.toString()}`
   }
 
-  const filteredLinks = links(organization).filter(({ label }) =>
-    label === 'Usage'
-      ? organization.feature_settings?.usage_based_billing_enabled
-      : true,
-  )
+  const filteredLinks = links(organization)
 
   return (
     <>

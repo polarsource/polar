@@ -3,26 +3,23 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
-import { Well, WellContent, WellHeader } from '@/components/Shared/Well'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
 import CheckoutsWidget from '@/components/Widgets/CheckoutsWidget'
 import { MonthWidget } from '@/components/Widgets/MonthWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
-import { useMetrics, useUpdateOrganization } from '@/hooks/queries'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useMetrics } from '@/hooks/queries'
 import {
   ChartRange,
   getChartRangeParams,
   getPreviousParams,
 } from '@/utils/metrics'
-import { ArrowOutwardOutlined, DonutLargeOutlined } from '@mui/icons-material'
+import { ArrowOutwardOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
-import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import React, { useContext } from 'react'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface HeroChartProps {
@@ -101,8 +98,6 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
 
   return (
     <DashboardBody className="gap-y-8 pb-16 md:gap-y-12">
-      <UsageBasedBillingBanner />
-
       <div className="dark:bg-polar-900 dark:border-polar-800 flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-3 text-sm md:hidden">
         <LogoIcon size={24} />
         <span>Polar for iOS is now available on TestFlight!</span>
@@ -149,67 +144,5 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
         </motion.div>
       </motion.div>
     </DashboardBody>
-  )
-}
-
-const UsageBasedBillingBanner = () => {
-  const { organization } = useContext(OrganizationContext)
-
-  const updateOrganization = useUpdateOrganization()
-
-  const handleEnableUsageBasedBilling = async () => {
-    await updateOrganization.mutateAsync({
-      id: organization.id,
-      body: {
-        feature_settings: {
-          usage_based_billing_enabled: true,
-          issue_funding_enabled:
-            organization.feature_settings?.issue_funding_enabled ?? false,
-        },
-      },
-    })
-  }
-
-  return (
-    <Well className="shadow-3xl hidden items-start gap-6 bg-white p-6 md:flex md:flex-row md:items-center md:justify-between">
-      <div className="flex flex-col gap-y-2">
-        <WellHeader className="flex flex-row items-center gap-x-2">
-          <DonutLargeOutlined fontSize="small" className="text-blue-500" />
-          <h3 className="text-lg font-medium">
-            Introducing Usage Based Billing
-          </h3>
-        </WellHeader>
-        <WellContent>
-          <p className="dark:text-polar-500 text-gray-500">
-            Unlock new revenue streams based on the usage of your application.
-            Now in Alpha.
-          </p>
-        </WellContent>
-      </div>
-      <div className="flex flex-row-reverse gap-x-4 md:flex-row md:items-center">
-        <Link
-          href="https://docs.polar.sh/features/usage-based-billing/introduction"
-          target="_blank"
-        >
-          <Button
-            variant={
-              organization.feature_settings?.usage_based_billing_enabled
-                ? 'default'
-                : 'secondary'
-            }
-          >
-            Learn More
-          </Button>
-        </Link>
-        {!organization.feature_settings?.usage_based_billing_enabled && (
-          <Button
-            loading={updateOrganization.isPending}
-            onClick={handleEnableUsageBasedBilling}
-          >
-            Enable
-          </Button>
-        )}
-      </div>
-    </Well>
   )
 }

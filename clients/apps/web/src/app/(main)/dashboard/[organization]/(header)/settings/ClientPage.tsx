@@ -1,7 +1,6 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import FeatureSettings from '@/components/Settings/FeatureSettings'
 import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import OrganizationSubscriptionSettings from '@/components/Settings/OrganizationSubscriptionSettings'
@@ -35,14 +34,6 @@ export default function ClientPage({
             description="Manage access tokens to authenticate with the Polar API"
           />
           <OrganizationAccessTokensSettings organization={org} />
-        </Section>
-
-        <Section id="features">
-          <SectionDescription
-            title="Additional Features"
-            description="Legacy, experimental or early-access features."
-          />
-          <FeatureSettings organization={org} />
         </Section>
       </div>
     </DashboardBody>

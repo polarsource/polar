@@ -24,7 +24,6 @@ export const org: schemas['Organization'] = {
   details_submitted_at: null,
   feature_settings: {
     issue_funding_enabled: false,
-    usage_based_billing_enabled: false,
   },
   email: null,
   subscription_settings: {

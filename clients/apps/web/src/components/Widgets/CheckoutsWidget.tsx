@@ -139,7 +139,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
             <div className="flex flex-col">
               <span>{stage.name}</span>
               <span className="dark:text-polar-500 text-sm text-gray-500">
-                {stage.percentage.toFixed(1)}% —{' '}
+                {isNaN(stage.percentage) ? 0 : stage.percentage.toFixed(1)}% —{' '}
                 {stage.value.toLocaleString('en-US')}
               </span>
             </div>

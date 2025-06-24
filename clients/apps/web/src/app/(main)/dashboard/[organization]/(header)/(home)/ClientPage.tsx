@@ -8,6 +8,7 @@ import { AccountWidget } from '@/components/Widgets/AccountWidget'
 import CheckoutsWidget from '@/components/Widgets/CheckoutsWidget'
 import { MonthWidget } from '@/components/Widgets/MonthWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
+import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
 import { useMetrics, useUpdateOrganization } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
@@ -126,7 +127,13 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
           <MonthWidget />
         </motion.div>
         <motion.div
-          className={twMerge(cardClassName, 'h-full xl:col-span-2')}
+          className={twMerge(cardClassName, 'xl:col-span-2')}
+          {...motionVariants}
+        >
+          <RevenueWidget />
+        </motion.div>
+        <motion.div
+          className={twMerge(cardClassName, 'xl:col-span-2')}
           {...motionVariants}
         >
           <CheckoutsWidget />

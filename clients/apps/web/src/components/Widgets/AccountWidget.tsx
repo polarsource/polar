@@ -27,7 +27,12 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
     summary.balance.amount > 0
 
   return (
-    <Card className={twMerge('flex h-80 flex-col justify-between', className)}>
+    <Card
+      className={twMerge(
+        'flex h-80 flex-col justify-between bg-gray-50',
+        className,
+      )}
+    >
       <CardHeader className="flex flex-col gap-y-1 pb-2">
         <div className="flex flex-row items-center justify-between">
           <span className="dark:text-polar-500 text-gray-400">Finance</span>

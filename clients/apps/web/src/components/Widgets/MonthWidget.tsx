@@ -104,7 +104,7 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
           </span>
         </div>
       </div>
-      <div className="dark:bg-polar-900 flex min-h-[260px] flex-col gap-y-4 rounded-3xl bg-white px-2 py-4">
+      <div className="dark:bg-polar-900 flex min-h-[300px] flex-col gap-y-4 rounded-3xl bg-white px-2 py-4">
         {orderMetrics.isLoading ? (
           <div className="flex h-full w-full items-center justify-center">
             <Spinner />

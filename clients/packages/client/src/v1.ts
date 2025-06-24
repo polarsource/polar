@@ -12336,6 +12336,8 @@ export interface components {
             tier_price_recurring_interval: string;
             /** Tier Organization Name */
             tier_organization_name: string;
+            /** Formatted Price Amount */
+            readonly formatted_price_amount: string;
         };
         /** MaintainerNewProductSaleNotification */
         MaintainerNewProductSaleNotification: {
@@ -12366,6 +12368,8 @@ export interface components {
             product_price_amount: number;
             /** Organization Name */
             organization_name: string;
+            /** Formatted Price Amount */
+            readonly formatted_price_amount: string;
         };
         /** Meter */
         Meter: {
@@ -13810,12 +13814,6 @@ export interface components {
              * @default false
              */
             issue_funding_enabled: boolean;
-            /**
-             * Usage Based Billing Enabled
-             * @description If this organization has usage-based billing enabled
-             * @default false
-             */
-            usage_based_billing_enabled: boolean;
         };
         /** OrganizationMember */
         OrganizationMember: {

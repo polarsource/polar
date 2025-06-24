@@ -82,7 +82,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
   return (
     <Card
       className={twMerge(
-        'dark:bg-polar-800 flex h-full w-full flex-col gap-y-6 bg-gray-100 p-6',
+        'dark:bg-polar-800 flex h-full w-full flex-col gap-y-6 bg-gray-50 p-6',
         className,
       )}
     >
@@ -129,8 +129,8 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
                 style={{
                   backgroundImage: `repeating-linear-gradient(
                 45deg,
-                ${isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'},
-                ${isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'} 10px,
+                ${isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.04)'},
+                ${isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.04)'} 10px,
                 transparent 10px,
                 transparent 20px
               )`,
@@ -153,8 +153,12 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
               <div className="flex flex-col">
                 <span>{stage.name}</span>
                 <span className="dark:text-polar-500 text-sm text-gray-500">
-                  {isNaN(stage.percentage) ? 0 : stage.percentage.toFixed(1)}% —{' '}
-                  {stage.value.toLocaleString('en-US')}
+                  {isNaN(stage.percentage)
+                    ? 0
+                    : stage.percentage.toFixed(
+                        stage.percentage % 1 === 0 ? 0 : 1,
+                      )}
+                  % — {stage.value.toLocaleString('en-US')}
                 </span>
               </div>
             </Link>

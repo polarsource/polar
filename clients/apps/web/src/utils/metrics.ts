@@ -136,9 +136,9 @@ export const getChartRangeParams = (
       case 'all_time':
         return parsedCreatedAt
       case '12m':
-        return startOfYear(now)
+        return subYears(now, 1)
       case '3m':
-        return startOfMonth(subMonths(now, 3))
+        return subMonths(now, 3)
       case '30d':
         return startOfDay(subDays(now, 30))
       case 'today':
@@ -146,9 +146,8 @@ export const getChartRangeParams = (
     }
   }
   const startDate = _getStartDate(range)
-  const maxStartDate = startDate > parsedCreatedAt ? startDate : parsedCreatedAt
-  const interval = dateToInterval(maxStartDate)
-  return [maxStartDate, endDate, interval]
+  const interval = dateToInterval(startDate)
+  return [startDate, endDate, interval]
 }
 
 export const getPreviousParams = (

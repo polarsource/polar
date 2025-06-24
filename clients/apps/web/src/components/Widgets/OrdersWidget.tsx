@@ -36,7 +36,7 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
   })
 
   return (
-    <Card className={className}>
+    <Card className={twMerge(className, 'bg-gray-50')}>
       <CardHeader className="dark:text-polar-500 flex flex-row items-baseline justify-between bg-transparent pb-6 text-sm text-gray-400">
         <span>{displayDate}</span>
         <span>{displayTime}</span>

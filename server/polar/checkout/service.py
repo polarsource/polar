@@ -51,6 +51,8 @@ from polar.models import (
     LegacyRecurringProductPriceCustom,
     LegacyRecurringProductPriceFixed,
     Organization,
+    Payment,
+    PaymentMethod,
     Product,
     ProductPrice,
     Subscription,
@@ -63,7 +65,6 @@ from polar.models.product_price import ProductPriceAmountType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
-from polar.payment.repository import PaymentRepository
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_currency_price,
@@ -920,35 +921,30 @@ class CheckoutService:
 
         return checkout
 
-    async def handle_payment_success(
-        self, session: AsyncSession, checkout_id: uuid.UUID, payment_id: uuid.UUID
+    async def handle_success(
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        payment: Payment | None = None,
+        payment_method: PaymentMethod | None = None,
     ) -> Checkout:
-        repository = CheckoutRepository.from_session(session)
-        checkout = await repository.get_by_id(
-            checkout_id, options=repository.get_eager_options()
-        )
-
-        if checkout is None:
-            raise CheckoutDoesNotExist(checkout_id)
-
-        # Legacy code path for recurring checkouts
-        product = checkout.product
-        if product.is_recurring:
-            return checkout
-
         if checkout.status != CheckoutStatus.confirmed:
             raise NotConfirmedCheckout(checkout)
-
-        payment_repository = PaymentRepository.from_session(session)
-        payment = await payment_repository.get_by_id(payment_id)
-        if payment is None:
-            raise PaymentDoesNotExist(payment_id)
 
         product_price = checkout.product_price
         if product_price.is_archived:
             raise ArchivedPriceCheckout(checkout)
 
-        await order_service.create_from_checkout(session, checkout, payment)
+        product = checkout.product
+        subscription: Subscription | None = None
+        if product.is_recurring:
+            subscription = await subscription_service.create_or_update_from_checkout(
+                session, checkout, payment_method
+            )
+
+        await order_service.create_from_checkout(
+            session, checkout, payment, subscription
+        )
 
         repository = CheckoutRepository.from_session(session)
         checkout = await repository.update(
@@ -959,28 +955,15 @@ class CheckoutService:
 
         return checkout
 
-    async def handle_payment_failed(
-        self, session: AsyncSession, checkout_id: uuid.UUID
+    async def handle_failure(
+        self, session: AsyncSession, checkout: Checkout, payment: Payment | None = None
     ) -> Checkout:
-        repository = CheckoutRepository.from_session(session)
-        checkout = await repository.get_by_id(
-            checkout_id, options=repository.get_eager_options()
-        )
-
-        if checkout is None:
-            raise CheckoutDoesNotExist(checkout_id)
-
         # Checkout is in an unrecoverable status: do nothing
         if checkout.status in {
             CheckoutStatus.expired,
             CheckoutStatus.succeeded,
             CheckoutStatus.failed,
         }:
-            return checkout
-
-        # Legacy code path for recurring checkouts
-        product = checkout.product
-        if product.is_recurring:
             return checkout
 
         # Put back checkout in open state so the customer can try another payment method
@@ -996,86 +979,6 @@ class CheckoutService:
         # the Checkout.
         # However, if it ultimately fails, we need to free up the Discount Redemption.
         await discount_service.remove_checkout_redemption(session, checkout)
-
-        await self._after_checkout_updated(session, checkout)
-
-        return checkout
-
-    async def handle_stripe_success(
-        self,
-        session: AsyncSession,
-        checkout_id: uuid.UUID,
-        intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent,
-    ) -> Checkout:
-        repository = CheckoutRepository.from_session(session)
-        checkout = await repository.get_by_id(
-            checkout_id, options=repository.get_eager_options()
-        )
-
-        if checkout is None:
-            raise CheckoutDoesNotExist(checkout_id)
-
-        # Legacy code path for non-recurring checkouts
-        if not checkout.product.is_recurring:
-            return checkout
-
-        if checkout.status != CheckoutStatus.confirmed:
-            raise NotConfirmedCheckout(checkout)
-
-        product_price = checkout.product_price
-        if product_price.is_archived:
-            raise ArchivedPriceCheckout(checkout)
-
-        if intent.status != "succeeded":
-            raise IntentNotSucceeded(checkout, intent.id)
-
-        if intent.payment_method is None:
-            raise NoPaymentMethodOnIntent(checkout, intent.id)
-
-        product = checkout.product
-        assert product.is_recurring
-        await subscription_service.create_or_update_from_checkout(
-            session, checkout, intent
-        )
-
-        checkout.status = CheckoutStatus.succeeded
-        checkout.payment_processor_metadata = {
-            **checkout.payment_processor_metadata,
-            "intent_status": intent.status,
-        }
-        session.add(checkout)
-
-        await self._after_checkout_updated(session, checkout)
-
-        return checkout
-
-    async def handle_free_success(
-        self, session: AsyncSession, checkout_id: uuid.UUID
-    ) -> Checkout:
-        repository = CheckoutRepository.from_session(session)
-        checkout = await repository.get_by_id(
-            checkout_id, options=repository.get_eager_options()
-        )
-
-        if checkout is None:
-            raise CheckoutDoesNotExist(checkout_id)
-
-        if checkout.status != CheckoutStatus.confirmed:
-            raise NotConfirmedCheckout(checkout)
-
-        if checkout.is_payment_form_required:
-            raise PaymentRequired(checkout)
-
-        product = checkout.product
-        if product.is_recurring:
-            await subscription_service.create_or_update_from_checkout(
-                session, checkout, None
-            )
-        else:
-            await order_service.create_from_checkout(session, checkout)
-
-        checkout.status = CheckoutStatus.succeeded
-        session.add(checkout)
 
         await self._after_checkout_updated(session, checkout)
 

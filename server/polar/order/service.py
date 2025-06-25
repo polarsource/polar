@@ -403,7 +403,11 @@ class OrderService:
         return OrderInvoice(url=url)
 
     async def create_from_checkout(
-        self, session: AsyncSession, checkout: Checkout, payment: Payment | None = None
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        payment: Payment | None = None,
+        subscription: Subscription | None = None,
     ) -> Order:
         product = checkout.product
         if product.is_recurring:
@@ -471,7 +475,7 @@ class OrderService:
                 customer=customer,
                 product=product,
                 discount=checkout.discount,
-                subscription=None,
+                subscription=subscription,
                 checkout=checkout,
                 user_metadata=checkout.user_metadata,
                 custom_field_data=checkout.custom_field_data,

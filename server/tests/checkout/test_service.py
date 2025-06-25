@@ -1,7 +1,7 @@
 import uuid
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import ANY, AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
@@ -22,13 +22,8 @@ from polar.checkout.schemas import (
 )
 from polar.checkout.service import (
     AlreadyActiveSubscriptionError,
-    CheckoutDoesNotExist,
-    IntentNotSucceeded,
-    NoPaymentMethodOnIntent,
     NotConfirmedCheckout,
     NotOpenCheckout,
-    PaymentDoesNotExist,
-    PaymentRequired,
 )
 from polar.checkout.service import checkout as checkout_service
 from polar.customer_session.service import customer_session as customer_session_service
@@ -3084,91 +3079,58 @@ class TestConfirm:
         assert checkout.customer.email == customer.email
 
 
-def build_stripe_payment_intent(
-    *,
-    amount: int = 0,
-    status: str = "succeeded",
-    customer: str | None = "CUSTOMER_ID",
-    payment_method: str | None = "PAYMENT_METHOD_ID",
-) -> stripe_lib.PaymentIntent:
-    return stripe_lib.PaymentIntent.construct_from(
-        {
-            "id": "STRIPE_PAYMENT_INTENT_ID",
-            "amount": amount,
-            "status": status,
-            "customer": customer,
-            "payment_method": payment_method,
-        },
-        None,
-    )
-
-
 @pytest.mark.asyncio
-class TestHandlePaymentSuccess:
-    async def test_not_existing_checkout(
-        self, session: AsyncSession, payment: Payment
-    ) -> None:
-        with pytest.raises(CheckoutDoesNotExist):
-            await checkout_service.handle_payment_success(
-                session, uuid.uuid4(), payment.id
-            )
-
+class TestHandleSuccess:
     async def test_not_confirmed_checkout(
-        self, session: AsyncSession, checkout_one_time_fixed: Checkout, payment: Payment
+        self, session: AsyncSession, checkout_one_time_fixed: Checkout
     ) -> None:
         with pytest.raises(NotConfirmedCheckout):
-            await checkout_service.handle_payment_success(
-                session, checkout_one_time_fixed.id, payment.id
-            )
+            await checkout_service.handle_success(session, checkout_one_time_fixed)
 
-    async def test_not_existing_payment(
-        self,
-        session: AsyncSession,
-        checkout_confirmed_one_time: Checkout,
-    ) -> None:
-        with pytest.raises(PaymentDoesNotExist):
-            await checkout_service.handle_payment_success(
-                session, checkout_confirmed_one_time.id, uuid.uuid4()
-            )
-
-    async def test_valid_one_time(
+    async def test_one_time(
         self,
         order_service_mock: MagicMock,
+        subscription_service_mock: MagicMock,
         session: AsyncSession,
         checkout_confirmed_one_time: Checkout,
         payment: Payment,
     ) -> None:
-        checkout = await checkout_service.handle_payment_success(
-            session, checkout_confirmed_one_time.id, payment.id
+        checkout = await checkout_service.handle_success(
+            session, checkout_confirmed_one_time, payment
         )
 
         assert checkout.status == CheckoutStatus.succeeded
-        order_service_mock.create_from_checkout.assert_called_once()
+        order_service_mock.create_from_checkout.assert_called_once_with(
+            ANY, checkout, payment, None
+        )
+        subscription_service_mock.create_or_update_from_checkout.assert_not_called()
 
     async def test_recurring(
         self,
+        order_service_mock: MagicMock,
         subscription_service_mock: MagicMock,
         session: AsyncSession,
         checkout_confirmed_recurring: Checkout,
         payment: Payment,
     ) -> None:
-        """
-        Temporary test while we have the legacy path for recurring products.
-        """
-        checkout = await checkout_service.handle_payment_success(
-            session, checkout_confirmed_recurring.id, payment.id
+        checkout = await checkout_service.handle_success(
+            session, checkout_confirmed_recurring, payment
         )
 
-        assert checkout.status == checkout_confirmed_recurring.status
-        subscription_service_mock.create_or_update_from_checkout.assert_not_called()
+        assert checkout.status == CheckoutStatus.succeeded
+        subscription_service_mock.create_or_update_from_checkout.assert_called_once_with(
+            ANY, checkout, None
+        )
+        order_service_mock.create_from_checkout.assert_called_once_with(
+            ANY,
+            checkout,
+            payment,
+            subscription_service_mock.create_or_update_from_checkout.return_value,
+        )
 
 
 @pytest.mark.asyncio
-class TestHandlePaymentFailed:
-    async def test_not_existing_checkout(self, session: AsyncSession) -> None:
-        with pytest.raises(CheckoutDoesNotExist):
-            await checkout_service.handle_payment_failed(session, uuid.uuid4())
-
+class TestHandleFailure:
     @pytest.mark.parametrize(
         "status",
         (
@@ -3187,8 +3149,8 @@ class TestHandlePaymentFailed:
         checkout_one_time_fixed.status = status
         await save_fixture(checkout_one_time_fixed)
 
-        checkout = await checkout_service.handle_payment_failed(
-            session, checkout_one_time_fixed.id
+        checkout = await checkout_service.handle_failure(
+            session, checkout_one_time_fixed
         )
 
         assert checkout.status == status
@@ -3196,8 +3158,8 @@ class TestHandlePaymentFailed:
     async def test_valid(
         self, session: AsyncSession, checkout_confirmed_one_time: Checkout
     ) -> None:
-        checkout = await checkout_service.handle_payment_failed(
-            session, checkout_confirmed_one_time.id
+        checkout = await checkout_service.handle_failure(
+            session, checkout_confirmed_one_time
         )
 
         assert checkout.status == CheckoutStatus.open
@@ -3215,8 +3177,8 @@ class TestHandlePaymentFailed:
         )
         await save_fixture(discount_redemption)
 
-        checkout = await checkout_service.handle_payment_failed(
-            session, checkout_confirmed_one_time.id
+        checkout = await checkout_service.handle_failure(
+            session, checkout_confirmed_one_time
         )
 
         assert checkout.status == CheckoutStatus.open
@@ -3228,146 +3190,3 @@ class TestHandlePaymentFailed:
             await discount_redemption_repository.get_by_id(discount_redemption.id)
             is None
         )
-
-
-@pytest.mark.asyncio
-class TestHandleStripeSuccess:
-    async def test_not_existing_checkout(self, session: AsyncSession) -> None:
-        with pytest.raises(CheckoutDoesNotExist):
-            await checkout_service.handle_stripe_success(
-                session,
-                uuid.uuid4(),
-                build_stripe_payment_intent(),
-            )
-
-    async def test_not_confirmed_checkout(
-        self, session: AsyncSession, checkout_recurring_fixed: Checkout
-    ) -> None:
-        with pytest.raises(NotConfirmedCheckout):
-            await checkout_service.handle_stripe_success(
-                session,
-                checkout_recurring_fixed.id,
-                build_stripe_payment_intent(),
-            )
-
-    async def test_not_succeeded_payment_intent(
-        self, session: AsyncSession, checkout_confirmed_recurring: Checkout
-    ) -> None:
-        with pytest.raises(IntentNotSucceeded):
-            await checkout_service.handle_stripe_success(
-                session,
-                checkout_confirmed_recurring.id,
-                build_stripe_payment_intent(status="canceled"),
-            )
-
-    async def test_no_payment_method_on_payment_intent(
-        self, session: AsyncSession, checkout_confirmed_recurring: Checkout
-    ) -> None:
-        with pytest.raises(NoPaymentMethodOnIntent):
-            await checkout_service.handle_stripe_success(
-                session,
-                checkout_confirmed_recurring.id,
-                build_stripe_payment_intent(payment_method=None),
-            )
-
-    async def test_valid_recurring(
-        self,
-        subscription_service_mock: MagicMock,
-        session: AsyncSession,
-        checkout_confirmed_recurring: Checkout,
-    ) -> None:
-        checkout = await checkout_service.handle_stripe_success(
-            session,
-            checkout_confirmed_recurring.id,
-            build_stripe_payment_intent(
-                amount=checkout_confirmed_recurring.total_amount
-            ),
-        )
-
-        assert checkout.status == CheckoutStatus.succeeded
-        subscription_service_mock.create_or_update_from_checkout.assert_called_once()
-
-    async def test_one_time(
-        self,
-        order_service_mock: MagicMock,
-        session: AsyncSession,
-        checkout_confirmed_one_time: Checkout,
-    ) -> None:
-        """
-        Temporary test while we have this legacy path for recurring products.
-        """
-        checkout = await checkout_service.handle_stripe_success(
-            session,
-            checkout_confirmed_one_time.id,
-            build_stripe_payment_intent(
-                amount=checkout_confirmed_one_time.total_amount
-            ),
-        )
-
-        assert checkout.status == checkout_confirmed_one_time.status
-        order_service_mock.create_from_checkout.assert_not_called()
-
-
-@pytest.mark.asyncio
-class TestHandleFreeSuccess:
-    async def test_not_existing_checkout(self, session: AsyncSession) -> None:
-        with pytest.raises(CheckoutDoesNotExist):
-            await checkout_service.handle_free_success(session, uuid.uuid4())
-
-    async def test_not_confirmed_checkout(
-        self, session: AsyncSession, checkout_one_time_free: Checkout
-    ) -> None:
-        with pytest.raises(NotConfirmedCheckout):
-            await checkout_service.handle_free_success(
-                session, checkout_one_time_free.id
-            )
-
-    async def test_payment_required(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        checkout_confirmed_one_time: Checkout,
-    ) -> None:
-        checkout_confirmed_one_time.payment_processor_metadata = {
-            "customer_id": "STRIPE_CUSTOMER_ID"
-        }
-        await save_fixture(checkout_confirmed_one_time)
-
-        with pytest.raises(PaymentRequired):
-            await checkout_service.handle_free_success(
-                session, checkout_confirmed_one_time.id
-            )
-
-    async def test_valid_one_time(
-        self,
-        order_service_mock: MagicMock,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        checkout_one_time_free: Checkout,
-    ) -> None:
-        checkout_one_time_free.status = CheckoutStatus.confirmed
-        await save_fixture(checkout_one_time_free)
-
-        checkout = await checkout_service.handle_free_success(
-            session, checkout_one_time_free.id
-        )
-
-        assert checkout.status == CheckoutStatus.succeeded
-        order_service_mock.create_from_checkout.assert_called_once()
-
-    async def test_valid_recurring(
-        self,
-        subscription_service_mock: MagicMock,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        checkout_recurring_free: Checkout,
-    ) -> None:
-        checkout_recurring_free.status = CheckoutStatus.confirmed
-        await save_fixture(checkout_recurring_free)
-
-        checkout = await checkout_service.handle_free_success(
-            session, checkout_recurring_free.id
-        )
-
-        assert checkout.status == CheckoutStatus.succeeded
-        subscription_service_mock.create_or_update_from_checkout.assert_called_once()

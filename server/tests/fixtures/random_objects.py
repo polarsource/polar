@@ -45,6 +45,7 @@ from polar.models import (
     OrderItem,
     Organization,
     Payment,
+    PaymentMethod,
     Payout,
     Product,
     ProductBenefit,
@@ -1731,3 +1732,30 @@ async def create_payment(
 @pytest_asyncio.fixture
 async def payment(save_fixture: SaveFixture, organization: Organization) -> Payment:
     return await create_payment(save_fixture, organization)
+
+
+async def create_payment_method(
+    save_fixture: SaveFixture,
+    customer: Customer,
+    *,
+    processor: PaymentProcessor = PaymentProcessor.stripe,
+    processor_id: str | None = None,
+    type: str = "card",
+    method_metadata: dict[str, Any] = {},
+) -> PaymentMethod:
+    payment_method = PaymentMethod(
+        processor=processor,
+        processor_id=processor_id or rstr("PAYMENT_METHOD_PROCESSOR_ID"),
+        type=type,
+        method_metadata=method_metadata,
+        customer=customer,
+    )
+    await save_fixture(payment_method)
+    return payment_method
+
+
+@pytest_asyncio.fixture
+async def payment_method(
+    save_fixture: SaveFixture, customer: Customer
+) -> PaymentMethod:
+    return await create_payment_method(save_fixture, customer)

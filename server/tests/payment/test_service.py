@@ -1,7 +1,4 @@
-from unittest.mock import AsyncMock
-
 import pytest
-from pytest_mock import MockerFixture
 
 from polar.enums import PaymentProcessor
 from polar.models import Customer, Product
@@ -14,18 +11,12 @@ from tests.fixtures.random_objects import create_checkout, create_order
 from tests.fixtures.stripe import build_stripe_charge
 
 
-@pytest.fixture
-def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
-    return mocker.patch("polar.payment.service.enqueue_job", autospec=True)
-
-
 @pytest.mark.asyncio
 class TestUpsertFromStripeCharge:
     async def test_new_payment_with_checkout(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        enqueue_job_mock: AsyncMock,
         product: Product,
         customer: Customer,
     ) -> None:
@@ -46,7 +37,9 @@ class TestUpsertFromStripeCharge:
         )
 
         # Test upsert_from_stripe_charge
-        payment = await payment_service.upsert_from_stripe_charge(session, charge)
+        payment = await payment_service.upsert_from_stripe_charge(
+            session, charge, checkout
+        )
 
         # Verify payment was created correctly
         assert payment.processor == PaymentProcessor.stripe
@@ -62,16 +55,10 @@ class TestUpsertFromStripeCharge:
         assert payment.risk_level == "normal"
         assert payment.risk_score == 10
 
-        # Verify enqueue_job was called
-        enqueue_job_mock.assert_called_once_with(
-            "checkout.payment_success", checkout_id=checkout.id, payment_id=payment.id
-        )
-
     async def test_new_payment_with_order(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        enqueue_job_mock: AsyncMock,
         product: Product,
         customer: Customer,
     ) -> None:
@@ -93,7 +80,7 @@ class TestUpsertFromStripeCharge:
         )
 
         # Test upsert_from_stripe_charge
-        payment = await payment_service.upsert_from_stripe_charge(session, charge)
+        payment = await payment_service.upsert_from_stripe_charge(session, charge, None)
 
         # Verify payment was created correctly
         assert payment.processor == PaymentProcessor.stripe
@@ -107,14 +94,10 @@ class TestUpsertFromStripeCharge:
         assert payment.order == order
         assert payment.organization == order.organization
 
-        # Verify enqueue_job was not called (only called for checkouts)
-        enqueue_job_mock.assert_not_called()
-
     async def test_new_payment_with_checkout_and_order(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        enqueue_job_mock: AsyncMock,
         product: Product,
         customer: Customer,
     ) -> None:
@@ -142,7 +125,9 @@ class TestUpsertFromStripeCharge:
         )
 
         # Test upsert_from_stripe_charge
-        payment = await payment_service.upsert_from_stripe_charge(session, charge)
+        payment = await payment_service.upsert_from_stripe_charge(
+            session, charge, checkout
+        )
 
         # Verify payment was created correctly
         assert payment.processor == PaymentProcessor.stripe
@@ -157,17 +142,8 @@ class TestUpsertFromStripeCharge:
         assert payment.order == order
         assert payment.organization == checkout.organization
 
-        # Verify enqueue_job was called
-        enqueue_job_mock.assert_called_once_with(
-            "checkout.payment_success", checkout_id=checkout.id, payment_id=payment.id
-        )
-
     async def test_failed_payment(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        enqueue_job_mock: AsyncMock,
-        product: Product,
+        self, session: AsyncSession, save_fixture: SaveFixture, product: Product
     ) -> None:
         # Create a checkout
         checkout = await create_checkout(
@@ -191,7 +167,9 @@ class TestUpsertFromStripeCharge:
         )
 
         # Test upsert_from_stripe_charge
-        payment = await payment_service.upsert_from_stripe_charge(session, charge)
+        payment = await payment_service.upsert_from_stripe_charge(
+            session, charge, checkout
+        )
 
         # Verify payment was created correctly
         assert payment.processor == PaymentProcessor.stripe
@@ -212,15 +190,7 @@ class TestUpsertFromStripeCharge:
             == "This payment was declined due to suspected fraud"
         )
 
-        # Verify enqueue_job was called with payment_failed
-        enqueue_job_mock.assert_called_once_with(
-            "checkout.payment_failed", checkout_id=checkout.id, payment_id=payment.id
-        )
-
-    async def test_unlinked_payment_error(
-        self,
-        session: AsyncSession,
-    ) -> None:
+    async def test_unlinked_payment_error(self, session: AsyncSession) -> None:
         # Create a charge without checkout_id or invoice
         charge = build_stripe_charge(
             amount=1000,
@@ -231,4 +201,4 @@ class TestUpsertFromStripeCharge:
 
         # Test upsert_from_stripe_charge should raise UnlinkedPaymentError
         with pytest.raises(UnlinkedPaymentError) as excinfo:
-            await payment_service.upsert_from_stripe_charge(session, charge)
+            await payment_service.upsert_from_stripe_charge(session, charge, None)

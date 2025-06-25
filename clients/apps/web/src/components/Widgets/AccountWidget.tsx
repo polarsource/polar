@@ -16,7 +16,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
 
   const { data: account } = useOrganizationAccount(org.id)
   const { data: summary } = useTransactionsSummary(account?.id ?? '')
-  const { data: payouts } = usePayouts(org.id, {
+  const { data: payouts } = usePayouts(account?.id, {
     limit: 1,
     sorting: ['-created_at'],
   })

@@ -87,9 +87,9 @@ const BenefitRow = ({
           )}
         >
           {checked ? (
-            <CheckOutlined className="h-3 w-3" fontSize="small" />
+            <CheckOutlined fontSize="inherit" />
           ) : (
-            <RemoveOutlined className="h-3 w-3" fontSize="small" />
+            <RemoveOutlined fontSize="inherit" />
           )}
         </span>
         <span

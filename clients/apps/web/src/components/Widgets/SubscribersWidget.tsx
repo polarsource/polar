@@ -45,13 +45,11 @@ export const SubscribersWidget = ({ className }: SubscribersWidgetProps) => {
         className,
       )}
     >
-      <CardHeader className="flex flex-col gap-y-1 pb-2">
+      <CardHeader className="flex flex-col gap-y-2 pb-2">
         <div className="flex flex-row items-center justify-between">
-          <span className="dark:text-polar-500 text-gray-400">
-            Active Subscriptions
-          </span>
+          <span className="text-lg">Active Subscriptions</span>
         </div>
-        <h2 className="text-xl">
+        <h2 className="text-5xl font-light">
           {
             subscriberMetrics.data?.periods[
               subscriberMetrics.data?.periods.length - 1

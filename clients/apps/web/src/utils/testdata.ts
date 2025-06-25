@@ -45,3 +45,22 @@ export const user: schemas['UserRead'] = {
   oauth_accounts: [],
   account_id: null,
 }
+
+export const payout: schemas['Payout'] = {
+  id: 'xxxabc-123',
+  created_at: new Date('2023-01-01T00:00:00Z').toISOString(),
+  modified_at: new Date('2023-01-01T09:00:00Z').toISOString(),
+  amount: 1000,
+  status: 'pending',
+  processor: 'stripe',
+  paid_at: null,
+  currency: 'USD',
+  fees_amount: 100,
+  fees_transactions: [],
+  gross_amount: 1000,
+  account_currency: 'USD',
+  account_amount: 1000,
+  account_id: 'xxxabc-123',
+  is_invoice_generated: false,
+  transaction_id: 'xxxabc-123',
+}

@@ -2,11 +2,10 @@ import { useOrders } from '@/hooks/queries/orders'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { ShoppingCartOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
-import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
 } from '@polar-sh/ui/components/atoms/Card'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
@@ -22,48 +21,30 @@ interface OrderCardProps {
 const OrderCard = ({ className, order }: OrderCardProps) => {
   const createdAtDate = new Date(order.created_at)
 
-  const { organization: org } = useContext(OrganizationContext)
-
   const displayDate = createdAtDate.toLocaleDateString('en-US', {
-    year: 'numeric',
     month: 'long',
     day: 'numeric',
-  })
-
-  const displayTime = createdAtDate.toLocaleTimeString('en-US', {
+    hour12: false,
     hour: 'numeric',
     minute: 'numeric',
   })
 
   return (
-    <Card className={twMerge(className, 'bg-gray-50')}>
-      <CardHeader className="dark:text-polar-500 flex flex-row items-baseline justify-between bg-transparent pb-6 text-sm text-gray-400">
+    <Card
+      className={twMerge(
+        className,
+        'dark:bg-polar-900 dark:hover:bg-polar-700 flex flex-col gap-y-1 rounded-2xl border-none bg-white transition-colors hover:bg-gray-200',
+      )}
+    >
+      <CardHeader className="dark:text-polar-500 flex flex-row items-baseline justify-between bg-transparent p-4 pb-0 text-sm text-gray-400">
         <span>{displayDate}</span>
-        <span>{displayTime}</span>
       </CardHeader>
-      <CardContent className="flex flex-col gap-y-1 pb-6 text-lg">
-        <h3>{order.product.name}</h3>
+      <CardContent className="flex flex-row justify-between gap-x-4 p-4 pt-0">
+        <h3 className="min-w-0 truncate">{order.product.name}</h3>
         <span className="dark:text-polar-500 text-gray-400">
-          {formatCurrencyAndAmount(order.net_amount, order.currency)}
+          {formatCurrencyAndAmount(order.net_amount, order.currency, 0)}
         </span>
       </CardContent>
-      <Link
-        href={`/dashboard/${org.slug}/customers?customerId=${order.customer.id}&query=${order.customer.email}`}
-      >
-        <CardFooter className="dark:bg-polar-900 m-2 flex flex-row items-center gap-x-4 rounded-3xl bg-white p-4">
-          <Avatar
-            className="h-10 w-10"
-            name={order.customer.name || order.customer.email}
-            avatar_url={order.customer.avatar_url}
-          />
-          <div className="flex flex-col text-sm">
-            <span>{order.customer.name ?? '—'}</span>
-            <span className="dark:text-polar-500 text-gray-400">
-              {order.customer.email}
-            </span>
-          </div>
-        </CardFooter>
-      </Link>
     </Card>
   )
 }
@@ -75,38 +56,44 @@ export interface OrdersWidgetProps {
 export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
   const { organization: org } = useContext(OrganizationContext)
 
-  const orders = useOrders(org.id, { limit: 3, sorting: ['-created_at'] })
-
-  const stackingClassNames = [
-    'scale-90',
-    'top-1/2 -translate-y-1/2 scale-[.95]',
-    'bottom-0',
-  ]
+  const orders = useOrders(org.id, { limit: 10, sorting: ['-created_at'] })
 
   return (
-    <div className={twMerge('hidden h-80 md:block', className)}>
+    <div
+      className={twMerge(
+        'dark:bg-polar-800 rounded-4xl relative h-full bg-gray-50',
+        className,
+      )}
+    >
       {(orders.data?.items.length ?? 0) > 0 ? (
-        <div className="relative h-full">
-          {orders.data?.items
-            ?.slice()
-            .reverse()
-            .map((order, index) => (
+        <div className="absolute inset-2 flex flex-col">
+          <div className="flex items-center justify-between p-4">
+            <h3 className="text-lg">Latest Orders</h3>
+            <Link href={`/dashboard/${org.slug}/sales`}>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="rounded-full border-none"
+              >
+                View All
+              </Button>
+            </Link>
+          </div>
+          <div className="rounded-b-4xl flex h-full flex-col gap-y-2 overflow-y-auto rounded-t-2xl pb-4">
+            {orders.data?.items?.map((order) => (
               <Link
                 key={order.id}
                 href={`/dashboard/${org.slug}/sales/${order.id}`}
-                className={twMerge(
-                  stackingClassNames[index],
-                  'rounded-4xl dark:bg-polar-900 dark:border-polar-700 peer absolute w-full border border-white transition-all duration-300 will-change-transform hover:z-10 hover:scale-100 peer-hover:opacity-0',
-                )}
               >
                 <OrderCard order={order} />
               </Link>
             ))}
+          </div>
         </div>
       ) : (
-        <Card className="dark:text-polar-500 flex h-full flex-col items-center justify-center gap-y-6 p-6 text-gray-400">
+        <Card className="dark:text-polar-500 flex h-full flex-col items-center justify-center gap-y-6 bg-gray-50 p-6 text-gray-400">
           <ShoppingCartOutlined
-            className="dark:text-polar-600 text-gray-200"
+            className="dark:text-polar-600 text-gray-300"
             fontSize="large"
           />
           <h3>No orders found</h3>

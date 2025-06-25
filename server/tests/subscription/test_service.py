@@ -2,7 +2,6 @@ import uuid
 from collections import namedtuple
 from datetime import datetime
 from decimal import Decimal
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, call
 
 import pytest
@@ -31,6 +30,7 @@ from polar.models import (
     Discount,
     Meter,
     Organization,
+    PaymentMethod,
     Product,
     ProductPrice,
     Subscription,
@@ -45,7 +45,6 @@ from polar.product.guard import MeteredPrice, is_metered_price
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
     MissingCheckoutCustomer,
-    MissingStripeCustomerID,
     NotARecurringProduct,
     SubscriptionDoesNotExist,
 )
@@ -57,7 +56,6 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_canceled_subscription,
     create_checkout,
-    create_customer,
     create_event,
     create_meter,
     create_product,
@@ -172,26 +170,6 @@ class TestCreateOrUpdateFromCheckout:
                 session, checkout, None
             )
 
-    async def test_missing_customer_stripe_id(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product: Product,
-    ) -> None:
-        customer = await create_customer(
-            save_fixture, organization=product.organization, stripe_customer_id=None
-        )
-        checkout = await create_checkout(
-            save_fixture,
-            products=[product],
-            status=CheckoutStatus.confirmed,
-            customer=customer,
-        )
-        with pytest.raises(MissingStripeCustomerID):
-            await subscription_service.create_or_update_from_checkout(
-                session, checkout, None
-            )
-
     async def test_new_fixed(
         self,
         publish_checkout_event_mock: AsyncMock,
@@ -199,7 +177,7 @@ class TestCreateOrUpdateFromCheckout:
         session: AsyncSession,
         product: Product,
         customer: Customer,
-        stripe_service_mock: MagicMock,
+        payment_method: PaymentMethod,
     ) -> None:
         checkout = await create_checkout(
             save_fixture,
@@ -208,30 +186,20 @@ class TestCreateOrUpdateFromCheckout:
             customer=customer,
         )
 
-        stripe_payment_method = build_stripe_payment_method(
-            customer=customer.stripe_customer_id,
-        )
-        stripe_service_mock.get_payment_method.return_value = stripe_payment_method
-        stripe_subscription = construct_stripe_subscription(product=product)
-        stripe_service_mock.create_out_of_band_subscription.return_value = (
-            stripe_subscription,
-            SimpleNamespace(id="STRIPE_INVOICE_ID", total=checkout.total_amount),
-        )
-
-        payment_intent = build_stripe_payment_intent(amount=checkout.total_amount)
-
         subscription = await subscription_service.create_or_update_from_checkout(
-            session, checkout, payment_intent
+            session, checkout, payment_method
         )
 
-        assert subscription.status == stripe_subscription.status
+        assert subscription.status == SubscriptionStatus.active
         assert subscription.prices == product.prices
         assert subscription.amount == checkout.total_amount
-        assert subscription.payment_method is not None
-        assert subscription.payment_method.processor_id == stripe_payment_method.id
+        assert subscription.payment_method == payment_method
 
-        stripe_service_mock.create_out_of_band_subscription.assert_called_once()
-        stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
+        assert subscription.started_at is not None
+        assert subscription.current_period_start is not None
+        assert subscription.current_period_end is not None
+        assert subscription.started_at == subscription.current_period_start
+        assert subscription.current_period_end > subscription.current_period_start
 
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
@@ -244,7 +212,7 @@ class TestCreateOrUpdateFromCheckout:
         session: AsyncSession,
         product_recurring_custom_price: Product,
         customer: Customer,
-        stripe_service_mock: MagicMock,
+        payment_method: PaymentMethod,
     ) -> None:
         checkout = await create_checkout(
             save_fixture,
@@ -255,46 +223,15 @@ class TestCreateOrUpdateFromCheckout:
             currency="usd",
         )
 
-        stripe_payment_method = build_stripe_payment_method(
-            customer=customer.stripe_customer_id,
-        )
-        stripe_service_mock.get_payment_method.return_value = stripe_payment_method
-        stripe_subscription = construct_stripe_subscription(
-            product=product_recurring_custom_price
-        )
-        stripe_service_mock.create_ad_hoc_custom_price.return_value = SimpleNamespace(
-            id="STRIPE_CUSTOM_PRICE_ID"
-        )
-        stripe_service_mock.create_out_of_band_subscription.return_value = (
-            stripe_subscription,
-            SimpleNamespace(id="STRIPE_INVOICE_ID", total=checkout.total_amount),
-        )
-
-        payment_intent = build_stripe_payment_intent(amount=checkout.total_amount)
-
         subscription = await subscription_service.create_or_update_from_checkout(
-            session, checkout, payment_intent
+            session, checkout, payment_method
         )
 
-        assert subscription.status == stripe_subscription.status
+        assert subscription.status == SubscriptionStatus.active
         assert subscription.prices == product_recurring_custom_price.prices
         assert subscription.amount == checkout.total_amount
         assert subscription.currency == checkout.currency
-        assert subscription.payment_method is not None
-        assert subscription.payment_method.processor_id == stripe_payment_method.id
-
-        stripe_service_mock.create_ad_hoc_custom_price.assert_called_once()
-        stripe_service_mock.create_out_of_band_subscription.assert_called_once()
-        assert stripe_service_mock.create_out_of_band_subscription.call_args[1][
-            "prices"
-        ] == ["STRIPE_CUSTOM_PRICE_ID"]
-        assert (
-            stripe_service_mock.create_out_of_band_subscription.call_args[1][
-                "automatic_tax"
-            ]
-            is True
-        )
-        stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
+        assert subscription.payment_method == payment_method
 
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
@@ -307,7 +244,6 @@ class TestCreateOrUpdateFromCheckout:
         session: AsyncSession,
         product_recurring_free_price: Product,
         customer: Customer,
-        stripe_service_mock: MagicMock,
     ) -> None:
         checkout = await create_checkout(
             save_fixture,
@@ -316,32 +252,15 @@ class TestCreateOrUpdateFromCheckout:
             customer=customer,
         )
 
-        stripe_subscription = construct_stripe_subscription(
-            product=product_recurring_free_price
-        )
-        stripe_service_mock.create_out_of_band_subscription.return_value = (
-            stripe_subscription,
-            SimpleNamespace(id="STRIPE_INVOICE_ID", total=checkout.total_amount),
-        )
-
         subscription = await subscription_service.create_or_update_from_checkout(
             session, checkout, None
         )
 
-        assert subscription.status == stripe_subscription.status
+        assert subscription.status == SubscriptionStatus.active
         assert subscription.prices == product_recurring_free_price.prices
         assert subscription.amount == 0
         assert subscription.currency == "usd"
         assert subscription.payment_method is None
-
-        stripe_service_mock.create_out_of_band_subscription.assert_called_once()
-        assert (
-            stripe_service_mock.create_out_of_band_subscription.call_args[1][
-                "automatic_tax"
-            ]
-            is False
-        )
-        stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
 
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
@@ -354,7 +273,7 @@ class TestCreateOrUpdateFromCheckout:
         session: AsyncSession,
         product_recurring_metered: Product,
         customer: Customer,
-        stripe_service_mock: MagicMock,
+        payment_method: PaymentMethod,
     ) -> None:
         checkout = await create_checkout(
             save_fixture,
@@ -363,31 +282,15 @@ class TestCreateOrUpdateFromCheckout:
             customer=customer,
         )
 
-        stripe_subscription = construct_stripe_subscription(
-            product=product_recurring_metered
-        )
-        stripe_service_mock.create_out_of_band_subscription.return_value = (
-            stripe_subscription,
-            SimpleNamespace(id="STRIPE_INVOICE_ID", total=checkout.total_amount),
-        )
-
         subscription = await subscription_service.create_or_update_from_checkout(
-            session, checkout, None
+            session, checkout, payment_method
         )
 
-        assert subscription.status == stripe_subscription.status
+        assert subscription.status == SubscriptionStatus.active
         assert subscription.prices == product_recurring_metered.prices
         assert subscription.amount == 0
         assert subscription.currency == "usd"
-
-        stripe_service_mock.create_out_of_band_subscription.assert_called_once()
-        assert (
-            stripe_service_mock.create_out_of_band_subscription.call_args[1][
-                "automatic_tax"
-            ]
-            is True
-        )
-        stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
+        assert subscription.payment_method == payment_method
 
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
@@ -401,7 +304,7 @@ class TestCreateOrUpdateFromCheckout:
         product_recurring_custom_price: Product,
         customer: Customer,
         discount_percentage_100: Discount,
-        stripe_service_mock: MagicMock,
+        payment_method: PaymentMethod,
     ) -> None:
         checkout = await create_checkout(
             save_fixture,
@@ -413,32 +316,15 @@ class TestCreateOrUpdateFromCheckout:
             discount=discount_percentage_100,
         )
 
-        stripe_subscription = construct_stripe_subscription(
-            product=product_recurring_custom_price
-        )
-        stripe_service_mock.create_ad_hoc_custom_price.return_value = SimpleNamespace(
-            id="STRIPE_CUSTOM_PRICE_ID"
-        )
-        stripe_service_mock.create_out_of_band_subscription.return_value = (
-            stripe_subscription,
-            SimpleNamespace(id="STRIPE_INVOICE_ID", total=checkout.total_amount),
-        )
-
         subscription = await subscription_service.create_or_update_from_checkout(
-            session, checkout, None
+            session, checkout, payment_method
         )
 
-        assert subscription.status == stripe_subscription.status
+        assert subscription.status == SubscriptionStatus.active
         assert subscription.prices == product_recurring_custom_price.prices
         assert subscription.amount == 0
         assert subscription.currency == checkout.currency
-
-        stripe_service_mock.create_ad_hoc_custom_price.assert_called_once()
-        stripe_service_mock.create_out_of_band_subscription.assert_called_once()
-        assert stripe_service_mock.create_out_of_band_subscription.call_args[1][
-            "prices"
-        ] == ["STRIPE_CUSTOM_PRICE_ID"]
-        stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
+        assert subscription.payment_method == payment_method
 
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
@@ -452,7 +338,7 @@ class TestCreateOrUpdateFromCheckout:
         product_recurring_free_price: Product,
         product: Product,
         customer: Customer,
-        stripe_service_mock: MagicMock,
+        payment_method: PaymentMethod,
     ) -> None:
         subscription = await create_subscription(
             save_fixture,
@@ -468,31 +354,27 @@ class TestCreateOrUpdateFromCheckout:
             subscription=subscription,
         )
 
-        stripe_payment_method = build_stripe_payment_method(
-            customer=customer.stripe_customer_id,
-        )
-        stripe_service_mock.get_payment_method.return_value = stripe_payment_method
-        stripe_subscription = construct_stripe_subscription(product=product)
-        stripe_service_mock.update_out_of_band_subscription.return_value = (
-            stripe_subscription,
-            SimpleNamespace(id="STRIPE_INVOICE_ID", total=checkout.total_amount),
+        updated_subscription = (
+            await subscription_service.create_or_update_from_checkout(
+                session, checkout, payment_method
+            )
         )
 
-        payment_intent = build_stripe_payment_intent(amount=checkout.total_amount)
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.prices == product.prices
+        assert updated_subscription.amount == checkout.total_amount
+        assert updated_subscription.currency == checkout.currency
+        assert updated_subscription.payment_method == payment_method
 
-        subscription = await subscription_service.create_or_update_from_checkout(
-            session, checkout, payment_intent
+        # Periods don't change on upgrade
+        assert updated_subscription.started_at == subscription.started_at
+        assert (
+            updated_subscription.current_period_start
+            == subscription.current_period_start
         )
-
-        assert subscription.status == stripe_subscription.status
-        assert subscription.prices == product.prices
-        assert subscription.amount == checkout.total_amount
-        assert subscription.currency == checkout.currency
-        assert subscription.payment_method is not None
-        assert subscription.payment_method.processor_id == stripe_payment_method.id
-
-        stripe_service_mock.update_out_of_band_subscription.assert_called_once()
-        stripe_service_mock.set_automatically_charged_subscription.assert_called_once()
+        assert (
+            updated_subscription.current_period_end == subscription.current_period_end
+        )
 
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created

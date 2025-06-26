@@ -236,7 +236,7 @@ class SubscriptionService:
         session: AsyncSession,
         checkout: Checkout,
         payment_method: PaymentMethod | None = None,
-    ) -> Subscription:
+    ) -> tuple[Subscription, bool]:
         product = checkout.product
         if not product.is_recurring:
             raise NotARecurringProduct(checkout, product)
@@ -261,7 +261,7 @@ class SubscriptionService:
             )
 
         subscription = checkout.subscription
-        new_subscription = False
+        created = False
         previous_ends_at = subscription.ends_at if subscription else None
         previous_status = subscription.status if subscription else None
 
@@ -278,7 +278,7 @@ class SubscriptionService:
                 cancel_at_period_end=False,
                 customer=customer,
             )
-            new_subscription = True
+            created = True
 
         subscription.recurring_interval = recurring_interval
         subscription.status = SubscriptionStatus.active
@@ -291,7 +291,7 @@ class SubscriptionService:
         subscription.custom_field_data = checkout.custom_field_data
 
         repository = SubscriptionRepository.from_session(session)
-        if new_subscription:
+        if created:
             subscription = await repository.create(subscription, flush=True)
             await self._after_subscription_created(session, subscription)
         else:
@@ -313,12 +313,15 @@ class SubscriptionService:
                 checkout.id, subscription.id
             )
 
+        # Enqueue the benefits grants for the subscription
+        await self.enqueue_benefits_grants(session, subscription)
+
         # Notify checkout channel that a subscription has been created from it
         await publish_checkout_event(
             checkout.client_secret, CheckoutEvent.subscription_created
         )
 
-        return subscription
+        return subscription, created
 
     async def _after_subscription_created(
         self, session: AsyncSession, subscription: Subscription

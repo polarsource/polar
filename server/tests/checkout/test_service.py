@@ -51,6 +51,7 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.order import OrderBillingReason
 from polar.models.product_price import (
     ProductPriceCustom,
     ProductPriceFixed,
@@ -3100,8 +3101,8 @@ class TestHandleSuccess:
         )
 
         assert checkout.status == CheckoutStatus.succeeded
-        order_service_mock.create_from_checkout.assert_called_once_with(
-            ANY, checkout, payment, None
+        order_service_mock.create_from_checkout_one_time.assert_called_once_with(
+            ANY, checkout, payment
         )
         subscription_service_mock.create_or_update_from_checkout.assert_not_called()
 
@@ -3113,6 +3114,12 @@ class TestHandleSuccess:
         checkout_confirmed_recurring: Checkout,
         payment: Payment,
     ) -> None:
+        subscription_mock = MagicMock()
+        subscription_service_mock.create_or_update_from_checkout.return_value = (
+            subscription_mock,
+            True,
+        )
+
         checkout = await checkout_service.handle_success(
             session, checkout_confirmed_recurring, payment
         )
@@ -3121,11 +3128,12 @@ class TestHandleSuccess:
         subscription_service_mock.create_or_update_from_checkout.assert_called_once_with(
             ANY, checkout, None
         )
-        order_service_mock.create_from_checkout.assert_called_once_with(
+        order_service_mock.create_from_checkout_subscription.assert_called_once_with(
             ANY,
             checkout,
+            subscription_mock,
+            OrderBillingReason.subscription_create,
             payment,
-            subscription_service_mock.create_or_update_from_checkout.return_value,
         )
 
 

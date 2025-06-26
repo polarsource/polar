@@ -34,6 +34,10 @@ class SubscriptionTierDoesNotExist(SubscriptionTaskError):
         super().__init__(message)
 
 
+@actor(actor_name="subscription.cycle", priority=TaskPriority.LOW)
+async def subscription_cycle(subscription_id: uuid.UUID) -> None: ...
+
+
 @actor(
     actor_name="subscription.subscription.update_product_benefits_grants",
     priority=TaskPriority.MEDIUM,

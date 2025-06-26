@@ -61,6 +61,7 @@ from polar.models import (
 from polar.models.checkout import CheckoutStatus
 from polar.models.checkout_product import CheckoutProduct
 from polar.models.discount import DiscountDuration
+from polar.models.order import OrderBillingReason
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import order as order_service
@@ -938,13 +939,25 @@ class CheckoutService:
         product = checkout.product
         subscription: Subscription | None = None
         if product.is_recurring:
-            subscription = await subscription_service.create_or_update_from_checkout(
+            (
+                subscription,
+                created,
+            ) = await subscription_service.create_or_update_from_checkout(
                 session, checkout, payment_method
             )
-
-        await order_service.create_from_checkout(
-            session, checkout, payment, subscription
-        )
+            await order_service.create_from_checkout_subscription(
+                session,
+                checkout,
+                subscription,
+                OrderBillingReason.subscription_create
+                if created
+                else OrderBillingReason.subscription_update,
+                payment,
+            )
+        else:
+            await order_service.create_from_checkout_one_time(
+                session, checkout, payment
+            )
 
         repository = CheckoutRepository.from_session(session)
         checkout = await repository.update(

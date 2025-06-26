@@ -655,15 +655,15 @@ class StripeService:
                 else None
             ),
         )
-        invoice = await stripe_lib.Invoice.finalize_invoice_async(
-            invoice_id,
-            idempotency_key=(
-                f"{idempotency_key}_finalize_invoice"
-                if idempotency_key is not None
-                else None
-            ),
-        )
-
+        if invoice.status == "draft":
+            invoice = await stripe_lib.Invoice.finalize_invoice_async(
+                invoice_id,
+                idempotency_key=(
+                    f"{idempotency_key}_finalize_invoice"
+                    if idempotency_key is not None
+                    else None
+                ),
+            )
         if invoice.status == "open":
             await stripe_lib.Invoice.pay_async(
                 invoice_id,

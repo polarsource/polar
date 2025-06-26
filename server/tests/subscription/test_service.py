@@ -136,6 +136,11 @@ def publish_checkout_event_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.subscription.service.publish_checkout_event")
 
 
+@pytest.fixture
+def enqueue_benefits_grants_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch.object(subscription_service, "enqueue_benefits_grants")
+
+
 @pytest.mark.asyncio
 class TestCreateOrUpdateFromCheckout:
     async def test_not_recurring_product(
@@ -172,6 +177,7 @@ class TestCreateOrUpdateFromCheckout:
 
     async def test_new_fixed(
         self,
+        enqueue_benefits_grants_mock: MagicMock,
         publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -186,9 +192,14 @@ class TestCreateOrUpdateFromCheckout:
             customer=customer,
         )
 
-        subscription = await subscription_service.create_or_update_from_checkout(
+        (
+            subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
             session, checkout, payment_method
         )
+
+        assert created is True
 
         assert subscription.status == SubscriptionStatus.active
         assert subscription.prices == product.prices
@@ -204,9 +215,11 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
         )
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
 
     async def test_new_custom(
         self,
+        enqueue_benefits_grants_mock: MagicMock,
         publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -223,9 +236,14 @@ class TestCreateOrUpdateFromCheckout:
             currency="usd",
         )
 
-        subscription = await subscription_service.create_or_update_from_checkout(
+        (
+            subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
             session, checkout, payment_method
         )
+
+        assert created is True
 
         assert subscription.status == SubscriptionStatus.active
         assert subscription.prices == product_recurring_custom_price.prices
@@ -236,9 +254,11 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
         )
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
 
     async def test_new_free(
         self,
+        enqueue_benefits_grants_mock: MagicMock,
         publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -252,9 +272,14 @@ class TestCreateOrUpdateFromCheckout:
             customer=customer,
         )
 
-        subscription = await subscription_service.create_or_update_from_checkout(
+        (
+            subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
             session, checkout, None
         )
+
+        assert created is True
 
         assert subscription.status == SubscriptionStatus.active
         assert subscription.prices == product_recurring_free_price.prices
@@ -265,9 +290,11 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
         )
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
 
     async def test_new_metered(
         self,
+        enqueue_benefits_grants_mock: MagicMock,
         publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -282,9 +309,14 @@ class TestCreateOrUpdateFromCheckout:
             customer=customer,
         )
 
-        subscription = await subscription_service.create_or_update_from_checkout(
+        (
+            subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
             session, checkout, payment_method
         )
+
+        assert created is True
 
         assert subscription.status == SubscriptionStatus.active
         assert subscription.prices == product_recurring_metered.prices
@@ -295,9 +327,11 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
         )
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
 
     async def test_new_custom_discount_percentage_100(
         self,
+        enqueue_benefits_grants_mock: MagicMock,
         publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -316,9 +350,14 @@ class TestCreateOrUpdateFromCheckout:
             discount=discount_percentage_100,
         )
 
-        subscription = await subscription_service.create_or_update_from_checkout(
+        (
+            subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
             session, checkout, payment_method
         )
+
+        assert created is True
 
         assert subscription.status == SubscriptionStatus.active
         assert subscription.prices == product_recurring_custom_price.prices
@@ -329,9 +368,11 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
         )
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
 
     async def test_upgrade_fixed(
         self,
+        enqueue_benefits_grants_mock: MagicMock,
         publish_checkout_event_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -354,11 +395,14 @@ class TestCreateOrUpdateFromCheckout:
             subscription=subscription,
         )
 
-        updated_subscription = (
-            await subscription_service.create_or_update_from_checkout(
-                session, checkout, payment_method
-            )
+        (
+            updated_subscription,
+            created,
+        ) = await subscription_service.create_or_update_from_checkout(
+            session, checkout, payment_method
         )
+
+        assert created is False
 
         assert updated_subscription.status == SubscriptionStatus.active
         assert updated_subscription.prices == product.prices
@@ -379,6 +423,9 @@ class TestCreateOrUpdateFromCheckout:
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created
         )
+        enqueue_benefits_grants_mock.assert_called_once_with(
+            session, updated_subscription
+        )
 
 
 @pytest.mark.asyncio
@@ -395,17 +442,13 @@ class TestUpdateFromStripe:
 
     async def test_valid(
         self,
-        mocker: MockerFixture,
+        enqueue_benefits_grants_mock: MagicMock,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
     ) -> None:
-        enqueue_benefits_grants_mock = mocker.patch.object(
-            subscription_service, "enqueue_benefits_grants"
-        )
-
         stripe_payment_method = build_stripe_payment_method(
             customer=customer.stripe_customer_id,
         )
@@ -438,17 +481,13 @@ class TestUpdateFromStripe:
 
     async def test_discount_reset(
         self,
-        mocker: MockerFixture,
+        enqueue_benefits_grants_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
         discount_percentage_50: Discount,
     ) -> None:
-        enqueue_benefits_grants_mock = mocker.patch.object(
-            subscription_service, "enqueue_benefits_grants"
-        )
-
         stripe_subscription = construct_stripe_subscription(
             product=product, status=SubscriptionStatus.active, discounts=[]
         )
@@ -469,16 +508,13 @@ class TestUpdateFromStripe:
 
     async def test_valid_cancel_at_period_end(
         self,
-        mocker: MockerFixture,
+        enqueue_benefits_grants_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription_hooks: Hooks,
         product: Product,
         customer: Customer,
     ) -> None:
-        enqueue_benefits_grants_mock = mocker.patch.object(
-            subscription_service, "enqueue_benefits_grants"
-        )
         subscription = await create_active_subscription(
             save_fixture,
             product=product,
@@ -987,15 +1023,11 @@ class TestUpdateProductBenefitsGrants:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        mocker: MockerFixture,
+        enqueue_benefits_grants_mock: MagicMock,
         customer: Customer,
         product: Product,
         product_second: Product,
     ) -> None:
-        enqueue_benefits_grants_mock = mocker.patch.object(
-            subscription_service, "enqueue_benefits_grants"
-        )
-
         subscription_1 = await create_subscription(
             save_fixture, product=product, customer=customer
         )

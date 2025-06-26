@@ -96,11 +96,6 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
             <h3 className="text-5xl font-light">
               {checkoutsInitiated.data?.pagination.total_count.toLocaleString(
                 'en-US',
-                {
-                  style: 'decimal',
-                  compactDisplay: 'short',
-                  notation: 'compact',
-                },
               )}
             </h3>
             <span className="text-lg">
@@ -112,7 +107,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
         </div>
       </div>
 
-      <div className="grid h-full grid-cols-1 gap-8 lg:grid-cols-4">
+      <div className="grid h-full grid-cols-4 gap-4 lg:grid-cols-4 lg:gap-8">
         {stages.map((stage) => {
           return (
             <Link
@@ -151,14 +146,14 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
                 )}
               </div>
               <div className="flex flex-col">
-                <span>{stage.name}</span>
+                <span className="text-sm lg:text-base">{stage.name}</span>
                 <span className="dark:text-polar-500 text-sm text-gray-500">
                   {isNaN(stage.percentage)
                     ? 0
                     : stage.percentage.toFixed(
                         stage.percentage % 1 === 0 ? 0 : 1,
                       )}
-                  % — {stage.value.toLocaleString('en-US')}
+                  %
                 </span>
               </div>
             </Link>

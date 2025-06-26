@@ -52,7 +52,7 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
         <h3 className="text-4xl font-light">Revenue</h3>
       </div>
 
-      <div className="grid h-full grid-cols-1 gap-6 lg:grid-cols-6">
+      <div className="grid h-full grid-cols-3 gap-4 lg:grid-cols-6 lg:gap-6">
         {revenueMetrics.data?.periods.map((period, index, array) => {
           const currentPeriodValue = period.revenue ?? 0
           const previousPeriodValue = array[index - 1]?.revenue ?? 0
@@ -111,7 +111,9 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
                 </TooltipContent>
               </Tooltip>
               <div className="flex flex-col text-left">
-                <span>{format(period.timestamp, 'MMMM')}</span>
+                <span className="text-sm lg:text-base">
+                  {format(period.timestamp, 'MMMM')}
+                </span>
                 <div className="flex flex-row items-center justify-between gap-x-2">
                   <span className="dark:text-polar-500 text-sm text-gray-500">
                     $

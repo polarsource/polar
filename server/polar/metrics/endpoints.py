@@ -33,7 +33,6 @@ async def get(
     start_date: date = Query(
         ...,
         description="Start date.",
-        ge=MIN_DATE,  # type: ignore
     ),
     end_date: date = Query(..., description="End date."),
     timezone: TimeZoneName = Query(

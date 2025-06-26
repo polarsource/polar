@@ -38,6 +38,7 @@ from polar.order.service import (
     MissingCheckoutCustomer,
     NotAnOrderInvoice,
     NotASubscriptionInvoice,
+    NotRecurringProduct,
     OrderDoesNotExist,
     RecurringProduct,
     SubscriptionDoesNotExist,
@@ -57,6 +58,7 @@ from tests.fixtures.email import WatcherEmailRenderer, watch_email
 from tests.fixtures.random_objects import (
     create_checkout,
     create_order,
+    create_subscription,
 )
 from tests.fixtures.stripe import construct_stripe_invoice
 from tests.transaction.conftest import create_transaction
@@ -363,7 +365,7 @@ class TestList:
 
 
 @pytest.mark.asyncio
-class TestCreateFromCheckout:
+class TestCreateFromCheckoutOneTime:
     async def test_recurring_product(
         self, save_fixture: SaveFixture, session: AsyncSession, product: Product
     ) -> None:
@@ -371,7 +373,7 @@ class TestCreateFromCheckout:
             save_fixture, products=[product], status=CheckoutStatus.confirmed
         )
         with pytest.raises(RecurringProduct):
-            await order_service.create_from_checkout(session, checkout)
+            await order_service.create_from_checkout_one_time(session, checkout)
 
     async def test_missing_customer(
         self,
@@ -383,7 +385,7 @@ class TestCreateFromCheckout:
             save_fixture, products=[product_one_time], status=CheckoutStatus.confirmed
         )
         with pytest.raises(MissingCheckoutCustomer):
-            await order_service.create_from_checkout(session, checkout)
+            await order_service.create_from_checkout_one_time(session, checkout)
 
     async def test_fixed(
         self,
@@ -401,7 +403,7 @@ class TestCreateFromCheckout:
             customer=customer,
         )
 
-        order = await order_service.create_from_checkout(session, checkout)
+        order = await order_service.create_from_checkout_one_time(session, checkout)
 
         assert order.net_amount == checkout.net_amount
         assert order.discount_amount == 0
@@ -439,7 +441,7 @@ class TestCreateFromCheckout:
             currency="usd",
         )
 
-        order = await order_service.create_from_checkout(session, checkout)
+        order = await order_service.create_from_checkout_one_time(session, checkout)
 
         assert order.net_amount == checkout.net_amount
         assert order.discount_amount == 0
@@ -475,7 +477,7 @@ class TestCreateFromCheckout:
             customer=customer,
         )
 
-        order = await order_service.create_from_checkout(session, checkout)
+        order = await order_service.create_from_checkout_one_time(session, checkout)
 
         assert order.net_amount == 0
         assert order.discount_amount == 0
@@ -518,7 +520,7 @@ class TestCreateFromCheckout:
             for price in product_one_time.prices
         )
 
-        order = await order_service.create_from_checkout(session, checkout)
+        order = await order_service.create_from_checkout_one_time(session, checkout)
 
         assert order.net_amount == 0
         assert order.discount_amount == discount_amount
@@ -537,6 +539,71 @@ class TestCreateFromCheckout:
         publish_checkout_event_mock.assert_awaited_once_with(
             checkout.client_secret, CheckoutEvent.order_created
         )
+
+
+@pytest.mark.asyncio
+class TestCreateFromCheckoutSubscription:
+    async def test_not_recurring_product(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        subscription: Subscription,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture, products=[product_one_time], status=CheckoutStatus.confirmed
+        )
+        with pytest.raises(NotRecurringProduct):
+            await order_service.create_from_checkout_subscription(
+                session, checkout, subscription, OrderBillingReason.subscription_create
+            )
+
+    async def test_missing_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture, products=[product], status=CheckoutStatus.confirmed
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        with pytest.raises(MissingCheckoutCustomer):
+            await order_service.create_from_checkout_subscription(
+                session, checkout, subscription, OrderBillingReason.subscription_create
+            )
+
+    async def test_fixed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        order = await order_service.create_from_checkout_subscription(
+            session, checkout, subscription, OrderBillingReason.subscription_create
+        )
+
+        assert order.net_amount == checkout.net_amount
+        assert order.discount_amount == 0
+        assert order.billing_reason == OrderBillingReason.subscription_create
+        assert order.customer == checkout.customer
+        assert order.product == product
+        assert len(order.items) == len(product.prices)
 
 
 @pytest.mark.asyncio

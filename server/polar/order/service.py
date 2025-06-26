@@ -104,6 +104,17 @@ class RecurringProduct(OrderError):
         super().__init__(message)
 
 
+class NotRecurringProduct(OrderError):
+    def __init__(self, checkout: Checkout, product: Product) -> None:
+        self.checkout = checkout
+        self.product = product
+        message = (
+            f"Checkout {checkout.id} is for product {product.id}, "
+            "which is not a recurring product."
+        )
+        super().__init__(message)
+
+
 class MissingCheckoutCustomer(OrderError):
     def __init__(self, checkout: Checkout) -> None:
         self.checkout = checkout
@@ -402,21 +413,65 @@ class OrderService:
         url, _ = await invoice_service.get_order_invoice_url(order)
         return OrderInvoice(url=url)
 
-    async def create_from_checkout(
-        self,
-        session: AsyncSession,
-        checkout: Checkout,
-        payment: Payment | None = None,
-        subscription: Subscription | None = None,
+    async def create_from_checkout_one_time(
+        self, session: AsyncSession, checkout: Checkout, payment: Payment | None = None
     ) -> Order:
         product = checkout.product
         if product.is_recurring:
             raise RecurringProduct(checkout, product)
 
+        order = await self._create_order_from_checkout(
+            session, checkout, OrderBillingReason.purchase
+        )
+
+        # Enqueue benefits grants
+        enqueue_job(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=order.customer.id,
+            product_id=product.id,
+            order_id=order.id,
+        )
+
+        # Trigger notifications
+        organization = checkout.organization
+        await self.send_admin_notification(session, organization, order)
+        await self.send_confirmation_email(session, organization, order)
+
+        return order
+
+    async def create_from_checkout_subscription(
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        subscription: Subscription,
+        billing_reason: Literal[
+            OrderBillingReason.subscription_create,
+            OrderBillingReason.subscription_update,
+        ],
+        payment: Payment | None = None,
+    ) -> Order:
+        product = checkout.product
+        if not product.is_recurring:
+            raise NotRecurringProduct(checkout, product)
+
+        return await self._create_order_from_checkout(
+            session, checkout, billing_reason, payment, subscription
+        )
+
+    async def _create_order_from_checkout(
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        billing_reason: OrderBillingReason,
+        payment: Payment | None = None,
+        subscription: Subscription | None = None,
+    ) -> Order:
         customer = checkout.customer
         if customer is None:
             raise MissingCheckoutCustomer(checkout)
 
+        product = checkout.product
         prices = product.prices
 
         items: list[OrderItem] = []
@@ -465,7 +520,7 @@ class OrderService:
                 discount_amount=discount_amount,
                 tax_amount=tax_amount,
                 currency=checkout.currency,
-                billing_reason=OrderBillingReason.purchase,
+                billing_reason=billing_reason,
                 billing_name=customer.billing_name,
                 billing_address=customer.billing_address,
                 taxability_reason=taxability_reason,
@@ -502,18 +557,6 @@ class OrderService:
                 order, update_dict={"tax_transaction_processor_id": transaction.id}
             )
 
-        # Enqueue benefits grants
-        enqueue_job(
-            "benefit.enqueue_benefits_grants",
-            task="grant",
-            customer_id=customer.id,
-            product_id=product.id,
-            order_id=order.id,
-        )
-
-        # Trigger notifications
-        await self.send_admin_notification(session, organization, order)
-        await self.send_confirmation_email(session, organization, order)
         await self._on_order_created(session, order)
 
         return order

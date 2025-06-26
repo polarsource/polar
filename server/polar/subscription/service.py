@@ -265,20 +265,22 @@ class SubscriptionService:
         previous_ends_at = subscription.ends_at if subscription else None
         previous_status = subscription.status if subscription else None
 
+        current_period_start = utc_now()
+        current_period_end = recurring_interval.get_next_period(current_period_start)
+
         # New subscription
         if subscription is None:
-            current_period_start = utc_now()
-            current_period_end = recurring_interval.get_next_period(
-                current_period_start
-            )
             subscription = Subscription(
-                current_period_start=current_period_start,
-                current_period_end=current_period_end,
                 started_at=current_period_start,
                 cancel_at_period_end=False,
                 customer=customer,
             )
             created = True
+
+        # Even when updating from a free subscription, we change the current period:
+        # we start a billing cycle from the checkout date.
+        subscription.current_period_start = current_period_start
+        subscription.current_period_end = current_period_end
 
         subscription.recurring_interval = recurring_interval
         subscription.status = SubscriptionStatus.active

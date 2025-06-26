@@ -18,7 +18,7 @@ from polar.exceptions import (
 )
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook
 from polar.kit.services import ResourceServiceReader
-from polar.kit.utils import utc_now
+from polar.kit.utils import generate_uuid, utc_now
 from polar.models.issue_reward import IssueReward
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.pledge_transaction import PledgeTransaction, PledgeTransactionType
@@ -107,6 +107,26 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         statement = statement.order_by(Pledge.created_at)
 
+        res = await session.execute(statement)
+        return res.scalars().unique().all()
+
+    async def get_by_issue_reference(
+        self,
+        session: AsyncSession,
+        issue_reference: str,
+    ) -> Sequence[Pledge]:
+        statement = (
+            sql.select(Pledge)
+            .options(
+                joinedload(Pledge.organization),
+            )
+            .where(
+                Pledge.state.in_(PledgeState.active_states()),
+                Pledge.issue_reference == issue_reference,
+                Pledge.payment_id.is_not(None),
+            )
+            .order_by(Pledge.created_at.desc())
+        )
         res = await session.execute(statement)
         return res.scalars().unique().all()
 
@@ -368,6 +388,61 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         session.add(transaction)
         await session.commit()
+
+    async def admin_transfer(
+        self,
+        session: AsyncSession,
+        pledge_id: UUID,
+    ) -> None:
+        """
+        Transfer a pledge directly to the organization (100% of amount minus fees).
+        Similar to the regular transfer method but without reward split logic.
+
+        Args:
+            pledge_id: The pledge to transfer
+
+        Raises:
+            PledgeError: If pledge is not in valid state for transfer
+        """
+        pledge = await self.get(session, id=pledge_id)
+        if not pledge:
+            raise ResourceNotFound(f"Pledge not found with id: {pledge_id}")
+
+        # Check if pledge is pay_upfront type
+        if pledge.type != PledgeType.pay_upfront:
+            raise NotPermitted(f"Pledge is not pay_upfront type: {pledge.type}")
+
+        # Update state to mimic old automatic state transfer from GitHub events
+        if pledge.state == PledgeState.created:
+            pledge.state = PledgeState.pending
+
+        if not pledge.scheduled_payout_at:
+            pledge.scheduled_payout_at = utc_now() - timedelta(seconds=10)
+
+        session.add(pledge)
+
+        # Create a 100% reward in admin to the receiving organization (unless it exists already)
+        stmt = sql.select(IssueReward).where(
+            IssueReward.organization_id == pledge.organization_id,
+            IssueReward.issue_reference == pledge.issue_reference,
+        )
+        res = await session.execute(stmt)
+        reward = res.scalars().unique().one_or_none()
+        if not reward:
+            reward = IssueReward(
+                id=generate_uuid(),
+                issue_reference=pledge.issue_reference,
+                share_thousands=1000,  # 100%
+                organization_id=pledge.organization_id,
+            )
+            session.add(reward)
+
+        # Now we can proceed with a regular old-school transfer
+        return await self.transfer(
+            session,
+            pledge_id=pledge.id,
+            issue_reward_id=reward.id,
+        )
 
     async def mark_disputed(
         self,

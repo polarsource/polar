@@ -394,6 +394,9 @@ class TestCreateOrUpdateFromCheckout:
             customer=customer,
             subscription=subscription,
         )
+        previous_current_period_start = subscription.current_period_start
+        previous_current_period_end = subscription.current_period_end
+        previous_started_at = subscription.started_at
 
         (
             updated_subscription,
@@ -410,15 +413,10 @@ class TestCreateOrUpdateFromCheckout:
         assert updated_subscription.currency == checkout.currency
         assert updated_subscription.payment_method == payment_method
 
-        # Periods don't change on upgrade
-        assert updated_subscription.started_at == subscription.started_at
-        assert (
-            updated_subscription.current_period_start
-            == subscription.current_period_start
-        )
-        assert (
-            updated_subscription.current_period_end == subscription.current_period_end
-        )
+        # Started at doesn't change, but current period does
+        assert updated_subscription.started_at == previous_started_at
+        assert updated_subscription.current_period_start > previous_current_period_start
+        assert updated_subscription.current_period_end > previous_current_period_end
 
         publish_checkout_event_mock.assert_called_once_with(
             checkout.client_secret, CheckoutEvent.subscription_created

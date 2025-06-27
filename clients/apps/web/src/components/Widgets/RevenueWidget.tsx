@@ -9,26 +9,24 @@ import {
 } from '@polar-sh/ui/components/ui/tooltip'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
-import { useTheme } from 'next-themes'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Spinner from '../Shared/Spinner'
 
-interface CheckoutsWidgetProps {
+interface RevenueWidgetProps {
   className?: string
+  productId?: string
 }
 
-const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
+const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
   const { organization } = useContext(OrganizationContext)
-  const { resolvedTheme } = useTheme()
-
-  const isDark = resolvedTheme === 'dark'
 
   const revenueMetrics = useMetrics({
     startDate: startOfMonth(subMonths(new Date(), 5)),
     endDate: endOfMonth(new Date()),
     organization_id: organization.id,
     interval: 'month',
+    product_id: productId ? [productId] : undefined,
   })
 
   const maxRevenue = Math.max(
@@ -49,7 +47,9 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
           </h2>
         </div>
 
-        <h3 className="text-4xl font-light">Revenue</h3>
+        <h3 className="text-4xl font-light">
+          {productId ? 'Product Revenue' : 'Revenue'}
+        </h3>
       </div>
 
       <div className="grid h-full grid-cols-3 gap-4 lg:grid-cols-6 lg:gap-6">
@@ -155,4 +155,4 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
   )
 }
 
-export default CheckoutsWidget
+export default RevenueWidget

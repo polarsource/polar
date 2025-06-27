@@ -26,13 +26,15 @@ export interface ParsedMetricsResponse {
 export const useMetrics = (
   { startDate, endDate, ...parameters }: GetMetricsRequest,
   enabled: boolean = true,
-): UseQueryResult<ParsedMetricsResponse, Error> =>
-  useQuery({
+): UseQueryResult<ParsedMetricsResponse, Error> => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  return useQuery({
     queryKey: [
       'metrics',
       {
         startDate: toISODate(startDate),
         endDate: toISODate(endDate),
+        timezone,
         ...parameters,
       },
     ],
@@ -43,6 +45,7 @@ export const useMetrics = (
             query: {
               start_date: toISODate(startDate),
               end_date: toISODate(endDate),
+              timezone,
               ...parameters,
             },
           },
@@ -59,3 +62,4 @@ export const useMetrics = (
     retry: defaultRetry,
     enabled,
   })
+}

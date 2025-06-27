@@ -15,11 +15,19 @@ import {
   AddOutlined,
   ArrowDownward,
   ArrowUpward,
+  CheckOutlined,
+  FilterList,
   Search,
 } from '@mui/icons-material'
 import { operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
 import { endOfToday } from 'date-fns'
 import { useSearchParams } from 'next/navigation'
 import {
@@ -65,6 +73,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     'page',
     parseAsInteger.withDefault(1),
   )
+  const [source, setSource] = useQueryState(
+    'source',
+    parseAsStringLiteral(['user', 'system', 'all'] as const).withDefault(
+      'user',
+    ),
+  )
 
   const {
     isShown: isEventCreationGuideShown,
@@ -75,7 +89,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const { data, fetchNextPage, hasNextPage } = useEventNames(organization.id, {
     query,
     sorting: [sorting],
-    source: 'user',
+    source: source === 'all' ? undefined : source,
   })
 
   const eventNames = useMemo(
@@ -93,10 +107,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           limit: PAGE_SIZE,
           start_timestamp: startDate.toISOString(),
           end_timestamp: endDate.toISOString(),
-          source: 'user',
+          source: source === 'all' ? undefined : source,
         }
       : undefined
-  }, [selectedEventName, currentPage, startDate, endDate])
+  }, [selectedEventName, currentPage, startDate, endDate, source])
 
   const { data: events } = useEvents(organization.id, eventParameters)
 
@@ -133,6 +147,43 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           <div className="flex flex-row items-center justify-between gap-6 px-4 py-4">
             <div>Events</div>
             <div className="flex flex-row items-center gap-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" className="h-6 w-6" variant="ghost">
+                    <FilterList fontSize="small" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setSource('all')}>
+                    <CheckOutlined
+                      className={twMerge(
+                        'h-4 w-4',
+                        source !== 'all' && 'invisible',
+                      )}
+                    />
+                    <span>All</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSource('user')}>
+                    <CheckOutlined
+                      className={twMerge(
+                        'h-4 w-4',
+                        source !== 'user' && 'invisible',
+                      )}
+                    />
+                    <span>User</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSource('system')}>
+                    <CheckOutlined
+                      className={twMerge(
+                        'h-4 w-4',
+                        source !== 'system' && 'invisible',
+                      )}
+                    />
+                    <span>System</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Button
                 variant="ghost"
                 size="icon"

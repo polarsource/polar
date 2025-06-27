@@ -45,6 +45,7 @@ export const useMetrics = (
             query: {
               start_date: toISODate(startDate),
               end_date: toISODate(endDate),
+              // @ts-expect-error
               timezone,
               ...parameters,
             },

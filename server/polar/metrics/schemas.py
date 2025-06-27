@@ -1,7 +1,7 @@
-from datetime import date, datetime
+from datetime import date
 from typing import TYPE_CHECKING
 
-from pydantic import Field, create_model
+from pydantic import AwareDatetime, Field, create_model
 
 from polar.kit.schemas import Schema
 
@@ -38,7 +38,7 @@ class MetricsPeriodBase(Schema):
     It maps each metric slug to its value for this timestamp.
     """
 
-    timestamp: datetime = Field(description="Timestamp of this period data.")
+    timestamp: AwareDatetime = Field(description="Timestamp of this period data.")
 
 
 if TYPE_CHECKING:

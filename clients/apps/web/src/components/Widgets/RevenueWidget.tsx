@@ -74,16 +74,11 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
             >
               <Tooltip>
                 <TooltipTrigger
-                  className="relative h-full min-h-48 overflow-hidden rounded-2xl"
-                  style={{
-                    backgroundImage: `repeating-linear-gradient(
-                45deg,
-                ${isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.04)'},
-                ${isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.04)'} 10px,
-                transparent 10px,
-                transparent 20px
-              )`,
-                  }}
+                  className={twMerge(
+                    'relative h-full min-h-48 overflow-hidden rounded-2xl',
+                    'bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.04),rgba(0,0,0,0.04)_10px,transparent_10px,transparent_20px)]',
+                    'dark:bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.03),rgba(255,255,255,0.03)_10px,transparent_10px,transparent_20px)]',
+                  )}
                 >
                   {revenueMetrics.isLoading ? (
                     <div className="dark:bg-polar-700 flex h-full w-full items-center justify-center rounded-2xl bg-gray-200">

@@ -1,8 +1,9 @@
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, date, datetime
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
-from sqlalchemy import ColumnElement, FromClause, select
+from sqlalchemy import ColumnElement, FromClause, select, text
 
 from polar.auth.models import AuthSubject
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
@@ -23,17 +24,19 @@ class MetricsService:
         *,
         start_date: date,
         end_date: date,
+        timezone: ZoneInfo,
         interval: TimeInterval,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
         billing_type: Sequence[ProductBillingType] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
     ) -> MetricsResponse:
+        await session.execute(text(f"SET LOCAL TIME ZONE '{timezone.key}'"))
         start_timestamp = datetime(
-            start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, UTC
+            start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, timezone
         )
         end_timestamp = datetime(
-            end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, UTC
+            end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, timezone
         )
 
         timestamp_series = get_timestamp_series_cte(

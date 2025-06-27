@@ -1,6 +1,8 @@
 from datetime import date
+from zoneinfo import ZoneInfo
 
 from fastapi import Depends, Query
+from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import PolarRequestValidationError
@@ -34,6 +36,10 @@ async def get(
         ge=MIN_DATE,  # type: ignore
     ),
     end_date: date = Query(..., description="End date."),
+    timezone: TimeZoneName = Query(
+        default="UTC",
+        description="Timezone to use for the timestamps. Default is UTC.",
+    ),
     interval: TimeInterval = Query(..., description="Interval between two timestamps."),
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
@@ -61,7 +67,6 @@ async def get(
 
     Currency values are output in cents.
     """
-
     if not is_under_limits(start_date, end_date, interval):
         raise PolarRequestValidationError(
             [
@@ -82,6 +87,7 @@ async def get(
         auth_subject,
         start_date=start_date,
         end_date=end_date,
+        timezone=ZoneInfo(timezone),
         interval=interval,
         organization_id=organization_id,
         product_id=product_id,

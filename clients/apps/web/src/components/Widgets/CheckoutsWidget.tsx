@@ -1,7 +1,6 @@
 import { useCheckouts } from '@/hooks/queries/checkouts'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { Card } from '@polar-sh/ui/components/atoms/Card'
-import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -13,9 +12,6 @@ interface CheckoutsWidgetProps {
 
 const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
   const { organization } = useContext(OrganizationContext)
-  const { resolvedTheme } = useTheme()
-
-  const isDark = resolvedTheme === 'dark'
 
   const checkoutsInitiated = useCheckouts(organization.id, {
     limit: 1,
@@ -120,16 +116,11 @@ const CheckoutsWidget = ({ className }: CheckoutsWidgetProps) => {
               }
             >
               <div
-                className="relative h-full min-h-48 overflow-hidden rounded-2xl"
-                style={{
-                  backgroundImage: `repeating-linear-gradient(
-                45deg,
-                ${isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.04)'},
-                ${isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.04)'} 10px,
-                transparent 10px,
-                transparent 20px
-              )`,
-                }}
+                className={twMerge(
+                  'relative h-full min-h-48 overflow-hidden rounded-2xl',
+                  'bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.04),rgba(0,0,0,0.04)_10px,transparent_10px,transparent_20px)]',
+                  'dark:bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.03),rgba(255,255,255,0.03)_10px,transparent_10px,transparent_20px)]',
+                )}
               >
                 {isLoading ? (
                   <div className="dark:bg-polar-700 flex h-full w-full items-center justify-center rounded-2xl bg-gray-200">

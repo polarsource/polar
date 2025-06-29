@@ -175,7 +175,7 @@ export const ProductPageContextView = ({
           compact={true}
         />
         {(benefitsAdded.length > 0 || benefitsRemoved.length > 0) && (
-          <div className="rounded-2xl bg-yellow-50 p-8 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
+          <div className="mx-8 mb-8 rounded-2xl bg-yellow-50 p-8 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
             Existing customers will immediately{' '}
             {benefitsAdded.length > 0 && (
               <>

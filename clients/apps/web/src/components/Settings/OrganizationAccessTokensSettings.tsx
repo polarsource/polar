@@ -52,8 +52,9 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
     AccessTokenCreate | AccessTokenUpdate
   >()
 
-  const selectableScopes =
-    enums.availableScopeValues as schemas['AvailableScope'][]
+  const sortedScopes = Array.from(enums.availableScopeValues).sort((a, b) =>
+    a.localeCompare(b),
+  )
   const [allSelected, setSelectAll] = useState(false)
 
   const onToggleAll = useCallback(
@@ -62,12 +63,12 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
 
       let values: Array<schemas['AvailableScope']> = []
       if (!allSelected) {
-        values = selectableScopes
+        values = sortedScopes
       }
       setValue('scopes', values)
       setSelectAll(!allSelected)
     },
-    [setValue, allSelected, selectableScopes],
+    [setValue, allSelected, sortedScopes],
   )
 
   return (
@@ -141,7 +142,7 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
         </div>
 
         <div className="flex flex-col gap-2">
-          {Object.values(selectableScopes).map((scope) => (
+          {sortedScopes.map((scope) => (
             <FormField
               key={scope}
               control={control}

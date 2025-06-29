@@ -253,6 +253,9 @@ export const FieldRedirectURIs = () => {
 
 export const FieldScopes = () => {
   const form = useFormContext<EnhancedOAuth2ClientConfiguration>()
+  const sortedAvailableScopes = Array.from(enums.availableScopeValues).sort(
+    (a, b) => a.localeCompare(b),
+  )
 
   return (
     <div className="flex flex-col gap-6">
@@ -261,7 +264,7 @@ export const FieldScopes = () => {
       </h2>
 
       <div className="flex flex-col gap-2">
-        {Object.values(enums.availableScopeValues).map((scope) => (
+        {sortedAvailableScopes.map((scope) => (
           <FormField
             key={scope}
             control={form.control}

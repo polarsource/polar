@@ -139,9 +139,6 @@ const BaseCheckoutForm = ({
               country: customerBillingAddress.country,
             },
           }
-          resetField('customerBillingAddress', {
-            defaultValue: { country: customerBillingAddress.country },
-          })
         }
         // Update other address fields
       } else if (name.startsWith('customerBillingAddress')) {
@@ -172,7 +169,7 @@ const BaseCheckoutForm = ({
         await update(payload)
       } catch {}
     },
-    [clearErrors, resetField, update],
+    [clearErrors, update],
   )
   const debouncedWatcher = useDebouncedCallback(watcher, 500, [watcher])
 

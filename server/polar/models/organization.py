@@ -182,3 +182,7 @@ class Organization(RecordModel):
         if self.blocked_at is not None:
             return True
         return False
+
+    @property
+    def statement_descriptor(self) -> str:
+        return self.slug[: settings.stripe_descriptor_suffix_max_length]

@@ -54,7 +54,7 @@ export const getFormattedMetricValue = (
     case 'scalar':
       return scalarFormatter.format(value)
     case 'currency':
-      return formatCurrencyAndAmount(value, 'usd')
+      return formatCurrencyAndAmount(value, 'usd', 0)
     case 'percentage':
       return percentageFormatter.format(value)
   }
@@ -162,7 +162,7 @@ export const getPreviousParams = (
     case '3m':
       return [startOfMonth(subMonths(startDate, 3)), startDate]
     case '30d':
-      return [startOfDay(subDays(startDate, 30)), startDate]
+      return [startOfDay(subMonths(startDate, 1)), startDate]
     case 'today':
       return [startOfYesterday(), startDate]
   }

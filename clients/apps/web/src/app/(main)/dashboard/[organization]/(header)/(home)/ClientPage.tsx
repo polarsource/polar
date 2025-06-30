@@ -10,11 +10,7 @@ import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
 import { useMetrics } from '@/hooks/queries'
-import {
-  ChartRange,
-  getChartRangeParams,
-  getPreviousParams,
-} from '@/utils/metrics'
+import { getChartRangeParams, getPreviousParams } from '@/utils/metrics'
 import { ArrowOutwardOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import { motion } from 'framer-motion'
@@ -29,10 +25,9 @@ interface HeroChartProps {
 const HeroChart = ({ organization }: HeroChartProps) => {
   const [selectedMetric, setSelectedMetric] =
     React.useState<keyof schemas['Metrics']>('revenue')
-  const [selectedRange, setSelectedRange] = React.useState<ChartRange>('30d')
   const [startDate, endDate, interval] = React.useMemo(
-    () => getChartRangeParams(selectedRange, organization.created_at),
-    [selectedRange, organization.created_at],
+    () => getChartRangeParams('30d', organization.created_at),
+    [organization.created_at],
   )
 
   const {
@@ -46,8 +41,8 @@ const HeroChart = ({ organization }: HeroChartProps) => {
   })
 
   const previousParams = React.useMemo(
-    () => getPreviousParams(startDate, selectedRange),
-    [startDate, selectedRange],
+    () => getPreviousParams(startDate, '30d'),
+    [startDate],
   )
 
   const {
@@ -73,8 +68,6 @@ const HeroChart = ({ organization }: HeroChartProps) => {
       data={currentPeriodMetricsData}
       previousData={previousPeriodMetricsData}
       interval={interval}
-      range={selectedRange}
-      onRangeChange={setSelectedRange}
       loading={metricLoading}
     />
   )

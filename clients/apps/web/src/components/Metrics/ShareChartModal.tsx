@@ -69,7 +69,7 @@ export const ShareChartModal = ({
 
       toast({
         title: 'Downloaded Image',
-        description: 'Checkout link image downloaded',
+        description: 'Chart image downloaded',
       })
     })
   }, [])
@@ -88,7 +88,7 @@ export const ShareChartModal = ({
 
       toast({
         title: 'Copied to Clipboard',
-        description: 'Checkout link image copied to clipboard',
+        description: 'Chart image copied to clipboard',
       })
     })
   }, [])

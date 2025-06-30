@@ -110,7 +110,7 @@ export const ShareChartModal = ({
       <div className="flex flex-col items-start gap-8">
         <div
           ref={chartRef}
-          className="rounded-4xl dark:bg-polar-950 dark:border-polar-700 flex w-full max-w-4xl flex-col items-center justify-center gap-12 border border-gray-200 bg-blue-50 p-12"
+          className="rounded-4xl dark:bg-polar-950 flex w-full max-w-4xl flex-col items-center justify-center gap-12 bg-blue-50 p-12"
           style={{
             backgroundImage:
               theme === 'mono'

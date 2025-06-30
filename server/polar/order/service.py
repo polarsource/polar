@@ -979,7 +979,11 @@ class OrderService:
         enqueue_job("order.discord_notification", order_id=order.id)
 
         if order.paid:
-            await self._on_order_paid(session, order)
+            await self._on_order_updated(
+                session,
+                order,
+                OrderStatus.pending,  # Pretend the previous status was pending to trigger the paid event
+            )
 
         # Notify checkout channel that an order has been created from it
         if order.checkout:

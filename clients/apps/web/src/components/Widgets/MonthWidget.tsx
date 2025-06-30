@@ -143,7 +143,8 @@ export const MonthWidget = ({ className }: MonthWidgetProps) => {
                           'relative flex h-8 w-8 items-center justify-center rounded-full text-sm',
                           day.orders > 0 &&
                             'dark:bg-polar-700 dark:text-polar-500 bg-gray-300 text-gray-500',
-                          isToday(day.timestamp) && 'bg-blue-500 text-white',
+                          isToday(day.timestamp) &&
+                            'bg-blue-500 text-white dark:bg-blue-500 dark:text-white',
                           isPreviousDay && '',
                         )}
                       >

@@ -77,9 +77,11 @@ export const ShareChartModal = ({
   }, [])
 
   const copyToClipboard = useCallback(() => {
-    if (!chartRef.current) return
+    const params = getParams()
 
-    domtoimage.toBlob(chartRef.current).then((blob) => {
+    if (!chartRef.current || !params) return
+
+    domtoimage.toBlob(chartRef.current, params).then((blob) => {
       if (!blob) return
 
       navigator.clipboard.write([

@@ -95,7 +95,7 @@ export const ShareChartModal = ({
         description: 'Chart image copied to clipboard',
       })
     })
-  }, [])
+  }, [getParams])
 
   return (
     <div className="relative flex w-full max-w-4xl flex-col items-center justify-center overflow-y-auto p-16">

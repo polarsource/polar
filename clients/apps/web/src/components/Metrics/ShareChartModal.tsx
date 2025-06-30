@@ -42,6 +42,8 @@ export const ShareChartModal = ({
       transformOrigin: 'top left',
       width: chartRef.current.offsetWidth + 'px',
       height: chartRef.current.offsetHeight + 'px',
+      borderRadius: '0px',
+      border: 'none',
     }
 
     const params = {

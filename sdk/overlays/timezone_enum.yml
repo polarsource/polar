@@ -1,0 +1,7 @@
+overlay: 1.0.0
+info:
+  title: Overlay to remove timezone enum, for which Speakeasy can't reliably generate enum names
+  version: 0.0.1
+actions:
+  - target: "$.paths['/v1/metrics/'].get.parameters[?(@.name=='timezone')].schema.enum"
+    remove: true

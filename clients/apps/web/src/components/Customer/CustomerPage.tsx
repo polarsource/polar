@@ -6,7 +6,7 @@ import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import { useListSubscriptions, useMetrics } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
-import { ChartRange, getChartRangeParams } from '@/utils/metrics'
+import { getChartRangeParams } from '@/utils/metrics'
 import { AddOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -54,11 +54,9 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
 
   const [selectedMetric, setSelectedMetric] =
     React.useState<keyof schemas['Metrics']>('revenue')
-  const [selectedRange, setSelectedRange] =
-    React.useState<ChartRange>('all_time')
   const [startDate, endDate, interval] = React.useMemo(
-    () => getChartRangeParams(selectedRange, customer.created_at),
-    [selectedRange, customer.created_at],
+    () => getChartRangeParams('all_time', customer.created_at),
+    [customer.created_at],
   )
   const { data: metricsData, isLoading: metricsLoading } = useMetrics({
     startDate,
@@ -86,8 +84,6 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           metric={selectedMetric}
           onMetricChange={setSelectedMetric}
           interval={interval}
-          range={selectedRange}
-          onRangeChange={setSelectedRange}
           data={metricsData}
           loading={metricsLoading}
         />

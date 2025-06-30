@@ -55,12 +55,31 @@ class CheckoutStatus(StrEnum):
 
 
 class CheckoutCustomerBillingAddressFields(TypedDict):
+    """
+    Deprecated: Use CheckoutBillingAddressFields instead.
+    """
+
     country: bool
     state: bool
     city: bool
     postal_code: bool
     line1: bool
     line2: bool
+
+
+class BillingAddressFieldMode(StrEnum):
+    required = "required"
+    optional = "optional"
+    disabled = "disabled"
+
+
+class CheckoutBillingAddressFields(TypedDict):
+    country: BillingAddressFieldMode
+    state: BillingAddressFieldMode
+    city: BillingAddressFieldMode
+    postal_code: BillingAddressFieldMode
+    line1: BillingAddressFieldMode
+    line2: BillingAddressFieldMode
 
 
 class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
@@ -293,6 +312,33 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
             "line2": False,
             "city": require_billing_address,
             "postal_code": require_billing_address,
+        }
+
+    @property
+    def billing_address_fields(self) -> CheckoutBillingAddressFields:
+        address = self.customer_billing_address
+        country = address.country if address else None
+        is_us = country == "US"
+        require_billing_address = (
+            self.require_billing_address or self.is_business_customer or is_us
+        )
+        return {
+            "country": BillingAddressFieldMode.required,
+            "state": BillingAddressFieldMode.required
+            if require_billing_address or country in {"US", "CA"}
+            else BillingAddressFieldMode.disabled,
+            "line1": BillingAddressFieldMode.required
+            if require_billing_address
+            else BillingAddressFieldMode.disabled,
+            "line2": BillingAddressFieldMode.optional
+            if require_billing_address
+            else BillingAddressFieldMode.disabled,
+            "city": BillingAddressFieldMode.required
+            if require_billing_address
+            else BillingAddressFieldMode.disabled,
+            "postal_code": BillingAddressFieldMode.required
+            if require_billing_address
+            else BillingAddressFieldMode.disabled,
         }
 
 

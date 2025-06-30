@@ -40,7 +40,11 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.models.checkout import CheckoutCustomerBillingAddressFields, CheckoutStatus
+from polar.models.checkout import (
+    CheckoutBillingAddressFields,
+    CheckoutCustomerBillingAddressFields,
+    CheckoutStatus,
+)
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.organization.schemas import Organization
 from polar.product.schemas import (
@@ -428,10 +432,15 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
         deprecated="Use `net_amount`.", validation_alias="net_amount"
     )
 
-    customer_billing_address_fields: CheckoutCustomerBillingAddressFields = Field(
+    customer_billing_address_fields: SkipJsonSchema[
+        CheckoutCustomerBillingAddressFields
+    ] = Field(
+        deprecated="Use `billing_address_fields` instead.",
+    )
+    billing_address_fields: CheckoutBillingAddressFields = Field(
         description=(
             "Determine which billing address fields "
-            "should be shown in the checkout form."
+            "should be disabled, optional or required in the checkout form."
         )
     )
 

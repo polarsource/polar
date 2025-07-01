@@ -52,15 +52,15 @@ export const MeterPage = ({
     parseAsIsoDateTime.withDefault(endOfToday()),
   )
 
-  const interval = useMemo(() => {
-    return dateRangeToInterval(startTimestamp, endTimestamp)
-  }, [startTimestamp, endTimestamp])
+  const interval = dateRangeToInterval(startTimestamp, endTimestamp)
 
   const { data: chartQuantities, isLoading: chartLoading } = useMeterQuantities(
     meter.id,
-    startTimestamp,
-    endTimestamp,
-    interval,
+    {
+      start_timestamp: startTimestamp.toISOString(),
+      end_timestamp: endTimestamp.toISOString(),
+      interval,
+    },
   )
 
   const { data } = useEvents(meter.organization_id, { meter_id: meter.id })
@@ -177,19 +177,17 @@ const MeterActivityCards = ({ meter }: { meter: schemas['Meter'] }) => {
     [organization?.created_at],
   )
 
-  const { data: figuresQuantities } = useMeterQuantities(
-    meter.id,
-    dates.lastMonthStart,
-    dates.currentMonthEnd,
-    'month',
-  )
+  const { data: figuresQuantities } = useMeterQuantities(meter.id, {
+    start_timestamp: dates.lastMonthStart.toISOString(),
+    end_timestamp: dates.currentMonthEnd.toISOString(),
+    interval: 'month',
+  })
 
-  const { data: allTimeQuantities } = useMeterQuantities(
-    meter.id,
-    dates.allTimeStart,
-    dates.allTimeEnd,
-    'month',
-  )
+  const { data: allTimeQuantities } = useMeterQuantities(meter.id, {
+    start_timestamp: dates.allTimeStart.toISOString(),
+    end_timestamp: dates.allTimeEnd.toISOString(),
+    interval: 'month',
+  })
 
   return (
     <div className="flex flex-row gap-x-8">

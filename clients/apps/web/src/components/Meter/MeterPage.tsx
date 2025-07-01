@@ -75,6 +75,7 @@ export const MeterPage = ({
                 chartQuantities.quantities as unknown as ParsedMetricPeriod[]
               }
               interval="day"
+              height={400}
               metric={{
                 slug: 'quantity',
                 display_name: 'Quantity',

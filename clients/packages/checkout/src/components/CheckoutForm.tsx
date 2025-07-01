@@ -225,10 +225,14 @@ const BaseCheckoutForm = ({
         )
       : {}
 
-    // Avoid overwriting a programmatically set discount without a code.
-    if (!data.discountCode && isDiscountWithoutCode) {
+    if (
+      data.discountCode === '' ||
+      // Avoid overwriting a programmatically set discount without a code.
+      (!data.discountCode && isDiscountWithoutCode)
+    ) {
       delete data.discountCode
     }
+
     await confirm({
       ...data,
       customFieldData: cleanedFieldData,

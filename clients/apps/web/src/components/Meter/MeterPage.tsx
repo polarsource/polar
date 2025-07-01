@@ -21,9 +21,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
-import { endOfMonth, endOfToday, startOfMonth, subMonths } from 'date-fns'
-import { parseAsIsoDateTime, useQueryState } from 'nuqs'
-import { useContext, useMemo } from 'react'
+import { endOfMonth, startOfMonth, subMonths } from 'date-fns'
+import { useContext, useMemo, useState } from 'react'
 import DateRangePicker from '../Metrics/DateRangePicker'
 import MetricChart from '../Metrics/MetricChart'
 import { InlineModal } from '../Modal/InlineModal'
@@ -43,22 +42,24 @@ export const MeterPage = ({
   isEditMeterModalShown: boolean
   hideEditMeterModal: () => void
 }) => {
-  const [startTimestamp, setStartDate] = useQueryState(
-    'startDate',
-    parseAsIsoDateTime.withDefault(subMonths(new Date(), 1)),
-  )
-  const [endTimestamp, setEndDate] = useQueryState(
-    'endDate',
-    parseAsIsoDateTime.withDefault(endOfToday()),
-  )
+  const [dateRange, setDateRange] = useState<{
+    from: Date
+    to: Date
+  }>({
+    from: subMonths(new Date(), 1),
+    to: new Date(),
+  })
 
-  const interval = dateRangeToInterval(startTimestamp, endTimestamp)
+  const interval = useMemo(
+    () => dateRangeToInterval(dateRange.from, dateRange.to),
+    [dateRange],
+  )
 
   const { data: chartQuantities, isLoading: chartLoading } = useMeterQuantities(
     meter.id,
     {
-      start_timestamp: startTimestamp.toISOString(),
-      end_timestamp: endTimestamp.toISOString(),
+      start_timestamp: dateRange.from.toISOString(),
+      end_timestamp: dateRange.to.toISOString(),
       interval,
     },
   )
@@ -84,14 +85,8 @@ export const MeterPage = ({
               <h2 className="text-xl">Meter Quantities</h2>
               <div className="w-full lg:w-auto">
                 <DateRangePicker
-                  date={{
-                    from: startTimestamp,
-                    to: endTimestamp,
-                  }}
-                  onDateChange={(range) => {
-                    setStartDate(range.from)
-                    setEndDate(range.to)
-                  }}
+                  date={dateRange}
+                  onDateChange={setDateRange}
                   className="w-full"
                 />
               </div>

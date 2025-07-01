@@ -1,6 +1,6 @@
 import { api } from '@/utils/client'
 import { toISODate } from '@/utils/metrics'
-import { schemas, unwrap } from '@polar-sh/client'
+import { operations, schemas, unwrap } from '@polar-sh/client'
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -27,7 +27,8 @@ export const useMetrics = (
   { startDate, endDate, ...parameters }: GetMetricsRequest,
   enabled: boolean = true,
 ): UseQueryResult<ParsedMetricsResponse, Error> => {
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const timezone = Intl.DateTimeFormat().resolvedOptions()
+    .timeZone as operations['metrics:get']['parameters']['query']['timezone']
   return useQuery({
     queryKey: [
       'metrics',
@@ -45,7 +46,6 @@ export const useMetrics = (
             query: {
               start_date: toISODate(startDate),
               end_date: toISODate(endDate),
-              // @ts-expect-error
               timezone,
               ...parameters,
             },

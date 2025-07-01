@@ -94,8 +94,6 @@ export const getTicks = (timestamps: Date[], maxTicks: number = 10): Date[] => {
 }
 
 export const dateRangeToInterval = (startDate: Date, endDate: Date) => {
-  console.log(JSON.stringify({ startDate, endDate }, null, 2))
-
   const diffInYears = differenceInYears(endDate, startDate)
   const diffInMonths = differenceInMonths(endDate, startDate)
   const diffInWeeks = differenceInWeeks(endDate, startDate)

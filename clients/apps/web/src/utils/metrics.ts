@@ -100,18 +100,6 @@ export const dateRangeToInterval = (startDate: Date, endDate: Date) => {
   const diffInMonths = differenceInMonths(endDate, startDate)
   const diffInWeeks = differenceInWeeks(endDate, startDate)
   const diffInDays = differenceInDays(endDate, startDate)
-  console.log(
-    JSON.stringify(
-      {
-        diffInYears,
-        diffInMonths,
-        diffInWeeks,
-        diffInDays,
-      },
-      null,
-      2,
-    ),
-  )
 
   if (diffInYears >= 3) {
     return 'year'

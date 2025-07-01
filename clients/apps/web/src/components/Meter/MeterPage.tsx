@@ -7,6 +7,7 @@ import { useEvents } from '@/hooks/queries/events'
 import { useMeterQuantities } from '@/hooks/queries/meters'
 import { ParsedMetricPeriod } from '@/hooks/queries/metrics'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { dateRangeToInterval } from '@/utils/metrics'
 import { UTCDate } from '@date-fns/utc'
 import { schemas } from '@polar-sh/client'
 import {
@@ -20,8 +21,10 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
-import { endOfMonth, startOfMonth, subDays, subMonths } from 'date-fns'
+import { endOfMonth, endOfToday, startOfMonth, subMonths } from 'date-fns'
+import { parseAsIsoDateTime, useQueryState } from 'nuqs'
 import { useContext, useMemo } from 'react'
+import DateRangePicker from '../Metrics/DateRangePicker'
 import MetricChart from '../Metrics/MetricChart'
 import { InlineModal } from '../Modal/InlineModal'
 import FormattedUnits from './FormattedUnits'
@@ -40,13 +43,24 @@ export const MeterPage = ({
   isEditMeterModalShown: boolean
   hideEditMeterModal: () => void
 }) => {
-  const startChart = useMemo(() => subDays(new UTCDate(), 7), [])
-  const endChart = useMemo(() => new UTCDate(), [])
+  const [startTimestamp, setStartDate] = useQueryState(
+    'startDate',
+    parseAsIsoDateTime.withDefault(subMonths(new Date(), 1)),
+  )
+  const [endTimestamp, setEndDate] = useQueryState(
+    'endDate',
+    parseAsIsoDateTime.withDefault(endOfToday()),
+  )
+
+  const interval = useMemo(() => {
+    return dateRangeToInterval(startTimestamp, endTimestamp)
+  }, [startTimestamp, endTimestamp])
+
   const { data: chartQuantities, isLoading: chartLoading } = useMeterQuantities(
     meter.id,
-    startChart,
-    endChart,
-    'day',
+    startTimestamp,
+    endTimestamp,
+    interval,
   )
 
   const { data } = useEvents(meter.organization_id, { meter_id: meter.id })
@@ -59,34 +73,52 @@ export const MeterPage = ({
   return (
     <>
       <Tabs defaultValue="overview" className="flex flex-col">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 p-0">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
           <TabsTrigger value="customers">Customers</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="flex flex-col gap-y-12 pb-12">
-          {chartLoading ? (
-            <div className="flex h-[300px] flex-col items-center justify-center">
-              <Spinner />
+          <div className="flex flex-col gap-y-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <h2 className="text-xl">Meter Quantities</h2>
+              <div className="w-full lg:w-auto">
+                <DateRangePicker
+                  date={{
+                    from: startTimestamp,
+                    to: endTimestamp,
+                  }}
+                  onDateChange={(range) => {
+                    setStartDate(range.from)
+                    setEndDate(range.to)
+                  }}
+                  className="w-full"
+                />
+              </div>
             </div>
-          ) : chartQuantities ? (
-            <MetricChart
-              data={
-                chartQuantities.quantities as unknown as ParsedMetricPeriod[]
-              }
-              interval="day"
-              height={400}
-              metric={{
-                slug: 'quantity',
-                display_name: 'Quantity',
-                type: 'scalar',
-              }}
-            />
-          ) : (
-            <div className="flex h-[300px] flex-col items-center justify-center">
-              <span className="text-lg">No data available</span>
-            </div>
-          )}
+            {chartLoading ? (
+              <div className="flex h-[300px] flex-col items-center justify-center">
+                <Spinner />
+              </div>
+            ) : chartQuantities ? (
+              <MetricChart
+                data={
+                  chartQuantities.quantities as unknown as ParsedMetricPeriod[]
+                }
+                interval={interval}
+                height={400}
+                metric={{
+                  slug: 'quantity',
+                  display_name: 'Quantity',
+                  type: 'scalar',
+                }}
+              />
+            ) : (
+              <div className="flex h-[300px] flex-col items-center justify-center">
+                <span className="text-lg">No data available</span>
+              </div>
+            )}
+          </div>
           <div className="flex flex-col gap-y-6">
             <div className="flex flex-row items-center justify-between">
               <h2 className="text-xl">Activity</h2>

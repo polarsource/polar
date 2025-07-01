@@ -229,6 +229,14 @@ export const createCheckoutPreview = (
       line1: false,
       line2: false,
     },
+    billing_address_fields: {
+      country: 'required',
+      state: 'disabled',
+      city: 'disabled',
+      postal_code: 'disabled',
+      line1: 'disabled',
+      line2: 'disabled',
+    },
   })
 
   return {

@@ -57,13 +57,12 @@ const CustomerMeterItem = ({
   startDate: Date
   endDate: Date
 }) => {
-  const { data } = useMeterQuantities(
-    customerMeter.meter_id,
-    startDate,
-    endDate,
-    'day',
-    { customer_id: customerMeter.customer_id },
-  )
+  const { data } = useMeterQuantities(customerMeter.meter_id, {
+    start_timestamp: startDate.toISOString(),
+    end_timestamp: endDate.toISOString(),
+    interval: 'day',
+    customer_id: customerMeter.customer_id,
+  })
 
   if (!data) return null
 

@@ -352,43 +352,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/personal_access_tokens/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Personal Access Tokens
-         * @description List personal access tokens.
-         */
-        get: operations["personal_access_token:list_personal_access_tokens"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/personal_access_tokens/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete Personal Access Token */
-        delete: operations["personal_access_token:delete_personal_access_token"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/accounts/search": {
         parameters: {
             query?: never;
@@ -5623,6 +5586,11 @@ export interface components {
             name: "benefit.updated";
             metadata: components["schemas"]["BenefitGrantMetadata"];
         };
+        /**
+         * BillingAddressFieldMode
+         * @enum {string}
+         */
+        BillingAddressFieldMode: "required" | "optional" | "disabled";
         /** Body_email-update:verify_email_update */
         "Body_email-update_verify_email_update": {
             /** Token */
@@ -5892,8 +5860,8 @@ export interface components {
             payment_processor_metadata: {
                 [key: string]: string;
             };
-            /** @description Determine which billing address fields should be shown in the checkout form. */
-            customer_billing_address_fields: components["schemas"]["CheckoutCustomerBillingAddressFields"];
+            /** @description Determine which billing address fields should be disabled, optional or required in the checkout form. */
+            billing_address_fields: components["schemas"]["CheckoutBillingAddressFields"];
             /** Metadata */
             metadata: {
                 [key: string]: string | number | boolean;
@@ -5930,6 +5898,15 @@ export interface components {
             customer_metadata: {
                 [key: string]: string | number | boolean;
             };
+        };
+        /** CheckoutBillingAddressFields */
+        CheckoutBillingAddressFields: {
+            country: components["schemas"]["BillingAddressFieldMode"];
+            state: components["schemas"]["BillingAddressFieldMode"];
+            city: components["schemas"]["BillingAddressFieldMode"];
+            postal_code: components["schemas"]["BillingAddressFieldMode"];
+            line1: components["schemas"]["BillingAddressFieldMode"];
+            line2: components["schemas"]["BillingAddressFieldMode"];
         };
         /**
          * CheckoutConfirmStripe
@@ -5998,7 +5975,10 @@ export interface components {
              */
             subscription_id?: string | null;
         };
-        /** CheckoutCustomerBillingAddressFields */
+        /**
+         * CheckoutCustomerBillingAddressFields
+         * @description Deprecated: Use CheckoutBillingAddressFields instead.
+         */
         CheckoutCustomerBillingAddressFields: {
             /** Country */
             country: boolean;
@@ -7077,8 +7057,8 @@ export interface components {
             payment_processor_metadata: {
                 [key: string]: string;
             };
-            /** @description Determine which billing address fields should be shown in the checkout form. */
-            customer_billing_address_fields: components["schemas"]["CheckoutCustomerBillingAddressFields"];
+            /** @description Determine which billing address fields should be disabled, optional or required in the checkout form. */
+            billing_address_fields: components["schemas"]["CheckoutBillingAddressFields"];
             /**
              * Products
              * @description List of products available to select.
@@ -7272,8 +7252,8 @@ export interface components {
             payment_processor_metadata: {
                 [key: string]: string;
             };
-            /** @description Determine which billing address fields should be shown in the checkout form. */
-            customer_billing_address_fields: components["schemas"]["CheckoutCustomerBillingAddressFields"];
+            /** @description Determine which billing address fields should be disabled, optional or required in the checkout form. */
+            billing_address_fields: components["schemas"]["CheckoutBillingAddressFields"];
             /**
              * Products
              * @description List of products available to select.
@@ -12166,12 +12146,6 @@ export interface components {
             items: components["schemas"]["Payout"][];
             pagination: components["schemas"]["Pagination"];
         };
-        /** ListResource[PersonalAccessToken] */
-        ListResource_PersonalAccessToken_: {
-            /** Items */
-            items: components["schemas"]["PersonalAccessToken"][];
-            pagination: components["schemas"]["Pagination"];
-        };
         /** ListResource[Product] */
         ListResource_Product_: {
             /** Items */
@@ -14148,33 +14122,6 @@ export interface components {
          * @enum {string}
          */
         PayoutStatus: "pending" | "in_transit" | "succeeded";
-        /** PersonalAccessToken */
-        PersonalAccessToken: {
-            /**
-             * Created At
-             * Format: date-time
-             * @description Creation timestamp of the object.
-             */
-            created_at: string;
-            /**
-             * Modified At
-             * @description Last modification timestamp of the object.
-             */
-            modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             */
-            id: string;
-            /** Scopes */
-            scopes: components["schemas"]["Scope"][];
-            /** Expires At */
-            expires_at: string | null;
-            /** Comment */
-            comment: string;
-            /** Last Used At */
-            last_used_at: string | null;
-        };
         /**
          * PlatformFeeType
          * @description Type of fees applied by Polar, and billed to the users.
@@ -17337,69 +17284,6 @@ export interface operations {
             };
             /** @description Notification recipient not found. */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "personal_access_token:list_personal_access_tokens": {
-        parameters: {
-            query?: {
-                /** @description Page number, defaults to 1. */
-                page?: number;
-                /** @description Size of a page, defaults to 10. Maximum is 100. */
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListResource_PersonalAccessToken_"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "personal_access_token:delete_personal_access_token": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -24880,6 +24764,7 @@ export const benefitRevokedEventNameValues: ReadonlyArray<components["schemas"][
 export const benefitSortPropertyValues: ReadonlyArray<components["schemas"]["BenefitSortProperty"]> = ["created_at", "-created_at", "description", "-description"];
 export const benefitTypeValues: ReadonlyArray<components["schemas"]["BenefitType"]> = ["custom", "discord", "github_repository", "downloadables", "license_keys", "meter_credit"];
 export const benefitUpdatedEventNameValues: ReadonlyArray<components["schemas"]["BenefitUpdatedEvent"]["name"]> = ["benefit.updated"];
+export const billingAddressFieldModeValues: ReadonlyArray<components["schemas"]["BillingAddressFieldMode"]> = ["required", "optional", "disabled"];
 export const body_oauth2_consentActionValues: ReadonlyArray<components["schemas"]["Body_oauth2_consent"]["action"]> = ["allow", "deny"];
 export const checkoutLinkSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutLinkSortProperty"]> = ["created_at", "-created_at", "label", "-label", "success_url", "-success_url", "allow_discount_codes", "-allow_discount_codes"];
 export const checkoutSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutSortProperty"]> = ["created_at", "-created_at", "expires_at", "-expires_at", "status", "-status"];

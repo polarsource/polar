@@ -34,6 +34,7 @@ export default defineEventHandler((event) => {
     accessToken: polarAccessToken,
     successUrl: polarCheckoutSuccessUrl,
     server: polarServer as "sandbox" | "production",
+    theme: "dark", // Enforces the theme - System-preferred theme will be set if left omitted
   });
 
   return checkoutHandler(event);

@@ -20,21 +20,18 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
 
 <Tabs>
   <Tab title="npm">
-    Install the BetterAuth and Polar required libraries using the following command:
-    ```bash
-    npm install better-auth @polar-sh/better-auth @polar-sh/sdk
+    Install the BetterAuth and Polar required libraries using the following
+    command: ```bash npm install better-auth @polar-sh/better-auth @polar-sh/sdk
     ```
   </Tab>
   <Tab title="yarn">
-    Install the BetterAuth and Polar required libraries using the following command:
-    ```bash
-    yarn add better-auth @polar-sh/better-auth @polar-sh/sdk
+    Install the BetterAuth and Polar required libraries using the following
+    command: ```bash yarn add better-auth @polar-sh/better-auth @polar-sh/sdk
     ```
   </Tab>
   <Tab title="pnpm">
-    Install the BetterAuth and Polar required libraries using the following command:
-    ```bash
-    pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk
+    Install the BetterAuth and Polar required libraries using the following
+    command: ```bash pnpm add better-auth @polar-sh/better-auth @polar-sh/sdk
     ```
   </Tab>
 </Tabs>
@@ -48,6 +45,7 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
     ```bash .env
     POLAR_ACCESS_TOKEN=...
     ```
+
   </Step>
   <Step title="Configure BetterAuth Server">
     The Polar plugin comes with it's own set of plugins to add functionality to your stack:
@@ -130,6 +128,7 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
     - `createCustomerOnSignUp` (optional): Automatically create a Polar customer when a user signs up
     - `getCustomerCreateParams` (optional): Custom function to provide additional customer creation metadata
     - `use` (optional): Array of Polar plugins to enable specific functionality (checkout, portal, usage, and webhooks)
+
   </Step>
   <Step title="Configure BetterAuth Client">
     You will be using the BetterAuth Client to interact with the Polar functionalities.
@@ -144,6 +143,7 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
       plugins: [polarClient()], // [!code ++]
     }); // [!code ++]
     ```
+
   </Step>
 </Steps>
 
@@ -157,22 +157,21 @@ All new customers are created with an associated `externalId`, i.e. the ID of yo
 
 [Source code](https://github.com/polarsource/polar-adapters/blob/main/packages/polar-betterauth/src/plugins/checkout.ts)
 
-To support [checkouts](/features/checkout/links) in your app, you would pass the `checkout` plugin in the `use` property. 
+To support [checkouts](/features/checkout/links) in your app, you would pass the `checkout` plugin in the `use` property.
 
 The checkout plugin accepts the following configuration options:
 
 - **`products`** (optional): An array of product mappings or a function that returns them asynchronously. Each mapping contains a `productId` and a `slug` that allows you to reference products by a friendly slug instead of their full ID.
-
 - **`successUrl`** (optional): The relative URL where customers will be redirected after a successful checkout completion. You can use the `{CHECKOUT_ID}` placeholder in the URL to include the checkout session ID in the redirect.
-
 - **`authenticatedUsersOnly`** (optional): A boolean flag that controls whether checkout sessions require user authentication. When set to `true`, only authenticated users can initiate checkouts and the customer information will be automatically associated with the authenticated user. When `false`, anonymous checkouts are allowed.
+- **`theme`** (optional): A string that can be used to enforce the theme of the checkout page. Can be either `light` or `dark`.
 
 <Steps>
   <Step title="Use Checkout Plugin">
     Update the `use` property of the Polar plugin for BetterAuth client to have the `checkout` plugin.
 
     ```typescript icon="square-js" Checkout Plugin Example
-    import { 
+    import {
       polar,
       checkout // [!code ++]
     } from "@polar-sh/better-auth";
@@ -196,6 +195,7 @@ The checkout plugin accepts the following configuration options:
         ]
     });
     ```
+
   </Step>
   <Step title="Create checkouts using BetterAuth client">
     When the `checkout` plugin is passed, you are then able to initialize Checkout Sessions using the `checkout` method on the BetterAuth client. This will redirect the user to the product's checkout link.
@@ -230,6 +230,7 @@ The checkout plugin accepts the following configuration options:
         referenceId: organizationId
     });
     ```
+
   </Step>
 </Steps>
 
@@ -359,6 +360,7 @@ To set up the Polar `webhooks` plugin with the BetterAuth client, follow the ste
         ]
     });
     ```
+
   </Step>
 </Steps>
 
@@ -440,7 +442,8 @@ The customer state object contains:
 - All the data about the customer.
 - The list of their active subscriptions.
   <Note>
-    This does not include subscriptions done by a parent organization. See the subscription list-method below for more information.
+    This does not include subscriptions done by a parent organization. See the
+    subscription list-method below for more information.
   </Note>
 - The list of their granted benefits.
 - The list of their active meters, with their current balance.
@@ -516,5 +519,6 @@ const { data: subscriptions } = await authClient.customer.subscriptions.list({
 ```
 
 <Danger>
-  This will not return subscriptions made by a parent organization to the authenticated user.
+  This will not return subscriptions made by a parent organization to the
+  authenticated user.
 </Danger>

@@ -10,7 +10,12 @@ Create a Checkout handler which takes care of redirections.
 ```typescript
 import { Checkout } from "jsr:@polar-sh/deno";
 
-Deno.serve(Checkout({ accessToken: "xxx" }));
+Deno.serve(
+  Checkout({
+    accessToken: "xxx",
+    theme: "dark", // Enforces the theme - System-preferred theme will be set if left omitted
+  })
+);
 ```
 
 ### Query Params

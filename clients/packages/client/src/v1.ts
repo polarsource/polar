@@ -13805,8 +13805,6 @@ export interface components {
             new_order: boolean;
             /** New Subscription */
             new_subscription: boolean;
-            /** Action Reminders */
-            action_reminders: boolean;
         };
         /** OrganizationProfileSettings */
         OrganizationProfileSettings: {

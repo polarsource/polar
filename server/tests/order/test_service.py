@@ -945,14 +945,13 @@ class TestUpdateOrderFromStripe:
 
     async def test_paid_charge(
         self,
-        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product: Product,
         customer: Customer,
     ) -> None:
         invoice = construct_stripe_invoice(status="paid", lines=[])
-        order = await create_order(
+        await create_order(
             save_fixture,
             product=product,
             customer=customer,
@@ -964,13 +963,8 @@ class TestUpdateOrderFromStripe:
         )
         assert updated_order.status == OrderStatus.paid
 
-        enqueue_job_mock.assert_any_call(
-            "order.balance", order_id=order.id, charge_id="CHARGE_ID"
-        )
-
     async def test_paid_out_of_band(
         self,
-        enqueue_job_mock: MagicMock,
         stripe_service_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -983,7 +977,7 @@ class TestUpdateOrderFromStripe:
         invoice = construct_stripe_invoice(
             status="paid", lines=[], metadata={"payment_intent_id": payment_intent.id}
         )
-        order = await create_order(
+        await create_order(
             save_fixture,
             product=product,
             customer=customer,
@@ -994,10 +988,6 @@ class TestUpdateOrderFromStripe:
             session, invoice=invoice
         )
         assert updated_order.status == OrderStatus.paid
-
-        enqueue_job_mock.assert_any_call(
-            "order.balance", order_id=order.id, charge_id=payment_intent.latest_charge
-        )
 
 
 @pytest.mark.asyncio

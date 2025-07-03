@@ -439,7 +439,7 @@ class OrderService:
             raise RecurringProduct(checkout, product)
 
         order = await self._create_order_from_checkout(
-            session, checkout, OrderBillingReason.purchase
+            session, checkout, OrderBillingReason.purchase, payment
         )
 
         # Enqueue benefits grants
@@ -699,6 +699,24 @@ class OrderService:
                     "order_id": str(order.id),
                 },
             )
+
+    async def handle_payment(
+        self, session: AsyncSession, order: Order, payment: Payment | None
+    ) -> Order:
+        if order.status != OrderStatus.pending:
+            raise OrderNotPending(order)
+
+        if payment is not None:
+            enqueue_job(
+                "order.balance", order_id=order.id, charge_id=payment.processor_id
+            )
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.update(order, update_dict={"status": OrderStatus.paid})
+
+        await self._on_order_updated(session, order, OrderStatus.pending)
+
+        return order
 
     async def create_order_from_stripe(
         self, session: AsyncSession, invoice: stripe_lib.Invoice
@@ -978,28 +996,6 @@ class OrderService:
         previous_status = order.status
         status = OrderStatus.paid if invoice.status == "paid" else OrderStatus.pending
         order = await repository.update(order, update_dict={"status": status})
-
-        # Enqueue the balance creation
-        if order.paid:
-            if invoice.charge:
-                enqueue_job(
-                    "order.balance",
-                    order_id=order.id,
-                    charge_id=get_expandable_id(invoice.charge),
-                )
-            # or if it has an associated out-of-band payment intent
-            elif invoice.metadata and (
-                payment_intent_id := invoice.metadata.get("payment_intent_id")
-            ):
-                payment_intent = await stripe_service.get_payment_intent(
-                    payment_intent_id
-                )
-                assert payment_intent.latest_charge is not None
-                enqueue_job(
-                    "order.balance",
-                    order_id=order.id,
-                    charge_id=get_expandable_id(payment_intent.latest_charge),
-                )
 
         await self._on_order_updated(session, order, previous_status)
         return order

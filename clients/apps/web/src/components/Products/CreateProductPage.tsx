@@ -3,13 +3,12 @@ import {
   useCreateProduct,
   useUpdateProductBenefits,
 } from '@/hooks/queries'
-import { useStore } from '@/store'
 import { setValidationErrors } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { getStatusRedirect } from '../Toast/utils'
@@ -36,12 +35,6 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     [benefits],
   )
 
-  const {
-    formDrafts: { ProductCreate: savedFormValues },
-    saveDraft,
-    clearDraft,
-  } = useStore()
-
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
     schemas['Benefit']['id'][]
   >([])
@@ -61,13 +54,11 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
         medias: [],
         full_medias: [],
       },
-      ...(savedFormValues ? savedFormValues : {}),
       organization_id: organization.id,
       metadata: [],
     },
   })
-  const { handleSubmit, watch, setError } = form
-  const newProduct = watch()
+  const { handleSubmit, setError } = form
 
   const createProduct = useCreateProduct(organization)
   const updateBenefits = useUpdateProductBenefits(organization)
@@ -98,7 +89,6 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
         },
       })
 
-      clearDraft('ProductCreate')
       router.push(
         getStatusRedirect(
           `/dashboard/${organization.slug}/products`,
@@ -113,7 +103,6 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
       createProduct,
       updateBenefits,
       setError,
-      clearDraft,
       router,
     ],
   )
@@ -141,20 +130,6 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
       ),
     [organizationBenefits, enabledBenefitIds],
   )
-
-  useEffect(() => {
-    const pagehideListener = () => {
-      saveDraft('ProductCreate', {
-        ...newProduct,
-        metadata: newProduct.metadata.reduce(
-          (acc, { key, value }) => ({ ...acc, [key]: value }),
-          {},
-        ),
-      })
-    }
-    window.addEventListener('pagehide', pagehideListener)
-    return () => window.removeEventListener('pagehide', pagehideListener)
-  }, [newProduct, saveDraft])
 
   return (
     <DashboardBody

@@ -11,8 +11,11 @@ from pytest_mock import MockerFixture
 from sqlalchemy.util.typing import TypeAlias
 
 from polar.auth.models import AuthSubject
+from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.event.repository import EventRepository
+from polar.event.system import SystemEvent
 from polar.exceptions import (
     BadRequest,
     PolarRequestValidationError,
@@ -41,9 +44,15 @@ from polar.models.billing_entry import BillingEntryDirection
 from polar.models.checkout import CheckoutStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
-from polar.product.guard import MeteredPrice, is_metered_price
+from polar.product.guard import (
+    MeteredPrice,
+    is_fixed_price,
+    is_free_price,
+    is_metered_price,
+)
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
+    InactiveSubscription,
     MissingCheckoutCustomer,
     NotARecurringProduct,
     SubscriptionDoesNotExist,
@@ -139,6 +148,11 @@ def publish_checkout_event_mock(mocker: MockerFixture) -> AsyncMock:
 @pytest.fixture
 def enqueue_benefits_grants_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch.object(subscription_service, "enqueue_benefits_grants")
+
+
+@pytest.fixture
+def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.subscription.service.enqueue_job")
 
 
 @pytest.mark.asyncio
@@ -424,6 +438,96 @@ class TestCreateOrUpdateFromCheckout:
         enqueue_benefits_grants_mock.assert_called_once_with(
             session, updated_subscription
         )
+
+
+@pytest.mark.asyncio
+class TestCycle:
+    async def test_inactive(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        with pytest.raises(InactiveSubscription):
+            await subscription_service.cycle(session, subscription)
+
+    async def test_fixed_price(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        previous_current_period_end = subscription.current_period_end
+
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        assert updated_subscription.ended_at is None
+        assert updated_subscription.current_period_start == previous_current_period_end
+        assert updated_subscription.current_period_end > previous_current_period_end
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(SystemEvent.subscription_cycled)
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 1
+        billing_entry = billing_entries[0]
+        assert (
+            billing_entry.start_timestamp == updated_subscription.current_period_start
+        )
+        assert billing_entry.end_timestamp == updated_subscription.current_period_end
+        assert billing_entry.direction == BillingEntryDirection.debit
+        assert billing_entry.customer_id == customer.id
+        assert billing_entry.product_price_id == price.id
+        assert billing_entry.event_id == event.id
+        assert billing_entry.amount == price.price_amount
+        assert billing_entry.currency == price.price_currency
+
+        enqueue_job_mock.assert_any_call("order.subscription_cycle", subscription.id)
+
+    async def test_free_price(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_free_price: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product_recurring_free_price, customer=customer
+        )
+
+        await subscription_service.cycle(session, subscription)
+
+        price = product_recurring_free_price.prices[0]
+        assert is_free_price(price)
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 1
+        billing_entry = billing_entries[0]
+        assert billing_entry.amount == 0
+        assert billing_entry.currency == subscription.currency
 
 
 @pytest.mark.asyncio

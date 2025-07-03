@@ -9,6 +9,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
+from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
@@ -36,6 +37,7 @@ from polar.models.product import ProductBillingType
 from polar.models.transaction import TransactionType
 from polar.order.service import (
     MissingCheckoutCustomer,
+    NoPendingBillingEntries,
     NotAnOrderInvoice,
     NotASubscriptionInvoice,
     NotRecurringProduct,
@@ -44,7 +46,7 @@ from polar.order.service import (
     SubscriptionDoesNotExist,
 )
 from polar.order.service import order as order_service
-from polar.product.guard import is_static_price
+from polar.product.guard import is_fixed_price, is_static_price
 from polar.transaction.service.balance import (
     PaymentTransactionForChargeDoesNotExist,
 )
@@ -56,6 +58,7 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.email import WatcherEmailRenderer, watch_email
 from tests.fixtures.random_objects import (
+    create_billing_entry,
     create_checkout,
     create_order,
     create_subscription,
@@ -604,6 +607,56 @@ class TestCreateFromCheckoutSubscription:
         assert order.customer == checkout.customer
         assert order.product == product
         assert len(order.items) == len(product.prices)
+
+
+@pytest.mark.asyncio
+class TestCreateSubscriptionOrder:
+    async def test_no_pending_billing_items(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        with pytest.raises(NoPendingBillingEntries):
+            await order_service.create_subscription_order(
+                session, subscription, OrderBillingReason.subscription_cycle
+            )
+
+    async def test_cycle_fixed_price(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        price = subscription.product.prices[0]
+        assert is_fixed_price(price)
+        billing_entry = await create_billing_entry(
+            save_fixture,
+            customer=subscription.customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        assert len(order.items) == 1
+        order_item = order.items[0]
+        assert order_item.product_price == price
+        assert order_item.amount == billing_entry.amount
+        assert order_item.order == order
+
+        assert order.subtotal_amount == billing_entry.amount
+        assert order.status == OrderStatus.pending
+        assert order.billing_reason == OrderBillingReason.subscription_cycle
+        assert order.subscription == subscription
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        updated_billing_entry = await billing_entry_repository.get_by_id(
+            billing_entry.id
+        )
+        assert updated_billing_entry is not None
+        assert updated_billing_entry.order_item_id == order_item.id
 
 
 @pytest.mark.asyncio

@@ -62,7 +62,6 @@ from polar.models.product import ProductBillingType
 from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
-    MaintainerCreateAccountNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
     NotificationType,
 )
@@ -917,19 +916,6 @@ class OrderService:
                 raise AlreadyBalancedOrder(order, payment_transaction)
 
             await held_balance_service.create(session, held_balance=held_balance)
-
-            if organization.notification_settings["action_reminders"]:
-                await notifications_service.send_to_org_members(
-                    session=session,
-                    org_id=organization.id,
-                    notif=PartialNotification(
-                        type=NotificationType.maintainer_create_account,
-                        payload=MaintainerCreateAccountNotificationPayload(
-                            organization_name=organization.slug,
-                            url=organization.account_url,
-                        ),
-                    ),
-                )
 
             return
 

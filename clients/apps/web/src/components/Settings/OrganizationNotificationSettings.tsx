@@ -54,8 +54,8 @@ const OrganizationNotificationSettings: React.FC<
     reset(data.notification_settings)
 
     toast({
-      title: 'Settings Updated',
-      description: `Settings were updated successfully`,
+      title: 'Notification Settings Updated',
+      description: `Notifications settings were updated successfully`,
     })
   }
 
@@ -106,26 +106,6 @@ const OrganizationNotificationSettings: React.FC<
             />
           </SettingsGroupItem>
 
-          <SettingsGroupItem
-            title="Action Reminders"
-            description="Send a notification when necessary organization actions are required (e.g. onboarding, payment accounts, etc.)"
-          >
-            <FormField
-              control={control}
-              name="action_reminders"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </SettingsGroupItem>
           <SettingsGroupActions>
             <Button
               className="self-start"

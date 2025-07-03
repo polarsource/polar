@@ -15,6 +15,7 @@ from polar.logging import Logger
 from polar.models import Customer, Order
 from polar.models.order import OrderBillingReason
 from polar.product.repository import ProductRepository
+from polar.subscription.repository import SubscriptionRepository
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry
 
@@ -29,6 +30,13 @@ MAX_RETRIES = 10
 class OrderTaskError(PolarTaskError): ...
 
 
+class SubscriptionDoesNotExist(OrderTaskError):
+    def __init__(self, subscription_id: uuid.UUID) -> None:
+        self.subscription_id = subscription_id
+        message = f"The subscription with id {subscription_id} does not exist."
+        super().__init__(message)
+
+
 class ProductDoesNotExist(OrderTaskError):
     def __init__(self, product_id: uuid.UUID) -> None:
         self.product_id = product_id
@@ -41,6 +49,21 @@ class OrderDoesNotExist(OrderTaskError):
         self.order_id = order_id
         message = f"The order with id {order_id} does not exist."
         super().__init__(message)
+
+
+@actor(actor_name="order.subscription_cycle", priority=TaskPriority.LOW)
+async def create_subscription_cycle_order(subscription_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.get_by_id(
+            subscription_id, options=repository.get_eager_options()
+        )
+        if subscription is None:
+            raise SubscriptionDoesNotExist(subscription_id)
+
+        await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
 
 
 @actor(actor_name="order.balance", priority=TaskPriority.LOW)

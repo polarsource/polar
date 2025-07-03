@@ -10,6 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, selectinload
 
 from polar.auth.models import AuthSubject
+from polar.billing_entry.repository import BillingEntryRepository
+from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.config import settings
@@ -19,6 +21,8 @@ from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import enqueue_email
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.event.service import event as event_service
+from polar.event.system import SystemEvent, build_system_event
 from polar.exceptions import (
     BadRequest,
     PolarError,
@@ -38,6 +42,7 @@ from polar.logging import Logger
 from polar.models import (
     Benefit,
     BenefitGrant,
+    BillingEntry,
     Checkout,
     Discount,
     Organization,
@@ -49,6 +54,7 @@ from polar.models import (
     SubscriptionProductPrice,
     User,
 )
+from polar.models.billing_entry import BillingEntryDirection
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -98,6 +104,13 @@ class MissingCheckoutCustomer(SubscriptionError):
     def __init__(self, checkout: Checkout) -> None:
         self.checkout = checkout
         message = f"Checkout {checkout.id} is missing a customer."
+        super().__init__(message)
+
+
+class InactiveSubscription(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = f"Subscription {subscription.id} is not active."
         super().__init__(message)
 
 
@@ -324,6 +337,65 @@ class SubscriptionService:
         )
 
         return subscription, created
+
+    async def cycle(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> Subscription:
+        if not subscription.active:
+            raise InactiveSubscription(subscription)
+
+        if subscription.cancel_at_period_end:
+            raise NotImplementedError("Revoke method")
+        else:
+            current_period_end = subscription.current_period_end
+            subscription.current_period_start = current_period_end
+            subscription.current_period_end = (
+                subscription.recurring_interval.get_next_period(current_period_end)
+            )
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.update(subscription)
+
+        # Add event and billing entry for the new period
+        event = await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_cycled,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata={
+                    "subscription_id": str(subscription.id),
+                },
+            ),
+        )
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        for subscription_product_price in subscription.subscription_product_prices:
+            product_price = subscription_product_price.product_price
+            if is_static_price(product_price):
+                await billing_entry_repository.create(
+                    BillingEntry(
+                        start_timestamp=subscription.current_period_start,
+                        end_timestamp=subscription.current_period_end,
+                        direction=BillingEntryDirection.debit,
+                        amount=subscription_product_price.amount,
+                        currency=subscription.currency,
+                        customer=subscription.customer,
+                        product_price=product_price,
+                        subscription=subscription,
+                        event=event,
+                    ),
+                )
+
+        enqueue_job("order.subscription_cycle", subscription.id)
+
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=subscription.status,
+            previous_ends_at=subscription.ends_at,
+        )
+
+        return subscription
 
     async def _after_subscription_created(
         self, session: AsyncSession, subscription: Subscription
@@ -830,6 +902,8 @@ class SubscriptionService:
         ) in await billing_entry_service.compute_pending_subscription_line_items(
             session, subscription
         ):
+            if not isinstance(line_item, MeteredLineItem):
+                continue
             subscription_meter_line = subscription.get_meter(line_item.price.meter)
             if subscription_meter_line is not None:
                 subscription_meter_line.consumed_units += Decimal(

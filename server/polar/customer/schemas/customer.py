@@ -111,10 +111,10 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         description="Timestamp for when the customer was soft deleted."
     )
 
-    @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=blank"])
+    @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=404"])
     def avatar_url(self) -> str:
         email_hash = hashlib.sha256(self.email.lower().encode()).hexdigest()
-        return f"https://www.gravatar.com/avatar/{email_hash}?d=blank"
+        return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
 
 
 class Customer(CustomerBase):

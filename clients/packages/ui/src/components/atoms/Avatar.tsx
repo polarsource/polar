@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const Avatar = ({
@@ -15,15 +16,10 @@ const Avatar = ({
 }) => {
   const initials = getInitials(name)
 
-  let showInitials = true
-  if (avatar_url) {
-    // Skip rendering initials in case of `avatar_url`
-    // Unless from Gravatar since they offer a transparent image in case of no avatar
-    // Also have to check for `http` first to avoid running `new URL` on internal NextJS asset paths
-    const avatarHost = avatar_url.startsWith('http')
-      ? new URL(avatar_url).host
-      : null
-    showInitials = avatarHost === 'www.gravatar.com'
+  const [showInitials, setShowInitials] = useState(avatar_url === null)
+
+  const onError = () => {
+    setShowInitials(true)
   }
 
   return (
@@ -33,12 +29,11 @@ const Avatar = ({
         className,
       )}
     >
-      {showInitials && (
+      {!avatar_url || showInitials ? (
         <div className="absolute inset-0 flex items-center justify-center bg-transparent">
           <span>{initials}</span>
         </div>
-      )}
-      {avatar_url && (
+      ) : (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -46,6 +41,7 @@ const Avatar = ({
             src={avatar_url}
             height={height}
             width={width}
+            onError={onError}
             className="z-[1] aspect-square rounded-full object-cover"
           />
         </>

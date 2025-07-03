@@ -61,7 +61,7 @@ async def missing_charge_invoice_fix(
         async with JobQueueManager.open(dramatiq.get_broker(), redis):
             # Create the charge
             charge = await stripe_service.get_charge(stripe_charge_id)
-            await payment_service.upsert_from_stripe_charge(session, charge)
+            await payment_service.upsert_from_stripe_charge(session, charge, None)
             await payment_transaction_service.create_payment(session, charge=charge)
 
             # Create the order

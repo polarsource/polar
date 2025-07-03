@@ -239,6 +239,15 @@ class InvoiceDoesNotExist(OrderError):
         super().__init__(message, 404)
 
 
+class NoPendingBillingEntries(OrderError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = (
+            f"No pending billing entries found for subscription {subscription.id}."
+        )
+        super().__init__(message)
+
+
 def _is_empty_customer_address(customer_address: dict[str, Any] | None) -> bool:
     return customer_address is None or customer_address["country"] is None
 
@@ -558,6 +567,99 @@ class OrderService:
             )
 
         await self._on_order_created(session, order)
+
+        return order
+
+    async def create_subscription_order(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        billing_reason: OrderBillingReason,
+    ) -> Order:
+        items = await billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        )
+        if len(items) == 0:
+            raise NoPendingBillingEntries(subscription)
+
+        customer = subscription.customer
+        billing_address = customer.billing_address
+
+        subtotal_amount = sum(item.amount for item in items)
+
+        # TODO: Discount handling
+        discount_amount = 0
+        discount = None
+
+        # TODO: Tax handling
+        tax_amount = 0
+        taxability_reason: TaxabilityReason | None = None
+        tax_id = customer.tax_id
+        tax_rate: TaxRate | None = None
+
+        invoice_number = await organization_service.get_next_invoice_number(
+            session, subscription.organization
+        )
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.create(
+            Order(
+                status=OrderStatus.pending,
+                subtotal_amount=subtotal_amount,
+                discount_amount=discount_amount,
+                tax_amount=tax_amount,
+                currency=subscription.currency,
+                billing_reason=billing_reason,
+                billing_name=customer.billing_name,
+                billing_address=billing_address,
+                taxability_reason=taxability_reason,
+                tax_id=tax_id,
+                tax_rate=tax_rate,
+                invoice_number=invoice_number,
+                customer=customer,
+                product=subscription.product,
+                discount=discount,
+                subscription=subscription,
+                checkout=None,
+                items=items,
+                user_metadata=subscription.user_metadata,
+                custom_field_data=subscription.custom_field_data,
+            ),
+            flush=True,
+        )
+
+        # Reset the associated meters, if any
+        for subscription_meter in subscription.meters:
+            rollover_units = await customer_meter_service.get_rollover_units(
+                session, customer, subscription_meter.meter
+            )
+            await event_service.create_event(
+                session,
+                build_system_event(
+                    SystemEvent.meter_reset,
+                    customer=customer,
+                    organization=subscription.organization,
+                    metadata={"meter_id": str(subscription_meter.meter_id)},
+                ),
+            )
+            if rollover_units > 0:
+                await event_service.create_event(
+                    session,
+                    build_system_event(
+                        SystemEvent.meter_credited,
+                        customer=customer,
+                        organization=subscription.organization,
+                        metadata={
+                            "meter_id": str(subscription_meter.meter_id),
+                            "units": rollover_units,
+                            "rollover": True,
+                        },
+                    ),
+                )
+
+        await self._on_order_created(session, order)
+
+        # TODO: trigger payment
 
         return order
 

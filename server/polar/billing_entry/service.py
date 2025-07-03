@@ -3,8 +3,11 @@ import itertools
 import uuid
 from collections.abc import Sequence
 from datetime import datetime
+from typing import cast
 
+from babel.dates import format_date
 from sqlalchemy.orm import joinedload
+from sqlalchemy.util.typing import Literal
 
 from polar.event.repository import EventRepository
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -13,9 +16,24 @@ from polar.meter.service import meter as meter_service
 from polar.models import BillingEntry, Event, OrderItem, Subscription
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
-from polar.product.guard import MeteredPrice, is_metered_price
+from polar.product.guard import (
+    MeteredPrice,
+    StaticPrice,
+    is_metered_price,
+    is_static_price,
+)
+from polar.product.repository import ProductRepository
 
 from .repository import BillingEntryRepository
+
+
+@dataclasses.dataclass
+class StaticLineItem:
+    price: StaticPrice
+    amount: int
+    currency: str
+    label: str
+    proration: bool
 
 
 @dataclasses.dataclass
@@ -28,6 +46,7 @@ class MeteredLineItem:
     amount: int
     currency: str
     label: str
+    proration: Literal[False] = False
 
 
 class BillingEntryService:
@@ -36,8 +55,8 @@ class BillingEntryService:
         session: AsyncSession,
         subscription: Subscription,
         *,
-        stripe_invoice_id: str,
-        stripe_customer_id: str,
+        stripe_invoice_id: str | None = None,
+        stripe_customer_id: str | None = None,
     ) -> Sequence[OrderItem]:
         repository = BillingEntryRepository.from_session(session)
 
@@ -46,31 +65,35 @@ class BillingEntryService:
             session, subscription
         ):
             order_item_id = uuid.uuid4()
-            price = line_item.price
-            await stripe_service.create_invoice_item(
-                customer=stripe_customer_id,
-                invoice=stripe_invoice_id,
-                amount=line_item.amount,
-                currency=line_item.currency,
-                description=line_item.label,
-                metadata={
-                    "order_item_id": str(order_item_id),
-                    "product_price_id": str(price.id),
-                    "meter_id": str(price.meter_id),
-                    "units": str(line_item.consumed_units),
-                    "credited_units": str(line_item.credited_units),
-                    "unit_amount": str(price.unit_amount),
-                    "cap_amount": str(price.cap_amount),
-                },
-            )
+
+            # For legacy subscriptions managed by Stripe, we create invoice items on Stripe
+            if stripe_invoice_id and stripe_customer_id:
+                assert isinstance(line_item, MeteredLineItem)
+                price = line_item.price
+                await stripe_service.create_invoice_item(
+                    customer=stripe_customer_id,
+                    invoice=stripe_invoice_id,
+                    amount=line_item.amount,
+                    currency=line_item.currency,
+                    description=line_item.label,
+                    metadata={
+                        "order_item_id": str(order_item_id),
+                        "product_price_id": str(price.id),
+                        "meter_id": str(price.meter_id),
+                        "units": str(line_item.consumed_units),
+                        "credited_units": str(line_item.credited_units),
+                        "unit_amount": str(price.unit_amount),
+                        "cap_amount": str(price.cap_amount),
+                    },
+                )
 
             order_item = OrderItem(
                 id=order_item_id,
                 label=line_item.label,
                 amount=line_item.amount,
                 tax_amount=0,
-                proration=False,
-                product_price=price,
+                proration=line_item.proration,
+                product_price=line_item.price,
             )
             items.append((order_item, entries))
 
@@ -85,28 +108,59 @@ class BillingEntryService:
 
     async def compute_pending_subscription_line_items(
         self, session: AsyncSession, subscription: Subscription
-    ) -> Sequence[tuple[MeteredLineItem, Sequence[BillingEntry]]]:
+    ) -> Sequence[tuple[StaticLineItem | MeteredLineItem, Sequence[BillingEntry]]]:
         repository = BillingEntryRepository.from_session(session)
         pending_entries = await repository.get_pending_by_subscription(
             subscription.id,
             options=(joinedload(BillingEntry.product_price),),
         )
-        entries_by_price = itertools.groupby(
-            pending_entries, lambda entry: entry.product_price
+
+        items: list[tuple[StaticLineItem | MeteredLineItem, list[BillingEntry]]] = []
+
+        static_price_entries = (
+            e for e in pending_entries if is_static_price(e.product_price)
         )
+        for entry in static_price_entries:
+            static_price = cast(StaticPrice, entry.product_price)
+            static_line_item = await self._get_static_price_line_item(
+                session, static_price, entry
+            )
+            items.append((static_line_item, [entry]))
 
-        items: list[tuple[MeteredLineItem, list[BillingEntry]]] = []
-        for price, entries in entries_by_price:
-            if not is_metered_price(price):
-                raise NotImplementedError()
-
+        metered_entries_by_price = itertools.groupby(
+            (e for e in pending_entries if is_metered_price(e.product_price)),
+            lambda e: cast(MeteredPrice, e.product_price),
+        )
+        for metered_price, entries in metered_entries_by_price:
             entries_list = list(entries)
             metered_line_item = await self._get_metered_line_item(
-                session, price, subscription, entries_list
+                session, metered_price, subscription, entries_list
             )
             items.append((metered_line_item, entries_list))
 
         return items
+
+    async def _get_static_price_line_item(
+        self, session: AsyncSession, price: StaticPrice, entry: BillingEntry
+    ) -> StaticLineItem:
+        assert entry.amount is not None
+        assert entry.currency is not None
+
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(price.product_id)
+        assert product is not None
+
+        start = format_date(entry.start_timestamp.date(), locale="en_US")
+        end = format_date(entry.end_timestamp.date(), locale="en_US")
+        label = f"{product.name} — From {start} to {end}"
+
+        return StaticLineItem(
+            price=price,
+            amount=entry.amount,
+            currency=entry.currency,
+            label=label,
+            proration=False,  # TODO: Handle proration for static prices
+        )
 
     async def _get_metered_line_item(
         self,

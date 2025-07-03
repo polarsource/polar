@@ -139,6 +139,9 @@ class OrganizationService:
         if update_schema.subscription_settings is not None:
             organization.subscription_settings = update_schema.subscription_settings
 
+        if update_schema.notification_settings is not None:
+            organization.notification_settings = update_schema.notification_settings
+
         previous_details = organization.details
         update_dict = update_schema.model_dump(
             by_alias=True,

@@ -41,6 +41,19 @@ class OrganizationDetails(TypedDict):
     previous_annual_revenue: int
 
 
+class OrganizationNotificationSettings(TypedDict):
+    new_order: bool
+    new_subscription: bool
+    action_reminders: bool
+
+
+_default_notification_settings: OrganizationNotificationSettings = {
+    "new_order": True,
+    "new_subscription": True,
+    "action_reminders": True,
+}
+
+
 class OrganizationSubscriptionSettings(TypedDict):
     allow_multiple_subscriptions: bool
     allow_customer_updates: bool
@@ -102,6 +115,10 @@ class Organization(RecordModel):
 
     subscription_settings: Mapped[OrganizationSubscriptionSettings] = mapped_column(
         JSONB, nullable=False, default=_default_subscription_settings
+    )
+
+    notification_settings: Mapped[OrganizationNotificationSettings] = mapped_column(
+        JSONB, nullable=False, default=_default_notification_settings
     )
 
     #

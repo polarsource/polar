@@ -763,19 +763,21 @@ class OrderService:
         self, session: AsyncSession, organization: Organization, order: Order
     ) -> None:
         product = order.product
-        await notifications_service.send_to_org_members(
-            session,
-            org_id=product.organization_id,
-            notif=PartialNotification(
-                type=NotificationType.maintainer_new_product_sale,
-                payload=MaintainerNewProductSaleNotificationPayload(
-                    customer_name=order.customer.email,
-                    product_name=product.name,
-                    product_price_amount=order.net_amount,
-                    organization_name=organization.slug,
+
+        if organization.notification_settings["new_order"]:
+            await notifications_service.send_to_org_members(
+                session,
+                org_id=product.organization_id,
+                notif=PartialNotification(
+                    type=NotificationType.maintainer_new_product_sale,
+                    payload=MaintainerNewProductSaleNotificationPayload(
+                        customer_name=order.customer.email,
+                        product_name=product.name,
+                        product_price_amount=order.net_amount,
+                        organization_name=organization.slug,
+                    ),
                 ),
-            ),
-        )
+            )
 
     async def update_order_from_stripe(
         self, session: AsyncSession, invoice: stripe_lib.Invoice
@@ -916,17 +918,18 @@ class OrderService:
 
             await held_balance_service.create(session, held_balance=held_balance)
 
-            await notifications_service.send_to_org_members(
-                session=session,
-                org_id=organization.id,
-                notif=PartialNotification(
-                    type=NotificationType.maintainer_create_account,
-                    payload=MaintainerCreateAccountNotificationPayload(
-                        organization_name=organization.slug,
-                        url=organization.account_url,
+            if organization.notification_settings["action_reminders"]:
+                await notifications_service.send_to_org_members(
+                    session=session,
+                    org_id=organization.id,
+                    notif=PartialNotification(
+                        type=NotificationType.maintainer_create_account,
+                        payload=MaintainerCreateAccountNotificationPayload(
+                            organization_name=organization.slug,
+                            url=organization.account_url,
+                        ),
                     ),
-                ),
-            )
+                )
 
             return
 

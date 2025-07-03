@@ -38,7 +38,10 @@ const OrganizationNotificationSettings: React.FC<
     const { data, error } = await updateOrganization.mutateAsync({
       id: organization.id,
       body: {
-        notification_settings,
+        notification_settings: {
+          ...organization.notification_settings,
+          ...notification_settings,
+        },
       },
     })
 

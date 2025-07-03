@@ -14,6 +14,7 @@ from polar.integrations.discord.internal_webhook import (
 from polar.logging import Logger
 from polar.models import Customer, Order
 from polar.models.order import OrderBillingReason
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
@@ -51,6 +52,13 @@ class OrderDoesNotExist(OrderTaskError):
         super().__init__(message)
 
 
+class PaymentMethodDoesNotExist(OrderTaskError):
+    def __init__(self, payment_method_id: uuid.UUID) -> None:
+        self.payment_method_id = payment_method_id
+        message = f"The payment method with id {payment_method_id} does not exist."
+        super().__init__(message)
+
+
 @actor(actor_name="order.subscription_cycle", priority=TaskPriority.LOW)
 async def create_subscription_cycle_order(subscription_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
@@ -64,6 +72,26 @@ async def create_subscription_cycle_order(subscription_id: uuid.UUID) -> None:
         await order_service.create_subscription_order(
             session, subscription, OrderBillingReason.subscription_cycle
         )
+
+
+@actor(actor_name="order.trigger_payment", priority=TaskPriority.LOW)
+async def trigger_payment(order_id: uuid.UUID, payment_method_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrderRepository.from_session(session)
+        order = await repository.get_by_id(
+            order_id, options=repository.get_eager_options()
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        payment_method_repository = PaymentMethodRepository.from_session(session)
+        payment_method = await payment_method_repository.get_by_id_and_customer(
+            payment_method_id, order.customer_id
+        )
+        if payment_method is None:
+            raise PaymentMethodDoesNotExist(payment_method_id)
+
+        await order_service.trigger_payment(session, order, payment_method)
 
 
 @actor(actor_name="order.balance", priority=TaskPriority.LOW)
@@ -106,12 +134,7 @@ async def order_discord_notification(order_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         order_repository = OrderRepository.from_session(session)
         order = await order_repository.get_by_id(
-            order_id,
-            options=order_repository.get_eager_options(
-                customer_load=joinedload(Order.customer).joinedload(
-                    Customer.organization
-                )
-            ),
+            order_id, options=order_repository.get_eager_options()
         )
         if order is None:
             raise OrderDoesNotExist(order_id)

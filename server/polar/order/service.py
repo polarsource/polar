@@ -20,6 +20,7 @@ from polar.customer_session.service import customer_session as customer_session_
 from polar.discount.service import discount as discount_service
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import enqueue_email
+from polar.enums import PaymentProcessor
 from polar.event.service import event as event_service
 from polar.event.system import SystemEvent, build_system_event
 from polar.eventstream.service import publish as eventstream_publish
@@ -50,6 +51,7 @@ from polar.models import (
     OrderItem,
     Organization,
     Payment,
+    PaymentMethod,
     Product,
     ProductPrice,
     Subscription,
@@ -245,6 +247,13 @@ class NoPendingBillingEntries(OrderError):
         message = (
             f"No pending billing entries found for subscription {subscription.id}."
         )
+        super().__init__(message)
+
+
+class OrderNotPending(OrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = f"Order {order.id} is not pending"
         super().__init__(message)
 
 
@@ -657,11 +666,39 @@ class OrderService:
                     ),
                 )
 
+        # TODO: if amount is 0, mark it as paid and don't trigger payment
+
+        enqueue_job(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=subscription.payment_method_id,
+        )
+
         await self._on_order_created(session, order)
 
-        # TODO: trigger payment
-
         return order
+
+    async def trigger_payment(
+        self, session: AsyncSession, order: Order, payment_method: PaymentMethod
+    ) -> None:
+        if order.status != OrderStatus.pending:
+            raise OrderNotPending(order)
+
+        if payment_method.processor == PaymentProcessor.stripe:
+            stripe_customer_id = order.customer.stripe_customer_id
+            assert stripe_customer_id is not None
+            await stripe_service.create_payment_intent(
+                amount=order.total_amount,
+                currency=order.currency,
+                payment_method=payment_method.processor_id,
+                customer=stripe_customer_id,
+                confirm=True,
+                off_session=True,
+                statement_descriptor_suffix=order.organization.statement_descriptor,
+                metadata={
+                    "order_id": str(order.id),
+                },
+            )
 
     async def create_order_from_stripe(
         self, session: AsyncSession, invoice: stripe_lib.Invoice

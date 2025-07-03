@@ -24,6 +24,7 @@ from sqlalchemy.orm.attributes import OP_BULK_REPLACE, Event
 from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.product.guard import is_metered_price
 
@@ -104,13 +105,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     recurring_interval: Mapped[SubscriptionRecurringInterval] = mapped_column(
-        String, nullable=False, index=True
+        StringEnum(SubscriptionRecurringInterval), nullable=False, index=True
     )
     stripe_subscription_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True, default=None
     )
 
-    status: Mapped[SubscriptionStatus] = mapped_column(String, nullable=False)
+    status: Mapped[SubscriptionStatus] = mapped_column(
+        StringEnum(SubscriptionStatus), nullable=False
+    )
     current_period_start: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )

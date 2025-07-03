@@ -2,18 +2,15 @@ import uuid
 from collections.abc import Sequence
 
 import stripe as stripe_lib
-from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
-from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import generate_uuid
-from polar.models import Checkout, Customer, Order, Payment
+from polar.models import Checkout, Order, Payment
 from polar.models.payment import PaymentStatus
-from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
 
 from .repository import PaymentRepository
@@ -104,6 +101,7 @@ class PaymentService:
         session: AsyncSession,
         charge: stripe_lib.Charge,
         checkout: Checkout | None,
+        order: Order | None,
     ) -> Payment:
         repository = PaymentRepository.from_session(session)
 
@@ -141,21 +139,6 @@ class PaymentService:
                 payment.risk_score = charge.outcome.get("risk_score")
 
         payment.checkout = checkout
-
-        order: Order | None = None
-        order_repository = OrderRepository.from_session(session)
-        if charge.invoice is not None:
-            invoice_id = get_expandable_id(charge.invoice)
-            order = await order_repository.get_by_stripe_invoice_id(
-                invoice_id,
-                options=(joinedload(Order.customer).joinedload(Customer.organization),),
-            )
-        elif checkout is not None:
-            order_repository = OrderRepository.from_session(session)
-            order = await order_repository.get_earliest_by_checkout_id(
-                checkout.id,
-                options=(joinedload(Order.customer).joinedload(Customer.organization),),
-            )
         payment.order = order
 
         if checkout is not None:
@@ -172,6 +155,7 @@ class PaymentService:
         session: AsyncSession,
         payment_intent: stripe_lib.PaymentIntent,
         checkout: Checkout | None,
+        order: Order | None,
     ) -> Payment:
         # Only handle payment intents that are not linked to a charge, and which
         # have a last_payment_error.
@@ -201,15 +185,6 @@ class PaymentService:
         payment.decline_message = payment_error.message
 
         payment.checkout = checkout
-
-        order: Order | None = None
-        order_repository = OrderRepository.from_session(session)
-        if payment_intent.invoice is not None:
-            invoice_id = get_expandable_id(payment_intent.invoice)
-            order = await order_repository.get_by_stripe_invoice_id(
-                invoice_id,
-                options=(joinedload(Order.customer).joinedload(Customer.organization),),
-            )
         payment.order = order
 
         if checkout is not None:

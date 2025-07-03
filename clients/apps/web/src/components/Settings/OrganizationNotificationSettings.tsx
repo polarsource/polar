@@ -32,6 +32,7 @@ const OrganizationNotificationSettings: React.FC<
   const { control, handleSubmit, setError, reset, formState } = form
 
   const updateOrganization = useUpdateOrganization()
+
   const onSubmit = async (
     notification_settings: schemas['OrganizationNotificationSettings'],
   ) => {

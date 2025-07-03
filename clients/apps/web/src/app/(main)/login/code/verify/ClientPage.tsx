@@ -1,6 +1,5 @@
 'use client'
 
-import { setValidationErrors } from '@/utils/api/errors'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   InputOTP,
@@ -27,14 +26,14 @@ const ClientPage = ({ returnTo }: { returnTo?: string }) => {
       const formElement = document.createElement('form')
       formElement.method = 'POST'
       formElement.action = '/v1/login-code/authenticate'
-      
+
       const codeInput = document.createElement('input')
       codeInput.type = 'hidden'
       codeInput.name = 'code'
       codeInput.value = code
-      
+
       formElement.appendChild(codeInput)
-      
+
       if (returnTo) {
         const returnToInput = document.createElement('input')
         returnToInput.type = 'hidden'
@@ -42,7 +41,7 @@ const ClientPage = ({ returnTo }: { returnTo?: string }) => {
         returnToInput.value = returnTo
         formElement.appendChild(returnToInput)
       }
-      
+
       document.body.appendChild(formElement)
       formElement.submit()
     },
@@ -67,9 +66,7 @@ const ClientPage = ({ returnTo }: { returnTo?: string }) => {
                     pattern="^[a-zA-Z0-9]+$"
                     inputMode="text"
                     {...field}
-                    onChange={(value) =>
-                      field.onChange(value.toUpperCase())
-                    }
+                    onChange={(value) => field.onChange(value.toUpperCase())}
                   >
                     <InputOTPGroup>
                       {Array.from({ length: 6 }).map((_, index) => (
@@ -87,11 +84,7 @@ const ClientPage = ({ returnTo }: { returnTo?: string }) => {
             )
           }}
         />
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full"
-        >
+        <Button type="submit" size="lg" className="w-full">
           Sign in
         </Button>
       </form>

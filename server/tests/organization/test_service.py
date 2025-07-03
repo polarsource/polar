@@ -115,7 +115,6 @@ class TestCreate:
                 notification_settings=OrganizationNotificationSettings(
                     new_order=False,
                     new_subscription=False,
-                    action_reminders=False,
                 ),
             ),
             auth_subject,
@@ -124,7 +123,6 @@ class TestCreate:
         assert organization.notification_settings == {
             "new_order": False,
             "new_subscription": False,
-            "action_reminders": False,
         }
 
     @pytest.mark.auth

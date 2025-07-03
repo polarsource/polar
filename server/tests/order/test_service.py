@@ -117,7 +117,7 @@ def stripe_service_mock(mocker: MockerFixture, customer: Customer) -> MagicMock:
 
 
 @pytest.fixture
-def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
+def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.order.service.enqueue_job")
 
 
@@ -393,7 +393,7 @@ class TestCreateFromCheckoutOneTime:
     async def test_fixed(
         self,
         publish_checkout_event_mock: AsyncMock,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_one_time: Product,
@@ -429,7 +429,7 @@ class TestCreateFromCheckoutOneTime:
     async def test_custom(
         self,
         publish_checkout_event_mock: AsyncMock,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_one_time_custom_price: Product,
@@ -467,7 +467,7 @@ class TestCreateFromCheckoutOneTime:
     async def test_free(
         self,
         publish_checkout_event_mock: AsyncMock,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_one_time_free_price: Product,
@@ -503,7 +503,7 @@ class TestCreateFromCheckoutOneTime:
     async def test_fixed_discounted_100(
         self,
         publish_checkout_event_mock: AsyncMock,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_one_time: Product,
@@ -621,6 +621,7 @@ class TestCreateSubscriptionOrder:
 
     async def test_cycle_fixed_price(
         self,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         subscription: Subscription,
@@ -658,6 +659,12 @@ class TestCreateSubscriptionOrder:
         assert updated_billing_entry is not None
         assert updated_billing_entry.order_item_id == order_item.id
 
+        enqueue_job_mock.assert_any_call(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=subscription.payment_method_id,
+        )
+
 
 @pytest.mark.asyncio
 class TestCreateOrderFromStripe:
@@ -680,7 +687,7 @@ class TestCreateOrderFromStripe:
 
     async def test_basic(
         self,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         subscription: Subscription,
         product: Product,
@@ -898,7 +905,7 @@ class TestCreateOrderFromStripe:
     async def test_tax(
         self,
         stripe_service_mock: MagicMock,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         subscription: Subscription,
         product: Product,
@@ -938,7 +945,7 @@ class TestUpdateOrderFromStripe:
 
     async def test_paid_charge(
         self,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product: Product,
@@ -963,7 +970,7 @@ class TestUpdateOrderFromStripe:
 
     async def test_paid_out_of_band(
         self,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         stripe_service_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,

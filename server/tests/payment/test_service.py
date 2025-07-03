@@ -38,7 +38,7 @@ class TestUpsertFromStripeCharge:
 
         # Test upsert_from_stripe_charge
         payment = await payment_service.upsert_from_stripe_charge(
-            session, charge, checkout
+            session, charge, checkout, None
         )
 
         # Verify payment was created correctly
@@ -80,7 +80,9 @@ class TestUpsertFromStripeCharge:
         )
 
         # Test upsert_from_stripe_charge
-        payment = await payment_service.upsert_from_stripe_charge(session, charge, None)
+        payment = await payment_service.upsert_from_stripe_charge(
+            session, charge, None, order
+        )
 
         # Verify payment was created correctly
         assert payment.processor == PaymentProcessor.stripe
@@ -126,7 +128,7 @@ class TestUpsertFromStripeCharge:
 
         # Test upsert_from_stripe_charge
         payment = await payment_service.upsert_from_stripe_charge(
-            session, charge, checkout
+            session, charge, checkout, order
         )
 
         # Verify payment was created correctly
@@ -168,7 +170,7 @@ class TestUpsertFromStripeCharge:
 
         # Test upsert_from_stripe_charge
         payment = await payment_service.upsert_from_stripe_charge(
-            session, charge, checkout
+            session, charge, checkout, None
         )
 
         # Verify payment was created correctly
@@ -201,4 +203,4 @@ class TestUpsertFromStripeCharge:
 
         # Test upsert_from_stripe_charge should raise UnlinkedPaymentError
         with pytest.raises(UnlinkedPaymentError) as excinfo:
-            await payment_service.upsert_from_stripe_charge(session, charge, None)
+            await payment_service.upsert_from_stripe_charge(session, charge, None, None)

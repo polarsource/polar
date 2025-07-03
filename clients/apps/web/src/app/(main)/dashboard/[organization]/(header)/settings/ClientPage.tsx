@@ -2,6 +2,7 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
+import OrganizationNotificationSettings from '@/components/Settings/OrganizationNotificationSettings'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import OrganizationSubscriptionSettings from '@/components/Settings/OrganizationSubscriptionSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
@@ -26,6 +27,11 @@ export default function ClientPage({
         <Section id="subscriptions">
           <SectionDescription title="Subscriptions" />
           <OrganizationSubscriptionSettings organization={org} />
+        </Section>
+
+        <Section id="notifications">
+          <SectionDescription title="Notifications" />
+          <OrganizationNotificationSettings organization={org} />
         </Section>
 
         <Section id="developers">

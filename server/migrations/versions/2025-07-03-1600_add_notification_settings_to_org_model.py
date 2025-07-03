@@ -33,7 +33,7 @@ def upgrade() -> None:
     op.execute(
         """
         UPDATE organizations
-        SET notification_settings = '{"new_order": true, "new_subscription": true, "action_reminders": true}'
+        SET notification_settings = '{"new_order": true, "new_subscription": true}'
         """
     )
 

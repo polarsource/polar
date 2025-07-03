@@ -118,7 +118,7 @@ const Features = ({ className }: FeaturesProps) => {
             <li className="flex flex-row gap-x-1">
               <KeyboardArrowRightOutlined className="mt-0.5" fontSize="small" />
               <span className="text-pretty leading-relaxed">
-                LLM Ingestion (OpenAI, Anthropic, etc.)
+                LLM Ingestion using AI SDK
               </span>
             </li>
             <li className="flex flex-row items-center gap-x-1">

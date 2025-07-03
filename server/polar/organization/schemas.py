@@ -28,7 +28,10 @@ from polar.kit.schemas import (
     SlugValidator,
     TimestampedSchema,
 )
-from polar.models.organization import OrganizationSubscriptionSettings
+from polar.models.organization import (
+    OrganizationNotificationSettings,
+    OrganizationSubscriptionSettings,
+)
 
 OrganizationID = Annotated[
     UUID4,
@@ -186,6 +189,9 @@ class Organization(IDSchema, TimestampedSchema):
     subscription_settings: OrganizationSubscriptionSettings = Field(
         description="Settings related to subscriptions management",
     )
+    notification_settings: OrganizationNotificationSettings = Field(
+        description="Settings related to notifications",
+    )
 
     # Deprecated attributes
     bio: SkipJsonSchema[str | None] = Field(..., deprecated="")
@@ -245,6 +251,7 @@ class OrganizationCreate(Schema):
     )
     feature_settings: OrganizationFeatureSettings | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
+    notification_settings: OrganizationNotificationSettings | None = None
 
 
 class OrganizationUpdate(Schema):
@@ -267,6 +274,7 @@ class OrganizationUpdate(Schema):
 
     feature_settings: OrganizationFeatureSettings | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
+    notification_settings: OrganizationNotificationSettings | None = None
 
 
 class OrganizationSetAccount(Schema):

@@ -1079,20 +1079,22 @@ class SubscriptionService:
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
         product = subscription.product
-        await notifications_service.send_to_org_members(
-            session,
-            org_id=product.organization_id,
-            notif=PartialNotification(
-                type=NotificationType.maintainer_new_paid_subscription,
-                payload=MaintainerNewPaidSubscriptionNotificationPayload(
-                    subscriber_name=subscription.customer.email,
-                    tier_name=product.name,
-                    tier_price_amount=subscription.amount,
-                    tier_price_recurring_interval=subscription.recurring_interval,
-                    tier_organization_name=subscription.organization.name,
+
+        if product.organization.notification_settings["new_subscription"]:
+            await notifications_service.send_to_org_members(
+                session,
+                org_id=product.organization_id,
+                notif=PartialNotification(
+                    type=NotificationType.maintainer_new_paid_subscription,
+                    payload=MaintainerNewPaidSubscriptionNotificationPayload(
+                        subscriber_name=subscription.customer.email,
+                        tier_name=product.name,
+                        tier_price_amount=subscription.amount,
+                        tier_price_recurring_interval=subscription.recurring_interval,
+                        tier_organization_name=subscription.organization.name,
+                    ),
                 ),
-            ),
-        )
+            )
 
     async def _send_webhook(
         self,

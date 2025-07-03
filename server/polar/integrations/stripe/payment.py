@@ -7,9 +7,13 @@ from polar.checkout.service import checkout as checkout_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.models import Checkout, Order, Payment, PaymentMethod
 from polar.order.repository import OrderRepository
+from polar.order.service import order as order_service
 from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
+from polar.transaction.service.payment import (
+    payment_transaction as payment_transaction_service,
+)
 
 
 async def resolve_checkout(
@@ -67,6 +71,7 @@ async def handle_success(
         payment = await payment_service.upsert_from_stripe_charge(
             session, object, checkout, order
         )
+        await payment_transaction_service.create_payment(session, charge=object)
 
     if checkout is not None:
         payment_method: PaymentMethod | None = None
@@ -81,6 +86,9 @@ async def handle_success(
             payment=payment,
             payment_method=payment_method,
         )
+
+    if order is not None:
+        await order_service.handle_payment(session, order, payment)
 
 
 async def handle_failure(
@@ -102,6 +110,10 @@ async def handle_failure(
 
     if checkout is not None:
         await checkout_service.handle_failure(session, checkout, payment=payment)
+
+    if order is not None:
+        # TODO: handle failure, trigger retry, etc.
+        pass
 
 
 __all__ = [

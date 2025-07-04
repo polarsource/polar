@@ -638,7 +638,7 @@ class OrderService:
             assert invoice.id is not None
             await stripe_service.update_invoice(
                 invoice.id,
-                statement_descriptor=subscription.organization.statement_descriptor,
+                statement_descriptor=subscription.organization.statement_descriptor_prefixed,
             )
 
         # Determine billing reason

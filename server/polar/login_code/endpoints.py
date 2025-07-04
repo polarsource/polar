@@ -1,6 +1,6 @@
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import Depends, Form, Request
 from fastapi.responses import RedirectResponse
 
 from polar.auth.dependencies import WebUserOrAnonymous

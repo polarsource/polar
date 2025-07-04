@@ -24,9 +24,7 @@ class LoginCodeError(PolarError): ...
 
 class LoginCodeInvalidOrExpired(LoginCodeError):
     def __init__(self) -> None:
-        super().__init__(
-            "This login code is invalid or has expired.", status_code=401
-        )
+        super().__init__("This login code is invalid or has expired.", status_code=401)
 
 
 class LoginCodeService:
@@ -42,12 +40,13 @@ class LoginCodeService:
         user = await user_repository.get_by_email(email)
 
         code, code_hash = self._generate_code_hash()
-        
+
         login_code = LoginCode(
             code_hash=code_hash,
             email=email,
             user_id=user.id if user is not None else None,
-            expires_at=utc_now() + datetime.timedelta(seconds=settings.LOGIN_CODE_TTL_SECONDS),
+            expires_at=utc_now()
+            + datetime.timedelta(seconds=settings.LOGIN_CODE_TTL_SECONDS),
             return_to=return_to,
         )
         session.add(login_code)
@@ -78,16 +77,17 @@ class LoginCodeService:
         )
 
     async def authenticate(
-        self, session: AsyncSession, code: str, *, signup_attribution: UserSignupAttribution | None = None
+        self,
+        session: AsyncSession,
+        code: str,
+        *,
+        signup_attribution: UserSignupAttribution | None = None,
     ) -> tuple[User, bool, str | None]:
         code_hash = get_token_hash(code, secret=settings.SECRET)
-        
+
         statement = (
             select(LoginCode)
-            .where(
-                LoginCode.code_hash == code_hash,
-                LoginCode.expires_at > utc_now()
-            )
+            .where(LoginCode.code_hash == code_hash, LoginCode.expires_at > utc_now())
             .options(joinedload(LoginCode.user))
         )
         result = await session.execute(statement)

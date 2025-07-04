@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { cn } from '@/lib/utils'
+import { ComponentProps, useState } from 'react'
 
 const Avatar = ({
   name,
@@ -16,19 +16,25 @@ const Avatar = ({
 }) => {
   const initials = getInitials(name)
 
+  // We render the image with opacity: 0 until it's successfully loaded.
+  // Not doing so can result in a flash of the `alt` text when a 404
+  // is returned from browser cache.
+  const [hasLoaded, setHasLoaded] = useState(false)
   const [showInitials, setShowInitials] = useState(avatar_url === null)
+
+  const onLoad = () => {
+    setHasLoaded(true)
+    setShowInitials(false)
+  }
 
   const onError = () => {
     setShowInitials(true)
+    setHasLoaded(true)
   }
-
-  useEffect(() => {
-    setShowInitials(avatar_url === null)
-  }, [avatar_url])
 
   return (
     <div
-      className={twMerge(
+      className={cn(
         'dark:bg-polar-900 dark:border-polar-700 relative z-[2] flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-200 bg-gray-50 text-sm',
         className,
       )}
@@ -45,8 +51,12 @@ const Avatar = ({
             src={avatar_url}
             height={height}
             width={width}
+            onLoad={onLoad}
             onError={onError}
-            className="z-[1] aspect-square rounded-full object-cover"
+            className={cn(
+              'z-[1] aspect-square rounded-full object-cover',
+              hasLoaded ? 'opacity-100' : 'opacity-0',
+            )}
           />
         </>
       )}
@@ -54,7 +64,11 @@ const Avatar = ({
   )
 }
 
-export default Avatar
+const AvatarWrapper = (props: ComponentProps<typeof StatefulAvatar>) => {
+  return <Avatar {...props} key={props.avatar_url} />
+}
+
+export default AvatarWrapper
 
 const getInitials = (fullName: string) => {
   const allNames = fullName.trim().split(' ')

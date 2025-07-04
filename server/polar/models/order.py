@@ -105,6 +105,9 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     tax_rate: Mapped[TaxRate | None] = mapped_column(
         JSONB(none_as_null=True), nullable=True, default=None
     )
+    tax_calculation_processor_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
     tax_transaction_processor_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )

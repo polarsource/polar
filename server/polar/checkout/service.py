@@ -1535,7 +1535,7 @@ class CheckoutService:
             and checkout.product.stripe_product_id is not None
         ):
             try:
-                tax_processor_id, tax_amount = await calculate_tax(
+                tax_calculation = await calculate_tax(
                     checkout.id,
                     checkout.currency,
                     checkout.net_amount,
@@ -1547,8 +1547,8 @@ class CheckoutService:
                         else []
                     ),
                 )
-                checkout.tax_amount = tax_amount
-                checkout.tax_processor_id = tax_processor_id
+                checkout.tax_amount = tax_calculation["amount"]
+                checkout.tax_processor_id = tax_calculation["processor_id"]
             except TaxCalculationError:
                 checkout.tax_amount = None
                 checkout.tax_processor_id = None

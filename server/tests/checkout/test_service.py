@@ -34,7 +34,12 @@ from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
-from polar.kit.tax import IncompleteTaxLocation, TaxIDFormat, calculate_tax
+from polar.kit.tax import (
+    IncompleteTaxLocation,
+    TaxabilityReason,
+    TaxIDFormat,
+    calculate_tax,
+)
 from polar.locker import Locker
 from polar.models import (
     Checkout,
@@ -102,7 +107,7 @@ def order_service_mock(mocker: MockerFixture) -> MagicMock:
 def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
     mock = AsyncMock(spec=calculate_tax)
     mocker.patch("polar.checkout.service.calculate_tax", new=mock)
-    mock.return_value = "TAX_PROCESSOR_ID", 0
+    mock.return_value = {"processor_id": "TAX_PROCESSOR_ID", "amount": 0}
     return mock
 
 
@@ -758,7 +763,12 @@ class TestCreate:
         user_organization: UserOrganization,
         product_one_time: Product,
     ) -> None:
-        calculate_tax_mock.return_value = "TAX_PROCESSOR_ID", 100
+        calculate_tax_mock.return_value = {
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": 100,
+            "taxability_reason": TaxabilityReason.standard_rated,
+            "tax_rate": {},
+        }
 
         price = product_one_time.prices[0]
         assert isinstance(price, ProductPriceFixed)
@@ -1988,7 +1998,12 @@ class TestUpdate:
         calculate_tax_mock: AsyncMock,
         checkout_one_time_fixed: Checkout,
     ) -> None:
-        calculate_tax_mock.return_value = "TAX_PROCESSOR_ID", 100
+        calculate_tax_mock.return_value = {
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": 100,
+            "taxability_reason": TaxabilityReason.standard_rated,
+            "tax_rate": {},
+        }
 
         checkout = await checkout_service.update(
             session,

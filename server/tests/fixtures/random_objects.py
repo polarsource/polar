@@ -794,6 +794,7 @@ async def create_order(
     billing_address: Address | None = None,
     invoice_number: str | None = None,
     checkout: Checkout | None = None,
+    discount: Discount | None = None,
 ) -> Order:
     order = Order(
         created_at=created_at or utc_now(),
@@ -821,6 +822,7 @@ async def create_order(
         product=product,
         subscription=subscription,
         checkout=checkout,
+        discount=discount,
         custom_field_data=custom_field_data or {},
         user_metadata=user_metadata or {},
     )

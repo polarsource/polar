@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const Avatar = ({
@@ -21,6 +21,10 @@ const Avatar = ({
   const onError = () => {
     setShowInitials(true)
   }
+
+  useEffect(() => {
+    setShowInitials(avatar_url === null)
+  }, [avatar_url])
 
   return (
     <div

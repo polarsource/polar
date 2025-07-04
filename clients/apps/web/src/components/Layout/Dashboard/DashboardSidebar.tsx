@@ -145,7 +145,7 @@ export const DashboardSidebar = ({
                   {organizations.map((org) => (
                     <DropdownMenuItem
                       key={org.id}
-                      className="flex cursor-pointer flex-row items-center gap-x-2"
+                      className="flex flex-row items-center gap-x-2"
                       onClick={() => navigateToOrganization(org)}
                     >
                       <Avatar
@@ -158,20 +158,17 @@ export const DashboardSidebar = ({
                   ))}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="cursor-pointer"
                     onClick={() => router.push('/dashboard/create')}
                   >
                     New Organization
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    className="cursor-pointer"
                     onClick={() => router.push('/dashboard/account')}
                   >
                     Account Settings
                   </DropdownMenuItem>
                   {!CONFIG.IS_SANDBOX && (
                     <DropdownMenuItem
-                      className="cursor-pointer"
                       onClick={() =>
                         router.push('https://sandbox.polar.sh/start')
                       }
@@ -181,7 +178,6 @@ export const DashboardSidebar = ({
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="cursor-pointer"
                     onClick={() =>
                       router.push(`${CONFIG.BASE_URL}/v1/auth/logout`)
                     }

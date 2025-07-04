@@ -78,7 +78,7 @@ const DropdownMenuItem = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownMenuItemPrimitive
     ref={ref}
-    className={twMerge('', className)}
+    className={twMerge(props?.onClick ? 'cursor-pointer' : '', className)}
     {...props}
   />
 ))

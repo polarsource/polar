@@ -91,7 +91,7 @@ class LoginCodeService:
             .options(joinedload(LoginCode.user))
         )
         result = await session.execute(statement)
-        login_code = result.scalar_one_or_none()
+        login_code = result.unique().scalar_one_or_none()
 
         if login_code is None:
             raise LoginCodeInvalidOrExpired()

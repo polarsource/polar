@@ -1,23 +1,22 @@
 'use client'
 
-import * as React from 'react'
 import {
   DropdownMenuCheckboxItem as DropdownMenuCheckboxItemPrimitive,
   DropdownMenuContent as DropdownMenuContentPrimitive,
   DropdownMenuGroup as DropdownMenuGroupPrimitive,
   DropdownMenuItem as DropdownMenuItemPrimitive,
   DropdownMenuLabel as DropdownMenuLabelPrimitive,
-  DropdownMenu as DropdownMenuPrimitive,
   DropdownMenuPortal as DropdownMenuPortalPrimitive,
+  DropdownMenu as DropdownMenuPrimitive,
   DropdownMenuRadioGroup as DropdownMenuRadioGroupPrimitive,
   DropdownMenuRadioItem as DropdownMenuRadioItemPrimitive,
   DropdownMenuSeparator as DropdownMenuSeparatorPrimitive,
-  DropdownMenuShortcut as DropdownMenuShortcutPrimitive,
-  DropdownMenuSub as DropdownMenuSubPrimitive,
   DropdownMenuSubContent as DropdownMenuSubContentPrimitive,
+  DropdownMenuSub as DropdownMenuSubPrimitive,
   DropdownMenuSubTrigger as DropdownMenuSubTriggerPrimitive,
   DropdownMenuTrigger as DropdownMenuTriggerPrimitive,
 } from '@/components/ui/dropdown-menu'
+import * as React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const DropdownMenu = DropdownMenuPrimitive
@@ -34,24 +33,17 @@ const DropdownMenuRadioGroup = DropdownMenuRadioGroupPrimitive
 
 const DropdownMenuSubTrigger = React.forwardRef<
   React.ElementRef<typeof DropdownMenuSubTriggerPrimitive>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuSubTriggerPrimitive> & {
-    inset?: boolean
-  }
->(({ className, inset, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DropdownMenuSubTriggerPrimitive>
+>(({ className, children, ...props }, ref) => (
   <DropdownMenuSubTriggerPrimitive
     ref={ref}
-    className={twMerge(
-      'flex cursor-default select-none items-center rounded-lg px-2 py-1.5 text-sm outline-none focus:bg-gray-100 data-[state=open]:bg-gray-100 dark:focus:bg-polar-700 dark:data-[state=open]:bg-polar-700',
-      inset && 'pl-8',
-      className,
-    )}
+    className={twMerge('', className)}
     {...props}
   >
     {children}
   </DropdownMenuSubTriggerPrimitive>
 ))
-DropdownMenuSubTrigger.displayName =
-  DropdownMenuSubTriggerPrimitive.displayName
+DropdownMenuSubTrigger.displayName = DropdownMenuSubTriggerPrimitive.displayName
 
 const DropdownMenuSubContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuSubContentPrimitive>,
@@ -59,15 +51,11 @@ const DropdownMenuSubContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownMenuSubContentPrimitive
     ref={ref}
-    className={twMerge(
-      'z-50 min-w-[8rem] overflow-hidden rounded-xl border border-gray-200 bg-white p-1 text-gray-900 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 dark:border-polar-700 dark:bg-polar-800 dark:text-polar-50',
-      className,
-    )}
+    className={twMerge('', className)}
     {...props}
   />
 ))
-DropdownMenuSubContent.displayName =
-  DropdownMenuSubContentPrimitive.displayName
+DropdownMenuSubContent.displayName = DropdownMenuSubContentPrimitive.displayName
 
 const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuContentPrimitive>,
@@ -77,10 +65,7 @@ const DropdownMenuContent = React.forwardRef<
     <DropdownMenuContentPrimitive
       ref={ref}
       sideOffset={sideOffset}
-      className={twMerge(
-        'z-50 min-w-[8rem] overflow-hidden rounded-xl border border-gray-200 bg-white p-1 text-gray-900 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 dark:border-polar-700 dark:bg-polar-800 dark:text-polar-50',
-        className,
-      )}
+      className={twMerge('', className)}
       {...props}
     />
   </DropdownMenuPortal>
@@ -89,17 +74,11 @@ DropdownMenuContent.displayName = DropdownMenuContentPrimitive.displayName
 
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuItemPrimitive>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuItemPrimitive> & {
-    inset?: boolean
-  }
->(({ className, inset, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DropdownMenuItemPrimitive>
+>(({ className, ...props }, ref) => (
   <DropdownMenuItemPrimitive
     ref={ref}
-    className={twMerge(
-      'relative flex cursor-pointer select-none items-center rounded-lg px-2 py-1.5 text-sm outline-none transition-colors focus:bg-gray-100 focus:text-gray-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 dark:focus:bg-polar-700 dark:focus:text-polar-50',
-      inset && 'pl-8',
-      className,
-    )}
+    className={twMerge('', className)}
     {...props}
   />
 ))
@@ -111,10 +90,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
 >(({ className, children, checked, ...props }, ref) => (
   <DropdownMenuCheckboxItemPrimitive
     ref={ref}
-    className={twMerge(
-      'relative flex cursor-pointer select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-gray-100 focus:text-gray-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 dark:focus:bg-polar-700 dark:focus:text-polar-50',
-      className,
-    )}
+    className={twMerge('', className)}
     checked={checked}
     {...props}
   >
@@ -130,10 +106,7 @@ const DropdownMenuRadioItem = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <DropdownMenuRadioItemPrimitive
     ref={ref}
-    className={twMerge(
-      'relative flex cursor-pointer select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-gray-100 focus:text-gray-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 dark:focus:bg-polar-700 dark:focus:text-polar-50',
-      className,
-    )}
+    className={twMerge('', className)}
     {...props}
   >
     {children}
@@ -143,17 +116,11 @@ DropdownMenuRadioItem.displayName = DropdownMenuRadioItemPrimitive.displayName
 
 const DropdownMenuLabel = React.forwardRef<
   React.ElementRef<typeof DropdownMenuLabelPrimitive>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuLabelPrimitive> & {
-    inset?: boolean
-  }
->(({ className, inset, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DropdownMenuLabelPrimitive>
+>(({ className, ...props }, ref) => (
   <DropdownMenuLabelPrimitive
     ref={ref}
-    className={twMerge(
-      'px-2 py-1.5 text-sm font-semibold',
-      inset && 'pl-8',
-      className,
-    )}
+    className={twMerge('', className)}
     {...props}
   />
 ))
@@ -165,10 +132,7 @@ const DropdownMenuSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownMenuSeparatorPrimitive
     ref={ref}
-    className={twMerge(
-      '-mx-1 my-1 h-px bg-gray-100 dark:bg-polar-700',
-      className,
-    )}
+    className={twMerge('', className)}
     {...props}
   />
 ))
@@ -178,32 +142,24 @@ const DropdownMenuShortcut = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLSpanElement>) => {
-  return (
-    <span
-      className={twMerge(
-        'ml-auto text-xs tracking-widest opacity-60',
-        className,
-      )}
-      {...props}
-    />
-  )
+  return <span className={twMerge('', className)} {...props} />
 }
 DropdownMenuShortcut.displayName = 'DropdownMenuShortcut'
 
 export {
   DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuCheckboxItem,
-  DropdownMenuRadioItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
-  DropdownMenuGroup,
-  DropdownMenuPortal,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-  DropdownMenuRadioGroup,
+  DropdownMenuTrigger,
 }

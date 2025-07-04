@@ -2,13 +2,13 @@ import { PolarHog, usePostHog } from '@/hooks/posthog'
 import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
-  AutoAwesome,
   CodeOutlined,
+  DiamondOutlined,
   DiscountOutlined,
   DonutLargeOutlined,
   HiveOutlined,
   LinkOutlined,
-  PeopleOutlined,
+  PeopleAltOutlined,
   ShoppingBagOutlined,
   SpaceDashboardOutlined,
   Storefront,
@@ -193,7 +193,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
   {
     id: 'benefits',
     title: 'Benefits',
-    icon: <AutoAwesome fontSize="inherit" />,
+    icon: <DiamondOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/benefits`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org?.slug}/benefits`)
@@ -203,7 +203,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
   {
     id: 'customers',
     title: 'Customers',
-    icon: <PeopleOutlined fontSize="inherit" />,
+    icon: <PeopleAltOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/customers`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org?.slug}/customers`)

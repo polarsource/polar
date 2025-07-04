@@ -26,6 +26,7 @@ from .held_balance import HeldBalance
 from .issue_reward import IssueReward
 from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
+from .login_code import LoginCode
 from .magic_link import MagicLink
 from .meter import Meter
 from .notification import Notification
@@ -100,6 +101,7 @@ __all__ = [
     "IssueReward",
     "LicenseKey",
     "LicenseKeyActivation",
+    "LoginCode",
     "MagicLink",
     "Meter",
     "Notification",

@@ -1,6 +1,6 @@
 'use client'
 
-import { MagicLinkError, useSendMagicLink } from '@/hooks/magicLink'
+import { LoginCodeError, useSendLoginCode } from '@/hooks/loginCode'
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { setValidationErrors } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
@@ -28,7 +28,7 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({
   const form = useForm<{ email: string }>()
   const { control, handleSubmit, setError } = form
   const [loading, setLoading] = useState(false)
-  const sendMagicLink = useSendMagicLink()
+  const sendLoginCode = useSendLoginCode()
   const posthog = usePostHog()
 
   const onSubmit: SubmitHandler<{ email: string }> = async ({ email }) => {
@@ -39,13 +39,13 @@ const MagicLinkLoginForm: React.FC<MagicLinkLoginFormProps> = ({
     }
 
     posthog.capture(eventName, {
-      method: 'ml',
+      method: 'code',
     })
 
     try {
-      await sendMagicLink(email, returnTo, signup)
+      await sendLoginCode(email, returnTo, signup)
     } catch (e) {
-      if (e instanceof MagicLinkError && e.error) {
+      if (e instanceof LoginCodeError && e.error) {
         setValidationErrors(e.error, setError)
       }
     } finally {

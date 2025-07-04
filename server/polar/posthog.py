@@ -180,12 +180,14 @@ class Service:
             },
         )
 
-    def user_login(self, user: User, method: Literal["github", "google", "ml"]) -> None:
+    def user_login(
+        self, user: User, method: Literal["github", "google", "ml", "code"]
+    ) -> None:
         self.identify(user)
         self.user_event(user, "user", "login", "done", {"method": method})
 
     def user_signup(
-        self, user: User, method: Literal["github", "google", "ml"]
+        self, user: User, method: Literal["github", "google", "ml", "code"]
     ) -> None:
         self.identify(user)
         self.user_event(user, "user", "signup", "done", {"method": method})

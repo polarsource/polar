@@ -30,7 +30,7 @@ from yaspin.spinners import Spinners
 ROOT_PATH = pathlib.Path(__file__).parent.parent
 IS_CODESPACES = os.getenv("CODESPACES", "false") == "true"
 SETUP_PAGE = """
-<form id="setup-form" action="https://github.com/organizations/polarsource/settings/apps/new" method="post">
+<form id="setup-form" action="https://github.com/settings/apps/new" method="post">
  Register a GitHub App Manifest: <input type="text" name="manifest" id="manifest"><br>
  <input type="submit" value="Submit">
 </form>

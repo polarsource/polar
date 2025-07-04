@@ -5,6 +5,7 @@ from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import pytest
 import stripe as stripe_lib
+from pydantic_extra_types.country import CountryAlpha2
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
@@ -17,7 +18,7 @@ from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
-from polar.kit.tax import TaxabilityReason
+from polar.kit.tax import TaxabilityReason, calculate_tax
 from polar.models import (
     Account,
     Customer,
@@ -42,6 +43,7 @@ from polar.order.service import (
     NotASubscriptionInvoice,
     NotRecurringProduct,
     OrderDoesNotExist,
+    OrderNotPending,
     RecurringProduct,
     SubscriptionDoesNotExist,
 )
@@ -58,9 +60,12 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.email import WatcherEmailRenderer, watch_email
 from tests.fixtures.random_objects import (
+    create_active_subscription,
     create_billing_entry,
     create_checkout,
+    create_customer,
     create_order,
+    create_payment,
     create_subscription,
 )
 from tests.fixtures.stripe import construct_stripe_invoice
@@ -131,6 +136,19 @@ def event_creation_time() -> tuple[datetime, int]:
     created_datetime = datetime.fromisoformat("2024-01-01T00:00:00Z")
     created_unix_timestamp = int(created_datetime.timestamp())
     return created_datetime, created_unix_timestamp
+
+
+@pytest.fixture
+def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
+    mock = AsyncMock(spec=calculate_tax)
+    mocker.patch("polar.order.service.calculate_tax", new=mock)
+    mock.return_value = {
+        "processor_id": "TAX_PROCESSOR_ID",
+        "amount": 100,
+        "taxability_reason": TaxabilityReason.standard_rated,
+        "tax_rate": {},
+    }
+    return mock
 
 
 @pytest.mark.asyncio
@@ -621,12 +639,22 @@ class TestCreateSubscriptionOrder:
 
     async def test_cycle_fixed_price(
         self,
+        calculate_tax_mock: MagicMock,
         enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        subscription: Subscription,
+        product: Product,
+        organization: Organization,
     ) -> None:
-        price = subscription.product.prices[0]
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        price = product.prices[0]
         assert is_fixed_price(price)
         billing_entry = await create_billing_entry(
             save_fixture,
@@ -651,6 +679,18 @@ class TestCreateSubscriptionOrder:
         assert order.status == OrderStatus.pending
         assert order.billing_reason == OrderBillingReason.subscription_cycle
         assert order.subscription == subscription
+
+        assert order.tax_amount == calculate_tax_mock.return_value["amount"]
+        assert (
+            order.tax_calculation_processor_id
+            == calculate_tax_mock.return_value["processor_id"]
+        )
+        assert (
+            order.taxability_reason
+            == calculate_tax_mock.return_value["taxability_reason"]
+        )
+        assert order.tax_rate == calculate_tax_mock.return_value["tax_rate"]
+        assert order.tax_transaction_processor_id is None
 
         billing_entry_repository = BillingEntryRepository.from_session(session)
         updated_billing_entry = await billing_entry_repository.get_by_id(
@@ -1113,3 +1153,75 @@ async def test_send_confirmation_email(
             await order_service.send_confirmation_email(session, organization, order)
 
         await watch_email(_send_confirmation_email, email_sender.path)
+
+
+@pytest.mark.asyncio
+class TestHandlePayment:
+    async def test_order_not_pending(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Create an order that is already paid
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+
+        with pytest.raises(OrderNotPending):
+            await order_service.handle_payment(session, order, None)
+
+    async def test_full_case_with_payment_and_tax(
+        self,
+        stripe_service_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Create a pending order with tax calculation processor ID
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        # Set tax_calculation_processor_id
+        order.tax_calculation_processor_id = "tax_calc_123"
+        await save_fixture(order)
+
+        # Create a payment
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_123",
+        )
+
+        # Mock stripe tax transaction creation
+        mock_tax_transaction = MagicMock()
+        mock_tax_transaction.id = "tax_txn_456"
+        stripe_service_mock.create_tax_transaction.return_value = mock_tax_transaction
+
+        # Call handle_payment
+        updated_order = await order_service.handle_payment(session, order, payment)
+
+        # Verify order status is updated to paid
+        assert updated_order.status == OrderStatus.paid
+        assert updated_order.tax_transaction_processor_id == "tax_txn_456"
+
+        # Verify enqueue_job was called to balance the order
+        enqueue_job_mock.assert_called_once_with(
+            "order.balance", order_id=order.id, charge_id="stripe_payment_123"
+        )
+
+        # Verify stripe tax transaction was created
+        stripe_service_mock.create_tax_transaction.assert_called_once_with(
+            "tax_calc_123", str(order.id)
+        )

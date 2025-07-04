@@ -38,6 +38,7 @@ from polar.kit.sorting import Sorting
 from polar.kit.tax import (
     TaxabilityReason,
     TaxRate,
+    calculate_tax,
     from_stripe_tax_rate,
     from_stripe_tax_rate_details,
 )
@@ -591,8 +592,10 @@ class OrderService:
         if len(items) == 0:
             raise NoPendingBillingEntries(subscription)
 
+        order_id = uuid.uuid4()
         customer = subscription.customer
         billing_address = customer.billing_address
+        product = subscription.product
 
         subtotal_amount = sum(item.amount for item in items)
 
@@ -600,11 +603,31 @@ class OrderService:
         discount_amount = 0
         discount = None
 
-        # TODO: Tax handling
+        # Calculate tax
         tax_amount = 0
         taxability_reason: TaxabilityReason | None = None
-        tax_id = customer.tax_id
         tax_rate: TaxRate | None = None
+        tax_id = customer.tax_id
+        tax_calculation_processor_id: str | None = None
+
+        if (
+            subtotal_amount > 0
+            and product.is_tax_applicable
+            and billing_address is not None
+            and product.stripe_product_id is not None
+        ):
+            tax_calculation = await calculate_tax(
+                order_id,
+                subscription.currency,
+                subtotal_amount,
+                product.stripe_product_id,
+                billing_address,
+                [tax_id] if tax_id is not None else [],
+            )
+            tax_calculation_processor_id = tax_calculation["processor_id"]
+            tax_amount = tax_calculation["amount"]
+            taxability_reason = tax_calculation["taxability_reason"]
+            tax_rate = tax_calculation["tax_rate"]
 
         invoice_number = await organization_service.get_next_invoice_number(
             session, subscription.organization
@@ -613,6 +636,7 @@ class OrderService:
         repository = OrderRepository.from_session(session)
         order = await repository.create(
             Order(
+                id=order_id,
                 status=OrderStatus.pending,
                 subtotal_amount=subtotal_amount,
                 discount_amount=discount_amount,
@@ -624,6 +648,7 @@ class OrderService:
                 taxability_reason=taxability_reason,
                 tax_id=tax_id,
                 tax_rate=tax_rate,
+                tax_calculation_processor_id=tax_calculation_processor_id,
                 invoice_number=invoice_number,
                 customer=customer,
                 product=subscription.product,
@@ -685,6 +710,12 @@ class OrderService:
             raise OrderNotPending(order)
 
         if payment_method.processor == PaymentProcessor.stripe:
+            metadata: dict[str, Any] = {"order_id": str(order.id)}
+            if order.tax_rate is not None:
+                metadata["tax_amount"] = order.tax_amount
+                metadata["tax_country"] = order.tax_rate["country"]
+                metadata["tax_state"] = order.tax_rate["state"]
+
             stripe_customer_id = order.customer.stripe_customer_id
             assert stripe_customer_id is not None
             await stripe_service.create_payment_intent(
@@ -695,9 +726,7 @@ class OrderService:
                 confirm=True,
                 off_session=True,
                 statement_descriptor_suffix=order.organization.statement_descriptor,
-                metadata={
-                    "order_id": str(order.id),
-                },
+                metadata=metadata,
             )
 
     async def handle_payment(
@@ -706,13 +735,23 @@ class OrderService:
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
 
+        update_dict: dict[str, Any] = {"status": OrderStatus.paid}
+
+        # Balance the order in the ledger
         if payment is not None:
             enqueue_job(
                 "order.balance", order_id=order.id, charge_id=payment.processor_id
             )
 
+        # Record tax transaction
+        if order.tax_calculation_processor_id is not None:
+            transaction = await stripe_service.create_tax_transaction(
+                order.tax_calculation_processor_id, str(order.id)
+            )
+            update_dict["tax_transaction_processor_id"] = transaction.id
+
         repository = OrderRepository.from_session(session)
-        order = await repository.update(order, update_dict={"status": OrderStatus.paid})
+        order = await repository.update(order, update_dict=update_dict)
 
         await self._on_order_updated(session, order, OrderStatus.pending)
 

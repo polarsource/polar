@@ -14,16 +14,24 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
-const ClientPage = ({ returnTo }: { returnTo?: string }) => {
+const ClientPage = ({ returnTo, error, email }: { returnTo?: string, error?: string, email?: string }) => {
   const form = useForm<{ code: string }>()
   const { control, setError } = form
 
   const urlSearchParams = new URLSearchParams({
     ...(returnTo && { returnTo }),
+    ...(email && { email }),
   })
+
+  // Set error from urlparams
+  useEffect(() => {
+    if (error) {
+      setError('code', { message: error })
+    }
+  }, [error, setError])
 
   const [loading, setLoading] = useState(false)
   const onSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {

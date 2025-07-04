@@ -1,5 +1,6 @@
 'use client'
 
+import { CONFIG } from '@/utils/config'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
   InputOTP,
@@ -13,46 +14,31 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 const ClientPage = ({ returnTo }: { returnTo?: string }) => {
   const form = useForm<{ code: string }>()
-  const { control, handleSubmit, setError } = form
+  const { control, setError } = form
 
-  const onSubmit = useCallback(
-    async ({ code }: { code: string }) => {
-      // Create a form and submit it to authenticate-form endpoint
-      const formElement = document.createElement('form')
-      formElement.method = 'POST'
-      formElement.action = '/v1/login-code/authenticate'
+  const urlSearchParams = new URLSearchParams({
+    ...(returnTo && { returnTo }),
+  })
 
-      const codeInput = document.createElement('input')
-      codeInput.type = 'hidden'
-      codeInput.name = 'code'
-      codeInput.value = code
-
-      formElement.appendChild(codeInput)
-
-      if (returnTo) {
-        const returnToInput = document.createElement('input')
-        returnToInput.type = 'hidden'
-        returnToInput.name = 'return_to'
-        returnToInput.value = returnTo
-        formElement.appendChild(returnToInput)
-      }
-
-      document.body.appendChild(formElement)
-      formElement.submit()
-    },
-    [returnTo],
-  )
+  const [loading, setLoading] = useState(false)
+  const onSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setLoading(true)
+    e.currentTarget.submit()
+  }, [])
 
   return (
     <Form {...form}>
       <form
         className="flex w-full flex-col items-center gap-y-6"
-        onSubmit={handleSubmit(onSubmit)}
+        action={`${CONFIG.BASE_URL}/v1/login-code/authenticate?${urlSearchParams.toString()}`}
+        method="POST"
+        onSubmit={onSubmit}
       >
         <FormField
           control={control}
@@ -84,7 +70,7 @@ const ClientPage = ({ returnTo }: { returnTo?: string }) => {
             )
           }}
         />
-        <Button type="submit" size="lg" className="w-full">
+        <Button type="submit" size="lg" className="w-full" loading={loading}>
           Sign in
         </Button>
       </form>

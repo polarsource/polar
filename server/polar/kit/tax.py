@@ -338,55 +338,6 @@ class InvalidTaxLocation(TaxCalculationError):
         )
 
 
-async def calculate_tax(
-    checkout_id: uuid.UUID,
-    currency: str,
-    amount: int,
-    stripe_product_id: str,
-    address: Address,
-    tax_ids: list[TaxID],
-) -> tuple[str, int]:
-    # Compute an idempotency key based on the input parameters to work as a sort of cache
-    address_str = address.model_dump_json()
-    tax_ids_str = ",".join(f"{tax_id[0]}:{tax_id[1]}" for tax_id in tax_ids)
-    idempotency_key_str = f"{checkout_id}:{currency}:{amount}:{stripe_product_id}:{address_str}:{tax_ids_str}"
-    idempotency_key = hashlib.sha256(idempotency_key_str.encode()).hexdigest()
-
-    try:
-        calculation = await stripe_service.create_tax_calculation(
-            currency=currency,
-            line_items=[
-                {
-                    "amount": amount,
-                    "product": stripe_product_id,
-                    "quantity": 1,
-                    "reference": stripe_product_id,
-                }
-            ],
-            customer_details={
-                "address": address.to_dict(),
-                "address_source": "billing",
-                "tax_ids": [to_stripe_tax_id(tax_id) for tax_id in tax_ids],
-            },
-            idempotency_key=idempotency_key,
-        )
-    except stripe_lib.InvalidRequestError as e:
-        if (
-            e.error is not None
-            and e.error.param is not None
-            and e.error.param.startswith("customer_details[address]")
-        ):
-            raise IncompleteTaxLocation(e) from e
-        raise
-    except stripe_lib.StripeError as e:
-        if e.error is None or e.error.code != "customer_tax_location_invalid":
-            raise
-        raise InvalidTaxLocation(e) from e
-    else:
-        assert calculation.id is not None
-        return calculation.id, calculation.tax_amount_exclusive
-
-
 class TaxabilityReason(StrEnum):
     standard_rated = "standard_rated"
     """Purchases that are subject to the standard rate of tax."""
@@ -483,3 +434,68 @@ def from_stripe_tax_rate_details(
         "country": tax_rate_details.country,
         "state": tax_rate_details.state,
     }
+
+
+class TaxCalculation(TypedDict):
+    processor_id: str
+    amount: int
+    taxability_reason: TaxabilityReason | None
+    tax_rate: TaxRate | None
+
+
+async def calculate_tax(
+    identifier: uuid.UUID,
+    currency: str,
+    amount: int,
+    stripe_product_id: str,
+    address: Address,
+    tax_ids: list[TaxID],
+) -> TaxCalculation:
+    # Compute an idempotency key based on the input parameters to work as a sort of cache
+    address_str = address.model_dump_json()
+    tax_ids_str = ",".join(f"{tax_id[0]}:{tax_id[1]}" for tax_id in tax_ids)
+    idempotency_key_str = f"{identifier}:{currency}:{amount}:{stripe_product_id}:{address_str}:{tax_ids_str}"
+    idempotency_key = hashlib.sha256(idempotency_key_str.encode()).hexdigest()
+
+    try:
+        calculation = await stripe_service.create_tax_calculation(
+            currency=currency,
+            line_items=[
+                {
+                    "amount": amount,
+                    "product": stripe_product_id,
+                    "quantity": 1,
+                    "reference": stripe_product_id,
+                }
+            ],
+            customer_details={
+                "address": address.to_dict(),
+                "address_source": "billing",
+                "tax_ids": [to_stripe_tax_id(tax_id) for tax_id in tax_ids],
+            },
+            idempotency_key=idempotency_key,
+        )
+    except stripe_lib.InvalidRequestError as e:
+        if (
+            e.error is not None
+            and e.error.param is not None
+            and e.error.param.startswith("customer_details[address]")
+        ):
+            raise IncompleteTaxLocation(e) from e
+        raise
+    except stripe_lib.StripeError as e:
+        if e.error is None or e.error.code != "customer_tax_location_invalid":
+            raise
+        raise InvalidTaxLocation(e) from e
+    else:
+        assert calculation.id is not None
+        amount = calculation.tax_amount_exclusive
+        breakdown = calculation.tax_breakdown[0]
+        return {
+            "processor_id": calculation.id,
+            "amount": amount,
+            "taxability_reason": TaxabilityReason.from_stripe(
+                breakdown.taxability_reason, amount
+            ),
+            "tax_rate": from_stripe_tax_rate_details(breakdown.tax_rate_details),
+        }

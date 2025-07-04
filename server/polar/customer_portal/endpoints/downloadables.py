@@ -57,6 +57,7 @@ async def list(
         410: {"description": "Expired signature"},
     },
     name="customer_portal.downloadables.get",
+    tags=[APITag.private],
 )
 async def get(
     token: str,

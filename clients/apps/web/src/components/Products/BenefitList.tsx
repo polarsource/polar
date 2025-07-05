@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import React, { ReactNode, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
 
-const AMOUNT_SHOWN = 5
+const AMOUNT_SHOWN = 15
 
 const BenefitRow = ({
   icon,

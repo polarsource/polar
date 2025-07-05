@@ -43,6 +43,7 @@ class CustomerOrderRepository(
             product_load.options(
                 selectinload(Product.product_medias),
                 joinedload(Product.organization),
+                selectinload(Product.product_benefits).joinedload("benefit"),
             ),
             selectinload(Order.items)
             .joinedload(OrderItem.product_price)

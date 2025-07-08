@@ -2,6 +2,7 @@ import uuid
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
+from datetime import timedelta
 
 import pytest
 import pytest_asyncio
@@ -29,6 +30,7 @@ from polar.checkout.service import (
     NotOpenCheckout,
     PaymentDoesNotExist,
     PaymentRequired,
+    ExpiredCheckoutError,
 )
 from polar.checkout.service import checkout as checkout_service
 from polar.customer_session.service import customer_session as customer_session_service
@@ -79,6 +81,8 @@ from tests.fixtures.random_objects import (
     create_product_price_fixed,
     create_subscription,
 )
+from polar.kit.utils import utc_now
+from polar.exceptions import ResourceNotFound
 
 
 @pytest.fixture(autouse=True)
@@ -3371,3 +3375,169 @@ class TestHandleFreeSuccess:
 
         assert checkout.status == CheckoutStatus.succeeded
         subscription_service_mock.create_or_update_from_checkout.assert_called_once()
+
+
+@pytest.mark.asyncio
+class TestGetOrRecreateByClientSecret:
+    async def test_valid_checkout(
+        self, session: AsyncSession, checkout_one_time_fixed: Checkout
+    ) -> None:
+        """Test that valid checkout is returned as-is."""
+        result = await checkout_service.get_or_recreate_by_client_secret(
+            session, checkout_one_time_fixed.client_secret
+        )
+        
+        assert result.id == checkout_one_time_fixed.id
+        assert result.client_secret == checkout_one_time_fixed.client_secret
+        assert result.status == CheckoutStatus.open
+
+    async def test_expired_checkout_recreated(
+        self, save_fixture: SaveFixture, session: AsyncSession, product: Product
+    ) -> None:
+        """Test that expired checkout creates a new session."""
+        expired_checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.open,
+            expires_at=utc_now() - timedelta(hours=1),  # Within 24-hour window
+        )
+        
+        result = await checkout_service.get_or_recreate_by_client_secret(
+            session, expired_checkout.client_secret
+        )
+        
+        # Should be a new checkout
+        assert result.id != expired_checkout.id
+        assert result.client_secret != expired_checkout.client_secret
+        assert result.status == CheckoutStatus.open
+        assert result.expires_at > utc_now()  # New expiration time
+        
+        # Should have same product and price
+        assert result.product_id == expired_checkout.product_id
+        assert result.product_price_id == expired_checkout.product_price_id
+        assert result.amount == expired_checkout.amount
+        assert result.currency == expired_checkout.currency
+
+    async def test_nonexistent_checkout(self, session: AsyncSession) -> None:
+        """Test that nonexistent checkout raises ResourceNotFound."""
+        with pytest.raises(ResourceNotFound):
+            await checkout_service.get_or_recreate_by_client_secret(
+                session, "nonexistent_client_secret"
+            )
+
+    async def test_expired_checkout_too_old_not_recreated(
+        self, save_fixture: SaveFixture, session: AsyncSession, product: Product
+    ) -> None:
+        """Test that very old expired checkout is not recreated."""
+        very_old_checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.open,
+            expires_at=utc_now() - timedelta(days=2),  # Older than 24 hours
+        )
+        
+        with pytest.raises(ExpiredCheckoutError):
+            await checkout_service.get_or_recreate_by_client_secret(
+                session, very_old_checkout.client_secret
+            )
+
+    async def test_non_open_checkout_not_recreated(
+        self, save_fixture: SaveFixture, session: AsyncSession, product: Product
+    ) -> None:
+        """Test that non-open checkouts are not recreated."""
+        for status in [CheckoutStatus.confirmed, CheckoutStatus.succeeded, CheckoutStatus.failed]:
+            expired_checkout = await create_checkout(
+                save_fixture,
+                products=[product],
+                status=status,
+                expires_at=utc_now() - timedelta(hours=1),
+            )
+            
+            with pytest.raises(ExpiredCheckoutError):
+                await checkout_service.get_or_recreate_by_client_secret(
+                    session, expired_checkout.client_secret
+                )
+
+    async def test_archived_product_not_recreated(
+        self, save_fixture: SaveFixture, session: AsyncSession, product: Product
+    ) -> None:
+        """Test that checkouts with archived products are not recreated."""
+        expired_checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.open,
+            expires_at=utc_now() - timedelta(hours=1),
+        )
+        
+        # Archive the product
+        product.is_archived = True
+        await save_fixture(product)
+        
+        with pytest.raises(ExpiredCheckoutError):
+            await checkout_service.get_or_recreate_by_client_secret(
+                session, expired_checkout.client_secret
+            )
+
+    async def test_blocked_organization_not_recreated(
+        self, save_fixture: SaveFixture, session: AsyncSession, product: Product
+    ) -> None:
+        """Test that checkouts from blocked organizations are not recreated."""
+        expired_checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.open,
+            expires_at=utc_now() - timedelta(hours=1),
+        )
+        
+        # Block the organization
+        product.organization.blocked_at = utc_now()
+        await save_fixture(product.organization)
+        
+        with pytest.raises(ExpiredCheckoutError):
+            await checkout_service.get_or_recreate_by_client_secret(
+                session, expired_checkout.client_secret
+            )
+
+    async def test_archived_price_not_recreated(
+        self, save_fixture: SaveFixture, session: AsyncSession, product: Product
+    ) -> None:
+        """Test that checkouts with archived prices are not recreated."""
+        expired_checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.open,
+            expires_at=utc_now() - timedelta(hours=1),
+        )
+        
+        # Archive the price
+        expired_checkout.product_price.is_archived = True
+        await save_fixture(expired_checkout.product_price)
+        
+        with pytest.raises(ExpiredCheckoutError):
+            await checkout_service.get_or_recreate_by_client_secret(
+                session, expired_checkout.client_secret
+            )
+
+    async def test_invalid_discount_removed_on_recreation(
+        self, save_fixture: SaveFixture, session: AsyncSession, discount_percentage_50: Discount, product: Product
+    ) -> None:
+        """Test that invalid discounts are removed when recreating sessions."""
+        expired_checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.open,
+            expires_at=utc_now() - timedelta(hours=1),
+            discount=discount_percentage_50,
+        )
+        
+        # Delete the discount (soft delete)
+        discount_percentage_50.deleted_at = utc_now()
+        await save_fixture(discount_percentage_50)
+        
+        result = await checkout_service.get_or_recreate_by_client_secret(
+            session, expired_checkout.client_secret
+        )
+        
+        # Should be a new checkout without the invalid discount
+        assert result.id != expired_checkout.id
+        assert result.discount is None

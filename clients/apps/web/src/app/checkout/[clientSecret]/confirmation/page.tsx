@@ -29,10 +29,28 @@ export default async function Page({
     if (error instanceof ResourceNotFound) {
       notFound()
     } else if (error instanceof ExpiredCheckoutError) {
-      notFound() // TODO: show expired checkout page
+      // This should rarely happen now since the backend recreates expired sessions,
+      // but if it does, show a not found page
+      notFound()
     } else {
       throw error
     }
+  }
+
+  // Check if the returned checkout has a different client secret
+  // This means the backend recreated an expired session
+  if (checkout.clientSecret !== clientSecret) {
+    const searchParamsString = new URLSearchParams({
+      ...(embed && { embed }),
+      ...(theme && { theme }),
+      ...(customer_session_token && { customer_session_token }),
+    }).toString()
+    
+    const redirectUrl = `/checkout/${checkout.clientSecret}/confirmation${
+      searchParamsString ? `?${searchParamsString}` : ''
+    }`
+    
+    redirect(redirectUrl)
   }
 
   if (checkout.status === 'open') {

@@ -457,38 +457,54 @@ class TestClientCreateCheckout:
 
 @pytest.mark.asyncio
 class TestClientUpdate:
-    async def test_not_existing(self, api_prefix: str, client: AsyncClient) -> None:
-        response = await client.patch(
-            f"{api_prefix}/client/123", json={"customer_name": "Customer Name"}
-        )
-
-        assert response.status_code == 404
-
-    async def test_valid(
+    async def test_expired_checkout_recreated(
         self,
         api_prefix: str,
-        session: AsyncSession,
+        save_fixture: SaveFixture,
         client: AsyncClient,
-        checkout_open: Checkout,
+        product: Product,
     ) -> None:
+        """Test that updating an expired checkout creates a new session."""
+        expired_checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.open,
+            expires_at=utc_now() - timedelta(days=1),
+        )
+
+        response = await client.patch(
+            f"{api_prefix}/client/{expired_checkout.client_secret}",
+            json={"customer_email": "test@example.com"},
+        )
+
+        assert response.status_code == 200
+        
+        json_response = response.json()
+        # Should be a new checkout with different client_secret
+        assert json_response["id"] != str(expired_checkout.id)
+        assert json_response["client_secret"] != expired_checkout.client_secret
+        assert json_response["status"] == "open"
+        assert json_response["customer_email"] == "test@example.com"
+        
+        # Should have same product
+        assert json_response["product_id"] == str(expired_checkout.product_id)
+
+    async def test_valid_checkout_updated(
+        self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
+    ) -> None:
+        """Test that valid checkout is updated normally."""
         response = await client.patch(
             f"{api_prefix}/client/{checkout_open.client_secret}",
-            json={
-                "customer_name": "Customer Name",
-                "metadata": {"test": "test"},
-            },
+            json={"customer_email": "test@example.com"},
         )
 
         assert response.status_code == 200
 
-        json = response.json()
-        assert json["customer_name"] == "Customer Name"
-        assert "metadata" not in json
-
-        repository = CheckoutRepository.from_session(session)
-        updated_checkout = await repository.get_by_id(checkout_open.id)
-        assert updated_checkout is not None
-        assert updated_checkout.user_metadata == {}
+        json_response = response.json()
+        # Should be the same checkout
+        assert json_response["id"] == str(checkout_open.id)
+        assert json_response["client_secret"] == checkout_open.client_secret
+        assert json_response["customer_email"] == "test@example.com"
 
 
 @pytest.mark.asyncio

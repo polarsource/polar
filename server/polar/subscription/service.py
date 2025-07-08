@@ -212,7 +212,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
-        customer_external_id: Sequence[str] | None = None,
+        external_customer_id: Sequence[str] | None = None,
         discount_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
         metadata: MetadataQuery | None = None,
@@ -238,8 +238,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if customer_id is not None:
             statement = statement.where(Subscription.customer_id.in_(customer_id))
 
-        if customer_external_id is not None:
-            statement = statement.where(Customer.external_id.in_(customer_external_id))
+        if external_customer_id is not None:
+            statement = statement.where(Customer.external_id.in_(external_customer_id))
 
         if discount_id is not None:
             statement = statement.where(Subscription.discount_id.in_(discount_id))

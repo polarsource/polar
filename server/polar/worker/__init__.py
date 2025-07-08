@@ -114,6 +114,7 @@ broker = RedisBroker(
     connection_pool=redis.ConnectionPool.from_url(
         settings.redis_url,
         client_name=f"{settings.ENV.value}.worker.dramatiq",
+        max_connections=settings.REDIS_BROKER_CONNECTIONS_LIMIT,
     ),
     # Override default middlewares
     middleware=[

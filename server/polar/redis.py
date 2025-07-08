@@ -29,6 +29,7 @@ def create_redis(process_name: ProcessName) -> Redis:
         retry_on_error=REDIS_RETRY_ON_ERRROR,
         retry=REDIS_RETRY,
         client_name=f"{settings.ENV.value}.{process_name}",
+        max_connections=settings.REDIS_CONNECTIONS_LIMIT,
     )
 
 

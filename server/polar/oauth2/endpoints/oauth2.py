@@ -45,7 +45,7 @@ router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 @router.get(
     "/",
     summary="List Clients",
-    tags=["clients", APITag.documented],
+    tags=["clients"],
     response_model=ListResource[OAuth2Client],
 )
 async def list(
@@ -65,7 +65,7 @@ async def list(
 @router.post(
     "/register",
     summary="Create Client",
-    tags=["clients", APITag.documented],
+    tags=["clients"],
     name="oauth2:create_client",
 )
 async def create(
@@ -84,7 +84,7 @@ async def create(
 
 @router.get(
     "/register/{client_id}",
-    tags=["clients", APITag.documented],
+    tags=["clients"],
     summary="Get Client",
     name="oauth2:get_client",
 )
@@ -103,7 +103,7 @@ async def get(
 
 @router.put(
     "/register/{client_id}",
-    tags=["clients", APITag.documented],
+    tags=["clients"],
     summary="Update Client",
     name="oauth2:update_client",
 )
@@ -124,7 +124,7 @@ async def update(
 
 @router.delete(
     "/register/{client_id}",
-    tags=["clients", APITag.documented],
+    tags=["clients"],
     summary="Delete Client",
     name="oauth2:delete_client",
 )

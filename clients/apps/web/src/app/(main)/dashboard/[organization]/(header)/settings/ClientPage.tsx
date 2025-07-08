@@ -1,8 +1,8 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import FeatureSettings from '@/components/Settings/FeatureSettings'
 import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
+import OrganizationNotificationSettings from '@/components/Settings/OrganizationNotificationSettings'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import OrganizationSubscriptionSettings from '@/components/Settings/OrganizationSubscriptionSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
@@ -29,20 +29,17 @@ export default function ClientPage({
           <OrganizationSubscriptionSettings organization={org} />
         </Section>
 
+        <Section id="notifications">
+          <SectionDescription title="Notifications" />
+          <OrganizationNotificationSettings organization={org} />
+        </Section>
+
         <Section id="developers">
           <SectionDescription
             title="Developers"
             description="Manage access tokens to authenticate with the Polar API"
           />
           <OrganizationAccessTokensSettings organization={org} />
-        </Section>
-
-        <Section id="features">
-          <SectionDescription
-            title="Additional Features"
-            description="Legacy, experimental or early-access features."
-          />
-          <FeatureSettings organization={org} />
         </Section>
       </div>
     </DashboardBody>

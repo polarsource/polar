@@ -1,14 +1,10 @@
 'use client'
 
 import {
-  AllInclusiveOutlined,
   Check,
-  DonutLargeOutlined,
   DownloadingOutlined,
-  Face,
-  HiveOutlined,
+  KeyboardArrowRightOutlined,
   KeyOutlined,
-  LanguageOutlined,
   ShortTextOutlined,
 } from '@mui/icons-material'
 import { motion } from 'framer-motion'
@@ -25,9 +21,8 @@ import {
 } from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
 
 type FeatureCardProps = {
-  icon: React.ReactNode
   title: string
-  description: string
+  description: string | React.ReactNode
   linkHref: string
   className?: string
   children?: React.ReactNode
@@ -35,7 +30,6 @@ type FeatureCardProps = {
 }
 
 const FeatureCard = ({
-  icon,
   title,
   description,
   linkHref,
@@ -55,19 +49,24 @@ const FeatureCard = ({
         href={linkHref}
         target="_blank"
         className={twMerge(
-          'dark:border-polar-700 dark:bg-polar-900 flex h-full gap-x-6 gap-y-8 rounded-2xl border border-transparent bg-white p-8 transition-transform hover:translate-y-[-4px]',
+          'dark:border-polar-700 dark:bg-polar-900 flex h-full gap-x-6 gap-y-8 rounded-2xl border border-transparent bg-white p-8 transition-transform hover:translate-y-[-4px] md:p-10',
           wide
             ? 'flex-col justify-between xl:flex-row xl:justify-start'
             : 'flex-col justify-between',
         )}
       >
-        <div className="flex flex-col gap-y-6">
-          <span>{icon}</span>
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl text-black dark:text-white">{title}</h3>
-            <p className="dark:text-polar-500 w-full flex-grow text-gray-500 md:max-w-96">
-              {description}
-            </p>
+        <div className="flex h-full flex-col gap-y-6">
+          <div className="flex h-full flex-col gap-y-2 md:gap-y-4">
+            <h3 className="text-pretty text-xl text-black md:text-3xl md:!leading-tight dark:text-white">
+              {title}
+            </h3>
+            {typeof description === 'string' ? (
+              <p className="dark:text-polar-500 w-full flex-grow text-gray-500 md:max-w-96">
+                {description}
+              </p>
+            ) : (
+              description
+            )}
           </div>
         </div>
         {children}
@@ -108,10 +107,45 @@ type FeaturesProps = {
 const Features = ({ className }: FeaturesProps) => {
   const features = [
     {
-      icon: <DonutLargeOutlined fontSize="medium" />,
       title: 'Usage Based Billing',
-      description:
-        'Robust Event Ingestion API that enables precise usage-based billing with the use of Ingestion Strategies.',
+      description: (
+        <div className="flex h-full w-full flex-grow flex-col justify-between gap-y-4 md:max-w-96">
+          <p className="dark:text-polar-500 text-gray-500">
+            Robust Event Ingestion API that enables precise usage-based billing
+            with the use of Ingestion Strategies.
+          </p>
+          <ul className="flex flex-col gap-y-1">
+            <li className="flex flex-row gap-x-1">
+              <KeyboardArrowRightOutlined className="mt-0.5" fontSize="small" />
+              <span className="text-pretty leading-relaxed">
+                LLM Ingestion using AI SDK
+              </span>
+            </li>
+            <li className="flex flex-row items-center gap-x-1">
+              <KeyboardArrowRightOutlined className="mt-0.5" fontSize="small" />
+              <span className="text-pretty leading-relaxed">
+                Delta Time Ingestion
+              </span>
+            </li>
+            <li className="flex flex-row items-center gap-x-1">
+              <KeyboardArrowRightOutlined className="mt-0.5" fontSize="small" />
+              <span className="text-pretty leading-relaxed">S3 Ingestion</span>
+            </li>
+            <li className="flex flex-row items-center gap-x-1">
+              <KeyboardArrowRightOutlined className="mt-0.5" fontSize="small" />
+              <span className="text-pretty leading-relaxed">
+                Stream Ingestion
+              </span>
+            </li>
+            <li className="flex flex-row items-center gap-x-1">
+              <KeyboardArrowRightOutlined className="mt-0.5" fontSize="small" />
+              <span className="text-pretty leading-relaxed">
+                Manual Event Ingestion
+              </span>
+            </li>
+          </ul>
+        </div>
+      ),
       linkHref:
         'https://docs.polar.sh/features/usage-based-billing/introduction',
       children: (
@@ -166,27 +200,26 @@ const { text } = await streamText({
       ),
     },
     {
-      icon: <HiveOutlined fontSize="medium" />,
       title: 'Digital Products & SaaS Billing',
       description:
         'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
       linkHref: 'https://docs.polar.sh/features/products',
       children: (
         <ul className="flex flex-col gap-y-1">
-          <li className="flex flex-row items-center gap-x-2">
-            <Check className="text-emerald-500" fontSize="small" />
+          <li className="flex flex-row gap-x-2">
+            <Check className="mt-1 text-emerald-500" fontSize="small" />
             <p className="text-pretty leading-relaxed">
               Digital & Subscription Products
             </p>
           </li>
-          <li className="flex flex-row items-center gap-x-2">
-            <Check className="text-emerald-500" fontSize="small" />
+          <li className="flex flex-row gap-x-2">
+            <Check className="mt-1 text-emerald-500" fontSize="small" />
             <p className="text-pretty leading-relaxed">
               Multiple Pricing Models
             </p>
           </li>
-          <li className="flex flex-row items-center gap-x-2">
-            <Check className="text-emerald-500" fontSize="small" />
+          <li className="flex flex-row gap-x-2">
+            <Check className="mt-1 text-emerald-500" fontSize="small" />
             <p className="text-pretty leading-relaxed">
               Discounts, Checkout Links & Benefits
             </p>
@@ -195,7 +228,6 @@ const { text } = await streamText({
       ),
     },
     {
-      icon: <AllInclusiveOutlined fontSize="medium" />,
       title: 'Benefits Engine',
       description:
         'Powerful entitlements engine that automates access to various features.',
@@ -241,7 +273,6 @@ const { text } = await streamText({
       ),
     },
     {
-      icon: <Face fontSize="medium" />,
       title: 'Customer Management',
       description:
         'Streamlined customer lifecycle management with detailed profiles and analytics.',
@@ -261,7 +292,6 @@ const { text } = await streamText({
       ),
     },
     {
-      icon: <LanguageOutlined fontSize="medium" />,
       title: 'Global Merchant of Record',
       description:
         'Focus on your passion while we handle all the tax compliance.',
@@ -309,7 +339,6 @@ const { text } = await streamText({
           <FeatureCard
             className={index === 0 ? 'xl:col-span-2' : ''}
             key={index}
-            icon={feature.icon}
             title={feature.title}
             description={feature.description}
             linkHref={feature.linkHref}

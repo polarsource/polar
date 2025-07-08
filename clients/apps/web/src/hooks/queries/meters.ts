@@ -82,12 +82,9 @@ export type ParsedMeterQuantities = schemas['MeterQuantities'] & {
 
 export const useMeterQuantities = (
   id: string,
-  startTimestamp: Date,
-  endTimestamp: Date,
-  interval: schemas['TimeInterval'],
   parameters?: Omit<
     NonNullable<operations['meters:quantities']['parameters']['query']>,
-    'id' | 'start_timestamp' | 'end_timestamp' | 'interval'
+    'id'
   >,
 ): UseQueryResult<ParsedMeterQuantities, Error> =>
   useQuery({
@@ -96,21 +93,19 @@ export const useMeterQuantities = (
       'quantities',
       {
         id,
-        startTimestamp,
-        endTimestamp,
-        interval,
         ...(parameters || {}),
       },
     ],
     queryFn: async () => {
+      const { start_timestamp, end_timestamp, interval } = parameters || {}
       const result = await unwrap(
         api.GET('/v1/meters/{id}/quantities', {
           params: {
             path: { id },
             query: {
-              start_timestamp: startTimestamp.toISOString(),
-              end_timestamp: endTimestamp.toISOString(),
-              interval,
+              start_timestamp: start_timestamp ?? '',
+              end_timestamp: end_timestamp ?? '',
+              interval: interval as schemas['TimeInterval'],
               ...(parameters || {}),
             },
           },

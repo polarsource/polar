@@ -303,6 +303,8 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   const amountType = watch(`prices.${index}.amount_type`)
   const recurringInterval = watch('recurring_interval')
 
+  const { data: meters } = useMeters(organization.id)
+
   const prices = watch('prices')
   const staticPriceIndex = prices
     ? (prices as schemas['ProductPrice'][]).findIndex(isStaticPrice)
@@ -369,9 +371,8 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                       <SelectItem value="fixed">Fixed price</SelectItem>
                       <SelectItem value="custom">Pay what you want</SelectItem>
                       <SelectItem value="free">Free</SelectItem>
-                      {organization.feature_settings
-                        ?.usage_based_billing_enabled &&
-                        recurringInterval !== null && (
+                      {recurringInterval !== null &&
+                        (meters?.pagination.total_count ?? 0) > 0 && (
                           <SelectItem value="metered_unit">
                             Metered price
                           </SelectItem>
@@ -552,22 +553,21 @@ export const ProductPricingSection = ({
               </p>
             </ShadowBox>
           )}
-          {organization.feature_settings?.usage_based_billing_enabled &&
-            recurringInterval !== null && (
-              <Button
-                className="self-start"
-                onClick={() =>
-                  append({
-                    amount_type: 'metered_unit',
-                    price_currency: 'usd',
-                    meter_id: '',
-                    unit_amount: 0,
-                  })
-                }
-              >
-                Add Price
-              </Button>
-            )}
+          {recurringInterval !== null && (
+            <Button
+              className="self-start"
+              onClick={() =>
+                append({
+                  amount_type: 'metered_unit',
+                  price_currency: 'usd',
+                  meter_id: '',
+                  unit_amount: 0,
+                })
+              }
+            >
+              Add Price
+            </Button>
+          )}
           <ErrorMessage
             errors={errors}
             name="prices"

@@ -76,14 +76,14 @@ dev = [
   "pytest-xdist[psutil]>=3.6.1",
   "sqlalchemy-utils>=0.41.2",
   "minio>=7.2.9",
-  "polar-sdk==0.13.5",
+  "polar-sdk==0.16.13",
 ]
 
 [tool.taskipy.tasks]
 emails = { cmd = "cd emails && pnpm i --frozen-lockfile && pnpm run build", help = "build emails" }
 backoffice = { cmd = "pnpm -C polar/web_backoffice install && pnpm -C polar/web_backoffice build", help = "build backoffice CSS and JS" }
 api = { cmd = "env AUTHLIB_INSECURE_TRANSPORT=true uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }
-worker = { cmd = "dramatiq -p 1 -t 1 --watch polar -f scheduler:start run_worker", help = "run worker" }
+worker = { cmd = "dramatiq -p 1 -t 1 --watch polar -f polar.worker.scheduler:start polar.worker.run", help = "run worker" }
 test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
 test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
 watch_email = { cmd = "POLAR_TEST_WATCH=1 pytest -s -m", help = "preview emails" }

@@ -108,7 +108,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           customer={order.customer as schemas['Customer']}
         />
       }
-      contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden"
+      contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden md:shadow-none"
       wide
     >
       <List size="small">

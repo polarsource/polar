@@ -5,6 +5,13 @@ import { ArrowOutwardOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/atoms/DropdownMenu'
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -15,13 +22,6 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@polar-sh/ui/components/ui/dropdown-menu'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
 import Link from 'next/link'

@@ -89,6 +89,7 @@ async def get(
     summary="Get Meter Quantities",
     response_model=MeterQuantities,
     responses={404: MeterNotFound},
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def quantities(
     id: MeterID,

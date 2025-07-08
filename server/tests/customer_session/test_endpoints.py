@@ -58,7 +58,7 @@ class TestCreate:
     ) -> None:
         response = await client.post(
             "/v1/customer-sessions/",
-            json={"customer_external_id": customer_external_id.external_id},
+            json={"external_customer_id": customer_external_id.external_id},
         )
         assert response.status_code == 201
 

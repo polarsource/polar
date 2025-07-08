@@ -90,8 +90,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/mdx
       '@polar-sh/sdk':
-        specifier: ^0.32.16
-        version: 0.32.16(zod@3.24.2)
+        specifier: ^0.34.3
+        version: 0.34.3(zod@3.24.2)
       '@polar-sh/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -152,6 +152,9 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
+      dom-to-image:
+        specifier: ^2.6.0
+        version: 2.6.0
       event-source-plus:
         specifier: ^0.1.8
         version: 0.1.8
@@ -315,6 +318,9 @@ importers:
       '@types/d3':
         specifier: ^7.4.3
         version: 7.4.3
+      '@types/dom-to-image':
+        specifier: ^2.6.7
+        version: 2.6.7
       '@types/jest':
         specifier: ^29.5.14
         version: 29.5.14
@@ -430,8 +436,8 @@ importers:
         specifier: workspace:^
         version: link:../../packages/checkout
       '@polar-sh/sdk':
-        specifier: ^0.32.16
-        version: 0.32.16(zod@3.24.2)
+        specifier: ^0.34.3
+        version: 0.34.3(zod@3.24.2)
       '@stripe/react-stripe-js':
         specifier: ^3.6.0
         version: 3.6.0(@stripe/stripe-js@7.1.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -488,8 +494,8 @@ importers:
   packages/checkout:
     dependencies:
       '@polar-sh/sdk':
-        specifier: ^0.32.16
-        version: 0.32.16(zod@3.24.2)
+        specifier: ^0.34.3
+        version: 0.34.3(zod@3.24.2)
       '@polar-sh/ui':
         specifier: workspace:^
         version: link:../ui
@@ -2540,8 +2546,8 @@ packages:
     resolution: {integrity: sha512-c83qWb22rNRuB0UaVCI0uRPNRr8Z0FWnEIvT47jiHAmOIUHbBOg5XvV7pM5x+rKn9HRpjxquDbXYSXr3fAKFcw==}
     engines: {node: '>=12'}
 
-  '@polar-sh/sdk@0.32.16':
-    resolution: {integrity: sha512-s+FvSJieNv9KcXGFNSbVzXpTY/hW8oYk8soa3Ow7NgWw/dY+pJ1py+qv+hNwxIuEmlHlpBIBHJVYQqPI9lLzCA==}
+  '@polar-sh/sdk@0.34.3':
+    resolution: {integrity: sha512-D6887BO+ogK1idUVYJo2J5OvDKK8u+kzYNtUGfdfn2CiV24I8wgCyr/mUCMTJa1KZD2yhcUjgrxVUcufQABE6g==}
     hasBin: true
     peerDependencies:
       '@modelcontextprotocol/sdk': '>=1.5.0 <1.10.0'
@@ -3904,6 +3910,9 @@ packages:
   '@types/doctrine@0.0.9':
     resolution: {integrity: sha512-eOIHzCUSH7SMfonMG1LsC2f8vxBFtho6NGBznK41R84YzPuvSBzrhEps33IsQiOW9+VL6NQ9DbjQJznk/S4uRA==}
 
+  '@types/dom-to-image@2.6.7':
+    resolution: {integrity: sha512-me5VbCv+fcXozblWwG13krNBvuEOm6kA5xoa4RrjDJCNFOZSWR3/QLtOXimBHk1Fisq69Gx3JtOoXtg1N1tijg==}
+
   '@types/draco3d@1.4.10':
     resolution: {integrity: sha512-AX22jp8Y7wwaBgAixaSvkoG4M/+PlAcm3Qs4OW8yT9DM4xUpWKeFhLueTAyZF39pviAdcDdeJoACapiAceqNcw==}
 
@@ -5246,6 +5255,9 @@ packages:
 
   dom-serializer@2.0.0:
     resolution: {integrity: sha512-wIkAryiqt/nV5EQKqQpo3SToSOV9J0DnbJqwK7Wv/Trc92zIAYZ4FlMu+JPFW1DfGFt81ZTCGgDEabffXeLyJg==}
+
+  dom-to-image@2.6.0:
+    resolution: {integrity: sha512-Dt0QdaHmLpjURjU7Tnu3AgYSF2LuOmksSGsUcE6ItvJoCWTBEmiMXcqBdNSAm9+QbbwD7JMoVsuuKX6ZVQv1qA==}
 
   domain-browser@4.23.0:
     resolution: {integrity: sha512-ArzcM/II1wCCujdCNyQjXrAFwS4mrLh4C7DZWlaI8mdh7h3BfKdNd3bKXITfl2PT9FtfQqaGvhi1vPRQPimjGA==}
@@ -11928,7 +11940,7 @@ snapshots:
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
 
-  '@polar-sh/sdk@0.32.16(zod@3.24.2)':
+  '@polar-sh/sdk@0.34.3(zod@3.24.2)':
     dependencies:
       standardwebhooks: 1.0.0
       zod: 3.24.2
@@ -13561,6 +13573,8 @@ snapshots:
 
   '@types/doctrine@0.0.9': {}
 
+  '@types/dom-to-image@2.6.7': {}
+
   '@types/draco3d@1.4.10': {}
 
   '@types/eslint-scope@3.7.7':
@@ -15127,6 +15141,8 @@ snapshots:
       domelementtype: 2.3.0
       domhandler: 5.0.3
       entities: 4.5.0
+
+  dom-to-image@2.6.0: {}
 
   domain-browser@4.23.0: {}
 

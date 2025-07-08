@@ -3,6 +3,7 @@ from typing import NotRequired, TypedDict
 
 import pytest
 import pytest_asyncio
+from apscheduler.util import ZoneInfo
 
 from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
@@ -236,9 +237,40 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
+            timezone=ZoneInfo("UTC"),
             interval=interval,
         )
         assert len(metrics.periods) == expected_count
+
+    async def test_timezones(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        fixtures: tuple[dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 1, 30),
+            timezone=ZoneInfo("Europe/Paris"),
+            interval=TimeInterval.day,
+        )
+
+        for period in metrics.periods:
+            assert period.timestamp.tzinfo == UTC
+
+        assert len(metrics.periods) == 30
+        assert metrics.periods[0].timestamp.date() == date(2023, 12, 31)
+
+        jan_1 = metrics.periods[0]
+        assert jan_1.orders == 3
+
+        jan_2 = metrics.periods[1]
+        assert jan_2.orders == 0
+
+        jan_3 = metrics.periods[2]
+        assert jan_3.orders == 0
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
@@ -255,6 +287,7 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
+            timezone=ZoneInfo("UTC"),
             interval=TimeInterval.day,
         )
 
@@ -326,6 +359,7 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
+            timezone=ZoneInfo("UTC"),
             interval=TimeInterval.day,
         )
 
@@ -357,6 +391,7 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
+            timezone=ZoneInfo("UTC"),
             interval=TimeInterval.day,
             product_id=[fixtures[0]["one_time_product"].id],
         )
@@ -432,6 +467,7 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
+            timezone=ZoneInfo("UTC"),
             interval=TimeInterval.day,
             billing_type=[ProductBillingType.one_time],
         )
@@ -505,6 +541,7 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
+            timezone=ZoneInfo("UTC"),
             interval=TimeInterval.year,
         )
 
@@ -554,6 +591,7 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
+            timezone=ZoneInfo("UTC"),
             interval=TimeInterval.day,
         )
 
@@ -652,6 +690,7 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 2, 1),
+            timezone=ZoneInfo("UTC"),
             interval=TimeInterval.month,
         )
 
@@ -722,6 +761,7 @@ class TestGetMetrics:
             auth_subject,
             start_date=date(2024, 1, 1),
             end_date=date(2024, 2, 1),
+            timezone=ZoneInfo("UTC"),
             interval=TimeInterval.month,
         )
 

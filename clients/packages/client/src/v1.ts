@@ -352,43 +352,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/personal_access_tokens/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Personal Access Tokens
-         * @description List personal access tokens.
-         */
-        get: operations["personal_access_token:list_personal_access_tokens"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/personal_access_tokens/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete Personal Access Token */
-        delete: operations["personal_access_token:delete_personal_access_token"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/accounts/search": {
         parameters: {
             query?: never;
@@ -2130,12 +2093,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Customer Payment Methods
+         * List Customer Payment Methods
          * @description Get saved payment methods of the authenticated customer.
          *
          *     **Scopes**: `customer_portal:read` `customer_portal:write`
          */
-        get: operations["customer_portal:customers:get_payment_methods"];
+        get: operations["customer_portal:customers:list_payment_methods"];
         put?: never;
         /**
          * Add Customer Payment Method
@@ -5623,6 +5586,11 @@ export interface components {
             name: "benefit.updated";
             metadata: components["schemas"]["BenefitGrantMetadata"];
         };
+        /**
+         * BillingAddressFieldMode
+         * @enum {string}
+         */
+        BillingAddressFieldMode: "required" | "optional" | "disabled";
         /** Body_email-update:verify_email_update */
         "Body_email-update_verify_email_update": {
             /** Token */
@@ -5892,13 +5860,20 @@ export interface components {
             payment_processor_metadata: {
                 [key: string]: string;
             };
+            /** @description Determine which billing address fields should be disabled, optional or required in the checkout form. */
+            billing_address_fields: components["schemas"]["CheckoutBillingAddressFields"];
             /** Metadata */
             metadata: {
                 [key: string]: string | number | boolean;
             };
             /**
-             * Customer External Id
+             * External Customer Id
              * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
+             */
+            external_customer_id: string | null;
+            /**
+             * Customer External Id
+             * @deprecated
              */
             customer_external_id: string | null;
             /**
@@ -5923,8 +5898,15 @@ export interface components {
             customer_metadata: {
                 [key: string]: string | number | boolean;
             };
-            /** @description Determine which billing address fields should be shown in the checkout form. */
-            readonly customer_billing_address_fields: components["schemas"]["CheckoutCustomerBillingAddressFields"];
+        };
+        /** CheckoutBillingAddressFields */
+        CheckoutBillingAddressFields: {
+            country: components["schemas"]["BillingAddressFieldMode"];
+            state: components["schemas"]["BillingAddressFieldMode"];
+            city: components["schemas"]["BillingAddressFieldMode"];
+            postal_code: components["schemas"]["BillingAddressFieldMode"];
+            line1: components["schemas"]["BillingAddressFieldMode"];
+            line2: components["schemas"]["BillingAddressFieldMode"];
         };
         /**
          * CheckoutConfirmStripe
@@ -5993,7 +5975,10 @@ export interface components {
              */
             subscription_id?: string | null;
         };
-        /** CheckoutCustomerBillingAddressFields */
+        /**
+         * CheckoutCustomerBillingAddressFields
+         * @description Deprecated: Use CheckoutBillingAddressFields instead.
+         */
         CheckoutCustomerBillingAddressFields: {
             /** Country */
             country: boolean;
@@ -6547,10 +6532,10 @@ export interface components {
              */
             is_business_customer: boolean;
             /**
-             * Customer External Id
+             * External Customer Id
              * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
              */
-            customer_external_id?: string | null;
+            external_customer_id?: string | null;
             /** Customer Name */
             customer_name?: string | null;
             /** Customer Email */
@@ -6732,10 +6717,10 @@ export interface components {
              */
             is_business_customer: boolean;
             /**
-             * Customer External Id
+             * External Customer Id
              * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
              */
-            customer_external_id?: string | null;
+            external_customer_id?: string | null;
             /** Customer Name */
             customer_name?: string | null;
             /** Customer Email */
@@ -6850,10 +6835,10 @@ export interface components {
              */
             is_business_customer: boolean;
             /**
-             * Customer External Id
+             * External Customer Id
              * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
              */
-            customer_external_id?: string | null;
+            external_customer_id?: string | null;
             /** Customer Name */
             customer_name?: string | null;
             /** Customer Email */
@@ -7072,6 +7057,8 @@ export interface components {
             payment_processor_metadata: {
                 [key: string]: string;
             };
+            /** @description Determine which billing address fields should be disabled, optional or required in the checkout form. */
+            billing_address_fields: components["schemas"]["CheckoutBillingAddressFields"];
             /**
              * Products
              * @description List of products available to select.
@@ -7089,8 +7076,6 @@ export interface components {
             organization: components["schemas"]["Organization"];
             /** Attached Custom Fields */
             attached_custom_fields: components["schemas"]["AttachedCustomField"][];
-            /** @description Determine which billing address fields should be shown in the checkout form. */
-            readonly customer_billing_address_fields: components["schemas"]["CheckoutCustomerBillingAddressFields"];
         };
         /**
          * CheckoutPublicConfirmed
@@ -7267,6 +7252,8 @@ export interface components {
             payment_processor_metadata: {
                 [key: string]: string;
             };
+            /** @description Determine which billing address fields should be disabled, optional or required in the checkout form. */
+            billing_address_fields: components["schemas"]["CheckoutBillingAddressFields"];
             /**
              * Products
              * @description List of products available to select.
@@ -7286,8 +7273,6 @@ export interface components {
             attached_custom_fields: components["schemas"]["AttachedCustomField"][];
             /** Customer Session Token */
             customer_session_token: string;
-            /** @description Determine which billing address fields should be shown in the checkout form. */
-            readonly customer_billing_address_fields: components["schemas"]["CheckoutCustomerBillingAddressFields"];
         };
         /**
          * CheckoutSortProperty
@@ -9103,6 +9088,8 @@ export interface components {
             oauth_accounts: {
                 [key: string]: components["schemas"]["CustomerPortalOAuthAccount"];
             };
+            /** Default Payment Method Id */
+            default_payment_method_id?: string | null;
         };
         /** CustomerPortalCustomerUpdate */
         CustomerPortalCustomerUpdate: {
@@ -9254,10 +9241,10 @@ export interface components {
          */
         CustomerSessionCustomerExternalIDCreate: {
             /**
-             * Customer External Id
+             * External Customer Id
              * @description External ID of the customer to create a session for.
              */
-            customer_external_id: string;
+            external_customer_id: string;
         };
         /**
          * CustomerSessionCustomerIDCreate
@@ -9397,6 +9384,13 @@ export interface components {
             benefit_id: string;
             /** @description The type of the benefit concerned by this grant. */
             benefit_type: components["schemas"]["BenefitType"];
+            /**
+             * Benefit Metadata
+             * @description The metadata of the benefit concerned by this grant.
+             */
+            benefit_metadata: {
+                [key: string]: string | number | boolean;
+            };
             /** Properties */
             properties: components["schemas"]["BenefitGrantDiscordProperties"] | components["schemas"]["BenefitGrantGitHubRepositoryProperties"] | components["schemas"]["BenefitGrantDownloadablesProperties"] | components["schemas"]["BenefitGrantLicenseKeysProperties"] | components["schemas"]["BenefitGrantCustomProperties"];
         };
@@ -12152,12 +12146,6 @@ export interface components {
             items: components["schemas"]["Payout"][];
             pagination: components["schemas"]["Pagination"];
         };
-        /** ListResource[PersonalAccessToken] */
-        ListResource_PersonalAccessToken_: {
-            /** Items */
-            items: components["schemas"]["PersonalAccessToken"][];
-            pagination: components["schemas"]["Pagination"];
-        };
         /** ListResource[Product] */
         ListResource_Product_: {
             /** Items */
@@ -12322,6 +12310,8 @@ export interface components {
             tier_price_recurring_interval: string;
             /** Tier Organization Name */
             tier_organization_name: string;
+            /** Formatted Price Amount */
+            readonly formatted_price_amount: string;
         };
         /** MaintainerNewProductSaleNotification */
         MaintainerNewProductSaleNotification: {
@@ -12352,6 +12342,8 @@ export interface components {
             product_price_amount: number;
             /** Organization Name */
             organization_name: string;
+            /** Formatted Price Amount */
+            readonly formatted_price_amount: string;
         };
         /** Meter */
         Meter: {
@@ -13566,6 +13558,8 @@ export interface components {
             feature_settings: components["schemas"]["OrganizationFeatureSettings"] | null;
             /** @description Settings related to subscriptions management */
             subscription_settings: components["schemas"]["OrganizationSubscriptionSettings"];
+            /** @description Settings related to notifications */
+            notification_settings: components["schemas"]["OrganizationNotificationSettings"];
         };
         /** OrganizationAccessToken */
         OrganizationAccessToken: {
@@ -13742,6 +13736,7 @@ export interface components {
             details?: components["schemas"]["OrganizationDetails"] | null;
             feature_settings?: components["schemas"]["OrganizationFeatureSettings"] | null;
             subscription_settings?: components["schemas"]["OrganizationSubscriptionSettings"] | null;
+            notification_settings?: components["schemas"]["OrganizationNotificationSettings"] | null;
         };
         /** OrganizationDetails */
         OrganizationDetails: {
@@ -13796,12 +13791,6 @@ export interface components {
              * @default false
              */
             issue_funding_enabled: boolean;
-            /**
-             * Usage Based Billing Enabled
-             * @description If this organization has usage-based billing enabled
-             * @default false
-             */
-            usage_based_billing_enabled: boolean;
         };
         /** OrganizationMember */
         OrganizationMember: {
@@ -13809,6 +13798,13 @@ export interface components {
             email: string;
             /** Avatar Url */
             avatar_url: string | null;
+        };
+        /** OrganizationNotificationSettings */
+        OrganizationNotificationSettings: {
+            /** New Order */
+            new_order: boolean;
+            /** New Subscription */
+            new_subscription: boolean;
         };
         /** OrganizationProfileSettings */
         OrganizationProfileSettings: {
@@ -13935,6 +13931,7 @@ export interface components {
             details?: components["schemas"]["OrganizationDetails"] | null;
             feature_settings?: components["schemas"]["OrganizationFeatureSettings"] | null;
             subscription_settings?: components["schemas"]["OrganizationSubscriptionSettings"] | null;
+            notification_settings?: components["schemas"]["OrganizationNotificationSettings"] | null;
         };
         /** Pagination */
         Pagination: {
@@ -13956,24 +13953,38 @@ export interface components {
         };
         /** PaymentMethodCard */
         PaymentMethodCard: {
-            /** Id */
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
             id: string;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp of the object.
+             */
+            created_at: string;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            processor: components["schemas"]["PaymentProcessor"];
+            /**
+             * Customer Id
+             * Format: uuid4
+             */
+            customer_id: string;
             /**
              * Type
              * @constant
              */
             type: "card";
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** Default */
-            default: boolean;
-            card: components["schemas"]["PaymentMethodCardData"];
+            method_metadata: components["schemas"]["PaymentMethodCardMetadata"];
         };
-        /** PaymentMethodCardData */
-        PaymentMethodCardData: {
+        /** PaymentMethodCardMetadata */
+        PaymentMethodCardMetadata: {
             /** Brand */
             brand: string;
             /** Last4 */
@@ -13987,17 +13998,31 @@ export interface components {
         };
         /** PaymentMethodGeneric */
         PaymentMethodGeneric: {
-            /** Id */
+            /**
+             * Id
+             * Format: uuid4
+             * @description The ID of the object.
+             */
             id: string;
-            /** Type */
-            type: string;
             /**
              * Created At
              * Format: date-time
+             * @description Creation timestamp of the object.
              */
             created_at: string;
-            /** Default */
-            default: boolean;
+            /**
+             * Modified At
+             * @description Last modification timestamp of the object.
+             */
+            modified_at: string | null;
+            processor: components["schemas"]["PaymentProcessor"];
+            /**
+             * Customer Id
+             * Format: uuid4
+             */
+            customer_id: string;
+            /** Type */
+            type: string;
         };
         /**
          * PaymentProcessor
@@ -14035,6 +14060,8 @@ export interface components {
             id: string;
             processor: components["schemas"]["AccountType"];
             status: components["schemas"]["PayoutStatus"];
+            /** Paid At */
+            paid_at: string | null;
             /** Currency */
             currency: string;
             /** Amount */
@@ -14100,39 +14127,12 @@ export interface components {
          * PayoutSortProperty
          * @enum {string}
          */
-        PayoutSortProperty: "created_at" | "-created_at" | "amount" | "-amount" | "fees_amount" | "-fees_amount" | "status" | "-status" | "account_id" | "-account_id";
+        PayoutSortProperty: "created_at" | "-created_at" | "amount" | "-amount" | "fees_amount" | "-fees_amount" | "status" | "-status" | "paid_at" | "-paid_at" | "account_id" | "-account_id";
         /**
          * PayoutStatus
          * @enum {string}
          */
         PayoutStatus: "pending" | "in_transit" | "succeeded";
-        /** PersonalAccessToken */
-        PersonalAccessToken: {
-            /**
-             * Created At
-             * Format: date-time
-             * @description Creation timestamp of the object.
-             */
-            created_at: string;
-            /**
-             * Modified At
-             * @description Last modification timestamp of the object.
-             */
-            modified_at: string | null;
-            /**
-             * Id
-             * Format: uuid4
-             */
-            id: string;
-            /** Scopes */
-            scopes: components["schemas"]["Scope"][];
-            /** Expires At */
-            expires_at: string | null;
-            /** Comment */
-            comment: string;
-            /** Last Used At */
-            last_used_at: string | null;
-        };
         /**
          * PlatformFeeType
          * @description Type of fees applied by Polar, and billed to the users.
@@ -17311,69 +17311,6 @@ export interface operations {
             };
         };
     };
-    "personal_access_token:list_personal_access_tokens": {
-        parameters: {
-            query?: {
-                /** @description Page number, defaults to 1. */
-                page?: number;
-                /** @description Size of a page, defaults to 10. Maximum is 100. */
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListResource_PersonalAccessToken_"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "personal_access_token:delete_personal_access_token": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     "accounts:search": {
         parameters: {
             query?: {
@@ -18532,6 +18469,8 @@ export interface operations {
                 limit?: number;
                 /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
                 sorting?: components["schemas"]["BenefitSortProperty"][] | null;
+                /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+                metadata?: components["schemas"]["MetadataQuery"];
             };
             header?: never;
             path?: never;
@@ -19064,6 +19003,8 @@ export interface operations {
                 limit?: number;
                 /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
                 sorting?: components["schemas"]["ProductSortProperty"][] | null;
+                /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+                metadata?: components["schemas"]["MetadataQuery"];
             };
             header?: never;
             path?: never;
@@ -20219,6 +20160,8 @@ export interface operations {
                 start_date: string;
                 /** @description End date. */
                 end_date: string;
+                /** @description Timezone to use for the timestamps. Default is UTC. */
+                timezone?: "Africa/Abidjan" | "Africa/Accra" | "Africa/Addis_Ababa" | "Africa/Algiers" | "Africa/Asmara" | "Africa/Asmera" | "Africa/Bamako" | "Africa/Bangui" | "Africa/Banjul" | "Africa/Bissau" | "Africa/Blantyre" | "Africa/Brazzaville" | "Africa/Bujumbura" | "Africa/Cairo" | "Africa/Casablanca" | "Africa/Ceuta" | "Africa/Conakry" | "Africa/Dakar" | "Africa/Dar_es_Salaam" | "Africa/Djibouti" | "Africa/Douala" | "Africa/El_Aaiun" | "Africa/Freetown" | "Africa/Gaborone" | "Africa/Harare" | "Africa/Johannesburg" | "Africa/Juba" | "Africa/Kampala" | "Africa/Khartoum" | "Africa/Kigali" | "Africa/Kinshasa" | "Africa/Lagos" | "Africa/Libreville" | "Africa/Lome" | "Africa/Luanda" | "Africa/Lubumbashi" | "Africa/Lusaka" | "Africa/Malabo" | "Africa/Maputo" | "Africa/Maseru" | "Africa/Mbabane" | "Africa/Mogadishu" | "Africa/Monrovia" | "Africa/Nairobi" | "Africa/Ndjamena" | "Africa/Niamey" | "Africa/Nouakchott" | "Africa/Ouagadougou" | "Africa/Porto-Novo" | "Africa/Sao_Tome" | "Africa/Timbuktu" | "Africa/Tripoli" | "Africa/Tunis" | "Africa/Windhoek" | "America/Adak" | "America/Anchorage" | "America/Anguilla" | "America/Antigua" | "America/Araguaina" | "America/Argentina/Buenos_Aires" | "America/Argentina/Catamarca" | "America/Argentina/ComodRivadavia" | "America/Argentina/Cordoba" | "America/Argentina/Jujuy" | "America/Argentina/La_Rioja" | "America/Argentina/Mendoza" | "America/Argentina/Rio_Gallegos" | "America/Argentina/Salta" | "America/Argentina/San_Juan" | "America/Argentina/San_Luis" | "America/Argentina/Tucuman" | "America/Argentina/Ushuaia" | "America/Aruba" | "America/Asuncion" | "America/Atikokan" | "America/Atka" | "America/Bahia" | "America/Bahia_Banderas" | "America/Barbados" | "America/Belem" | "America/Belize" | "America/Blanc-Sablon" | "America/Boa_Vista" | "America/Bogota" | "America/Boise" | "America/Buenos_Aires" | "America/Cambridge_Bay" | "America/Campo_Grande" | "America/Cancun" | "America/Caracas" | "America/Catamarca" | "America/Cayenne" | "America/Cayman" | "America/Chicago" | "America/Chihuahua" | "America/Ciudad_Juarez" | "America/Coral_Harbour" | "America/Cordoba" | "America/Costa_Rica" | "America/Coyhaique" | "America/Creston" | "America/Cuiaba" | "America/Curacao" | "America/Danmarkshavn" | "America/Dawson" | "America/Dawson_Creek" | "America/Denver" | "America/Detroit" | "America/Dominica" | "America/Edmonton" | "America/Eirunepe" | "America/El_Salvador" | "America/Ensenada" | "America/Fort_Nelson" | "America/Fort_Wayne" | "America/Fortaleza" | "America/Glace_Bay" | "America/Godthab" | "America/Goose_Bay" | "America/Grand_Turk" | "America/Grenada" | "America/Guadeloupe" | "America/Guatemala" | "America/Guayaquil" | "America/Guyana" | "America/Halifax" | "America/Havana" | "America/Hermosillo" | "America/Indiana/Indianapolis" | "America/Indiana/Knox" | "America/Indiana/Marengo" | "America/Indiana/Petersburg" | "America/Indiana/Tell_City" | "America/Indiana/Vevay" | "America/Indiana/Vincennes" | "America/Indiana/Winamac" | "America/Indianapolis" | "America/Inuvik" | "America/Iqaluit" | "America/Jamaica" | "America/Jujuy" | "America/Juneau" | "America/Kentucky/Louisville" | "America/Kentucky/Monticello" | "America/Knox_IN" | "America/Kralendijk" | "America/La_Paz" | "America/Lima" | "America/Los_Angeles" | "America/Louisville" | "America/Lower_Princes" | "America/Maceio" | "America/Managua" | "America/Manaus" | "America/Marigot" | "America/Martinique" | "America/Matamoros" | "America/Mazatlan" | "America/Mendoza" | "America/Menominee" | "America/Merida" | "America/Metlakatla" | "America/Mexico_City" | "America/Miquelon" | "America/Moncton" | "America/Monterrey" | "America/Montevideo" | "America/Montreal" | "America/Montserrat" | "America/Nassau" | "America/New_York" | "America/Nipigon" | "America/Nome" | "America/Noronha" | "America/North_Dakota/Beulah" | "America/North_Dakota/Center" | "America/North_Dakota/New_Salem" | "America/Nuuk" | "America/Ojinaga" | "America/Panama" | "America/Pangnirtung" | "America/Paramaribo" | "America/Phoenix" | "America/Port-au-Prince" | "America/Port_of_Spain" | "America/Porto_Acre" | "America/Porto_Velho" | "America/Puerto_Rico" | "America/Punta_Arenas" | "America/Rainy_River" | "America/Rankin_Inlet" | "America/Recife" | "America/Regina" | "America/Resolute" | "America/Rio_Branco" | "America/Rosario" | "America/Santa_Isabel" | "America/Santarem" | "America/Santiago" | "America/Santo_Domingo" | "America/Sao_Paulo" | "America/Scoresbysund" | "America/Shiprock" | "America/Sitka" | "America/St_Barthelemy" | "America/St_Johns" | "America/St_Kitts" | "America/St_Lucia" | "America/St_Thomas" | "America/St_Vincent" | "America/Swift_Current" | "America/Tegucigalpa" | "America/Thule" | "America/Thunder_Bay" | "America/Tijuana" | "America/Toronto" | "America/Tortola" | "America/Vancouver" | "America/Virgin" | "America/Whitehorse" | "America/Winnipeg" | "America/Yakutat" | "America/Yellowknife" | "Antarctica/Casey" | "Antarctica/Davis" | "Antarctica/DumontDUrville" | "Antarctica/Macquarie" | "Antarctica/Mawson" | "Antarctica/McMurdo" | "Antarctica/Palmer" | "Antarctica/Rothera" | "Antarctica/South_Pole" | "Antarctica/Syowa" | "Antarctica/Troll" | "Antarctica/Vostok" | "Arctic/Longyearbyen" | "Asia/Aden" | "Asia/Almaty" | "Asia/Amman" | "Asia/Anadyr" | "Asia/Aqtau" | "Asia/Aqtobe" | "Asia/Ashgabat" | "Asia/Ashkhabad" | "Asia/Atyrau" | "Asia/Baghdad" | "Asia/Bahrain" | "Asia/Baku" | "Asia/Bangkok" | "Asia/Barnaul" | "Asia/Beirut" | "Asia/Bishkek" | "Asia/Brunei" | "Asia/Calcutta" | "Asia/Chita" | "Asia/Choibalsan" | "Asia/Chongqing" | "Asia/Chungking" | "Asia/Colombo" | "Asia/Dacca" | "Asia/Damascus" | "Asia/Dhaka" | "Asia/Dili" | "Asia/Dubai" | "Asia/Dushanbe" | "Asia/Famagusta" | "Asia/Gaza" | "Asia/Harbin" | "Asia/Hebron" | "Asia/Ho_Chi_Minh" | "Asia/Hong_Kong" | "Asia/Hovd" | "Asia/Irkutsk" | "Asia/Istanbul" | "Asia/Jakarta" | "Asia/Jayapura" | "Asia/Jerusalem" | "Asia/Kabul" | "Asia/Kamchatka" | "Asia/Karachi" | "Asia/Kashgar" | "Asia/Kathmandu" | "Asia/Katmandu" | "Asia/Khandyga" | "Asia/Kolkata" | "Asia/Krasnoyarsk" | "Asia/Kuala_Lumpur" | "Asia/Kuching" | "Asia/Kuwait" | "Asia/Macao" | "Asia/Macau" | "Asia/Magadan" | "Asia/Makassar" | "Asia/Manila" | "Asia/Muscat" | "Asia/Nicosia" | "Asia/Novokuznetsk" | "Asia/Novosibirsk" | "Asia/Omsk" | "Asia/Oral" | "Asia/Phnom_Penh" | "Asia/Pontianak" | "Asia/Pyongyang" | "Asia/Qatar" | "Asia/Qostanay" | "Asia/Qyzylorda" | "Asia/Rangoon" | "Asia/Riyadh" | "Asia/Saigon" | "Asia/Sakhalin" | "Asia/Samarkand" | "Asia/Seoul" | "Asia/Shanghai" | "Asia/Singapore" | "Asia/Srednekolymsk" | "Asia/Taipei" | "Asia/Tashkent" | "Asia/Tbilisi" | "Asia/Tehran" | "Asia/Tel_Aviv" | "Asia/Thimbu" | "Asia/Thimphu" | "Asia/Tokyo" | "Asia/Tomsk" | "Asia/Ujung_Pandang" | "Asia/Ulaanbaatar" | "Asia/Ulan_Bator" | "Asia/Urumqi" | "Asia/Ust-Nera" | "Asia/Vientiane" | "Asia/Vladivostok" | "Asia/Yakutsk" | "Asia/Yangon" | "Asia/Yekaterinburg" | "Asia/Yerevan" | "Atlantic/Azores" | "Atlantic/Bermuda" | "Atlantic/Canary" | "Atlantic/Cape_Verde" | "Atlantic/Faeroe" | "Atlantic/Faroe" | "Atlantic/Jan_Mayen" | "Atlantic/Madeira" | "Atlantic/Reykjavik" | "Atlantic/South_Georgia" | "Atlantic/St_Helena" | "Atlantic/Stanley" | "Australia/ACT" | "Australia/Adelaide" | "Australia/Brisbane" | "Australia/Broken_Hill" | "Australia/Canberra" | "Australia/Currie" | "Australia/Darwin" | "Australia/Eucla" | "Australia/Hobart" | "Australia/LHI" | "Australia/Lindeman" | "Australia/Lord_Howe" | "Australia/Melbourne" | "Australia/NSW" | "Australia/North" | "Australia/Perth" | "Australia/Queensland" | "Australia/South" | "Australia/Sydney" | "Australia/Tasmania" | "Australia/Victoria" | "Australia/West" | "Australia/Yancowinna" | "Brazil/Acre" | "Brazil/DeNoronha" | "Brazil/East" | "Brazil/West" | "CET" | "CST6CDT" | "Canada/Atlantic" | "Canada/Central" | "Canada/Eastern" | "Canada/Mountain" | "Canada/Newfoundland" | "Canada/Pacific" | "Canada/Saskatchewan" | "Canada/Yukon" | "Chile/Continental" | "Chile/EasterIsland" | "Cuba" | "EET" | "EST" | "EST5EDT" | "Egypt" | "Eire" | "Etc/GMT" | "Etc/GMT+0" | "Etc/GMT+1" | "Etc/GMT+10" | "Etc/GMT+11" | "Etc/GMT+12" | "Etc/GMT+2" | "Etc/GMT+3" | "Etc/GMT+4" | "Etc/GMT+5" | "Etc/GMT+6" | "Etc/GMT+7" | "Etc/GMT+8" | "Etc/GMT+9" | "Etc/GMT-0" | "Etc/GMT-1" | "Etc/GMT-10" | "Etc/GMT-11" | "Etc/GMT-12" | "Etc/GMT-13" | "Etc/GMT-14" | "Etc/GMT-2" | "Etc/GMT-3" | "Etc/GMT-4" | "Etc/GMT-5" | "Etc/GMT-6" | "Etc/GMT-7" | "Etc/GMT-8" | "Etc/GMT-9" | "Etc/GMT0" | "Etc/Greenwich" | "Etc/UCT" | "Etc/UTC" | "Etc/Universal" | "Etc/Zulu" | "Europe/Amsterdam" | "Europe/Andorra" | "Europe/Astrakhan" | "Europe/Athens" | "Europe/Belfast" | "Europe/Belgrade" | "Europe/Berlin" | "Europe/Bratislava" | "Europe/Brussels" | "Europe/Bucharest" | "Europe/Budapest" | "Europe/Busingen" | "Europe/Chisinau" | "Europe/Copenhagen" | "Europe/Dublin" | "Europe/Gibraltar" | "Europe/Guernsey" | "Europe/Helsinki" | "Europe/Isle_of_Man" | "Europe/Istanbul" | "Europe/Jersey" | "Europe/Kaliningrad" | "Europe/Kiev" | "Europe/Kirov" | "Europe/Kyiv" | "Europe/Lisbon" | "Europe/Ljubljana" | "Europe/London" | "Europe/Luxembourg" | "Europe/Madrid" | "Europe/Malta" | "Europe/Mariehamn" | "Europe/Minsk" | "Europe/Monaco" | "Europe/Moscow" | "Europe/Nicosia" | "Europe/Oslo" | "Europe/Paris" | "Europe/Podgorica" | "Europe/Prague" | "Europe/Riga" | "Europe/Rome" | "Europe/Samara" | "Europe/San_Marino" | "Europe/Sarajevo" | "Europe/Saratov" | "Europe/Simferopol" | "Europe/Skopje" | "Europe/Sofia" | "Europe/Stockholm" | "Europe/Tallinn" | "Europe/Tirane" | "Europe/Tiraspol" | "Europe/Ulyanovsk" | "Europe/Uzhgorod" | "Europe/Vaduz" | "Europe/Vatican" | "Europe/Vienna" | "Europe/Vilnius" | "Europe/Volgograd" | "Europe/Warsaw" | "Europe/Zagreb" | "Europe/Zaporozhye" | "Europe/Zurich" | "Factory" | "GB" | "GB-Eire" | "GMT" | "GMT+0" | "GMT-0" | "GMT0" | "Greenwich" | "HST" | "Hongkong" | "Iceland" | "Indian/Antananarivo" | "Indian/Chagos" | "Indian/Christmas" | "Indian/Cocos" | "Indian/Comoro" | "Indian/Kerguelen" | "Indian/Mahe" | "Indian/Maldives" | "Indian/Mauritius" | "Indian/Mayotte" | "Indian/Reunion" | "Iran" | "Israel" | "Jamaica" | "Japan" | "Kwajalein" | "Libya" | "MET" | "MST" | "MST7MDT" | "Mexico/BajaNorte" | "Mexico/BajaSur" | "Mexico/General" | "NZ" | "NZ-CHAT" | "Navajo" | "PRC" | "PST8PDT" | "Pacific/Apia" | "Pacific/Auckland" | "Pacific/Bougainville" | "Pacific/Chatham" | "Pacific/Chuuk" | "Pacific/Easter" | "Pacific/Efate" | "Pacific/Enderbury" | "Pacific/Fakaofo" | "Pacific/Fiji" | "Pacific/Funafuti" | "Pacific/Galapagos" | "Pacific/Gambier" | "Pacific/Guadalcanal" | "Pacific/Guam" | "Pacific/Honolulu" | "Pacific/Johnston" | "Pacific/Kanton" | "Pacific/Kiritimati" | "Pacific/Kosrae" | "Pacific/Kwajalein" | "Pacific/Majuro" | "Pacific/Marquesas" | "Pacific/Midway" | "Pacific/Nauru" | "Pacific/Niue" | "Pacific/Norfolk" | "Pacific/Noumea" | "Pacific/Pago_Pago" | "Pacific/Palau" | "Pacific/Pitcairn" | "Pacific/Pohnpei" | "Pacific/Ponape" | "Pacific/Port_Moresby" | "Pacific/Rarotonga" | "Pacific/Saipan" | "Pacific/Samoa" | "Pacific/Tahiti" | "Pacific/Tarawa" | "Pacific/Tongatapu" | "Pacific/Truk" | "Pacific/Wake" | "Pacific/Wallis" | "Pacific/Yap" | "Poland" | "Portugal" | "ROC" | "ROK" | "Singapore" | "Turkey" | "UCT" | "US/Alaska" | "US/Aleutian" | "US/Arizona" | "US/Central" | "US/East-Indiana" | "US/Eastern" | "US/Hawaii" | "US/Indiana-Starke" | "US/Michigan" | "US/Mountain" | "US/Pacific" | "US/Samoa" | "UTC" | "Universal" | "W-SU" | "WET" | "Zulu";
                 /** @description Interval between two timestamps. */
                 interval: components["schemas"]["TimeInterval"];
                 /** @description Filter by organization ID. */
@@ -21824,7 +21767,7 @@ export interface operations {
             };
         };
     };
-    "customer_portal:customers:get_payment_methods": {
+    "customer_portal:customers:list_payment_methods": {
         parameters: {
             query?: {
                 /** @description Page number, defaults to 1. */
@@ -23363,6 +23306,8 @@ export interface operations {
                 customer_id?: string | string[] | null;
                 /** @description Filter by external customer ID. */
                 external_customer_id?: string | string[] | null;
+                /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+                metadata?: components["schemas"]["MetadataQuery"];
             };
             header?: never;
             path: {
@@ -24809,6 +24754,7 @@ type ReadonlyArray<T> = [
 ] extends [
     unknown[]
 ] ? Readonly<Exclude<T, undefined>> : Readonly<Exclude<T, undefined>[]>;
+export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<paths["/v1/metrics/"]["get"]["parameters"]["query"]["timezone"]> = ["Africa/Abidjan", "Africa/Accra", "Africa/Addis_Ababa", "Africa/Algiers", "Africa/Asmara", "Africa/Asmera", "Africa/Bamako", "Africa/Bangui", "Africa/Banjul", "Africa/Bissau", "Africa/Blantyre", "Africa/Brazzaville", "Africa/Bujumbura", "Africa/Cairo", "Africa/Casablanca", "Africa/Ceuta", "Africa/Conakry", "Africa/Dakar", "Africa/Dar_es_Salaam", "Africa/Djibouti", "Africa/Douala", "Africa/El_Aaiun", "Africa/Freetown", "Africa/Gaborone", "Africa/Harare", "Africa/Johannesburg", "Africa/Juba", "Africa/Kampala", "Africa/Khartoum", "Africa/Kigali", "Africa/Kinshasa", "Africa/Lagos", "Africa/Libreville", "Africa/Lome", "Africa/Luanda", "Africa/Lubumbashi", "Africa/Lusaka", "Africa/Malabo", "Africa/Maputo", "Africa/Maseru", "Africa/Mbabane", "Africa/Mogadishu", "Africa/Monrovia", "Africa/Nairobi", "Africa/Ndjamena", "Africa/Niamey", "Africa/Nouakchott", "Africa/Ouagadougou", "Africa/Porto-Novo", "Africa/Sao_Tome", "Africa/Timbuktu", "Africa/Tripoli", "Africa/Tunis", "Africa/Windhoek", "America/Adak", "America/Anchorage", "America/Anguilla", "America/Antigua", "America/Araguaina", "America/Argentina/Buenos_Aires", "America/Argentina/Catamarca", "America/Argentina/ComodRivadavia", "America/Argentina/Cordoba", "America/Argentina/Jujuy", "America/Argentina/La_Rioja", "America/Argentina/Mendoza", "America/Argentina/Rio_Gallegos", "America/Argentina/Salta", "America/Argentina/San_Juan", "America/Argentina/San_Luis", "America/Argentina/Tucuman", "America/Argentina/Ushuaia", "America/Aruba", "America/Asuncion", "America/Atikokan", "America/Atka", "America/Bahia", "America/Bahia_Banderas", "America/Barbados", "America/Belem", "America/Belize", "America/Blanc-Sablon", "America/Boa_Vista", "America/Bogota", "America/Boise", "America/Buenos_Aires", "America/Cambridge_Bay", "America/Campo_Grande", "America/Cancun", "America/Caracas", "America/Catamarca", "America/Cayenne", "America/Cayman", "America/Chicago", "America/Chihuahua", "America/Ciudad_Juarez", "America/Coral_Harbour", "America/Cordoba", "America/Costa_Rica", "America/Coyhaique", "America/Creston", "America/Cuiaba", "America/Curacao", "America/Danmarkshavn", "America/Dawson", "America/Dawson_Creek", "America/Denver", "America/Detroit", "America/Dominica", "America/Edmonton", "America/Eirunepe", "America/El_Salvador", "America/Ensenada", "America/Fort_Nelson", "America/Fort_Wayne", "America/Fortaleza", "America/Glace_Bay", "America/Godthab", "America/Goose_Bay", "America/Grand_Turk", "America/Grenada", "America/Guadeloupe", "America/Guatemala", "America/Guayaquil", "America/Guyana", "America/Halifax", "America/Havana", "America/Hermosillo", "America/Indiana/Indianapolis", "America/Indiana/Knox", "America/Indiana/Marengo", "America/Indiana/Petersburg", "America/Indiana/Tell_City", "America/Indiana/Vevay", "America/Indiana/Vincennes", "America/Indiana/Winamac", "America/Indianapolis", "America/Inuvik", "America/Iqaluit", "America/Jamaica", "America/Jujuy", "America/Juneau", "America/Kentucky/Louisville", "America/Kentucky/Monticello", "America/Knox_IN", "America/Kralendijk", "America/La_Paz", "America/Lima", "America/Los_Angeles", "America/Louisville", "America/Lower_Princes", "America/Maceio", "America/Managua", "America/Manaus", "America/Marigot", "America/Martinique", "America/Matamoros", "America/Mazatlan", "America/Mendoza", "America/Menominee", "America/Merida", "America/Metlakatla", "America/Mexico_City", "America/Miquelon", "America/Moncton", "America/Monterrey", "America/Montevideo", "America/Montreal", "America/Montserrat", "America/Nassau", "America/New_York", "America/Nipigon", "America/Nome", "America/Noronha", "America/North_Dakota/Beulah", "America/North_Dakota/Center", "America/North_Dakota/New_Salem", "America/Nuuk", "America/Ojinaga", "America/Panama", "America/Pangnirtung", "America/Paramaribo", "America/Phoenix", "America/Port-au-Prince", "America/Port_of_Spain", "America/Porto_Acre", "America/Porto_Velho", "America/Puerto_Rico", "America/Punta_Arenas", "America/Rainy_River", "America/Rankin_Inlet", "America/Recife", "America/Regina", "America/Resolute", "America/Rio_Branco", "America/Rosario", "America/Santa_Isabel", "America/Santarem", "America/Santiago", "America/Santo_Domingo", "America/Sao_Paulo", "America/Scoresbysund", "America/Shiprock", "America/Sitka", "America/St_Barthelemy", "America/St_Johns", "America/St_Kitts", "America/St_Lucia", "America/St_Thomas", "America/St_Vincent", "America/Swift_Current", "America/Tegucigalpa", "America/Thule", "America/Thunder_Bay", "America/Tijuana", "America/Toronto", "America/Tortola", "America/Vancouver", "America/Virgin", "America/Whitehorse", "America/Winnipeg", "America/Yakutat", "America/Yellowknife", "Antarctica/Casey", "Antarctica/Davis", "Antarctica/DumontDUrville", "Antarctica/Macquarie", "Antarctica/Mawson", "Antarctica/McMurdo", "Antarctica/Palmer", "Antarctica/Rothera", "Antarctica/South_Pole", "Antarctica/Syowa", "Antarctica/Troll", "Antarctica/Vostok", "Arctic/Longyearbyen", "Asia/Aden", "Asia/Almaty", "Asia/Amman", "Asia/Anadyr", "Asia/Aqtau", "Asia/Aqtobe", "Asia/Ashgabat", "Asia/Ashkhabad", "Asia/Atyrau", "Asia/Baghdad", "Asia/Bahrain", "Asia/Baku", "Asia/Bangkok", "Asia/Barnaul", "Asia/Beirut", "Asia/Bishkek", "Asia/Brunei", "Asia/Calcutta", "Asia/Chita", "Asia/Choibalsan", "Asia/Chongqing", "Asia/Chungking", "Asia/Colombo", "Asia/Dacca", "Asia/Damascus", "Asia/Dhaka", "Asia/Dili", "Asia/Dubai", "Asia/Dushanbe", "Asia/Famagusta", "Asia/Gaza", "Asia/Harbin", "Asia/Hebron", "Asia/Ho_Chi_Minh", "Asia/Hong_Kong", "Asia/Hovd", "Asia/Irkutsk", "Asia/Istanbul", "Asia/Jakarta", "Asia/Jayapura", "Asia/Jerusalem", "Asia/Kabul", "Asia/Kamchatka", "Asia/Karachi", "Asia/Kashgar", "Asia/Kathmandu", "Asia/Katmandu", "Asia/Khandyga", "Asia/Kolkata", "Asia/Krasnoyarsk", "Asia/Kuala_Lumpur", "Asia/Kuching", "Asia/Kuwait", "Asia/Macao", "Asia/Macau", "Asia/Magadan", "Asia/Makassar", "Asia/Manila", "Asia/Muscat", "Asia/Nicosia", "Asia/Novokuznetsk", "Asia/Novosibirsk", "Asia/Omsk", "Asia/Oral", "Asia/Phnom_Penh", "Asia/Pontianak", "Asia/Pyongyang", "Asia/Qatar", "Asia/Qostanay", "Asia/Qyzylorda", "Asia/Rangoon", "Asia/Riyadh", "Asia/Saigon", "Asia/Sakhalin", "Asia/Samarkand", "Asia/Seoul", "Asia/Shanghai", "Asia/Singapore", "Asia/Srednekolymsk", "Asia/Taipei", "Asia/Tashkent", "Asia/Tbilisi", "Asia/Tehran", "Asia/Tel_Aviv", "Asia/Thimbu", "Asia/Thimphu", "Asia/Tokyo", "Asia/Tomsk", "Asia/Ujung_Pandang", "Asia/Ulaanbaatar", "Asia/Ulan_Bator", "Asia/Urumqi", "Asia/Ust-Nera", "Asia/Vientiane", "Asia/Vladivostok", "Asia/Yakutsk", "Asia/Yangon", "Asia/Yekaterinburg", "Asia/Yerevan", "Atlantic/Azores", "Atlantic/Bermuda", "Atlantic/Canary", "Atlantic/Cape_Verde", "Atlantic/Faeroe", "Atlantic/Faroe", "Atlantic/Jan_Mayen", "Atlantic/Madeira", "Atlantic/Reykjavik", "Atlantic/South_Georgia", "Atlantic/St_Helena", "Atlantic/Stanley", "Australia/ACT", "Australia/Adelaide", "Australia/Brisbane", "Australia/Broken_Hill", "Australia/Canberra", "Australia/Currie", "Australia/Darwin", "Australia/Eucla", "Australia/Hobart", "Australia/LHI", "Australia/Lindeman", "Australia/Lord_Howe", "Australia/Melbourne", "Australia/NSW", "Australia/North", "Australia/Perth", "Australia/Queensland", "Australia/South", "Australia/Sydney", "Australia/Tasmania", "Australia/Victoria", "Australia/West", "Australia/Yancowinna", "Brazil/Acre", "Brazil/DeNoronha", "Brazil/East", "Brazil/West", "CET", "CST6CDT", "Canada/Atlantic", "Canada/Central", "Canada/Eastern", "Canada/Mountain", "Canada/Newfoundland", "Canada/Pacific", "Canada/Saskatchewan", "Canada/Yukon", "Chile/Continental", "Chile/EasterIsland", "Cuba", "EET", "EST", "EST5EDT", "Egypt", "Eire", "Etc/GMT", "Etc/GMT+0", "Etc/GMT+1", "Etc/GMT+10", "Etc/GMT+11", "Etc/GMT+12", "Etc/GMT+2", "Etc/GMT+3", "Etc/GMT+4", "Etc/GMT+5", "Etc/GMT+6", "Etc/GMT+7", "Etc/GMT+8", "Etc/GMT+9", "Etc/GMT-0", "Etc/GMT-1", "Etc/GMT-10", "Etc/GMT-11", "Etc/GMT-12", "Etc/GMT-13", "Etc/GMT-14", "Etc/GMT-2", "Etc/GMT-3", "Etc/GMT-4", "Etc/GMT-5", "Etc/GMT-6", "Etc/GMT-7", "Etc/GMT-8", "Etc/GMT-9", "Etc/GMT0", "Etc/Greenwich", "Etc/UCT", "Etc/UTC", "Etc/Universal", "Etc/Zulu", "Europe/Amsterdam", "Europe/Andorra", "Europe/Astrakhan", "Europe/Athens", "Europe/Belfast", "Europe/Belgrade", "Europe/Berlin", "Europe/Bratislava", "Europe/Brussels", "Europe/Bucharest", "Europe/Budapest", "Europe/Busingen", "Europe/Chisinau", "Europe/Copenhagen", "Europe/Dublin", "Europe/Gibraltar", "Europe/Guernsey", "Europe/Helsinki", "Europe/Isle_of_Man", "Europe/Istanbul", "Europe/Jersey", "Europe/Kaliningrad", "Europe/Kiev", "Europe/Kirov", "Europe/Kyiv", "Europe/Lisbon", "Europe/Ljubljana", "Europe/London", "Europe/Luxembourg", "Europe/Madrid", "Europe/Malta", "Europe/Mariehamn", "Europe/Minsk", "Europe/Monaco", "Europe/Moscow", "Europe/Nicosia", "Europe/Oslo", "Europe/Paris", "Europe/Podgorica", "Europe/Prague", "Europe/Riga", "Europe/Rome", "Europe/Samara", "Europe/San_Marino", "Europe/Sarajevo", "Europe/Saratov", "Europe/Simferopol", "Europe/Skopje", "Europe/Sofia", "Europe/Stockholm", "Europe/Tallinn", "Europe/Tirane", "Europe/Tiraspol", "Europe/Ulyanovsk", "Europe/Uzhgorod", "Europe/Vaduz", "Europe/Vatican", "Europe/Vienna", "Europe/Vilnius", "Europe/Volgograd", "Europe/Warsaw", "Europe/Zagreb", "Europe/Zaporozhye", "Europe/Zurich", "Factory", "GB", "GB-Eire", "GMT", "GMT+0", "GMT-0", "GMT0", "Greenwich", "HST", "Hongkong", "Iceland", "Indian/Antananarivo", "Indian/Chagos", "Indian/Christmas", "Indian/Cocos", "Indian/Comoro", "Indian/Kerguelen", "Indian/Mahe", "Indian/Maldives", "Indian/Mauritius", "Indian/Mayotte", "Indian/Reunion", "Iran", "Israel", "Jamaica", "Japan", "Kwajalein", "Libya", "MET", "MST", "MST7MDT", "Mexico/BajaNorte", "Mexico/BajaSur", "Mexico/General", "NZ", "NZ-CHAT", "Navajo", "PRC", "PST8PDT", "Pacific/Apia", "Pacific/Auckland", "Pacific/Bougainville", "Pacific/Chatham", "Pacific/Chuuk", "Pacific/Easter", "Pacific/Efate", "Pacific/Enderbury", "Pacific/Fakaofo", "Pacific/Fiji", "Pacific/Funafuti", "Pacific/Galapagos", "Pacific/Gambier", "Pacific/Guadalcanal", "Pacific/Guam", "Pacific/Honolulu", "Pacific/Johnston", "Pacific/Kanton", "Pacific/Kiritimati", "Pacific/Kosrae", "Pacific/Kwajalein", "Pacific/Majuro", "Pacific/Marquesas", "Pacific/Midway", "Pacific/Nauru", "Pacific/Niue", "Pacific/Norfolk", "Pacific/Noumea", "Pacific/Pago_Pago", "Pacific/Palau", "Pacific/Pitcairn", "Pacific/Pohnpei", "Pacific/Ponape", "Pacific/Port_Moresby", "Pacific/Rarotonga", "Pacific/Saipan", "Pacific/Samoa", "Pacific/Tahiti", "Pacific/Tarawa", "Pacific/Tongatapu", "Pacific/Truk", "Pacific/Wake", "Pacific/Wallis", "Pacific/Yap", "Poland", "Portugal", "ROC", "ROK", "Singapore", "Turkey", "UCT", "US/Alaska", "US/Aleutian", "US/Arizona", "US/Central", "US/East-Indiana", "US/Eastern", "US/Hawaii", "US/Indiana-Starke", "US/Michigan", "US/Mountain", "US/Pacific", "US/Samoa", "UTC", "Universal", "W-SU", "WET", "Zulu"];
 export const accountTypeValues: ReadonlyArray<components["schemas"]["AccountType"]> = ["stripe", "open_collective"];
 export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseOrganization"]["sub_type"]> = ["organization"];
 export const authorizeResponseUserSub_typeValues: ReadonlyArray<components["schemas"]["AuthorizeResponseUser"]["sub_type"]> = ["user"];
@@ -24829,6 +24775,7 @@ export const benefitRevokedEventNameValues: ReadonlyArray<components["schemas"][
 export const benefitSortPropertyValues: ReadonlyArray<components["schemas"]["BenefitSortProperty"]> = ["created_at", "-created_at", "description", "-description"];
 export const benefitTypeValues: ReadonlyArray<components["schemas"]["BenefitType"]> = ["custom", "discord", "github_repository", "downloadables", "license_keys", "meter_credit"];
 export const benefitUpdatedEventNameValues: ReadonlyArray<components["schemas"]["BenefitUpdatedEvent"]["name"]> = ["benefit.updated"];
+export const billingAddressFieldModeValues: ReadonlyArray<components["schemas"]["BillingAddressFieldMode"]> = ["required", "optional", "disabled"];
 export const body_oauth2_consentActionValues: ReadonlyArray<components["schemas"]["Body_oauth2_consent"]["action"]> = ["allow", "deny"];
 export const checkoutLinkSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutLinkSortProperty"]> = ["created_at", "-created_at", "label", "-label", "success_url", "-success_url", "allow_discount_codes", "-allow_discount_codes"];
 export const checkoutSortPropertyValues: ReadonlyArray<components["schemas"]["CheckoutSortProperty"]> = ["created_at", "-created_at", "expires_at", "-expires_at", "status", "-status"];
@@ -24911,7 +24858,7 @@ export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]
 export const paymentProcessorValues: ReadonlyArray<components["schemas"]["PaymentProcessor"]> = ["stripe"];
 export const paymentSortPropertyValues: ReadonlyArray<components["schemas"]["PaymentSortProperty"]> = ["created_at", "-created_at", "status", "-status", "amount", "-amount", "method", "-method"];
 export const paymentStatusValues: ReadonlyArray<components["schemas"]["PaymentStatus"]> = ["pending", "succeeded", "failed"];
-export const payoutSortPropertyValues: ReadonlyArray<components["schemas"]["PayoutSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "fees_amount", "-fees_amount", "status", "-status", "account_id", "-account_id"];
+export const payoutSortPropertyValues: ReadonlyArray<components["schemas"]["PayoutSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "fees_amount", "-fees_amount", "status", "-status", "paid_at", "-paid_at", "account_id", "-account_id"];
 export const payoutStatusValues: ReadonlyArray<components["schemas"]["PayoutStatus"]> = ["pending", "in_transit", "succeeded"];
 export const platformFeeTypeValues: ReadonlyArray<components["schemas"]["PlatformFeeType"]> = ["payment", "international_payment", "subscription", "invoice", "cross_border_transfer", "payout", "account", "dispute", "platform"];
 export const pledgeStateValues: ReadonlyArray<components["schemas"]["PledgeState"]> = ["initiated", "created", "pending", "refunded", "disputed", "charge_disputed", "cancelled"];

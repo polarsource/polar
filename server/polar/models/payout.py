@@ -1,8 +1,9 @@
+from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid
+from sqlalchemy import TIMESTAMP, ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql.sqltypes import BigInteger
 
@@ -48,6 +49,10 @@ class Payout(RecordModel):
         default=PayoutStatus.pending,
     )
     """Status of this payout."""
+    paid_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+    """Date and time when this payout was paid. Might be `None` if not yet paid."""
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     """Currency of this transaction from Polar's perspective. Should be `usd`."""
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)

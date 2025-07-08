@@ -62,7 +62,6 @@ from polar.models.product import ProductBillingType
 from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
-    MaintainerCreateAccountNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
     NotificationType,
 )
@@ -279,7 +278,7 @@ class OrderService:
             statement = statement.where(Order.discount_id.in_(discount_id))
 
         # TODO:
-        # Once we add `customer_external_id` be sure to filter for non-deleted.
+        # Once we add `external_customer_id` be sure to filter for non-deleted.
         # Since it could be shared across soft deleted records whereas the unique ID cannot.
         if customer_id is not None:
             statement = statement.where(Order.customer_id.in_(customer_id))
@@ -639,9 +638,7 @@ class OrderService:
             assert invoice.id is not None
             await stripe_service.update_invoice(
                 invoice.id,
-                statement_descriptor=subscription.organization.name[
-                    : settings.stripe_descriptor_suffix_max_length
-                ],
+                statement_descriptor=subscription.organization.statement_descriptor,
             )
 
         # Determine billing reason
@@ -765,19 +762,21 @@ class OrderService:
         self, session: AsyncSession, organization: Organization, order: Order
     ) -> None:
         product = order.product
-        await notifications_service.send_to_org_members(
-            session,
-            org_id=product.organization_id,
-            notif=PartialNotification(
-                type=NotificationType.maintainer_new_product_sale,
-                payload=MaintainerNewProductSaleNotificationPayload(
-                    customer_name=order.customer.email,
-                    product_name=product.name,
-                    product_price_amount=order.net_amount,
-                    organization_name=organization.slug,
+
+        if organization.notification_settings["new_order"]:
+            await notifications_service.send_to_org_members(
+                session,
+                org_id=product.organization_id,
+                notif=PartialNotification(
+                    type=NotificationType.maintainer_new_product_sale,
+                    payload=MaintainerNewProductSaleNotificationPayload(
+                        customer_name=order.customer.email,
+                        product_name=product.name,
+                        product_price_amount=order.net_amount,
+                        organization_name=organization.slug,
+                    ),
                 ),
-            ),
-        )
+            )
 
     async def update_order_from_stripe(
         self, session: AsyncSession, invoice: stripe_lib.Invoice
@@ -918,18 +917,6 @@ class OrderService:
 
             await held_balance_service.create(session, held_balance=held_balance)
 
-            await notifications_service.send_to_org_members(
-                session=session,
-                org_id=organization.id,
-                notif=PartialNotification(
-                    type=NotificationType.maintainer_create_account,
-                    payload=MaintainerCreateAccountNotificationPayload(
-                        organization_name=organization.slug,
-                        url=organization.account_url,
-                    ),
-                ),
-            )
-
             return
 
         # Sanity check: make sure we didn't already create a balance for this order
@@ -981,7 +968,11 @@ class OrderService:
         enqueue_job("order.discord_notification", order_id=order.id)
 
         if order.paid:
-            await self._on_order_paid(session, order)
+            await self._on_order_updated(
+                session,
+                order,
+                OrderStatus.pending,  # Pretend the previous status was pending to trigger the paid event
+            )
 
         # Notify checkout channel that an order has been created from it
         if order.checkout:

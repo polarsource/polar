@@ -10,11 +10,13 @@ import { SpinnerNoMargin } from '../Shared/Spinner'
 interface CheckoutBenefitsProps {
   checkout: CheckoutPublic
   customerSessionToken?: string
+  maxWaitingTimeMs?: number
 }
 
 const CheckoutBenefits = ({
   checkout,
   customerSessionToken,
+  maxWaitingTimeMs = 15000,
 }: CheckoutBenefitsProps) => {
   const api = createClientSideAPI(customerSessionToken)
   const { data: benefitGrants, refetch } = useCustomerBenefitGrants(api, {
@@ -29,6 +31,16 @@ const CheckoutBenefits = ({
       customerEvents.off('benefit.granted', refetch)
     }
   }, [customerEvents, refetch])
+
+  useEffect(() => {
+    if (benefitGrants && benefitGrants.items.length >= expectedBenefits) {
+      return
+    }
+    let intervalId = setInterval(() => {
+      refetch()
+    }, maxWaitingTimeMs)
+    return () => clearInterval(intervalId)
+  }, [benefitGrants, expectedBenefits, maxWaitingTimeMs, refetch])
 
   return (
     <>

@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import Select, select
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
+from polar.enums import PaymentProcessor
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -23,9 +24,11 @@ class PaymentRepository(
 ):
     model = Payment
 
-    async def get_by_processor_id(self, processor_id: str) -> Payment | None:
+    async def get_by_processor_id(
+        self, processor: PaymentProcessor, processor_id: str
+    ) -> Payment | None:
         statement = self.get_base_statement().where(
-            Payment.processor_id == processor_id
+            Payment.processor == processor, Payment.processor_id == processor_id
         )
         return await self.get_one_or_none(statement)
 

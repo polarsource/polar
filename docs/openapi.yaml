@@ -1729,7 +1729,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.oauth2.token({\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n    code: \"<value>\",\n    redirectUri: \"https://memorable-season.name\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.oauth2.token({\n    grantType: \"authorization_code\",\n    clientId: \"<id>\",\n    clientSecret: \"<value>\",\n    code: \"<value>\",\n    redirectUri: \"https://memorable-season.name\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -2072,6 +2072,16 @@
               "title": "Sorting"
             },
             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+          },
+          {
+            "name": "metadata",
+            "in": "query",
+            "required": false,
+            "style": "deepObject",
+            "schema": {
+              "$ref": "#/components/schemas/MetadataQuery"
+            },
+            "description": "Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`."
           }
         ],
         "responses": {
@@ -2211,7 +2221,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.create({\n    description: \"mature emergent at outside arrogantly gadzooks zealous equatorial notwithstanding\",\n    properties: {},\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.create({\n    type: \"license_keys\",\n    description: \"mature emergent at outside arrogantly gadzooks zealous equatorial notwithstanding\",\n    properties: {},\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -2425,7 +2435,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.update({\n    id: \"<value>\",\n    requestBody: {},\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.update({\n    id: \"<value>\",\n    requestBody: {\n      type: \"meter_credit\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -3659,6 +3669,16 @@
               "title": "Sorting"
             },
             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+          },
+          {
+            "name": "metadata",
+            "in": "query",
+            "required": false,
+            "style": "deepObject",
+            "schema": {
+              "$ref": "#/components/schemas/MetadataQuery"
+            },
+            "description": "Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`."
           }
         ],
         "responses": {
@@ -6413,7 +6433,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.create({\n    name: \"<value>\",\n    mimeType: \"<value>\",\n    size: 612128,\n    upload: {\n      parts: [],\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.create({\n    name: \"<value>\",\n    mimeType: \"<value>\",\n    size: 612128,\n    upload: {\n      parts: [],\n    },\n    service: \"downloadable\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -6798,6 +6818,19 @@
               "title": "End Date"
             },
             "description": "End date."
+          },
+          {
+            "name": "timezone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Timezone to use for the timestamps. Default is UTC.",
+              "default": "UTC",
+              "title": "Timezone"
+            },
+            "description": "Timezone to use for the timestamps. Default is UTC."
           },
           {
             "name": "interval",
@@ -7875,7 +7908,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.create({\n    allowDiscountCodes: true,\n    requireBillingAddress: false,\n    productPriceId: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkoutLinks.create({\n    paymentProcessor: \"stripe\",\n    allowDiscountCodes: true,\n    requireBillingAddress: false,\n    productPriceId: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -8433,7 +8466,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.create({\n    slug: \"<value>\",\n    name: \"<value>\",\n    properties: {\n      options: [],\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.create({\n    type: \"select\",\n    slug: \"<value>\",\n    name: \"<value>\",\n    properties: {\n      options: [],\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -8619,7 +8652,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.update({\n    id: \"<value>\",\n    customFieldUpdate: {},\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customFields.update({\n    id: \"<value>\",\n    customFieldUpdate: {\n      type: \"date\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -10817,7 +10850,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.benefitGrants.update({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    id: \"<value>\",\n    customerBenefitGrantUpdate: {},\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.benefitGrants.update({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    id: \"<value>\",\n    customerBenefitGrantUpdate: {\n      benefitType: \"license_keys\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -10970,9 +11003,9 @@
           "customers",
           "documented"
         ],
-        "summary": "Get Customer Payment Methods",
+        "summary": "List Customer Payment Methods",
         "description": "Get saved payment methods of the authenticated customer.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
-        "operationId": "customer_portal:customers:get_payment_methods",
+        "operationId": "customer_portal:customers:list_payment_methods",
         "security": [
           {
             "customer_session": []
@@ -11054,7 +11087,7 @@
           "disabled": true
         },
         "x-speakeasy-group": "customer_portal.customers",
-        "x-speakeasy-name-override": "get_payment_methods",
+        "x-speakeasy-name-override": "list_payment_methods",
         "x-codeSamples": [
           {
             "lang": "go",
@@ -11069,7 +11102,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.customers.getPaymentMethods({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {});\n\n  for await (const page of result) {\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.customers.listPaymentMethods({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {});\n\n  for await (const page of result) {\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -11186,6 +11219,7 @@
             "required": true,
             "schema": {
               "type": "string",
+              "format": "uuid4",
               "title": "Id"
             }
           }
@@ -11237,7 +11271,7 @@
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  await polar.customerPortal.customers.deletePaymentMethod({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    id: \"<id>\",\n  });\n\n\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  await polar.customerPortal.customers.deletePaymentMethod({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    id: \"<value>\",\n  });\n\n\n}\n\nrun();"
           },
           {
             "lang": "php",
@@ -13756,22 +13790,22 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerSessions.Create(ctx, operations.CreateCustomerSessionsCreateCustomerSessionCreateCustomerSessionCustomerExternalIDCreate(\n        components.CustomerSessionCustomerExternalIDCreate{\n            CustomerExternalID: \"<id>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerSession != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.CustomerSessions.Create(ctx, operations.CreateCustomerSessionsCreateCustomerSessionCreateCustomerSessionCustomerExternalIDCreate(\n        components.CustomerSessionCustomerExternalIDCreate{\n            ExternalCustomerID: \"<id>\",\n        },\n    ))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerSession != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customer_sessions.create(request={\n        \"customer_external_id\": \"<id>\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.customer_sessions.create(request={\n        \"external_customer_id\": \"<id>\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerSessions.create({\n    customerExternalId: \"<id>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.customerSessions.create({\n    externalCustomerId: \"<id>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CustomerSessionCustomerExternalIDCreate(\n    customerExternalId: '<id>',\n);\n\n$response = $sdk->customerSessions->create(\n    request: $request\n);\n\nif ($response->customerSession !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\CustomerSessionCustomerExternalIDCreate(\n    externalCustomerId: '<id>',\n);\n\n$response = $sdk->customerSessions->create(\n    request: $request\n);\n\nif ($response->customerSession !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -15155,6 +15189,16 @@
               "description": "Filter by external customer ID."
             },
             "description": "Filter by external customer ID."
+          },
+          {
+            "name": "metadata",
+            "in": "query",
+            "required": false,
+            "style": "deepObject",
+            "schema": {
+              "$ref": "#/components/schemas/MetadataQuery"
+            },
+            "description": "Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`."
           }
         ],
         "responses": {
@@ -20913,6 +20957,15 @@
         "title": "BenefitUpdatedEvent",
         "description": "An event created by Polar when a benefit is updated."
       },
+      "BillingAddressFieldMode": {
+        "type": "string",
+        "enum": [
+          "required",
+          "optional",
+          "disabled"
+        ],
+        "title": "BillingAddressFieldMode"
+      },
       "CardPayment": {
         "properties": {
           "created_at": {
@@ -21082,7 +21135,8 @@
             "title": "Brand",
             "description": "The brand of the card used for the payment.",
             "examples": [
-              "visa"
+              "visa",
+              "amex"
             ]
           },
           "last4": {
@@ -21385,6 +21439,10 @@
             "type": "object",
             "title": "Payment Processor Metadata"
           },
+          "billing_address_fields": {
+            "$ref": "#/components/schemas/CheckoutBillingAddressFields",
+            "description": "Determine which billing address fields should be disabled, optional or required in the checkout form."
+          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -21405,6 +21463,18 @@
             "type": "object",
             "title": "Metadata"
           },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set."
+          },
           "customer_external_id": {
             "anyOf": [
               {
@@ -21415,7 +21485,7 @@
               }
             ],
             "title": "Customer External Id",
-            "description": "ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set."
+            "deprecated": true
           },
           "products": {
             "items": {
@@ -21500,10 +21570,6 @@
             },
             "type": "object",
             "title": "Customer Metadata"
-          },
-          "customer_billing_address_fields": {
-            "$ref": "#/components/schemas/CheckoutCustomerBillingAddressFields",
-            "description": "Determine which billing address fields should be shown in the checkout form."
           }
         },
         "type": "object",
@@ -21543,7 +21609,9 @@
           "customer_billing_address",
           "customer_tax_id",
           "payment_processor_metadata",
+          "billing_address_fields",
           "metadata",
+          "external_customer_id",
           "customer_external_id",
           "products",
           "product",
@@ -21551,11 +21619,42 @@
           "discount",
           "subscription_id",
           "attached_custom_fields",
-          "customer_metadata",
-          "customer_billing_address_fields"
+          "customer_metadata"
         ],
         "title": "Checkout",
         "description": "Checkout session data retrieved using an access token."
+      },
+      "CheckoutBillingAddressFields": {
+        "properties": {
+          "country": {
+            "$ref": "#/components/schemas/BillingAddressFieldMode"
+          },
+          "state": {
+            "$ref": "#/components/schemas/BillingAddressFieldMode"
+          },
+          "city": {
+            "$ref": "#/components/schemas/BillingAddressFieldMode"
+          },
+          "postal_code": {
+            "$ref": "#/components/schemas/BillingAddressFieldMode"
+          },
+          "line1": {
+            "$ref": "#/components/schemas/BillingAddressFieldMode"
+          },
+          "line2": {
+            "$ref": "#/components/schemas/BillingAddressFieldMode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "country",
+          "state",
+          "city",
+          "postal_code",
+          "line1",
+          "line2"
+        ],
+        "title": "CheckoutBillingAddressFields"
       },
       "CheckoutConfirmStripe": {
         "properties": {
@@ -21762,7 +21861,8 @@
           "line1",
           "line2"
         ],
-        "title": "CheckoutCustomerBillingAddressFields"
+        "title": "CheckoutCustomerBillingAddressFields",
+        "description": "Deprecated: Use CheckoutBillingAddressFields instead."
       },
       "CheckoutDiscountFixedOnceForeverDuration": {
         "properties": {
@@ -22848,7 +22948,7 @@
             "description": "Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.",
             "default": false
           },
-          "customer_external_id": {
+          "external_customer_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -22857,7 +22957,7 @@
                 "type": "null"
               }
             ],
-            "title": "Customer External Id",
+            "title": "External Customer Id",
             "description": "ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set."
           },
           "customer_name": {
@@ -23246,7 +23346,7 @@
             "description": "Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.",
             "default": false
           },
-          "customer_external_id": {
+          "external_customer_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -23255,7 +23355,7 @@
                 "type": "null"
               }
             ],
-            "title": "Customer External Id",
+            "title": "External Customer Id",
             "description": "ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set."
           },
           "customer_name": {
@@ -23523,7 +23623,7 @@
             "description": "Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.",
             "default": false
           },
-          "customer_external_id": {
+          "external_customer_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -23532,7 +23632,7 @@
                 "type": "null"
               }
             ],
-            "title": "Customer External Id",
+            "title": "External Customer Id",
             "description": "ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set."
           },
           "customer_name": {
@@ -23974,6 +24074,10 @@
             "type": "object",
             "title": "Payment Processor Metadata"
           },
+          "billing_address_fields": {
+            "$ref": "#/components/schemas/CheckoutBillingAddressFields",
+            "description": "Determine which billing address fields should be disabled, optional or required in the checkout form."
+          },
           "products": {
             "items": {
               "$ref": "#/components/schemas/CheckoutProduct"
@@ -24031,10 +24135,6 @@
             },
             "type": "array",
             "title": "Attached Custom Fields"
-          },
-          "customer_billing_address_fields": {
-            "$ref": "#/components/schemas/CheckoutCustomerBillingAddressFields",
-            "description": "Determine which billing address fields should be shown in the checkout form."
           }
         },
         "type": "object",
@@ -24074,13 +24174,13 @@
           "customer_billing_address",
           "customer_tax_id",
           "payment_processor_metadata",
+          "billing_address_fields",
           "products",
           "product",
           "product_price",
           "discount",
           "organization",
-          "attached_custom_fields",
-          "customer_billing_address_fields"
+          "attached_custom_fields"
         ],
         "title": "CheckoutPublic",
         "description": "Checkout session data retrieved using the client secret."
@@ -24369,6 +24469,10 @@
             "type": "object",
             "title": "Payment Processor Metadata"
           },
+          "billing_address_fields": {
+            "$ref": "#/components/schemas/CheckoutBillingAddressFields",
+            "description": "Determine which billing address fields should be disabled, optional or required in the checkout form."
+          },
           "products": {
             "items": {
               "$ref": "#/components/schemas/CheckoutProduct"
@@ -24430,10 +24534,6 @@
           "customer_session_token": {
             "type": "string",
             "title": "Customer Session Token"
-          },
-          "customer_billing_address_fields": {
-            "$ref": "#/components/schemas/CheckoutCustomerBillingAddressFields",
-            "description": "Determine which billing address fields should be shown in the checkout form."
           }
         },
         "type": "object",
@@ -24473,14 +24573,14 @@
           "customer_billing_address",
           "customer_tax_id",
           "payment_processor_metadata",
+          "billing_address_fields",
           "products",
           "product",
           "product_price",
           "discount",
           "organization",
           "attached_custom_fields",
-          "customer_session_token",
-          "customer_billing_address_fields"
+          "customer_session_token"
         ],
         "title": "CheckoutPublicConfirmed",
         "description": "Checkout session data retrieved using the client secret after confirmation.\n\nIt contains a customer session token to retrieve order information\nright after the checkout."
@@ -28804,6 +28904,18 @@
             },
             "type": "object",
             "title": "Oauth Accounts"
+          },
+          "default_payment_method_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Payment Method Id"
           }
         },
         "type": "object",
@@ -29081,15 +29193,15 @@
       },
       "CustomerSessionCustomerExternalIDCreate": {
         "properties": {
-          "customer_external_id": {
+          "external_customer_id": {
             "type": "string",
-            "title": "Customer External Id",
+            "title": "External Customer Id",
             "description": "External ID of the customer to create a session for."
           }
         },
         "type": "object",
         "required": [
-          "customer_external_id"
+          "external_customer_id"
         ],
         "title": "CustomerSessionCustomerExternalIDCreate",
         "description": "Schema for creating a customer session using an external customer ID."
@@ -29390,6 +29502,32 @@
               "custom"
             ]
           },
+          "benefit_metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Benefit Metadata",
+            "description": "The metadata of the benefit concerned by this grant.",
+            "examples": [
+              {
+                "key": "value"
+              }
+            ]
+          },
           "properties": {
             "anyOf": [
               {
@@ -29419,6 +29557,7 @@
           "granted_at",
           "benefit_id",
           "benefit_type",
+          "benefit_metadata",
           "properties"
         ],
         "title": "CustomerStateBenefitGrant",
@@ -39220,12 +39359,6 @@
             "title": "Issue Funding Enabled",
             "description": "If this organization has issue funding enabled",
             "default": false
-          },
-          "usage_based_billing_enabled": {
-            "type": "boolean",
-            "title": "Usage Based Billing Enabled",
-            "description": "If this organization has usage-based billing enabled",
-            "default": false
           }
         },
         "type": "object",
@@ -39594,37 +39727,59 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id"
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "processor": {
+            "$ref": "#/components/schemas/PaymentProcessor"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Customer Id"
           },
           "type": {
             "type": "string",
             "const": "card",
             "title": "Type"
           },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "default": {
-            "type": "boolean",
-            "title": "Default"
-          },
-          "card": {
-            "$ref": "#/components/schemas/PaymentMethodCardData"
+          "method_metadata": {
+            "$ref": "#/components/schemas/PaymentMethodCardMetadata"
           }
         },
         "type": "object",
         "required": [
           "id",
-          "type",
           "created_at",
-          "default",
-          "card"
+          "modified_at",
+          "processor",
+          "customer_id",
+          "type",
+          "method_metadata"
         ],
         "title": "PaymentMethodCard"
       },
-      "PaymentMethodCardData": {
+      "PaymentMethodCardMetadata": {
         "properties": {
           "brand": {
             "type": "string",
@@ -39661,34 +39816,56 @@
           "exp_month",
           "exp_year"
         ],
-        "title": "PaymentMethodCardData"
+        "title": "PaymentMethodCardMetadata"
       },
       "PaymentMethodGeneric": {
         "properties": {
           "id": {
             "type": "string",
-            "title": "Id"
-          },
-          "type": {
-            "type": "string",
-            "title": "Type"
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "title": "Created At"
+            "title": "Created At",
+            "description": "Creation timestamp of the object."
           },
-          "default": {
-            "type": "boolean",
-            "title": "Default"
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At",
+            "description": "Last modification timestamp of the object."
+          },
+          "processor": {
+            "$ref": "#/components/schemas/PaymentProcessor"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Customer Id"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
           }
         },
         "type": "object",
         "required": [
           "id",
-          "type",
           "created_at",
-          "default"
+          "modified_at",
+          "processor",
+          "customer_id",
+          "type"
         ],
         "title": "PaymentMethodGeneric"
       },

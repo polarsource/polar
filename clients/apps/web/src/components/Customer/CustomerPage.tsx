@@ -6,7 +6,7 @@ import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import { useListSubscriptions, useMetrics } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
-import { ChartRange, getChartRangeParams } from '@/utils/metrics'
+import { getChartRangeParams } from '@/utils/metrics'
 import { AddOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -54,11 +54,9 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
 
   const [selectedMetric, setSelectedMetric] =
     React.useState<keyof schemas['Metrics']>('revenue')
-  const [selectedRange, setSelectedRange] =
-    React.useState<ChartRange>('all_time')
   const [startDate, endDate, interval] = React.useMemo(
-    () => getChartRangeParams(selectedRange, customer.created_at),
-    [selectedRange, customer.created_at],
+    () => getChartRangeParams('all_time', customer.created_at),
+    [customer.created_at],
   )
   const { data: metricsData, isLoading: metricsLoading } = useMetrics({
     startDate,
@@ -78,20 +76,14 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     <Tabs defaultValue="overview" className="flex flex-col">
       <TabsList className="mb-8">
         <TabsTrigger value="overview">Overview</TabsTrigger>
-        {organization.feature_settings?.usage_based_billing_enabled && (
-          <TabsTrigger value="usage">Usage</TabsTrigger>
-        )}
-        {organization.feature_settings?.usage_based_billing_enabled && (
-          <TabsTrigger value="events">Events</TabsTrigger>
-        )}
+        <TabsTrigger value="events">Events</TabsTrigger>
+        <TabsTrigger value="usage">Usage</TabsTrigger>
       </TabsList>
       <TabsContent value="overview" className="flex flex-col gap-y-12">
         <MetricChartBox
           metric={selectedMetric}
           onMetricChange={setSelectedMetric}
           interval={interval}
-          range={selectedRange}
-          onRangeChange={setSelectedRange}
           data={metricsData}
           loading={metricsLoading}
         />
@@ -273,9 +265,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           </ShadowBox>
         </div>
       </TabsContent>
-      {organization.feature_settings?.usage_based_billing_enabled && (
-        <CustomerUsageView customer={customer} />
-      )}
+      <CustomerUsageView customer={customer} />
       <TabsContent value="events">
         <CustomerEventsView customer={customer} organization={organization} />
       </TabsContent>

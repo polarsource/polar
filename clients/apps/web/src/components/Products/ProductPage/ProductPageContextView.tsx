@@ -10,8 +10,6 @@ import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { ConfirmModal } from '../../Modal/ConfirmModal'
-import { useModal } from '../../Modal/useModal'
 import { getStatusRedirect } from '../../Toast/utils'
 import ProductBenefitsForm from '../ProductBenefitsForm'
 import ProductForm, { ProductFullMediasMixin } from '../ProductForm/ProductForm'
@@ -148,20 +146,6 @@ export const ProductPageContextView = ({
     [enabledBenefits, product],
   )
 
-  const {
-    isShown: isArchiveModalShown,
-    hide: hideArchiveModal,
-    show: showArchiveModal,
-  } = useModal()
-
-  const handleArchiveProduct = useCallback(async () => {
-    await updateProduct.mutateAsync({
-      id: product.id,
-      body: { is_archived: true },
-    })
-    router.push(`/dashboard/${organization.slug}/products`)
-  }, [product, updateProduct, organization, router])
-
   return (
     <div className="flex h-full flex-col justify-between pt-4">
       <div className="dark:divide-polar-700 flex h-full flex-col divide-y overflow-y-auto">
@@ -191,7 +175,7 @@ export const ProductPageContextView = ({
           compact={true}
         />
         {(benefitsAdded.length > 0 || benefitsRemoved.length > 0) && (
-          <div className="rounded-2xl bg-yellow-50 p-8 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
+          <div className="mx-8 mb-8 rounded-2xl bg-yellow-50 p-8 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
             Existing customers will immediately{' '}
             {benefitsAdded.length > 0 && (
               <>
@@ -218,21 +202,7 @@ export const ProductPageContextView = ({
           >
             Save Product
           </Button>
-          {!product.is_archived && (
-            <Button variant="secondary" onClick={showArchiveModal}>
-              Archive
-            </Button>
-          )}
         </div>
-        <ConfirmModal
-          title="Archive Product"
-          description="Archiving a product will not affect its current customers, only prevent new subscribers and purchases."
-          onConfirm={handleArchiveProduct}
-          isShown={isArchiveModalShown}
-          hide={hideArchiveModal}
-          destructiveText="Archive"
-          destructive
-        />
       </div>
     </div>
   )

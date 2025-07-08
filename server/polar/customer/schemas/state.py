@@ -10,6 +10,7 @@ from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.metadata import (
     MetadataOutputMixin,
+    MetadataOutputType,
 )
 from polar.kit.schemas import (
     BENEFIT_GRANT_ID_EXAMPLE,
@@ -124,6 +125,16 @@ class CustomerStateBenefitGrant(TimestampedSchema, IDSchema):
             AliasPath("benefit", "type"),
         ),
         examples=[BenefitType.custom],
+    )
+    benefit_metadata: MetadataOutputType = Field(
+        description="The metadata of the benefit concerned by this grant.",
+        examples=[{"key": "value"}],
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "benefit_metadata",
+            # Validate from ORM model
+            AliasPath("benefit", "user_metadata"),
+        ),
     )
     properties: BenefitGrantProperties
 

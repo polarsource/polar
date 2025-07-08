@@ -9,6 +9,7 @@ from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
+    NotificationPayloadBase,
 )
 
 
@@ -66,3 +67,34 @@ async def test_MaintainerCreateAccountNotificationPayload() -> None:
     )
 
     await check_diff(n.render())
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "payload",
+    [
+        MaintainerNewProductSaleNotificationPayload(
+            customer_name="{{ 21 * 2 }}",
+            product_name="{{ 21 * 2 }}",
+            product_price_amount=500,
+            organization_name="{{ 21 * 2 }}",
+        ),
+        MaintainerCreateAccountNotificationPayload(
+            organization_name="{{ 21 * 2 }}",
+            url="https://example.com/url",
+        ),
+        MaintainerNewPaidSubscriptionNotificationPayload(
+            subscriber_name="John Doe",
+            tier_name="{{ 21 * 2 }}",
+            tier_price_amount=500,
+            tier_organization_name="{{ 21 * 2 }}",
+            tier_price_recurring_interval="month",
+        ),
+    ],
+)
+async def test_injection_payloads(payload: NotificationPayloadBase) -> None:
+    subject, body = payload.render()
+    assert "42" not in subject
+    assert "42" not in body
+
+    assert "{{ 21 * 2 }}" in body

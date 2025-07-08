@@ -37,6 +37,7 @@ from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.address import Address
 from polar.kit.crypto import generate_token
+from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.tax import TaxID, to_stripe_tax_id, validate_tax_id
@@ -365,11 +366,11 @@ class CheckoutService:
                         }
                     ]
                 )
-        elif checkout_create.customer_external_id is not None:
+        elif checkout_create.external_customer_id is not None:
             # Link customer by external ID, if it exists.
             # It not, that's fine': we'll create a new customer on confirm.
             customer = await customer_repository.get_by_external_id_and_organization(
-                checkout_create.customer_external_id, product.organization_id
+                checkout_create.external_customer_id, product.organization_id
             )
 
         amount = checkout_create.amount
@@ -782,13 +783,13 @@ class CheckoutService:
         required_fields = self._get_required_confirm_fields(checkout)
         for required_field in required_fields:
             if (
-                getattr(checkout, required_field) is None
-                and getattr(checkout_confirm, required_field, None) is None
+                attrgetter(checkout, required_field) is None
+                and attrgetter(checkout_confirm, required_field) is None
             ):
                 errors.append(
                     {
                         "type": "missing",
-                        "loc": ("body", required_field),
+                        "loc": ("body", *required_field),
                         "msg": "Field is required.",
                         "input": None,
                     }
@@ -861,9 +862,7 @@ class CheckoutService:
                             "confirm": True,
                             "confirmation_token": checkout_confirm.confirmation_token_id,
                             "customer": stripe_customer_id,
-                            "statement_descriptor_suffix": checkout.organization.name[
-                                : settings.stripe_descriptor_suffix_max_length
-                            ],
+                            "statement_descriptor_suffix": checkout.organization.statement_descriptor,
                             "description": f"{checkout.organization.name} — {checkout.product.name}",
                             "metadata": intent_metadata,
                             "return_url": settings.generate_frontend_url(
@@ -1720,12 +1719,18 @@ class CheckoutService:
         if len(existing_subscriptions) > 0:
             raise AlreadyActiveSubscriptionError()
 
-    def _get_required_confirm_fields(self, checkout: Checkout) -> set[str]:
-        fields = {"customer_email"}
+    def _get_required_confirm_fields(self, checkout: Checkout) -> set[tuple[str, ...]]:
+        fields: set[tuple[str, ...]] = {("customer_email",)}
         if checkout.is_payment_form_required:
-            fields.update({"customer_name", "customer_billing_address"})
+            fields.update({("customer_name",), ("customer_billing_address",)})
+            for (
+                address_field,
+                required,
+            ) in checkout.customer_billing_address_fields.items():
+                if required:
+                    fields.add(("customer_billing_address", address_field))
         if checkout.is_business_customer:
-            fields.update({"customer_billing_name", "customer_billing_address"})
+            fields.update({("customer_billing_name",), ("customer_billing_address",)})
         return fields
 
     async def _create_or_update_customer(
@@ -1746,7 +1751,7 @@ class CheckoutService:
             )
             if customer is None:
                 customer = Customer(
-                    external_id=checkout.customer_external_id,
+                    external_id=checkout.external_customer_id,
                     email=checkout.customer_email,
                     email_verified=False,
                     stripe_customer_id=None,

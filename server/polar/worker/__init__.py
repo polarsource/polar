@@ -1,224 +1,25 @@
 import contextlib
-import contextvars
-import json
-import uuid
-from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
+import functools
+from collections.abc import Awaitable, Callable
 from enum import IntEnum
-from typing import Any, ParamSpec, TypeAlias, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 import dramatiq
 import logfire
 import redis
-import structlog
 from apscheduler.triggers.cron import CronTrigger
 from dramatiq import actor as _actor
 from dramatiq import middleware
-from dramatiq.asyncio import get_event_loop_thread
 from dramatiq.brokers.redis import RedisBroker
 
 from polar.config import settings
-from polar.kit.db.postgres import AsyncSessionMaker as AsyncSessionMakerType
-from polar.kit.db.postgres import create_async_sessionmaker
-from polar.logfire import instrument_httpx, instrument_sqlalchemy
-from polar.logging import Logger
-from polar.postgres import AsyncEngine, AsyncSession, create_async_engine
-from polar.redis import Redis, create_redis
+from polar.logfire import instrument_httpx
 
-from .health import HealthMiddleware
-
-log: Logger = structlog.get_logger()
-
-_sqlalchemy_engine: AsyncEngine | None = None
-_sqlalchemy_async_sessionmaker: AsyncSessionMakerType | None = None
-
-
-async def dispose_sqlalchemy_engine() -> None:
-    global _sqlalchemy_engine
-    if _sqlalchemy_engine is not None:
-        await _sqlalchemy_engine.dispose()
-        log.info("Disposed SQLAlchemy engine")
-        _sqlalchemy_engine = None
-
-
-class SQLAlchemyMiddleware(dramatiq.Middleware):
-    """
-    Middleware managing the lifecycle of the database engine and sessionmaker.
-    """
-
-    @classmethod
-    def get_async_session(cls) -> contextlib.AbstractAsyncContextManager[AsyncSession]:
-        global _sqlalchemy_async_sessionmaker
-        if _sqlalchemy_async_sessionmaker is None:
-            raise RuntimeError("SQLAlchemy not initialized")
-        return _sqlalchemy_async_sessionmaker()
-
-    def before_worker_boot(
-        self, broker: dramatiq.Broker, worker: dramatiq.Worker
-    ) -> None:
-        global _sqlalchemy_engine, _sqlalchemy_async_sessionmaker
-        _sqlalchemy_engine = create_async_engine("worker")
-        _sqlalchemy_async_sessionmaker = create_async_sessionmaker(_sqlalchemy_engine)
-        instrument_sqlalchemy(_sqlalchemy_engine.sync_engine)
-        log.info("Created database engine")
-
-    def after_worker_shutdown(
-        self, broker: dramatiq.Broker, worker: dramatiq.Worker
-    ) -> None:
-        event_loop_thread = get_event_loop_thread()
-        assert event_loop_thread is not None
-        event_loop_thread.run_coroutine(dispose_sqlalchemy_engine())
-
-
-@contextlib.asynccontextmanager
-async def AsyncSessionMaker() -> AsyncIterator[AsyncSession]:
-    """
-    Context manager to handle a database session taken from the middleware context.
-    """
-    async with SQLAlchemyMiddleware.get_async_session() as session:
-        try:
-            yield session
-        except:
-            await session.rollback()
-            raise
-        else:
-            await session.commit()
-
-
-_redis: Redis | None = None
-
-
-async def _close_redis() -> None:
-    global _redis
-    if _redis is not None:
-        await _redis.close(True)
-        log.info("Closed Redis client")
-        _redis = None
-
-
-class RedisMiddleware(dramatiq.Middleware):
-    """
-    Middleware managing the lifecycle of the Redis connection.
-    """
-
-    @classmethod
-    def get(cls) -> Redis:
-        global _redis
-        if _redis is None:
-            raise RuntimeError("Redis not initialized")
-        return _redis
-
-    def before_worker_boot(
-        self, broker: dramatiq.Broker, worker: dramatiq.Worker
-    ) -> None:
-        global _redis
-        _redis = create_redis("worker")
-        log.info("Created Redis client")
-
-    def after_worker_shutdown(
-        self, broker: dramatiq.Broker, worker: dramatiq.Worker
-    ) -> None:
-        event_loop_thread = get_event_loop_thread()
-        assert event_loop_thread is not None
-        event_loop_thread.run_coroutine(_close_redis())
-
-
-JSONSerializable: TypeAlias = (
-    Mapping[str, "JSONSerializable"]
-    | Sequence["JSONSerializable"]
-    | str
-    | int
-    | float
-    | bool
-    | uuid.UUID
-    | None
-)
-
-
-_job_queue_manager: contextvars.ContextVar["JobQueueManager | None"] = (
-    contextvars.ContextVar("polar.job_queue_manager")
-)
-
-
-class JobQueueManager:
-    __slots__ = ("_enqueued_jobs", "_ingested_events")
-
-    def __init__(self) -> None:
-        self._enqueued_jobs: list[
-            tuple[str, tuple[JSONSerializable, ...], dict[str, JSONSerializable]]
-        ] = []
-        self._ingested_events: list[uuid.UUID] = []
-
-    def enqueue_job(
-        self, actor: str, *args: JSONSerializable, **kwargs: JSONSerializable
-    ) -> None:
-        self._enqueued_jobs.append((actor, args, kwargs))
-        log.debug("polar.worker.job_enqueued", actor=actor)
-
-    def enqueue_events(self, *event_ids: uuid.UUID) -> None:
-        self._ingested_events.extend(event_ids)
-
-    async def flush(self, broker: dramatiq.Broker, redis: Redis) -> None:
-        if len(self._ingested_events) > 0:
-            self.enqueue_job("event.ingested", self._ingested_events)
-
-        for actor_name, args, kwargs in self._enqueued_jobs:
-            fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
-            redis_message_id = str(uuid.uuid4())
-            message = fn.message_with_options(
-                args=args, kwargs=kwargs, redis_message_id=redis_message_id
-            )
-            await redis.hset(
-                f"dramatiq:{message.queue_name}.msgs",
-                redis_message_id,
-                message.encode(),
-            )
-            await redis.rpush(f"dramatiq:{message.queue_name}", redis_message_id)
-            log.debug(
-                "polar.worker.job_flushed",
-                actor=fn.actor_name,
-                message=message.encode(),
-            )
-
-        self.reset()
-
-    def reset(self) -> None:
-        self._enqueued_jobs = []
-        self._ingested_events = []
-
-    @classmethod
-    @contextlib.asynccontextmanager
-    async def open(
-        cls, broker: dramatiq.Broker, redis: Redis
-    ) -> AsyncIterator["JobQueueManager"]:
-        job_queue_manager = JobQueueManager()
-        _job_queue_manager.set(job_queue_manager)
-        try:
-            yield job_queue_manager
-            await job_queue_manager.flush(broker, redis)
-        finally:
-            job_queue_manager.reset()
-            _job_queue_manager.set(None)
-
-    @classmethod
-    def get(cls) -> "JobQueueManager":
-        job_queue_manager = _job_queue_manager.get()
-        if job_queue_manager is None:
-            raise RuntimeError("JobQueueManager not initialized")
-        return job_queue_manager
-
-
-def enqueue_job(
-    actor: str, *args: JSONSerializable, **kwargs: JSONSerializable
-) -> None:
-    """Enqueue a job by actor name."""
-    job_queue_manager = JobQueueManager.get()
-    job_queue_manager.enqueue_job(actor, *args, **kwargs)
-
-
-def enqueue_events(*event_ids: uuid.UUID) -> None:
-    """Enqueue events to be ingested."""
-    job_queue_manager = JobQueueManager.get()
-    job_queue_manager.enqueue_events(*event_ids)
+from ._encoder import JSONEncoder
+from ._enqueue import JobQueueManager, enqueue_events, enqueue_job
+from ._health import HealthMiddleware
+from ._redis import RedisMiddleware
+from ._sqlalchemy import AsyncSessionMaker, SQLAlchemyMiddleware
 
 
 class MaxRetriesMiddleware(dramatiq.Middleware):
@@ -309,19 +110,6 @@ class LogfireMiddleware(dramatiq.Middleware):
         return self.after_process_message(broker, message)
 
 
-def _json_obj_serializer(obj: Any) -> Any:
-    if isinstance(obj, uuid.UUID):
-        return str(obj)
-    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
-
-
-class JSONEncoder(dramatiq.JSONEncoder):
-    def encode(self, data: dict[str, Any]) -> bytes:
-        return json.dumps(
-            data, separators=(",", ":"), default=_json_obj_serializer
-        ).encode("utf-8")
-
-
 broker = RedisBroker(
     connection_pool=redis.ConnectionPool.from_url(
         settings.redis_url,
@@ -377,6 +165,7 @@ def actor(
     def decorator(
         fn: Callable[P, Awaitable[R]],
     ) -> Callable[P, Awaitable[R]]:
+        @functools.wraps(fn)
         async def _wrapped_fn(*args: P.args, **kwargs: P.kwargs) -> R:
             async with JobQueueManager.open(
                 dramatiq.get_broker(), RedisMiddleware.get()
@@ -403,8 +192,10 @@ __all__ = [
     "CronTrigger",
     "AsyncSessionMaker",
     "RedisMiddleware",
+    "JobQueueManager",
     "scheduler_middleware",
     "enqueue_job",
+    "enqueue_events",
     "get_retries",
     "can_retry",
 ]

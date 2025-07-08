@@ -152,6 +152,10 @@ const ORGANIZATION: schemas['Organization'] = {
     allow_customer_updates: true,
     proration_behavior: 'invoice',
   },
+  notification_settings: {
+    new_order: true,
+    new_subscription: true,
+  },
 }
 
 export const createCheckoutPreview = (
@@ -228,6 +232,14 @@ export const createCheckoutPreview = (
       postal_code: false,
       line1: false,
       line2: false,
+    },
+    billing_address_fields: {
+      country: 'required',
+      state: 'disabled',
+      city: 'disabled',
+      postal_code: 'disabled',
+      line1: 'disabled',
+      line2: 'disabled',
     },
   })
 

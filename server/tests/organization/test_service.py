@@ -6,6 +6,7 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Organization, User
+from polar.models.organization import OrganizationNotificationSettings
 from polar.organization.schemas import OrganizationCreate, OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
@@ -101,6 +102,28 @@ class TestCreate:
         assert organization.name == "My New Organization"
 
         assert organization.feature_settings == {"issue_funding_enabled": False}
+
+    @pytest.mark.auth
+    async def test_valid_with_notification_settings(
+        self, auth_subject: AuthSubject[User], session: AsyncSession
+    ) -> None:
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(
+                name="My New Organization",
+                slug="my-new-organization",
+                notification_settings=OrganizationNotificationSettings(
+                    new_order=False,
+                    new_subscription=False,
+                ),
+            ),
+            auth_subject,
+        )
+
+        assert organization.notification_settings == {
+            "new_order": False,
+            "new_subscription": False,
+        }
 
     @pytest.mark.auth
     async def test_valid_with_none_subscription_settings(

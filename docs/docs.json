@@ -543,6 +543,14 @@
   "navbar": {
     "links": [
       {
+        "label": "llms.txt",
+        "href": "https://docs.polar.sh/llms.txt"
+      },
+      {
+        "label": "llms-full.txt",
+        "href": "https://docs.polar.sh/llms-full.txt"
+      },
+      {
         "label": "Discord",
         "href": "https://dub.sh/polar-discord"
       },
@@ -556,6 +564,9 @@
       "label": "Get Started",
       "href": "https://polar.sh"
     }
+  },
+  "contextual": {
+    "options": ["copy", "view", "chatgpt", "claude"]
   },
   "footer": {
     "socials": {

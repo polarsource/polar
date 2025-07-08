@@ -33,6 +33,7 @@ import {
 import { PropsWithChildren, useCallback, useEffect, useMemo } from 'react'
 import { UseFormReturn, WatchObserver } from 'react-hook-form'
 import { useDebouncedCallback } from '../hooks/debounce'
+import { isDisplayedField, isRequiredField } from '../utils/address'
 import { getDiscountDisplay } from '../utils/discount'
 import { formatCurrencyNumber } from '../utils/money'
 import { getMeteredPrices, hasLegacyRecurringPrices } from '../utils/product'
@@ -139,9 +140,6 @@ const BaseCheckoutForm = ({
               country: customerBillingAddress.country,
             },
           }
-          resetField('customerBillingAddress', {
-            defaultValue: { country: customerBillingAddress.country },
-          })
         }
         // Update other address fields
       } else if (name.startsWith('customerBillingAddress')) {
@@ -172,7 +170,7 @@ const BaseCheckoutForm = ({
         await update(payload)
       } catch {}
     },
-    [clearErrors, resetField, update],
+    [clearErrors, update],
   )
   const debouncedWatcher = useDebouncedCallback(watcher, 500, [watcher])
 
@@ -227,10 +225,14 @@ const BaseCheckoutForm = ({
         )
       : {}
 
-    // Avoid overwriting a programmatically set discount without a code.
-    if (!data.discountCode && isDiscountWithoutCode) {
+    if (
+      data.discountCode === '' ||
+      // Avoid overwriting a programmatically set discount without a code.
+      (!data.discountCode && isDiscountWithoutCode)
+    ) {
       delete data.discountCode
     }
+
     await confirm({
       ...data,
       customFieldData: cleanedFieldData,
@@ -358,13 +360,17 @@ const BaseCheckoutForm = ({
 
                   <FormItem>
                     <FormLabel>Billing address</FormLabel>
-                    {checkout.customerBillingAddressFields.line1 && (
+                    {isDisplayedField(checkout.billingAddressFields.line1) && (
                       <FormControl>
                         <FormField
                           control={control}
                           name="customerBillingAddress.line1"
                           rules={{
-                            required: 'This field is required',
+                            required: isRequiredField(
+                              checkout.billingAddressFields.line1,
+                            )
+                              ? 'This field is required'
+                              : false,
                           }}
                           render={({ field }) => (
                             <>
@@ -382,11 +388,18 @@ const BaseCheckoutForm = ({
                         />
                       </FormControl>
                     )}
-                    {checkout.customerBillingAddressFields.line2 && (
+                    {isDisplayedField(checkout.billingAddressFields.line2) && (
                       <FormControl>
                         <FormField
                           control={control}
                           name="customerBillingAddress.line2"
+                          rules={{
+                            required: isRequiredField(
+                              checkout.billingAddressFields.line2,
+                            )
+                              ? 'This field is required'
+                              : false,
+                          }}
                           render={({ field }) => (
                             <>
                               <Input
@@ -404,13 +417,19 @@ const BaseCheckoutForm = ({
                       </FormControl>
                     )}
                     <div className="grid grid-cols-2 gap-x-2">
-                      {checkout.customerBillingAddressFields.postalCode && (
+                      {isDisplayedField(
+                        checkout.billingAddressFields.postalCode,
+                      ) && (
                         <FormControl>
                           <FormField
                             control={control}
                             name="customerBillingAddress.postalCode"
                             rules={{
-                              required: 'This field is required',
+                              required: isRequiredField(
+                                checkout.billingAddressFields.postalCode,
+                              )
+                                ? 'This field is required'
+                                : false,
                             }}
                             render={({ field }) => (
                               <div>
@@ -428,13 +447,17 @@ const BaseCheckoutForm = ({
                           />
                         </FormControl>
                       )}
-                      {checkout.customerBillingAddressFields.city && (
+                      {isDisplayedField(checkout.billingAddressFields.city) && (
                         <FormControl>
                           <FormField
                             control={control}
                             name="customerBillingAddress.city"
                             rules={{
-                              required: 'This field is required',
+                              required: isRequiredField(
+                                checkout.billingAddressFields.city,
+                              )
+                                ? 'This field is required'
+                                : false,
                             }}
                             render={({ field }) => (
                               <div>
@@ -453,16 +476,17 @@ const BaseCheckoutForm = ({
                         </FormControl>
                       )}
                     </div>
-                    {checkout.customerBillingAddressFields.state && (
+                    {isDisplayedField(checkout.billingAddressFields.state) && (
                       <FormControl>
                         <FormField
                           control={control}
                           name="customerBillingAddress.state"
                           rules={{
-                            required:
-                              country === 'US' || country === 'CA'
-                                ? 'This field is required'
-                                : false,
+                            required: isRequiredField(
+                              checkout.billingAddressFields.state,
+                            )
+                              ? 'This field is required'
+                              : false,
                           }}
                           render={({ field }) => (
                             <>
@@ -485,13 +509,19 @@ const BaseCheckoutForm = ({
                         />
                       </FormControl>
                     )}
-                    {checkout.customerBillingAddressFields.country && (
+                    {isDisplayedField(
+                      checkout.billingAddressFields.country,
+                    ) && (
                       <FormControl>
                         <FormField
                           control={control}
                           name="customerBillingAddress.country"
                           rules={{
-                            required: 'This field is required',
+                            required: isRequiredField(
+                              checkout.billingAddressFields.country,
+                            )
+                              ? 'This field is required'
+                              : false,
                           }}
                           render={({ field }) => (
                             <>

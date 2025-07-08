@@ -45,7 +45,13 @@ class InvoiceItem(BaseModel):
 
 class InvoiceHeadingItem(BaseModel):
     label: str
-    value: str
+    value: str | datetime
+
+    @property
+    def display_value(self) -> str:
+        if isinstance(self.value, datetime):
+            return format_date(self.value)
+        return self.value
 
 
 class Invoice(BaseModel):
@@ -115,7 +121,7 @@ class Invoice(BaseModel):
     def heading_items(self) -> list[InvoiceHeadingItem]:
         return [
             InvoiceHeadingItem(label="Invoice number", value=self.number),
-            InvoiceHeadingItem(label="Date of issue", value=format_date(self.date)),
+            InvoiceHeadingItem(label="Date of issue", value=self.date),
             *(self.extra_heading_items or []),
         ]
 
@@ -262,7 +268,7 @@ class InvoiceGenerator(FPDF):
             self.set_font(style="")
             self.cell(
                 h=self.cell_height(),
-                text=heading_item.value,
+                text=heading_item.display_value,
                 new_x=XPos.LMARGIN,
                 new_y=YPos.NEXT,
             )
@@ -273,8 +279,9 @@ class InvoiceGenerator(FPDF):
 
         # Seller on left column
         self.set_font(style="B")
-        self.cell(
-            h=self.cell_height(),
+        self.multi_cell(
+            80,
+            self.cell_height(),
             text=self.data.seller_name,
             new_x=XPos.LMARGIN,
             new_y=YPos.NEXT,
@@ -302,8 +309,9 @@ class InvoiceGenerator(FPDF):
             h=self.cell_height(), text="Bill to", new_x=XPos.LEFT, new_y=YPos.NEXT
         )
         self.set_font(style="B")
-        self.cell(
-            h=self.cell_height(),
+        self.multi_cell(
+            80,
+            self.cell_height(),
             text=self.data.customer_name,
             new_x=XPos.LEFT,
             new_y=YPos.NEXT,

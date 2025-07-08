@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import UUID4, AliasPath, Field
 
 from polar.enums import AccountType
@@ -20,6 +22,7 @@ class PayoutEstimate(Schema):
 class Payout(IDSchema, TimestampedSchema):
     processor: AccountType
     status: PayoutStatus
+    paid_at: datetime | None
     currency: str
     amount: int
     fees_amount: int

@@ -1,4 +1,5 @@
 import { useMeters } from '@/hooks/queries/meters'
+import { DonutLargeOutlined } from '@mui/icons-material'
 import {
   Select,
   SelectContent,
@@ -9,20 +10,24 @@ import {
 
 const MeterSelect: React.FC<
   React.ComponentProps<typeof Select> & {
+    className?: string
     organizationId: string
     allOption?: boolean
   }
-> = ({ organizationId, allOption, ...props }) => {
+> = ({ organizationId, allOption, className, ...props }) => {
   const { data } = useMeters(organizationId, { sorting: ['name'] })
   const meters = data?.items ?? []
 
   return (
     <Select {...props}>
-      <SelectTrigger>
-        <SelectValue placeholder="Select a meter" />
+      <SelectTrigger className={className}>
+        <div className="flex flex-row items-center gap-x-2">
+          <DonutLargeOutlined fontSize="inherit" />
+          <SelectValue placeholder="Select a meter" />
+        </div>
       </SelectTrigger>
       <SelectContent>
-        {allOption && <SelectItem value="all">All meters</SelectItem>}
+        {allOption && <SelectItem value="all">All Meters</SelectItem>}
         {meters.map((meter) => (
           <SelectItem key={meter.id} value={meter.id}>
             {meter.name}

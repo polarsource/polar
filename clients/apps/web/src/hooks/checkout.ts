@@ -50,7 +50,16 @@ export const useCheckoutConfirmedRedirect = (
       // It ensures the user will have an up-to-date status when they are redirected,
       // especially if the external URL doesn't implement proper webhook handling
       if (!isInternalURL && listenFulfillment) {
-        await listenFulfillment()
+        try {
+          await listenFulfillment()
+        } catch {
+          // The fullfillment listener timed out.
+          // Redirect to confirm page where we'll be able to recover
+          router.push(
+            `/checkout/${checkout.clientSecret}/confirmation?${parsedURL.searchParams}`,
+          )
+          return
+        }
       }
 
       if (checkout.embedOrigin) {

@@ -101,7 +101,7 @@ export const BenefitForm = ({
         }}
       />
 
-      {!update ? <BenefitTypeSelect organization={organization} /> : null}
+      {!update ? <BenefitTypeSelect /> : null}
       {type === 'custom' && <CustomBenefitForm update={update} />}
       {type === 'discord' && <DiscordBenefitForm />}
       {type === 'github_repository' && (
@@ -135,6 +135,9 @@ export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
             <FormItem>
               <div className="flex flex-row items-center justify-between">
                 <FormLabel>Private note</FormLabel>
+                <span className="dark:text-polar-500 text-sm text-gray-500">
+                  Markdown Format
+                </span>
               </div>
               <FormControl>
                 <TextArea
@@ -280,11 +283,7 @@ export const DiscordBenefitForm = () => {
   )
 }
 
-const BenefitTypeSelect = ({
-  organization,
-}: {
-  organization: schemas['Organization']
-}) => {
+const BenefitTypeSelect = () => {
   const { control } = useFormContext<schemas['BenefitCustomCreate']>()
 
   return (
@@ -304,18 +303,11 @@ const BenefitTypeSelect = ({
                   <SelectValue placeholder="Select a benefit type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {enums.benefitTypeValues
-                    .filter(
-                      (type) =>
-                        type !== 'meter_credit' ||
-                        organization.feature_settings
-                          ?.usage_based_billing_enabled,
-                    )
-                    .map((value) => (
-                      <SelectItem key={value} value={value}>
-                        {benefitsDisplayNames[value]}
-                      </SelectItem>
-                    ))}
+                  {enums.benefitTypeValues.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {benefitsDisplayNames[value]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </FormControl>

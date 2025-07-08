@@ -1,97 +1,158 @@
 import { useMetrics } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import {
-  Card,
-  CardFooter,
-  CardHeader,
-} from '@polar-sh/ui/components/atoms/Card'
+import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material'
+import { Card } from '@polar-sh/ui/components/atoms/Card'
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@polar-sh/ui/components/ui/tooltip'
-import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
+import Spinner from '../Shared/Spinner'
 
-export interface RevenueWidgetProps {
+interface RevenueWidgetProps {
   className?: string
+  productId?: string
 }
 
-export const RevenueWidget = ({ className }: RevenueWidgetProps) => {
-  const { organization: org } = useContext(OrganizationContext)
-
-  const startDate = new Date()
-  startDate.setFullYear(startDate.getFullYear() - 1)
+const RevenueWidget = ({ className, productId }: RevenueWidgetProps) => {
+  const { organization } = useContext(OrganizationContext)
 
   const revenueMetrics = useMetrics({
-    organization_id: org.id,
+    startDate: startOfMonth(subMonths(new Date(), 5)),
+    endDate: endOfMonth(new Date()),
+    organization_id: organization.id,
     interval: 'month',
-    startDate,
-    endDate: new Date(),
+    product_id: productId ? [productId] : undefined,
   })
 
-  const maxPeriod =
-    revenueMetrics.data?.periods.reduce(
-      (acc, curr) => (curr.revenue > acc ? curr.revenue : acc),
-      0,
-    ) ?? 0
+  const maxRevenue = Math.max(
+    ...(revenueMetrics.data?.periods.map((period) => period.revenue) ?? []),
+  )
 
   return (
-    <Card className={twMerge('flex h-80 flex-col justify-between', className)}>
-      <CardHeader className="flex flex-col gap-y-1 pb-2">
-        <div className="flex flex-row items-center justify-between">
-          <span className="dark:text-polar-500 text-gray-400">Revenue</span>
+    <Card
+      className={twMerge(
+        'dark:bg-polar-800 flex h-full w-full flex-col gap-y-8 bg-gray-50 p-6',
+        className,
+      )}
+    >
+      <div className="flex flex-col gap-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="dark:text-polar-500 text-lg text-gray-500">
+            Last 6 Months
+          </h2>
         </div>
-        <h2 className="text-xl">
-          $
-          {getCentsInDollarString(
-            revenueMetrics.data?.periods[
-              revenueMetrics.data?.periods.length - 1
-            ].cumulative_revenue ?? 0,
-            false,
-          )}
-        </h2>
-      </CardHeader>
-      <TooltipProvider>
-        <CardFooter className="dark:bg-polar-900 m-2 flex h-full flex-row items-end justify-between gap-x-1 rounded-3xl bg-white p-4">
-          {revenueMetrics.data?.periods.map((period, i) => {
-            const activeClass =
-              i === revenueMetrics.data.periods.length - 1
-                ? 'bg-blue-500 dark:bg-blue-500'
-                : 'hover:bg-blue-100 dark:hover:bg-blue-900'
 
-            const tooltipContent = `$${getCentsInDollarString(period.revenue, false)} in ${period.timestamp.toLocaleDateString(
-              'en-US',
-              {
-                month: 'long',
-                year: 'numeric',
-              },
-            )}`
+        <h3 className="text-4xl font-light">
+          {productId ? 'Product Revenue' : 'Revenue'}
+        </h3>
+      </div>
 
-            return (
-              <Tooltip key={i} delayDuration={0}>
+      <div className="grid h-full grid-cols-3 gap-4 lg:grid-cols-6 lg:gap-6">
+        {revenueMetrics.data?.periods.map((period, index, array) => {
+          const currentPeriodValue = period.revenue ?? 0
+          const previousPeriodValue = array[index - 1]?.revenue ?? 0
+
+          const percentageChangeComparedToPreviousPeriod =
+            previousPeriodValue === 0 && currentPeriodValue === 0
+              ? 0
+              : ((currentPeriodValue - previousPeriodValue) /
+                  Math.abs(previousPeriodValue)) *
+                100
+
+          const isTrendFlat = percentageChangeComparedToPreviousPeriod === 0
+          const isTrendingUp = percentageChangeComparedToPreviousPeriod > 0
+
+          return (
+            <div
+              key={period.timestamp}
+              className="flex h-full flex-col gap-y-2"
+            >
+              <Tooltip>
                 <TooltipTrigger
-                  style={{
-                    height: `${Math.max(
-                      (period.revenue / maxPeriod) * 100 || 0,
-                      8,
-                    )}%`,
-                  }}
                   className={twMerge(
-                    'dark:bg-polar-700 w-3 flex-shrink rounded-full bg-gray-300',
-                    activeClass,
+                    'relative h-full min-h-48 overflow-hidden rounded-2xl',
+                    'bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.04),rgba(0,0,0,0.04)_10px,transparent_10px,transparent_20px)]',
+                    'dark:bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.03),rgba(255,255,255,0.03)_10px,transparent_10px,transparent_20px)]',
                   )}
-                />
-                <TooltipContent className="text-sm">
-                  {tooltipContent}
+                >
+                  {revenueMetrics.isLoading ? (
+                    <div className="dark:bg-polar-700 flex h-full w-full items-center justify-center rounded-2xl bg-gray-200">
+                      <Spinner />
+                    </div>
+                  ) : (
+                    <div
+                      className={twMerge(
+                        'absolute bottom-0 w-full rounded-2xl',
+                        index === array.length - 1
+                          ? 'bg-indigo-300 dark:bg-indigo-500'
+                          : 'dark:bg-polar-600 bg-gray-300',
+                      )}
+                      style={{
+                        height: `${(period.revenue / maxRevenue) * 100}%`,
+                      }}
+                    />
+                  )}
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>
+                    {formatCurrencyAndAmount(period.revenue, 'usd', 0)} in{' '}
+                    {format(period.timestamp, 'MMMM')}
+                  </span>
                 </TooltipContent>
               </Tooltip>
-            )
-          })}
-        </CardFooter>
-      </TooltipProvider>
+              <div className="flex flex-col text-left">
+                <span className="text-sm lg:text-base">
+                  {format(period.timestamp, 'MMMM')}
+                </span>
+                <div className="flex flex-row items-center justify-between gap-x-2">
+                  <span className="dark:text-polar-500 text-sm text-gray-500">
+                    $
+                    {(period.revenue / 100).toLocaleString('en-US', {
+                      style: 'decimal',
+                      compactDisplay: 'short',
+                      notation: 'compact',
+                    })}
+                  </span>
+                  {!isTrendFlat ? (
+                    <Tooltip>
+                      <TooltipTrigger
+                        className={twMerge(
+                          'flex flex-row items-center gap-x-1 rounded-sm p-0.5 text-xs',
+                          isTrendingUp
+                            ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
+                            : 'bg-red-100 text-red-500 dark:bg-red-950',
+                        )}
+                      >
+                        {isTrendingUp ? (
+                          <KeyboardArrowUp fontSize="inherit" />
+                        ) : (
+                          <KeyboardArrowDown fontSize="inherit" />
+                        )}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <span className="text-xs">
+                          {percentageChangeComparedToPreviousPeriod === Infinity
+                            ? 'Infinity'
+                            : percentageChangeComparedToPreviousPeriod.toFixed(
+                                0,
+                              ) + '%'}
+                        </span>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </Card>
   )
 }
+
+export default RevenueWidget

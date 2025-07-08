@@ -1,22 +1,22 @@
+from collections.abc import Sequence
 from typing import cast
+from uuid import UUID
 
 import stripe as stripe_lib
 
+from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
-from polar.exceptions import PolarRequestValidationError, ResourceNotFound
+from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.kit.pagination import ListResource, Pagination
+from polar.kit.pagination import PaginationParams
 from polar.kit.tax import InvalidTaxID, to_stripe_tax_id, validate_tax_id
-from polar.models import Customer
+from polar.models import Customer, PaymentMethod
+from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
 
-from ..schemas.customer import (
-    CustomerPaymentMethod,
-    CustomerPaymentMethodCreate,
-    CustomerPaymentMethodTypeAdapter,
-    CustomerPortalCustomerUpdate,
-)
+from ..repository.payment_method import CustomerPaymentMethodRepository
+from ..schemas.customer import CustomerPaymentMethodCreate, CustomerPortalCustomerUpdate
 
 
 class CustomerService:
@@ -103,44 +103,35 @@ class CustomerService:
         return customer
 
     async def list_payment_methods(
-        self, customer: Customer
-    ) -> ListResource[CustomerPaymentMethod]:
-        items: list[CustomerPaymentMethod] = []
-        if customer.stripe_customer_id is not None:
-            stripe_customer = await stripe_service.get_customer(
-                customer.stripe_customer_id
-            )
-            default_payment_method_id: str | None = None
-            if (
-                stripe_customer.invoice_settings
-                and stripe_customer.invoice_settings.default_payment_method
-            ):
-                default_payment_method_id = get_expandable_id(
-                    stripe_customer.invoice_settings.default_payment_method
-                )
-            items = [
-                CustomerPaymentMethodTypeAdapter.validate_python(
-                    {
-                        **payment_method,
-                        "default": payment_method.id == default_payment_method_id,
-                    }
-                )
-                async for payment_method in stripe_service.list_payment_methods(
-                    customer.stripe_customer_id
-                )
-            ]
-        items.sort(key=lambda x: x.created_at, reverse=True)
-
-        return ListResource(
-            items=items, pagination=Pagination(total_count=len(items), max_page=1)
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Customer],
+        *,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[PaymentMethod], int]:
+        repository = CustomerPaymentMethodRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).order_by(
+            PaymentMethod.created_at.desc()
         )
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
+
+    async def get_payment_method(
+        self, session: AsyncSession, auth_subject: AuthSubject[Customer], id: UUID
+    ) -> PaymentMethod | None:
+        repository = CustomerPaymentMethodRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            PaymentMethod.id == id
+        )
+        return await repository.get_one_or_none(statement)
 
     async def add_payment_method(
         self,
         session: AsyncSession,
         customer: Customer,
         payment_method_create: CustomerPaymentMethodCreate,
-    ) -> CustomerPaymentMethod:
+    ) -> PaymentMethod:
         if customer.stripe_customer_id is None:
             params: stripe_lib.Customer.CreateParams = {
                 "email": customer.email,
@@ -181,28 +172,24 @@ class CustomerService:
                 },
             )
 
-        return CustomerPaymentMethodTypeAdapter.validate_python(
-            {
-                **cast(stripe_lib.PaymentMethod, setup_intent.payment_method),
-                "default": payment_method_create.set_default,
-            }
+        payment_method = await payment_method_service.upsert_from_stripe(
+            session,
+            customer,
+            cast(stripe_lib.PaymentMethod, setup_intent.payment_method),
+            flush=True,
         )
+        if payment_method_create.set_default:
+            repository = CustomerRepository.from_session(session)
+            customer = await repository.update(
+                customer, update_dict={"default_payment_method": payment_method}
+            )
+
+        return payment_method
 
     async def delete_payment_method(
-        self, customer: Customer, payment_method_id: str
+        self, session: AsyncSession, payment_method: PaymentMethod
     ) -> None:
-        if customer.stripe_customer_id is None:
-            raise ResourceNotFound()
-
-        payment_method = await stripe_service.get_payment_method(payment_method_id)
-        if (
-            payment_method is None
-            or payment_method.customer is None
-            or get_expandable_id(payment_method.customer) != customer.stripe_customer_id
-        ):
-            raise ResourceNotFound()
-
-        await stripe_service.delete_payment_method(payment_method_id)
+        await payment_method_service.delete(session, payment_method)
 
 
 customer = CustomerService()

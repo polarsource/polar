@@ -655,15 +655,15 @@ class StripeService:
                 else None
             ),
         )
-        invoice = await stripe_lib.Invoice.finalize_invoice_async(
-            invoice_id,
-            idempotency_key=(
-                f"{idempotency_key}_finalize_invoice"
-                if idempotency_key is not None
-                else None
-            ),
-        )
-
+        if invoice.status == "draft":
+            invoice = await stripe_lib.Invoice.finalize_invoice_async(
+                invoice_id,
+                idempotency_key=(
+                    f"{idempotency_key}_finalize_invoice"
+                    if idempotency_key is not None
+                    else None
+                ),
+            )
         if invoice.status == "open":
             await stripe_lib.Invoice.pay_async(
                 invoice_id,
@@ -847,11 +847,8 @@ class StripeService:
 
     async def get_payment_method(
         self, payment_method_id: str
-    ) -> stripe_lib.PaymentMethod | None:
-        try:
-            return await stripe_lib.PaymentMethod.retrieve_async(payment_method_id)
-        except stripe_lib.InvalidRequestError:
-            return None
+    ) -> stripe_lib.PaymentMethod:
+        return await stripe_lib.PaymentMethod.retrieve_async(payment_method_id)
 
     async def delete_payment_method(
         self, payment_method_id: str

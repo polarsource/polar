@@ -1,6 +1,10 @@
 import { schemas } from '@polar-sh/client'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import {
+  differenceInDays,
+  differenceInMonths,
+  differenceInWeeks,
+  differenceInYears,
   format,
   parse,
   startOfDay,
@@ -54,7 +58,7 @@ export const getFormattedMetricValue = (
     case 'scalar':
       return scalarFormatter.format(value)
     case 'currency':
-      return formatCurrencyAndAmount(value, 'usd')
+      return formatCurrencyAndAmount(value, 'usd', 0)
     case 'percentage':
       return percentageFormatter.format(value)
   }
@@ -89,25 +93,19 @@ export const getTicks = (timestamps: Date[], maxTicks: number = 10): Date[] => {
   return timestamps.filter((_, index) => index % step === 0)
 }
 
-const dateToInterval = (startDate: Date) => {
-  const yearsAgo = new Date().getFullYear() - startDate.getFullYear()
-  const monthsAgo =
-    (new Date().getFullYear() - startDate.getFullYear()) * 12 +
-    (new Date().getMonth() - startDate.getMonth())
-  const weeksAgo = Math.floor(
-    (new Date().getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000),
-  )
-  const daysAgo = Math.floor(
-    (new Date().getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000),
-  )
+export const dateRangeToInterval = (startDate: Date, endDate: Date) => {
+  const diffInYears = differenceInYears(endDate, startDate)
+  const diffInMonths = differenceInMonths(endDate, startDate)
+  const diffInWeeks = differenceInWeeks(endDate, startDate)
+  const diffInDays = differenceInDays(endDate, startDate)
 
-  if (yearsAgo >= 3) {
+  if (diffInYears >= 3) {
     return 'year'
-  } else if (monthsAgo >= 4) {
+  } else if (diffInMonths >= 4) {
     return 'month'
-  } else if (weeksAgo > 4) {
+  } else if (diffInWeeks > 4) {
     return 'week'
-  } else if (daysAgo > 1) {
+  } else if (diffInDays > 1) {
     return 'day'
   } else {
     return 'hour'
@@ -136,9 +134,9 @@ export const getChartRangeParams = (
       case 'all_time':
         return parsedCreatedAt
       case '12m':
-        return startOfYear(now)
+        return subYears(now, 1)
       case '3m':
-        return startOfMonth(subMonths(now, 3))
+        return subMonths(now, 3)
       case '30d':
         return startOfDay(subDays(now, 30))
       case 'today':
@@ -146,9 +144,8 @@ export const getChartRangeParams = (
     }
   }
   const startDate = _getStartDate(range)
-  const maxStartDate = startDate > parsedCreatedAt ? startDate : parsedCreatedAt
-  const interval = dateToInterval(maxStartDate)
-  return [maxStartDate, endDate, interval]
+  const interval = dateRangeToInterval(startDate, endDate)
+  return [startDate, endDate, interval]
 }
 
 export const getPreviousParams = (
@@ -163,7 +160,7 @@ export const getPreviousParams = (
     case '3m':
       return [startOfMonth(subMonths(startDate, 3)), startDate]
     case '30d':
-      return [startOfDay(subDays(startDate, 30)), startDate]
+      return [startOfDay(subMonths(startDate, 1)), startDate]
     case 'today':
       return [startOfYesterday(), startDate]
   }

@@ -11,7 +11,6 @@ import {
   startOfMonth,
   startOfToday,
   startOfWeek,
-  startOfYear,
   startOfYesterday,
   subMonths,
   subYears,
@@ -188,18 +187,18 @@ const DateRangeIntervals = ({
     {
       slug: 'last3Months',
       label: 'Last 3 Months',
-      value: [startOfMonth(subMonths(new Date(), 3)), new Date()],
+      value: [subMonths(new Date(), 3), new Date()],
     },
     {
       slug: 'thisYear',
       label: 'This Year',
-      value: [startOfYear(new Date()), endOfYear(new Date())],
+      value: [endOfYear(subYears(new Date(), 1)), endOfYear(new Date())],
     },
     {
       slug: 'lastYear',
       label: 'Last Year',
       value: [
-        startOfYear(subYears(new Date(), 1)),
+        endOfYear(subYears(new Date(), 2)),
         endOfYear(subYears(new Date(), 1)),
       ],
     },

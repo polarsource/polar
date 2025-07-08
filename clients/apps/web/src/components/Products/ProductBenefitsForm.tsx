@@ -87,9 +87,9 @@ const BenefitRow = ({
           )}
         >
           {checked ? (
-            <CheckOutlined className="h-3 w-3" fontSize="small" />
+            <CheckOutlined fontSize="inherit" />
           ) : (
-            <RemoveOutlined className="h-3 w-3" fontSize="small" />
+            <RemoveOutlined fontSize="inherit" />
           )}
         </span>
         <span
@@ -195,29 +195,23 @@ const ProductBenefitsForm = ({
       compact={compact}
     >
       <div className="flex w-full flex-col gap-y-2">
-        {enums.benefitTypeValues
-          .filter(
-            (type) =>
-              type !== 'meter_credit' ||
-              organization.feature_settings?.usage_based_billing_enabled,
-          )
-          .map((type) => (
-            <BenefitsContainer
-              key={type}
-              organization={organization}
-              title={benefitsDisplayNames[type]}
-              type={type}
-              handleCheckedChange={handleCheckedChange}
-              enabledBenefits={benefits}
-              benefits={organizationBenefits.filter(
-                (benefit) => benefit.type === type,
-              )}
-              onCreateNewBenefit={() => {
-                setType(type as CreatableBenefit)
-                show()
-              }}
-            />
-          ))}
+        {enums.benefitTypeValues.map((type) => (
+          <BenefitsContainer
+            key={type}
+            organization={organization}
+            title={benefitsDisplayNames[type]}
+            type={type}
+            handleCheckedChange={handleCheckedChange}
+            enabledBenefits={benefits}
+            benefits={organizationBenefits.filter(
+              (benefit) => benefit.type === type,
+            )}
+            onCreateNewBenefit={() => {
+              setType(type as CreatableBenefit)
+              show()
+            }}
+          />
+        ))}
       </div>
       <InlineModal
         isShown={isShown}

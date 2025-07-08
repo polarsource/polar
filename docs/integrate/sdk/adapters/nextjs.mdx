@@ -19,6 +19,7 @@ export const GET = Checkout({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
   successUrl: process.env.SUCCESS_URL,
   server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+  theme: "dark", // Enforces the theme - System-preferred theme will be set if left omitted
 });
 ```
 
@@ -69,23 +70,29 @@ export const POST = Webhooks({
 
 The Webhook handler also supports granular handlers for easy integration.
 
-- onCheckoutCreated: (payload) =>
-- onCheckoutUpdated: (payload) =>
-- onOrderCreated: (payload) =>
-- onSubscriptionCreated: (payload) =>
-- onSubscriptionUpdated: (payload) =>
-- onSubscriptionActive: (payload) =>
-- onSubscriptionCanceled: (payload) =>
-- onSubscriptionRevoked: (payload) =>
-- onProductCreated: (payload) =>
-- onProductUpdated: (payload) =>
-- onOrganizationUpdated: (payload) =>
-- onBenefitCreated: (payload) =>
-- onBenefitUpdated: (payload) =>
-- onBenefitGrantCreated: (payload) =>
-- onBenefitGrantUpdated: (payload) =>
-- onBenefitGrantRevoked: (payload) =>
-- onCustomerCreated: (payload) =>
-- onCustomerUpdated: (payload) =>
-- onCustomerDeleted: (payload) =>
-- onCustomerStateChanged: (payload) =>
+- `onPayload` - Catch-all handler for any incoming Webhook event
+- `onCheckoutCreated` - Triggered when a checkout is created
+- `onCheckoutUpdated` - Triggered when a checkout is updated
+- `onOrderCreated` - Triggered when an order is created
+- `onOrderPaid` - Triggered when an order is paid
+- `onOrderRefunded` - Triggered when an order is refunded
+- `onRefundCreated` - Triggered when a refund is created
+- `onRefundUpdated` - Triggered when a refund is updated
+- `onSubscriptionCreated` - Triggered when a subscription is created
+- `onSubscriptionUpdated` - Triggered when a subscription is updated
+- `onSubscriptionActive` - Triggered when a subscription becomes active
+- `onSubscriptionCanceled` - Triggered when a subscription is canceled
+- `onSubscriptionRevoked` - Triggered when a subscription is revoked
+- `onSubscriptionUncanceled` - Triggered when a subscription cancellation is reversed
+- `onProductCreated` - Triggered when a product is created
+- `onProductUpdated` - Triggered when a product is updated
+- `onOrganizationUpdated` - Triggered when an organization is updated
+- `onBenefitCreated` - Triggered when a benefit is created
+- `onBenefitUpdated` - Triggered when a benefit is updated
+- `onBenefitGrantCreated` - Triggered when a benefit grant is created
+- `onBenefitGrantUpdated` - Triggered when a benefit grant is updated
+- `onBenefitGrantRevoked` - Triggered when a benefit grant is revoked
+- `onCustomerCreated` - Triggered when a customer is created
+- `onCustomerUpdated` - Triggered when a customer is updated
+- `onCustomerDeleted` - Triggered when a customer is deleted
+- `onCustomerStateChanged` - Triggered when a customer state changes

@@ -80,7 +80,7 @@ class MaintainerAccountReviewedNotificationPayload(NotificationPayloadBase):
 
     @classmethod
     def subject(cls) -> str:
-        return "Your Polar account is now completed"
+        return "Your Polar account review is now completed"
 
     @classmethod
     def body(cls) -> str:
@@ -89,7 +89,8 @@ class MaintainerAccountReviewedNotificationPayload(NotificationPayloadBase):
 We are pleased to inform you that the review of your Polar account has been
 successfully completed.<br><br>
 
-We appreciate your patience throughout this process.<br><br>
+We appreciate your patience throughout this process and are excited to grow
+together!<br><br>
 """
 
 

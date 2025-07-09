@@ -16,6 +16,8 @@ async def get_admin(
         "birkjernstrom",
         "frankie567",
         "emilwidlund",
+        "malthejorgensen",
+        "psincraian",
     }:
         raise HTTPException(status_code=403, detail="Forbidden")
 

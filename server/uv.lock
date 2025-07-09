@@ -573,7 +573,7 @@ wheels = [
 
 [[package]]
 name = "githubkit"
-version = "0.12.13"
+version = "0.12.15"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -582,9 +582,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ab/6b/d825aaceeea94ed3032bc21f946dcd27bcddc97c2add870d87ad59e1542e/githubkit-0.12.13.tar.gz", hash = "sha256:6ac861257c1aa5273c872ea1cbe9693f933e50efa7a48c3f9f1ede6b94dd195f", size = 2116892, upload_time = "2025-05-11T13:40:48.516Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a6/d9/ccbfee35b103dbbd4ea9c660b0b3f078e3c3bee643d9f8efd948237f7e18/githubkit-0.12.15.tar.gz", hash = "sha256:5efce5bec3afc67f5f929c13940c804b800b94f30220690d5c07a6922c4c10c7", size = 2141906, upload_time = "2025-06-29T05:51:34.931Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/75/cdb2f777e4ad5f1364045047b7df350340e96dc5bc6eae1453c21432f673/githubkit-0.12.13-py3-none-any.whl", hash = "sha256:0064a662100aad9983066a5102396d98af5cfa2230e4f6f7845715a9e4d81e02", size = 5713932, upload_time = "2025-05-11T13:40:46.722Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/68/af86fca22a10d882819b9ca32f138b207625d042ae46292208c5a7620416/githubkit-0.12.15-py3-none-any.whl", hash = "sha256:14a7ffa87495c4e4502296be1c46ddebdb9b4287a7c3b11114ba49dbc601d63d", size = 5776298, upload_time = "2025-06-29T05:51:33.025Z" },
 ]
 
 [[package]]
@@ -1411,7 +1411,7 @@ requires-dist = [
     { name = "exponent-server-sdk", specifier = ">=2.1.0" },
     { name = "fastapi", specifier = ">=0.115.2" },
     { name = "fpdf2", specifier = ">=2.8.3" },
-    { name = "githubkit", specifier = "==0.12.13" },
+    { name = "githubkit", specifier = "==0.12.15" },
     { name = "greenlet", specifier = ">=3.1.1" },
     { name = "httpx", specifier = ">=0.23.0" },
     { name = "httpx-oauth", specifier = ">=0.16.0" },

@@ -73,6 +73,8 @@ async def _get_auth_subject(
             "birkjernstrom",
             "frankie567",
             "emilwidlund",
+            "malthejorgensen",
+            "psincraian",
         }:
             scopes.add(Scope.admin)
         return AuthSubject(user, scopes, AuthMethod.COOKIE)

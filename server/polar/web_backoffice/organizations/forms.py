@@ -14,3 +14,8 @@ class AccountReviewForm(forms.BaseForm):
         forms.CurrencyValidator,
         Field(title="Next Review Threshold"),
     ]
+
+
+class UpdateOrganizationForm(forms.BaseForm):
+    name: str
+    slug: str

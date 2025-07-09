@@ -4,7 +4,7 @@ import structlog
 from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
 
-from polar.customer.schemas.customer import CustomerExternalID, CustomerID
+from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
@@ -56,9 +56,9 @@ async def list(
     customer_id: MultipleQueryFilter[CustomerID] | None = Query(
         None, title="CustomerID Filter", description="Filter by customer ID."
     ),
-    external_customer_id: MultipleQueryFilter[CustomerExternalID] | None = Query(
+    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Query(
         None,
-        title="CustomerExternalID Filter",
+        title="ExternalCustomerID Filter",
         description="Filter by customer external ID.",
     ),
     discount_id: MultipleQueryFilter[ProductID] | None = Query(

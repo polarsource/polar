@@ -21,10 +21,10 @@ from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
 from polar.user.repository import UserRepository
 
-from ..components import accordion, button, datatable, description_list, input
+from ..components import accordion, button, datatable, description_list, input, modal
 from ..layout import layout
 from ..responses import HXRedirectResponse
-from .forms import AccountReviewForm
+from .forms import AccountReviewForm, UpdateOrganizationForm
 
 router = APIRouter()
 
@@ -175,6 +175,56 @@ async def list(
                 pass
 
 
+@router.api_route("/{id}/update", name="organizations:update", methods=["GET", "POST"])
+async def update(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(id)
+    if not organization:
+        raise HTTPException(status_code=404)
+
+    form_class = UpdateOrganizationForm
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = form_class.model_validate(data)
+            if form.name:
+                organization.name = form.name
+            if form.slug:
+                organization.slug = form.slug
+            session.add(organization)
+            await session.commit()
+            return HXRedirectResponse(
+                request, str(request.url_for("organizations:get", id=id)), 303
+            )
+
+        except ValidationError as e:
+            validation_error = e
+
+    with modal("Update Organization", open=True):
+        with form_class.render(
+            {"name": organization.name, "slug": organization.slug},
+            method="POST",
+            action=str(request.url_for("organizations:update", id=id)),
+            classes="flex flex-col gap-4",
+            validation_error=validation_error,
+        ):
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
+                    text("Update")
+
+
 @router.api_route("/{id}", name="organizations:get", methods=["GET", "POST"])
 async def get(
     request: Request,
@@ -214,8 +264,16 @@ async def get(
         "organizations:get",
     ):
         with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text(organization.name)
+            with tag.div(classes="flex justify-between items-center"):
+                with tag.h1(classes="text-4xl"):
+                    text(organization.name)
+                with button(
+                    hx_get=str(
+                        request.url_for("organizations:update", id=organization.id)
+                    ),
+                    hx_target="#modal",
+                ):
+                    text("Edit")
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 with description_list.DescriptionList[Organization](
                     description_list.DescriptionListAttrItem(

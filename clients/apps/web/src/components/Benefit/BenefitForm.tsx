@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
+import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   FormControl,
   FormDescription,
@@ -276,6 +277,29 @@ export const DiscordBenefitForm = () => {
                 </FormItem>
               )
             }}
+          />
+          <FormField
+            control={control}
+            name="properties.kick_member"
+            defaultValue={false}
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <div className="flex flex-row items-center gap-x-2">
+                    <Checkbox
+                      defaultChecked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                    <p className="text-sm">Kick member on revocation</p>
+                  </div>
+                </FormControl>
+                <FormDescription>
+                  Whether to kick the member from the server when the benefit is
+                  revoked. Otherwise, only the role will be removed.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
           />
         </>
       )}

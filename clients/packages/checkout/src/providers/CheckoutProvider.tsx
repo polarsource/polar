@@ -105,6 +105,24 @@ interface CheckoutProviderProps {
   serverURL?: string
 }
 
+/**
+ * Redirects to a new checkout session when the client secret changes.
+ * This happens when the backend recreates an expired session.
+ */
+const redirectToNewSession = (newClientSecret: string) => {
+  const currentPath = window.location.pathname
+  const searchParams = window.location.search
+  
+  // Replace the old client secret in the URL with the new one
+  const newPath = currentPath.replace(
+    /\/checkout\/[^\/]+/,
+    `/checkout/${newClientSecret}`
+  )
+  
+  // Perform the redirect
+  window.location.href = `${newPath}${searchParams}`
+}
+
 export const CheckoutProvider = ({
   clientSecret,
   serverURL,
@@ -121,6 +139,12 @@ export const CheckoutProvider = ({
     checkoutsClientGet(client, { clientSecret }).then(
       ({ ok, value, error }) => {
         if (ok) {
+          // Check if the returned checkout has a different client secret
+          // This indicates the backend recreated an expired session
+          if (value.clientSecret !== clientSecret) {
+            redirectToNewSession(value.clientSecret)
+            return
+          }
           setCheckout(value)
         } else {
           throw error
@@ -132,6 +156,11 @@ export const CheckoutProvider = ({
   const refresh = useCallback(async () => {
     const result = await checkoutsClientGet(client, { clientSecret })
     if (result.ok) {
+      // Check for client secret change on refresh
+      if (result.value.clientSecret !== clientSecret) {
+        redirectToNewSession(result.value.clientSecret)
+        return result
+      }
       setCheckout(result.value)
     }
     return result
@@ -144,6 +173,11 @@ export const CheckoutProvider = ({
         checkoutUpdatePublic: data,
       })
       if (result.ok) {
+        // Check for client secret change on update
+        if (result.value.clientSecret !== clientSecret) {
+          redirectToNewSession(result.value.clientSecret)
+          return result
+        }
         setCheckout(result.value)
       }
       return result
@@ -158,6 +192,11 @@ export const CheckoutProvider = ({
         checkoutConfirmStripe: data,
       })
       if (result.ok) {
+        // Check for client secret change on confirm
+        if (result.value.clientSecret !== clientSecret) {
+          redirectToNewSession(result.value.clientSecret)
+          return result
+        }
         setCheckout(
           result.value as CheckoutPublicConfirmed & { status: 'confirmed' },
         )

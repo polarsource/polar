@@ -2,6 +2,7 @@ import contextlib
 import typing
 import uuid
 from collections.abc import AsyncIterator, Sequence
+from datetime import timedelta
 
 import stripe as stripe_lib
 import structlog
@@ -77,6 +78,7 @@ from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
+from polar.kit.utils import utc_now
 
 from ..kit.tax import InvalidTaxID, TaxCalculationError, calculate_tax
 from . import ip_geolocation
@@ -1092,6 +1094,131 @@ class CheckoutService:
             raise ResourceNotFound()
         if checkout.is_expired:
             raise ExpiredCheckoutError()
+        return checkout
+
+    async def get_or_recreate_by_client_secret(
+        self, session: AsyncSession, client_secret: str
+    ) -> Checkout:
+        """
+        Get checkout by client secret, or create a new one if expired.
+        
+        This method handles the case where a customer idles at checkout
+        and comes back to an expired session. Instead of returning an error,
+        we create a new checkout session with the same parameters.
+        
+        Security boundaries:
+        - Only recreates sessions expired for less than 24 hours
+        - Never recreates confirmed, succeeded, or failed sessions
+        - Validates product/price are still active and available
+        - Checks organization is not blocked
+        """
+        repository = CheckoutRepository.from_session(session)
+        checkout = await repository.get_by_client_secret(
+            client_secret, options=repository.get_eager_options()
+        )
+        
+        if checkout is None:
+            raise ResourceNotFound()
+        
+        if checkout.is_expired:
+            # Security check: Don't recreate sessions that are too old (24 hours)
+            max_recreation_age = timedelta(hours=24)
+            if checkout.expires_at < utc_now() - max_recreation_age:
+                raise ExpiredCheckoutError()
+            
+            # Security check: Never recreate non-open sessions
+            if checkout.status != CheckoutStatus.open:
+                raise ExpiredCheckoutError()
+            
+            # Security check: Validate product and organization are still active
+            if checkout.product.is_archived:
+                raise ExpiredCheckoutError()
+            
+            if checkout.product.organization.is_blocked():
+                raise ExpiredCheckoutError()
+            
+            # Security check: Validate price is still active
+            if checkout.product_price.is_archived:
+                raise ExpiredCheckoutError()
+            
+            # Create a new checkout session with the same parameters
+            new_checkout = Checkout(
+                payment_processor=checkout.payment_processor,
+                client_secret=generate_token(prefix=CHECKOUT_CLIENT_SECRET_PREFIX),
+                amount=checkout.amount,
+                currency=checkout.currency,
+                checkout_products=[
+                    CheckoutProduct(product=cp.product, order=cp.order)
+                    for cp in checkout.checkout_products
+                ],
+                product=checkout.product,
+                product_price=checkout.product_price,
+                customer=checkout.customer,
+                subscription=checkout.subscription,
+                customer_email=checkout.customer_email,
+                customer_name=checkout.customer_name,
+                customer_billing_name=checkout.customer_billing_name,
+                customer_billing_address=checkout.customer_billing_address,
+                customer_tax_id=checkout.customer_tax_id,
+                customer_metadata=checkout.customer_metadata,
+                discount=checkout.discount,
+                external_customer_id=checkout.external_customer_id,
+                is_business_customer=checkout.is_business_customer,
+                allow_discount_codes=checkout.allow_discount_codes,
+                require_billing_address=checkout.require_billing_address,
+                embed_origin=checkout.embed_origin,
+                _success_url=checkout._success_url,
+                custom_field_data=checkout.custom_field_data,
+                metadata=checkout.metadata,
+            )
+            
+            # Additional security check: Validate discount is still active (if present)
+            if new_checkout.discount:
+                discount = new_checkout.discount
+                discount_invalid = (
+                    discount.deleted_at is not None or  # Soft deleted
+                    (discount.starts_at and discount.starts_at > utc_now()) or  # Not started
+                    (discount.ends_at and discount.ends_at < utc_now()) or  # Expired
+                    (discount.max_redemptions and discount.redemptions_count >= discount.max_redemptions) or  # Max redemptions reached
+                    not discount.is_applicable(new_checkout.product)  # Not applicable to product
+                )
+                if discount_invalid:
+                    new_checkout.discount = None
+            
+            # Copy payment processor metadata
+            if checkout.payment_processor == PaymentProcessor.stripe:
+                new_checkout.payment_processor_metadata = {
+                    "publishable_key": settings.STRIPE_PUBLISHABLE_KEY,
+                }
+                if new_checkout.customer and new_checkout.customer.stripe_customer_id is not None:
+                    stripe_customer_session = await stripe_service.create_customer_session(
+                        new_checkout.customer.stripe_customer_id
+                    )
+                    new_checkout.payment_processor_metadata = {
+                        **new_checkout.payment_processor_metadata,
+                        "customer_session_client_secret": stripe_customer_session.client_secret,
+                    }
+            
+            # Copy IP address if available
+            new_checkout.customer_ip_address = checkout.customer_ip_address
+            
+            # Update IP geolocation (this will be a no-op if IP address is the same)
+            new_checkout = await self._update_checkout_ip_geolocation(
+                session, new_checkout, None
+            )
+            
+            # Try to calculate tax (swallow errors like in create methods)
+            try:
+                new_checkout = await self._update_checkout_tax(session, new_checkout)
+            except TaxCalculationError:
+                pass
+            
+            session.add(new_checkout)
+            await session.flush()
+            await self._after_checkout_created(session, new_checkout)
+            
+            return new_checkout
+        
         return checkout
 
     async def _get_validated_price(

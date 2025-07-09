@@ -4200,6 +4200,11 @@ export interface components {
              * @description The ID of the Discord role to grant.
              */
             role_id: string;
+            /**
+             * Kick Member
+             * @description Whether to kick the member from the Discord server on revocation.
+             */
+            kick_member: boolean;
         };
         /**
          * BenefitDiscordProperties
@@ -4216,6 +4221,11 @@ export interface components {
              * @description The ID of the Discord role to grant.
              */
             role_id: string;
+            /**
+             * Kick Member
+             * @description Whether to kick the member from the Discord server on revocation.
+             */
+            kick_member: boolean;
             /** Guild Token */
             readonly guild_token: string;
         };

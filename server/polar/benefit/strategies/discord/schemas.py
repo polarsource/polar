@@ -22,6 +22,10 @@ class BenefitDiscordProperties(Schema):
 
     guild_id: str = Field(..., description="The ID of the Discord server.")
     role_id: str = Field(..., description="The ID of the Discord role to grant.")
+    kick_member: bool = Field(
+        ...,
+        description="Whether to kick the member from the Discord server on revocation.",
+    )
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -40,6 +44,10 @@ class BenefitDiscordCreateProperties(Schema):
 
     guild_token: str = Field(serialization_alias="guild_id")
     role_id: str = Field(..., description="The ID of the Discord role to grant.")
+    kick_member: bool = Field(
+        ...,
+        description="Whether to kick the member from the Discord server on revocation.",
+    )
 
     @field_validator("guild_token")
     @classmethod

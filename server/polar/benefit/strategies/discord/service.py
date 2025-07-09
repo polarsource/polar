@@ -116,8 +116,15 @@ class BenefitDiscordService(
         if not (guild_id and role_id and account_id):
             return {}
 
+        properties = self._get_properties(benefit)
+
         try:
-            await discord_bot_service.remove_member_role(guild_id, role_id, account_id)
+            if properties["kick_member"]:
+                await discord_bot_service.remove_member(guild_id, account_id)
+            else:
+                await discord_bot_service.remove_member_role(
+                    guild_id, role_id, account_id
+                )
         except httpx.HTTPError as e:
             error_bound_logger = bound_logger.bind(error=str(e))
             if isinstance(e, httpx.HTTPStatusError):

@@ -104,11 +104,6 @@ async def payment_intent_succeeded(event_id: uuid.UUID) -> None:
                     )
                 return
 
-            log.error(
-                "stripe.webhook.payment_intent.succeeded.not_handled",
-                pi=payload.id,
-            )
-
 
 @actor(
     actor_name="stripe.webhook.payment_intent.payment_failed",

@@ -125,6 +125,13 @@ async def payment_intent_payment_failed(event_id: uuid.UUID) -> None:
                 await payment.handle_failure(session, payment_intent)
             except UnhandledPaymentIntent:
                 pass
+            except payment.OrderDoesNotExist as e:
+                # Retry because we may not have been able to handle the order yet
+                if can_retry():
+                    raise Retry() from e
+                # Raise the exception to be notified about it
+                else:
+                    raise
 
 
 @actor(actor_name="stripe.webhook.setup_intent.succeeded", priority=TaskPriority.HIGH)
@@ -135,7 +142,7 @@ async def setup_intent_succeeded(event_id: uuid.UUID) -> None:
             setup_intent = cast(stripe_lib.SetupIntent, event.stripe_data.data.object)
             try:
                 await payment.handle_success(session, setup_intent)
-            except NotConfirmedCheckout as e:
+            except (NotConfirmedCheckout, payment.OrderDoesNotExist) as e:
                 # Retry because we've seen in the wild a Stripe webhook coming
                 # *before* we updated the Checkout Session status in the database!
                 if can_retry():
@@ -153,7 +160,15 @@ async def setup_intent_setup_failed(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             setup_intent = cast(stripe_lib.SetupIntent, event.stripe_data.data.object)
-            await payment.handle_failure(session, setup_intent)
+            try:
+                await payment.handle_failure(session, setup_intent)
+            except payment.OrderDoesNotExist as e:
+                # Retry because we may not have been able to handle the order yet
+                if can_retry():
+                    raise Retry() from e
+                # Raise the exception to be notified about it
+                else:
+                    raise
 
 
 @actor(actor_name="stripe.webhook.charge.pending", priority=TaskPriority.HIGH)
@@ -162,7 +177,15 @@ async def charge_pending(event_id: uuid.UUID) -> None:
         async with external_event_service.handle_stripe(session, event_id) as event:
             charge = cast(stripe_lib.Charge, event.stripe_data.data.object)
             checkout = await payment.resolve_checkout(session, charge)
-            order = await payment.resolve_order(session, charge, checkout)
+            try:
+                order = await payment.resolve_order(session, charge, checkout)
+            except payment.OrderDoesNotExist as e:
+                # Retry because we may not have been able to handle the order yet
+                if can_retry():
+                    raise Retry() from e
+                # Raise the exception to be notified about it
+                else:
+                    raise
             await payment_service.upsert_from_stripe_charge(
                 session, charge, checkout, order
             )
@@ -173,7 +196,15 @@ async def charge_failed(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             charge = cast(stripe_lib.Charge, event.stripe_data.data.object)
-            await payment.handle_failure(session, charge)
+            try:
+                await payment.handle_failure(session, charge)
+            except payment.OrderDoesNotExist as e:
+                # Retry because we may not have been able to handle the order yet
+                if can_retry():
+                    raise Retry() from e
+                # Raise the exception to be notified about it
+                else:
+                    raise
 
 
 @actor(actor_name="stripe.webhook.charge.succeeded", priority=TaskPriority.HIGH)
@@ -184,7 +215,7 @@ async def charge_succeeded(event_id: uuid.UUID) -> None:
             charge = cast(stripe_lib.Charge, event.stripe_data.data.object)
             try:
                 await payment.handle_success(session, charge)
-            except NotConfirmedCheckout as e:
+            except (NotConfirmedCheckout, payment.OrderDoesNotExist) as e:
                 # Retry because we've seen in the wild a Stripe webhook coming
                 # *before* we updated the Checkout Session status in the database!
                 if can_retry():

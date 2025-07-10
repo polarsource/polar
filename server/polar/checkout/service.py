@@ -969,7 +969,14 @@ class CheckoutService:
 
         repository = CheckoutRepository.from_session(session)
         checkout = await repository.update(
-            checkout, update_dict={"status": CheckoutStatus.succeeded}
+            checkout,
+            update_dict={
+                "status": CheckoutStatus.succeeded,
+                "payment_processor_metadata": {
+                    **checkout.payment_processor_metadata,
+                    "intent_status": "succeeded",
+                },
+            },
         )
 
         await self._after_checkout_updated(session, checkout)
@@ -989,10 +996,11 @@ class CheckoutService:
 
         # Put back checkout in open state so the customer can try another payment method
         checkout.status = CheckoutStatus.open
-        payment_processor_metadata = checkout.payment_processor_metadata
-        payment_processor_metadata.pop("intent_status", None)
-        payment_processor_metadata.pop("intent_client_secret", None)
-        checkout.payment_processor_metadata = payment_processor_metadata
+        checkout.payment_processor_metadata = {
+            k: v
+            for k, v in checkout.payment_processor_metadata.items()
+            if k not in {"intent_status", "intent_client_secret"}
+        }
         session.add(checkout)
 
         # Make sure to remove the Discount Redemptions

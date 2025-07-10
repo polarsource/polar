@@ -21,7 +21,9 @@ class CheckoutDoesNotExist(CheckoutTaskError):
 async def handle_free_success(checkout_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = CheckoutRepository.from_session(session)
-        checkout = await repository.get_by_id(checkout_id)
+        checkout = await repository.get_by_id(
+            checkout_id, options=repository.get_eager_options()
+        )
         if checkout is None:
             raise CheckoutDoesNotExist(checkout_id)
         await checkout_service.handle_success(session, checkout)

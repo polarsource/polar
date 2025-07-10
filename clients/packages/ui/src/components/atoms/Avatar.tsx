@@ -64,7 +64,7 @@ const Avatar = ({
   )
 }
 
-const AvatarWrapper = (props: ComponentProps<typeof StatefulAvatar>) => {
+const AvatarWrapper = (props: ComponentProps<typeof Avatar>) => {
   return <Avatar {...props} key={props.avatar_url} />
 }
 

@@ -1170,6 +1170,7 @@ class TestHandlePayment:
             product=product,
             customer=customer,
             status=OrderStatus.paid,
+            stripe_invoice_id=None,
         )
 
         with pytest.raises(OrderNotPending):
@@ -1224,4 +1225,35 @@ class TestHandlePayment:
         # Verify stripe tax transaction was created
         stripe_service_mock.create_tax_transaction.assert_called_once_with(
             "tax_calc_123", str(order.id)
+        )
+
+    async def test_stripe_order_not_pending(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Create a Stripe order that is already paid
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+
+        # Create a payment
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_123",
+        )
+
+        await order_service.handle_payment(session, order, payment)
+
+        # Verify enqueue_job was called to balance the order
+        enqueue_job_mock.assert_called_once_with(
+            "order.balance", order_id=order.id, charge_id="stripe_payment_123"
         )

@@ -732,10 +732,15 @@ class OrderService:
     async def handle_payment(
         self, session: AsyncSession, order: Order, payment: Payment | None
     ) -> Order:
-        if order.status != OrderStatus.pending:
+        # Stripe invoices may already have been marked as paid, so ignore the check
+        if order.stripe_invoice_id is None and order.status != OrderStatus.pending:
             raise OrderNotPending(order)
 
-        update_dict: dict[str, Any] = {"status": OrderStatus.paid}
+        previous_status = order.status
+        update_dict: dict[str, Any] = {}
+
+        if order.status == OrderStatus.pending:
+            update_dict["status"] = OrderStatus.paid
 
         # Balance the order in the ledger
         if payment is not None:
@@ -744,7 +749,10 @@ class OrderService:
             )
 
         # Record tax transaction
-        if order.tax_calculation_processor_id is not None:
+        if (
+            order.tax_calculation_processor_id is not None
+            and order.tax_transaction_processor_id is None
+        ):
             transaction = await stripe_service.create_tax_transaction(
                 order.tax_calculation_processor_id, str(order.id)
             )
@@ -753,7 +761,8 @@ class OrderService:
         repository = OrderRepository.from_session(session)
         order = await repository.update(order, update_dict=update_dict)
 
-        await self._on_order_updated(session, order, OrderStatus.pending)
+        if update_dict:
+            await self._on_order_updated(session, order, previous_status)
 
         return order
 

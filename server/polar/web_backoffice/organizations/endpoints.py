@@ -1,7 +1,7 @@
 import contextlib
 import uuid
 from collections.abc import Generator
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from babel.numbers import format_currency
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -225,6 +225,32 @@ async def update(
                     text("Update")
 
 
+@router.post("/{id}/account_status/{status}", name="organizations:account_status")
+async def account_status_update(
+    request: Request,
+    id: UUID4,
+    status: Literal["under_review", "denied"],
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(
+        id, options=(joinedload(Organization.account),)
+    )
+
+    if organization is None or organization.account is None:
+        raise HTTPException(status_code=404)
+
+    account = organization.account
+    if status == "denied":
+        await account_service.deny_account(session, account)
+    elif status == "under_review":
+        await account_service.set_account_under_review(session, account)
+
+    return HXRedirectResponse(
+        request, str(request.url_for("organizations:get", id=id)), 303
+    )
+
+
 @router.api_route("/{id}", name="organizations:get", methods=["GET", "POST"])
 async def get(
     request: Request,
@@ -245,6 +271,8 @@ async def get(
     account = organization.account
     validation_error: ValidationError | None = None
     if account and request.method == "POST":
+        # This part handles the "Approve" action
+        # It's a POST to the current page URL, not the status update URL
         data = await request.form()
         try:
             account_review = AccountReviewForm.model_validate(data)
@@ -339,11 +367,41 @@ async def get(
                                     with AccountReviewForm.render(
                                         account,
                                         method="POST",
+                                        action=str(request.url),
                                         classes="flex flex-col gap-4",
                                         validation_error=validation_error,
                                     ):
                                         with button(type="submit", variant="primary"):
                                             text("Approve")
+                                    with tag.form(
+                                        method="POST",
+                                        action=str(
+                                            request.url_for(
+                                                "organizations:account_status",
+                                                id=organization.id,
+                                                status="denied",
+                                            )
+                                        ),
+                                    ):
+                                        with button(type="submit", variant="error"):
+                                            text("Deny")
+                            elif (
+                                account.status == Account.Status.DENIED
+                                or account.status == Account.Status.ACTIVE
+                            ):
+                                with tag.div(classes="card-actions"):
+                                    with tag.form(
+                                        method="POST",
+                                        action=str(
+                                            request.url_for(
+                                                "organizations:account_status",
+                                                id=organization.id,
+                                                status="under_review",
+                                            )
+                                        ),
+                                    ):
+                                        with button(type="submit"):
+                                            text("Set to Under Review")
 
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):

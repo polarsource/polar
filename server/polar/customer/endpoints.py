@@ -15,10 +15,10 @@ from . import auth, sorting
 from .schemas.customer import Customer as CustomerSchema
 from .schemas.customer import (
     CustomerCreate,
-    CustomerExternalID,
     CustomerID,
     CustomerUpdate,
     CustomerUpdateExternalID,
+    ExternalCustomerID,
 )
 from .schemas.state import CustomerState
 from .service import customer as customer_service
@@ -99,7 +99,7 @@ async def get(
     responses={404: CustomerNotFound},
 )
 async def get_external(
-    external_id: CustomerExternalID,
+    external_id: ExternalCustomerID,
     auth_subject: auth.CustomerRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
@@ -148,7 +148,7 @@ async def get_state(
     responses={404: CustomerNotFound},
 )
 async def get_state_external(
-    external_id: CustomerExternalID,
+    external_id: ExternalCustomerID,
     auth_subject: auth.CustomerRead,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
@@ -220,7 +220,7 @@ async def update(
     },
 )
 async def update_external(
-    external_id: CustomerExternalID,
+    external_id: ExternalCustomerID,
     customer_update: CustomerUpdateExternalID,
     auth_subject: auth.CustomerWrite,
     session: AsyncSession = Depends(get_db_session),
@@ -281,7 +281,7 @@ async def delete(
     },
 )
 async def delete_external(
-    external_id: CustomerExternalID,
+    external_id: ExternalCustomerID,
     auth_subject: auth.CustomerWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:

@@ -44,6 +44,7 @@ from .payout import Payout
 from .personal_access_token import PersonalAccessToken
 from .pledge import Pledge
 from .pledge_transaction import PledgeTransaction
+from .processor_transaction import ProcessorTransaction
 from .product import Product
 from .product_benefit import ProductBenefit
 from .product_custom_field import ProductCustomField
@@ -119,6 +120,7 @@ __all__ = [
     "PersonalAccessToken",
     "Pledge",
     "PledgeTransaction",
+    "ProcessorTransaction",
     "Product",
     "ProductBenefit",
     "ProductCustomField",

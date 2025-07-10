@@ -4,6 +4,7 @@ import stripe as stripe_lib
 
 from polar.checkout.repository import CheckoutRepository
 from polar.checkout.service import checkout as checkout_service
+from polar.exceptions import PolarError
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.models import Checkout, Order, Payment, PaymentMethod
 from polar.order.repository import OrderRepository
@@ -14,6 +15,13 @@ from polar.postgres import AsyncSession
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
 )
+
+
+class OrderDoesNotExist(PolarError):
+    def __init__(self, order_id: str) -> None:
+        self.order_id = order_id
+        message = f"Order with id {order_id} does not exist."
+        super().__init__(message)
 
 
 async def resolve_checkout(
@@ -42,15 +50,21 @@ async def resolve_order(
         object.metadata is not None
         and (order_id := object.metadata.get("order_id")) is not None
     ):
-        return await order_repository.get_by_id(
+        order = await order_repository.get_by_id(
             uuid.UUID(order_id), options=order_repository.get_eager_options()
         )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+        return order
 
     if object.OBJECT_NAME == "charge" and object.invoice is not None:
         invoice_id = get_expandable_id(object.invoice)
-        return await order_repository.get_by_stripe_invoice_id(
+        order = await order_repository.get_by_stripe_invoice_id(
             invoice_id, options=order_repository.get_eager_options()
         )
+        if order is None:
+            raise OrderDoesNotExist(invoice_id)
+        return order
 
     if checkout is not None:
         return await order_repository.get_earliest_by_checkout_id(

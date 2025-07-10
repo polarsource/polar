@@ -1036,6 +1036,14 @@ class OrderService:
         status = OrderStatus.paid if invoice.status == "paid" else OrderStatus.pending
         order = await repository.update(order, update_dict={"status": status})
 
+        # Enqueue the balance creation for out-of-band subscription creation orders
+        if (
+            order.paid
+            and invoice.metadata
+            and (charge_id := invoice.metadata.get("charge_id"))
+        ):
+            enqueue_job("order.balance", order_id=order.id, charge_id=charge_id)
+
         await self._on_order_updated(session, order, previous_status)
         return order
 

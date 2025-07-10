@@ -939,8 +939,7 @@ class CheckoutService:
         product = checkout.product
         subscription: Subscription | None = None
         if product.is_recurring:
-            STRIPE = True
-            if STRIPE:
+            if not product.organization.subscriptions_billing_engine:
                 (
                     subscription,
                     _,

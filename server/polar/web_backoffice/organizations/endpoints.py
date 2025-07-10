@@ -197,8 +197,7 @@ async def update(
                 organization.name = form.name
             if form.slug:
                 organization.slug = form.slug
-            session.add(organization)
-            await session.commit()
+            organization = await org_repo.update(organization, update_dict=form.model_dump(exclude_none=True))
             return HXRedirectResponse(
                 request, str(request.url_for("organizations:get", id=id)), 303
             )
@@ -242,9 +241,9 @@ async def account_status_update(
 
     account = organization.account
     if status == "denied":
-        await account_service.deny_account(session, account)
+        await account_service.deny_account(account)
     elif status == "under_review":
-        await account_service.set_account_under_review(session, account)
+        await account_service.set_account_under_review(account)
 
     return HXRedirectResponse(
         request, str(request.url_for("organizations:get", id=id)), 303

@@ -254,18 +254,16 @@ class AccountService:
         if account.account_type == AccountType.stripe and account.stripe_id:
             await stripe.update_account(account.stripe_id, name)
 
-    async def deny_account(self, session: AsyncSession, account: Account) -> Account:
+    async def deny_account(self, account: Account) -> Account:
         """Sets an account's status to 'denied'."""
         account.status = Account.Status.DENIED
-        session.add(account)
-        await session.commit()
+        enqueue_job("account.denied", account_id=account.id)
         return account
 
-    async def set_account_under_review(self, session: AsyncSession, account: Account) -> Account:
+    async def set_account_under_review(self, account: Account) -> Account:
         """Sets an account's status to 'under_review'."""
         account.status = Account.Status.UNDER_REVIEW
-        session.add(account)
-        await session.commit()
+        enqueue_job("account.under_review", account_id=account.id)
         return account
 
 

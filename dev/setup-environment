@@ -17,6 +17,7 @@ import pathlib
 import queue
 import random
 import string
+import subprocess
 import typing
 import urllib.parse
 import webbrowser
@@ -329,6 +330,11 @@ def _get_options():
         help="The base URL of the temporary webserver to create GitHub app",
         default=default_github_setup_base_url,
     )
+    parser.add_argument(
+        "--extended",
+        action="store_true",
+        help="Also run `pnpm install` and `uv run task emails`",
+    )
 
     args = parser.parse_args()
 
@@ -362,4 +368,26 @@ if __name__ == "__main__":
         _write_server_env_file(github_app)
         _write_apps_web_env_file(github_app)
         _generate_jwks()
-        spinner.ok("Environment files have been successfully setup")
+
+        if not options.extended:
+            spinner.ok("Environment files have been successfully setup")
+        else:
+            spinner.text = "Running `pnpm install`..."
+            with open(
+                os.devnull, "w"
+            ) as devnull:  # Silence the output of the subprocess
+                subprocess.run(
+                    ["pnpm", "install"], cwd=ROOT_PATH / "clients", stdout=devnull
+                )
+            spinner.text = "Running `uv run task emails`..."
+            with open(
+                os.devnull, "w"
+            ) as devnull:  # Silence the output of the subprocess
+                subprocess.run(
+                    ["uv", "run", "task", "emails"],
+                    cwd=ROOT_PATH / "server",
+                    stdout=devnull,
+                )
+            spinner.ok(
+                "Environment files have been successfully setup. Also `pnpm install` and `uv run task emails` have been run."
+            )

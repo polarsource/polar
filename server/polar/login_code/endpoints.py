@@ -19,7 +19,7 @@ from .schemas import LoginCodeRequest
 from .service import LoginCodeError
 from .service import login_code as login_code_service
 
-router = APIRouter(prefix="/login-code", tags=["login_code", APITag.documented])
+router = APIRouter(prefix="/login-code", tags=["login_code", APITag.private])
 
 
 @router.post("/request", status_code=202)

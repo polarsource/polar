@@ -14,7 +14,7 @@ dependencies = [
   "githubkit==0.12.15",
   "redis>=5.0.4",
   "sse-starlette>=2.0.0",
-  "stripe>=10.12.0,<12",
+  "stripe>=10.12.0,<13",
   "pyjwt>=2.6.0",
   "pydantic>=2.10,<2.11",
   "jinja2>=3.1.2",

@@ -14,15 +14,23 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
-const ClientPage = ({ returnTo, error, email }: { returnTo?: string, error?: string, email?: string }) => {
+const ClientPage = ({
+  return_to,
+  error,
+  email,
+}: {
+  return_to?: string
+  error?: string
+  email?: string
+}) => {
   const form = useForm<{ code: string }>()
   const { control, setError } = form
 
   const urlSearchParams = new URLSearchParams({
-    ...(returnTo && { returnTo }),
+    ...(return_to && { return_to }),
     ...(email && { email }),
   })
 

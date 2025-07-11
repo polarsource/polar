@@ -9,6 +9,7 @@ from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.email import EmailStrDNS
 from polar.kit.http import ReturnTo
 from polar.openapi import APITag
 from polar.postgres import get_db_session
@@ -45,6 +46,7 @@ async def request_login_code(
 async def authenticate_login_code(
     request: Request,
     return_to: ReturnTo,
+    email: EmailStrDNS,
     auth_subject: WebUserOrAnonymous,
     code: str = Form(),
     session: AsyncSession = Depends(get_db_session),
@@ -56,7 +58,9 @@ async def authenticate_login_code(
         return RedirectResponse(return_to, 303)
 
     try:
-        user, is_signup = await login_code_service.authenticate(session, code)
+        user, is_signup = await login_code_service.authenticate(
+            session, code=code, email=email
+        )
     except LoginCodeError as e:
         base_url = str(settings.generate_frontend_url("/login/code/verify"))
         url_params = {

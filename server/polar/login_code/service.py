@@ -79,6 +79,7 @@ class LoginCodeService:
         self,
         session: AsyncSession,
         code: str,
+        email: str,
         *,
         signup_attribution: UserSignupAttribution | None = None,
     ) -> tuple[User, bool]:
@@ -86,7 +87,11 @@ class LoginCodeService:
 
         statement = (
             select(LoginCode)
-            .where(LoginCode.code_hash == code_hash, LoginCode.expires_at > utc_now())
+            .where(
+                LoginCode.code_hash == code_hash,
+                LoginCode.email == email,
+                LoginCode.expires_at > utc_now(),
+            )
             .options(joinedload(LoginCode.user))
         )
         result = await session.execute(statement)

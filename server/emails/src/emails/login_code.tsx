@@ -1,4 +1,4 @@
-import { Section, Text } from '@react-email/components'
+import { Preview, Section, Text } from '@react-email/components'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
 import Wrapper from '../components/Wrapper'
@@ -12,6 +12,10 @@ export function LoginCode({
 }) {
   return (
     <Wrapper>
+      <Preview>
+        Your code to sign in is {code}. It is valid for the next{' '}
+        {`code_lifetime_minutes`} minutes.
+      </Preview>
       <Header />
       <Section>
         <Text>Hi,</Text>
@@ -24,7 +28,7 @@ export function LoginCode({
         </Text>
       </Section>
       <Section className="text-center">
-        <Text className="text-5xl font-bold tracking-wider text-brand">
+        <Text className="text-brand text-5xl font-bold tracking-wider">
           {code}
         </Text>
       </Section>

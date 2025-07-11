@@ -91,6 +91,10 @@ class Settings(BaseSettings):
 
     # Magic link
     MAGIC_LINK_TTL_SECONDS: int = 60 * 30  # 30 minutes
+    
+    # Login code
+    LOGIN_CODE_TTL_SECONDS: int = 60 * 30  # 30 minutes
+    LOGIN_CODE_LENGTH: int = 6
 
     # Email verification
     EMAIL_VERIFICATION_TTL_SECONDS: int = 60 * 30  # 30 minutes

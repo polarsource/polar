@@ -1697,6 +1697,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/storefronts/lookup/product/{product_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Organization Slug By Product Id
+         * @description Get organization slug by product ID for legacy redirect purposes.
+         */
+        get: operations["storefronts:get_organization_slug_by_product_id"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefronts/lookup/subscription/{subscription_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Organization Slug By Subscription Id
+         * @description Get organization slug by subscription ID for legacy redirect purposes.
+         */
+        get: operations["storefronts:get_organization_slug_by_subscription_id"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/custom-fields/": {
         parameters: {
             query?: never;
@@ -13866,6 +13906,17 @@ export interface components {
              */
             account_id: string;
         };
+        /**
+         * OrganizationSlugLookup
+         * @description Schema for organization slug lookup response.
+         */
+        OrganizationSlugLookup: {
+            /**
+             * Organization Slug
+             * @description The slug of the organization that owns the product or subscription.
+             */
+            organization_slug: string;
+        };
         /** OrganizationSocialLink */
         OrganizationSocialLink: {
             /** @description The social platform of the URL */
@@ -20719,6 +20770,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Storefront"];
+                };
+            };
+            /** @description Organization not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "storefronts:get_organization_slug_by_product_id": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationSlugLookup"];
+                };
+            };
+            /** @description Organization not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "storefronts:get_organization_slug_by_subscription_id": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subscription_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationSlugLookup"];
                 };
             };
             /** @description Organization not found. */

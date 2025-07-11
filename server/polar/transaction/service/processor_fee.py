@@ -182,7 +182,7 @@ class ProcessorFeeTransactionService(BaseTransactionService):
         transactions: list[Transaction] = []
 
         balance_transactions = await stripe_service.list_balance_transactions(
-            type="stripe_fee"
+            type="stripe_fee", expand=["data.source"]
         )
         async for balance_transaction in balance_transactions:
             transaction = await self.get_by(

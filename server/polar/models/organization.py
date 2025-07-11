@@ -205,3 +205,8 @@ class Organization(RecordModel):
     @property
     def statement_descriptor(self) -> str:
         return self.slug[: settings.stripe_descriptor_suffix_max_length]
+
+    @property
+    def statement_descriptor_prefixed(self) -> str:
+        # Cannot use *. Setting separator to # instead.
+        return f"{settings.STRIPE_STATEMENT_DESCRIPTOR}# {self.statement_descriptor}"

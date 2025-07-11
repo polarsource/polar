@@ -22,8 +22,26 @@
 /* Dark mode */
 
 #polar-bg-gradient {
-  font-size: 12px;
-  font-family: sans-serif;
+  height: 100vh;
+  width: 100vw;
+
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    #fcf0ec 0%,
+    rgba(252, 240, 236, 0) 100%
+  );
+  background-size: 1344px 1284px;
+  background-position-y: -405px;
+  background-position-x: -405px;
+  background-repeat: no-repeat;
+
+  pointer-events: none;
+
   --token-de3bbe02-efef-4dfe-a362-f6d5715de8ac: rgb(209, 223, 242);
   --token-58f5305f-65b1-4075-86f8-f9ee69a3e917: #fefdf9;
   --token-ec1cd941-31b3-45e1-ad4c-e85325e1620f: rgb(70, 103, 202);
@@ -34,21 +52,8 @@
   --framer-aspect-ratio-supported: auto;
   box-sizing: border-box;
   -webkit-font-smoothing: inherit;
-  background: radial-gradient(
-    50% 50% at 50% 50%,
-    #fcf0ec 0%,
-    rgba(252, 240, 236, 0) 100%
-  );
-  flex: none;
-  height: 1284px;
-  left: calc(22.883597883597908% - 1344px / 2);
   mix-blend-mode: multiply;
   overflow: hidden;
-  pointer-events: none;
-  position: absolute;
-  top: -405px;
-  width: 1344px;
-  z-index: 10;
 }
 
 @media (max-width: 420px) {

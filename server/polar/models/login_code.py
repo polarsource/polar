@@ -14,7 +14,9 @@ if TYPE_CHECKING:
 class LoginCode(RecordModel):
     __tablename__ = "login_codes"
 
-    code_hash: Mapped[str] = mapped_column(CHAR(64), nullable=False, index=True)
+    code_hash: Mapped[str] = mapped_column(
+        CHAR(64), nullable=False, index=True, unique=True
+    )
     expires_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, index=True
     )

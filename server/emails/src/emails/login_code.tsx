@@ -14,7 +14,7 @@ export function LoginCode({
     <Wrapper>
       <Preview>
         Your code to sign in is {code}. It is valid for the next{' '}
-        {`code_lifetime_minutes`} minutes.
+        {code_lifetime_minutes} minutes.
       </Preview>
       <Header />
       <Section>

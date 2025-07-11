@@ -380,16 +380,18 @@ class StripeService:
         account_id: str | None = None,
         payout: str | None = None,
         type: str | None = None,
+        expand: list[str] | None = None,
     ) -> AsyncIterator[stripe_lib.BalanceTransaction]:
         params: stripe_lib.BalanceTransaction.ListParams = {
             "limit": 100,
             "stripe_account": account_id,
-            "expand": ["data.source"],
         }
         if payout is not None:
             params["payout"] = payout
         if type is not None:
             params["type"] = type
+        if expand is not None:
+            params["expand"] = expand
 
         result = await stripe_lib.BalanceTransaction.list_async(**params)
         return result.auto_paging_iter()

@@ -28,7 +28,7 @@ export interface CreateProductPageProps {
 export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   const router = useRouter()
   const benefits = useBenefits(organization.id, {
-    limit: 100,
+    limit: 200,
   })
   const organizationBenefits = useMemo(
     () => benefits.data?.items ?? [],

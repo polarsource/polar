@@ -14,7 +14,7 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 
 const ClientPage = ({ returnTo, error, email }: { returnTo?: string, error?: string, email?: string }) => {
@@ -40,9 +40,12 @@ const ClientPage = ({ returnTo, error, email }: { returnTo?: string, error?: str
     e.currentTarget.submit()
   }, [])
 
+  const formRef = useRef<HTMLFormElement>(null)
+
   return (
     <Form {...form}>
       <form
+        ref={formRef}
         className="flex w-full flex-col items-center gap-y-6"
         action={`${CONFIG.BASE_URL}/v1/login-code/authenticate?${urlSearchParams.toString()}`}
         method="POST"
@@ -61,6 +64,12 @@ const ClientPage = ({ returnTo, error, email }: { returnTo?: string, error?: str
                     inputMode="text"
                     {...field}
                     onChange={(value) => field.onChange(value.toUpperCase())}
+                    onComplete={() => {
+                      if (formRef.current) {
+                        setLoading(true)
+                        formRef.current.submit()
+                      }
+                    }}
                   >
                     <InputOTPGroup>
                       {Array.from({ length: 6 }).map((_, index) => (

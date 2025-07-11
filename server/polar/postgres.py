@@ -18,7 +18,7 @@ from polar.kit.db.postgres import (
     create_sync_engine as _create_sync_engine,
 )
 
-ProcessName: TypeAlias = Literal["app", "worker", "script", "backoffice"]
+ProcessName: TypeAlias = Literal["app", "worker", "scheduler", "script"]
 
 
 def create_async_engine(process_name: ProcessName) -> AsyncEngine:

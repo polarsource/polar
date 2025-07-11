@@ -71,7 +71,12 @@ const DownloadInvoice = ({
     if (response.error) {
       return
     }
-    window.open(response.data.url, '_blank')
+    const newWindow = window.open(response.data.url, '_blank')
+
+    if (!newWindow) {
+      window.location.href = response.data.url
+    }
+
     setLoading(false)
     hide()
   }, [order, api, hide, invoiceURL])

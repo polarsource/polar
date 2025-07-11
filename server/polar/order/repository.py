@@ -86,7 +86,9 @@ class OrderRepository(
         discount_load: "_AbstractLoad | None" = None,
     ) -> Options:
         return (
-            customer_load if customer_load else joinedload(Order.customer),
+            customer_load
+            if customer_load
+            else joinedload(Order.customer).joinedload(Customer.organization),
             discount_load if discount_load else joinedload(Order.discount),
             product_load if product_load else joinedload(Order.product),
             joinedload(Order.subscription).joinedload(Subscription.customer),

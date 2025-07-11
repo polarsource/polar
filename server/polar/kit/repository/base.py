@@ -80,8 +80,11 @@ class RepositoryBase(Generic[M]):
 
     async def stream(self, statement: Select[tuple[M]]) -> AsyncGenerator[M, None]:
         results = await self.session.stream_scalars(statement)
-        async for result in results.unique():
-            yield result
+        try:
+            async for result in results.unique():
+                yield result
+        finally:
+            await results.close()
 
     async def paginate(
         self, statement: Select[tuple[M]], *, limit: int, page: int

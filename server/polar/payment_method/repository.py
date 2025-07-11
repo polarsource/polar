@@ -20,6 +20,23 @@ class PaymentMethodRepository(
 ):
     model = PaymentMethod
 
+    async def get_by_id_and_customer(
+        self,
+        id: UUID,
+        customer: UUID,
+        *,
+        options: Options = (),
+    ) -> PaymentMethod | None:
+        statement = (
+            self.get_base_statement()
+            .where(
+                PaymentMethod.id == id,
+                PaymentMethod.customer_id == customer,
+            )
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
     async def get_by_customer_and_processor_id(
         self,
         customer: UUID,

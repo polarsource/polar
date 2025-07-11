@@ -54,7 +54,8 @@ import { CustomerPortal } from "@polar-sh/nextjs";
 
 export const GET = CustomerPortal({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
-  getCustomerId: async (req) => '<value>'
+  getCustomerId: async (req) => '<value>',
+  server: 'sandbox' // Use sandbox if you're testing Polar - pass 'production' otherwise
 });
 ```
 

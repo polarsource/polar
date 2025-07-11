@@ -4,6 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
+    Boolean,
     ColumnElement,
     ForeignKey,
     Integer,
@@ -125,6 +126,9 @@ class Organization(RecordModel):
 
     feature_settings: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
+    )
+    subscriptions_billing_engine: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
     )
 
     #

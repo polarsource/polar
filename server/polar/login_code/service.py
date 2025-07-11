@@ -47,7 +47,6 @@ class LoginCodeService:
             user_id=user.id if user is not None else None,
             expires_at=utc_now()
             + datetime.timedelta(seconds=settings.LOGIN_CODE_TTL_SECONDS),
-            return_to=return_to,
         )
         session.add(login_code)
         await session.flush()
@@ -82,7 +81,7 @@ class LoginCodeService:
         code: str,
         *,
         signup_attribution: UserSignupAttribution | None = None,
-    ) -> tuple[User, bool, str | None]:
+    ) -> tuple[User, bool]:
         code_hash = get_token_hash(code, secret=settings.SECRET)
 
         statement = (
@@ -111,10 +110,9 @@ class LoginCodeService:
             user.email_verified = True
             session.add(user)
 
-        return_to = login_code.return_to
         await session.delete(login_code)
 
-        return user, is_signup, return_to
+        return user, is_signup
 
     def _generate_code_hash(self) -> tuple[str, str]:
         code = "".join(

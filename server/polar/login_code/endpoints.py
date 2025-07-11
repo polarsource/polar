@@ -56,7 +56,7 @@ async def authenticate_login_code(
         return RedirectResponse(return_to, 303)
 
     try:
-        user, is_signup, _ = await login_code_service.authenticate(session, code)
+        user, is_signup = await login_code_service.authenticate(session, code)
     except LoginCodeError as e:
         base_url = str(settings.generate_frontend_url("/login/code/verify"))
         url_params = {

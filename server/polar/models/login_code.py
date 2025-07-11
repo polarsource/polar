@@ -27,5 +27,3 @@ class LoginCode(RecordModel):
         index=True,
     )
     user: Mapped["User | None"] = relationship("User", lazy="raise")
-
-    return_to: Mapped[str | None] = mapped_column(String, nullable=True)

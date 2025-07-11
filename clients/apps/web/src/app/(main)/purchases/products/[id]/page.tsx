@@ -1,7 +1,6 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
-import { getProductById } from '@/utils/product'
-import { unwrap } from '@polar-sh/client'
-import { notFound, redirect } from 'next/navigation'
+import { getOrganizationSlugByProductIdOrNotFound } from '@/utils/storefront'
+import { redirect } from 'next/navigation'
 
 export default async function LegacyProductPurchasePage({
   params,
@@ -9,22 +8,6 @@ export default async function LegacyProductPurchasePage({
   params: { id: string }
 }) {
   const api = getServerSideAPI()
-
-  let product
-  let organization
-
-  try {
-    product = await getProductById(api, params.id)
-    organization = await unwrap(
-      api.GET('/v1/organizations/{id}', {
-        params: {
-          path: { id: product.organization_id },
-        },
-      }),
-    )
-  } catch (error) {
-    notFound()
-  }
-
-  redirect(`/${organization.slug}/portal`)
+  const lookup = await getOrganizationSlugByProductIdOrNotFound(api, params.id)
+  redirect(`/${lookup.organization_slug}/portal`)
 }

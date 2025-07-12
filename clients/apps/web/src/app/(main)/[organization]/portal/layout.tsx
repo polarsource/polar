@@ -4,6 +4,7 @@ import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import { twMerge } from 'tailwind-merge'
 import { Navigation } from './Navigation'
+import { Toaster } from '@/components/Toast/Toaster'
 
 export default async function Layout({
   params,
@@ -52,6 +53,7 @@ export default async function Layout({
       <div className="flex min-h-screen w-full flex-col items-stretch gap-6 px-4 py-8 md:mx-auto md:max-w-5xl md:flex-row md:gap-12 lg:px-0">
         <Navigation organization={organization} themePreset={themePreset} />
         <div className="flex w-full flex-col md:py-12">{children}</div>
+      <Toaster />
       </div>
     </div>
   )

@@ -32,7 +32,7 @@ export const BrandingMenu = ({
 
   const [brandingMenuOpen, setBrandingMenuOpen] = useState(false)
 
-  const handleTriggerClick: MouseEventHandler<HTMLButtonElement> = useCallback(
+  const handleTriggerClick: MouseEventHandler<HTMLElement> = useCallback(
     (e) => {
       e.preventDefault()
       e.stopPropagation()
@@ -51,7 +51,7 @@ export const BrandingMenu = ({
   return (
     <div className={twMerge('relative flex flex-row items-center', className)}>
       <DropdownMenu open={brandingMenuOpen}>
-        <DropdownMenuTrigger onContextMenu={handleTriggerClick}>
+        <DropdownMenuTrigger asChild onContextMenu={handleTriggerClick}>
           <Link href="/">
             {logoVariant === 'logotype' ? (
               <LogoType

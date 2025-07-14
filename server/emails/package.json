@@ -8,7 +8,9 @@
   "scripts": {
     "dev": "email dev --dir src/emails",
     "clean": "rm -rf dist bin",
-    "build": "pnpm run clean && tsup && pkg package.json"
+    "build": "pnpm run clean && tsup && pkg package.json",
+    "format_check": "prettier src/** --check",
+    "format_write": "prettier src/** --write"
   },
   "packageManager": "pnpm@10.5.2",
   "dependencies": {

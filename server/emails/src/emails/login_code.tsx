@@ -1,6 +1,6 @@
 import { Preview, Section, Text } from '@react-email/components'
 import Footer from '../components/Footer'
-import Header from '../components/Header'
+import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
 
 export function LoginCode({
@@ -16,7 +16,7 @@ export function LoginCode({
         Your code to sign in is {code}. It is valid for the next{' '}
         {code_lifetime_minutes} minutes.
       </Preview>
-      <Header />
+      <PolarHeader />
       <Section>
         <Text>Hi,</Text>
         <Text>

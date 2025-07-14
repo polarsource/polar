@@ -88,7 +88,7 @@ class CustomerSessionService:
         body = render_email_template(
             "customer_session_code",
             {
-                "featured_organization": {
+                "organization": {
                     "name": organization.name,
                     "slug": organization.slug,
                 },

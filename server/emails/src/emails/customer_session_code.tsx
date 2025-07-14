@@ -1,11 +1,11 @@
 import { Link, Preview, Section, Text } from '@react-email/components'
 import Footer from '../components/Footer'
-import Header from '../components/Header'
+import OrganizationHeader from '../components/OrganizationHeader'
 import OTPCode from '../components/OTPCode'
 import Wrapper from '../components/Wrapper'
 
 interface CustomerSessionCodeProps {
-  featured_organization: {
+  organization: {
     name: string
     slug: string
   }
@@ -16,7 +16,7 @@ interface CustomerSessionCodeProps {
 }
 
 export function CustomerSessionCode({
-  featured_organization,
+  organization,
   code,
   code_lifetime_minutes,
   url,
@@ -24,14 +24,14 @@ export function CustomerSessionCode({
   return (
     <Wrapper>
       <Preview>
-        Here is your code to access your {featured_organization.name} purchases
+        Here is your code to access your {organization.name} purchases
       </Preview>
-      <Header featuredOrganization={featured_organization} />
+      <OrganizationHeader organization={organization} />
       <Section>
         <Text>Hi,</Text>
         <Text>
-          Here is your code to access your {featured_organization.name}{' '}
-          purchases. Click the button below to complete the login process.{' '}
+          Here is your code to access your {organization.name} purchases. Click
+          the button below to complete the login process.{' '}
           <span className="font-bold">
             This code is only valid for the next {code_lifetime_minutes}{' '}
             minutes.
@@ -58,7 +58,7 @@ export function CustomerSessionCode({
 }
 
 CustomerSessionCode.PreviewProps = {
-  featured_organization: {
+  organization: {
     name: 'Acme Inc',
     slug: 'acme-inc',
   },

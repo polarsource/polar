@@ -1,7 +1,7 @@
 import { Link, Preview, Section, Text } from '@react-email/components'
 import Footer from '../components/Footer'
-import Header from '../components/Header'
 import InfoBox from '../components/InfoBox'
+import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
 
 interface OAuth2LeakedClientProps {
@@ -27,7 +27,7 @@ export function OAuth2LeakedClient({
           : 'Client Registration Token'}{' '}
         has been publicly leaked
       </Preview>
-      <Header />
+      <PolarHeader />
       <Section>
         <Text className="text-xl font-bold text-gray-900 dark:text-white">
           Important security notice

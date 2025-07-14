@@ -1,10 +1,14 @@
 import { Link, Preview, Section, Text } from '@react-email/components'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
-import Header from '../components/Header'
+import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
 
 interface SubscriptionCancellationProps {
+  organization: {
+    name: string
+    slug: string
+  }
   product: {
     name: string
     benefits: Array<{
@@ -19,6 +23,7 @@ interface SubscriptionCancellationProps {
 }
 
 export function SubscriptionCancellation({
+  organization,
   product,
   subscription,
   url,
@@ -32,7 +37,7 @@ export function SubscriptionCancellation({
   return (
     <Wrapper>
       <Preview>Your subscription to {product.name} has been canceled</Preview>
-      <Header />
+      <OrganizationHeader organization={organization} />
       <Section>
         <Text className="text-xl font-bold text-gray-900 dark:text-white">
           Your subscription has been canceled
@@ -79,6 +84,10 @@ export function SubscriptionCancellation({
 }
 
 SubscriptionCancellation.PreviewProps = {
+  organization: {
+    name: 'Acme Inc',
+    slug: 'acme-inc',
+  },
   product: {
     name: 'Premium Subscription',
     benefits: [

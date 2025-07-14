@@ -1,14 +1,27 @@
-import { Column, Img, Link, Row, Section } from '@react-email/components'
+import { Column, Img, Link, Row, Section, Text } from '@react-email/components'
 
-const Header = () => (
+interface HeaderProps {
+  featuredOrganization?: {
+    name: string
+    slug: string
+  }
+}
+
+const Header = ({ featuredOrganization }: HeaderProps) => (
   <Section className="px-[32px] py-[40px]">
     <Row>
       <Column className="w-[80%]">
-        <Img
-          alt="Polar Logo"
-          height="42"
-          src="https://polar-public-assets.s3.us-east-2.amazonaws.com/emails/polar-logo-blue.png"
-        />
+        {featuredOrganization ? (
+          <Text className="text-lg font-bold text-gray-900 dark:text-white">
+            {featuredOrganization.slug}
+          </Text>
+        ) : (
+          <Img
+            alt="Polar Logo"
+            height="42"
+            src="https://polar-public-assets.s3.us-east-2.amazonaws.com/emails/polar-logo-blue.png"
+          />
+        )}
       </Column>
       <Column align="right">
         <Row align="right">

@@ -9,7 +9,7 @@ from sqlalchemy import select
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_session.service import customer_session as customer_session_service
-from polar.email.renderer import get_email_renderer
+from polar.email.react import render_email_template
 from polar.email.sender import enqueue_email
 from polar.exceptions import PolarError
 from polar.kit.crypto import get_token_hash
@@ -75,10 +75,6 @@ class CustomerSessionService:
         customer_session_code: CustomerSessionCode,
         code: str,
     ) -> None:
-        email_renderer = get_email_renderer(
-            {"customer_portal": "polar.customer_portal"}
-        )
-
         customer = customer_session_code.customer
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(
@@ -89,11 +85,13 @@ class CustomerSessionService:
         delta = customer_session_code.expires_at - utc_now()
         code_lifetime_minutes = int(ceil(delta.seconds / 60))
 
-        subject, body = email_renderer.render_from_template(
-            f"Access your {organization.name} purchases",
-            "customer_portal/customer_session_code.html",
+        body = render_email_template(
+            "customer_session_code",
             {
-                "featured_organization": organization,
+                "featured_organization": {
+                    "name": organization.name,
+                    "slug": organization.slug,
+                },
                 "code": code,
                 "code_lifetime_minutes": code_lifetime_minutes,
                 "url": settings.generate_frontend_url(
@@ -103,7 +101,11 @@ class CustomerSessionService:
             },
         )
 
-        enqueue_email(to_email_addr=customer.email, subject=subject, html_content=body)
+        enqueue_email(
+            to_email_addr=customer.email,
+            subject=f"Access your {organization.name} purchases",
+            html_content=body,
+        )
 
     async def authenticate(
         self, session: AsyncSession, code: str

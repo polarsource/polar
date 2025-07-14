@@ -18,7 +18,7 @@ from polar.config import settings
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
-from polar.email.renderer import get_email_renderer
+from polar.email.react import render_email_template
 from polar.email.sender import enqueue_email
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.service import event as event_service
@@ -1304,8 +1304,8 @@ class SubscriptionService:
         return await self._send_customer_email(
             session,
             subscription,
-            subject_template="Your {{ product.name }} subscription",
-            template_path="subscription/confirmation.html",
+            subject_template="Your {product.name} subscription",
+            template_name="subscription_confirmation",
         )
 
     async def send_uncanceled_email(
@@ -1314,8 +1314,8 @@ class SubscriptionService:
         return await self._send_customer_email(
             session,
             subscription,
-            subject_template="Your {{ product.name }} subscription is uncanceled",
-            template_path="subscription/uncanceled.html",
+            subject_template="Your {product.name} subscription is uncanceled",
+            template_name="subscription_uncanceled",
         )
 
     async def send_cancellation_email(
@@ -1324,8 +1324,8 @@ class SubscriptionService:
         return await self._send_customer_email(
             session,
             subscription,
-            subject_template="Your {{ product.name }} subscription cancellation",
-            template_path="subscription/cancellation.html",
+            subject_template="Your {product.name} subscription cancellation",
+            template_name="subscription_cancellation",
         )
 
     async def send_revoked_email(
@@ -1334,8 +1334,8 @@ class SubscriptionService:
         return await self._send_customer_email(
             session,
             subscription,
-            subject_template="Your {{ product.name }} subscription has ended",
-            template_path="subscription/revoked.html",
+            subject_template="Your {product.name} subscription has ended",
+            template_name="subscription_revoked",
         )
 
     async def _send_customer_email(
@@ -1344,10 +1344,8 @@ class SubscriptionService:
         subscription: Subscription,
         *,
         subject_template: str,
-        template_path: str,
+        template_name: str,
     ) -> None:
-        email_renderer = get_email_renderer({"subscription": "polar.subscription"})
-
         product = subscription.product
         organization_repository = OrganizationRepository.from_session(session)
         featured_organization = await organization_repository.get_by_id(
@@ -1365,9 +1363,8 @@ class SubscriptionService:
             session, customer
         )
 
-        subject, body = email_renderer.render_from_template(
-            subject_template,
-            template_path,
+        body = render_email_template(
+            template_name,
             {
                 "featured_organization": featured_organization,
                 "product": product,
@@ -1378,6 +1375,8 @@ class SubscriptionService:
                 "current_year": datetime.now().year,
             },
         )
+
+        subject = subject_template.format(product=product)
 
         enqueue_email(
             to_email_addr=subscription.customer.email,

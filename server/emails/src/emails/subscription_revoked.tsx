@@ -1,10 +1,14 @@
 import { Link, Preview, Section, Text } from '@react-email/components'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
-import Header from '../components/Header'
+import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
 
 interface SubscriptionRevokedProps {
+  organization: {
+    name: string
+    slug: string
+  }
   product: {
     name: string
   }
@@ -13,13 +17,14 @@ interface SubscriptionRevokedProps {
 }
 
 export function SubscriptionRevoked({
+  organization,
   product,
   url,
 }: SubscriptionRevokedProps) {
   return (
     <Wrapper>
       <Preview>Your subscription to {product.name} has now ended</Preview>
-      <Header />
+      <OrganizationHeader organization={organization} />
       <Section>
         <Text className="text-xl font-bold text-gray-900 dark:text-white">
           Your subscription has now ended
@@ -55,6 +60,10 @@ export function SubscriptionRevoked({
 }
 
 SubscriptionRevoked.PreviewProps = {
+  organization: {
+    name: 'Acme Inc',
+    slug: 'acme-inc',
+  },
   product: {
     name: 'Premium Subscription',
   },

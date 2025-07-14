@@ -1,10 +1,14 @@
 import { Link, Preview, Section, Text } from '@react-email/components'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
-import Header from '../components/Header'
+import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
 
 interface SubscriptionConfirmationProps {
+  organization: {
+    name: string
+    slug: string
+  }
   product: {
     name: string
   }
@@ -13,13 +17,14 @@ interface SubscriptionConfirmationProps {
 }
 
 export function SubscriptionConfirmation({
+  organization,
   product,
   url,
 }: SubscriptionConfirmationProps) {
   return (
     <Wrapper>
       <Preview>Thank you for your subscription to {product.name}!</Preview>
-      <Header />
+      <OrganizationHeader organization={organization} />
       <Section>
         <Text className="text-xl font-bold text-gray-900 dark:text-white">
           Thank you for your subscription!
@@ -54,6 +59,10 @@ export function SubscriptionConfirmation({
 }
 
 SubscriptionConfirmation.PreviewProps = {
+  organization: {
+    name: 'Acme Inc',
+    slug: 'acme-inc',
+  },
   product: {
     name: 'Premium Subscription',
   },

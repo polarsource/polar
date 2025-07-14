@@ -1071,7 +1071,7 @@ class OrderService:
         body = render_email_template(
             "order_confirmation",
             {
-                "featured_organization": {
+                "organization": {
                     "name": organization.name,
                     "slug": organization.slug,
                 },

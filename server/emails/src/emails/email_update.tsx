@@ -1,7 +1,7 @@
 import { Link, Preview, Section, Text } from '@react-email/components'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
-import Header from '../components/Header'
+import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
 
 interface EmailUpdateProps {
@@ -14,7 +14,7 @@ export function EmailUpdate({ token_lifetime_minutes, url }: EmailUpdateProps) {
   return (
     <Wrapper>
       <Preview>Here is the verification link to update your email</Preview>
-      <Header />
+      <PolarHeader />
       <Section>
         <Text>Hi,</Text>
         <Text>

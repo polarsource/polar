@@ -1,7 +1,7 @@
 import { Link, Preview, Section, Text } from '@react-email/components'
 import Footer from '../components/Footer'
-import Header from '../components/Header'
 import InfoBox from '../components/InfoBox'
+import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
 
 interface PersonalAccessTokenLeakedProps {
@@ -21,7 +21,7 @@ export function PersonalAccessTokenLeaked({
       <Preview>
         Important security notice: Your personal access token has been leaked
       </Preview>
-      <Header />
+      <PolarHeader />
       <Section>
         <Text className="text-xl font-bold text-gray-900 dark:text-white">
           Important security notice

@@ -1,10 +1,14 @@
 import { Link, Preview, Section, Text } from '@react-email/components'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
-import Header from '../components/Header'
+import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
 
 interface OrderConfirmationProps {
+  organization: {
+    name: string
+    slug: string
+  }
   product: {
     name: string
   }
@@ -12,11 +16,15 @@ interface OrderConfirmationProps {
   current_year: number
 }
 
-export function OrderConfirmation({ product, url }: OrderConfirmationProps) {
+export function OrderConfirmation({
+  organization,
+  product,
+  url,
+}: OrderConfirmationProps) {
   return (
     <Wrapper>
       <Preview>Thank you for your order of {product.name}!</Preview>
-      <Header />
+      <OrganizationHeader organization={organization} />
       <Section>
         <Text className="text-xl font-bold text-gray-900 dark:text-white">
           Thank you for your order!
@@ -51,6 +59,10 @@ export function OrderConfirmation({ product, url }: OrderConfirmationProps) {
 }
 
 OrderConfirmation.PreviewProps = {
+  organization: {
+    name: 'Acme Inc',
+    slug: 'acme-inc',
+  },
   product: {
     name: 'Premium Subscription',
   },

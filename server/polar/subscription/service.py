@@ -1374,7 +1374,7 @@ class SubscriptionService:
         body = render_email_template(
             template_name,
             {
-                "featured_organization": {
+                "organization": {
                     "name": featured_organization.name,
                     "slug": featured_organization.slug,
                 },

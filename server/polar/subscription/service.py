@@ -1374,9 +1374,21 @@ class SubscriptionService:
         body = render_email_template(
             template_name,
             {
-                "featured_organization": featured_organization,
-                "product": product,
-                "subscription": subscription,
+                "featured_organization": {
+                    "name": featured_organization.name,
+                    "slug": featured_organization.slug,
+                },
+                "product": {
+                    "name": product.name,
+                    "benefits": [
+                        {"description": benefit} for benefit in product.benefits
+                    ],
+                },
+                "subscription": {
+                    "ends_at": subscription.ends_at.isoformat()
+                    if subscription.ends_at
+                    else None,
+                },
                 "url": settings.generate_frontend_url(
                     f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
                 ),

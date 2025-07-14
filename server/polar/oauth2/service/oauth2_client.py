@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
-from polar.email.renderer import get_email_renderer
+from polar.email.react import render_email_template
 from polar.email.sender import enqueue_email
 from polar.enums import TokenType
 from polar.exceptions import PolarError
@@ -92,11 +92,8 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
             )
         session.add(client)
 
-        email_renderer = get_email_renderer({"oauth2": "polar.oauth2"})
-
-        subject, body = email_renderer.render_from_template(
-            subject,
-            "oauth2/leaked_client.html",
+        body = render_email_template(
+            "oauth2_leaked_client",
             {
                 "token_type": token_type,
                 "client_name": client.client_name,

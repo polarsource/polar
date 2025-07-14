@@ -8,7 +8,7 @@ interface ButtonProps {
 
 export function Button({ href, children, variant = 'primary' }: ButtonProps) {
   const baseClasses =
-    'px-[18px] py-[10px] rounded-lg font-medium text-white no-underline text-center block w-full'
+    'px-[18px] py-[10px] rounded-lg font-medium text-white no-underline text-center block'
 
   const variantClasses = {
     primary: 'bg-blue-600 hover:bg-blue-700',

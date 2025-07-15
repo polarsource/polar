@@ -1,22 +1,19 @@
-from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Select, or_, select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import joinedload
 
-from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.email.renderer import get_email_renderer
 from polar.email.sender import enqueue_email
 from polar.enums import TokenType
 from polar.kit.crypto import get_token_hash
-from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.models import PersonalAccessToken, User
+from polar.models import PersonalAccessToken
 from polar.postgres import AsyncSession
 
 log: Logger = structlog.get_logger()
@@ -25,26 +22,6 @@ TOKEN_PREFIX = "polar_pat_"
 
 
 class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
-    async def list(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        *,
-        pagination: PaginationParams,
-    ) -> tuple[Sequence[PersonalAccessToken], int]:
-        statement = self._get_readable_order_statement(auth_subject)
-        return await paginate(session, statement, pagination=pagination)
-
-    async def get_by_id(
-        self, session: AsyncSession, auth_subject: AuthSubject[User], id: UUID
-    ) -> PersonalAccessToken | None:
-        statement = self._get_readable_order_statement(auth_subject).where(
-            PersonalAccessToken.id == id,
-            PersonalAccessToken.deleted_at.is_(None),
-        )
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
-
     async def get_by_token(
         self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> PersonalAccessToken | None:
@@ -67,12 +44,6 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
 
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
-
-    async def delete(
-        self, session: AsyncSession, personal_access_token: PersonalAccessToken
-    ) -> None:
-        personal_access_token.set_deleted_at()
-        session.add(personal_access_token)
 
     async def record_usage(
         self, session: AsyncSession, id: UUID, last_used_at: datetime
@@ -130,14 +101,6 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
         )
 
         return True
-
-    def _get_readable_order_statement(
-        self, auth_subject: AuthSubject[User]
-    ) -> Select[tuple[PersonalAccessToken]]:
-        return select(PersonalAccessToken).where(
-            PersonalAccessToken.user_id == auth_subject.subject.id,
-            PersonalAccessToken.deleted_at.is_(None),
-        )
 
 
 personal_access_token = PersonalAccessTokenService(PersonalAccessToken)

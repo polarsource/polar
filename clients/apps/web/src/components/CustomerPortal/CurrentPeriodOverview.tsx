@@ -1,4 +1,6 @@
 import { schemas } from '@polar-sh/client'
+import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { twMerge } from 'tailwind-merge'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import AmountLabel from '../Shared/AmountLabel'
 
@@ -9,6 +11,10 @@ interface CurrentPeriodOverviewProps {
 export const CurrentPeriodOverview = ({
   subscription,
 }: CurrentPeriodOverviewProps) => {
+  const themePreset = useThemePreset(
+    subscription.product.organization.slug === 'midday' ? 'midday' : 'polar',
+  )
+
   if (subscription.status !== 'active') {
     return null
   }
@@ -17,17 +23,18 @@ export const CurrentPeriodOverview = ({
     (price) => price.amount_type === 'fixed',
   )
 
-  const meteredPrices = subscription.prices.filter(
-    (price) => price.amount_type === 'metered_unit',
-  )
-
-  const totalAmount = meteredPrices.reduce(
-    (acc, price) => acc + Number.parseFloat(price.unit_amount),
+  const totalAmount = subscription.meters.reduce(
+    (acc, meter) => acc + meter.amount,
     basePrice?.price_amount || 0,
   )
 
   return (
-    <div className="dark:border-polar-700 flex flex-col gap-4 rounded-3xl border border-gray-200 p-6">
+    <div
+      className={twMerge(
+        'dark:border-polar-700 flex flex-col gap-4 rounded-3xl border border-gray-200 p-8',
+        themePreset.polar.wellSecondary,
+      )}
+    >
       <div className="flex items-center justify-between">
         <h4 className="text-lg font-medium">Current Period Overview</h4>
         <span className="text-sm text-gray-500">
@@ -53,19 +60,20 @@ export const CurrentPeriodOverview = ({
           </span>
         </div>
 
-        {meteredPrices.length > 0 && (
+        {subscription.meters.length > 0 && (
           <>
             <span className="font-medium">Metered Charges</span>
 
-            {meteredPrices.map((price) => (
-              <div key={price.id} className="flex items-center justify-between">
+            {subscription.meters.map((meter) => (
+              <div key={meter.id} className="flex items-center justify-between">
                 <span className="text-gray-600 dark:text-gray-400">
-                  {price.meter.name}
+                  {meter.meter.name}
                 </span>
                 <span className="font-medium">
                   <AmountLabel
-                    amount={Number.parseFloat(price.unit_amount)}
-                    currency={price.price_currency}
+                    amount={meter.amount}
+                    currency={subscription.currency}
+                    minimumFractionDigits={2}
                   />
                 </span>
               </div>
@@ -84,7 +92,7 @@ export const CurrentPeriodOverview = ({
             </span>
           </div>
 
-          {meteredPrices.length > 0 && (
+          {subscription.meters.length > 0 && (
             <p className="text-xs text-gray-500">
               Final charges may vary based on usage until the end of the billing
               period

@@ -3,12 +3,13 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, TypeAlias
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Uuid
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.enums import AccountType
+from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 
@@ -57,7 +58,7 @@ class Account(RecordModel):
     email: Mapped[str | None] = mapped_column(String(254), nullable=True, default=None)
 
     country: Mapped[str] = mapped_column(String(2), nullable=False)
-    currency: Mapped[str | None] = mapped_column(String(3))
+    currency: Mapped[str] = mapped_column(String(3))
 
     is_details_submitted: Mapped[bool] = mapped_column(Boolean, nullable=False)
     is_charges_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
@@ -91,6 +92,15 @@ class Account(RecordModel):
     )
 
     data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+    billing_name: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
+    billing_address: Mapped[Address | None] = mapped_column(AddressType, nullable=True)
+    billing_additional_info: Mapped[str | None] = mapped_column(
+        Text, nullable=True, default=None
+    )
+    billing_notes: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
 
     @declared_attr
     def admin(cls) -> Mapped["User"]:

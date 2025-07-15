@@ -102,7 +102,12 @@ const CountryStatePicker = ({
         autoComplete={autoComplete}
       >
         <SelectTrigger className={className}>
-          <SelectValue placeholder={country === 'US' ? 'State' : 'Province'} />
+          <SelectValue
+            placeholder={country === 'US' ? 'State' : 'Province'}
+            // Avoids issues due to browser automatic translation
+            // https://github.com/shadcn-ui/ui/issues/852
+            translate="no"
+          />
         </SelectTrigger>
         <SelectContent className={contentClassName}>
           {Object.entries(states).map(([code, name]) => (
@@ -112,7 +117,9 @@ const CountryStatePicker = ({
               textValue={name}
               className={itemClassName}
             >
-              {name}
+              {/* Wrap in div to workaround an issue with browser automatic translation
+                https://github.com/shadcn-ui/ui/issues/852 */}
+              <div>{name}</div>
             </SelectItem>
           ))}
         </SelectContent>

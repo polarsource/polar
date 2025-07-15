@@ -11,6 +11,7 @@ from pydantic import (
     IPvAnyAddress,
     Tag,
 )
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.custom_field.attachment import AttachedCustomField
 from polar.custom_field.data import (
@@ -25,6 +26,7 @@ from polar.discount.schemas import (
 )
 from polar.enums import PaymentProcessor
 from polar.kit.address import Address
+from polar.kit.email import EmailStrDNS
 from polar.kit.metadata import (
     METADATA_DESCRIPTION,
     MetadataField,
@@ -32,14 +34,17 @@ from polar.kit.metadata import (
     MetadataOutputMixin,
 )
 from polar.kit.schemas import (
-    EmailStrDNS,
     EmptyStrToNoneValidator,
     IDSchema,
     Schema,
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.models.checkout import CheckoutStatus
+from polar.models.checkout import (
+    CheckoutBillingAddressFields,
+    CheckoutCustomerBillingAddressFields,
+    CheckoutStatus,
+)
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.organization.schemas import Organization
 from polar.product.schemas import (
@@ -114,6 +119,19 @@ _allow_discount_codes_description = (
     "If you apply a discount through `discount_id`, it'll still be applied, "
     "but the customer won't be able to change it."
 )
+_require_billing_address_description = (
+    "Whether to require the customer to fill their full billing address, instead of "
+    "just the country. "
+    "Customers in the US will always be required to fill their full address, "
+    "regardless of this setting. "
+    "If you preset the billing address, this setting will be automatically set to "
+    "`true`."
+)
+_is_business_customer_description = (
+    "Whether the customer is a business or an individual. "
+    "If `true`, the customer will be required to fill their full billing address "
+    "and billing name."
+)
 _customer_metadata_description = METADATA_DESCRIPTION.format(
     heading=(
         "Key-value object allowing you to store additional information "
@@ -136,6 +154,9 @@ class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
     allow_discount_codes: bool = Field(
         default=True, description=_allow_discount_codes_description
     )
+    require_billing_address: bool = Field(
+        default=False, description=_require_billing_address_description
+    )
     amount: Amount | None = None
     customer_id: UUID4 | None = Field(
         default=None,
@@ -145,12 +166,18 @@ class CheckoutCreateBase(CustomFieldDataInputMixin, MetadataInputMixin, Schema):
             "The resulting order will be linked to this customer."
         ),
     )
-    customer_external_id: str | None = Field(
-        default=None, description=_external_customer_id_description
+    is_business_customer: bool = Field(
+        default=False, description=_is_business_customer_description
+    )
+    external_customer_id: str | None = Field(
+        default=None,
+        description=_external_customer_id_description,
+        validation_alias=AliasChoices("external_customer_id", "customer_external_id"),
     )
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
+    customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_billing_address: CustomerBillingAddress | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_metadata: MetadataField = Field(
@@ -217,7 +244,9 @@ class CheckoutProductsCreate(CheckoutCreateBase):
 
 
 CheckoutCreate = Annotated[
-    CheckoutProductsCreate | CheckoutProductCreate | CheckoutPriceCreate,
+    CheckoutProductsCreate
+    | SkipJsonSchema[CheckoutProductCreate]
+    | SkipJsonSchema[CheckoutPriceCreate],
     SetSchemaReference("CheckoutCreate"),
 ]
 
@@ -257,8 +286,10 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
         ),
     )
     amount: Amount | None = None
+    is_business_customer: bool | None = None
     customer_name: Annotated[CustomerName | None, EmptyStrToNoneValidator] = None
     customer_email: CustomerEmail | None = None
+    customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_billing_address: CustomerBillingAddress | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
 
@@ -271,6 +302,9 @@ class CheckoutUpdate(MetadataInputMixin, CheckoutUpdateBase):
     )
     allow_discount_codes: bool | None = Field(
         default=None, description=_allow_discount_codes_description
+    )
+    require_billing_address: bool | None = Field(
+        default=None, description=_require_billing_address_description
     )
     customer_ip_address: CustomerIPAddress | None = None
     customer_metadata: MetadataField | None = Field(
@@ -350,6 +384,9 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
         description="ID of the discount applied to the checkout."
     )
     allow_discount_codes: bool = Field(description=_allow_discount_codes_description)
+    require_billing_address: bool = Field(
+        description=_require_billing_address_description
+    )
     is_discount_applicable: bool = Field(
         description=(
             "Whether the discount is applicable to the checkout. "
@@ -379,9 +416,11 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
     )
 
     customer_id: UUID4 | None
+    is_business_customer: bool = Field(description=_is_business_customer_description)
     customer_name: str | None = Field(description="Name of the customer.")
     customer_email: str | None = Field(description="Email address of the customer.")
     customer_ip_address: CustomerIPAddress | None
+    customer_billing_name: str | None
     customer_billing_address: CustomerBillingAddress | None
     customer_tax_id: str | None = Field(
         validation_alias=AliasChoices("customer_tax_id_number", "customer_tax_id")
@@ -389,8 +428,20 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
 
     payment_processor_metadata: dict[str, str]
 
-    subtotal_amount: int | None = Field(
+    subtotal_amount: SkipJsonSchema[int | None] = Field(
         deprecated="Use `net_amount`.", validation_alias="net_amount"
+    )
+
+    customer_billing_address_fields: SkipJsonSchema[
+        CheckoutCustomerBillingAddressFields
+    ] = Field(
+        deprecated="Use `billing_address_fields` instead.",
+    )
+    billing_address_fields: CheckoutBillingAddressFields = Field(
+        description=(
+            "Determine which billing address fields "
+            "should be disabled, optional or required in the checkout form."
+        )
     )
 
 
@@ -468,8 +519,13 @@ CheckoutDiscount = Annotated[
 class Checkout(MetadataOutputMixin, CheckoutBase):
     """Checkout session data retrieved using an access token."""
 
+    external_customer_id: str | None = Field(
+        description=_external_customer_id_description,
+        validation_alias=AliasChoices("external_customer_id", "customer_external_id"),
+    )
     customer_external_id: str | None = Field(
-        description=_external_customer_id_description
+        validation_alias=AliasChoices("external_customer_id", "customer_external_id"),
+        deprecated="Use `external_customer_id` instead.",
     )
     products: list[CheckoutProduct] = Field(
         description="List of products available to select."

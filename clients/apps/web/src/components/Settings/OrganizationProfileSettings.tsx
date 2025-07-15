@@ -21,7 +21,6 @@ import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -31,7 +30,6 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from '@polar-sh/ui/components/ui/radio-group'
-import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { Textarea } from '@polar-sh/ui/components/ui/textarea'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
@@ -39,6 +37,11 @@ import { useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../FileUpload'
 import { toast } from '../Toast/use-toast'
+import {
+  SettingsGroup,
+  SettingsGroupActions,
+  SettingsGroupItem,
+} from './SettingsGroup'
 
 interface OrganizationDetailsFormProps {
   organization: schemas['Organization']
@@ -98,13 +101,16 @@ const OrganizationSocialLinks = () => {
   }
 
   const handleAddSocial = () => {
-    setValue('socials', [...socials, { platform: 'other', url: '' }])
+    setValue('socials', [...socials, { platform: 'other', url: '' }], {
+      shouldDirty: true,
+    })
   }
 
   const handleRemoveSocial = (index: number) => {
     setValue(
       'socials',
       socials.filter((_, i) => i !== index),
+      { shouldDirty: true },
     )
   }
 
@@ -129,13 +135,12 @@ const OrganizationSocialLinks = () => {
         platform: newPlatform,
         url: value,
       }
-      setValue('socials', updatedSocials)
+      setValue('socials', updatedSocials, { shouldDirty: true })
     } catch {}
   }
 
   return (
     <div className="flex flex-col gap-y-4">
-      <FormLabel>Social media</FormLabel>
       {socials.map((social, index) => (
         <FormField
           key={index}
@@ -177,6 +182,7 @@ const OrganizationSocialLinks = () => {
         variant="secondary"
         onClick={handleAddSocial}
         className="self-start"
+        size="sm"
         wrapperClassNames="flex flex-row items-center gap-x-2"
       >
         <AddOutlined fontSize="small" />
@@ -201,7 +207,7 @@ export const OrganizationDetailsForm: React.FC<
         return
       }
       const lastFile = files[files.length - 1]
-      setValue('avatar_url', lastFile.public_url)
+      setValue('avatar_url', lastFile.public_url, { shouldDirty: true })
     },
     [setValue],
   )
@@ -231,314 +237,332 @@ export const OrganizationDetailsForm: React.FC<
 
   return (
     <>
-      <FormField
-        control={control}
-        name="name"
-        rules={{ required: 'This field is required.' }}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>{inKYCMode && `Organization `}Name</FormLabel>
-            <FormControl>
-              <Input {...field} value={field.value || ''} />
-            </FormControl>
-            <FormDescription>
-              What customers will see in checkout, receipts and more.
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={control}
-        name="avatar_url"
-        render={({ field }) => (
-          <div className="flex flex-col gap-y-4">
-            <FormLabel>Logotype</FormLabel>
-            <div className="flex flex-row items-center gap-4">
-              <div
-                {...getRootProps()}
-                className={twMerge(
-                  'group relative',
-                  isDragActive && 'opacity-50',
-                )}
-              >
-                <input {...getInputProps()} />
-                <Avatar
-                  avatar_url={avatarURL ?? ''}
-                  name={name ?? ''}
-                  className={twMerge(
-                    'h-16 w-16 group-hover:opacity-50',
-                    isDragActive && 'opacity-50',
-                  )}
-                />
-                <div
-                  className={twMerge(
-                    'absolute left-0 top-0 h-16 w-16 cursor-pointer items-center justify-center group-hover:flex',
-                    isDragActive ? 'flex' : 'hidden',
-                  )}
-                >
-                  <AddPhotoAlternateOutlined />
-                </div>
-              </div>
-              <FormItem className="grow">
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value || ''}
-                    placeholder="Logo URL"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            </div>
+      <SettingsGroupItem
+        title="Organization Name"
+        description="What customers will see in checkout & receipts"
+      >
+        <FormField
+          control={control}
+          name="name"
+          rules={{ required: 'This field is required.' }}
+          render={({ field }) => (
+            <>
+              <FormControl>
+                <Input {...field} value={field.value || ''} />
+              </FormControl>
+              <FormMessage />
+            </>
+          )}
+        />
+      </SettingsGroupItem>
+      <SettingsGroupItem
+        title="Logotype"
+        description="Used to identify your organization"
+      >
+        <div
+          {...getRootProps()}
+          className={twMerge('group relative', isDragActive && 'opacity-50')}
+        >
+          <input id="logo-input" {...getInputProps()} />
+          <Avatar
+            avatar_url={avatarURL ?? ''}
+            name={name ?? ''}
+            className={twMerge(
+              'h-16 w-16 group-hover:opacity-50',
+              isDragActive && 'opacity-50',
+            )}
+          />
+          <div
+            className={twMerge(
+              'absolute left-0 top-0 h-16 w-16 cursor-pointer items-center justify-center group-hover:flex',
+              isDragActive ? 'flex' : 'hidden',
+            )}
+          >
+            <AddPhotoAlternateOutlined />
           </div>
-        )}
-      />
-      <FormField
-        control={control}
-        name="website"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Website</FormLabel>
-            <FormControl>
-              <Input
-                {...field}
-                value={field.value || ''}
-                placeholder="https://"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={control}
-        name="email"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Support Email</FormLabel>
-            <FormControl>
-              <Input
-                {...field}
-                value={field.value || ''}
-                placeholder="support@example.com"
-                required
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <OrganizationSocialLinks />
+        </div>
+      </SettingsGroupItem>
+      <SettingsGroupItem
+        title="Website"
+        description="Website associated with your organization"
+      >
+        <FormField
+          control={control}
+          name="website"
+          render={({ field }) => (
+            <>
+              <FormControl>
+                <Input
+                  type="url"
+                  {...field}
+                  value={field.value || ''}
+                  placeholder="https://"
+                />
+              </FormControl>
+              <FormMessage />
+            </>
+          )}
+        />
+      </SettingsGroupItem>
+      <SettingsGroupItem
+        title="Support Email"
+        description="Where customers can contact you"
+      >
+        <FormField
+          control={control}
+          name="email"
+          render={({ field }) => (
+            <>
+              <FormControl>
+                <Input
+                  type="email"
+                  {...field}
+                  value={field.value || ''}
+                  placeholder="support@example.com"
+                  required
+                />
+              </FormControl>
+              <FormMessage />
+            </>
+          )}
+        />
+      </SettingsGroupItem>
+      <SettingsGroupItem
+        title="Social media"
+        description="Your social media presence"
+        vertical
+      >
+        <OrganizationSocialLinks />
+      </SettingsGroupItem>
       {inKYCMode && (
         <>
-          <Separator />
-          <div className="flex flex-col gap-y-2">
-            <h3 className="font-medium">Compliance Information</h3>
-            <p className="dark:text-polar-500 text-sm text-gray-500">
-              Please fill this out accurately &amp; thoroughly for our reviews
-            </p>
-          </div>
-          <FormField
-            control={control}
-            name="details.about"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>About you and your business</FormLabel>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    placeholder="I'm the founder of AcmeCo - building a SaaS application for easier uptime monitoring for developers."
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+          <SettingsGroupItem
+            title="Compliance Information"
+            description="Please fill this out accurately &amp; thoroughly for our reviews"
           />
-          <FormField
-            control={control}
-            name="details.product_description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Describe the product</FormLabel>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    placeholder="We'll sell SaaS tiers with different credits for uptime monitoring combined with one-time purchases for some premium add-on features."
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={control}
-            name="details.intended_use"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>How do you plan on using Polar?</FormLabel>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    placeholder="We will integrate the API & Webhooks within our service and use checkout links to promote products on social media. Finally, we will use Polar license keys to validate access to our desktop app."
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <SettingsGroupItem title="About you and your business">
+            <FormField
+              control={control}
+              name="details.about"
+              render={({ field }) => (
+                <>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder="I'm the founder of AcmeCo - building a SaaS application for easier uptime monitoring for developers."
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </>
+              )}
+            />
+          </SettingsGroupItem>
+          <SettingsGroupItem title="Describe the product">
+            <FormField
+              control={control}
+              name="details.product_description"
+              render={({ field }) => (
+                <>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder="We'll sell SaaS tiers with different credits for uptime monitoring combined with one-time purchases for some premium add-on features."
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </>
+              )}
+            />
+          </SettingsGroupItem>
+          <SettingsGroupItem title="How do you plan on using Polar?">
+            <FormField
+              control={control}
+              name="details.intended_use"
+              render={({ field }) => (
+                <>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      className="w-full"
+                      placeholder="We will integrate the API & Webhooks within our service and use checkout links to promote products on social media. Finally, we will use Polar license keys to validate access to our desktop app."
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </>
+              )}
+            />
+          </SettingsGroupItem>
+          <SettingsGroupItem title="Main channels for customer acquisition">
+            <FormField
+              control={control}
+              name="details.customer_acquisition"
+              render={({ field }) => (
+                <>
+                  <FormControl>
+                    <ul className="flex w-full flex-col gap-y-2">
+                      {Object.entries(AcquisitionOptions).map(
+                        ([key, label]) => (
+                          <li
+                            key={key}
+                            className="flex flex-row items-center gap-x-4"
+                          >
+                            <Checkbox
+                              id={`acquisition-${key}`}
+                              defaultChecked={
+                                field.value ? field.value.includes(key) : false
+                              }
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  field.onChange([...(field.value || []), key])
+                                } else {
+                                  field.onChange(
+                                    (field.value || []).filter(
+                                      (v) => v !== key,
+                                    ),
+                                  )
+                                }
+                              }}
+                            />
+                            <FormLabel htmlFor={`acquisition-${key}`}>
+                              {label}
+                            </FormLabel>
+                          </li>
+                        ),
+                      )}
+                    </ul>
+                  </FormControl>
+                  <FormMessage />
+                </>
+              )}
+            />
+          </SettingsGroupItem>
 
-          <FormField
-            control={control}
-            name="details.customer_acquisition"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Main channels for customer acquisition</FormLabel>
-                <FormControl>
-                  <ul className="flex flex-col gap-y-2">
-                    {Object.entries(AcquisitionOptions).map(([key, label]) => (
-                      <li
-                        key={key}
-                        className="flex flex-row items-center gap-x-4"
+          <SettingsGroupItem
+            title="Estimated sales per year"
+            description="How much do you expect to sell for in a year?"
+          >
+            <FormField
+              control={control}
+              name="details.future_annual_revenue"
+              render={({ field }) => (
+                <>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="number"
+                      value={field.value || ''}
+                      placeholder="1000"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </>
+              )}
+            />
+          </SettingsGroupItem>
+
+          <SettingsGroupItem
+            title="Switching from another platform"
+            description="If you are currently selling on another platform, please select the platform you are currently using."
+          >
+            <FormField
+              control={control}
+              name="details.switching"
+              render={({ field }) => (
+                <>
+                  <FormControl>
+                    <div className="flex w-full flex-row items-center gap-x-4">
+                      <RadioGroup
+                        value={field.value ? '1' : '0'}
+                        onValueChange={(value) => field.onChange(value === '1')}
                       >
-                        <Checkbox
-                          id={`acquisition-${key}`}
-                          defaultChecked={
-                            field.value ? field.value.includes(key) : false
-                          }
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              field.onChange([...(field.value || []), key])
-                            } else {
-                              field.onChange(
-                                (field.value || []).filter((v) => v !== key),
-                              )
-                            }
-                          }}
-                        />
-                        <FormLabel htmlFor={`acquisition-${key}`}>
-                          {label}
-                        </FormLabel>
-                      </li>
-                    ))}
-                  </ul>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={control}
-            name="details.future_annual_revenue"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Estimated sales per year (USD)</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type="number"
-                    value={field.value || ''}
-                    placeholder="1000"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={control}
-            name="details.switching"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel htmlFor="switching">
-                  Already selling on another platform?
-                </FormLabel>
-                <FormControl>
-                  <div className="flex flex-row items-center gap-x-4">
-                    <RadioGroup
-                      value={field.value ? '1' : '0'}
-                      onValueChange={(value) => field.onChange(value === '1')}
-                    >
-                      <ul className="flex flex-col gap-y-2">
-                        <li className="flex flex-row items-center gap-x-4">
-                          <RadioGroupItem id={`switching-false`} value="0" />
-                          <FormLabel htmlFor={`switching-false`}>No</FormLabel>
-                        </li>
-                        <li className="flex flex-row items-center gap-x-4">
-                          <RadioGroupItem id={`switching-true`} value="1" />
-                          <FormLabel htmlFor={`switching-true`}>Yes</FormLabel>
-                        </li>
-                      </ul>
-                    </RadioGroup>
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                        <ul className="flex flex-col gap-y-2">
+                          <li className="flex flex-row items-center gap-x-4">
+                            <RadioGroupItem id={`switching-false`} value="0" />
+                            <FormLabel htmlFor={`switching-false`}>
+                              No
+                            </FormLabel>
+                          </li>
+                          <li className="flex flex-row items-center gap-x-4">
+                            <RadioGroupItem id={`switching-true`} value="1" />
+                            <FormLabel htmlFor={`switching-true`}>
+                              Yes
+                            </FormLabel>
+                          </li>
+                        </ul>
+                      </RadioGroup>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </>
+              )}
+            />
+          </SettingsGroupItem>
 
           {isSwitching && (
             <>
-              <FormField
-                control={control}
-                name="details.switching_from"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Which platform are you currently using?
-                    </FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        value={field.value ?? 'other'}
-                        onValueChange={field.onChange}
-                      >
-                        <ul className="flex flex-col gap-y-2">
-                          {Object.entries(SwitchingFromOptions).map(
-                            ([key, label]) => (
-                              <li
-                                key={key}
-                                className="flex flex-row items-center gap-x-4"
-                              >
-                                <RadioGroupItem
-                                  id={`switching-from-${key}`}
-                                  value={key}
-                                />
-                                <FormLabel htmlFor={`switching-from-${key}`}>
-                                  {label}
-                                </FormLabel>
-                              </li>
-                            ),
-                          )}
-                        </ul>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <SettingsGroupItem
+                title="Switching from another platform"
+                description="If you are currently selling on another platform, please select the platform you are currently using."
+              >
+                <FormField
+                  control={control}
+                  name="details.switching_from"
+                  render={({ field }) => (
+                    <>
+                      <FormControl>
+                        <RadioGroup
+                          className="w-full"
+                          value={field.value ?? 'other'}
+                          onValueChange={field.onChange}
+                        >
+                          <ul className="flex w-full flex-col gap-y-2">
+                            {Object.entries(SwitchingFromOptions).map(
+                              ([key, label]) => (
+                                <li
+                                  key={key}
+                                  className="flex flex-row items-center gap-x-4"
+                                >
+                                  <RadioGroupItem
+                                    id={`switching-from-${key}`}
+                                    value={key}
+                                  />
+                                  <FormLabel htmlFor={`switching-from-${key}`}>
+                                    {label}
+                                  </FormLabel>
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </>
+                  )}
+                />
+              </SettingsGroupItem>
 
-              <FormField
-                control={control}
-                name="details.previous_annual_revenue"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      How much did you sell for last year (USD)?
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="number"
-                        value={field.value || ''}
-                        placeholder="1000"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <SettingsGroupItem
+                title="How much did you sell for last year?"
+                description="How much did you sell for last year?"
+              >
+                <FormField
+                  control={control}
+                  name="details.previous_annual_revenue"
+                  render={({ field }) => (
+                    <>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          value={field.value || ''}
+                          placeholder="1000"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </>
+                  )}
+                />
+              </SettingsGroupItem>
             </>
           )}
         </>
@@ -594,70 +618,59 @@ const OrganizationProfileSettings: React.FC<
 
   return (
     <Form {...form}>
-      <form
-        className="dark:divide-polar-700 flex w-full flex-col gap-y-8"
-        onSubmit={handleSubmit(onSubmit)}
-      >
-        {!inKYCMode && (
-          <>
-            <div className="flex flex-col gap-y-2">
-              <FormLabel>ID</FormLabel>
-              <FormControl>
-                <CopyToClipboardInput
-                  value={organization.id}
-                  onCopy={() => {
-                    toast({
-                      title: 'Copied To Clipboard',
-                      description: `Organization ID was copied to clipboard`,
-                    })
-                  }}
-                />
-              </FormControl>
-            </div>
-            <div className="flex flex-col gap-y-2">
-              <FormLabel>Slug</FormLabel>
-              <FormControl>
-                <CopyToClipboardInput
-                  value={organization.slug}
-                  onCopy={() => {
-                    toast({
-                      title: 'Copied To Clipboard',
-                      description: `Organization Slug was copied to clipboard`,
-                    })
-                  }}
-                />
-              </FormControl>
-              <FormDescription>
-                Your slug determines the customer portal URL, e.g{' '}
-                <span className="dark:bg-polar-800 dark:text-polar-500 rounded bg-gray-200 px-2 py-1 text-gray-500">
-                  https://polar.sh/{organization.slug}/portal
-                </span>{' '}
-                -{' '}
-                <a
-                  href="https://docs.polar.sh/support"
-                  target="_blank"
-                  className="text-blue-500"
-                >
-                  contact support
-                </a>{' '}
-                to change the slug.
-              </FormDescription>
-            </div>
-          </>
-        )}
-        <OrganizationDetailsForm
-          organization={organization}
-          inKYCMode={inKYCMode}
-        />
-        <div>
-          <Button
-            type="submit"
-            disabled={!formState.isDirty}
-            loading={updateOrganization.isPending}
-          >
-            {inKYCMode ? 'Submit' : 'Save'}
-          </Button>
-        </div>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <SettingsGroup>
+          {!inKYCMode && (
+            <>
+              <SettingsGroupItem
+                title="Identifier"
+                description="Unique identifier for your organization"
+              >
+                <FormControl>
+                  <CopyToClipboardInput
+                    value={organization.id}
+                    onCopy={() => {
+                      toast({
+                        title: 'Copied To Clipboard',
+                        description: `Organization ID was copied to clipboard`,
+                      })
+                    }}
+                  />
+                </FormControl>
+              </SettingsGroupItem>
+              <SettingsGroupItem
+                title="Organization Slug"
+                description="Used for Customer Portal, Transaction Statements, etc."
+              >
+                <FormControl>
+                  <CopyToClipboardInput
+                    value={organization.slug}
+                    onCopy={() => {
+                      toast({
+                        title: 'Copied To Clipboard',
+                        description: `Organization Slug was copied to clipboard`,
+                      })
+                    }}
+                  />
+                </FormControl>
+              </SettingsGroupItem>
+            </>
+          )}
+          <OrganizationDetailsForm
+            organization={organization}
+            inKYCMode={inKYCMode}
+          />
+          <SettingsGroupActions>
+            <Button
+              type="submit"
+              disabled={!formState.isDirty}
+              loading={updateOrganization.isPending}
+              size="sm"
+            >
+              {inKYCMode ? 'Submit' : 'Save'}
+            </Button>
+          </SettingsGroupActions>
+        </SettingsGroup>
       </form>
     </Form>
   )

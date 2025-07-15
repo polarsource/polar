@@ -67,6 +67,7 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.subscription_active], Subscription]
     | tuple[Literal[WebhookEventType.subscription_canceled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_revoked], Subscription]
+    | tuple[Literal[WebhookEventType.subscription_uncanceled], Subscription]
     | tuple[Literal[WebhookEventType.refund_created], Refund]
     | tuple[Literal[WebhookEventType.refund_updated], Refund]
     | tuple[Literal[WebhookEventType.product_created], Product]
@@ -845,7 +846,7 @@ class WebhookSubscriptionUncanceledPayload(WebhookSubscriptionUpdatedPayloadBase
 
 class WebhookSubscriptionRevokedPayload(WebhookSubscriptionUpdatedPayloadBase):
     """
-    Sent when a subscription is revoked, the user looses access immediately.
+    Sent when a subscription is revoked, the user loses access immediately.
     Happens when the subscription is canceled, or payment is past due.
 
     **Discord & Slack support:** Full

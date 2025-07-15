@@ -52,7 +52,6 @@ export default async function Page({
     const returnTo = `/oauth2/authorize?${serializedSearchParams}`
     const locationSearchParam = new URLSearchParams({
       return_to: returnTo,
-      force: 'true',
     }).toString()
     const location = `/login?${locationSearchParam}`
     redirect(location)

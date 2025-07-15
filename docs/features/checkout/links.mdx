@@ -8,7 +8,9 @@ Checkout links can be shared or linked on your website which automatically
 creates a checkout session for customers.
 
 <Tip>
-  Looking for a way to generate Checkout session programmatically? Checkout Links might not be the right tool for you. Instead, you should use the [Checkout API](/features/checkout/session).
+  Looking for a way to generate Checkout session programmatically? Checkout
+  Links might not be the right tool for you. Instead, you should use the
+  [Checkout API](/features/checkout/session).
 </Tip>
 
 ## Create a Checkout Link
@@ -16,8 +18,14 @@ creates a checkout session for customers.
 Checkout Links can be managed from the **Checkout Links** tabs of the Products section. Click on **New Link** to create a new one.
 
 <Frame>
-  <img className="block dark:hidden" src="/assets/features/checkout/links/create.light.png" />
-  <img className="hidden dark:block" src="/assets/features/checkout/links/create.dark.png" />
+  <img
+    className="block dark:hidden"
+    src="/assets/features/checkout/links/create.light.png"
+  />
+  <img
+    className="hidden dark:block"
+    src="/assets/features/checkout/links/create.dark.png"
+  />
 </Frame>
 
 #### Label
@@ -28,8 +36,14 @@ This is an internal name for the Checkout Link. It's only visible to you.
 
 You can select one or **several** products. With several products, customers will be able to switch between them on the checkout page.
 
-<img className="block dark:hidden" src="/assets/features/checkout/links/checkout_multiple_products.light.png" />
-<img className="hidden dark:block" src="/assets/features/checkout/links/checkout_multiple_products.dark.png" />
+<img
+  className="block dark:hidden"
+  src="/assets/features/checkout/links/checkout_multiple_products.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/checkout/links/checkout_multiple_products.dark.png"
+/>
 
 #### Discount
 
@@ -45,19 +59,29 @@ This is an optional key-value object allowing you to store additional informatio
 
 You can share the Checkout Link URL on your webpage, social media, or directly to customers.
 
-<img className="block dark:hidden" src="/assets/features/checkout/links/checkout_link.light.png" />
-<img className="hidden dark:block" src="/assets/features/checkout/links/checkout_link.dark.png" />
+<img
+  className="block dark:hidden"
+  src="/assets/features/checkout/links/checkout_link.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/checkout/links/checkout_link.dark.png"
+/>
 
 <Warning>
   Checkout Links will go against our API, and redirect to short-lived Checkout session. This means that the Checkout page the user will end up on, are temporary and expires after a while if no successful purchase is made.
 
-  This means that you need to make sure to always use this Checkout Link URL (as shown above). If you mistakenly copy the URL from a Checkout Session, the link will expire.
-</Warning>
+This means that you need to make sure to always use this Checkout Link URL (as shown above). If you mistakenly copy the URL from a Checkout Session, the link will expire.
 
+</Warning>
 
 ### Query parameters
 
-You can pass optional query parameters to your Checkout Links to pre-populate a variety of options on the Checkout Form.
+You can pass optional query parameters to your Checkout Links.
+
+#### Prepopulate fields
+
+You can prefill the checkout fields with the following query parameters:
 
 <ParamField path="customer_email" type="string">
   Prefill customer email at checkout
@@ -77,4 +101,32 @@ You can pass optional query parameters to your Checkout Links to pre-populate a 
 
 <ParamField path="custom_field_data.{slug}" type="string">
   Prefill checkout fields data, where `{slug}` is the slug of the custom field.
+</ParamField>
+
+#### Store attribution and reference metadata
+
+The following query parameters will automatically be set on Checkout [`metadata`](/api-reference/checkouts/get-session#response-metadata).
+
+<ParamField path="reference_id" type="string">
+  Your own reference ID for the checkout session.
+</ParamField>
+
+<ParamField path="utm_source" type="string">
+  UTM source of the checkout session.
+</ParamField>
+
+<ParamField path="utm_medium" type="string">
+  UTM medium of the checkout session.
+</ParamField>
+
+<ParamField path="utm_campaign" type="string">
+  UTM campaign of the checkout session.
+</ParamField>
+
+<ParamField path="utm_content" type="string">
+  UTM content of the checkout session.
+</ParamField>
+
+<ParamField path="utm_term" type="string">
+  UTM term of the checkout session.
 </ParamField>

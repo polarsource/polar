@@ -11,6 +11,7 @@ import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -33,7 +34,7 @@ const CustomerSubscriptionDetails = ({
   onUserSubscriptionUpdate: (
     subscription: schemas['CustomerSubscription'],
   ) => void
-  customerSessionToken?: string
+  customerSessionToken: string
 }) => {
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
@@ -158,6 +159,29 @@ const CustomerSubscriptionDetails = ({
             </span>
           </div>
         )}
+        {subscription.meters.length > 0 && (
+          <div className="flex flex-col gap-y-4 py-2">
+            <span className="text-lg">Metered Usage</span>
+            <div className="flex flex-col gap-y-2">
+              {subscription.meters.map((subscriptionMeter) => (
+                <div
+                  key={subscriptionMeter.meter.id}
+                  className="flex flex-row items-center justify-between"
+                >
+                  <span className="dark:text-polar-500 text-gray-500">
+                    {subscriptionMeter.meter.name}
+                  </span>
+                  <span>
+                    {formatCurrencyAndAmount(
+                      subscriptionMeter.amount,
+                      subscription.currency,
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {subscription.ended_at && (
           <div className="flex flex-row items-center justify-between">
             <span className="dark:text-polar-500 text-gray-500">Expired</span>
@@ -238,6 +262,7 @@ const CustomerSubscriptionDetails = ({
           <div className="flex flex-col overflow-y-auto p-8">
             <CustomerPortalSubscription
               api={api}
+              customerSessionToken={customerSessionToken}
               subscription={subscription}
               themingPreset={themePreset}
             />

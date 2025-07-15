@@ -1,6 +1,6 @@
 import CheckoutComponent from '@/components/Checkout/Checkout'
 import { CHECKOUT_PREVIEW } from '@/components/Customization/utils'
-import { KeyboardArrowRight } from '@mui/icons-material'
+import { ArrowOutwardOutlined } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
 import { DummyCheckoutContextProvider } from '../Checkout/DummyCheckoutContextProvider'
@@ -19,10 +19,11 @@ export const Checkout = () => {
           <Button
             fullWidth
             wrapperClassNames="flex flex-row items-center gap-x-2"
-            variant="ghost"
+            variant="secondary"
+            className="rounded-full"
           >
             <span>Integrate Checkouts</span>
-            <KeyboardArrowRight fontSize="inherit" />
+            <ArrowOutwardOutlined fontSize="inherit" />
           </Button>
         </Link>
       </div>

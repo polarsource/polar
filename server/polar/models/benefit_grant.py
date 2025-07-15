@@ -30,6 +30,12 @@ if TYPE_CHECKING:
     from polar.models import Benefit, Customer, Order, Subscription
 
 
+class BenefitGrantError(TypedDict):
+    message: str
+    type: str
+    timestamp: str
+
+
 class BenefitGrantScope(TypedDict, total=False):
     subscription: "Subscription"
     order: "Order"
@@ -88,10 +94,7 @@ class BenefitGrant(RecordModel):
     )
 
     customer_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("customers.id", ondelete="cascade"),
-        nullable=False,
-        index=True,
+        Uuid, ForeignKey("customers.id", ondelete="cascade"), nullable=False, index=True
     )
 
     @declared_attr
@@ -141,6 +144,12 @@ class BenefitGrant(RecordModel):
     def properties(cls) -> Mapped["BenefitGrantProperties"]:
         return mapped_column("properties", JSONB, nullable=False, default=dict)
 
+    @declared_attr
+    def error(cls) -> Mapped[BenefitGrantError | None]:
+        return mapped_column(
+            "error", JSONB(none_as_null=True), nullable=True, default=None
+        )
+
     @hybrid_property
     def is_granted(self) -> bool:
         return self.granted_at is not None
@@ -162,10 +171,19 @@ class BenefitGrant(RecordModel):
     def set_granted(self) -> None:
         self.granted_at = datetime.now(UTC)
         self.revoked_at = None
+        self.error = None
 
     def set_revoked(self) -> None:
         self.granted_at = None
         self.revoked_at = datetime.now(UTC)
+
+    def set_grant_failed(self, error: Exception) -> None:
+        self.granted_at = None
+        self.error = BenefitGrantError(
+            message=str(error),
+            type=error.__class__.__name__,
+            timestamp=datetime.now(UTC).isoformat(),
+        )
 
     @property
     def previous_properties(self) -> "BenefitGrantProperties | None":

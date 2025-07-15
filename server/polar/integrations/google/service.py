@@ -10,8 +10,8 @@ from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
 from polar.user.oauth_service import oauth_account_service
-from polar.user.schemas.user import UserSignupAttribution
-from polar.user.service.user import user as user_service
+from polar.user.repository import UserRepository
+from polar.user.schemas import UserSignupAttribution
 from polar.worker import enqueue_job
 
 google_oauth_client = GoogleOAuth2(
@@ -60,8 +60,9 @@ class GoogleService:
         signup_attribution: UserSignupAttribution | None = None,
     ) -> tuple[User, bool]:
         google_profile = await self._get_profile(token["access_token"])
-        user = await user_service.get_by_oauth_account(
-            session, OAuthPlatform.google, google_profile["id"]
+        user_repository = UserRepository.from_session(session)
+        user = await user_repository.get_by_oauth_account(
+            OAuthPlatform.google, google_profile["id"]
         )
 
         # Linked account, update access token
@@ -84,7 +85,7 @@ class GoogleService:
         )
 
         # Check if user exists with the same email
-        user = await user_service.get_by_email(session, google_profile["email"])
+        user = await user_repository.get_by_email(google_profile["email"])
         if user is not None:
             # Automatically link if email is verified
             if google_profile["email_verified"]:

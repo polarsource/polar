@@ -8,15 +8,17 @@ from polar.models import Customer
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
+from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas.customer import Customer as CustomerSchema
 from .schemas.customer import (
     CustomerCreate,
-    CustomerExternalID,
     CustomerID,
     CustomerUpdate,
+    CustomerUpdateExternalID,
+    ExternalCustomerID,
 )
 from .schemas.state import CustomerState
 from .service import customer as customer_service
@@ -97,7 +99,7 @@ async def get(
     responses={404: CustomerNotFound},
 )
 async def get_external(
-    external_id: CustomerExternalID,
+    external_id: ExternalCustomerID,
     auth_subject: auth.CustomerRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
@@ -120,6 +122,7 @@ async def get_state(
     id: CustomerID,
     auth_subject: auth.CustomerRead,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> CustomerState:
     """
     Get a customer state by ID.
@@ -135,7 +138,7 @@ async def get_state(
     if customer is None:
         raise ResourceNotFound()
 
-    return await customer_service.get_state(session, customer)
+    return await customer_service.get_state(session, redis, customer)
 
 
 @router.get(
@@ -145,9 +148,10 @@ async def get_state(
     responses={404: CustomerNotFound},
 )
 async def get_state_external(
-    external_id: CustomerExternalID,
+    external_id: ExternalCustomerID,
     auth_subject: auth.CustomerRead,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> CustomerState:
     """
     Get a customer state by external ID.
@@ -163,7 +167,7 @@ async def get_state_external(
     if customer is None:
         raise ResourceNotFound()
 
-    return await customer_service.get_state(session, customer)
+    return await customer_service.get_state(session, redis, customer)
 
 
 @router.post(
@@ -216,8 +220,8 @@ async def update(
     },
 )
 async def update_external(
-    external_id: CustomerExternalID,
-    customer_update: CustomerUpdate,
+    external_id: ExternalCustomerID,
+    customer_update: CustomerUpdateExternalID,
     auth_subject: auth.CustomerWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
@@ -277,7 +281,7 @@ async def delete(
     },
 )
 async def delete_external(
-    external_id: CustomerExternalID,
+    external_id: ExternalCustomerID,
     auth_subject: auth.CustomerWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:

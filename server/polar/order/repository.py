@@ -42,6 +42,18 @@ class OrderRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_earliest_by_checkout_id(
+        self, checkout_id: UUID, *, options: Options = ()
+    ) -> Order | None:
+        statement = (
+            self.get_base_statement()
+            .where(Order.checkout_id == checkout_id)
+            .order_by(Order.created_at.asc())
+            .limit(1)
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Order]]:
@@ -74,7 +86,9 @@ class OrderRepository(
         discount_load: "_AbstractLoad | None" = None,
     ) -> Options:
         return (
-            customer_load if customer_load else joinedload(Order.customer),
+            customer_load
+            if customer_load
+            else joinedload(Order.customer).joinedload(Customer.organization),
             discount_load if discount_load else joinedload(Order.discount),
             product_load if product_load else joinedload(Order.product),
             joinedload(Order.subscription).joinedload(Subscription.customer),

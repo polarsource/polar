@@ -1,7 +1,7 @@
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Link from 'next/link'
 
-const testimonials = [
+export const testimonials = [
   {
     link: 'https://x.com/mitchellh/status/1775925951668552005',
     name: 'Mitchell Hashimoto',
@@ -18,6 +18,19 @@ const testimonials = [
           supporting/purchasing.
         </p>
       </>
+    ),
+  },
+  {
+    link: 'https://x.com/rauchg/status/1909810055622672851',
+    name: 'Guillermo Rauch',
+    username: 'rauchg',
+    verified: true,
+    avatar: '/assets/landing/testamonials/rauch.jpg',
+    text: (
+      <p>
+        The speed at which Polar is executing on the financial infrastructure
+        primitives the new world needs is very impressive
+      </p>
     ),
   },
   {
@@ -63,7 +76,20 @@ const testimonials = [
       </p>
     ),
   },
-
+  {
+    name: 'enjie',
+    username: 'im_enjie',
+    avatar: '/assets/landing/testamonials/enjie.jpg',
+    link: 'https://x.com/im_enjie/status/1911490599980519690',
+    verified: true,
+    text: (
+      <p>
+        I finally tried @polar_sh after all the hype, and it&apos;s hands down
+        the smoothest, most developer-friendly, and straightforward payment
+        integration out there.
+      </p>
+    ),
+  },
   {
     link: 'https://x.com/samuel_colvin/status/1676167205715582978',
     name: 'Samuel Colvin',
@@ -78,19 +104,6 @@ const testimonials = [
           future.
         </p>
       </>
-    ),
-  },
-  {
-    link: 'https://x.com/rauchg/status/1909810055622672851',
-    name: 'Guillermo Rauch',
-    username: 'rauchg',
-    verified: true,
-    avatar: '/assets/landing/testamonials/rauch.jpg',
-    text: (
-      <p>
-        The speed at which Polar is executing on the financial infrastructure
-        primitives the new world needs is very impressive
-      </p>
     ),
   },
   {
@@ -259,7 +272,7 @@ interface TestamonialProps {
   verified?: boolean
 }
 
-const Testamonial = ({
+export const Testamonial = ({
   name,
   username,
   avatar,
@@ -271,7 +284,7 @@ const Testamonial = ({
     <Link
       href={link}
       target="_blank"
-      className="dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-row gap-x-4 rounded-2xl border border-gray-200 bg-white p-6 transition-colors hover:bg-white"
+      className="dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-800 flex h-full flex-row gap-x-4 rounded-2xl border border-transparent bg-white p-6 transition-colors hover:bg-white"
     >
       <div className="flex flex-col gap-y-4 pt-1.5">
         <div className="flex flex-row items-center gap-x-3">
@@ -302,10 +315,7 @@ export const Testimonials = () => {
   const secondRow = testimonials.slice(halfLength)
 
   return (
-    <div className="flex flex-col items-center gap-y-12 px-4 md:gap-y-24 md:px-0 md:py-24">
-      <h3 className="text-center text-3xl leading-snug md:text-5xl">
-        Trusted by thousands of developers
-      </h3>
+    <div className="flex flex-col items-center gap-y-12 px-4 md:gap-y-24 md:px-0">
       <div className="flex flex-col gap-4 md:relative md:w-full md:overflow-hidden">
         <div className="flex flex-col gap-y-4 md:hidden">
           {firstRow.map((testimonial, index) => (

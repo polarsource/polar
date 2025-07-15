@@ -1,0 +1,157 @@
+---
+title: "Meters"
+description: "Creating and managing meters for Usage Based Billing"
+---
+
+import Meters from "/snippets/usage/meters.mdx";
+
+<Meters />
+
+## Creating a Meter
+
+To create a meter, navigate to the Meters page in the sidebar and click the "Create Meter" button.
+
+<img
+  className="block dark:hidden"
+  src="/assets/features/usage/create-meter.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/usage/create-meter.dark.png"
+/>
+
+## Filters
+
+A filter is a set of clauses that are combined using conjunctions. They're used to filter events that you've ingested into Polar.
+
+<img
+  className="block dark:hidden"
+  src="/assets/features/usage/filter.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/usage/filter.dark.png"
+/>
+
+### Clauses
+
+A clause is a condition that an event must meet to be included in the meter.
+
+#### Property
+
+Properties are the properties of the event that you want to filter on.
+
+If you want to match on a metadata field, you can use the metadata key directly. No need to include a `metadata.` prefix.
+
+#### Operator
+
+Operators are the operators that you want to use to filter the events.
+
+- **Equals**
+- **Not equals**
+- **Greater Than**
+- **Greater Than or Equals**
+- **Less Than**
+- **Less Than or Equals**
+- **Contains**
+- **Does Not Contain**
+
+#### Value
+
+Values are automatically parsed in the filter builder. They're parsed in the following order:
+
+1. Number — Tries to parse the value as number
+2. Boolean — Checks if value is "true" or "false"
+3. String — Treats value as string as fallback
+
+### Conjunctions
+
+A conjunction is a logical operator that combines two or more clauses.
+
+- **and** — All clauses must be true for the event to be included.
+- **or** — At least one clause must be true for the event to be included.
+
+## Aggregation
+
+The aggregation is the function that is used to aggregate the events that match the filter.
+
+For example, if you want to count the number of events that match the filter, you can use the **Count** aggregation. If you want to sum the value of a metadata field, you can use the **Sum** aggregation.
+
+- **Count** — Counts the number of events that match the filter.
+- **Sum** — Sums the value of a property.
+- **Average** — Computes the average value of a property.
+- **Minimum** — Computes the minimum value of a property.
+- **Maximum** — Computes the maximum value of a property.
+
+<AccordionGroup>
+  <Accordion title="Example">
+
+Consider the following events:
+
+```json
+[
+  {
+    "name": "ai_usage",
+    "external_customer_id": "cus_123",
+    "metadata": {
+      "total_tokens": 10
+    }
+  },
+  {
+    "name": "ai_usage",
+    "external_customer_id": "cus_123",
+    "metadata": {
+      "total_tokens": 20
+    }
+  },
+  {
+    "name": "ai_usage",
+    "external_customer_id": "cus_123",
+    "metadata": {
+      "total_tokens": 30
+    }
+  }
+]
+```
+
+Here is the result of each aggregation function, over the `total_tokens` metadata property:
+
+- **Count**: 3 units
+- **Sum**: 60 units
+- **Average**: 20 units
+- **Minimum**: 10 units
+- **Maximum**: 30 units
+
+</Accordion>
+</AccordionGroup>
+
+If you want to use a metadata property in the aggregation, you can use the metadata property directly. No need to include a `metadata.` prefix.
+
+## Example
+
+The following Meter Filter & Aggregation will match events that have the name `openai-usage` and sum units over metadata property `completionTokens`.
+
+<img
+  className="block dark:hidden"
+  src="/assets/features/usage/meter.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/usage/meter.dark.png"
+/>
+
+<Tip>
+  You can **Preview** the events matched by the meter while creating it.
+</Tip>
+
+## Good to know
+
+A few things to keep in mind when creating and managing meters:
+
+### Updating a Meter
+
+You may update a meter's filters or aggregation function as long as the meter doesn't have any processed events.
+
+### Deleting a Meter
+
+Meters are permanent. Once created, they cannot be deleted.

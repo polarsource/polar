@@ -1,115 +1,211 @@
 import { ParsedMetricPeriod } from '@/hooks/queries'
-import {
-  defaultMetricMarks,
-  getTicks,
-  MetricMarksResolver,
-} from '@/utils/metrics'
-import * as Plot from '@observablehq/plot'
+import { getFormattedMetricValue } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  CartesianGrid,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  Line,
+  LineChart,
+  XAxis,
+} from '@polar-sh/ui/components/ui/chart'
+import { useTheme } from 'next-themes'
+import { forwardRef } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 interface MetricChartProps {
+  ref: React.RefObject<HTMLDivElement>
   data: ParsedMetricPeriod[]
+  previousData?: ParsedMetricPeriod[]
   interval: schemas['TimeInterval']
   metric: schemas['Metric']
   height?: number
-  maxTicks?: number
+  width?: number
+  grid?: boolean
   onDataIndexHover?: (index: number | undefined) => void
-  marks?: MetricMarksResolver
+  simple?: boolean
 }
 
-const MetricChart: React.FC<MetricChartProps> = ({
-  data,
-  interval,
-  metric,
-  height: _height,
-  maxTicks: _maxTicks,
-  onDataIndexHover,
-  marks = defaultMetricMarks,
-}) => {
-  const [width, setWidth] = useState(0)
-  const height = useMemo(() => _height || 150, [_height])
-  const maxTicks = useMemo(() => _maxTicks || 10, [_maxTicks])
+const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
+  (
+    {
+      data,
+      previousData,
+      interval,
+      metric,
+      height: _height,
+      width: _width,
+      onDataIndexHover,
+      simple = false,
+    },
+    ref,
+  ) => {
+    const { resolvedTheme } = useTheme()
 
-  const timestamps = useMemo(
-    () => data.map(({ timestamp }) => timestamp),
-    [data],
-  )
-  const ticks = useMemo(
-    () => getTicks(timestamps, maxTicks),
-    [timestamps, maxTicks],
-  )
+    const mergedData = data.map((period, index) => ({
+      timestamp: period.timestamp,
+      current:
+        period[metric.slug as keyof Omit<ParsedMetricPeriod, 'timestamp'>],
+      ...(previousData && previousData[index]
+        ? {
+            previous:
+              previousData[index][
+                metric.slug as keyof Omit<ParsedMetricPeriod, 'timestamp'>
+              ],
+          }
+        : {}),
+    }))
 
-  const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null)
+    const isDark = resolvedTheme === 'dark'
 
-  useEffect(() => {
-    const resizeObserver = new ResizeObserver((_entries) => {
-      if (containerRef) {
-        setWidth(containerRef.clientWidth ?? 0)
-      }
-    })
+    return (
+      <ChartContainer
+        ref={ref}
+        style={{ height: _height, width: _width }}
+        config={{
+          current: {
+            label: 'Current',
+            color: '#2563eb',
+          },
+          previous: {
+            label: 'Previous',
+            color: isDark ? '#383942' : '#ccc',
+          },
+          metric: {
+            label: metric.display_name,
+          },
+        }}
+      >
+        <LineChart
+          accessibilityLayer
+          data={mergedData}
+          margin={{
+            left: 24,
+            right: 24,
+            top: 24,
+          }}
+          onMouseMove={(state) => {
+            if (onDataIndexHover) {
+              onDataIndexHover(state.activeTooltipIndex)
+            }
+          }}
+          onMouseLeave={() => {
+            if (onDataIndexHover) {
+              onDataIndexHover(undefined)
+            }
+          }}
+        >
+          {simple ? undefined : (
+            <CartesianGrid
+              horizontal={false}
+              vertical={true}
+              stroke={isDark ? '#222225' : '#ccc'}
+              strokeDasharray="6 6"
+            />
+          )}
+          <XAxis
+            dataKey="timestamp"
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            interval="preserveStartEnd"
+            ticks={
+              simple
+                ? [
+                    mergedData[0].timestamp,
+                    mergedData[mergedData.length - 1].timestamp,
+                  ]
+                : undefined
+            }
+            tickFormatter={(value) => {
+              switch (interval) {
+                case 'hour':
+                  return value.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                  })
+                case 'day':
+                case 'week':
+                  return value.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: '2-digit',
+                  })
+                case 'month':
+                  return value.toLocaleDateString('en-US', {
+                    month: 'short',
+                    year: '2-digit',
+                  })
+                case 'year':
+                  return value.toLocaleDateString('en-US', {
+                    month: 'short',
+                    year: 'numeric',
+                  })
+                default:
+                  return value.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: '2-digit',
+                  })
+              }
+            }}
+          />
+          <ChartTooltip
+            cursor={false}
+            content={
+              <ChartTooltipContent
+                className="text-black dark:text-white"
+                indicator="dot"
+                labelKey="metric"
+                formatter={(value, name) => {
+                  const formattedValue = getFormattedMetricValue(
+                    metric,
+                    value as number,
+                  )
+                  return (
+                    <div className="flex flex-row justify-between gap-x-8">
+                      <div className="flex flex-row items-center gap-x-2">
+                        <span
+                          className={twMerge(
+                            'h-2 w-2 rounded-full',
+                            name === 'current'
+                              ? 'bg-primary dark:bg-primary'
+                              : 'dark:bg-polar-500 bg-gray-500',
+                          )}
+                        />
+                        <span className="capitalize">
+                          {name.toString().split('_').join(' ')}
+                        </span>
+                      </div>
+                      <span>{formattedValue}</span>
+                    </div>
+                  )
+                }}
+              />
+            }
+          />
+          {previousData && (
+            <Line
+              dataKey="previous"
+              stroke="var(--color-previous)"
+              type="linear"
+              dot={false}
+              strokeWidth={1.5}
+            />
+          )}
+          <Line
+            dataKey="current"
+            stroke="var(--color-current)"
+            type="linear"
+            dot={false}
+            strokeWidth={1.5}
+          />
+        </LineChart>
+      </ChartContainer>
+    )
+  },
+)
 
-    if (containerRef) {
-      resizeObserver.observe(containerRef)
-    }
-
-    return () => {
-      if (containerRef) {
-        resizeObserver.unobserve(containerRef)
-      }
-    }
-  }, [containerRef])
-
-  const onMouseLeave = useCallback(() => {
-    if (onDataIndexHover) {
-      onDataIndexHover(undefined)
-    }
-  }, [onDataIndexHover])
-
-  useEffect(() => {
-    if (!containerRef) {
-      return
-    }
-
-    const plot = Plot.plot({
-      style: {
-        background: 'none',
-      },
-      width,
-      height,
-      y: {
-        grid: true,
-      },
-      marks: marks({
-        data,
-        metric,
-        interval,
-        onDataIndexHover,
-        ticks,
-      }),
-    })
-    containerRef.append(plot)
-
-    return () => plot.remove()
-  }, [
-    data,
-    metric,
-    containerRef,
-    interval,
-    ticks,
-    width,
-    height,
-    onDataIndexHover,
-    marks,
-  ])
-
-  return (
-    <div
-      className="dark:text-polar-500 w-full text-gray-500"
-      ref={setContainerRef}
-      onMouseLeave={onMouseLeave}
-    />
-  )
-}
+MetricChart.displayName = 'MetricChart'
 
 export default MetricChart

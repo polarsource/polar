@@ -6,7 +6,7 @@ import LabeledSeparator from '@polar-sh/ui/components/atoms/LabeledSeparator'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 import GithubLoginButton from '../Auth/GithubLoginButton'
-import MagicLinkLoginForm from '../Auth/MagicLinkLoginForm'
+import LoginCodeForm from '../Auth/LoginCodeForm'
 import GoogleLoginButton from './GoogleLoginButton'
 
 const Login = ({
@@ -63,9 +63,9 @@ const Login = ({
     loginProps = { signup }
   }
 
-  if (returnTo) {
+  if (returnTo && returnParams) {
     const returnToParams = new URLSearchParams(returnParams)
-    if (returnToParams) {
+    if (returnToParams.size) {
       returnTo = `${returnTo || ''}?${returnToParams}`
     }
 
@@ -87,7 +87,7 @@ const Login = ({
         />
         <GoogleLoginButton {...loginProps} />
         <LabeledSeparator label="Or" />
-        <MagicLinkLoginForm {...loginProps} />
+        <LoginCodeForm {...loginProps} />
       </div>
       <div className="dark:text-polar-500 mt-6 text-center text-xs text-gray-400">
         By using Polar you agree to our{' '}

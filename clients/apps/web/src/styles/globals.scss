@@ -22,8 +22,26 @@
 /* Dark mode */
 
 #polar-bg-gradient {
-  font-size: 12px;
-  font-family: sans-serif;
+  height: 100vh;
+  width: 100vw;
+
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    #fcf0ec 0%,
+    rgba(252, 240, 236, 0) 100%
+  );
+  background-size: 1344px 1284px;
+  background-position-y: -405px;
+  background-position-x: -405px;
+  background-repeat: no-repeat;
+
+  pointer-events: none;
+
   --token-de3bbe02-efef-4dfe-a362-f6d5715de8ac: rgb(209, 223, 242);
   --token-58f5305f-65b1-4075-86f8-f9ee69a3e917: #fefdf9;
   --token-ec1cd941-31b3-45e1-ad4c-e85325e1620f: rgb(70, 103, 202);
@@ -34,21 +52,8 @@
   --framer-aspect-ratio-supported: auto;
   box-sizing: border-box;
   -webkit-font-smoothing: inherit;
-  background: radial-gradient(
-    50% 50% at 50% 50%,
-    #fcf0ec 0%,
-    rgba(252, 240, 236, 0) 100%
-  );
-  flex: none;
-  height: 1284px;
-  left: calc(22.883597883597908% - 1344px / 2);
   mix-blend-mode: multiply;
   overflow: hidden;
-  pointer-events: none;
-  position: absolute;
-  top: -405px;
-  width: 1344px;
-  z-index: 10;
 }
 
 @media (max-width: 420px) {
@@ -106,28 +111,28 @@
   }
 
   .dark {
-    --background: 233 8% 12%;
+    --background: 233 5% 9.5%;
     --foreground: 233 10% 36%;
 
-    --card: 233 8% 12%;
+    --card: 233 5% 9.5%;
     --card-foreground: 231 17% 100%;
 
-    --popover: 233 8% 11%;
+    --popover: 233 5% 6.5%;
     --popover-foreground: 231 17% 85%;
 
-    --sidebar-background: 233 8% 5%;
-    --sidebar-foreground: 231 17% 85%;
+    --sidebar-background: 233 5% 3%;
+    --sidebar-foreground: 233 17% 85%;
     --sidebar-primary: 217 100% 50%;
     --sidebar-primary-foreground: 231 17% 100%;
-    --sidebar-border: 233 8% 16%;
+    --sidebar-border: 233 5% 12%;
 
     --primary: 217 100% 50%;
-    --primary-foreground: 231 17% 100%;
+    --primary-foreground: 233 17% 100%;
 
     --secondary: 233 8% 5%;
-    --secondary-foreground: 231 17% 100%;
+    --secondary-foreground: 233 17% 100%;
 
-    --muted: 233 8% 13%;
+    --muted: 233 5% 12%;
     --muted-foreground: 233 10% 36%;
 
     --accent: 217 100% 50%;
@@ -142,9 +147,9 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
 
-    --border: 233 8% 14%;
-    --input: 233 8% 14%;
-    --ring: 233 8% 14%;
+    --border: 233 5% 12%;
+    --input: 233 5% 12%;
+    --ring: 233 5% 12%;
   }
 }
 

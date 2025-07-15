@@ -3,9 +3,9 @@ from typing import Annotated
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
-from polar.authz.service import Authz
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.schemas import MultipleQueryFilter
 from polar.models import WebhookEndpoint
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -18,7 +18,7 @@ from .schemas import WebhookEndpoint as WebhookEndpointSchema
 from .schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from .service import webhook as webhook_service
 
-router = APIRouter(prefix="/webhooks", tags=["webhooks", APITag.private])
+router = APIRouter(prefix="/webhooks", tags=["webhooks", APITag.documented])
 
 WebhookEndpointID = Annotated[UUID4, Path(description="The webhook endpoint ID.")]
 WebhookEndpointNotFound = {
@@ -31,7 +31,7 @@ WebhookEndpointNotFound = {
 async def list_webhook_endpoints(
     pagination: PaginationParamsQuery,
     auth_subject: WebhooksRead,
-    organization_id: OrganizationID | None = Query(
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, description="Filter by organization ID."
     ),
     session: AsyncSession = Depends(get_db_session),
@@ -90,10 +90,6 @@ async def create_webhook_endpoint(
     response_model=WebhookEndpointSchema,
     responses={
         200: {"description": "Webhook endpoint updated."},
-        403: {
-            "description": "You don't have the permission to update this webhook endpoint.",
-            "model": NotPermitted.schema(),
-        },
         404: WebhookEndpointNotFound,
     },
 )
@@ -102,7 +98,6 @@ async def update_webhook_endpoint(
     update: WebhookEndpointUpdate,
     auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> WebhookEndpoint:
     """
     Update a webhook endpoint.
@@ -121,10 +116,6 @@ async def update_webhook_endpoint(
     status_code=204,
     responses={
         204: {"description": "Webhook endpoint deleted."},
-        403: {
-            "description": "You don't have the permission to delete this webhook endpoint.",
-            "model": NotPermitted.schema(),
-        },
         404: WebhookEndpointNotFound,
     },
 )
@@ -132,7 +123,6 @@ async def delete_webhook_endpoint(
     id: WebhookEndpointID,
     auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> None:
     """
     Delete a webhook endpoint.
@@ -151,7 +141,7 @@ async def delete_webhook_endpoint(
 async def list_webhook_deliveries(
     pagination: PaginationParamsQuery,
     auth_subject: WebhooksRead,
-    endpoint_id: UUID4 | None = Query(
+    endpoint_id: MultipleQueryFilter[UUID4] | None = Query(
         None, description="Filter by webhook endpoint ID."
     ),
     session: AsyncSession = Depends(get_db_session),
@@ -187,7 +177,6 @@ async def redeliver_webhook_event(
     id: Annotated[UUID4, Path(..., description="The webhook event ID.")],
     auth_subject: WebhooksWrite,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> None:
     """
     Schedule the re-delivery of a webhook event.

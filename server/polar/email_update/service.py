@@ -17,7 +17,7 @@ from polar.kit.utils import utc_now
 from polar.models import EmailVerification
 from polar.models.user import User
 from polar.postgres import AsyncSession
-from polar.user.service.user import user as user_service
+from polar.user.repository import UserRepository
 
 TOKEN_PREFIX = "polar_ev_"
 
@@ -41,7 +41,8 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
     ) -> tuple[EmailVerification, str]:
         user = auth_subject.subject
 
-        existing_user = await user_service.get_by_email(session, email)
+        user_repository = UserRepository.from_session(session)
+        existing_user = await user_repository.get_by_email(email)
         if existing_user is not None and existing_user.id != user.id:
             raise PolarRequestValidationError(
                 [

@@ -17,8 +17,8 @@ from polar.models.benefit import BenefitType
 
 from .strategies import BenefitGrantProperties
 from .strategies.base.schemas import (
-    BenefitBase,
     BenefitGrantBase,
+    BenefitPublicBase,
 )
 from .strategies.custom.schemas import (
     BenefitCustom,
@@ -134,5 +134,6 @@ BenefitSubscriber = Annotated[
 
 BenefitSubscriberAdapter = TypeAdapter[BenefitSubscriber](BenefitSubscriber)
 
+
 # Properties that are public (when embedding products benefits in storefront and checkout)
-BenefitPublic = BenefitBase
+class BenefitPublic(BenefitPublicBase): ...

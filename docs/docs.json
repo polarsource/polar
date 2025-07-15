@@ -7,9 +7,9 @@
   "name": "Polar",
   "description": "Payments & Billing with 6 lines of code. Open Source & Global Merchant of Record.",
   "colors": {
-    "primary": "#0062FF",
-    "light": "#3381FF",
-    "dark": "#0054DB"
+    "primary": "#000",
+    "light": "#fff",
+    "dark": "#000"
   },
   "background": {
     "color": {
@@ -25,15 +25,32 @@
         "groups": [
           {
             "group": "Bootup",
-            "pages": [
-              "introduction",
-              "migrate"
-            ]
+            "pages": ["introduction", "migrate"]
           },
           {
             "group": "Features",
             "pages": [
               "features/products",
+              {
+                "group": "Usage Based Billing",
+                "pages": [
+                  "features/usage-based-billing/introduction",
+                  "features/usage-based-billing/event-ingestion",
+                  {
+                    "group": "Ingestion Strategies",
+                    "pages": [
+                      "features/usage-based-billing/ingestion-strategies/ingestion-strategy",
+                      "features/usage-based-billing/ingestion-strategies/llm-strategy",
+                      "features/usage-based-billing/ingestion-strategies/s3-strategy",
+                      "features/usage-based-billing/ingestion-strategies/stream-strategy",
+                      "features/usage-based-billing/ingestion-strategies/delta-time-strategy"
+                    ]
+                  },
+                  "features/usage-based-billing/meters",
+                  "features/usage-based-billing/credits",
+                  "features/usage-based-billing/billing"
+                ]
+              },
               {
                 "group": "Benefits",
                 "pages": [
@@ -42,6 +59,7 @@
                   "features/benefits/file-downloads",
                   "features/benefits/discord-access",
                   "features/benefits/github-access",
+                  "features/benefits/credits",
                   "features/benefits/custom"
                 ]
               },
@@ -53,6 +71,7 @@
                   "features/checkout/session"
                 ]
               },
+              "features/custom-fields",
               "features/discounts",
               "features/orders",
               "features/refunds",
@@ -74,7 +93,8 @@
                   "features/integrations/framer",
                   "features/integrations/zapier",
                   "features/integrations/paritydeals",
-                  "features/integrations/affonso"
+                  "features/integrations/affonso",
+                  "features/integrations/fernand"
                 ]
               }
             ]
@@ -103,6 +123,7 @@
                   "integrate/sdk/adapters/nuxt",
                   "integrate/sdk/adapters/astro",
                   "integrate/sdk/adapters/remix",
+                  "integrate/sdk/adapters/tanstack-start",
                   "integrate/sdk/adapters/sveltekit",
                   "integrate/sdk/adapters/deno",
                   "integrate/sdk/adapters/elysia",
@@ -114,10 +135,7 @@
               },
               {
                 "group": "Framework Guides",
-                "pages": [
-                  "guides/nextjs",
-                  "guides/laravel"
-                ]
+                "pages": ["guides/nextjs", "guides/laravel"]
               },
               {
                 "group": "Webhooks",
@@ -153,6 +171,10 @@
         "anchor": "API Reference",
         "icon": "rectangle-terminal",
         "groups": [
+          {
+            "group": "General",
+            "pages": ["api-reference/rate-limits"]
+          },
           {
             "group": "Core API",
             "pages": [
@@ -216,7 +238,9 @@
                 "group": "Orders",
                 "pages": [
                   "api-reference/orders/get",
+                  "api-reference/orders/patch",
                   "api-reference/orders/list",
+                  "api-reference/orders/post-invoice",
                   "api-reference/orders/get-invoice"
                 ]
               },
@@ -248,6 +272,24 @@
                 ]
               },
               {
+                "group": "Events",
+                "pages": [
+                  "api-reference/events/ingest",
+                  "api-reference/events/get",
+                  "api-reference/events/list"
+                ]
+              },
+              {
+                "group": "Meters",
+                "pages": [
+                  "api-reference/meters/create",
+                  "api-reference/meters/get",
+                  "api-reference/meters/list",
+                  "api-reference/meters/update",
+                  "api-reference/meters/get-quantities"
+                ]
+              },
+              {
                 "group": "Benefits",
                 "pages": [
                   "api-reference/benefits/create",
@@ -256,6 +298,13 @@
                   "api-reference/benefits/list-grants",
                   "api-reference/benefits/update",
                   "api-reference/benefits/delete"
+                ]
+              },
+              {
+                "group": "Customer Meters",
+                "pages": [
+                  "api-reference/customer-meters/get",
+                  "api-reference/customer-meters/list"
                 ]
               },
               {
@@ -302,9 +351,7 @@
               "api-reference/customer-portal/get-organization",
               {
                 "group": "Sessions",
-                "pages": [
-                  "api-reference/customer-portal/sessions/create"
-                ]
+                "pages": ["api-reference/customer-portal/sessions/create"]
               },
               {
                 "group": "Subscriptions",
@@ -319,7 +366,9 @@
                 "group": "Orders",
                 "pages": [
                   "api-reference/customer-portal/orders/get",
+                  "api-reference/customer-portal/orders/patch",
                   "api-reference/customer-portal/orders/list",
+                  "api-reference/customer-portal/orders/post-invoice",
                   "api-reference/customer-portal/orders/get-invoice"
                 ]
               },
@@ -395,6 +444,7 @@
                     "group": "Benefit Grants",
                     "pages": [
                       "api-reference/webhooks/benefit_grant.created",
+                      "api-reference/webhooks/benefit_grant.cycled",
                       "api-reference/webhooks/benefit_grant.updated",
                       "api-reference/webhooks/benefit_grant.revoked"
                     ]
@@ -420,20 +470,17 @@
                   },
                   {
                     "group": "Organization",
-                    "pages": [
-                      "api-reference/webhooks/organization.updated"
-                    ]
+                    "pages": ["api-reference/webhooks/organization.updated"]
                   }
                 ]
-              },
-              "api-reference/webhooks/benefit_grant.cycled"
+              }
             ]
           },
           {
-            "group": "OAuth 2.0 API",
+            "group": "Integrations",
             "pages": [
               {
-                "group": "Connect",
+                "group": "OpenID Connect",
                 "pages": [
                   "api-reference/oauth2/connect/authorize",
                   "api-reference/oauth2/connect/request-token",
@@ -443,13 +490,23 @@
                 ]
               },
               {
-                "group": "Clients",
+                "group": "OAuth 2.0 Clients",
                 "pages": [
                   "api-reference/oauth2/clients/create",
                   "api-reference/oauth2/clients/get",
                   "api-reference/oauth2/clients/list",
                   "api-reference/oauth2/clients/update",
                   "api-reference/oauth2/clients/delete"
+                ]
+              },
+              {
+                "group": "Webhooks",
+                "pages": [
+                  "api-reference/webhooks/endpoints/create",
+                  "api-reference/webhooks/endpoints/get",
+                  "api-reference/webhooks/endpoints/list",
+                  "api-reference/webhooks/endpoints/update",
+                  "api-reference/webhooks/endpoints/delete"
                 ]
               }
             ]
@@ -462,22 +519,17 @@
         "groups": [
           {
             "group": "Changelog",
-            "pages": [
-              "changelog/recent",
-              "changelog/api"
-            ]
+            "pages": ["changelog/recent", "changelog/api"]
           }
         ]
       },
       {
         "anchor": "Support",
-        "icon": "question",
+        "icon": "square-question",
         "groups": [
           {
             "group": "Contact Us",
-            "pages": [
-              "support"
-            ]
+            "pages": ["support"]
           }
         ]
       }
@@ -490,6 +542,14 @@
   },
   "navbar": {
     "links": [
+      {
+        "label": "llms.txt",
+        "href": "https://docs.polar.sh/llms.txt"
+      },
+      {
+        "label": "llms-full.txt",
+        "href": "https://docs.polar.sh/llms-full.txt"
+      },
       {
         "label": "Discord",
         "href": "https://dub.sh/polar-discord"
@@ -504,6 +564,9 @@
       "label": "Get Started",
       "href": "https://polar.sh"
     }
+  },
+  "contextual": {
+    "options": ["copy", "view", "chatgpt", "claude"]
   },
   "footer": {
     "socials": {

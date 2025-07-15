@@ -1,20 +1,16 @@
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Select, UnaryExpression, asc, desc, select
 from sqlalchemy.exc import IntegrityError
 
 from polar.account.service import account as account_service
-from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.authz.service import AccessType, Authz
-from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
+from polar.auth.models import AuthSubject
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
-from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceServiceReader
+from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Organization, User, UserOrganization
 from polar.models.webhook_endpoint import WebhookEventType
@@ -23,7 +19,7 @@ from polar.posthog import posthog
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
-from .auth import OrganizationsWrite
+from .repository import OrganizationRepository
 from .schemas import OrganizationCreate, OrganizationUpdate
 from .sorting import OrganizationSortProperty
 
@@ -42,7 +38,7 @@ class InvalidAccount(OrganizationError):
         super().__init__(message)
 
 
-class OrganizationService(ResourceServiceReader[Organization]):
+class OrganizationService:
     async def list(
         self,
         session: AsyncSession,
@@ -54,34 +50,29 @@ class OrganizationService(ResourceServiceReader[Organization]):
             (OrganizationSortProperty.created_at, False)
         ],
     ) -> tuple[Sequence[Organization], int]:
-        statement = self._get_readable_organization_statement(auth_subject)
+        repository = OrganizationRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject)
 
         if slug is not None:
             statement = statement.where(Organization.slug == slug)
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
-        for criterion, is_desc in sorting:
-            clause_function = desc if is_desc else asc
-            if criterion == OrganizationSortProperty.created_at:
-                order_by_clauses.append(clause_function(Organization.created_at))
-            elif criterion == OrganizationSortProperty.organization_name:
-                order_by_clauses.append(clause_function(Organization.name))
-        statement = statement.order_by(*order_by_clauses)
+        statement = repository.apply_sorting(statement, sorting)
 
-        return await paginate(session, statement, pagination=pagination)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
-    async def get_by_id(
+    async def get(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Organization | None:
-        statement = self._get_readable_organization_statement(auth_subject).where(
+        repository = OrganizationRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
             Organization.id == id
         )
-
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
+        return await repository.get_one_or_none(statement)
 
     async def create(
         self,
@@ -89,7 +80,8 @@ class OrganizationService(ResourceServiceReader[Organization]):
         create_schema: OrganizationCreate,
         auth_subject: AuthSubject[User],
     ) -> Organization:
-        existing_slug = await self.get_by(session, slug=create_schema.slug)
+        repository = OrganizationRepository.from_session(session)
+        existing_slug = await repository.get_by_slug(create_schema.slug)
         if existing_slug is not None:
             raise PolarRequestValidationError(
                 [
@@ -102,10 +94,12 @@ class OrganizationService(ResourceServiceReader[Organization]):
                 ]
             )
 
-        organization = Organization(
-            **create_schema.model_dump(exclude_unset=True, exclude_none=True)
+        organization = await repository.create(
+            Organization(
+                **create_schema.model_dump(exclude_unset=True, exclude_none=True),
+                customer_invoice_prefix=create_schema.slug.upper(),
+            )
         )
-        session.add(organization)
         await self.add_user(session, organization, auth_subject.subject)
 
         enqueue_job("organization.created", organization_id=organization.id)
@@ -126,15 +120,10 @@ class OrganizationService(ResourceServiceReader[Organization]):
     async def update(
         self,
         session: AsyncSession,
-        authz: Authz,
         organization: Organization,
         update_schema: OrganizationUpdate,
-        auth_subject: AuthSubject[User | Organization],
     ) -> Organization:
-        subject = auth_subject.subject
-
-        if not await authz.can(subject, AccessType.write, organization):
-            raise NotPermitted()
+        repository = OrganizationRepository.from_session(session)
 
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(UTC)
@@ -150,6 +139,9 @@ class OrganizationService(ResourceServiceReader[Organization]):
         if update_schema.subscription_settings is not None:
             organization.subscription_settings = update_schema.subscription_settings
 
+        if update_schema.notification_settings is not None:
+            organization.notification_settings = update_schema.notification_settings
+
         previous_details = organization.details
         update_dict = update_schema.model_dump(
             by_alias=True,
@@ -161,70 +153,17 @@ class OrganizationService(ResourceServiceReader[Organization]):
                 "details",
             },
         )
-        for key, value in update_dict.items():
-            setattr(organization, key, value)
 
         # Only store details once to avoid API overrides later w/o review
         if not previous_details and update_schema.details:
             organization.details = update_schema.details.model_dump()
             organization.details_submitted_at = datetime.now(UTC)
 
-        session.add(organization)
+        organization = await repository.update(organization, update_dict=update_dict)
 
         await self._after_update(session, organization)
 
-        if not is_user(auth_subject):
-            return organization
-
         return organization
-
-    # Override get method to include `blocked_at` filter
-    async def get(
-        self,
-        session: AsyncSession,
-        id: UUID,
-        allow_deleted: bool = False,
-        allow_blocked: bool = False,
-        *,
-        options: Sequence[sql.ExecutableOption] | None = None,
-    ) -> Organization | None:
-        conditions = [Organization.id == id]
-        if not allow_deleted:
-            conditions.append(Organization.deleted_at.is_(None))
-
-        if not allow_blocked:
-            conditions.append(Organization.blocked_at.is_(None))
-
-        query = sql.select(Organization).where(*conditions)
-
-        if options is not None:
-            query = query.options(*options)
-
-        res = await session.execute(query)
-        return res.scalars().unique().one_or_none()
-
-    async def list_all_orgs_by_user_id(
-        self,
-        session: AsyncSession,
-        user_id: UUID,
-        filter_by_name: str | None = None,
-    ) -> Sequence[Organization]:
-        statement = (
-            sql.select(Organization)
-            .join(UserOrganization)
-            .where(
-                UserOrganization.user_id == user_id,
-                UserOrganization.deleted_at.is_(None),
-                Organization.deleted_at.is_(None),
-                Organization.blocked_at.is_(None),
-            )
-        )
-
-        if filter_by_name:
-            statement = statement.where(Organization.slug == filter_by_name)
-
-        res = await session.execute(statement)
-        return res.scalars().unique().all()
 
     async def add_user(
         self,
@@ -273,23 +212,20 @@ class OrganizationService(ResourceServiceReader[Organization]):
     async def set_account(
         self,
         session: AsyncSession,
-        *,
-        authz: Authz,
-        auth_subject: OrganizationsWrite,
+        auth_subject: AuthSubject[User | Organization],
         organization: Organization,
         account_id: UUID,
     ) -> Organization:
-        account = await account_service.get_by_id(session, account_id)
+        account = await account_service.get(session, auth_subject, account_id)
         if account is None:
-            raise InvalidAccount(account_id)
-        if not await authz.can(auth_subject.subject, AccessType.write, account):
             raise InvalidAccount(account_id)
 
         first_account_set = organization.account_id is None
 
-        organization.account = account
-        session.add(organization)
-        await session.commit()
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.update(
+            organization, update_dict={"account": account}
+        )
 
         if first_account_set:
             enqueue_job("organization.account_set", organization.id)
@@ -297,6 +233,22 @@ class OrganizationService(ResourceServiceReader[Organization]):
         await self._after_update(session, organization)
 
         return organization
+
+    async def get_next_invoice_number(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> str:
+        invoice_number = f"{organization.customer_invoice_prefix}-{organization.customer_invoice_next_number:04d}"
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.update(
+            organization,
+            update_dict={
+                "customer_invoice_next_number": organization.customer_invoice_next_number
+                + 1
+            },
+        )
+        return invoice_number
 
     async def _after_update(
         self,
@@ -307,26 +259,5 @@ class OrganizationService(ResourceServiceReader[Organization]):
             session, organization, WebhookEventType.organization_updated, organization
         )
 
-    def _get_readable_organization_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[Organization]]:
-        statement = select(Organization).where(
-            Organization.deleted_at.is_(None), Organization.blocked_at.is_(None)
-        )
 
-        if is_user(auth_subject):
-            user = auth_subject.subject
-            statement = statement.where(
-                Organization.id.in_(
-                    select(UserOrganization.organization_id)
-                    .where(UserOrganization.user_id == user.id)
-                    .where(UserOrganization.deleted_at.is_(None))
-                )
-            )
-        elif is_organization(auth_subject):
-            statement = statement.where(Organization.id == auth_subject.subject.id)
-
-        return statement
-
-
-organization = OrganizationService(Organization)
+organization = OrganizationService()

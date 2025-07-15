@@ -35,13 +35,20 @@ class BenefitRetriableError(BenefitServiceError):
     A retriable error occured while granting or revoking the benefit.
     """
 
-    defer_seconds: int
-    "Number of seconds to wait before retrying."
+    defer_seconds: int | None
+    "Number of seconds to wait before retrying. If None, worker defaults will be used."
 
-    def __init__(self, defer_seconds: int) -> None:
+    def __init__(self, defer_seconds: int | None = None) -> None:
         self.defer_seconds = defer_seconds
-        message = f"An error occured. We'll retry in {defer_seconds} seconds."
+        message = "An error occured while granting or revoking the benefit."
         super().__init__(message)
+
+    @property
+    def defer_milliseconds(self) -> int | None:
+        """
+        Number of milliseconds to wait before retrying.
+        """
+        return self.defer_seconds * 1000 if self.defer_seconds else None
 
 
 class BenefitActionRequiredError(BenefitServiceError):

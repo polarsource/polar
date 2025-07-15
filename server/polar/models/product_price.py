@@ -1,7 +1,7 @@
 import math
 from decimal import Decimal
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -40,7 +40,7 @@ class ProductPriceType(StrEnum):
     recurring = "recurring"
 
     def as_literal(self) -> Literal["one_time", "recurring"]:
-        return cast(Literal["one_time", "recurring"], self.value)
+        return self.value
 
 
 class ProductPriceAmountType(StrEnum):
@@ -85,9 +85,7 @@ class ProductPrice(RecordModel):
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     product_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("products.id", ondelete="cascade"),
-        nullable=False,
+        Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=False, index=True
     )
 
     @declared_attr

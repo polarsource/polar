@@ -42,6 +42,39 @@ const redirectDocs = (source, destination, permanent = false) => {
   ]
 }
 
+const S3_PUBLIC_IMAGES_BUCKET_ORIGIN = process.env
+  .S3_PUBLIC_IMAGES_BUCKET_HOSTNAME
+  ? `${process.env.S3_PUBLIC_IMAGES_BUCKET_PROTOCOL || 'https'}://${process.env.S3_PUBLIC_IMAGES_BUCKET_HOSTNAME}${process.env.S3_PUBLIC_IMAGES_BUCKET_PORT ? `:${process.env.S3_PUBLIC_IMAGES_BUCKET_PORT}` : ''}`
+  : ''
+const baseCSP = `
+    default-src 'self';
+    connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL} ${process.env.S3_UPLOAD_ORIGINS} https://api.stripe.com https://maps.googleapis.com;
+    frame-src 'self' https://*.js.stripe.com https://js.stripe.com https://hooks.stripe.com;
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.js.stripe.com https://js.stripe.com https://maps.googleapis.com;
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' blob: data: https://www.gravatar.com https://avatars.githubusercontent.com ${S3_PUBLIC_IMAGES_BUCKET_ORIGIN};
+    font-src 'self';
+    object-src 'none';
+    base-uri 'self';
+    ${ENVIRONMENT !== 'development' ? 'upgrade-insecure-requests;' : ''}
+`
+const nonEmbeddedCSP = `
+  ${baseCSP}
+  form-action 'self' ${process.env.NEXT_PUBLIC_API_URL};
+  frame-ancestors 'none';
+`
+const embeddedCSP = `
+  ${baseCSP}
+  form-action 'self' ${process.env.NEXT_PUBLIC_API_URL};
+  frame-ancestors *;
+`
+// Don't add form-action to the OAuth2 authorize page, as it blocks the OAuth2 redirection
+// 10-years old debate about whether to block redirects with form-action or not: https://github.com/w3c/webappsec-csp/issues/8
+const oauth2CSP = `
+  ${baseCSP}
+  frame-ancestors 'none';
+`
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -342,7 +375,7 @@ const nextConfig = {
       },
       {
         source: '/finance',
-        destination: '/finance/incoming',
+        destination: '/finance/income',
         permanent: false,
       },
       {
@@ -377,14 +410,21 @@ const nextConfig = {
       },
       {
         source: '/dashboard/:organization/finance',
-        destination: '/dashboard/:organization/finance/incoming',
+        destination: '/dashboard/:organization/finance/income',
         permanent: false,
+      },
+
+      // Account Settings Redirects
+      {
+        source: '/settings',
+        destination: '/dashboard/account/preferences',
+        permanent: true,
       },
 
       // Access tokens redirect
       {
         source: '/settings/tokens',
-        destination: '/settings',
+        destination: '/account/developer',
         permanent: false,
       },
 
@@ -414,6 +454,59 @@ const nextConfig = {
       },
     ]
   },
+  async headers() {
+    return [
+      {
+        source: '/((?!checkout|oauth2).*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: nonEmbeddedCSP.replace(/\n/g, ''),
+          },
+          {
+            key: 'Permissions-Policy',
+            value:
+              'payment=(), publickey-credentials-get=(), camera=(), microphone=(), geolocation=()',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+        ],
+      },
+      {
+        source: '/oauth2/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: oauth2CSP.replace(/\n/g, ''),
+          },
+          {
+            key: 'Permissions-Policy',
+            value:
+              'payment=(), publickey-credentials-get=(), camera=(), microphone=(), geolocation=()',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+        ],
+      },
+      {
+        source: '/checkout/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: embeddedCSP.replace(/\n/g, ''),
+          },
+          {
+            key: 'Permissions-Policy',
+            value: `payment=*, publickey-credentials-get=*, camera=(), microphone=(), geolocation=()`,
+          },
+        ],
+      },
+    ]
+  },
 }
 
 const createConfig = async () => {
@@ -440,20 +533,6 @@ const createConfig = async () => {
               name: 'BodyWrapper',
               attributes: [],
               children: tree.children,
-            },
-            // Automatically add a TOCGenerator component to the end of the MDX file
-            // using the TOC data from the remarkFlexibleToc plugin
-            {
-              type: 'mdxJsxFlowElement',
-              name: 'TOCGenerator',
-              attributes: [
-                {
-                  type: 'mdxJsxAttribute',
-                  name: 'items',
-                  value: JSON.stringify(file.data.toc),
-                },
-              ],
-              children: [],
             },
           ],
         }),

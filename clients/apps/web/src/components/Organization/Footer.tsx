@@ -3,38 +3,36 @@ import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { BrandingMenu } from '../Layout/Public/BrandingMenu'
 
-const Footer = ({ wide }: { wide?: boolean }) => {
+const Footer = () => {
   return (
-    <div
-      className={twMerge(
-        'flex w-full flex-col items-center space-y-24 px-4 py-16',
-      )}
-    >
+    <div className="mt-16 flex w-full flex-col items-center gap-y-12 bg-white dark:bg-black">
       <div
         className={twMerge(
-          'dark:md:bg-polar-900 md:rounded-4xl flex w-full flex-col gap-x-32 gap-y-24 md:justify-between md:gap-y-12 md:bg-gray-50 md:p-16 lg:flex-row',
-          wide ? 'max-w-7xl' : 'max-w-[970px]',
+          'flex w-full flex-col items-center px-6 py-16 md:max-w-3xl md:px-0 xl:max-w-7xl',
         )}
       >
-        <div className="flex flex-grow flex-col gap-y-6">
-          <span className="ml-2 text-black md:ml-0 dark:text-white">
-            <BrandingMenu logoVariant="logotype" size={120} />
-          </span>
-          <span className="dark:text-polar-500 w-full flex-grow text-gray-500">
-            &copy; Polar Software Inc. {new Date().getFullYear()}
-          </span>
-        </div>
         <div
           className={twMerge(
-            'flex flex-col gap-x-12 gap-y-12 text-sm md:flex-row [&>div]:w-36',
+            'grid w-full grid-cols-1 gap-12 md:grid-cols-2 md:justify-between md:gap-24 lg:grid-cols-6',
           )}
         >
+          <div className="flex flex-1 flex-col gap-y-6 md:col-span-2">
+            <span className="text-black md:ml-0 dark:text-white">
+              <BrandingMenu
+                className="ml-2 md:ml-0"
+                logoVariant="logotype"
+                size={120}
+              />
+            </span>
+            <span className="dark:text-polar-500 w-full flex-grow text-gray-500">
+              &copy; Polar Software Inc. {new Date().getFullYear()}
+            </span>
+          </div>
+
           <div className="flex flex-col gap-y-4">
             <h3 className="text-base dark:text-white">Platform</h3>
             <div className="flex flex-col gap-y-2">
-              <FooterLink href="https://api.polar.sh/v1/integrations/github/authorize?return_to=%2Fmaintainer&user_signup_type=maintainer">
-                Create an Account
-              </FooterLink>
+              <FooterLink href="/login">Get Started</FooterLink>
               <FooterLink href="https://docs.polar.sh/documentation/features/products">
                 Products & Subscriptions
               </FooterLink>

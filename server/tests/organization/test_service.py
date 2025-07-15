@@ -6,6 +6,7 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Organization, User
+from polar.models.organization import OrganizationNotificationSettings
 from polar.organization.schemas import OrganizationCreate, OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
@@ -103,6 +104,28 @@ class TestCreate:
         assert organization.feature_settings == {"issue_funding_enabled": False}
 
     @pytest.mark.auth
+    async def test_valid_with_notification_settings(
+        self, auth_subject: AuthSubject[User], session: AsyncSession
+    ) -> None:
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(
+                name="My New Organization",
+                slug="my-new-organization",
+                notification_settings=OrganizationNotificationSettings(
+                    new_order=False,
+                    new_subscription=False,
+                ),
+            ),
+            auth_subject,
+        )
+
+        assert organization.notification_settings == {
+            "new_order": False,
+            "new_subscription": False,
+        }
+
+    @pytest.mark.auth
     async def test_valid_with_none_subscription_settings(
         self, auth_subject: AuthSubject[User], session: AsyncSession
     ) -> None:
@@ -117,3 +140,18 @@ class TestCreate:
         )
 
         assert organization.subscription_settings is not None
+
+
+@pytest.mark.asyncio
+async def test_get_next_invoice_number(
+    session: AsyncSession,
+    organization: Organization,
+) -> None:
+    assert organization.customer_invoice_next_number == 1
+
+    next_invoice_number = await organization_service.get_next_invoice_number(
+        session, organization
+    )
+
+    assert next_invoice_number == f"{organization.customer_invoice_prefix}-0001"
+    assert organization.customer_invoice_next_number == 2

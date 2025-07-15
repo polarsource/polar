@@ -1,16 +1,12 @@
 from datetime import datetime
 
-from pydantic import (
-    UUID4,
-    Field,
-)
+from pydantic import UUID4, Field
+from pydantic.json_schema import SkipJsonSchema
 
-from polar.kit.schemas import (
-    IDSchema,
-    Schema,
-    TimestampedSchema,
-)
+from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
+from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.benefit import BenefitType
+from polar.models.benefit_grant import BenefitGrantError
 from polar.organization.schemas import Organization, OrganizationID
 
 BENEFIT_DESCRIPTION_MIN_LENGTH = 3
@@ -20,7 +16,7 @@ BENEFIT_DESCRIPTION_MAX_LENGTH = 42
 class BenefitProperties(Schema): ...
 
 
-class BenefitCreateBase(Schema):
+class BenefitCreateBase(MetadataInputMixin, Schema):
     type: BenefitType
     description: str = Field(
         ...,
@@ -40,7 +36,7 @@ class BenefitCreateBase(Schema):
     )
 
 
-class BenefitUpdateBase(Schema):
+class BenefitUpdateBase(MetadataInputMixin, Schema):
     description: str | None = Field(
         None,
         min_length=BENEFIT_DESCRIPTION_MIN_LENGTH,
@@ -52,7 +48,7 @@ class BenefitUpdateBase(Schema):
     )
 
 
-class BenefitBase(IDSchema, TimestampedSchema):
+class BenefitPublicBase(TimestampedSchema, IDSchema):
     id: UUID4 = Field(..., description="The ID of the benefit.")
     type: BenefitType = Field(..., description="The type of the benefit.")
     description: str = Field(..., description="The description of the benefit.")
@@ -63,6 +59,9 @@ class BenefitBase(IDSchema, TimestampedSchema):
     organization_id: UUID4 = Field(
         ..., description="The ID of the organization owning the benefit."
     )
+
+
+class BenefitBase(MetadataOutputMixin, BenefitPublicBase): ...
 
 
 class BenefitGrantBase(IDSchema, TimestampedSchema):
@@ -96,11 +95,15 @@ class BenefitGrantBase(IDSchema, TimestampedSchema):
     customer_id: UUID4 = Field(
         description="The ID of the customer concerned by this grant."
     )
-    user_id: UUID4 = Field(
+    user_id: SkipJsonSchema[UUID4] = Field(
         validation_alias="customer_id", deprecated="Use `customer_id`."
     )
     benefit_id: UUID4 = Field(
         description="The ID of the benefit concerned by this grant."
+    )
+    error: BenefitGrantError | None = Field(
+        None,
+        description="The error information if the benefit grant failed with an unrecoverable error.",
     )
 
 

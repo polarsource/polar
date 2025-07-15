@@ -6,6 +6,7 @@ from fastapi import Path
 from pydantic import UUID4, Field, computed_field
 
 from polar.kit.address import Address
+from polar.kit.email import EmailStrDNS
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
@@ -13,7 +14,6 @@ from polar.kit.metadata import (
 from polar.kit.schemas import (
     CUSTOMER_ID_EXAMPLE,
     ORGANIZATION_ID_EXAMPLE,
-    EmailStrDNS,
     IDSchema,
     Schema,
     TimestampedSchema,
@@ -22,7 +22,7 @@ from polar.kit.tax import TaxID
 from polar.organization.schemas import OrganizationID
 
 CustomerID = Annotated[UUID4, Path(description="The customer ID.")]
-CustomerExternalID = Annotated[str, Path(description="The customer external ID.")]
+ExternalCustomerID = Annotated[str, Path(description="The customer external ID.")]
 
 _external_id_description = (
     "The ID of the customer in your system. "
@@ -61,12 +61,7 @@ class CustomerCreate(MetadataInputMixin, Schema):
     )
 
 
-class CustomerUpdate(MetadataInputMixin, Schema):
-    external_id: str | None = Field(
-        default=None,
-        description=_external_id_description,
-        examples=[_external_id_example],
-    )
+class CustomerUpdateBase(MetadataInputMixin, Schema):
     email: EmailStrDNS | None = Field(
         default=None, description=_email_description, examples=[_email_example]
     )
@@ -75,6 +70,17 @@ class CustomerUpdate(MetadataInputMixin, Schema):
     )
     billing_address: Address | None = None
     tax_id: TaxID | None = None
+
+
+class CustomerUpdate(CustomerUpdateBase):
+    external_id: str | None = Field(
+        default=None,
+        description=_external_id_description,
+        examples=[_external_id_example],
+    )
+
+
+class CustomerUpdateExternalID(CustomerUpdateBase): ...
 
 
 class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
@@ -105,10 +111,10 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         description="Timestamp for when the customer was soft deleted."
     )
 
-    @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=blank"])
+    @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=404"])
     def avatar_url(self) -> str:
         email_hash = hashlib.sha256(self.email.lower().encode()).hexdigest()
-        return f"https://www.gravatar.com/avatar/{email_hash}?d=blank"
+        return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
 
 
 class Customer(CustomerBase):

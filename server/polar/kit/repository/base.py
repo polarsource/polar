@@ -72,16 +72,19 @@ class RepositoryBase(Generic[M]):
 
     async def get_one_or_none(self, statement: Select[tuple[M]]) -> M | None:
         result = await self.session.execute(statement)
-        return result.scalar_one_or_none()
+        return result.unique().scalar_one_or_none()
 
     async def get_all(self, statement: Select[tuple[M]]) -> Sequence[M]:
         result = await self.session.execute(statement)
         return result.scalars().unique().all()
 
     async def stream(self, statement: Select[tuple[M]]) -> AsyncGenerator[M, None]:
-        results = await self.session.stream(statement)
-        async for result in results.unique().scalars():
-            yield result
+        results = await self.session.stream_scalars(statement)
+        try:
+            async for result in results.unique():
+                yield result
+        finally:
+            await results.close()
 
     async def paginate(
         self, statement: Select[tuple[M]], *, limit: int, page: int
@@ -128,6 +131,11 @@ class RepositoryBase(Generic[M]):
             await self.session.flush()
 
         return object
+
+    async def count(self, statement: Select[tuple[M]]) -> int:
+        count_statement = statement.with_only_columns(func.count())
+        result = await self.session.execute(count_statement)
+        return result.scalar_one()
 
     @classmethod
     def from_session(cls, session: AsyncSession) -> Self:

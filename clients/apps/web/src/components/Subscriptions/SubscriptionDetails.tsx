@@ -3,7 +3,8 @@
 import { schemas } from '@polar-sh/client'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
-import AmountLabel from '../Shared/AmountLabel'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
+import { DetailRow } from '../Shared/DetailRow'
 import { SubscriptionStatus } from './SubscriptionStatus'
 
 const CANCELLATION_REASONS: {
@@ -48,94 +49,75 @@ const SubscriptionDetails = ({ subscription }: SubscriptionDetailsProps) => {
   return (
     <>
       <div className="flex flex-col gap-2">
-        <div className="flex justify-between">
-          <span className="dark:text-polar-500 text-gray-500">
-            Subscription ID
-          </span>
-          <span className="dark:text-polar-500 font-mono text-sm text-gray-500">
-            {subscription.id}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="dark:text-polar-500 text-gray-500">Status</span>
-          <SubscriptionStatus subscription={subscription} />
-        </div>
-        <div className="flex justify-between">
-          <span className="dark:text-polar-500 text-gray-500">
-            Started Date
-          </span>
-          <span>
-            <FormattedDateTime datetime={subscription.created_at} />
-          </span>
-        </div>
+        <DetailRow
+          label="Subscription ID"
+          value={subscription.id}
+          valueClassName="font-mono text-sm"
+        />
+        <DetailRow
+          label="Status"
+          value={<SubscriptionStatus subscription={subscription} />}
+        />
+        <DetailRow
+          label="Started Date"
+          value={<FormattedDateTime datetime={subscription.created_at} />}
+        />
+
         {nextEventDatetime && (
-          <div className="flex justify-between">
-            <span className="dark:text-polar-500 text-gray-500">
-              {subscription.ends_at ? 'Ending Date' : 'Renewal Date'}
-            </span>
-            <span>
-              <FormattedDateTime datetime={nextEventDatetime} />
-            </span>
-          </div>
+          <DetailRow
+            label={subscription.ends_at ? 'Ending Date' : 'Renewal Date'}
+            value={<FormattedDateTime datetime={nextEventDatetime} />}
+          />
         )}
+
         {subscription.ended_at && (
-          <div className="flex justify-between">
-            <span className="dark:text-polar-500 text-gray-500">
-              Ended Date
-            </span>
-            <span>
-              <FormattedDateTime datetime={subscription.ended_at} />
-            </span>
-          </div>
+          <DetailRow
+            label="Ended Date"
+            value={<FormattedDateTime datetime={subscription.ended_at} />}
+          />
         )}
-        <div className="flex justify-between">
-          <span className="dark:text-polar-500 text-gray-500">
-            Recurring Interval
-          </span>
-          <span>
-            {subscription.recurring_interval === 'month' ? 'Month' : 'Year'}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="dark:text-polar-500 text-gray-500">Discount</span>
-          <span>
-            {subscription.discount ? subscription.discount.code : '—'}
-          </span>
-        </div>
-        {subscription.amount && subscription.currency && (
-          <div className="flex justify-between">
-            <span className="dark:text-polar-500 text-gray-500">Amount</span>
-            <AmountLabel
-              amount={subscription.amount}
-              currency={subscription.currency}
-              interval={subscription.recurring_interval}
-            />
-          </div>
-        )}
+
+        <DetailRow
+          label="Recurring Interval"
+          value={subscription.recurring_interval === 'month' ? 'Month' : 'Year'}
+        />
+
+        <DetailRow
+          label="Discount"
+          value={subscription.discount ? subscription.discount.code : '—'}
+        />
+
+        <DetailRow
+          label="Amount"
+          value={
+            subscription.amount
+              ? formatCurrencyAndAmount(subscription.amount)
+              : '—'
+          }
+        />
       </div>
 
       {cancellationDate && (
         <div className="flex flex-col gap-y-4">
           <h3 className="text-lg">Cancellation Details</h3>
           <div className="flex flex-col gap-y-2">
-            <div className="flex justify-between">
-              <span className="dark:text-polar-500 text-gray-500">Ends</span>
-              <span>
-                {cancellationDate.toLocaleDateString('en-US', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="dark:text-polar-500 text-gray-500">Reason</span>
-              <span>
-                {cancellationReason
+            <DetailRow
+              label="Ends"
+              value={cancellationDate.toLocaleDateString('en-US', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })}
+            />
+
+            <DetailRow
+              label="Reason"
+              value={
+                cancellationReason
                   ? getHumanCancellationReason(cancellationReason)
-                  : '—'}
-              </span>
-            </div>
+                  : '—'
+              }
+            />
           </div>
           {cancellationComment && (
             <TextArea tabIndex={-1} readOnly resizable={false}>

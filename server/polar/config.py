@@ -6,8 +6,10 @@ from typing import Annotated, Literal
 
 from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
+from pydantic_extra_types.country import CountryAlpha2
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from polar.kit.address import Address
 from polar.kit.jwk import JWKSFile
 
 
@@ -50,6 +52,9 @@ class Settings(BaseSettings):
     TESTING: bool = False
 
     WORKER_HEALTH_CHECK_INTERVAL: timedelta = timedelta(seconds=30)
+    WORKER_MAX_RETRIES: int = 20
+    WORKER_MIN_BACKOFF_MILLISECONDS: int = 2_000
+    WEBHOOK_MAX_RETRIES: int = 10
 
     SECRET: str = "super secret jwt secret"
     JWKS: JWKSFile = Field(default="./.jwks.json")
@@ -86,6 +91,10 @@ class Settings(BaseSettings):
 
     # Magic link
     MAGIC_LINK_TTL_SECONDS: int = 60 * 30  # 30 minutes
+
+    # Login code
+    LOGIN_CODE_TTL_SECONDS: int = 60 * 30  # 30 minutes
+    LOGIN_CODE_LENGTH: int = 6
 
     # Email verification
     EMAIL_VERIFICATION_TTL_SECONDS: int = 60 * 30  # 30 minutes
@@ -164,7 +173,6 @@ class Settings(BaseSettings):
     SENTRY_DSN: str | None = None
 
     # Discord
-    DISCORD_WEBHOOK_URL: str | None = None
     FAVICON_URL: str = "https://raw.githubusercontent.com/polarsource/polar/2648cf7472b5128704a097cd1eb3ae5f1dd847e5/docs/docs/assets/favicon.png"
     THUMBNAIL_URL: str = "https://raw.githubusercontent.com/polarsource/polar/4fd899222e200ca70982f437039f549b7a822ecc/clients/apps/web/public/email-logo-dark.png"
 
@@ -176,6 +184,10 @@ class Settings(BaseSettings):
 
     # Logfire
     LOGFIRE_TOKEN: str | None = None
+    LOGFIRE_IGNORED_ACTORS: set[str] = {
+        "organization_access_token.record_usage",
+        "personal_access_token.record_usage",
+    }
 
     # Plain
     PLAIN_REQUEST_SIGNING_SECRET: str | None = None
@@ -199,10 +211,27 @@ class Settings(BaseSettings):
     MINIO_USER: str = "polar"
     MINIO_PWD: str = "polarpolar"
 
+    # Invoices
+    S3_CUSTOMER_INVOICES_BUCKET_NAME: str = "polar-customer-invoices"
+    S3_PAYOUT_INVOICES_BUCKET_NAME: str = "polar-payout-invoices"
+    INVOICES_NAME: str = "Polar Software, Inc."
+    INVOICES_ADDRESS: Address = Address(
+        line1="548 Market St",
+        line2="PMB 61301",
+        postal_code="94104",
+        city="San Francisco",
+        state="CA",
+        country=CountryAlpha2("US"),
+    )
+    INVOICES_ADDITIONAL_INFO: str | None = (
+        "[support@polar.sh](mailto:support@polar.sh)\n"
+    )
+    PAYOUT_INVOICES_PREFIX: str = "POLAR-"
+
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100
 
-    ACCOUNT_PAYOUT_DELAY: timedelta = timedelta(days=1)
+    ACCOUNT_PAYOUT_DELAY: timedelta = timedelta(seconds=1)
     ACCOUNT_PAYOUT_MINIMUM_BALANCE: int = 1000
 
     PLATFORM_FEE_BASIS_POINTS: int = 400

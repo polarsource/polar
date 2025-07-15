@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Any
 
 import pytest
 from httpx import AsyncClient
@@ -80,3 +81,33 @@ class TestListEvents:
 
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["id"] == str(event2.id)
+
+
+@pytest.mark.asyncio
+class TestIngest:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post("/v1/events/ingest", json={"events": []})
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.parametrize(
+        "events",
+        [
+            [
+                {
+                    "name": "event1",
+                    "external_customer_id": "CUSTOMER_ID",
+                    "metadata": {"usage": 127.32},
+                }
+            ]
+        ],
+    )
+    async def test_valid(
+        self, events: list[dict[str, Any]], client: AsyncClient
+    ) -> None:
+        response = await client.post("/v1/events/ingest", json={"events": events})
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json == {"inserted": len(events)}

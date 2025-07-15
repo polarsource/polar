@@ -3,8 +3,8 @@ from urllib.parse import parse_qs, urlencode, urlparse
 import pytest
 from httpx import AsyncClient, ReadError
 
+from polar.file.repository import FileRepository
 from polar.file.s3 import S3_SERVICES
-from polar.file.service import file as file_service
 from polar.integrations.aws.s3.exceptions import S3FileError
 from polar.models import Organization
 from polar.postgres import AsyncSession
@@ -59,7 +59,8 @@ class TestEndpoints:
             s3_service = S3_SERVICES[created.service]
             s3_service.get_head_or_raise(created.path)
 
-        record = await file_service.get(session, created.id, allow_deleted=True)
+        repository = FileRepository.from_session(session)
+        record = await repository.get_by_id(created.id, include_deleted=True)
         assert record
         assert record.is_uploaded is False
 
@@ -107,7 +108,8 @@ class TestEndpoints:
             s3_service = S3_SERVICES[created.service]
             s3_service.get_head_or_raise(created.path)
 
-        record = await file_service.get(session, created.id, allow_deleted=True)
+        repository = FileRepository.from_session(session)
+        record = await repository.get_by_id(created.id, include_deleted=True)
         assert record
         assert record.is_uploaded is False
 
@@ -118,6 +120,7 @@ class TestEndpoints:
         uploaded = await logo_jpg.upload(created)
         await logo_jpg.complete(session, created, uploaded)
 
-        record = await file_service.get(session, created.id, allow_deleted=True)
+        repository = FileRepository.from_session(session)
+        record = await repository.get_by_id(created.id, include_deleted=True)
         assert record
         assert record.is_uploaded is True

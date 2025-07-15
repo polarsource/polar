@@ -27,6 +27,7 @@ from polar.meter.filter import Filter, FilterConjunction
 from polar.models import (
     Account,
     Benefit,
+    BillingEntry,
     Checkout,
     CheckoutLink,
     CheckoutLinkProduct,
@@ -44,6 +45,9 @@ from polar.models import (
     Order,
     OrderItem,
     Organization,
+    Payment,
+    PaymentMethod,
+    Payout,
     Product,
     ProductBenefit,
     ProductCustomField,
@@ -64,6 +68,7 @@ from polar.models.benefit_grant import (
     BenefitGrant,
     BenefitGrantScope,
 )
+from polar.models.billing_entry import BillingEntryDirection
 from polar.models.checkout import CheckoutStatus, get_expires_at
 from polar.models.custom_field import (
     CustomFieldCheckbox,
@@ -86,6 +91,8 @@ from polar.models.discount import (
 from polar.models.event import EventSource
 from polar.models.notification_recipient import NotificationRecipient
 from polar.models.order import OrderBillingReason, OrderStatus
+from polar.models.payment import PaymentStatus
+from polar.models.payout import PayoutStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import (
     ProductPriceAmountType,
@@ -113,7 +120,9 @@ async def create_organization(
     organization = Organization(
         name=name,
         slug=name,
+        customer_invoice_prefix=name.upper(),
         avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
+        subscriptions_billing_engine=True,
         **kwargs,
     )
     await save_fixture(organization)
@@ -272,10 +281,7 @@ async def user_organization(
     organization: Organization,
     user: User,
 ) -> UserOrganization:
-    user_organization = UserOrganization(
-        user_id=user.id,
-        organization_id=organization.id,
-    )
+    user_organization = UserOrganization(user=user, organization=organization)
     await save_fixture(user_organization)
     return user_organization
 
@@ -286,10 +292,7 @@ async def user_organization_second(
     organization: Organization,
     user_second: User,
 ) -> UserOrganization:
-    user_organization = UserOrganization(
-        user_id=user_second.id,
-        organization_id=organization.id,
-    )
+    user_organization = UserOrganization(user=user_second, organization=organization)
     await save_fixture(user_organization)
     return user_organization
 
@@ -300,29 +303,9 @@ async def user_organization_blocked(
     organization_blocked: Organization,
     user: User,
 ) -> UserOrganization:
-    user_organization = UserOrganization(
-        user_id=user.id,
-        organization_id=organization_blocked.id,
-    )
+    user_organization = UserOrganization(user=user, organization=organization_blocked)
     await save_fixture(user_organization)
     return user_organization
-
-
-@pytest_asyncio.fixture
-async def open_collective_account(save_fixture: SaveFixture, user: User) -> Account:
-    account = Account(
-        account_type=AccountType.open_collective,
-        admin_id=user.id,
-        open_collective_slug="polar",
-        country="US",
-        currency="USD",
-        is_details_submitted=True,
-        is_charges_enabled=True,
-        is_payouts_enabled=True,
-        business_type="fiscal_host",
-    )
-    await save_fixture(account)
-    return account
 
 
 @typing.overload
@@ -645,7 +628,7 @@ async def create_discount(
     name: str = "Discount",
     code: str | None = None,
     duration_in_months: int | None = None,
-    stripe_coupon_id: str = "STRIPE_COUPON_ID",
+    stripe_coupon_id: str | None = None,
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
     max_redemptions: int | None = None,
@@ -662,7 +645,7 @@ async def create_discount(
     name: str = "Discount",
     code: str | None = None,
     duration_in_months: int | None = None,
-    stripe_coupon_id: str = "STRIPE_COUPON_ID",
+    stripe_coupon_id: str | None = None,
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
     max_redemptions: int | None = None,
@@ -680,7 +663,7 @@ async def create_discount(
     name: str = "Discount",
     code: str | None = None,
     duration_in_months: int | None = None,
-    stripe_coupon_id: str = "STRIPE_COUPON_ID",
+    stripe_coupon_id: str | None = None,
     starts_at: datetime | None = None,
     ends_at: datetime | None = None,
     max_redemptions: int | None = None,
@@ -694,7 +677,9 @@ async def create_discount(
         duration=duration,
         duration_in_months=duration_in_months,
         organization=organization,
-        stripe_coupon_id=stripe_coupon_id,
+        stripe_coupon_id=stripe_coupon_id
+        if stripe_coupon_id
+        else rstr("STRIPE_COUPON_ID"),
         starts_at=starts_at,
         ends_at=ends_at,
         discount_products=[],
@@ -803,8 +788,14 @@ async def create_order(
     subscription: Subscription | None = None,
     stripe_invoice_id: str | None = "INVOICE_ID",
     billing_reason: OrderBillingReason = OrderBillingReason.purchase,
+    user_metadata: dict[str, Any] | None = None,
     created_at: datetime | None = None,
     custom_field_data: dict[str, Any] | None = None,
+    billing_name: str | None = None,
+    billing_address: Address | None = None,
+    invoice_number: str | None = None,
+    checkout: Checkout | None = None,
+    discount: Discount | None = None,
 ) -> Order:
     order = Order(
         created_at=created_at or utc_now(),
@@ -825,10 +816,16 @@ async def create_order(
         currency="usd",
         billing_reason=billing_reason,
         stripe_invoice_id=stripe_invoice_id,
+        billing_name=billing_name,
+        billing_address=billing_address,
+        invoice_number=invoice_number or rstr("INV-"),
         customer=customer,
         product=product,
         subscription=subscription,
+        checkout=checkout,
+        discount=discount,
         custom_field_data=custom_field_data or {},
+        user_metadata=user_metadata or {},
     )
     await save_fixture(order)
     return order
@@ -908,6 +905,7 @@ async def create_subscription(
     stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
     cancel_at_period_end: bool = False,
     revoke: bool = False,
+    user_metadata: dict[str, Any] | None = None,
 ) -> Subscription:
     prices = prices or product.prices
     now = datetime.now(UTC)
@@ -948,8 +946,10 @@ async def create_subscription(
             SubscriptionProductPrice.from_price(price) for price in prices
         ],
         discount=discount,
+        user_metadata=user_metadata or {},
     )
     await save_fixture(subscription)
+
     return subscription
 
 
@@ -960,19 +960,25 @@ async def create_active_subscription(
     prices: Sequence[ProductPrice] | None = None,
     customer: Customer,
     organization: Organization | None = None,
+    discount: Discount | None = None,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
+    cancel_at_period_end: bool = False,
     stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
+    user_metadata: dict[str, Any] | None = None,
 ) -> Subscription:
     return await create_subscription(
         save_fixture,
         product=product,
         prices=prices,
         customer=customer,
+        discount=discount,
         status=SubscriptionStatus.active,
         started_at=started_at or utc_now(),
         ended_at=ended_at,
+        cancel_at_period_end=cancel_at_period_end,
         stripe_subscription_id=stripe_subscription_id,
+        user_metadata=user_metadata or {},
     )
 
 
@@ -1167,6 +1173,7 @@ async def create_checkout(
     expires_at: datetime | None = None,
     client_secret: str | None = None,
     user_metadata: dict[str, Any] = {},
+    external_customer_id: str | None = None,
     customer_metadata: dict[str, Any] = {},
     payment_processor_metadata: dict[str, Any] = {},
     amount: int | None = None,
@@ -1198,6 +1205,7 @@ async def create_checkout(
             "CHECKOUT_CLIENT_SECRET",
         ),
         user_metadata=user_metadata,
+        external_customer_id=external_customer_id,
         customer_metadata=customer_metadata,
         payment_processor_metadata=payment_processor_metadata,
         amount=amount,
@@ -1306,7 +1314,7 @@ async def organization_second_members(
     for _ in range(5):
         user = await create_user(save_fixture)
         user_organization = UserOrganization(
-            user_id=user.id, organization_id=organization_second.id
+            user=user, organization=organization_second
         )
         await save_fixture(user_organization)
         users.append(user)
@@ -1550,7 +1558,7 @@ async def create_event(
     timestamp: datetime | None = None,
     customer: Customer | None = None,
     external_customer_id: str | None = None,
-    metadata: dict[str, str | int | bool] | None = None,
+    metadata: dict[str, str | int | bool | float] | None = None,
 ) -> Event:
     event = Event(
         timestamp=timestamp or utc_now(),
@@ -1609,3 +1617,196 @@ async def create_notification_recipient(
     )
     await save_fixture(notification_recipient)
     return notification_recipient
+
+
+async def create_payout(
+    save_fixture: SaveFixture,
+    *,
+    account: Account,
+    transaction: Transaction | None = None,
+    status: PayoutStatus = PayoutStatus.pending,
+    amount: int = 1000,
+    fees_amount: int = 0,
+    currency: str = "usd",
+    account_currency: str = "usd",
+    account_amount: int = 1000,
+    created_at: datetime | None = None,
+    invoice_number: str | None = None,
+) -> Payout:
+    payout = Payout(
+        created_at=created_at,
+        account=account,
+        status=status,
+        processor=account.account_type,
+        currency=currency,
+        amount=amount,
+        fees_amount=fees_amount,
+        account_currency=account_currency,
+        account_amount=account_amount,
+        transaction=transaction,
+        invoice_number=invoice_number or rstr("POLAR-"),
+    )
+    await save_fixture(payout)
+    return payout
+
+
+async def create_account(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    user: User,
+    *,
+    status: Account.Status = Account.Status.ACTIVE,
+    country: str = "US",
+    currency: str = "usd",
+    account_type: AccountType = AccountType.stripe,
+    stripe_id: str = "STRIPE_ID",
+    processor_fees_applicable: bool = True,
+    fee_basis_points: int | None = None,
+    fee_fixed: int | None = None,
+    is_payouts_enabled: bool = True,
+    billing_name: str | None = None,
+    billing_address: Address | None = None,
+) -> Account:
+    account = Account(
+        status=status,
+        account_type=account_type,
+        admin_id=user.id,
+        country=country,
+        currency=currency,
+        is_details_submitted=True,
+        is_charges_enabled=True,
+        is_payouts_enabled=is_payouts_enabled,
+        processor_fees_applicable=processor_fees_applicable,
+        stripe_id=stripe_id,
+        _platform_fee_percent=fee_basis_points,
+        _platform_fee_fixed=fee_fixed,
+        billing_name=billing_name,
+        billing_address=billing_address,
+    )
+    await save_fixture(account)
+    organization.account = account
+    await save_fixture(organization)
+    return account
+
+
+@pytest_asyncio.fixture
+async def account(
+    save_fixture: SaveFixture, organization: Organization, user: User
+) -> Account:
+    return await create_account(save_fixture, organization, user)
+
+
+async def create_payment(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    *,
+    processor: PaymentProcessor = PaymentProcessor.stripe,
+    status: PaymentStatus = PaymentStatus.succeeded,
+    amount: int = 1000,
+    currency: str = "usd",
+    method: str = "card",
+    method_metadata: dict[str, Any] = {},
+    customer_email: str | None = "customer@example.com",
+    processor_id: str | None = None,
+    decline_reason: str | None = None,
+    decline_message: str | None = None,
+    risk_level: str | None = None,
+    risk_score: int | None = None,
+    checkout: Checkout | None = None,
+    order: Order | None = None,
+) -> Payment:
+    payment = Payment(
+        processor=processor,
+        status=status,
+        amount=amount,
+        currency=currency,
+        method=method,
+        method_metadata=method_metadata,
+        customer_email=customer_email,
+        processor_id=processor_id or rstr("PAYMENT_PROCESSOR_ID"),
+        decline_reason=decline_reason,
+        decline_message=decline_message,
+        risk_level=risk_level,
+        risk_score=risk_score,
+        organization=organization,
+        checkout=checkout,
+        order=order,
+    )
+    await save_fixture(payment)
+    return payment
+
+
+@pytest_asyncio.fixture
+async def payment(save_fixture: SaveFixture, organization: Organization) -> Payment:
+    return await create_payment(save_fixture, organization)
+
+
+async def create_payment_method(
+    save_fixture: SaveFixture,
+    customer: Customer,
+    *,
+    processor: PaymentProcessor = PaymentProcessor.stripe,
+    processor_id: str | None = None,
+    type: str = "card",
+    method_metadata: dict[str, Any] = {},
+) -> PaymentMethod:
+    payment_method = PaymentMethod(
+        processor=processor,
+        processor_id=processor_id or rstr("PAYMENT_METHOD_PROCESSOR_ID"),
+        type=type,
+        method_metadata=method_metadata,
+        customer=customer,
+    )
+    await save_fixture(payment_method)
+    return payment_method
+
+
+@pytest_asyncio.fixture
+async def payment_method(
+    save_fixture: SaveFixture, customer: Customer
+) -> PaymentMethod:
+    return await create_payment_method(save_fixture, customer)
+
+
+async def create_billing_entry(
+    save_fixture: SaveFixture,
+    *,
+    customer: Customer,
+    product_price: ProductPrice,
+    event: Event | None = None,
+    start_timestamp: datetime | None = None,
+    end_timestamp: datetime | None = None,
+    direction: BillingEntryDirection = BillingEntryDirection.debit,
+    amount: int | None = None,
+    currency: str | None = None,
+    subscription: Subscription | None = None,
+    order_item: OrderItem | None = None,
+) -> BillingEntry:
+    if event is None:
+        event = await create_event(
+            save_fixture,
+            organization=customer.organization,
+            name="Billing Entry",
+            customer=customer,
+        )
+
+    if start_timestamp is None:
+        start_timestamp = event.timestamp
+
+    if end_timestamp is None:
+        end_timestamp = event.timestamp
+
+    billing_entry = BillingEntry(
+        start_timestamp=start_timestamp,
+        end_timestamp=end_timestamp,
+        direction=direction,
+        amount=amount,
+        currency=currency,
+        customer=customer,
+        product_price=product_price,
+        subscription=subscription,
+        event=event,
+        order_item=order_item,
+    )
+    await save_fixture(billing_entry)
+    return billing_entry

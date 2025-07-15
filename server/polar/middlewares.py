@@ -1,13 +1,14 @@
 import functools
 import re
 
+import dramatiq
 import structlog
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from polar.config import settings
 from polar.logging import Logger, generate_correlation_id
-from polar.worker import flush_enqueued_jobs
+from polar.worker import JobQueueManager
 
 
 class LogCorrelationIdMiddleware:
@@ -34,10 +35,12 @@ class FlushEnqueuedWorkerJobsMiddleware:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await self.app(scope, receive, send)
+        if scope["type"] not in ("http", "websocket") or settings.is_testing():
+            await self.app(scope, receive, send)
+            return
 
-        if not settings.is_testing():
-            await flush_enqueued_jobs(scope["state"]["arq_pool"])
+        async with JobQueueManager.open(dramatiq.get_broker(), scope["state"]["redis"]):
+            await self.app(scope, receive, send)
 
 
 class PathRewriteMiddleware:

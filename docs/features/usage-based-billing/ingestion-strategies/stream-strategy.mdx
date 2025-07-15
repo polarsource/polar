@@ -1,0 +1,54 @@
+---
+title: "Stream Strategy"
+description: "Ingestion strategy for Readable & Writable Streams"
+---
+
+## Javascript SDK
+
+Wrap any Readable or Writable stream of choice to automatically ingest the bytes consumed.
+
+```
+pnpm add @polar-sh/ingestion
+```
+
+```typescript
+import { Ingestion } from '@polar-sh/ingestion';
+import { StreamStrategy } from '@polar-sh/ingestion/strategies/Stream';
+
+const myReadstream = createReadStream(...);
+
+// Setup the Stream Ingestion Strategy
+const streamIngestion = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN })
+  .strategy(new StreamStrategy(myReadstream))
+  .ingest("my-stream");
+
+export async function GET(request: Request) {
+  try {
+
+    // Get the wrapped stream
+    // Pass Customer Id to properly annotate the ingestion events with a specific customer
+    const stream = streamIngestion.client({
+      customerId: request.headers.get("X-Polar-Customer-Id") ?? ""
+    });
+
+    // Consume stream...
+    stream.on('data', () => ...)
+
+    return Response.json({});
+  } catch (error) {
+    return Response.json({ error: error.message });
+  }
+}
+```
+
+#### Ingestion Payload
+
+```json
+{
+  "customerId": "123",
+  "name": "my-stream",
+  "metadata": {
+    "bytes": 100
+  }
+}
+```

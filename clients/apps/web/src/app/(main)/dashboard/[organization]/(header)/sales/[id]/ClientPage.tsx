@@ -5,64 +5,32 @@ import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
-import { ProductThumbnail } from '@/components/Products/ProductThumbnail'
+import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
+import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
+import PaymentStatus from '@/components/PaymentStatus/PaymentStatus'
+import { ProductListItem } from '@/components/Products/ProductListItem'
 import { RefundModal } from '@/components/Refunds/RefundModal'
 import {
   RefundReasonDisplay,
   RefundStatusDisplayColor,
   RefundStatusDisplayTitle,
 } from '@/components/Refunds/utils'
+import { DetailRow } from '@/components/Shared/DetailRow'
 import { useCustomFields, useProduct } from '@/hooks/queries'
 import { useOrder } from '@/hooks/queries/orders'
+import { usePayments } from '@/hooks/queries/payments'
 import { useRefunds } from '@/hooks/queries/refunds'
-import { markdownOptionsJustText } from '@/utils/markdown'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import { List } from '@polar-sh/ui/components/atoms/List'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { Separator } from '@radix-ui/react-dropdown-menu'
-import Markdown from 'markdown-to-jsx'
-import Link from 'next/link'
-import React, { PropsWithChildren } from 'react'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
-
-interface OrderProductItemProps {
-  product: schemas['Product']
-}
-
-const OrderProductItem = ({ product }: OrderProductItemProps) => {
-  return (
-    <div className="dark:bg-polar-800 dark:border-polar-700 flex flex-row items-center gap-6 rounded-3xl border border-gray-200 bg-white p-4">
-      <ProductThumbnail product={product} size="medium" />
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-row items-center gap-x-4">
-          <h3 className="text-xl">{product.name}</h3>
-          {product.is_archived && (
-            <Status
-              status="Archived"
-              className="bg-red-100 text-xs text-red-500 dark:bg-red-950"
-            />
-          )}
-        </div>
-        {product.description && (
-          <div
-            className={twMerge(
-              'prose dark:prose-invert dark:text-polar-500 flex-shrink leading-normal text-gray-500',
-              'max-w-96 truncate',
-            )}
-          >
-            <Markdown options={markdownOptionsJustText}>
-              {product.description}
-            </Markdown>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
 
 const OrderStatusDisplayName: Record<schemas['OrderStatus'], string> = {
   pending: 'Pending payment',
@@ -87,9 +55,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
   organization,
   order: _order,
 }) => {
-  const { data: order } = useOrder(_order.id, _order)
+  const { data: order, refetch: refetchOrder } = useOrder(_order.id, _order)
   const { data: product } = useProduct(_order.product.id)
   const { data: customFields } = useCustomFields(organization.id)
+  const { data: payments, isLoading: paymentsLoading } = usePayments(
+    organization.id,
+    { order_id: _order.id },
+  )
   const { data: refunds, isLoading: refundsLoading } = useRefunds(_order.id)
 
   const {
@@ -98,7 +70,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
     hide: hideRefundModal,
   } = useModal()
 
-  const canRefund = (order?.refunded_amount ?? 0) < (order?.net_amount ?? 0)
+  const canRefund =
+    order?.paid && (order?.refunded_amount ?? 0) < (order?.net_amount ?? 0)
 
   if (!order || !product) {
     return null
@@ -115,114 +88,125 @@ const ClientPage: React.FC<ClientPageProps> = ({
               className={OrderStatusDisplayColor[order.status]}
             />
           </div>
-          <span className="dark:text-polar-500 font-mono text-sm text-gray-500">
-            {order.id}
-          </span>
         </div>
       }
-      className="gap-y-8"
+      header={
+        <>
+          {order.paid && (
+            <DownloadInvoiceDashboard
+              order={order}
+              organization={organization}
+              onInvoiceGenerated={refetchOrder}
+            />
+          )}
+        </>
+      }
+      className="gap-y-12"
       contextView={
         <CustomerContextView
           organization={organization}
           customer={order.customer as schemas['Customer']}
         />
       }
+      contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden md:shadow-none"
       wide
     >
-      <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0">
-        <div className="flex flex-col gap-6 p-8">
-          <OrderProductItem product={product} />
-          <div className="flex flex-row gap-4">
-            {!product.is_archived && (
-              <Link
-                href={`/dashboard/${organization.slug}/products/${product.id}`}
-              >
-                <Button>View Product</Button>
-              </Link>
-            )}
-            <Link
-              href={`/dashboard/${organization.slug}/sales?product_id=${product.id}`}
-            >
-              <Button
-                variant="secondary"
-                className="bg-gray-300 hover:bg-gray-200"
-              >
-                All Product Orders
-              </Button>
-            </Link>
-          </div>
-        </div>
-        <div className="flex flex-col gap-6 p-8">
-          <h2 className="text-xl">Order Details</h2>
-          <div className="flex flex-col gap-1">
-            <DetailRow title="Order ID">
-              <span className="dark:text-polar-500 font-mono text-sm text-gray-500">
-                {order.id}
-              </span>
-            </DetailRow>
-            <DetailRow title="Order Date">
-              <span>
+      <List size="small">
+        <ProductListItem organization={organization} product={product} />
+      </List>
+      <ShadowBox className="dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border-gray-200 bg-transparent p-0 md:!rounded-3xl">
+        <div className="flex flex-col gap-6 p-4 md:p-8">
+          <div className="flex flex-col gap-4 md:gap-1">
+            <DetailRow
+              label="Order ID"
+              value={order.id}
+              valueClassName="font-mono text-sm"
+            />
+            <DetailRow
+              label="Order Date"
+              value={
                 <FormattedDateTime
-                  dateStyle="long"
+                  dateStyle="medium"
+                  resolution="time"
                   datetime={order.created_at}
                 />
-              </span>
-            </DetailRow>
-            <DetailRow title="Billing Reason">
-              <Status
-                status={order.billing_reason.split('_').join(' ')}
-                className="bg-emerald-100 capitalize text-emerald-500 dark:bg-emerald-950"
-              />
-            </DetailRow>
+              }
+            />
+            <DetailRow
+              label="Status"
+              value={
+                <Status
+                  status={OrderStatusDisplayName[order.status]}
+                  className={twMerge(
+                    OrderStatusDisplayColor[order.status],
+                    'w-fit',
+                  )}
+                />
+              }
+            />
+            <DetailRow
+              label="Billing Reason"
+              value={order.billing_reason.split('_').join(' ')}
+              valueClassName="capitalize"
+            />
 
             <Separator className="dark:bg-polar-700 my-4 h-[1px] bg-gray-300" />
 
-            {order.items.map((item) => (
-              <DetailRow key={item.id} title={item.label}>
-                <span>{formatCurrencyAndAmount(item.amount)}</span>
-              </DetailRow>
-            ))}
+            <div className="flex flex-col gap-y-6 pb-4">
+              {order.items.map((item) => (
+                <DetailRow
+                  key={item.id}
+                  label={item.label}
+                  value={formatCurrencyAndAmount(item.amount)}
+                />
+              ))}
+            </div>
 
-            <DetailRow title="Subtotal">
-              <span>{formatCurrencyAndAmount(order.subtotal_amount)}</span>
-            </DetailRow>
-            <DetailRow title="Discount">
-              <span>
-                {order.discount_amount
+            <DetailRow
+              label="Subtotal"
+              value={formatCurrencyAndAmount(order.subtotal_amount)}
+            />
+            <DetailRow
+              label="Discount"
+              value={
+                order.discount_amount
                   ? formatCurrencyAndAmount(-order.discount_amount)
-                  : '—'}
-              </span>
-            </DetailRow>
-            <DetailRow title="Net amount">
-              <span>{formatCurrencyAndAmount(order.net_amount)}</span>
-            </DetailRow>
-            <DetailRow title="Tax">
-              <span>{formatCurrencyAndAmount(order.tax_amount)}</span>
-            </DetailRow>
-            <DetailRow title="Total">
-              <span>{formatCurrencyAndAmount(order.total_amount)}</span>
-            </DetailRow>
+                  : '—'
+              }
+            />
+            <DetailRow
+              label="Net amount"
+              value={formatCurrencyAndAmount(order.net_amount)}
+            />
+            <DetailRow
+              label="Tax"
+              value={formatCurrencyAndAmount(order.tax_amount)}
+            />
+            <DetailRow
+              label="Total"
+              value={formatCurrencyAndAmount(order.total_amount)}
+            />
             {order.billing_address ? (
               <>
                 <Separator className="dark:bg-polar-700 my-4 h-[1px] bg-gray-300" />
-                <DetailRow title="Country">
-                  <span>{order.billing_address?.country}</span>
-                </DetailRow>
-                <DetailRow title="Address">
-                  <span>{order.billing_address?.line1 ?? '—'}</span>
-                </DetailRow>
-                <DetailRow title="Address 2">
-                  <span>{order.billing_address?.line2 ?? '—'}</span>
-                </DetailRow>
-                <DetailRow title="Postal Code">
-                  <span>{order.billing_address?.postal_code ?? '—'}</span>
-                </DetailRow>
-                <DetailRow title="City">
-                  <span>{order.billing_address?.city ?? '—'}</span>
-                </DetailRow>
-                <DetailRow title="State">
-                  <span>{order.billing_address?.state ?? '—'}</span>
-                </DetailRow>
+                <DetailRow
+                  label="Country"
+                  value={order.billing_address?.country}
+                />
+                <DetailRow
+                  label="Address"
+                  value={order.billing_address?.line1}
+                />
+                <DetailRow
+                  label="Address 2"
+                  value={order.billing_address?.line2}
+                />
+                <DetailRow
+                  label="Postal Code"
+                  value={order.billing_address?.postal_code}
+                />
+                <DetailRow label="City" value={order.billing_address?.city} />
+                <DetailRow label="State" value={order.billing_address?.state} />
               </>
             ) : (
               <></>
@@ -235,18 +219,22 @@ const ClientPage: React.FC<ClientPageProps> = ({
             <h3 className="text-lg">Custom Fields</h3>
             <div className="flex flex-col gap-2">
               {customFields?.items?.map((field) => (
-                <DetailRow key={field.id} title={field.name}>
-                  <CustomFieldValue
-                    field={field}
-                    value={
-                      order.custom_field_data
-                        ? order.custom_field_data[
-                            field.slug as keyof typeof order.custom_field_data
-                          ]
-                        : undefined
-                    }
-                  />
-                </DetailRow>
+                <DetailRow
+                  key={field.id}
+                  label={field.name}
+                  value={
+                    <CustomFieldValue
+                      field={field}
+                      value={
+                        order.custom_field_data
+                          ? order.custom_field_data[
+                              field.slug as keyof typeof order.custom_field_data
+                            ]
+                          : undefined
+                      }
+                    />
+                  }
+                />
               ))}
             </div>
           </div>
@@ -257,24 +245,62 @@ const ClientPage: React.FC<ClientPageProps> = ({
             <h3 className="text-lg">Metadata</h3>
             <div className="flex flex-col gap-2">
               {Object.entries(order.metadata).map(([key, value]) => (
-                <DetailRow key={key} title={key}>
-                  <span className="font-mono">{value}</span>
-                </DetailRow>
+                <DetailRow key={key} label={key} value={value} />
               ))}
             </div>
           </div>
         )}
+      </ShadowBox>
 
-        <div className="flex flex-col gap-6 p-8">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-row items-center justify-between gap-x-8">
+          <div className="flex flex-row items-center justify-between gap-x-6">
+            <h3 className="text-lg">Payment Attempts</h3>
+          </div>
+        </div>
+
+        <DataTable
+          isLoading={paymentsLoading}
+          columns={[
+            {
+              accessorKey: 'created_at',
+              header: 'Created At',
+              cell: ({
+                row: {
+                  original: { created_at },
+                },
+              }) => (
+                <FormattedDateTime
+                  dateStyle="medium"
+                  resolution="time"
+                  datetime={created_at}
+                />
+              ),
+            },
+            {
+              accessorKey: 'method',
+              header: 'Method',
+              cell: ({ row: { original } }) => (
+                <PaymentMethod payment={original} />
+              ),
+            },
+            {
+              accessorKey: 'status',
+              header: 'Status',
+              cell: ({ row: { original } }) => (
+                <PaymentStatus payment={original} />
+              ),
+            },
+          ]}
+          data={payments?.items ?? []}
+        />
+      </div>
+
+      {order.paid && (
+        <div className="flex flex-col gap-6">
           <div className="flex flex-row items-center justify-between gap-x-8">
             <div className="flex flex-row items-center justify-between gap-x-6">
               <h3 className="text-lg">Refunds</h3>
-              {order.status != 'paid' && (
-                <Status
-                  status={OrderStatusDisplayName[order.status]}
-                  className={OrderStatusDisplayColor[order.status]}
-                />
-              )}
             </div>
             {canRefund && (
               <Button onClick={showRefundModal}>Refund Order</Button>
@@ -340,25 +366,22 @@ const ClientPage: React.FC<ClientPageProps> = ({
             data={refunds?.items ?? []}
           />
         </div>
-      </ShadowBox>
+      )}
+
+      <div className="flex flex-col gap-y-6 md:hidden">
+        <h3 className="text-lg">Customer</h3>
+        <CustomerContextView
+          organization={organization}
+          customer={order.customer as schemas['Customer']}
+        />
+      </div>
+
       <InlineModal
         isShown={isRefundModalShown}
         hide={hideRefundModal}
         modalContent={<RefundModal order={order} hide={hideRefundModal} />}
       />
     </DashboardBody>
-  )
-}
-
-const DetailRow = ({
-  title,
-  children,
-}: PropsWithChildren<{ title: string }>) => {
-  return (
-    <div className="flex flex-row justify-between gap-8">
-      <span className="dark:text-polar-500 text-gray-500">{title}</span>
-      {children}
-    </div>
   )
 }
 

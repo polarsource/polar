@@ -5,11 +5,11 @@ import pytest
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
-from polar.models import Benefit, Organization, UserOrganization
+from polar.models import Benefit, Customer, Organization, Subscription, UserOrganization
 from polar.models.benefit import BenefitType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_benefit
+from tests.fixtures.random_objects import create_benefit, create_benefit_grant
 
 
 @pytest.mark.asyncio
@@ -296,3 +296,156 @@ class TestDeleteBenefit:
         response = await client.delete(f"/v1/benefits/{benefit_organization.id}")
 
         assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+class TestViewGrants:
+    async def test_anonymous(
+        self,
+        client: AsyncClient,
+        benefit_organization: Benefit,
+    ) -> None:
+        response = await client.get(
+            f"/v1/benefits/{benefit_organization.id}/grants",
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.get(
+            f"/v1/benefits/{uuid.uuid4()}/grants",
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_empty_grants(
+        self,
+        client: AsyncClient,
+        benefit_organization: Benefit,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            f"/v1/benefits/{benefit_organization.id}/grants",
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["items"] == []
+
+    @pytest.mark.auth
+    async def test_with_granted_grants(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        benefit_organization: Benefit,
+        user_organization: UserOrganization,
+        customer: Customer,
+        subscription: Subscription,
+    ) -> None:
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        response = await client.get(
+            f"/v1/benefits/{benefit_organization.id}/grants",
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert len(json["items"]) == 1
+
+        granted_item = json["items"][0]
+        assert granted_item["id"] == str(grant.id)
+        assert granted_item["is_granted"] is True
+        assert granted_item["granted_at"] is not None
+        assert granted_item["is_revoked"] is False
+        assert granted_item["revoked_at"] is None
+        assert granted_item["customer_id"] == str(customer.id)
+        assert granted_item["benefit_id"] == str(benefit_organization.id)
+        assert granted_item["subscription_id"] == str(subscription.id)
+        assert granted_item["error"] is None
+
+    @pytest.mark.auth
+    async def test_with_revoked_grants(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        benefit_organization: Benefit,
+        user_organization: UserOrganization,
+        customer: Customer,
+        subscription: Subscription,
+    ) -> None:
+        revoked_grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=False,
+            subscription=subscription,
+        )
+
+        response = await client.get(
+            f"/v1/benefits/{benefit_organization.id}/grants",
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert len(json["items"]) == 1
+
+        revoked_item = json["items"][0]
+        assert revoked_item["id"] == str(revoked_grant.id)
+        assert revoked_item["is_granted"] is False
+        assert revoked_item["granted_at"] is None
+        assert revoked_item["is_revoked"] is True
+        assert revoked_item["revoked_at"] is not None
+        assert revoked_item["customer_id"] == str(customer.id)
+        assert revoked_item["benefit_id"] == str(benefit_organization.id)
+        assert revoked_item["subscription_id"] == str(subscription.id)
+        assert revoked_item["error"] is None
+
+    @pytest.mark.auth
+    async def test_with_errored_grants(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        benefit_organization: Benefit,
+        user_organization: UserOrganization,
+        customer: Customer,
+        subscription: Subscription,
+    ) -> None:
+        error_grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            subscription=subscription,
+        )
+        error_message = "Test error message"
+        error_grant.set_grant_failed(Exception(error_message))
+        await save_fixture(error_grant)
+
+        response = await client.get(
+            f"/v1/benefits/{benefit_organization.id}/grants",
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert len(json["items"]) == 1
+
+        error_item = json["items"][0]
+        assert error_item["id"] == str(error_grant.id)
+        assert error_item["is_granted"] is False
+        assert error_item["granted_at"] is None
+        assert error_item["is_revoked"] is False
+        assert error_item["error"] is not None
+        assert error_item["error"]["message"] == error_message
+        assert error_item["error"]["type"] == "Exception"
+        assert "timestamp" in error_item["error"]

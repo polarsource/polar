@@ -2,11 +2,10 @@ import inspect
 from typing import Annotated
 
 from pydantic import UUID4, AliasChoices, AliasPath, Field
+from pydantic.json_schema import SkipJsonSchema
 
-from polar.kit.schemas import (
-    Schema,
-    SetSchemaReference,
-)
+from polar.kit.schemas import IDSchema, Schema, SetSchemaReference, TimestampedSchema
+from polar.meter.schemas import NAME_DESCRIPTION as METER_NAME_DESCRIPTION
 from polar.models.subscription import CustomerCancellationReason
 from polar.organization.schemas import Organization
 from polar.product.schemas import (
@@ -16,7 +15,7 @@ from polar.product.schemas import (
     ProductPrice,
     ProductPriceList,
 )
-from polar.subscription.schemas import SubscriptionBase
+from polar.subscription.schemas import SubscriptionBase, SubscriptionMeterBase
 
 
 class CustomerSubscriptionProduct(ProductBase):
@@ -26,8 +25,16 @@ class CustomerSubscriptionProduct(ProductBase):
     organization: Organization
 
 
+class CustomerSubscriptionMeterMeter(IDSchema, TimestampedSchema):
+    name: str = Field(description=METER_NAME_DESCRIPTION)
+
+
+class CustomerSubscriptionMeter(SubscriptionMeterBase):
+    meter: CustomerSubscriptionMeterMeter
+
+
 class CustomerSubscription(SubscriptionBase):
-    user_id: UUID4 = Field(
+    user_id: SkipJsonSchema[UUID4] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -38,7 +45,7 @@ class CustomerSubscription(SubscriptionBase):
     )
     product: CustomerSubscriptionProduct
 
-    price: ProductPrice = Field(
+    price: SkipJsonSchema[ProductPrice] = Field(
         deprecated="Use `prices` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -50,6 +57,9 @@ class CustomerSubscription(SubscriptionBase):
 
     prices: list[ProductPrice] = Field(
         description="List of enabled prices for the subscription."
+    )
+    meters: list[CustomerSubscriptionMeter] = Field(
+        description="List of meters associated with the subscription."
     )
 
 

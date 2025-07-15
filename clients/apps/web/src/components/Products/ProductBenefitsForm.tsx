@@ -1,6 +1,4 @@
-import { usePostHog } from '@/hooks/posthog'
 import { useDeleteBenefit } from '@/hooks/queries'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import {
   AddOutlined,
@@ -18,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useSearchParams } from 'next/navigation'
-import { useCallback, useContext, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CreateBenefitModalContent from '../Benefit/CreateBenefitModalContent'
 import UpdateBenefitModalContent from '../Benefit/UpdateBenefitModalContent'
@@ -89,9 +87,9 @@ const BenefitRow = ({
           )}
         >
           {checked ? (
-            <CheckOutlined className="h-3 w-3" fontSize="small" />
+            <CheckOutlined fontSize="inherit" />
           ) : (
-            <RemoveOutlined className="h-3 w-3" fontSize="small" />
+            <RemoveOutlined fontSize="inherit" />
           )}
         </span>
         <span
@@ -177,8 +175,6 @@ const ProductBenefitsForm = ({
     searchParams?.get('create_benefit') === 'true',
   )
 
-  const { isFeatureEnabled } = usePostHog()
-
   const handleCheckedChange = useCallback(
     (benefit: schemas['Benefit']) => (checked: boolean) => {
       if (checked) {
@@ -199,28 +195,23 @@ const ProductBenefitsForm = ({
       compact={compact}
     >
       <div className="flex w-full flex-col gap-y-2">
-        {enums.benefitTypeValues
-          .filter(
-            (type) =>
-              type !== 'meter_credit' ||
-              isFeatureEnabled('usage_based_billing'),
-          )
-          .map((type) => (
-            <BenefitsContainer
-              key={type}
-              title={benefitsDisplayNames[type]}
-              type={type}
-              handleCheckedChange={handleCheckedChange}
-              enabledBenefits={benefits}
-              benefits={organizationBenefits.filter(
-                (benefit) => benefit.type === type,
-              )}
-              onCreateNewBenefit={() => {
-                setType(type as CreatableBenefit)
-                show()
-              }}
-            />
-          ))}
+        {enums.benefitTypeValues.map((type) => (
+          <BenefitsContainer
+            key={type}
+            organization={organization}
+            title={benefitsDisplayNames[type]}
+            type={type}
+            handleCheckedChange={handleCheckedChange}
+            enabledBenefits={benefits}
+            benefits={organizationBenefits.filter(
+              (benefit) => benefit.type === type,
+            )}
+            onCreateNewBenefit={() => {
+              setType(type as CreatableBenefit)
+              show()
+            }}
+          />
+        ))}
       </div>
       <InlineModal
         isShown={isShown}
@@ -242,6 +233,7 @@ const ProductBenefitsForm = ({
 }
 
 interface BenefitsContainerProps {
+  organization: schemas['Organization']
   title: string
   benefits: schemas['Benefit'][]
   enabledBenefits: schemas['Benefit'][]
@@ -253,6 +245,7 @@ interface BenefitsContainerProps {
 }
 
 const BenefitsContainer = ({
+  organization,
   title,
   benefits,
   enabledBenefits,
@@ -264,8 +257,6 @@ const BenefitsContainer = ({
     return enabledBenefits.some((b) => b.id === benefit.id)
   })
   const [open, setOpen] = useState(hasEnabledBenefits)
-
-  const { organization } = useContext(OrganizationContext)
 
   if (benefits.length === 0 && !onCreateNewBenefit) {
     return null

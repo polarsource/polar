@@ -5,15 +5,21 @@ from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
+    BigInteger,
     ColumnElement,
     ForeignKey,
     String,
     Uuid,
     and_,
     exists,
+    extract,
     or_,
     select,
 )
+from sqlalchemy import (
+    cast as sqla_cast,
+)
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (
     Mapped,
     Relationship,
@@ -124,7 +130,7 @@ class Event(Model, MetadataMixin):
                 ")"
             ),
             comparator_factory=CustomerComparator,
-            lazy="joined",
+            lazy="raise",
             viewonly=True,
         )
 
@@ -132,8 +138,33 @@ class Event(Model, MetadataMixin):
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=False,
+        index=True,
     )
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
+
+    @hybrid_property
+    def is_meter_credit(self) -> bool:
+        return (
+            self.source == EventSource.system
+            and
+            # ⚠️ We don't use `SystemEvent` here to avoid circular imports.
+            self.name == "meter.credited"
+        )
+
+    @is_meter_credit.inplace.expression
+    @classmethod
+    def _is_meter_credit_expression(cls) -> ColumnElement[bool]:
+        return and_(
+            cls.source == EventSource.system,
+            # ⚠️ We don't use `SystemEvent` here to avoid circular imports.
+            cls.name == "meter.credited",
+        )
+
+    _filterable_fields: dict[str, tuple[type[str | int | bool], Any]] = {
+        "timestamp": (int, sqla_cast(extract("epoch", timestamp), BigInteger)),
+        "name": (str, name),
+        "source": (str, source),
+    }

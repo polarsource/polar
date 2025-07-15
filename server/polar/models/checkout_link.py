@@ -34,6 +34,9 @@ class CheckoutLink(MetadataMixin, RecordModel):
     allow_discount_codes: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
     )
+    require_billing_address: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
 
     discount_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("discounts.id", ondelete="set null"), nullable=True
@@ -63,6 +66,7 @@ class CheckoutLink(MetadataMixin, RecordModel):
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=False,
+        index=True,
     )
 
     @declared_attr

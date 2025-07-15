@@ -1,8 +1,9 @@
 import { ParsedMeterQuantities } from '@/hooks/queries/meters'
+import { ParsedMetricPeriod } from '@/hooks/queries/metrics'
 import { schemas } from '@polar-sh/client'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import FormattedUnits from '../Meter/FormattedUnits'
-import { MeterChart } from '../Meter/MeterChart'
+import MetricChart from '../Metrics/MetricChart'
 
 export const CustomerMeter = ({
   customerMeter,
@@ -14,7 +15,7 @@ export const CustomerMeter = ({
   const { meter } = customerMeter
 
   return (
-    <ShadowBox className="flex flex-col p-2">
+    <ShadowBox className="dark:bg-polar-800 flex flex-col p-2">
       <div className="flex flex-col gap-y-4 p-6">
         <div className="flex flex-row items-center justify-between gap-x-2">
           <h2 className="text-xl">{meter.name}</h2>
@@ -60,8 +61,17 @@ export const CustomerMeter = ({
           </div>
         </div>
       </div>
-      <div className="dark:bg-polar-800 flex flex-col justify-between gap-y-6 rounded-3xl bg-white p-4">
-        <MeterChart data={quantities} interval="day" height={250} />
+      <div className="dark:bg-polar-900 flex flex-col justify-between gap-y-6 rounded-3xl bg-white p-4">
+        <MetricChart
+          data={quantities as unknown as ParsedMetricPeriod[]}
+          interval="day"
+          height={250}
+          metric={{
+            slug: 'quantity',
+            display_name: 'Quantity',
+            type: 'scalar',
+          }}
+        />
       </div>
     </ShadowBox>
   )

@@ -16,6 +16,7 @@ from pydantic.networks import HttpUrl
 
 from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
+from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import (
     ORGANIZATION_ID_EXAMPLE,
     EmptyStrToNoneValidator,
@@ -27,7 +28,10 @@ from polar.kit.schemas import (
     SlugValidator,
     TimestampedSchema,
 )
-from polar.models.organization import OrganizationSubscriptionSettings
+from polar.models.organization import (
+    OrganizationNotificationSettings,
+    OrganizationSubscriptionSettings,
+)
 
 OrganizationID = Annotated[
     UUID4,
@@ -185,22 +189,25 @@ class Organization(IDSchema, TimestampedSchema):
     subscription_settings: OrganizationSubscriptionSettings = Field(
         description="Settings related to subscriptions management",
     )
+    notification_settings: OrganizationNotificationSettings = Field(
+        description="Settings related to notifications",
+    )
 
     # Deprecated attributes
-    bio: str | None = Field(..., deprecated="")
-    company: str | None = Field(
+    bio: SkipJsonSchema[str | None] = Field(..., deprecated="")
+    company: SkipJsonSchema[str | None] = Field(
         ...,
         deprecated="Legacy attribute no longer in use.",
     )
-    blog: str | None = Field(
+    blog: SkipJsonSchema[str | None] = Field(
         ...,
         deprecated="Legacy attribute no longer in use. See `socials` instead.",
     )
-    location: str | None = Field(
+    location: SkipJsonSchema[str | None] = Field(
         ...,
         deprecated="Legacy attribute no longer in use.",
     )
-    twitter_username: str | None = Field(
+    twitter_username: SkipJsonSchema[str | None] = Field(
         ...,
         deprecated="Legacy attribute no longer in use. See `socials` instead.",
     )
@@ -244,6 +251,7 @@ class OrganizationCreate(Schema):
     )
     feature_settings: OrganizationFeatureSettings | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
+    notification_settings: OrganizationNotificationSettings | None = None
 
 
 class OrganizationUpdate(Schema):
@@ -252,8 +260,8 @@ class OrganizationUpdate(Schema):
     ] = None
     avatar_url: HttpUrlToStr | None = None
 
-    email: str | None = Field(None, description="Public support email.")
-    website: str | None = Field(
+    email: EmailStrDNS | None = Field(None, description="Public support email.")
+    website: HttpUrlToStr | None = Field(
         None, description="Official website of the organization."
     )
     socials: list[OrganizationSocialLink] | None = Field(
@@ -266,6 +274,7 @@ class OrganizationUpdate(Schema):
 
     feature_settings: OrganizationFeatureSettings | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
+    notification_settings: OrganizationNotificationSettings | None = None
 
 
 class OrganizationSetAccount(Schema):

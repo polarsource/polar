@@ -5,7 +5,6 @@ import { getGitHubAuthorizeURL } from '@/utils/auth'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
 const GithubLoginButton = (props: {
@@ -17,12 +16,9 @@ const GithubLoginButton = (props: {
   text: string
 }) => {
   const posthog = usePostHog()
-
-  const search = useSearchParams()
   const signup = props.signup
 
   const authorizeURL = getGitHubAuthorizeURL({
-    payment_intent_id: search?.get('payment_intent_id') ?? undefined,
     return_to: props.returnTo,
     attribution: JSON.stringify(signup),
   })

@@ -50,7 +50,7 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
     mock = AsyncMock(spec=calculate_tax)
     mocker.patch("polar.checkout.service.calculate_tax", new=mock)
-    mock.return_value = 0
+    mock.return_value = {"processor_id": "TAX_PROCESSOR_ID", "amount": 0}
     return mock
 
 
@@ -281,6 +281,37 @@ class TestCreateCheckout:
             json["success_url"]
             == f"https://example.com/success?checkout_id={json['id']}"
         )
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    @pytest.mark.parametrize(
+        "external_customer_id_param",
+        [
+            "external_customer_id",
+            "customer_external_id",
+        ],
+    )
+    async def test_external_customer_id(
+        self,
+        api_prefix: str,
+        external_customer_id_param: str,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        body = {
+            "payment_processor": "stripe",
+            "product_price_id": str(product.prices[0].id),
+            "success_url": "https://example.com/success?checkout_id={CHECKOUT_ID}",
+        }
+        body[external_customer_id_param] = "external_customer_id_value"
+
+        response = await client.post(f"{api_prefix}/", json=body)
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["external_customer_id"] == "external_customer_id_value"
+        assert json["customer_external_id"] == "external_customer_id_value"
 
 
 @pytest.mark.asyncio

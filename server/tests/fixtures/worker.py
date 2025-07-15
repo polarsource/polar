@@ -1,38 +1,41 @@
-import contextlib
-from collections.abc import AsyncIterator
-from typing import cast
-from unittest.mock import MagicMock
+from collections.abc import Iterator
+from typing import Any
 
-import pytest_asyncio
-from arq import ArqRedis
+import dramatiq
+import pytest
+from dramatiq.middleware.current_message import CurrentMessage
+from pytest_mock import MockerFixture
 
-from polar.kit.db.postgres import AsyncSession, AsyncSessionMaker
-from polar.kit.utils import utc_now
-from polar.postgres import create_async_engine
+from polar.config import settings
+from polar.kit.db.postgres import AsyncSession
 from polar.redis import Redis
-from polar.worker import JobContext
+from polar.worker import JobQueueManager, RedisMiddleware
+from polar.worker._enqueue import _job_queue_manager
+from polar.worker._sqlalchemy import SQLAlchemyMiddleware
 
 
-@pytest_asyncio.fixture
-async def job_context(session: AsyncSession, redis: Redis) -> AsyncIterator[JobContext]:
-    engine = create_async_engine("worker")
+@pytest.fixture(autouse=True)
+def set_job_queue_manager_context() -> None:
+    _job_queue_manager.set(JobQueueManager())
 
-    @contextlib.asynccontextmanager
-    async def sessionmaker() -> AsyncIterator[AsyncSession]:
-        yield session
 
-    yield {
-        "redis": ArqRedis(redis.connection_pool),
-        "raw_redis": redis,
-        "async_engine": engine,
-        "async_sessionmaker": cast(AsyncSessionMaker, sessionmaker),
-        "exit_stack": contextlib.AsyncExitStack(),
-        "job_id": "fake_job_id",
-        "job_try": 1,
-        "enqueue_time": utc_now(),
-        "score": 0,
-        "job_exit_stack": contextlib.ExitStack(),
-        "logfire_span": MagicMock(),
-    }
+@pytest.fixture(autouse=True)
+def patch_middlewares(
+    mocker: MockerFixture, session: AsyncSession, redis: Redis
+) -> None:
+    mocker.patch.object(SQLAlchemyMiddleware, "get_async_session", new=lambda: session)
+    mocker.patch.object(RedisMiddleware, "get", new=lambda: redis)
 
-    await engine.dispose()
+
+@pytest.fixture(autouse=True)
+def current_message() -> Iterator[dramatiq.Message[Any]]:
+    message = dramatiq.Message[Any](
+        queue_name="default",
+        actor_name="actor",
+        args=(),
+        kwargs={},
+        options={"retries": 0, "max_retries": settings.WORKER_MAX_RETRIES},
+    )
+    CurrentMessage._MESSAGE.set(message)
+    yield message
+    CurrentMessage._MESSAGE.set(None)

@@ -7,7 +7,7 @@ from polar.exceptions import PolarTaskError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Meter
-from polar.worker import AsyncSessionMaker, JobContext, task
+from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 
 class MeterTaskError(PolarTaskError): ...
@@ -20,15 +20,19 @@ class MeterDoesNotExist(MeterTaskError):
         super().__init__(message)
 
 
-@task("meter.enqueue_billing", cron_trigger=CronTrigger.from_crontab("*/5 * * * *"))
-async def meter_enqueue_billing(ctx: JobContext) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(
+    actor_name="meter.enqueue_billing",
+    cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
+    priority=TaskPriority.LOW,
+)
+async def meter_enqueue_billing() -> None:
+    async with AsyncSessionMaker() as session:
         await meter_service.enqueue_billing(session)
 
 
-@task("meter.billing_entries")
-async def meter_billing_entries(ctx: JobContext, meter_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="meter.billing_entries", priority=TaskPriority.LOW)
+async def meter_billing_entries(meter_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
         repository = MeterRepository.from_session(session)
         meter = await repository.get_by_id(
             meter_id, options=(joinedload(Meter.last_billed_event),)

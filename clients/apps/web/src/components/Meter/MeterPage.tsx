@@ -1,18 +1,18 @@
 'use client'
 
 import { Events } from '@/components/Events/Events'
-import { MeterChart } from '@/components/Meter/MeterChart'
 import MeterEventsTab from '@/components/Meter/MeterEventsTab'
-import { MeterGetStarted } from '@/components/Meter/MeterGetStarted'
 import Spinner from '@/components/Shared/Spinner'
 import { useEvents } from '@/hooks/queries/events'
 import { useMeterQuantities } from '@/hooks/queries/meters'
+import { ParsedMetricPeriod } from '@/hooks/queries/metrics'
+import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { dateRangeToInterval } from '@/utils/metrics'
 import { UTCDate } from '@date-fns/utc'
 import { schemas } from '@polar-sh/client'
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
 } from '@polar-sh/ui/components/atoms/Card'
 import {
@@ -21,42 +21,47 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
-import { endOfMonth, startOfMonth, subDays, subMonths } from 'date-fns'
-import { useMemo } from 'react'
+import { endOfMonth, startOfMonth, subMonths } from 'date-fns'
+import { useContext, useMemo, useState } from 'react'
+import DateRangePicker from '../Metrics/DateRangePicker'
+import MetricChart from '../Metrics/MetricChart'
+import { InlineModal } from '../Modal/InlineModal'
 import FormattedUnits from './FormattedUnits'
 import MeterCustomersTab from './MeterCustomersTab'
+import { MeterGetStarted } from './MeterGetStarted'
+import { MeterUpdateModal } from './MeterUpdateModal'
 
 export const MeterPage = ({
   meter,
   organization,
+  isEditMeterModalShown,
+  hideEditMeterModal,
 }: {
   meter: schemas['Meter']
   organization: schemas['Organization']
+  isEditMeterModalShown: boolean
+  hideEditMeterModal: () => void
 }) => {
-  const startChart = useMemo(() => subDays(new UTCDate(), 7), [])
-  const endChart = useMemo(() => new UTCDate(), [])
-  const { data: chartQuantities, isLoading: chartLoading } = useMeterQuantities(
-    meter.id,
-    startChart,
-    endChart,
-    'day',
+  const [dateRange, setDateRange] = useState<{
+    from: Date
+    to: Date
+  }>({
+    from: subMonths(new Date(), 1),
+    to: new Date(),
+  })
+
+  const interval = useMemo(
+    () => dateRangeToInterval(dateRange.from, dateRange.to),
+    [dateRange],
   )
 
-  const lastMonthStart = useMemo(
-    () => startOfMonth(subMonths(new UTCDate(), 1)),
-    [],
-  )
-  const lastMonthEnd = useMemo(
-    () => endOfMonth(subMonths(new UTCDate(), 1)),
-    [],
-  )
-  const currentMonthStart = useMemo(() => startOfMonth(new UTCDate()), [])
-  const currentMonthEnd = useMemo(() => endOfMonth(new UTCDate()), [])
-  const { data: figuresQuantities } = useMeterQuantities(
+  const { data: chartQuantities, isLoading: chartLoading } = useMeterQuantities(
     meter.id,
-    lastMonthStart,
-    currentMonthEnd,
-    'month',
+    {
+      start_timestamp: dateRange.from.toISOString(),
+      end_timestamp: dateRange.to.toISOString(),
+      interval,
+    },
   )
 
   const { data } = useEvents(meter.organization_id, { meter_id: meter.id })
@@ -69,91 +74,51 @@ export const MeterPage = ({
   return (
     <>
       <Tabs defaultValue="overview" className="flex flex-col">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 p-0">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
           <TabsTrigger value="customers">Customers</TabsTrigger>
         </TabsList>
-        <TabsContent value="overview" className="flex flex-col gap-y-12">
-          {chartLoading ? (
-            <div className="flex h-[300px] flex-col items-center justify-center">
-              <Spinner />
+        <TabsContent value="overview" className="flex flex-col gap-y-12 pb-12">
+          <div className="flex flex-col gap-y-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <h2 className="text-xl">Meter Quantities</h2>
+              <div className="w-full lg:w-auto">
+                <DateRangePicker
+                  date={dateRange}
+                  onDateChange={setDateRange}
+                  className="w-full"
+                />
+              </div>
             </div>
-          ) : chartQuantities ? (
-            <MeterChart data={chartQuantities.quantities} interval="day" />
-          ) : (
-            <div className="flex h-[300px] flex-col items-center justify-center">
-              <span className="text-lg">No data available</span>
-            </div>
-          )}
+            {chartLoading ? (
+              <div className="flex h-[300px] flex-col items-center justify-center">
+                <Spinner />
+              </div>
+            ) : chartQuantities ? (
+              <MetricChart
+                data={
+                  chartQuantities.quantities as unknown as ParsedMetricPeriod[]
+                }
+                interval={interval}
+                height={400}
+                metric={{
+                  slug: 'quantity',
+                  display_name: 'Quantity',
+                  type: 'scalar',
+                }}
+              />
+            ) : (
+              <div className="flex h-[300px] flex-col items-center justify-center">
+                <span className="text-lg">No data available</span>
+              </div>
+            )}
+          </div>
           <div className="flex flex-col gap-y-6">
             <div className="flex flex-row items-center justify-between">
               <h2 className="text-xl">Activity</h2>
             </div>
-            <div className="flex flex-row gap-x-8">
-              <Card className="dark:border-polar-700 flex-1 rounded-3xl border border-gray-200">
-                <CardHeader>
-                  <span className="dark:text-polar-500 text-gray-500">
-                    Previous Period
-                  </span>
-                </CardHeader>
-                <CardContent>
-                  <span className="text-4xl">
-                    {figuresQuantities ? (
-                      <FormattedUnits
-                        value={figuresQuantities.quantities[0].quantity}
-                      />
-                    ) : (
-                      '—'
-                    )}
-                  </span>
-                </CardContent>
-                <CardFooter>
-                  <span className="dark:text-polar-500 text-gray-500">
-                    {lastMonthStart.toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                    })}{' '}
-                    -{' '}
-                    {lastMonthEnd.toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </span>
-                </CardFooter>
-              </Card>
-              <Card className="dark:border-polar-700 flex-1 rounded-3xl border border-gray-200">
-                <CardHeader>
-                  <span className="dark:text-polar-500 text-gray-500">
-                    Current Period
-                  </span>
-                </CardHeader>
-                <CardContent>
-                  <span className="text-4xl">
-                    {figuresQuantities ? (
-                      <FormattedUnits
-                        value={figuresQuantities.quantities[1].quantity}
-                      />
-                    ) : (
-                      '—'
-                    )}
-                  </span>
-                </CardContent>
-                <CardFooter>
-                  <span className="dark:text-polar-500 text-gray-500">
-                    {currentMonthStart.toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                    })}{' '}
-                    -{' '}
-                    {currentMonthEnd.toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </span>
-                </CardFooter>
-              </Card>
-            </div>
+            <MeterActivityCards meter={meter} />
           </div>
           {meterEvents.length > 0 ? (
             <div className="flex flex-col gap-y-6">
@@ -176,6 +141,103 @@ export const MeterPage = ({
           <MeterCustomersTab meter={meter} organization={organization} />
         </TabsContent>
       </Tabs>
+
+      <InlineModal
+        isShown={isEditMeterModalShown}
+        hide={hideEditMeterModal}
+        modalContent={
+          <MeterUpdateModal
+            meter={meter}
+            hide={hideEditMeterModal}
+            hasProcessedEvents={meterEvents.length > 0}
+          />
+        }
+      />
     </>
+  )
+}
+
+const MeterActivityCards = ({ meter }: { meter: schemas['Meter'] }) => {
+  const { organization } = useContext(OrganizationContext)
+
+  const dates = useMemo(
+    () => ({
+      currentMonthStart: startOfMonth(new UTCDate()),
+      currentMonthEnd: endOfMonth(new UTCDate()),
+      lastMonthStart: startOfMonth(subMonths(new UTCDate(), 1)),
+      lastMonthEnd: endOfMonth(subMonths(new UTCDate(), 1)),
+      allTimeStart: new UTCDate(organization?.created_at),
+      allTimeEnd: new UTCDate(),
+    }),
+    [organization?.created_at],
+  )
+
+  const { data: figuresQuantities } = useMeterQuantities(meter.id, {
+    start_timestamp: dates.lastMonthStart.toISOString(),
+    end_timestamp: dates.currentMonthEnd.toISOString(),
+    interval: 'month',
+  })
+
+  const { data: allTimeQuantities } = useMeterQuantities(meter.id, {
+    start_timestamp: dates.allTimeStart.toISOString(),
+    end_timestamp: dates.allTimeEnd.toISOString(),
+    interval: 'month',
+  })
+
+  return (
+    <div className="flex flex-row gap-x-8">
+      {[
+        {
+          title: 'Current Month',
+          value: figuresQuantities?.quantities[1]?.quantity,
+          startDate: dates.currentMonthStart,
+          endDate: dates.currentMonthEnd,
+        },
+        {
+          title: 'Previous Month',
+          value: figuresQuantities?.quantities[0]?.quantity,
+          startDate: dates.lastMonthStart,
+          endDate: dates.lastMonthEnd,
+        },
+        {
+          title: 'All Time',
+          value: allTimeQuantities?.quantities.reduce(
+            (acc, curr) => acc + curr.quantity,
+            0,
+          ),
+          startDate: dates.allTimeStart,
+          endDate: dates.allTimeEnd,
+        },
+      ].map((card, i) => (
+        <Card key={i} className="flex-1 rounded-3xl">
+          <CardHeader className="flex flex-col gap-y-0">
+            <h3 className="text-lg">{card.title}</h3>
+            <span className="dark:text-polar-500 text-gray-500">
+              {card.startDate.toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                ...(card.startDate.getFullYear() !==
+                  new Date().getFullYear() && {
+                  year: 'numeric',
+                }),
+              })}{' '}
+              -{' '}
+              {card.endDate.toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                ...(card.endDate.getFullYear() !== new Date().getFullYear() && {
+                  year: 'numeric',
+                }),
+              })}
+            </span>
+          </CardHeader>
+          <CardContent>
+            <span className="text-4xl">
+              {card.value ? <FormattedUnits value={card.value} /> : '—'}
+            </span>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   )
 }

@@ -12,6 +12,7 @@ from polar.kit.pagination import PaginationParams
 from polar.models import Customer, Organization, User, UserOrganization
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
@@ -242,6 +243,18 @@ class TestUpdate:
         assert customer.external_id == "123"
         assert customer.name == "John"
 
+    async def test_valid_same_external_id(
+        self, session: AsyncSession, customer_external_id: Customer
+    ) -> None:
+        customer = await customer_service.update(
+            session,
+            customer_external_id,
+            CustomerUpdate(external_id=customer_external_id.external_id),
+        )
+        await session.flush()
+
+        assert customer.external_id == customer_external_id.external_id
+
 
 @pytest.mark.asyncio
 class TestDelete:
@@ -325,11 +338,12 @@ class TestWebhook:
         event_type: CustomerWebhookEventType,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
     ) -> None:
         send_mock = mocker.patch("polar.webhook.service.webhook.send")
 
-        await customer_service.webhook(session, event_type, customer)
+        await customer_service.webhook(session, redis, event_type, customer)
 
         assert send_mock.call_count == 2
 
@@ -337,12 +351,13 @@ class TestWebhook:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
     ) -> None:
         send_mock = mocker.patch("polar.webhook.service.webhook.send")
 
         await customer_service.webhook(
-            session, WebhookEventType.customer_state_changed, customer
+            session, redis, WebhookEventType.customer_state_changed, customer
         )
 
         assert send_mock.call_count == 1

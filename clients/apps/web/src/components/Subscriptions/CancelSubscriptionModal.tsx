@@ -70,20 +70,27 @@ const CancelSubscriptionModal = ({
 
   const onSubmit = useCallback(
     async (cancellation: SubscriptionCancelForm) => {
-      let body: schemas['SubscriptionCancel'] = {
+      const base = {
         customer_cancellation_reason: cancellation.customer_cancellation_reason,
       }
+      let body: schemas['SubscriptionRevoke'] | schemas['SubscriptionCancel']
       if (cancellation.cancellation_action === 'revoke') {
-        body.revoke = true
+        body = {
+          ...base,
+          revoke: true,
+        }
       } else {
-        body.cancel_at_period_end = true
+        body = {
+          ...base,
+          cancel_at_period_end: true,
+        }
       }
 
       await cancelSubscription.mutateAsync(body).then(({ error }) => {
         if (error) {
           if (error.detail)
             if (isValidationError(error.detail)) {
-              setValidationErrors(error.detail, form.setError)
+              setValidationErrors(error.detail, setError)
             } else {
               toast({
                 title: 'Customer Update Failed',

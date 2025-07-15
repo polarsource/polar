@@ -1,6 +1,5 @@
 'use client'
 
-import { usePostHog } from '@/hooks/posthog'
 import { useMeters } from '@/hooks/queries/meters'
 import {
   isLegacyRecurringPrice,
@@ -304,7 +303,7 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   const amountType = watch(`prices.${index}.amount_type`)
   const recurringInterval = watch('recurring_interval')
 
-  const { isFeatureEnabled } = usePostHog()
+  const { data: meters } = useMeters(organization.id)
 
   const prices = watch('prices')
   const staticPriceIndex = prices
@@ -372,8 +371,8 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                       <SelectItem value="fixed">Fixed price</SelectItem>
                       <SelectItem value="custom">Pay what you want</SelectItem>
                       <SelectItem value="free">Free</SelectItem>
-                      {isFeatureEnabled('usage_based_billing') &&
-                        recurringInterval !== null && (
+                      {recurringInterval !== null &&
+                        (meters?.pagination.total_count ?? 0) > 0 && (
                           <SelectItem value="metered_unit">
                             Metered price
                           </SelectItem>
@@ -425,8 +424,6 @@ export const ProductPricingSection = ({
   update,
   compact,
 }: ProductPricingSectionProps) => {
-  const { isFeatureEnabled } = usePostHog()
-
   const {
     control,
     formState: { errors },
@@ -556,22 +553,21 @@ export const ProductPricingSection = ({
               </p>
             </ShadowBox>
           )}
-          {isFeatureEnabled('usage_based_billing') &&
-            recurringInterval !== null && (
-              <Button
-                className="self-start"
-                onClick={() =>
-                  append({
-                    amount_type: 'metered_unit',
-                    price_currency: 'usd',
-                    meter_id: '',
-                    unit_amount: 0,
-                  })
-                }
-              >
-                Add Price
-              </Button>
-            )}
+          {recurringInterval !== null && (
+            <Button
+              className="self-start"
+              onClick={() =>
+                append({
+                  amount_type: 'metered_unit',
+                  price_currency: 'usd',
+                  meter_id: '',
+                  unit_amount: 0,
+                })
+              }
+            >
+              Add Price
+            </Button>
+          )}
           <ErrorMessage
             errors={errors}
             name="prices"

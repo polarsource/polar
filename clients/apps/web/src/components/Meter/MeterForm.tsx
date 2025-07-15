@@ -79,6 +79,7 @@ const MeterForm = ({ eventNames }: { eventNames?: schemas['EventName'][] }) => {
           Specify how events are filtered before they are aggregated.
         </FormDescription>
         <MeterFilterInput eventNames={eventNames} prefix="filter" />
+        <FormMessage />
       </FormItem>
       <FormItem>
         <FormLabel>Aggregation</FormLabel>

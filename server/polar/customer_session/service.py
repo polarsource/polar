@@ -43,10 +43,10 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
             id_value = customer_create.customer_id
         else:
             statement = statement.where(
-                Customer.external_id == customer_create.customer_external_id
+                Customer.external_id == customer_create.external_customer_id
             )
-            id_field = "customer_external_id"
-            id_value = customer_create.customer_external_id
+            id_field = "external_customer_id"
+            id_value = customer_create.external_customer_id
 
         customer = await repository.get_one_or_none(statement)
 

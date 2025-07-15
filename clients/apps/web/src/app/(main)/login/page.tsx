@@ -23,7 +23,7 @@ export default async function Page({
               Welcome to Polar
             </h2>
             <h2 className="dark:text-polar-400 text-lg text-gray-500">
-              The all-in-one funding & monetization platform for developers
+              The modern way to sell your SaaS and digital products
             </h2>
           </div>
         </div>

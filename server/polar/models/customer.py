@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from .benefit_grant import BenefitGrant
     from .customer_meter import CustomerMeter
     from .organization import Organization
+    from .payment_method import PaymentMethod
     from .subscription import Subscription
 
 
@@ -95,6 +96,9 @@ class Customer(MetadataMixin, RecordModel):
     )
 
     name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    _billing_name: Mapped[str | None] = mapped_column(
+        "billing_name", String, nullable=True, default=None
+    )
     billing_address: Mapped[Address | None] = mapped_column(
         AddressType, nullable=True, default=None
     )
@@ -124,11 +128,38 @@ class Customer(MetadataMixin, RecordModel):
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=False,
+        index=True,
     )
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
+
+    @declared_attr
+    def payment_methods(cls) -> Mapped[Sequence["PaymentMethod"]]:
+        return relationship(
+            "PaymentMethod",
+            lazy="raise",
+            back_populates="customer",
+            cascade="all, delete-orphan",
+            foreign_keys="[PaymentMethod.customer_id]",
+        )
+
+    default_payment_method_id: Mapped[UUID | None] = mapped_column(
+        "default_payment_method_id",
+        Uuid,
+        ForeignKey("payment_methods.id", ondelete="set null"),
+        nullable=True,
+    )
+
+    @declared_attr
+    def default_payment_method(cls) -> Mapped["PaymentMethod | None"]:
+        return relationship(
+            "PaymentMethod",
+            lazy="raise",
+            uselist=False,
+            foreign_keys=[cls.default_payment_method_id],  # type: ignore
+        )
 
     def get_oauth_account(
         self, account_id: str, platform: CustomerOAuthPlatform
@@ -195,3 +226,11 @@ class Customer(MetadataMixin, RecordModel):
     @active_meters.setter
     def active_meters(self, value: Sequence["CustomerMeter"]) -> None:
         self._active_meters = value
+
+    @property
+    def billing_name(self) -> str | None:
+        return self._billing_name or self.name
+
+    @billing_name.setter
+    def billing_name(self, value: str | None) -> None:
+        self._billing_name = value

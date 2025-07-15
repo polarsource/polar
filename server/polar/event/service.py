@@ -15,7 +15,7 @@ from polar.meter.repository import MeterRepository
 from polar.models import Customer, Event, Organization, User, UserOrganization
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
-from polar.worker import enqueue_job
+from polar.worker import enqueue_events, enqueue_job
 
 from .repository import EventRepository
 from .schemas import EventCreateCustomer, EventName, EventsIngest, EventsIngestResponse
@@ -53,7 +53,9 @@ class EventService:
         ],
     ) -> tuple[Sequence[Event], int]:
         repository = EventRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        statement = repository.get_readable_statement(auth_subject).options(
+            *repository.get_eager_options()
+        )
 
         if filter is not None:
             statement = statement.where(filter.get_sql_clause(Event))
@@ -120,8 +122,10 @@ class EventService:
         id: uuid.UUID,
     ) -> Event | None:
         repository = EventRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
-            Event.id == id
+        statement = (
+            repository.get_readable_statement(auth_subject)
+            .where(Event.id == id)
+            .options(*repository.get_eager_options())
         )
         return await repository.get_one_or_none(statement)
 
@@ -233,17 +237,24 @@ class EventService:
 
         repository = EventRepository.from_session(session)
         event_ids = await repository.insert_batch(events)
-
-        enqueue_job("event.ingested", event_ids=event_ids)
+        enqueue_events(*event_ids)
 
         return EventsIngestResponse(inserted=len(events))
+
+    async def create_event(self, session: AsyncSession, event: Event) -> Event:
+        repository = EventRepository.from_session(session)
+        event = await repository.create(event, flush=True)
+        enqueue_events(event.id)
+        return event
 
     async def ingested(
         self, session: AsyncSession, event_ids: Sequence[uuid.UUID]
     ) -> None:
         repository = EventRepository.from_session(session)
-        statement = repository.get_base_statement().where(
-            Event.id.in_(event_ids), Event.customer.is_not(None)
+        statement = (
+            repository.get_base_statement()
+            .where(Event.id.in_(event_ids), Event.customer.is_not(None))
+            .options(*repository.get_eager_options())
         )
         events = await repository.get_all(statement)
         customers: set[Customer] = set()

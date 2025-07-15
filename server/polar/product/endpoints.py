@@ -2,9 +2,9 @@ from typing import Annotated
 
 from fastapi import Depends, Query
 
-from polar.authz.service import Authz
 from polar.benefit.schemas import BenefitID
 from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
@@ -17,7 +17,7 @@ from polar.routing import APIRouter
 from . import auth
 from .schemas import Product as ProductSchema
 from .schemas import ProductBenefitsUpdate, ProductCreate, ProductID, ProductUpdate
-from .service.product import product as product_service
+from .service import product as product_service
 from .sorting import ProductSortProperty
 
 router = APIRouter(
@@ -37,11 +37,17 @@ ListSorting = Annotated[
 ]
 
 
-@router.get("/", summary="List Products", response_model=ListResource[ProductSchema])
+@router.get(
+    "/",
+    summary="List Products",
+    response_model=ListResource[ProductSchema],
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+)
 async def list(
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
     auth_subject: auth.CreatorProductsRead,
+    metadata: MetadataQuery,
     id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="ProductID Filter", description="Filter by product ID."
     ),
@@ -75,6 +81,7 @@ async def list(
         is_archived=is_archived,
         is_recurring=is_recurring,
         benefit_id=benefit_id,
+        metadata=metadata,
         pagination=pagination,
         sorting=sorting,
     )
@@ -98,7 +105,7 @@ async def get(
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Get a product by ID."""
-    product = await product_service.get_by_id(session, auth_subject, id)
+    product = await product_service.get(session, auth_subject, id)
 
     if product is None:
         raise ResourceNotFound()
@@ -139,22 +146,15 @@ async def update(
     id: ProductID,
     product_update: ProductUpdate,
     auth_subject: auth.CreatorProductsWrite,
-    authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Update a product."""
-    product = await product_service.get_by_id(session, auth_subject, id)
+    product = await product_service.get(session, auth_subject, id)
 
     if product is None:
         raise ResourceNotFound()
 
-    return await product_service.update(
-        session,
-        authz,
-        product,
-        product_update,
-        auth_subject,
-    )
+    return await product_service.update(session, product, product_update, auth_subject)
 
 
 @router.post(
@@ -174,20 +174,15 @@ async def update_benefits(
     id: ProductID,
     benefits_update: ProductBenefitsUpdate,
     auth_subject: auth.CreatorProductsWrite,
-    authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Update benefits granted by a product."""
-    product = await product_service.get_by_id(session, auth_subject, id)
+    product = await product_service.get(session, auth_subject, id)
 
     if product is None:
         raise ResourceNotFound()
 
     product, _, _ = await product_service.update_benefits(
-        session,
-        authz,
-        product,
-        benefits_update.benefits,
-        auth_subject,
+        session, product, benefits_update.benefits, auth_subject
     )
     return product

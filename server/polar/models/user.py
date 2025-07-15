@@ -20,6 +20,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.schema import Index, UniqueConstraint
 
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.schemas import Schema
 
 from .account import Account
@@ -33,6 +34,21 @@ class OAuthPlatform(StrEnum):
     github = "github"
     github_repository_benefit = "github_repository_benefit"
     google = "google"
+
+
+class IdentityVerificationStatus(StrEnum):
+    unverified = "unverified"
+    pending = "pending"
+    verified = "verified"
+    failed = "failed"
+
+    def get_display_name(self) -> str:
+        return {
+            IdentityVerificationStatus.unverified: "Unverified",
+            IdentityVerificationStatus.pending: "Pending",
+            IdentityVerificationStatus.verified: "Verified",
+            IdentityVerificationStatus.failed: "Failed",
+        }[self]
 
 
 class OAuthAccount(RecordModel):
@@ -121,6 +137,19 @@ class User(RecordModel):
     stripe_customer_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None, unique=True
     )
+
+    identity_verification_status: Mapped[IdentityVerificationStatus] = mapped_column(
+        StringEnum(IdentityVerificationStatus),
+        nullable=False,
+        default=IdentityVerificationStatus.unverified,
+    )
+    identity_verification_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None, unique=True
+    )
+
+    @property
+    def identity_verified(self) -> bool:
+        return self.identity_verification_status == IdentityVerificationStatus.verified
 
     # Time of blocking traffic/activity for given user
     blocked_at: Mapped[datetime | None] = mapped_column(

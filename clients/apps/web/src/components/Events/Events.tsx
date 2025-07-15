@@ -1,3 +1,4 @@
+import { MoreHorizOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { List } from '@polar-sh/ui/components/atoms/List'
@@ -46,7 +47,7 @@ const EventRow = ({
           </div>
         </td>
         <td className="px-4 py-2">
-          <div className="w-[120px] flex-shrink-0 font-mono text-sm">
+          <div className="w-[120px] flex-shrink-0 font-mono text-xs">
             <span>{event.name}</span>
           </div>
         </td>
@@ -76,9 +77,9 @@ const EventRow = ({
           </Link>
         </td>
         <td className="px-4 py-2">
-          <pre className="w-full min-w-0 truncate font-mono text-xs">
-            {JSON.stringify(event.metadata, null, 2)}
-          </pre>
+          <span className="dark:bg-polar-700 dark:text-polar-500 w-fit items-center justify-center rounded-md bg-gray-100 px-1.5 py-0.5 text-gray-500">
+            <MoreHorizOutlined className="small" />
+          </span>
         </td>
       </tr>
       {isExpanded && (

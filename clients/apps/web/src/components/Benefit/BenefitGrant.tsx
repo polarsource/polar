@@ -1,4 +1,5 @@
 import { useCustomerBenefitGrantUpdate } from '@/hooks/queries'
+import { markdownOptions } from '@/utils/markdown'
 import { Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import {
@@ -9,6 +10,7 @@ import {
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import Markdown from 'markdown-to-jsx'
 import { usePathname } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -35,8 +37,10 @@ const BenefitGrantCustom = ({
     return null
   }
   return (
-    <ShadowBox className="dark:bg-polar-800 bg-white p-4 text-sm lg:rounded-3xl">
-      <p className="whitespace-pre-line">{note}</p>
+    <ShadowBox className="dark:bg-polar-800 bg-white p-6 lg:rounded-3xl">
+      <div className="prose dark:prose-invert prose-headings:font-medium prose-headings:text-black prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-h4:text-sm prose-h5:text-sm prose-h6:text-sm dark:prose-headings:text-white dark:text-polar-300 prose-p:text-sm leading-normal text-gray-800 [&>*>*:first-child]:mt-0">
+        <Markdown options={markdownOptions}>{note}</Markdown>
+      </div>
     </ShadowBox>
   )
 }
@@ -118,7 +122,7 @@ const BenefitGrantOAuth = ({
       <div className="flex flex-row gap-2">
         {account_id && (
           <a href={openButtonUrl} target="_blank" rel="noopener noreferrer">
-            <Button asChild size="lg">
+            <Button asChild fullWidth>
               {openButtonText}
             </Button>
           </a>
@@ -126,12 +130,7 @@ const BenefitGrantOAuth = ({
         {!account_id && (
           <>
             {accounts.length === 0 ? (
-              <Button
-                type="button"
-                onClick={authorize}
-                size="lg"
-                className="w-full"
-              >
+              <Button type="button" onClick={authorize} fullWidth>
                 {connectButtonText}
               </Button>
             ) : (
@@ -160,7 +159,7 @@ const BenefitGrantOAuth = ({
                     <SelectItem value="add">Connect new account</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button type="button" onClick={onAccountSubmit} size="lg">
+                <Button type="button" onClick={onAccountSubmit} fullWidth>
                   Request my invite
                 </Button>
               </>

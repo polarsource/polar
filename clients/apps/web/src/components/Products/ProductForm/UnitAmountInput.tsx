@@ -1,4 +1,5 @@
 import Input from '@polar-sh/ui/components/atoms/Input'
+import Big from 'big.js'
 import { DollarSign } from 'lucide-react'
 import React, { useCallback, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -31,7 +32,7 @@ const UnitAmountInput: React.ForwardRefExoticComponent<
     if (isNaN(parsed)) {
       return undefined
     }
-    return formatter.format(parsed / 100)
+    return formatter.format(new Big(parsed).div(100).toNumber())
   }, [value, formatter])
 
   const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -60,7 +61,7 @@ const UnitAmountInput: React.ForwardRefExoticComponent<
       if (isNaN(parsed)) {
         return
       }
-      const cents = parsed * 100
+      const cents = new Big(parsed).times(100).toNumber()
       onValueChange(cents)
     },
     [onValueChange],

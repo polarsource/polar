@@ -29,6 +29,7 @@ digital products and software with ease.
       successUrl: process.env.SUCCESS_URL,
     });
     ```
+
   </Accordion>
 
   <Accordion title="First-class No-Code Support" icon="gauge">
@@ -36,19 +37,25 @@ digital products and software with ease.
     without ever integrating our API.
 
     See how you can easily create powerful [Checkout Links](/features/checkout/links).
+
   </Accordion>
 
-  <Accordion title="Merchant of Record" icon="globe">
-    Sell internationally and leave the headache of calculating, capturing and
-    remitting taxes world-wide to us as your [Merchant of Record](/merchant-of-record/introduction).
-  </Accordion>
+{" "}
 
-  <Accordion title="20% Lower Fees" icon="badge-percent">
-    - No fixed monthly costs
-    - 4% + 40¢ on transactions - we earn when you do
-    - Some payments may be subject to additional [fees](/merchant-of-record/fees)
-    - Large or fast-growing business? [Reach out](mailto:support@polar.sh) to us for volume discounts
-  </Accordion>
+<Accordion title="Merchant of Record" icon="globe">
+  Sell internationally and leave the headache of calculating, capturing and
+  remitting taxes world-wide to us as your [Merchant of
+  Record](/merchant-of-record/introduction).
+</Accordion>
+
+{" "}
+
+<Accordion title="20% Lower Fees" icon="badge-percent">
+  - No fixed monthly costs - 4% + 40¢ on transactions - we earn when you do -
+  Some payments may be subject to additional [fees](/merchant-of-record/fees) -
+  Large or fast-growing business? [Reach out](mailto:support@polar.sh) to us for
+  volume discounts
+</Accordion>
 
   <Accordion title="Automated Benefits (Entitlements)" icon="battery-bolt">
     Focus on building your core product vs. common product benefits.
@@ -58,6 +65,7 @@ digital products and software with ease.
     - [License Keys](/features/benefits/license-keys)
     - [GitHub Repo Access](/features/benefits/github-access)
     - [Discord Access](/features/benefits/github-access)
+
   </Accordion>
 
   <Accordion title="Powerful Checkout" icon="money-bill">
@@ -69,6 +77,7 @@ digital products and software with ease.
     - [Embedded Checkout](/features/checkout/embed) on your site
     - [Checkout API](/features/checkout/embed) to programmatically create
       dynamic sessions
+
   </Accordion>
 
   <Accordion title="Open Source" icon="osi">
@@ -80,65 +89,47 @@ digital products and software with ease.
 </AccordionGroup>
 
 ## Quickstart
-Get up and running in 5 minutes
 
-<Steps>
-  <Step title="Sign up">
-    <img className="block dark:hidden" src="/assets/create-org.light.png" />
-    <img className="hidden dark:block" src="/assets/create-org.dark.png" />
+Head over to [polar.sh/signup](https://polar.sh/login) to create an account.
 
-    [Sign up](https://polar.sh/signup) to Polar easily using GitHub, Google or email.
-    Create an organization (store) for your products, customers and checkouts.
-  </Step>
-  <Step title="Create your first product">
-    <img className="block dark:hidden" src="/assets/features/products/create.light.png" />
-    <img className="hidden dark:block" src="/assets/features/products/create.dark.png" />
+<img className="block dark:hidden" src="/assets/create-org.light.png" />
+<img className="hidden dark:block" src="/assets/create-org.dark.png" />
 
-    You can now [create products](/features/products) in minutes with ease. From
-    one-time purchases to subscription tiers.
+[Sign up](https://polar.sh/signup) to Polar easily using GitHub, Google or email. Create an organization for your products, customers and checkouts.
 
-    Using our built-in product benefits to easily offer
-    [File Downloads](/features/benefits/file-downloads),
-    [License Keys](/features/benefits/license-keys),
-    [GitHub Repo Access](/features/benefits/github-access) and
-    [Discord Access](/features/benefits/github-access).
-  </Step>
-  <Step title="Create and share Checkout Links">
-    <img className="block dark:hidden" src="/assets/features/checkout/links/create.light.png" />
-    <img className="hidden dark:block" src="/assets/features/checkout/links/create.dark.png" />
+## Using the Polar SDK
 
-    You can now easily create and share a checkout link to drive sales.
-  </Step>
-  <Step title="Get sales & payouts 🎉">
-    <img className="block dark:hidden" src="/assets/features/analytics/overview.light.png" />
-    <img className="hidden dark:block" src="/assets/features/analytics/overview.dark.png" />
+Polar comes in the form of an SDK, and is designed to be used in your existing backend infrastructure. We currently have SDKs for:
 
-    Easily monitor your
-    [Analytics](/features/analytics),
-    [Sales](/features/orders),
-    [Financial Balance](/features/finance/balance)
-    and [get payouts](/features/finance/payouts) at any time.
+- [JavaScript/TypeScript](/integrate/sdk/typescript)
+- [Python](/integrate/sdk/python)
+- [Go](/integrate/sdk/golang)
+- [PHP](/integrate/sdk/php)
 
-    <Note>
-      We perform [account reviews](/merchant-of-record/account-reviews) to ensure
-      [acceptable use](/merchant-of-record/acceptable-use) ahead of the first
-      payout.
-    </Note>
-  </Step>
-</Steps>
+Navigate to the relevant SDK page to learn more about the SDK and how to use it. In this particular guide, we'll focus on using the JavaScript/TypeScript SDK.
 
-## Quickstart from CLI
+## Using a Polar Adapter
 
-The fastest way to get started with Polar in your Next.js or Nuxt.js app. Setup SaaS products & the necessary files for your framework in seconds.
+Polar's Adapters are small framework-specific utilities which makes it super-easy to integrate Polar.
 
-```bash
-npx polar-init
-```
+They can be used to:
 
-**Supported Frameworks**
-- Next.js
-- Nuxt.js
+- Create Checkout Sessions
+- Create a Customer Portal
+- Listen for Polar Webhooks (e.g. for events like a customer being created, a subscription being updated, etc.)
 
-**Open Source**
+We currently have adapters for the most popular frameworks:
 
-The code is open source and available on [GitHub](https://github.com/polarsource/polar-init)
+- [Next.js](/integrate/sdk/adapters/nextjs)
+- [BetterAuth](/integrate/sdk/adapters/better-auth)
+- [Express](/integrate/sdk/adapters/express)
+- [Fastify](/integrate/sdk/adapters/fastify)
+- [Hono](/integrate/sdk/adapters/hono)
+- [Deno](/integrate/sdk/adapters/deno)
+- [Nuxt](/integrate/sdk/adapters/nuxt)
+- [Remix](/integrate/sdk/adapters/remix)
+- [SvelteKit](/integrate/sdk/adapters/sveltekit)
+- [Tanstack Start](/integrate/sdk/adapters/tanstack-start)
+- [Elysia](/integrate/sdk/adapters/elysia)
+- [Astro](/integrate/sdk/adapters/astro)
+- [Laravel](/integrate/sdk/adapters/laravel)

@@ -10,17 +10,16 @@ from typing import (
     is_typeddict,
 )
 
-from arq.worker import Function as WorkerFunction
+import dramatiq
 from fastapi import Request
 from pydantic import Field, create_model
 
 from polar import tasks  # noqa
-from polar.worker import WorkerSettings
 
 from .. import forms
 
-_TASK_DEFINITIONS: dict[str, WorkerFunction] = {
-    f.name: f for f in WorkerSettings.functions
+_TASK_DEFINITIONS: dict[str, dramatiq.Actor[Any, Any]] = {
+    name: actor for name, actor in dramatiq.get_broker().actors.items()
 }
 _TaskName = Literal[tuple(_TASK_DEFINITIONS.keys())]  # type: ignore[valid-type]
 
@@ -64,7 +63,7 @@ def build_enqueue_task_form_class(
     }
     if task is not None:
         task_function = _TASK_DEFINITIONS[task]
-        for key, type_hint in _get_function_arguments(task_function.coroutine):
+        for key, type_hint in _get_function_arguments(task_function.fn):
             field_definitions[key] = (type_hint, ...)
 
     return create_model(

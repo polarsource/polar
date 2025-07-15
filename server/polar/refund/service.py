@@ -30,7 +30,7 @@ from polar.models.refund import Refund, RefundReason, RefundStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
-from polar.organization.service import organization as organization_service
+from polar.organization.repository import OrganizationRepository
 from polar.pledge.service import pledge as pledge_service
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
@@ -201,7 +201,7 @@ class RefundService(ResourceServiceReader[Refund]):
             )
         except stripe_lib.InvalidRequestError as e:
             if e.code == "charge_already_refunded":
-                log.warn("refund.attempted_already_refunded", order_id=order.id)
+                log.warning("refund.attempted_already_refunded", order_id=order.id)
                 raise RefundedAlready(order)
             else:
                 raise e
@@ -324,10 +324,11 @@ class RefundService(ResourceServiceReader[Refund]):
         if order is None:
             return refund
 
-        organization = await organization_service.get(
-            session, order.product.organization_id
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            order.product.organization_id
         )
-        if not organization:
+        if organization is None:
             return refund
 
         await self._on_updated(session, organization, refund)
@@ -501,10 +502,11 @@ class RefundService(ResourceServiceReader[Refund]):
         if order is None:
             return instance
 
-        organization = await organization_service.get(
-            session, order.product.organization_id
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            order.product.organization_id
         )
-        if not organization:
+        if organization is None:
             return instance
 
         await self._on_created(session, organization, instance)
@@ -539,6 +541,29 @@ class RefundService(ResourceServiceReader[Refund]):
                 refunded_amount=refund.amount,
                 refunded_tax_amount=refund.tax_amount,
             )
+
+            # Revert the tax transaction in the tax processor ledger
+            if order.tax_transaction_processor_id:
+                if refund.total_amount == order.total_amount:
+                    tax_transaction_processor = (
+                        await stripe_service.revert_tax_transaction(
+                            order.tax_transaction_processor_id,
+                            mode="full",
+                            reference=str(refund.id),
+                        )
+                    )
+                else:
+                    tax_transaction_processor = (
+                        await stripe_service.revert_tax_transaction(
+                            order.tax_transaction_processor_id,
+                            mode="partial",
+                            reference=str(refund.id),
+                            amount=-refund.total_amount,
+                        )
+                    )
+                refund.tax_transaction_processor_id = tax_transaction_processor.id
+                session.add(refund)
+
         elif pledge and pledge.payment_id and payment.charge_id:
             await pledge_service.refund_by_payment_id(
                 session=session,

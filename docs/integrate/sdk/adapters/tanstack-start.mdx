@@ -1,0 +1,106 @@
+---
+title: "TanStack Start"
+description: "Payments and Checkouts made dead simple with TanStack Start"
+---
+
+`pnpm install @polar-sh/tanstack-start zod`
+
+## Checkout
+
+Create a Checkout handler which takes care of redirections.
+
+```typescript
+// routes/api/checkout.ts
+import { Checkout } from "@polar-sh/tanstack-start";
+import { createAPIFileRoute } from "@tanstack/react-start/api";
+
+export const APIRoute = createAPIFileRoute("/api/checkout")({
+  GET: Checkout({
+    accessToken: process.env.POLAR_ACCESS_TOKEN,
+    successUrl: process.env.SUCCESS_URL,
+    server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+    theme: "dark", // Enforces the theme - System-preferred theme will be set if left omitted
+  }),
+});
+```
+
+### Query Params
+
+Pass query params to this route.
+
+- products `?products=123`
+- customerId (optional) `?products=123&customerId=xxx`
+- customerExternalId (optional) `?products=123&customerExternalId=xxx`
+- customerEmail (optional) `?products=123&customerEmail=janedoe@gmail.com`
+- customerName (optional) `?products=123&customerName=Jane`
+- metadata (optional) `URL-Encoded JSON string`
+
+## Customer Portal
+
+Create a customer portal where your customer can view orders and subscriptions.
+
+```typescript
+// routes/api/portal.ts
+import { CustomerPortal } from "@polar-sh/tanstack-start";
+import { createAPIFileRoute } from "@tanstack/react-start/api";
+import { getSupabaseServerClient } from "~/servers/supabase-server";
+
+export const APIRoute = createAPIFileRoute("/api/portal")({
+  GET: CustomerPortal({
+    accessToken: process.env.POLAR_ACCESS_TOKEN,
+    getCustomerId: async (request: Request) => "", // Function to resolve a Polar Customer ID
+    server: "sandbox", // Use sandbox if you're testing Polar - omit the parameter or pass 'production' otherwise
+  }),
+});
+```
+
+## Webhooks
+
+A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
+
+```typescript
+// api/webhook/polar.ts
+import { Webhooks } from "@polar-sh/tanstack-start";
+import { createAPIFileRoute } from "@tanstack/react-start/api";
+
+export const APIRoute = createAPIFileRoute("/api/webhook/polar")({
+  POST: Webhooks({
+    webhookSecret: process.env.POLAR_WEBHOOK_SECRET!,
+    onPayload: async (payload) => {
+      // Handle the payload
+      // No need to return an acknowledge response
+    },
+  }),
+});
+```
+
+#### Payload Handlers
+
+The Webhook handler also supports granular handlers for easy integration.
+
+- `onPayload` - Catch-all handler for any incoming Webhook event
+- `onCheckoutCreated` - Triggered when a checkout is created
+- `onCheckoutUpdated` - Triggered when a checkout is updated
+- `onOrderCreated` - Triggered when an order is created
+- `onOrderPaid` - Triggered when an order is paid
+- `onOrderRefunded` - Triggered when an order is refunded
+- `onRefundCreated` - Triggered when a refund is created
+- `onRefundUpdated` - Triggered when a refund is updated
+- `onSubscriptionCreated` - Triggered when a subscription is created
+- `onSubscriptionUpdated` - Triggered when a subscription is updated
+- `onSubscriptionActive` - Triggered when a subscription becomes active
+- `onSubscriptionCanceled` - Triggered when a subscription is canceled
+- `onSubscriptionRevoked` - Triggered when a subscription is revoked
+- `onSubscriptionUncanceled` - Triggered when a subscription cancellation is reversed
+- `onProductCreated` - Triggered when a product is created
+- `onProductUpdated` - Triggered when a product is updated
+- `onOrganizationUpdated` - Triggered when an organization is updated
+- `onBenefitCreated` - Triggered when a benefit is created
+- `onBenefitUpdated` - Triggered when a benefit is updated
+- `onBenefitGrantCreated` - Triggered when a benefit grant is created
+- `onBenefitGrantUpdated` - Triggered when a benefit grant is updated
+- `onBenefitGrantRevoked` - Triggered when a benefit grant is revoked
+- `onCustomerCreated` - Triggered when a customer is created
+- `onCustomerUpdated` - Triggered when a customer is updated
+- `onCustomerDeleted` - Triggered when a customer is deleted
+- `onCustomerStateChanged` - Triggered when a customer state changes

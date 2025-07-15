@@ -1,7 +1,7 @@
 from enum import StrEnum
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import AfterValidator, BaseModel, ConfigDict
 from sqlalchemy import (
     ColumnExpressionArgument,
     Dialect,
@@ -27,42 +27,54 @@ class FilterOperator(StrEnum):
     not_like = "not_like"
 
 
+def _strip_metadata_prefix(value: str) -> str:
+    prefix = "metadata."
+    return value[len(prefix) :] if value.startswith(prefix) else value
+
+
 class FilterClause(BaseModel):
-    property: str
+    property: Annotated[str, AfterValidator(_strip_metadata_prefix)]
     operator: FilterOperator
     value: str | int | bool
 
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
-        try:
-            attr = getattr(model, self.property)
-            return self._get_comparison_clause(attr, str(self.value))
-        except AttributeError:
-            attr = model.user_metadata[self.property]
-            return case(
-                # The property is a string, compare it with the value as a string
-                (
-                    func.jsonb_typeof(attr) == "string",
-                    self._get_comparison_clause(attr.as_string(), str(self.value)),
-                ),
-                # The property is a number
-                (
-                    func.jsonb_typeof(attr) == "number",
-                    # Compare it with the value if it's an integer
-                    self._get_comparison_clause(attr.as_integer(), self.value)
-                    if isinstance(self.value, int)
-                    # Otherwise return false
-                    else false(),
-                ),
-                # The property is a boolean
-                (
-                    func.jsonb_typeof(attr) == "boolean",
-                    # Compare it with the value if it's a boolean
-                    self._get_comparison_clause(attr.as_boolean(), self.value)
-                    if isinstance(self.value, bool)
-                    # Otherwise return false
-                    else false(),
-                ),
-            )
+        if self.property in model._filterable_fields:
+            allowed_type, attr = model._filterable_fields[self.property]
+            if not isinstance(self.value, allowed_type):
+                return false()
+            return self._get_comparison_clause(attr, self.value)
+
+        attr = model.user_metadata[self.property]
+
+        # The operator is LIKE OR NOT LIKE, treat everything as a string
+        if self.operator in (FilterOperator.like, FilterOperator.not_like):
+            return self._get_comparison_clause(attr.as_string(), self._get_str_value())
+
+        return case(
+            # The property is a string, compare it with the value as a string
+            (
+                func.jsonb_typeof(attr) == "string",
+                self._get_comparison_clause(attr.as_string(), self._get_str_value()),
+            ),
+            # The property is a number
+            (
+                func.jsonb_typeof(attr) == "number",
+                # Compare it with the value if it's an integer
+                self._get_comparison_clause(attr.as_integer(), self._get_number_value())
+                if isinstance(self.value, int)
+                # Otherwise return false
+                else false(),
+            ),
+            # The property is a boolean
+            (
+                func.jsonb_typeof(attr) == "boolean",
+                # Compare it with the value if it's a boolean
+                self._get_comparison_clause(attr.as_boolean(), self.value)
+                if isinstance(self.value, bool)
+                # Otherwise return false
+                else false(),
+            ),
+        )
 
     def _get_comparison_clause(self, attr: Any, value: str | int | bool) -> Any:
         if self.operator == FilterOperator.eq:
@@ -82,6 +94,18 @@ class FilterClause(BaseModel):
         elif self.operator == FilterOperator.not_like:
             return attr.notlike(f"%{value}%")
         raise ValueError(f"Unsupported operator: {self.operator}")
+
+    def _get_str_value(self) -> str:
+        if isinstance(self.value, bool):
+            return "t" if self.value else "f"
+        return str(self.value)
+
+    def _get_number_value(self) -> int:
+        if isinstance(self.value, str):
+            raise ValueError("Cannot convert string to number")
+        if isinstance(self.value, bool):
+            return 1 if self.value else 0
+        return self.value
 
 
 class FilterConjunction(StrEnum):

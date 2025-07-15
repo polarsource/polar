@@ -22,6 +22,7 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_canceled_subscription,
     create_product,
+    create_subscription,
 )
 from tests.fixtures.stripe import (
     cloned_stripe_canceled_subscription,
@@ -72,6 +73,43 @@ class TestListSubscriptions:
             assert "user" in item
             assert "customer" in item
             assert item["user"]["id"] == item["customer"]["id"]
+
+    @pytest.mark.auth
+    async def test_metadata(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "ABC"},
+        )
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "DEF"},
+        )
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "GHI"},
+        )
+
+        response = await client.get(
+            "/v1/subscriptions/", params={"metadata[reference_id]": ["ABC", "DEF"]}
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
 
 
 @pytest.mark.asyncio
@@ -344,6 +382,48 @@ class TestSubscriptionUpdateCancel:
         assert updated_subscription["ended_at"] is None
         assert updated_subscription["customer_cancellation_reason"] == reason
         assert updated_subscription["customer_cancellation_comment"] == comment
+
+    @pytest.mark.auth
+    async def test_valid_past_due(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        stripe_service_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=datetime(2023, 1, 1),
+            status=SubscriptionStatus.past_due,
+        )
+
+        reason = "too_expensive"
+        comment = "Inflation be crazy"
+
+        canceled = cloned_stripe_canceled_subscription(subscription)
+        stripe_service_mock.cancel_subscription.return_value = canceled
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json=dict(
+                cancel_at_period_end=True,
+                customer_cancellation_reason=reason,
+                customer_cancellation_comment=comment,
+            ),
+        )
+        assert response.status_code == 200
+        assert stripe_service_mock.update_subscription_price.called is False
+        stripe_service_mock.cancel_subscription.assert_called_once_with(
+            subscription.stripe_subscription_id,
+            customer_reason=reason,
+            customer_comment=comment,
+        )
+
+        updated_subscription = response.json()
+        assert updated_subscription["status"] == SubscriptionStatus.past_due
 
 
 @pytest.mark.asyncio

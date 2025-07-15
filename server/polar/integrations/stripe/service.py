@@ -1,21 +1,19 @@
 import uuid
 from collections.abc import AsyncGenerator, AsyncIterator, Sequence
-from typing import TYPE_CHECKING, Literal, Unpack, cast
+from typing import TYPE_CHECKING, Literal, Unpack, cast, overload
 
 import stripe as stripe_lib
 
-from polar.account.schemas import AccountCreate
 from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import PolarError
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import utc_now
 from polar.logfire import instrument_httpx
-from polar.models.user import User
-from polar.postgres import AsyncSession, sql
 
 if TYPE_CHECKING:
-    from polar.models import Product, ProductPrice
+    from polar.account.schemas import AccountCreate
+    from polar.models import Product, ProductPrice, User
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 
@@ -68,7 +66,7 @@ class StripeService:
         return await stripe_lib.PaymentIntent.retrieve_async(id)
 
     async def create_account(
-        self, account: AccountCreate, name: str | None
+        self, account: "AccountCreate", name: str | None
     ) -> stripe_lib.Account:
         create_params: stripe_lib.Account.CreateParams = {
             "country": account.country,
@@ -153,50 +151,6 @@ class StripeService:
 
     async def get_customer(self, customer_id: str) -> stripe_lib.Customer:
         return await stripe_lib.Customer.retrieve_async(customer_id)
-
-    async def get_or_create_user_customer(
-        self,
-        session: AsyncSession,
-        user: User,
-    ) -> stripe_lib.Customer | None:
-        if user.stripe_customer_id:
-            return await self.get_customer(user.stripe_customer_id)
-
-        customer = await stripe_lib.Customer.create_async(
-            email=user.email,
-            metadata={
-                "user_id": str(user.id),
-                "email": user.email,
-            },
-        )
-
-        if not customer:
-            return None
-
-        # Save customer ID
-        stmt = (
-            sql.Update(User)
-            .where(User.id == user.id)
-            .values(stripe_customer_id=customer.id)
-        )
-        await session.execute(stmt)
-        await session.flush()
-
-        return customer
-
-    async def create_user_portal_session(
-        self,
-        session: AsyncSession,
-        user: User,
-    ) -> stripe_lib.billing_portal.Session | None:
-        customer = await self.get_or_create_user_customer(session, user)
-        if not customer:
-            return None
-
-        return await stripe_lib.billing_portal.Session.create_async(
-            customer=customer.id,
-            return_url=f"{settings.FRONTEND_BASE_URL}/settings",
-        )
 
     async def create_product(
         self,
@@ -344,6 +298,20 @@ class StripeService:
                 raise MissingPaymentMethod(id)
             raise
 
+    async def update_subscription_discount(
+        self, id: str, old_coupon: str | None, new_coupon: str | None
+    ) -> stripe_lib.Subscription:
+        if old_coupon is not None:
+            await stripe_lib.Subscription.delete_discount_async(id)
+
+        modify_discount_params: list[stripe_lib.Subscription.ModifyParamsDiscount] = []
+        if new_coupon is not None:
+            modify_discount_params.append({"coupon": new_coupon})
+
+        return await stripe_lib.Subscription.modify_async(
+            id, discounts=modify_discount_params
+        )
+
     async def uncancel_subscription(self, id: str) -> stripe_lib.Subscription:
         return await stripe_lib.Subscription.modify_async(
             id,
@@ -394,9 +362,9 @@ class StripeService:
         return details
 
     async def update_invoice(
-        self, id: str, *, metadata: dict[str, str] | None = None
+        self, id: str, **params: Unpack[stripe_lib.Invoice.ModifyParams]
     ) -> stripe_lib.Invoice:
-        return await stripe_lib.Invoice.modify_async(id, metadata=metadata or {})
+        return await stripe_lib.Invoice.modify_async(id, **params)
 
     async def get_balance_transaction(self, id: str) -> stripe_lib.BalanceTransaction:
         return await stripe_lib.BalanceTransaction.retrieve_async(id)
@@ -412,16 +380,18 @@ class StripeService:
         account_id: str | None = None,
         payout: str | None = None,
         type: str | None = None,
+        expand: list[str] | None = None,
     ) -> AsyncIterator[stripe_lib.BalanceTransaction]:
         params: stripe_lib.BalanceTransaction.ListParams = {
             "limit": 100,
             "stripe_account": account_id,
-            "expand": ["data.source"],
         }
         if payout is not None:
             params["payout"] = payout
         if type is not None:
             params["type"] = type
+        if expand is not None:
+            params["expand"] = expand
 
         result = await stripe_lib.BalanceTransaction.list_async(**params)
         return result.auto_paging_iter()
@@ -687,15 +657,15 @@ class StripeService:
                 else None
             ),
         )
-        invoice = await stripe_lib.Invoice.finalize_invoice_async(
-            invoice_id,
-            idempotency_key=(
-                f"{idempotency_key}_finalize_invoice"
-                if idempotency_key is not None
-                else None
-            ),
-        )
-
+        if invoice.status == "draft":
+            invoice = await stripe_lib.Invoice.finalize_invoice_async(
+                invoice_id,
+                idempotency_key=(
+                    f"{idempotency_key}_finalize_invoice"
+                    if idempotency_key is not None
+                    else None
+                ),
+            )
         if invoice.status == "open":
             await stripe_lib.Invoice.pay_async(
                 invoice_id,
@@ -754,12 +724,21 @@ class StripeService:
             )
             item_map[invoice_item.id] = (price, invoice_item)
 
-        invoice = await stripe_lib.Invoice.finalize_invoice_async(
-            invoice_id,
-            idempotency_key=(
-                f"{idempotency_key}_finalize_invoice" if idempotency_key else None
-            ),
+        # Manually retrieve the invoice, as we've seen cases where finalization below
+        # failed because the idempotency request returned us a draft invoice,
+        # but the invoice was actually already finalized.
+        invoice = await stripe_lib.Invoice.retrieve_async(
+            invoice_id, expand=["total_tax_amounts.tax_rate"]
         )
+
+        if invoice.status == "draft":
+            invoice = await stripe_lib.Invoice.finalize_invoice_async(
+                invoice_id,
+                idempotency_key=(
+                    f"{idempotency_key}_finalize_invoice" if idempotency_key else None
+                ),
+                expand=["total_tax_amounts.tax_rate"],
+            )
 
         if invoice.status == "open":
             await stripe_lib.Invoice.pay_async(
@@ -805,6 +784,49 @@ class StripeService:
     ) -> stripe_lib.tax.Calculation:
         return await stripe_lib.tax.Calculation.create_async(**params)
 
+    async def get_tax_calculation(self, id: str) -> stripe_lib.tax.Calculation:
+        return await stripe_lib.tax.Calculation.retrieve_async(id)
+
+    async def create_tax_transaction(
+        self, calculation_id: str, reference: str
+    ) -> stripe_lib.tax.Transaction:
+        return await stripe_lib.tax.Transaction.create_from_calculation_async(
+            calculation=calculation_id,
+            reference=reference,
+            idempotency_key=f"polar:tax_transaction:{reference}",
+        )
+
+    @overload
+    async def revert_tax_transaction(
+        self, original_transaction_id: str, mode: Literal["full"], reference: str
+    ) -> stripe_lib.tax.Transaction: ...
+
+    @overload
+    async def revert_tax_transaction(
+        self,
+        original_transaction_id: str,
+        mode: Literal["partial"],
+        reference: str,
+        amount: int,
+    ) -> stripe_lib.tax.Transaction: ...
+
+    async def revert_tax_transaction(
+        self,
+        original_transaction_id: str,
+        mode: Literal["full", "partial"],
+        reference: str,
+        amount: int | None = None,
+    ) -> stripe_lib.tax.Transaction:
+        params: stripe_lib.tax.Transaction.CreateReversalParams = {
+            "mode": mode,
+            "original_transaction": original_transaction_id,
+            "reference": reference,
+            "idempotency_key": f"polar:tax_transaction_revert:{reference}",
+        }
+        if mode == "partial" and amount is not None:
+            params["flat_amount"] = amount
+        return await stripe_lib.tax.Transaction.create_reversal_async(**params)
+
     async def create_coupon(
         self, **params: Unpack[stripe_lib.Coupon.CreateParams]
     ) -> stripe_lib.Coupon:
@@ -827,16 +849,40 @@ class StripeService:
 
     async def get_payment_method(
         self, payment_method_id: str
-    ) -> stripe_lib.PaymentMethod | None:
-        try:
-            return await stripe_lib.PaymentMethod.retrieve_async(payment_method_id)
-        except stripe_lib.InvalidRequestError:
-            return None
+    ) -> stripe_lib.PaymentMethod:
+        return await stripe_lib.PaymentMethod.retrieve_async(payment_method_id)
 
     async def delete_payment_method(
         self, payment_method_id: str
     ) -> stripe_lib.PaymentMethod:
         return await stripe_lib.PaymentMethod.detach_async(payment_method_id)
+
+    async def get_verification_session(
+        self, id: str
+    ) -> stripe_lib.identity.VerificationSession:
+        return await stripe_lib.identity.VerificationSession.retrieve_async(id)
+
+    async def create_verification_session(
+        self, user: "User"
+    ) -> stripe_lib.identity.VerificationSession:
+        return await stripe_lib.identity.VerificationSession.create_async(
+            type="document",
+            options={
+                "document": {
+                    "allowed_types": ["driving_license", "id_card", "passport"],
+                    "require_live_capture": True,
+                    "require_matching_selfie": True,
+                }
+            },
+            provided_details={
+                "email": user.email,
+            },
+            client_reference_id=str(user.id),
+            metadata={"user_id": str(user.id)},
+        )
+
+    async def get_tax_rate(self, id: str) -> stripe_lib.TaxRate:
+        return await stripe_lib.TaxRate.retrieve_async(id)
 
 
 stripe = StripeService()

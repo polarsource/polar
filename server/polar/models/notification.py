@@ -20,7 +20,9 @@ class Notification(RecordModel):
     user_id: Mapped[UUID] = mapped_column(Uuid, nullable=True)
     email_addr: Mapped[str] = mapped_column(String, nullable=True)
 
-    organization_id: Mapped[UUID] = mapped_column(Uuid, nullable=True, default=None)
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid, nullable=True, default=None, index=True
+    )
 
     type: Mapped[str] = mapped_column(String, nullable=False)
 
@@ -28,4 +30,4 @@ class Notification(RecordModel):
         Uuid, ForeignKey("pledges.id"), nullable=True
     )
 
-    payload: Mapped[JSONDict | None] = mapped_column(JSONB, nullable=True, default=dict)
+    payload: Mapped[JSONDict] = mapped_column(JSONB, nullable=False, default=dict)

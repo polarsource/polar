@@ -1,0 +1,73 @@
+---
+title: "S3 Strategy"
+description: "Ingestion strategy for S3 Operations"
+---
+
+## Javascript SDK
+
+Wrap the official AWS S3 Client with our S3 Ingestion Strategy to automatically ingest bytes uploaded.
+
+```
+pnpm add @polar-sh/ingestion @aws-sdk/client-s3
+```
+
+```typescript
+import { Ingestion } from "@polar-sh/ingestion";
+import { S3Strategy } from "@polar-sh/ingestion/strategies/S3";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION,
+  endpoint: process.env.AWS_ENDPOINT_URL,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+});
+
+// Setup the S3 Ingestion Strategy
+const s3Ingestion = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN })
+  .strategy(new S3Strategy(s3Client))
+  .ingest("s3-uploads");
+
+export async function POST(request: Request) {
+  try {
+    // Get the wrapped S3 Client
+    // Pass Customer Id to properly annotate the ingestion events with a specific customer
+    const s3 = s3Ingestion.client({
+      customerId: request.headers.get("X-Polar-Customer-Id") ?? "",
+    });
+
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: "a-random-key",
+        Body: JSON.stringify({
+          name: "John Doe",
+          age: 30,
+        }),
+        ContentType: "application/json",
+      })
+    );
+
+    return Response.json({});
+  } catch (error) {
+    return Response.json({ error: error.message });
+  }
+}
+```
+
+#### Ingestion Payload
+
+```json
+{
+  "customerId": "123",
+  "name": "s3-uploads",
+  "metadata": {
+    "bytes": 100,
+    "bucket": "my-bucket",
+    "key": "my-key",
+    "contentType": "application/text"
+  }
+}
+```

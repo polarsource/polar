@@ -10,8 +10,8 @@ from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession
 from polar.user.oauth_service import oauth_account_service
-from polar.user.schemas.user import UserSignupAttribution
-from polar.user.service.user import UserService
+from polar.user.repository import UserRepository
+from polar.user.schemas import UserSignupAttribution
 from polar.worker import enqueue_job
 
 if TYPE_CHECKING:
@@ -57,7 +57,7 @@ class AccountLinkedToAnotherUserError(GithubUserServiceError):
         super().__init__(message, 403)
 
 
-class GithubUserService(UserService):
+class GithubUserService:
     async def get_user_by_github_id(
         self, session: AsyncSession, id: int
     ) -> User | None:
@@ -250,7 +250,8 @@ class GithubUserService(UserService):
 
         # Check if existing user with this email
         email, email_verified = github_email
-        existing_user_by_email = await self.get_by_email(session, email)
+        repository = UserRepository.from_session(session)
+        existing_user_by_email = await repository.get_by_email(email)
         if existing_user_by_email:
             # Automatically link if email is verified
             if email_verified:
@@ -350,4 +351,4 @@ class GithubUserService(UserService):
         raise NoPrimaryEmailError()
 
 
-github_user = GithubUserService(User)
+github_user = GithubUserService()

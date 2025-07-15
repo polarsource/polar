@@ -1,0 +1,52 @@
+---
+title: "Event Ingestion"
+description: "Ingest events from your application"
+---
+
+import Events from "/snippets/usage/events.mdx";
+
+<Events />
+
+## Ingest events using the Polar SDK
+
+To ingest events, you can use the Polar SDKs.
+
+### TypeScript Example
+
+```typescript
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+});
+
+await polar.events.ingest({
+  events: [
+    {
+      name: "<value>",
+      externalCustomerId: "<id>",
+      metadata: {
+        key: "value",
+      },
+    },
+  ],
+});
+```
+
+<Note>
+  You are always responsible for checking the balance of your customers' Usage
+  Meter. As events always are ingested, we will never prohibit any customer's
+  action based on their Usage Meter balance.
+</Note>
+
+## Ingestion Strategies
+
+To make it easier to ingest events, we have created a set of ingestion strategies for common event sources.
+
+Learn more about our [Ingestion Strategies](/features/usage-based-billing/ingestion-strategies).
+
+## Good to know
+
+### Events are immutable
+
+Once an event is ingested, it cannot be changed, nor can it be deleted.

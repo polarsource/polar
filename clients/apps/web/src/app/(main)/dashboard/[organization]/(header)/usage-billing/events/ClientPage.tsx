@@ -15,27 +15,20 @@ import {
   AddOutlined,
   ArrowDownward,
   ArrowUpward,
+  CheckOutlined,
+  FilterList,
   Search,
 } from '@mui/icons-material'
 import { operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/ui/components/atoms/Select'
-import {
-  endOfMonth,
-  endOfToday,
-  endOfYesterday,
-  startOfMonth,
-  startOfToday,
-  startOfYesterday,
-  subMonths,
-} from 'date-fns'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
+import { endOfToday } from 'date-fns'
 import { useSearchParams } from 'next/navigation'
 import {
   parseAsInteger,
@@ -46,72 +39,6 @@ import {
 } from 'nuqs'
 import React, { useCallback, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-
-interface DatePresetDropdownProps {
-  organization: schemas['Organization']
-  setDateRange: (dateRange: { from: Date; to: Date }) => void
-}
-
-const DatePresetDropdown = ({
-  organization,
-  setDateRange,
-}: DatePresetDropdownProps) => {
-  const datePresets = {
-    today: {
-      from: startOfToday(),
-      to: endOfToday(),
-    },
-    yesterday: {
-      from: startOfYesterday(),
-      to: endOfYesterday(),
-    },
-    this_month: {
-      from: startOfMonth(new Date()),
-      to: endOfMonth(new Date()),
-    },
-    last_month: {
-      from: startOfMonth(subMonths(new Date(), 1)),
-      to: endOfMonth(subMonths(new Date(), 1)),
-    },
-    last_3_months: {
-      from: subMonths(new Date(), 3),
-      to: new Date(),
-    },
-    since_organization_creation: {
-      from: new Date(organization.created_at),
-      to: new Date(),
-    },
-  } as const
-
-  const datePresetDisplayNames = {
-    today: 'Today',
-    yesterday: 'Yesterday',
-    this_month: 'This Month',
-    last_month: 'Last Month',
-    last_3_months: 'Last 3 Months',
-    since_organization_creation: 'Since Organization Creation',
-  } as const
-
-  return (
-    <Select
-      defaultValue="since_organization_creation"
-      onValueChange={(value) => {
-        setDateRange(datePresets[value as keyof typeof datePresets])
-      }}
-    >
-      <SelectTrigger className="w-fit min-w-64">
-        <SelectValue placeholder="Date Range Preset" />
-      </SelectTrigger>
-      <SelectContent>
-        {Object.keys(datePresets).map((key) => (
-          <SelectItem key={key} value={key}>
-            {datePresetDisplayNames[key as keyof typeof datePresetDisplayNames]}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )
-}
 
 const PAGE_SIZE = 50
 
@@ -140,11 +67,17 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   )
   const [endDate, setEndDate] = useQueryState(
     'endDate',
-    parseAsIsoDateTime.withDefault(new Date()),
+    parseAsIsoDateTime.withDefault(endOfToday()),
   )
   const [currentPage, setCurrentPage] = useQueryState(
     'page',
     parseAsInteger.withDefault(1),
+  )
+  const [source, setSource] = useQueryState(
+    'source',
+    parseAsStringLiteral(['user', 'system', 'all'] as const).withDefault(
+      'user',
+    ),
   )
 
   const {
@@ -156,6 +89,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const { data, fetchNextPage, hasNextPage } = useEventNames(organization.id, {
     query,
     sorting: [sorting],
+    source: source === 'all' ? undefined : source,
   })
 
   const eventNames = useMemo(
@@ -173,10 +107,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           limit: PAGE_SIZE,
           start_timestamp: startDate.toISOString(),
           end_timestamp: endDate.toISOString(),
-          source: 'user',
+          source: source === 'all' ? undefined : source,
         }
       : undefined
-  }, [selectedEventName, currentPage, startDate, endDate])
+  }, [selectedEventName, currentPage, startDate, endDate, source])
 
   const { data: events } = useEvents(organization.id, eventParameters)
 
@@ -190,12 +124,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     [setStartDate, setEndDate],
   )
 
-  const dateRange = useMemo(() => {
-    return {
-      from: startDate,
-      to: endDate,
-    }
-  }, [startDate, endDate])
+  const dateRange = {
+    from: startDate,
+    to: endDate,
+  }
 
   const { ref: loadingRef, inViewport } = useInViewport<HTMLDivElement>()
 
@@ -215,6 +147,43 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           <div className="flex flex-row items-center justify-between gap-6 px-4 py-4">
             <div>Events</div>
             <div className="flex flex-row items-center gap-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" className="h-6 w-6" variant="ghost">
+                    <FilterList fontSize="small" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setSource('all')}>
+                    <CheckOutlined
+                      className={twMerge(
+                        'h-4 w-4',
+                        source !== 'all' && 'invisible',
+                      )}
+                    />
+                    <span>All</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSource('user')}>
+                    <CheckOutlined
+                      className={twMerge(
+                        'h-4 w-4',
+                        source !== 'user' && 'invisible',
+                      )}
+                    />
+                    <span>User</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSource('system')}>
+                    <CheckOutlined
+                      className={twMerge(
+                        'h-4 w-4',
+                        source !== 'system' && 'invisible',
+                      )}
+                    />
+                    <span>System</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -301,10 +270,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       {selectedEventName ? (
         <div className="flex flex-col gap-y-8">
           <div className="flex flex-row items-center gap-4">
-            <DatePresetDropdown
-              organization={organization}
-              setDateRange={onDateRangeChange}
-            />
             <DateRangePicker
               date={dateRange}
               onDateChange={onDateRangeChange}

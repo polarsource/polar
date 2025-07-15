@@ -96,26 +96,6 @@ export const LicenseKeysList = ({
         )
       },
     },
-    {
-      id: 'usage',
-      accessorKey: 'usage',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Usage" />
-      ),
-      cell: ({ row: { original: licenseKey } }) => {
-        return (
-          <div className="flex flex-row gap-x-2">
-            {typeof licenseKey.limit_usage === 'number' ? (
-              <span>
-                {licenseKey.usage}/{licenseKey.limit_usage}
-              </span>
-            ) : (
-              <span>{licenseKey.usage}</span>
-            )}
-          </div>
-        )
-      },
-    },
   ]
 
   return (

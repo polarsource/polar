@@ -1,4 +1,3 @@
-import { usePostHog } from '@/hooks/posthog'
 import { useDiscordGuild } from '@/hooks/queries'
 import { getBotDiscordAuthorizeURL } from '@/utils/auth'
 import { enums, schemas } from '@polar-sh/client'
@@ -15,6 +14,7 @@ import {
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
 import TextArea from '@polar-sh/ui/components/atoms/TextArea'
+import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   FormControl,
   FormDescription,
@@ -136,12 +136,15 @@ export const CustomBenefitForm = ({}: CustomBenefitFormProps) => {
             <FormItem>
               <div className="flex flex-row items-center justify-between">
                 <FormLabel>Private note</FormLabel>
+                <span className="dark:text-polar-500 text-sm text-gray-500">
+                  Markdown Format
+                </span>
               </div>
               <FormControl>
                 <TextArea
                   {...field}
                   value={field.value || ''}
-                  placeholder="Write a secret note here. Like your private email address for premium support, Cal.com link to book consultation, etc."
+                  placeholder="Write a secret note here. Like your private email address for premium support or link to premium content."
                 />
               </FormControl>
               <FormMessage />
@@ -275,16 +278,37 @@ export const DiscordBenefitForm = () => {
               )
             }}
           />
+          <FormField
+            control={control}
+            name="properties.kick_member"
+            defaultValue={false}
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <div className="flex flex-row items-center gap-x-2">
+                    <Checkbox
+                      defaultChecked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                    <p className="text-sm">Kick member on revocation</p>
+                  </div>
+                </FormControl>
+                <FormDescription>
+                  Whether to kick the member from the server when the benefit is
+                  revoked. Otherwise, only the role will be removed.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </>
       )}
     </>
   )
 }
 
-const BenefitTypeSelect = ({}) => {
+const BenefitTypeSelect = () => {
   const { control } = useFormContext<schemas['BenefitCustomCreate']>()
-
-  const { isFeatureEnabled } = usePostHog()
 
   return (
     <FormField
@@ -303,17 +327,11 @@ const BenefitTypeSelect = ({}) => {
                   <SelectValue placeholder="Select a benefit type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {enums.benefitTypeValues
-                    .filter(
-                      (type) =>
-                        type !== 'meter_credit' ||
-                        isFeatureEnabled('usage_based_billing'),
-                    )
-                    .map((value) => (
-                      <SelectItem key={value} value={value}>
-                        {benefitsDisplayNames[value]}
-                      </SelectItem>
-                    ))}
+                  {enums.benefitTypeValues.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {benefitsDisplayNames[value]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </FormControl>

@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 
 class CustomerCardKey(StrEnum):
+    user = "user"
     organization = "organization"
     customer = "customer"
     order = "order"

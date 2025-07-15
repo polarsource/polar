@@ -12,7 +12,6 @@ from polar.integrations.discord.service import discord_bot as discord_bot_servic
 from polar.logging import Logger
 from polar.models import Benefit, Customer, Organization, User
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
-from polar.worker import compute_backoff
 
 from ..base.service import (
     BenefitActionRequiredError,
@@ -76,7 +75,7 @@ class BenefitDiscordService(
                     status_code=e.response.status_code, body=e.response.text
                 )
             error_bound_logger.warning("HTTP error while adding member")
-            raise BenefitRetriableError(compute_backoff(attempt)) from e
+            raise BenefitRetriableError() from e
 
         bound_logger.debug("Benefit granted")
 
@@ -117,8 +116,15 @@ class BenefitDiscordService(
         if not (guild_id and role_id and account_id):
             return {}
 
+        properties = self._get_properties(benefit)
+
         try:
-            await discord_bot_service.remove_member_role(guild_id, role_id, account_id)
+            if properties["kick_member"]:
+                await discord_bot_service.remove_member(guild_id, account_id)
+            else:
+                await discord_bot_service.remove_member_role(
+                    guild_id, role_id, account_id
+                )
         except httpx.HTTPError as e:
             error_bound_logger = bound_logger.bind(error=str(e))
             if isinstance(e, httpx.HTTPStatusError):
@@ -126,7 +132,7 @@ class BenefitDiscordService(
                     status_code=e.response.status_code, body=e.response.text
                 )
             error_bound_logger.warning("HTTP error while removing member")
-            raise BenefitRetriableError(compute_backoff(attempt)) from e
+            raise BenefitRetriableError() from e
 
         bound_logger.debug("Benefit revoked")
 

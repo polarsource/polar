@@ -145,17 +145,16 @@ const ORGANIZATION: schemas['Organization'] = {
   website: null,
   socials: [],
   details_submitted_at: null,
-  bio: null,
-  blog: null,
-  company: null,
-  location: null,
   email: null,
   feature_settings: null,
-  twitter_username: null,
   subscription_settings: {
     allow_multiple_subscriptions: true,
     allow_customer_updates: true,
     proration_behavior: 'invoice',
+  },
+  notification_settings: {
+    new_order: true,
+    new_subscription: true,
   },
 }
 
@@ -208,9 +207,11 @@ export const createCheckoutPreview = (
     is_payment_setup_required: price.type === 'recurring',
     is_payment_form_required: amount > 0 || price.type === 'recurring',
     currency: 'usd',
+    is_business_customer: false,
     customer_id: null,
     customer_email: 'janedoe@gmail.com',
     customer_name: 'Jane Doe',
+    customer_billing_name: null,
     customer_billing_address: null,
     customer_ip_address: null,
     customer_tax_id: null,
@@ -218,18 +219,28 @@ export const createCheckoutPreview = (
     url: '/checkout/CLIENT_SECRET',
     success_url: '/checkout/CLIENT_SECRET/confirmation',
     embed_origin: null,
-    organization: {
-      ...organization,
-      // FIXME: removed field to please outdated SDK, we can remove that later
-      default_upfront_split_to_contributors: null,
-      pledge_minimum_amount: 2000,
-      pledge_badge_show_amount: false,
-      profile_settings: null,
-    },
+    organization: organization,
     attached_custom_fields: [],
     discount: null,
     discount_id: null,
     allow_discount_codes: true,
+    require_billing_address: false,
+    customer_billing_address_fields: {
+      country: true,
+      state: false,
+      city: false,
+      postal_code: false,
+      line1: false,
+      line2: false,
+    },
+    billing_address_fields: {
+      country: 'required',
+      state: 'disabled',
+      city: 'disabled',
+      postal_code: 'disabled',
+      line1: 'disabled',
+      line2: 'disabled',
+    },
   })
 
   return {
@@ -246,6 +257,12 @@ export const CHECKOUT_PREVIEW = createCheckoutPreview(
 
 export const ORDER_PREVIEW: schemas['CustomerOrder'] = {
   id: '123',
+  created_at: new Date().toISOString(),
+  modified_at: new Date().toISOString(),
+  billing_reason: 'subscription_create',
+  billing_name: null,
+  billing_address: null,
+  is_invoice_generated: false,
   status: 'paid',
   paid: true,
   amount: 10000,
@@ -260,16 +277,12 @@ export const ORDER_PREVIEW: schemas['CustomerOrder'] = {
   user_id: '123',
   customer_id: '123',
   product_id: PRODUCT_PREVIEW.id,
-  product_price_id: PRODUCT_PREVIEW.prices[0].id,
-  product_price: PRODUCT_PREVIEW.prices[0],
   subscription_id: null,
   subscription: null,
   product: {
     ...PRODUCT_PREVIEW,
     organization: ORGANIZATION,
   },
-  created_at: new Date().toISOString(),
-  modified_at: new Date().toISOString(),
   items: [
     {
       created_at: new Date().toISOString(),
@@ -282,6 +295,8 @@ export const ORDER_PREVIEW: schemas['CustomerOrder'] = {
       product_price_id: PRODUCT_PREVIEW.prices[0].id,
     },
   ],
+  discount_id: null,
+  checkout_id: CHECKOUT_PREVIEW.id,
 }
 
 export const SUBSCRIPTION_ORDER_PREVIEW: schemas['CustomerSubscription'] = {
@@ -301,29 +316,16 @@ export const SUBSCRIPTION_ORDER_PREVIEW: schemas['CustomerSubscription'] = {
   started_at: new Date().toISOString(),
   ends_at: null,
   ended_at: null,
-  user_id: '123',
   customer_id: '123',
   product_id: SUBSCRIPTION_PRODUCT_PREVIEW.id,
-  price_id: SUBSCRIPTION_PRODUCT_PREVIEW.prices[0].id,
   prices: SUBSCRIPTION_PRODUCT_PREVIEW.prices,
   checkout_id: null,
   product: {
     ...SUBSCRIPTION_PRODUCT_PREVIEW,
     organization: ORGANIZATION,
   },
-  price: {
-    id: '123',
-    amount_type: 'fixed',
-    price_amount: 10000,
-    type: 'recurring',
-    recurring_interval: 'month',
-    price_currency: 'usd',
-    is_archived: false,
-    created_at: new Date().toISOString(),
-    modified_at: new Date().toISOString(),
-    product_id: '123',
-  },
   discount_id: null,
   customer_cancellation_comment: null,
   customer_cancellation_reason: null,
+  meters: [],
 }

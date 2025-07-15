@@ -1,6 +1,11 @@
-import { useMetrics } from '@/hooks/queries'
-import { dateToInterval } from '@/utils/metrics'
+import { ConfirmModal } from '@/components/Modal/ConfirmModal'
+import { useModal } from '@/components/Modal/useModal'
+import { toast } from '@/components/Toast/use-toast'
+import { useMetrics, useUpdateProduct } from '@/hooks/queries'
+import { getChartRangeParams } from '@/utils/metrics'
+import { MoreVert } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import {
   Tabs,
@@ -8,7 +13,15 @@ import {
   TabsList,
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
-import { useMemo } from 'react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
+import { useRouter } from 'next/navigation'
+import { useCallback } from 'react'
 import { DashboardBody } from '../../Layout/DashboardLayout'
 import { ProductThumbnail } from '../ProductThumbnail'
 import { ProductMetricsView } from './ProductMetricsView'
@@ -17,7 +30,8 @@ import { ProductPageContextView } from './ProductPageContextView'
 
 const ProductTypeDisplayColor: Record<string, string> = {
   subscription: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950',
-  one_time: 'bg-blue-100 text-blue-400 dark:bg-blue-950',
+  one_time:
+    'bg-indigo-100 text-indigo-500 dark:bg-indigo-950 dark:text-indigo-400',
 }
 
 export interface ProductPageProps {
@@ -26,16 +40,16 @@ export interface ProductPageProps {
 }
 
 export const ProductPage = ({ organization, product }: ProductPageProps) => {
-  const interval = useMemo(
-    () => dateToInterval(new Date(product.created_at)),
-    [product.created_at],
+  const [allTimeStart, allTimeEnd, allTimeInterval] = getChartRangeParams(
+    'all_time',
+    product.created_at,
   )
   const { data: metrics, isLoading: metricsLoading } = useMetrics({
     organization_id: organization.id,
     product_id: [product.id],
-    interval,
-    startDate: new Date(product.created_at),
-    endDate: new Date(),
+    startDate: allTimeStart,
+    endDate: allTimeEnd,
+    interval: allTimeInterval,
   })
   const { data: todayMetrics } = useMetrics({
     organization_id: organization.id,
@@ -44,6 +58,24 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
     interval: 'day',
     product_id: [product.id],
   })
+
+  const updateProduct = useUpdateProduct(organization)
+  const router = useRouter()
+
+  const {
+    isShown: isArchiveModalShown,
+    hide: hideArchiveModal,
+    show: showArchiveModal,
+  } = useModal()
+
+  const handleArchiveProduct = useCallback(async () => {
+    await updateProduct.mutateAsync({
+      id: product.id,
+      body: { is_archived: true },
+    })
+
+    router.push(`/dashboard/${organization.slug}/products`)
+  }, [product, updateProduct, organization, router])
 
   return (
     <Tabs defaultValue="overview" className="h-full">
@@ -74,6 +106,46 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
             </div>
           </div>
         }
+        header={
+          !product.is_archived ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="secondary">
+                  <MoreVert fontSize="small" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (typeof navigator !== 'undefined') {
+                      navigator.clipboard.writeText(product.id)
+
+                      toast({
+                        title: 'Product ID Copied',
+                        description: 'Product ID copied to clipboard',
+                      })
+                    }
+                  }}
+                >
+                  Copy Product ID
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    router.push(
+                      `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
+                    )
+                  }}
+                >
+                  Integrate Checkout
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={showArchiveModal}>
+                  Archive Product
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : undefined
+        }
         contextViewClassName="hidden md:block"
         contextView={
           product.is_archived ? undefined : (
@@ -99,12 +171,20 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
         </TabsContent>
         <TabsContent value="metrics">
           <ProductMetricsView
-            metrics={metrics?.metrics}
-            periods={metrics?.periods}
-            interval={interval}
+            data={metrics}
+            interval={allTimeInterval}
             loading={metricsLoading}
           />
         </TabsContent>
+        <ConfirmModal
+          title="Archive Product"
+          description="Archiving a product will not affect its current customers, only prevent new subscribers and purchases."
+          onConfirm={handleArchiveProduct}
+          isShown={isArchiveModalShown}
+          hide={hideArchiveModal}
+          destructiveText="Archive"
+          destructive
+        />
       </DashboardBody>
     </Tabs>
   )

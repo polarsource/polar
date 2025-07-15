@@ -3,6 +3,60 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2025-06-12">
+  ## Update subscription discount
+
+We've added the ability to update the discount on a subscription. This allows you to add, remove, or change the discount applied to a subscription at any time.
+
+This feature is both available through the [API](/api-reference/subscriptions/update) and the dashboard.
+
+</Update>
+
+<Update label="2025-06-05">
+  ## Payout Reverse Invoices
+
+We've added the ability to generate reverse invoices for payouts directly from the Payouts page. This feature allows you to easily create an invoice that details the sales made on your behalf, minus our fees.
+
+[Read more](/features/finance/payouts#reverse-invoices)
+
+</Update>
+
+<Update label="2025-05-22">
+  ## Business Purchase Option on Checkout
+
+We've added a new "I'm purchasing as a business" checkbox to the Checkout flow. When selected, customers are required to provide their business billing name and complete billing address.
+
+</Update>
+
+<Update label="2025-05-19">
+  ## Enhanced Attribution for Checkout Links
+
+We've added support for `reference_id` and UTM parameters (`utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`) as query parameters for Checkout Links. These parameters are automatically stored in the Checkout metadata, allowing you to track the source of your traffic and conversions more effectively.
+
+[Read more](/features/checkout/links#store-attribution-and-reference-metadata)
+
+</Update>
+
+<Update label="2025-05-15">
+  ## Checkouts and payments insights
+
+We've added a new **Checkouts** tab under the **Sales**, where you can review all the checkout sessions, successful or not. You can filter them by customer email, status, and product. You can also see the payment attempts for each checkout session, including the reason for any failed or declined payments.
+
+<img
+  className="block dark:hidden"
+  src="/assets/features/orders/checkout.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/orders/checkout.dark.png"
+/>
+
+The payment attempts information is also available on each order.
+
+Besides, we've also added new analytics around checkouts: total number of checkouts, successful checkouts, and conversion rate.
+
+</Update>
+
 <Update label="2025-03-11">
   ## Zapier integration officially launched
 
@@ -37,7 +91,7 @@ Integrating authentication and billing for your users has never been easier.
 
 [Better Auth](https://www.better-auth.com/) is an open source authentication framework for
 TypeScript that is quickly becoming a favorite amongst developers. Today, we're
-trilled to have shipped a Polar plugin for Better Auth - in collaboration with them.
+thrilled to have shipped a Polar plugin for Better Auth - in collaboration with them.
 
 Checkout our [integration guide](/integrate/sdk/adapters/better-auth).
 
@@ -52,7 +106,7 @@ Previously, the recommended way to reconcile with your users was to use `metadat
 
 With `external_id`, you can now fetch a Customer directly by their external ID through dedicated `GET`, `PATCH`, and `DELETE` endpoints. You don't even need to store Polar's internal ID in your system anymore! [Read more](/features/customer-management#external-id)
 
-Of course, you can also directly preset `customer_external_id` when creating a Checkout Session, and it will automatically be set on the newly created Customer after a successful checkout. [Read more](/features/checkout/session#external-customer-id)
+Of course, you can also directly preset `external_customer_id` when creating a Checkout Session, and it will automatically be set on the newly created Customer after a successful checkout. [Read more](/features/checkout/session#external-customer-id)
 
 </Update>
 

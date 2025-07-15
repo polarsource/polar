@@ -1,12 +1,10 @@
 'use client'
 
-import { LanguageOutlined, MailOutline } from '@mui/icons-material'
+import { MailOutline } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Link from 'next/link'
 import { PropsWithChildren, useEffect, useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
-import { externalURL } from '../Organization'
 import { Gradient } from './GradientMesh'
 import { computeComplementaryColor } from './utils'
 
@@ -65,38 +63,7 @@ export const StorefrontHeader = ({ organization }: StorefrontHeaderProps) => {
       </div>
       <div className="flex w-full flex-grow flex-col items-center">
         <div className="flex w-full flex-grow flex-col items-center gap-y-6">
-          <p
-            className={twMerge(
-              'dark:text-polar-500 flex w-full flex-col items-center text-center text-lg leading-normal text-gray-500 md:w-2/3',
-            )}
-          >
-            {organization.bio}
-          </p>
-
           <div className="flex flex-row flex-wrap items-center gap-3 text-lg">
-            {organization.twitter_username && (
-              <SocialLink
-                href={`https://twitter.com/${organization.twitter_username}`}
-              >
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 300 300.251"
-                  version="1.1"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66"
-                    fill="currentColor"
-                  />
-                </svg>
-              </SocialLink>
-            )}
-            {organization.blog && (
-              <SocialLink href={externalURL(organization.blog)}>
-                <LanguageOutlined fontSize="small" />
-              </SocialLink>
-            )}
             {organization.email && (
               <SocialLink href={`mailto:${organization.email}`}>
                 <MailOutline fontSize="small" />

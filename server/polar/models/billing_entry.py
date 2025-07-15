@@ -3,8 +3,9 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Self
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, Uuid
+from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.types import Integer
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StrEnumType
@@ -37,8 +38,10 @@ class BillingEntry(RecordModel):
     direction: Mapped[BillingEntryDirection] = mapped_column(
         StrEnumType(BillingEntryDirection), nullable=False
     )
+    amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True, default=None)
     customer_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("customers.id", ondelete="cascade"), nullable=False
+        Uuid, ForeignKey("customers.id", ondelete="cascade"), nullable=False, index=True
     )
     product_price_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("product_prices.id", ondelete="restrict"), nullable=False

@@ -32,6 +32,11 @@ def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.event.service.enqueue_job")
 
 
+@pytest.fixture
+def enqueue_events_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch("polar.event.service.enqueue_events")
+
+
 @pytest.mark.asyncio
 class TestList:
     @pytest.mark.auth
@@ -413,10 +418,12 @@ class TestIngest:
         errors = e.value.errors()
         assert len(errors) == 2
 
+    @pytest.mark.parametrize("count", [0, 1, 500])
     @pytest.mark.auth
     async def test_valid_user(
         self,
-        enqueue_job_mock: AsyncMock,
+        count: int,
+        enqueue_events_mock: AsyncMock,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         organization: Organization,
@@ -429,7 +436,7 @@ class TestIngest:
                     external_customer_id="test",
                     organization_id=organization.id,
                 )
-                for _ in range(500)
+                for _ in range(count)
             ]
         )
 
@@ -437,19 +444,19 @@ class TestIngest:
 
         event_repository = EventRepository.from_session(session)
         events = await event_repository.get_all_by_organization(organization.id)
-        assert len(events) == 500
+        assert len(events) == count
 
         for event in events:
             assert event.source == EventSource.user
 
-        enqueue_job_mock.assert_called_once_with(
-            "event.ingested", event_ids=[event.id for event in events]
-        )
+        enqueue_events_mock.assert_called_once_with(*(event.id for event in events))
 
+    @pytest.mark.parametrize("count", [0, 1, 500])
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_valid_organization(
         self,
-        enqueue_job_mock: AsyncMock,
+        count: int,
+        enqueue_events_mock: AsyncMock,
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
     ) -> None:
@@ -459,7 +466,7 @@ class TestIngest:
                     name="test",
                     external_customer_id="test",
                 )
-                for _ in range(500)
+                for _ in range(count)
             ]
         )
 
@@ -467,14 +474,12 @@ class TestIngest:
 
         event_repository = EventRepository.from_session(session)
         events = await event_repository.get_all_by_organization(auth_subject.subject.id)
-        assert len(events) == 500
+        assert len(events) == count
 
         for event in events:
             assert event.source == EventSource.user
 
-        enqueue_job_mock.assert_called_once_with(
-            "event.ingested", event_ids=[event.id for event in events]
-        )
+        enqueue_events_mock.assert_called_once_with(*(event.id for event in events))
 
 
 @pytest.mark.asyncio

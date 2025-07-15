@@ -88,6 +88,9 @@ class DiscordBotService:
             role_id=role_id,
         )
 
+    async def remove_member(self, guild_id: str, account_id: str) -> None:
+        await bot_client.remove_member(guild_id=guild_id, discord_user_id=account_id)
+
     async def is_bot_role_above_role(self, guild_id: str, role_id: str) -> bool:
         """
         Checks if our bot's role has a higher position than the one we want to grant.

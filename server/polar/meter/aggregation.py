@@ -1,8 +1,15 @@
 from enum import StrEnum
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Discriminator, TypeAdapter
-from sqlalchemy import ColumnExpressionArgument, Dialect, TypeDecorator, func, true
+from pydantic import AfterValidator, BaseModel, Discriminator, TypeAdapter
+from sqlalchemy import (
+    ColumnExpressionArgument,
+    Dialect,
+    TypeDecorator,
+    false,
+    func,
+    true,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 
 
@@ -24,6 +31,11 @@ class CountAggregation(BaseModel):
         return true()
 
 
+def _strip_metadata_prefix(value: str) -> str:
+    prefix = "metadata."
+    return value[len(prefix) :] if value.startswith(prefix) else value
+
+
 class PropertyAggregation(BaseModel):
     func: Literal[
         AggregationFunction.sum,
@@ -31,13 +43,14 @@ class PropertyAggregation(BaseModel):
         AggregationFunction.min,
         AggregationFunction.avg,
     ]
-    property: str
+    property: Annotated[str, AfterValidator(_strip_metadata_prefix)]
 
     def get_sql_column(self, model: type[Any]) -> Any:
-        try:
-            attr = getattr(model, self.property)
-        except AttributeError:
-            attr = model.user_metadata[self.property].as_integer()
+        if self.property in model._filterable_fields:
+            _, attr = model._filterable_fields[self.property]
+
+        attr = model.user_metadata[self.property].as_float()
+
         if self.func == AggregationFunction.sum:
             return func.sum(attr)
         elif self.func == AggregationFunction.max:
@@ -49,11 +62,11 @@ class PropertyAggregation(BaseModel):
         raise ValueError(f"Unsupported aggregation function: {self.func}")
 
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
-        try:
-            getattr(model, self.property)
-            return true()
-        except AttributeError:
-            return func.jsonb_typeof(model.user_metadata[self.property]) == "number"
+        if self.property in model._filterable_fields:
+            allowed_type, _ = model._filterable_fields[self.property]
+            return true() if allowed_type is int else false()
+
+        return func.jsonb_typeof(model.user_metadata[self.property]) == "number"
 
 
 _Aggregation = CountAggregation | PropertyAggregation

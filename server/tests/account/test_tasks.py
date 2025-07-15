@@ -14,26 +14,22 @@ from polar.kit.db.postgres import AsyncSession
 from polar.models import Account, User
 from polar.notifications.service import NotificationsService
 from polar.notifications.service import notifications as notification_service
-from polar.worker import JobContext
 from tests.account.conftest import create_account
 from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
 class TestAccountUnderReview:
-    async def test_not_existing_account(
-        self, job_context: JobContext, session: AsyncSession
-    ) -> None:
+    async def test_not_existing_account(self, session: AsyncSession) -> None:
         # then
         session.expunge_all()
 
         with pytest.raises(AccountDoesNotExist):
-            await account_under_review(job_context, uuid.uuid4())
+            await account_under_review(uuid.uuid4())
 
     async def test_existing_account(
         self,
         mocker: MockerFixture,
-        job_context: JobContext,
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
@@ -54,7 +50,7 @@ class TestAccountUnderReview:
             "polar.account.tasks.plain_service.create_account_review_thread"
         )
 
-        await account_under_review(job_context, account.id)
+        await account_under_review(account.id)
 
         send_to_user_mock.assert_called_once()
         create_account_review_thread_mock.assert_called_once()
@@ -62,19 +58,16 @@ class TestAccountUnderReview:
 
 @pytest.mark.asyncio
 class TestAccountReviewed:
-    async def test_not_existing_account(
-        self, job_context: JobContext, session: AsyncSession
-    ) -> None:
+    async def test_not_existing_account(self, session: AsyncSession) -> None:
         # then
         session.expunge_all()
 
         with pytest.raises(AccountDoesNotExist):
-            await account_reviewed(job_context, uuid.uuid4())
+            await account_reviewed(uuid.uuid4())
 
     async def test_existing_account(
         self,
         mocker: MockerFixture,
-        job_context: JobContext,
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
@@ -97,7 +90,7 @@ class TestAccountReviewed:
         # then
         session.expunge_all()
 
-        await account_reviewed(job_context, account.id)
+        await account_reviewed(account.id)
 
         release_account_mock.assert_called_once()
         send_to_user_mock.assert_called_once()

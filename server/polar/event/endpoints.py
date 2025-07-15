@@ -18,7 +18,13 @@ from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import Event as EventSchema
-from .schemas import EventID, EventName, EventsIngest, EventsIngestResponse
+from .schemas import (
+    EventID,
+    EventName,
+    EventsIngest,
+    EventsIngestResponse,
+    EventTypeAdapter,
+)
 from .service import event as event_service
 
 router = APIRouter(
@@ -104,7 +110,9 @@ async def list(
     )
 
     return ListResource.from_paginated_results(
-        [EventSchema.model_validate(result) for result in results], count, pagination
+        [EventTypeAdapter.validate_python(result) for result in results],
+        count,
+        pagination,
     )
 
 
@@ -127,6 +135,9 @@ async def list_names(
         title="ExternalCustomerID Filter",
         description="Filter by external customer ID.",
     ),
+    source: MultipleQueryFilter[EventSource] | None = Query(
+        None, title="Source Filter", description="Filter by event source."
+    ),
     query: str | None = Query(
         None, title="Query", description="Query to filter event names."
     ),
@@ -138,6 +149,7 @@ async def list_names(
         organization_id=organization_id,
         customer_id=customer_id,
         external_customer_id=external_customer_id,
+        source=source,
         query=query,
         pagination=pagination,
         sorting=sorting,

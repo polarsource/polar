@@ -5,8 +5,8 @@ import {
 } from '@polar-sh/checkout/providers'
 import { PolarCore } from '@polar-sh/sdk/core'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
-import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
 import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
+import { ResourceNotFound } from '@polar-sh/sdk/models/errors/resourcenotfound'
 import { notFound, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -39,8 +39,12 @@ export default async function Page({
     }
   }
 
-  if (checkout.status !== 'open') {
+  if (checkout.status === 'succeeded') {
     redirect(checkout.successUrl)
+  }
+
+  if (checkout.status !== 'open') {
+    redirect(`/checkout/${checkout.clientSecret}/confirmation`)
   }
 
   return (

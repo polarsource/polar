@@ -2,8 +2,8 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
+import { OrderStatus } from '@/components/Orders/OrderStatus'
 import ProductSelect from '@/components/Products/ProductSelect'
-import { OrderAmountWithRefund } from '@/components/Refunds/OrderAmountWithRefund'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { useOrders } from '@/hooks/queries/orders'
 import {
@@ -12,7 +12,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { dateToInterval } from '@/utils/metrics'
+import { getChartRangeParams } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import {
@@ -22,6 +22,7 @@ import {
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
+import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
@@ -148,7 +149,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <DataTableColumnHeader column={column} title="Amount" />
       ),
       cell: ({ row: { original: order } }) => (
-        <OrderAmountWithRefund order={order} />
+        <span>{formatCurrencyAndAmount(order.net_amount, order.currency)}</span>
       ),
     },
     {
@@ -171,6 +172,18 @@ const ClientPage: React.FC<ClientPageProps> = ({
           </div>
         )
       },
+    },
+    {
+      accessorKey: 'status',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Status" />
+      ),
+      cell: ({ row: { original: order } }) => (
+        <span className="flex flex-shrink">
+          <OrderStatus status={order.status} />
+        </span>
+      ),
     },
     {
       accessorKey: 'created_at',
@@ -204,11 +217,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
     }
   }, [selectedOrder, router, organization])
 
+  const [allTimeStart, allTimeEnd, allTimeInterval] = getChartRangeParams(
+    'all_time',
+    organization.created_at,
+  )
   const { data: metricsData } = useMetrics({
     organization_id: organization.id,
-    startDate: new Date(organization.created_at),
-    endDate: new Date(),
-    interval: dateToInterval(new Date(organization.created_at)),
+    startDate: allTimeStart,
+    endDate: allTimeEnd,
+    interval: allTimeInterval,
     product_id: productId,
   })
   const { data: todayMetricsData } = useMetrics({
@@ -235,25 +252,16 @@ const ClientPage: React.FC<ClientPageProps> = ({
         </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <MiniMetricChartBox
-            value={metricsData?.periods.reduce(
-              (acc, current) => acc + current.orders,
-              0,
-            )}
+            value={metricsData?.totals.orders}
             metric={metricsData?.metrics.orders}
           />
           <MiniMetricChartBox
             title="Today's Revenue"
-            value={
-              todayMetricsData?.periods[todayMetricsData.periods.length - 1]
-                .revenue
-            }
+            value={todayMetricsData?.totals.revenue}
             metric={todayMetricsData?.metrics.revenue}
           />
           <MiniMetricChartBox
-            value={
-              metricsData?.periods[metricsData.periods.length - 1]
-                .cumulative_revenue
-            }
+            value={metricsData?.totals.revenue}
             metric={metricsData?.metrics.cumulative_revenue}
           />
         </div>

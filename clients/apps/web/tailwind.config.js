@@ -129,17 +129,17 @@ module.exports = {
           950: 'hsl(233, 10%, 0%)',
         },
         polar: {
-          50: 'hsl(233, 7%, 85%)',
-          100: 'hsl(233, 7%, 79%)',
-          200: 'hsl(233, 7%, 68%)',
-          300: 'hsl(233, 7%, 62%)',
-          400: 'hsl(233, 7%, 52%)',
-          500: 'hsl(233, 7%, 46%)',
-          600: 'hsl(233, 7%, 24%)',
-          700: 'hsl(233, 7%, 14%)',
-          800: 'hsl(233, 7%, 10.5%)',
-          900: 'hsl(233, 7%, 7.5%)',
-          950: 'hsl(233, 7%, 5%)',
+          50: 'hsl(233, 5%, 85%)',
+          100: 'hsl(233, 5%, 79%)',
+          200: 'hsl(233, 5%, 68%)',
+          300: 'hsl(233, 5%, 62%)',
+          400: 'hsl(233, 5%, 52%)',
+          500: 'hsl(233, 5%, 46%)',
+          600: 'hsl(233, 5%, 24%)',
+          700: 'hsl(233, 5%, 12%)',
+          800: 'hsl(233, 5%, 9.5%)',
+          900: 'hsl(233, 5%, 6.5%)',
+          950: 'hsl(233, 5%, 3%)',
         },
 
         // chadcn/ui start
@@ -208,6 +208,10 @@ module.exports = {
         'infinite-scroll': {
           from: { transform: 'translateX(0)' },
           to: { transform: 'translateX(-25%)' },
+        },
+        'infinite-vertical-scroll': {
+          from: { transform: 'translateY(0)' },
+          to: { transform: 'translateY(-25%)' },
         },
         gradient: {
           '0%': { backgroundPosition: '0% 50%' },

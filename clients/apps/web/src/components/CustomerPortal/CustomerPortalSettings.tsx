@@ -1,12 +1,16 @@
 'use client'
 
 import revalidate from '@/app/actions'
-import { useCustomer, useCustomerPaymentMethods } from '@/hooks/queries'
+import {
+  useAuthenticatedCustomer,
+  useCustomerPaymentMethods,
+} from '@/hooks/queries'
 import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useTheme } from 'next-themes'
 import { twMerge } from 'tailwind-merge'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
@@ -31,11 +35,13 @@ export const CustomerPortalSettings = ({
     hide: hideAddPaymentMethodModal,
     show: showAddPaymentMethodModal,
   } = useModal()
-  const { data: customer } = useCustomer(api)
+  const { data: customer } = useAuthenticatedCustomer(api)
   const { data: paymentMethods } = useCustomerPaymentMethods(api)
 
+  const theme = useTheme()
   const themingPreset = useThemePreset(
     organization.slug === 'midday' ? 'midday' : 'polar',
+    theme.resolvedTheme as 'light' | 'dark',
   )
 
   if (!customer) {
@@ -65,7 +71,13 @@ export const CustomerPortalSettings = ({
         <Separator className="dark:bg-polar-700" />
         <WellContent className="gap-y-4">
           {paymentMethods?.items.map((pm) => (
-            <PaymentMethod key={pm.id} paymentMethod={pm} api={api} />
+            <PaymentMethod
+              key={pm.id}
+              customer={customer}
+              paymentMethod={pm}
+              api={api}
+              deletable={paymentMethods.items.length > 1}
+            />
           ))}
         </WellContent>
       </Well>

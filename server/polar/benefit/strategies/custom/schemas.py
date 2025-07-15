@@ -1,6 +1,7 @@
 from typing import Annotated, Literal
 
 from pydantic import Field
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import Schema
 from polar.models.benefit import BenefitType
@@ -69,7 +70,7 @@ class BenefitCustom(BenefitBase):
 
     type: Literal[BenefitType.custom]
     properties: BenefitCustomProperties
-    is_tax_applicable: bool = Field(deprecated=True)
+    is_tax_applicable: SkipJsonSchema[bool] = Field(deprecated=True)
 
 
 class BenefitCustomSubscriber(BenefitSubscriberBase):

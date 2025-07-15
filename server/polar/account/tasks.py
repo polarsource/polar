@@ -1,11 +1,10 @@
 import uuid
 
+from sqlalchemy.orm import joinedload
+
+from polar.account.repository import AccountRepository
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
-from polar.integrations.discord.internal_webhook import (
-    get_branded_discord_embed,
-    send_internal_webhook,
-)
 from polar.integrations.plain.service import plain as plain_service
 from polar.models import Account
 from polar.notifications.notification import (
@@ -15,9 +14,7 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notification_service
-from polar.worker import AsyncSessionMaker, JobContext, task
-
-from .service import account as account_service
+from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 
 class AccountTaskError(PolarTaskError): ...
@@ -30,31 +27,17 @@ class AccountDoesNotExist(AccountTaskError):
         super().__init__(message)
 
 
-async def send_account_under_review_discord_notification(account: Account) -> None:
-    await send_internal_webhook(
-        {
-            "content": "Payout account should be reviewed",
-            "embeds": [
-                get_branded_discord_embed(
-                    {
-                        "title": "Payout account should be reviewed",
-                        "description": (
-                            f"The {account.account_type.get_display_name()} "
-                            f"payout account used by {', '.join(account.get_associations_names())} should be reviewed."
-                        ),
-                    }
-                )
-            ],
-        }
-    )
-
-
-@task("account.under_review")
-async def account_under_review(ctx: JobContext, account_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
-        account = await account_service.get_by_id(session, account_id)
+@actor(actor_name="account.under_review", priority=TaskPriority.LOW)
+async def account_under_review(account_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = AccountRepository.from_session(session)
+        account = await repository.get_by_id(
+            account_id, options=(joinedload(Account.organizations),)
+        )
         if account is None:
             raise AccountDoesNotExist(account_id)
+
+        await plain_service.create_account_review_thread(session, account)
 
         await notification_service.send_to_user(
             session=session,
@@ -67,13 +50,12 @@ async def account_under_review(ctx: JobContext, account_id: uuid.UUID) -> None:
             ),
         )
 
-        await plain_service.create_account_review_thread(session, account)
 
-
-@task("account.reviewed")
-async def account_reviewed(ctx: JobContext, account_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
-        account = await account_service.get_by_id(session, account_id)
+@actor(actor_name="account.reviewed", priority=TaskPriority.LOW)
+async def account_reviewed(account_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = AccountRepository.from_session(session)
+        account = await repository.get_by_id(account_id)
         if account is None:
             raise AccountDoesNotExist(account_id)
 

@@ -1,9 +1,11 @@
 import uuid
 from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
+from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
@@ -39,6 +41,11 @@ from tests.fixtures.random_objects import (
     create_meter,
     create_product,
 )
+
+
+@pytest.fixture
+def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch("polar.meter.service.enqueue_job")
 
 
 @pytest.mark.asyncio
@@ -522,6 +529,81 @@ class TestGetQuantities:
         assert quantity.quantity == 0
         assert result.total == 0
 
+    async def test_metadata_filter(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        timestamp = utc_now()
+        events = [
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 20, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 10, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 10, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 0, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 100, "model": "pro"},
+            ),
+        ]
+
+        meter = await create_meter(
+            save_fixture,
+            name="Lite Model Usage",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="name", operator=FilterOperator.eq, value="test"
+                    )
+                ],
+            ),
+            aggregation=CountAggregation(),
+            organization=customer.organization,
+        )
+
+        result = await meter_service.get_quantities(
+            session,
+            meter,
+            customer_id=[customer.id],
+            start_timestamp=timestamp,
+            end_timestamp=timestamp,
+            interval=TimeInterval.day,
+            metadata={"model": ["lite"]},
+        )
+
+        assert len(result.quantities) == 1
+        quantity = result.quantities[0]
+        assert quantity.quantity == 4
+        assert result.total == 4
+
 
 @pytest_asyncio.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
@@ -629,6 +711,7 @@ async def metered_subscription(
 class TestCreateBillingEntries:
     async def test_no_subscription(
         self,
+        enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         customer: Customer,
@@ -641,8 +724,11 @@ class TestCreateBillingEntries:
         assert len(entries) == 0
         assert meter.last_billed_event == events[-3]
 
+        enqueue_job_mock.assert_not_called()
+
     async def test_no_last_billed_event(
         self,
+        enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         customer: Customer,
@@ -660,12 +746,18 @@ class TestCreateBillingEntries:
             assert entry.end_timestamp == entry.event.timestamp
             assert entry.direction == BillingEntryDirection.debit
             assert entry.customer == customer
+            assert entry.subscription == metered_subscription
             assert entry.product_price == product_metered_unit.prices[0]
 
         assert meter.last_billed_event == events[-3]
 
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.update_meters", metered_subscription.id
+        )
+
     async def test_last_billed_event(
         self,
+        enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         customer: Customer,
@@ -684,6 +776,11 @@ class TestCreateBillingEntries:
             assert entry.end_timestamp == entry.event.timestamp
             assert entry.direction == BillingEntryDirection.debit
             assert entry.customer == customer
+            assert entry.subscription == metered_subscription
             assert entry.product_price == product_metered_unit.prices[0]
 
         assert meter.last_billed_event == events[-3]
+
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.update_meters", metered_subscription.id
+        )

@@ -3,23 +3,17 @@ import {
   useCreateProduct,
   useUpdateProductBenefits,
 } from '@/hooks/queries'
-import { useMeters } from '@/hooks/queries/meters'
-import { useStore } from '@/store'
 import { setValidationErrors } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { CheckoutInfo } from '../Checkout/CheckoutInfo'
-import { createCheckoutPreview } from '../Customization/utils'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { getStatusRedirect } from '../Toast/utils'
 import ProductBenefitsForm from './ProductBenefitsForm'
 import ProductForm, { ProductFullMediasMixin } from './ProductForm/ProductForm'
-import { productCreateToProduct } from './utils'
 
 type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
   ProductFullMediasMixin & {
@@ -34,21 +28,12 @@ export interface CreateProductPageProps {
 export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   const router = useRouter()
   const benefits = useBenefits(organization.id, {
-    limit: 100,
+    limit: 200,
   })
   const organizationBenefits = useMemo(
     () => benefits.data?.items ?? [],
     [benefits],
   )
-  const meters = useMeters(organization.id, {
-    sorting: ['name'],
-  })
-
-  const {
-    formDrafts: { ProductCreate: savedFormValues },
-    saveDraft,
-    clearDraft,
-  } = useStore()
 
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
     schemas['Benefit']['id'][]
@@ -69,32 +54,14 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
         medias: [],
         full_medias: [],
       },
-      ...(savedFormValues ? savedFormValues : {}),
       organization_id: organization.id,
       metadata: [],
     },
   })
-  const { handleSubmit, watch, setError } = form
-  const newProduct = watch()
+  const { handleSubmit, setError } = form
 
   const createProduct = useCreateProduct(organization)
   const updateBenefits = useUpdateProductBenefits(organization)
-
-  const createdProduct = watch()
-  const reconciledProduct = productCreateToProduct(
-    organization.id,
-    {
-      ...createdProduct,
-      metadata: createdProduct.metadata.reduce(
-        (acc, { key, value }) => ({ ...acc, [key]: value }),
-        {},
-      ),
-    },
-    enabledBenefitIds
-      .map((id) => organizationBenefits.find((b) => b.id === id))
-      .filter(Boolean) as schemas['Benefit'][],
-    meters.data?.items ?? [],
-  )
 
   const onSubmit = useCallback(
     async (productCreate: ProductCreateForm) => {
@@ -122,7 +89,6 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
         },
       })
 
-      clearDraft('ProductCreate')
       router.push(
         getStatusRedirect(
           `/dashboard/${organization.slug}/products`,
@@ -137,7 +103,6 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
       createProduct,
       updateBenefits,
       setError,
-      clearDraft,
       router,
     ],
   )
@@ -166,38 +131,11 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     [organizationBenefits, enabledBenefitIds],
   )
 
-  useEffect(() => {
-    const pagehideListener = () => {
-      saveDraft('ProductCreate', {
-        ...newProduct,
-        metadata: newProduct.metadata.reduce(
-          (acc, { key, value }) => ({ ...acc, [key]: value }),
-          {},
-        ),
-      })
-    }
-    window.addEventListener('pagehide', pagehideListener)
-    return () => window.removeEventListener('pagehide', pagehideListener)
-  }, [newProduct, saveDraft])
-
-  const themePreset = useThemePreset('polar')
-
   return (
     <DashboardBody
       title="Create Product"
       wrapperClassName="!max-w-screen-md"
       className="gap-y-16"
-      contextViewClassName="hidden md:block"
-      contextView={
-        <div className="flex h-full flex-col justify-between p-8 py-12">
-          <CheckoutInfo
-            className="md:w-full md:p-0"
-            checkout={createCheckoutPreview(reconciledProduct, organization)}
-            themePreset={themePreset}
-          />
-        </div>
-      }
-      wide
     >
       <div className="rounded-4xl dark:border-polar-700 dark:divide-polar-700 flex flex-col divide-y divide-gray-200 border border-gray-200">
         <Form {...form}>

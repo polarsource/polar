@@ -37,3 +37,11 @@ class Storefront(Schema):
     products: list[ProductStorefront]
     donation_product: ProductStorefront | None
     customers: StorefrontCustomers
+
+
+class OrganizationSlugLookup(Schema):
+    """Schema for organization slug lookup response."""
+
+    organization_slug: str = Field(
+        description="The slug of the organization that owns the product or subscription."
+    )

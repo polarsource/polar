@@ -1,17 +1,25 @@
 from collections.abc import AsyncGenerator
+from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from polar_sdk import Polar
+from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
+from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
 from polar.models import Benefit, Customer, Organization, Product, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_order, create_subscription
+from tests.fixtures.random_objects import (
+    create_active_subscription,
+    create_order,
+    create_subscription,
+)
+from tests.fixtures.stripe import construct_stripe_subscription
 
 
 @pytest_asyncio.fixture
@@ -115,6 +123,34 @@ class TestSDK:
 
         assert len(response.result.items) == len(subscriptions)
 
+    async def test_cancel_subscription(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        polar: Polar,
+        product: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+    ) -> None:
+        stripe_service_mock = MagicMock(spec=StripeService)
+        stripe_service_mock.cancel_subscription.return_value = (
+            construct_stripe_subscription(product=product)
+        )
+        mocker.patch(
+            "polar.subscription.service.stripe_service", new=stripe_service_mock
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await polar.subscriptions.update_async(
+            id=str(subscription.id),
+            subscription_update={"cancel_at_period_end": True},  # type: ignore
+        )
+
+        assert response is not None
+
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user", scopes={Scope.checkouts_write})
     )
@@ -126,14 +162,20 @@ class TestSDK:
         customer: Customer,
         user_organization: UserOrganization,
     ) -> None:
-        response = await polar.checkouts.custom.create_async(
+        response = await polar.checkouts.create_async(
             request={
                 "product_id": str(product.id),
+                # Test deprecated field for backward compatibility
+                # The current field is `external_customer_id`
+                "customer_external_id": "EXTERNAL_CUSTOMER_ID",
             }
         )
         assert response is not None
 
         assert response.product_id == str(product.id)
+        # Test deprecated field for backward compatibility
+        # The current field is `external_customer_id`
+        assert response.customer_external_id == "EXTERNAL_CUSTOMER_ID"
 
     async def test_create_checkout_link(
         self,

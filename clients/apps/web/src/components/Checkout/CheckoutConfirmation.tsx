@@ -2,23 +2,28 @@
 
 import { useCheckoutClientSSE } from '@/hooks/sse'
 import { getServerURL } from '@/utils/api'
-import { organizationPageLink } from '@/utils/nav'
 import { checkoutsClientGet } from '@polar-sh/sdk/funcs/checkoutsClientGet'
 import type { CheckoutPublic } from '@polar-sh/sdk/models/components/checkoutpublic'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 
+import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { PolarCore } from '@polar-sh/sdk/core'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
 import { Stripe, loadStripe } from '@stripe/stripe-js'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import LogoType from '../Brand/LogoType'
 import { SpinnerNoMargin } from '../Shared/Spinner'
 import CheckoutBenefits from './CheckoutBenefits'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
+
+const isIntegrationError = (
+  err: any,
+): err is { name: 'IntegrationError'; message: string } =>
+  err.name === 'IntegrationError'
 
 const StripeRequiresAction = ({
   stripe,
@@ -43,6 +48,14 @@ const StripeRequiresAction = ({
             clientSecret: intent_client_secret,
           })
           setSuccess(true)
+        } catch (err) {
+          // Case where the intent is already confirmed, but we didn't receive the webhook update yet
+          if (
+            isIntegrationError(err) &&
+            err.message.includes('requires_action')
+          ) {
+            setSuccess(true)
+          }
         } finally {
           setPendingHandling(false)
         }
@@ -79,15 +92,22 @@ const StripeRequiresAction = ({
 
 export interface CheckoutConfirmationProps {
   checkout: CheckoutPublic
+  embed: boolean
+  theme?: 'light' | 'dark'
   customerSessionToken?: string
   disabled?: boolean
+  maxWaitingTimeMs?: number
 }
 
 export const CheckoutConfirmation = ({
   checkout: _checkout,
+  embed,
+  theme,
   customerSessionToken,
   disabled,
+  maxWaitingTimeMs = 15000,
 }: CheckoutConfirmationProps) => {
+  const router = useRouter()
   const client = useMemo(() => new PolarCore({ serverURL: getServerURL() }), [])
   const [checkout, setCheckout] = useState(_checkout)
   const { product, status, organization } = checkout
@@ -100,39 +120,56 @@ export const CheckoutConfirmation = ({
       setCheckout(value)
     }
   }, [client, checkout])
+  const checkoutConfirmedRedirect = useCheckoutConfirmedRedirect(embed, theme)
 
   const checkoutEvents = useCheckoutClientSSE(checkout.clientSecret)
   useEffect(() => {
-    if (disabled || status !== 'confirmed') {
+    if (disabled) {
       return
     }
+
+    // Checkout is back in open state, redirect to the checkout page
+    if (status === 'open') {
+      router.push(checkout.url)
+      return
+    }
+
+    if (status === 'succeeded') {
+      checkoutConfirmedRedirect(checkout, customerSessionToken)
+      return
+    }
+
     checkoutEvents.on('checkout.updated', updateCheckout)
     return () => {
       checkoutEvents.off('checkout.updated', updateCheckout)
     }
-  }, [disabled, checkout, status, checkoutEvents, updateCheckout])
+  }, [
+    disabled,
+    router,
+    checkout,
+    status,
+    checkoutEvents,
+    updateCheckout,
+    checkoutConfirmedRedirect,
+    customerSessionToken,
+  ])
+
+  useEffect(() => {
+    if (checkout.status === 'open' || checkout.status === 'succeeded') {
+      return
+    }
+    let intervalId = setInterval(() => updateCheckout(), maxWaitingTimeMs)
+    return () => clearInterval(intervalId)
+  }, [checkout.status, maxWaitingTimeMs, updateCheckout])
 
   return (
     <ShadowBox className="flex w-full max-w-7xl flex-col items-center justify-between gap-y-24 md:px-32 md:py-24">
       <div className="flex w-full max-w-md flex-col gap-y-8">
-        {organization.profileSettings?.enabled ? (
-          <Link
-            href={organizationPageLink(organization)}
-            className="flex self-start"
-          >
-            <Avatar
-              className="h-16 w-16"
-              avatar_url={organization.avatarUrl}
-              name={organization.name}
-            />
-          </Link>
-        ) : (
-          <Avatar
-            className="h-16 w-16"
-            avatar_url={organization.avatarUrl}
-            name={organization.name}
-          />
-        )}
+        <Avatar
+          className="h-16 w-16"
+          avatar_url={organization.avatarUrl}
+          name={organization.name}
+        />
         <h1 className="text-2xl font-medium">
           {status === 'confirmed' && 'We are processing your order'}
           {status === 'succeeded' && 'Your order was successful!'}
@@ -166,6 +203,7 @@ export const CheckoutConfirmation = ({
             <CheckoutBenefits
               checkout={checkout}
               customerSessionToken={customerSessionToken}
+              maxWaitingTimeMs={maxWaitingTimeMs}
             />
             <p className="dark:text-polar-500 text-center text-xs text-gray-500">
               This order was processed by our online reseller & Merchant of

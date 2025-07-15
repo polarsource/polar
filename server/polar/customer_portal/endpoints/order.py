@@ -1,4 +1,4 @@
-from typing import Annotated, cast
+from typing import Annotated
 
 from fastapi import Depends, Query
 
@@ -9,9 +9,13 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Order
 from polar.models.product import ProductBillingType
-from polar.models.product_price import ProductPriceType
 from polar.openapi import APITag
 from polar.order.schemas import OrderID
+from polar.order.service import (
+    InvoiceAlreadyExists,
+    MissingInvoiceBillingDetails,
+    NotPaidOrder,
+)
 from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
@@ -19,7 +23,7 @@ from polar.routing import APIRouter
 from polar.subscription.schemas import SubscriptionID
 
 from .. import auth
-from ..schemas.order import CustomerOrder, CustomerOrderInvoice
+from ..schemas.order import CustomerOrder, CustomerOrderInvoice, CustomerOrderUpdate
 from ..service.order import CustomerOrderSortProperty
 from ..service.order import customer_order as customer_order_service
 
@@ -54,9 +58,6 @@ async def list(
             "`one_time` will filter data corresponding to one-time purchases."
         ),
     ),
-    product_price_type: MultipleQueryFilter[ProductPriceType] | None = Query(
-        None, title="ProductPriceType Filter", deprecated="Use `product_billing_type"
-    ),
     subscription_id: MultipleQueryFilter[SubscriptionID] | None = Query(
         None, title="SubscriptionID Filter", description="Filter by subscription ID."
     ),
@@ -71,8 +72,7 @@ async def list(
         auth_subject,
         organization_id=organization_id,
         product_id=product_id,
-        product_billing_type=product_billing_type
-        or cast(MultipleQueryFilter[ProductBillingType] | None, product_price_type),
+        product_billing_type=product_billing_type,
         subscription_id=subscription_id,
         query=query,
         pagination=pagination,
@@ -106,6 +106,56 @@ async def get(
     return order
 
 
+@router.patch(
+    "/{id}",
+    summary="Update Order",
+    response_model=CustomerOrder,
+    responses={404: OrderNotFound},
+)
+async def update(
+    id: OrderID,
+    order_update: CustomerOrderUpdate,
+    auth_subject: auth.CustomerPortalWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Order:
+    """Update an order for the authenticated customer."""
+    order = await customer_order_service.get_by_id(session, auth_subject, id)
+
+    if order is None:
+        raise ResourceNotFound()
+
+    return await customer_order_service.update(session, order, order_update)
+
+
+@router.post(
+    "/{id}/invoice",
+    status_code=202,
+    summary="Generate Order Invoice",
+    responses={
+        409: {
+            "description": "Order already has an invoice.",
+            "model": InvoiceAlreadyExists.schema(),
+        },
+        422: {
+            "description": "Order is not paid or is missing billing name or address.",
+            "model": MissingInvoiceBillingDetails.schema() | NotPaidOrder.schema(),
+        },
+    },
+)
+async def generate_invoice(
+    id: OrderID,
+    auth_subject: auth.CustomerPortalRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Trigger generation of an order's invoice."""
+    order = await customer_order_service.get_by_id(session, auth_subject, id)
+
+    if order is None:
+        raise ResourceNotFound()
+
+    await customer_order_service.trigger_invoice_generation(session, order)
+
+
 @router.get(
     "/{id}/invoice",
     summary="Get Order Invoice",
@@ -123,6 +173,4 @@ async def invoice(
     if order is None:
         raise ResourceNotFound()
 
-    invoice_url = await customer_order_service.get_order_invoice_url(order)
-
-    return CustomerOrderInvoice(url=invoice_url)
+    return await customer_order_service.get_order_invoice(order)

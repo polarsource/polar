@@ -30,7 +30,7 @@ async def get_optional_personal_access_token(
         enqueue_job(
             "personal_access_token.record_usage",
             personal_access_token_id=token.id,
-            last_used_at=utc_now(),
+            last_used_at=utc_now().timestamp(),
         )
 
     return token, True

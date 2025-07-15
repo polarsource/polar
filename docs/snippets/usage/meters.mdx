@@ -1,0 +1,7 @@
+Meters are there to filter and aggregate the events that are ingested. Said another way, this is how you define what usage you want to charge for, based on the events you send to Polar. For example:
+
+- AI usage meter, which filters the events with the name `ai_usage` and sums the `total_tokens` field.
+- Video streaming meter, which filters the events with the name `video_streamed` and sums the `duration` field.
+- File upload meter, which filters the events with the name `file_uploaded` and sums the `size` field.
+
+You can create and manage your meters from the dashboard. Polar is then able to compute the usage over time, both globally and per customer.

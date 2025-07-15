@@ -1,8 +1,14 @@
+import contextlib
+from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, Any, cast
 
 import structlog
-from githubkit import AppInstallationAuthStrategy, GitHub
-from githubkit.exception import RateLimitExceeded, RequestError, RequestTimeout
+from githubkit.exception import (
+    RateLimitExceeded,
+    RequestError,
+    RequestFailed,
+    RequestTimeout,
+)
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.integrations.github import client as github
@@ -13,7 +19,6 @@ from polar.logging import Logger
 from polar.models import Benefit, Customer, Organization, User
 from polar.models.customer import CustomerOAuthPlatform
 from polar.posthog import posthog
-from polar.worker import compute_backoff
 
 from ..base.service import (
     BenefitActionRequiredError,
@@ -27,7 +32,9 @@ from .properties import (
 )
 
 if TYPE_CHECKING:
+    from githubkit import AppInstallationAuthStrategy, GitHub
     from githubkit.versions.latest.models import RepositoryInvitation
+
 
 log: Logger = structlog.get_logger()
 
@@ -52,69 +59,74 @@ class BenefitGitHubRepositoryService(
         )
         bound_logger.debug("Grant benefit")
 
-        client = await self._get_github_app_client(benefit)
+        async with self._get_github_app_client(benefit) as client:
+            properties = self._get_properties(benefit)
+            repository_owner = properties["repository_owner"]
+            repository_name = properties["repository_name"]
+            permission = properties["permission"]
 
-        properties = self._get_properties(benefit)
-        repository_owner = properties["repository_owner"]
-        repository_name = properties["repository_name"]
-        permission = properties["permission"]
+            if (account_id := grant_properties.get("account_id")) is None:
+                raise BenefitActionRequiredError(
+                    "The customer needs to connect their GitHub account"
+                )
 
-        if (account_id := grant_properties.get("account_id")) is None:
-            raise BenefitActionRequiredError(
-                "The customer needs to connect their GitHub account"
+            oauth_account = customer.get_oauth_account(
+                account_id, CustomerOAuthPlatform.github
             )
 
-        oauth_account = customer.get_oauth_account(
-            account_id, CustomerOAuthPlatform.github
-        )
+            if oauth_account is None or oauth_account.account_username is None:
+                raise BenefitActionRequiredError(
+                    "The customer needs to connect their GitHub account"
+                )
 
-        if oauth_account is None or oauth_account.account_username is None:
-            raise BenefitActionRequiredError(
-                "The customer needs to connect their GitHub account"
-            )
+            # If we already granted this benefit, make sure we revoke the previous config
+            if update and grant_properties:
+                bound_logger.debug("Grant benefit update")
+                invitation = await self._get_invitation(
+                    client,
+                    repository_owner=repository_owner,
+                    repository_name=repository_name,
+                    user_id=int(oauth_account.account_id),
+                )
+                # The repository changed, or the invitation is still pending: revoke
+                if (
+                    repository_owner != grant_properties.get("repository_owner")
+                    or repository_name != grant_properties.get("repository_name")
+                    or invitation is not None
+                ):
+                    await self.revoke(
+                        benefit, customer, grant_properties, attempt=attempt
+                    )
+                # The permission changed, and the invitation is already accepted
+                elif permission != grant_properties.get("permission"):
+                    # The permission change will be handled by the add_collaborator call
+                    pass
 
-        # If we already granted this benefit, make sure we revoke the previous config
-        if update and grant_properties:
-            bound_logger.debug("Grant benefit update")
-            invitation = await self._get_invitation(
-                client,
-                repository_owner=repository_owner,
-                repository_name=repository_name,
-                user_id=int(oauth_account.account_id),
-            )
-            # The repository changed, or the invitation is still pending: revoke
-            if (
-                repository_owner != grant_properties.get("repository_owner")
-                or repository_name != grant_properties.get("repository_name")
-                or invitation is not None
-            ):
-                await self.revoke(benefit, customer, grant_properties, attempt=attempt)
-            # The permission changed, and the invitation is already accepted
-            elif permission != grant_properties.get("permission"):
-                # The permission change will be handled by the add_collaborator call
-                pass
+            try:
+                await client.rest.repos.async_add_collaborator(
+                    owner=repository_owner,
+                    repo=repository_name,
+                    username=oauth_account.account_username,
+                    data={"permission": permission},
+                )
+            except RateLimitExceeded as e:
+                raise BenefitRetriableError(int(e.retry_after.total_seconds())) from e
+            except RequestFailed as e:
+                if e.response.is_client_error:
+                    raise
+                raise BenefitRetriableError() from e
+            except (RequestTimeout, RequestError) as e:
+                raise BenefitRetriableError() from e
 
-        try:
-            await client.rest.repos.async_add_collaborator(
-                owner=repository_owner,
-                repo=repository_name,
-                username=oauth_account.account_username,
-                data={"permission": permission},
-            )
-        except RateLimitExceeded as e:
-            raise BenefitRetriableError(int(e.retry_after.total_seconds())) from e
-        except (RequestTimeout, RequestError) as e:
-            raise BenefitRetriableError(compute_backoff(attempt)) from e
+            bound_logger.debug("Benefit granted")
 
-        bound_logger.debug("Benefit granted")
-
-        # Store repository and permission to compare on update
-        return {
-            **grant_properties,
-            "repository_owner": repository_owner,
-            "repository_name": repository_name,
-            "permission": permission,
-        }
+            # Store repository and permission to compare on update
+            return {
+                **grant_properties,
+                "repository_owner": repository_owner,
+                "repository_name": repository_name,
+                "permission": permission,
+            }
 
     async def cycle(
         self,
@@ -139,53 +151,56 @@ class BenefitGitHubRepositoryService(
             customer_id=str(customer.id),
         )
 
-        client = await self._get_github_app_client(benefit)
+        async with self._get_github_app_client(benefit) as client:
+            properties = self._get_properties(benefit)
+            repository_owner = properties["repository_owner"]
+            repository_name = properties["repository_name"]
 
-        properties = self._get_properties(benefit)
-        repository_owner = properties["repository_owner"]
-        repository_name = properties["repository_name"]
+            if (account_id := grant_properties.get("account_id")) is None:
+                raise BenefitActionRequiredError(
+                    "The customer needs to connect their GitHub account"
+                )
 
-        if (account_id := grant_properties.get("account_id")) is None:
-            raise BenefitActionRequiredError(
-                "The customer needs to connect their GitHub account"
+            oauth_account = customer.get_oauth_account(
+                account_id, CustomerOAuthPlatform.github
             )
 
-        oauth_account = customer.get_oauth_account(
-            account_id, CustomerOAuthPlatform.github
-        )
+            if oauth_account is None or oauth_account.account_username is None:
+                raise BenefitActionRequiredError(
+                    "The customer needs to connect their GitHub account"
+                )
 
-        if oauth_account is None or oauth_account.account_username is None:
-            raise BenefitActionRequiredError(
-                "The customer needs to connect their GitHub account"
+            invitation = await self._get_invitation(
+                client,
+                repository_owner=repository_owner,
+                repository_name=repository_name,
+                user_id=int(oauth_account.account_id),
             )
+            if invitation is not None:
+                bound_logger.debug("Invitation not yet accepted, removing it")
+                revoke_request = client.rest.repos.async_delete_invitation(
+                    repository_owner, repository_name, invitation.id
+                )
+            else:
+                bound_logger.debug("Invitation not found, removing the user")
+                revoke_request = client.rest.repos.async_remove_collaborator(
+                    repository_owner, repository_name, oauth_account.account_username
+                )
 
-        invitation = await self._get_invitation(
-            client,
-            repository_owner=repository_owner,
-            repository_name=repository_name,
-            user_id=int(oauth_account.account_id),
-        )
-        if invitation is not None:
-            bound_logger.debug("Invitation not yet accepted, removing it")
-            revoke_request = client.rest.repos.async_delete_invitation(
-                repository_owner, repository_name, invitation.id
-            )
-        else:
-            bound_logger.debug("Invitation not found, removing the user")
-            revoke_request = client.rest.repos.async_remove_collaborator(
-                repository_owner, repository_name, oauth_account.account_username
-            )
+            try:
+                await revoke_request
+            except RateLimitExceeded as e:
+                raise BenefitRetriableError(int(e.retry_after.total_seconds())) from e
+            except RequestFailed as e:
+                if e.response.is_client_error:
+                    raise
+                raise BenefitRetriableError() from e
+            except (RequestTimeout, RequestError) as e:
+                raise BenefitRetriableError() from e
 
-        try:
-            await revoke_request
-        except RateLimitExceeded as e:
-            raise BenefitRetriableError(int(e.retry_after.total_seconds())) from e
-        except (RequestTimeout, RequestError) as e:
-            raise BenefitRetriableError(compute_backoff(attempt)) from e
+            bound_logger.debug("Benefit revoked")
 
-        bound_logger.debug("Benefit revoked")
-
-        return {}
+            return {}
 
     async def requires_update(
         self, benefit: Benefit, previous_properties: BenefitGitHubRepositoryProperties
@@ -242,10 +257,7 @@ class BenefitGitHubRepositoryService(
         # check that use has access to the app installed on this repository
         has_access = (
             await github_repository_benefit_user_service.user_has_access_to_repository(
-                oauth,
-                self.redis,
-                owner=repository_owner,
-                name=repository_name,
+                oauth, owner=repository_owner, name=repository_name
             )
         )
 
@@ -263,9 +275,7 @@ class BenefitGitHubRepositoryService(
 
         installation = (
             await github_repository_benefit_user_service.get_repository_installation(
-                self.redis,
-                owner=repository_owner,
-                name=repository_name,
+                owner=repository_owner, name=repository_name
             )
         )
         if not installation:
@@ -308,7 +318,7 @@ class BenefitGitHubRepositoryService(
 
     async def _get_invitation(
         self,
-        client: github.GitHub[Any],
+        client: "GitHub[Any]",
         *,
         repository_owner: str,
         repository_name: str,
@@ -324,18 +334,18 @@ class BenefitGitHubRepositoryService(
 
         return None
 
+    @contextlib.asynccontextmanager
     async def _get_github_app_client(
         self, benefit: Benefit
-    ) -> GitHub[AppInstallationAuthStrategy]:
+    ) -> AsyncIterator["GitHub[AppInstallationAuthStrategy]"]:
         properties = self._get_properties(benefit)
         repository_owner = properties["repository_owner"]
         repository_name = properties["repository_name"]
         installation = (
             await github_repository_benefit_user_service.get_repository_installation(
-                self.redis, owner=repository_owner, name=repository_name
+                owner=repository_owner, name=repository_name
             )
         )
         assert installation is not None
-        return github.get_app_installation_client(
-            installation.id, redis=self.redis, app=github.GitHubApp.repository_benefit
-        )
+        async with github.get_app_installation_client(installation.id) as client:
+            yield client

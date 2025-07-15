@@ -24,7 +24,7 @@ const PublicLayout = ({
       >
         {children}
       </div>
-      {footer && <Footer wide={wide} />}
+      {footer && <Footer />}
     </EmptyLayout>
   )
 }

@@ -69,7 +69,7 @@ jobs:
           RENDER_DEPLOY_KEY_WORKER_GITHUB_SANDBOX: ${{ secrets.RENDER_DEPLOY_KEY_WORKER_GITHUB_SANDBOX }}
 
       - name: Sentry Release
-        uses: getsentry/action-release@v3.1.1
+        uses: getsentry/action-release@v3.2.0
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}

@@ -269,9 +269,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
   return (
     <DashboardBody wide>
       <div className="flex flex-col gap-8">
-        <div className="flex flex-row items-center justify-between gap-6">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <Input
-            className="w-full max-w-64"
+            className="w-full md:max-w-64"
             preSlot={<Search fontSize="small" />}
             placeholder="Search Discounts"
             value={query}

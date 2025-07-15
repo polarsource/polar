@@ -3,12 +3,14 @@ from typing import Literal
 
 from pydantic import UUID4, AliasChoices, Field
 from pydantic.aliases import AliasPath
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.benefit.strategies import BenefitGrantProperties
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.metadata import (
     MetadataOutputMixin,
+    MetadataOutputType,
 )
 from polar.kit.schemas import (
     BENEFIT_GRANT_ID_EXAMPLE,
@@ -22,8 +24,13 @@ from polar.kit.schemas import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.subscription import SubscriptionStatus
+from polar.subscription.schemas import SubscriptionMeterBase
 
 from .customer import CustomerBase
+
+
+class CustomerStateSubscriptionMeter(SubscriptionMeterBase):
+    """Current consumption and spending for a subscription meter."""
 
 
 class CustomerStateSubscription(
@@ -80,7 +87,7 @@ class CustomerStateSubscription(
         description="The ID of the applied discount, if any.", examples=[None]
     )
 
-    price_id: UUID4 = Field(
+    price_id: SkipJsonSchema[UUID4] = Field(
         deprecated=True,
         examples=[PRICE_ID_EXAMPLE],
         validation_alias=AliasChoices(
@@ -89,6 +96,9 @@ class CustomerStateSubscription(
             # Validate from ORM model
             AliasPath("prices", 0, "id"),
         ),
+    )
+    meters: list[CustomerStateSubscriptionMeter] = Field(
+        description="List of meters associated with the subscription."
     )
 
 
@@ -116,10 +126,20 @@ class CustomerStateBenefitGrant(TimestampedSchema, IDSchema):
         ),
         examples=[BenefitType.custom],
     )
+    benefit_metadata: MetadataOutputType = Field(
+        description="The metadata of the benefit concerned by this grant.",
+        examples=[{"key": "value"}],
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "benefit_metadata",
+            # Validate from ORM model
+            AliasPath("benefit", "user_metadata"),
+        ),
+    )
     properties: BenefitGrantProperties
 
 
-class CustomerStateMeter(TimestampedSchema):
+class CustomerStateMeter(TimestampedSchema, IDSchema):
     """An active meter for a customer, with latest consumed and credited units."""
 
     meter_id: UUID4 = Field(
@@ -134,8 +154,7 @@ class CustomerStateMeter(TimestampedSchema):
     balance: float = Field(
         description=(
             "The balance of the meter, "
-            "i.e. the difference between credited and consumed units. "
-            "Never goes negative."
+            "i.e. the difference between credited and consumed units."
         ),
         examples=[75.0],
     )

@@ -4,7 +4,6 @@ import { BenefitGrant } from '@/components/Benefit/BenefitGrant'
 import {
   useCustomerBenefitGrants,
   useCustomerCancelSubscription,
-  useCustomerOrderInvoice,
   useCustomerOrders,
 } from '@/hooks/queries'
 import { Client, schemas } from '@polar-sh/client'
@@ -14,8 +13,8 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import { useCallback } from 'react'
 import { useModal } from '../Modal/useModal'
+import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
 import AmountLabel from '../Shared/AmountLabel'
 import { DetailRow } from '../Shared/DetailRow'
 import CustomerCancellationModal from '../Subscriptions/CustomerCancellationModal'
@@ -23,10 +22,12 @@ import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 
 const CustomerPortalSubscription = ({
   api,
+  customerSessionToken,
   subscription,
   themingPreset,
 }: {
   api: Client
+  customerSessionToken: string
   subscription: schemas['CustomerSubscription']
   themingPreset: ThemingPresetProps
 }) => {
@@ -42,20 +43,11 @@ const CustomerPortalSubscription = ({
     sorting: ['type'],
   })
 
-  const { data: orders } = useCustomerOrders(api, {
+  const { data: orders, refetch: refetchOrders } = useCustomerOrders(api, {
     subscription_id: subscription.id,
     limit: 100,
     sorting: ['-created_at'],
   })
-
-  const orderInvoiceMutation = useCustomerOrderInvoice(api)
-  const openInvoice = useCallback(
-    async (order: schemas['CustomerOrder']) => {
-      const { url } = await orderInvoiceMutation.mutateAsync({ id: order.id })
-      window.open(url, '_blank')
-    },
-    [orderInvoiceMutation],
-  )
 
   const cancelSubscription = useCustomerCancelSubscription(api)
 
@@ -214,15 +206,13 @@ const CustomerPortalSubscription = ({
                   header: '',
                   cell: ({ row }) => (
                     <span className="flex justify-end">
-                      <Button
+                      <DownloadInvoicePortal
+                        customerSessionToken={customerSessionToken}
+                        order={row.original}
+                        onInvoiceGenerated={refetchOrders}
                         variant="secondary"
-                        onClick={() => openInvoice(row.original)}
-                        loading={orderInvoiceMutation.isPending}
-                        disabled={orderInvoiceMutation.isPending}
                         className={themingPreset.polar.buttonSecondary}
-                      >
-                        <span className="">View Invoice</span>
-                      </Button>
+                      />
                     </span>
                   ),
                 },

@@ -2,23 +2,27 @@ import uuid
 from typing import Literal, Unpack
 
 import structlog
-from arq import Retry
+from dramatiq import Retry
 
 from polar.benefit.repository import BenefitRepository
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.benefit_grant import BenefitGrantScopeArgs
-from polar.product.service.product import product as product_service
-from polar.worker import AsyncSessionMaker, JobContext, get_worker_redis, task
+from polar.product.repository import ProductRepository
+from polar.worker import (
+    AsyncSessionMaker,
+    RedisMiddleware,
+    TaskPriority,
+    actor,
+    get_retries,
+)
 
 from .grant.scope import resolve_scope
 from .grant.service import benefit_grant as benefit_grant_service
 from .strategies import BenefitRetriableError
 
 log: Logger = structlog.get_logger()
-
-GRANT_REVOKE_MAX_TRIES = 16
 
 
 class BenefitTaskError(PolarTaskError): ...
@@ -59,15 +63,14 @@ class OrganizationDoesNotExist(BenefitTaskError):
         super().__init__(message)
 
 
-@task("benefit.enqueue_benefits_grants")
+@actor(actor_name="benefit.enqueue_benefits_grants", priority=TaskPriority.MEDIUM)
 async def enqueue_benefits_grants(
-    ctx: JobContext,
     task: Literal["grant", "revoke"],
     customer_id: uuid.UUID,
     product_id: uuid.UUID,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+    async with AsyncSessionMaker() as session:
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id(
             customer_id,
@@ -77,7 +80,8 @@ async def enqueue_benefits_grants(
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
 
-        product = await product_service.get(session, product_id)
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(product_id)
         if product is None:
             raise ProductDoesNotExist(product_id)
 
@@ -88,14 +92,13 @@ async def enqueue_benefits_grants(
         )
 
 
-@task("benefit.grant", max_tries=GRANT_REVOKE_MAX_TRIES)
+@actor(actor_name="benefit.grant", priority=TaskPriority.MEDIUM)
 async def benefit_grant(
-    ctx: JobContext,
     customer_id: uuid.UUID,
     benefit_id: uuid.UUID,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+    async with AsyncSessionMaker() as session:
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id(customer_id)
         if customer is None:
@@ -113,10 +116,10 @@ async def benefit_grant(
         try:
             await benefit_grant_service.grant_benefit(
                 session,
-                get_worker_redis(ctx),
+                RedisMiddleware.get(),
                 customer,
                 benefit,
-                attempt=ctx["job_try"],
+                attempt=get_retries(),
                 **resolved_scope,
             )
         except BenefitRetriableError as e:
@@ -127,17 +130,16 @@ async def benefit_grant(
                 benefit_id=str(benefit_id),
                 customer_id=str(customer_id),
             )
-            raise Retry(e.defer_seconds) from e
+            raise Retry(delay=e.defer_milliseconds) from e
 
 
-@task("benefit.revoke", max_tries=GRANT_REVOKE_MAX_TRIES)
+@actor(actor_name="benefit.revoke", priority=TaskPriority.MEDIUM)
 async def benefit_revoke(
-    ctx: JobContext,
     customer_id: uuid.UUID,
     benefit_id: uuid.UUID,
     **scope: Unpack[BenefitGrantScopeArgs],
 ) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+    async with AsyncSessionMaker() as session:
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id(
             customer_id,
@@ -159,10 +161,10 @@ async def benefit_revoke(
         try:
             await benefit_grant_service.revoke_benefit(
                 session,
-                get_worker_redis(ctx),
+                RedisMiddleware.get(),
                 customer,
                 benefit,
-                attempt=ctx["job_try"],
+                attempt=get_retries(),
                 **resolved_scope,
             )
         except BenefitRetriableError as e:
@@ -173,12 +175,12 @@ async def benefit_revoke(
                 benefit_id=str(benefit_id),
                 customer_id=str(customer_id),
             )
-            raise Retry(e.defer_seconds) from e
+            raise Retry(delay=e.defer_milliseconds) from e
 
 
-@task("benefit.update")
-async def benefit_update(ctx: JobContext, benefit_grant_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="benefit.update", priority=TaskPriority.MEDIUM)
+async def benefit_update(benefit_grant_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
         benefit_grant = await benefit_grant_service.get(
             session, benefit_grant_id, loaded=True
         )
@@ -187,7 +189,7 @@ async def benefit_update(ctx: JobContext, benefit_grant_id: uuid.UUID) -> None:
 
         try:
             await benefit_grant_service.update_benefit_grant(
-                session, get_worker_redis(ctx), benefit_grant, attempt=ctx["job_try"]
+                session, RedisMiddleware.get(), benefit_grant, attempt=get_retries()
             )
         except BenefitRetriableError as e:
             log.warning(
@@ -196,23 +198,21 @@ async def benefit_update(ctx: JobContext, benefit_grant_id: uuid.UUID) -> None:
                 defer_seconds=e.defer_seconds,
                 benefit_grant_id=str(benefit_grant_id),
             )
-            raise Retry(e.defer_seconds) from e
+            raise Retry(delay=e.defer_milliseconds) from e
 
 
-@task("benefit.enqueue_benefit_grant_cycles")
-async def enqueue_benefit_grant_cycles(
-    ctx: JobContext, **scope: Unpack[BenefitGrantScopeArgs]
-) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="benefit.enqueue_benefit_grant_cycles", priority=TaskPriority.MEDIUM)
+async def enqueue_benefit_grant_cycles(**scope: Unpack[BenefitGrantScopeArgs]) -> None:
+    async with AsyncSessionMaker() as session:
         resolved_scope = await resolve_scope(session, scope)
         await benefit_grant_service.enqueue_benefit_grant_cycles(
-            session, get_worker_redis(ctx), **resolved_scope
+            session, RedisMiddleware.get(), **resolved_scope
         )
 
 
-@task("benefit.cycle")
-async def benefit_cycle(ctx: JobContext, benefit_grant_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="benefit.cycle", priority=TaskPriority.MEDIUM)
+async def benefit_cycle(benefit_grant_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
         benefit_grant = await benefit_grant_service.get(
             session, benefit_grant_id, loaded=True
         )
@@ -221,7 +221,7 @@ async def benefit_cycle(ctx: JobContext, benefit_grant_id: uuid.UUID) -> None:
 
         try:
             await benefit_grant_service.cycle_benefit_grant(
-                session, get_worker_redis(ctx), benefit_grant, attempt=ctx["job_try"]
+                session, RedisMiddleware.get(), benefit_grant, attempt=get_retries()
             )
         except BenefitRetriableError as e:
             log.warning(
@@ -230,12 +230,12 @@ async def benefit_cycle(ctx: JobContext, benefit_grant_id: uuid.UUID) -> None:
                 defer_seconds=e.defer_seconds,
                 benefit_grant_id=str(benefit_grant_id),
             )
-            raise Retry(e.defer_seconds) from e
+            raise Retry(delay=e.defer_milliseconds) from e
 
 
-@task("benefit.delete")
-async def benefit_delete(ctx: JobContext, benefit_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="benefit.delete", priority=TaskPriority.MEDIUM)
+async def benefit_delete(benefit_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
         benefit_repository = BenefitRepository.from_session(session)
         benefit = await benefit_repository.get_by_id(
             benefit_id,
@@ -248,9 +248,9 @@ async def benefit_delete(ctx: JobContext, benefit_id: uuid.UUID) -> None:
         await benefit_grant_service.enqueue_benefit_grant_deletions(session, benefit)
 
 
-@task("benefit.revoke_customer")
-async def benefit_revoke_customer(ctx: JobContext, customer_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+@actor(actor_name="benefit.revoke_customer", priority=TaskPriority.MEDIUM)
+async def benefit_revoke_customer(customer_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id(
             customer_id, include_deleted=True
@@ -261,16 +261,18 @@ async def benefit_revoke_customer(ctx: JobContext, customer_id: uuid.UUID) -> No
         await benefit_grant_service.enqueue_customer_grant_deletions(session, customer)
 
 
-@task("benefit.delete_grant")
-async def benefit_delete_grant(ctx: JobContext, benefit_grant_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
-        benefit_grant = await benefit_grant_service.get(session, benefit_grant_id)
+@actor(actor_name="benefit.delete_grant", priority=TaskPriority.MEDIUM)
+async def benefit_delete_grant(benefit_grant_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        benefit_grant = await benefit_grant_service.get(
+            session, benefit_grant_id, loaded=True
+        )
         if benefit_grant is None:
             raise BenefitGrantDoesNotExist(benefit_grant_id)
 
         try:
             await benefit_grant_service.delete_benefit_grant(
-                session, get_worker_redis(ctx), benefit_grant, attempt=ctx["job_try"]
+                session, RedisMiddleware.get(), benefit_grant, attempt=get_retries()
             )
         except BenefitRetriableError as e:
             log.warning(
@@ -279,4 +281,4 @@ async def benefit_delete_grant(ctx: JobContext, benefit_grant_id: uuid.UUID) -> 
                 defer_seconds=e.defer_seconds,
                 benefit_grant_id=str(benefit_grant_id),
             )
-            raise Retry(e.defer_seconds) from e
+            raise Retry(delay=e.defer_milliseconds) from e

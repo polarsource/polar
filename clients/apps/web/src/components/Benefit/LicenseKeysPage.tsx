@@ -159,10 +159,7 @@ export const LicenseKeysPage = ({
           name={selectedLicenseKey.customer.email}
         />
         <div className="flex flex-col">
-          <span>{selectedLicenseKey.user?.public_name}</span>
-          <span className="dark:text-polar-500 text-xs text-gray-500">
-            {selectedLicenseKey.user?.email}
-          </span>
+          <span>{selectedLicenseKey.customer.email}</span>
         </div>
       </div>
       <div className="flex flex-col gap-y-6">

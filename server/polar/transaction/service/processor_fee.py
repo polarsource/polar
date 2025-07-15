@@ -31,7 +31,11 @@ def _get_stripe_processor_fee_type(description: str) -> ProcessorFeeType:
         return ProcessorFeeType.account
     if "billing" in description:
         return ProcessorFeeType.subscription
-    if "automatic tax" in description or "tax api calculation" in description:
+    if (
+        "automatic tax" in description
+        or "tax api calculation" in description
+        or "tax api transaction" in description
+    ):
         return ProcessorFeeType.tax
     if "invoicing" in description or "post payment invoices" in description:
         return ProcessorFeeType.invoice
@@ -50,6 +54,8 @@ def _get_stripe_processor_fee_type(description: str) -> ProcessorFeeType:
         return ProcessorFeeType.tax
     if "identity document check" in description:
         return ProcessorFeeType.security
+    if "payments" in description:
+        return ProcessorFeeType.payment
     raise UnsupportedStripeFeeType(description)
 
 
@@ -176,7 +182,7 @@ class ProcessorFeeTransactionService(BaseTransactionService):
         transactions: list[Transaction] = []
 
         balance_transactions = await stripe_service.list_balance_transactions(
-            type="stripe_fee"
+            type="stripe_fee", expand=["data.source"]
         )
         async for balance_transaction in balance_transactions:
             transaction = await self.get_by(

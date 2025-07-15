@@ -30,7 +30,7 @@ from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
 from tests.fixtures.database import SaveFixture
-from tests.transaction.conftest import create_account
+from tests.fixtures.random_objects import create_account
 
 
 async def create_balance_transactions(
@@ -546,10 +546,18 @@ class TestCreateDisputeFeesBalances:
 @pytest.mark.asyncio
 class TestCreatePayoutFeesBalances:
     async def test_not_processor_fees_applicable(
-        self, session: AsyncSession, account: Account
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
     ) -> None:
-        # then
-        session.expunge_all()
+        account = await create_account(
+            save_fixture,
+            organization,
+            user,
+            processor_fees_applicable=False,
+        )
 
         (
             balance_amount,

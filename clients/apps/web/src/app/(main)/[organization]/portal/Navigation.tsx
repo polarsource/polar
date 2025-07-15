@@ -1,6 +1,5 @@
 'use client'
 
-import { usePostHog } from '@/hooks/posthog'
 import { schemas } from '@polar-sh/client'
 import {
   Select,
@@ -19,6 +18,11 @@ const links = (organization: schemas['Organization']) => [
     href: `/${organization.slug}/portal/overview`,
     label: 'Overview',
     isActive: (path: string) => path.includes('/overview'),
+  },
+  {
+    href: `/${organization.slug}/portal/orders`,
+    label: 'Orders',
+    isActive: (path: string) => path.includes('/orders'),
   },
   {
     href: `/${organization.slug}/portal/usage`,
@@ -42,19 +46,16 @@ export const Navigation = ({
   const router = useRouter()
   const currentPath = usePathname()
   const searchParams = useSearchParams()
-  const { isFeatureEnabled } = usePostHog()
 
   const buildPath = (path: string) => {
     return `${path}?${searchParams.toString()}`
   }
 
-  const filteredLinks = links(organization).filter(({ label }) =>
-    label === 'Usage' ? isFeatureEnabled('usage_based_billing') : true,
-  )
+  const filteredLinks = links(organization)
 
   return (
     <>
-      <nav className="hidden w-64 flex-col gap-y-1 py-12 md:flex">
+      <nav className="sticky top-0 hidden h-fit w-64 flex-col gap-y-1 py-12 md:flex">
         {filteredLinks.map((link) => (
           <Link
             key={link.href}

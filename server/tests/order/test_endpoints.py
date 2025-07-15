@@ -53,37 +53,44 @@ class TestListOrders:
         json = response.json()
         assert json["pagination"]["total_count"] == len(orders)
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.orders_read}),
-    )
-    async def test_organization(self, client: AsyncClient, orders: list[Order]) -> None:
-        response = await client.get("/v1/orders/")
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["pagination"]["total_count"] == len(orders)
-
     @pytest.mark.auth
-    @pytest.mark.parametrize(
-        "product_price_type,expected", [("one_time", 0), ("recurring", 1)]
-    )
-    async def test_deprecated_product_price_type_filter(
+    async def test_metadata_filter(
         self,
-        product_price_type: str,
-        expected: int,
+        save_fixture: SaveFixture,
         client: AsyncClient,
         user_organization: UserOrganization,
-        orders: list[Order],
+        product: Product,
+        customer: Customer,
     ) -> None:
+        await create_order(
+            save_fixture,
+            stripe_invoice_id="INVOICE_ID_1",
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "ABC"},
+        )
+        await create_order(
+            save_fixture,
+            stripe_invoice_id="INVOICE_ID_2",
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "DEF"},
+        )
+        await create_order(
+            save_fixture,
+            stripe_invoice_id="INVOICE_ID_3",
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "GHI"},
+        )
+
         response = await client.get(
-            "/v1/orders/", params={"product_price_type": product_price_type}
+            "/v1/orders/", params={"metadata[reference_id]": ["ABC", "DEF"]}
         )
 
         assert response.status_code == 200
-
         json = response.json()
-        assert json["pagination"]["total_count"] == expected
+        assert json["pagination"]["total_count"] == 2
 
 
 @pytest.mark.asyncio

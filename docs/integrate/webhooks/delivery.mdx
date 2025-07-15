@@ -70,7 +70,7 @@ app = Flask(__name__)
 def webhook():
     try:
         event = validate_event(
-            payload=request.data,
+            body=request.data,
             headers=request.headers,
             secret=os.getenv('POLAR_WEBHOOK_SECRET', ''),
         )

@@ -21,7 +21,7 @@ from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.routing import APIRouter
-from polar.user.schemas.user import UserSignupAttribution, UserSignupAttributionQuery
+from polar.user.schemas import UserSignupAttribution, UserSignupAttributionQuery
 
 from .schemas import OAuthAccessToken
 from .service.secret_scanning import secret_scanning as secret_scanning_service

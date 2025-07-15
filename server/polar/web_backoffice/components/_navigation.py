@@ -58,7 +58,7 @@ class NavigationItem:
             elif self.children:
                 with tag.details():
                     if is_active:
-                        attr("open")
+                        attr("open", True)
                     with tag.summary():
                         text(self.label)
                     with tag.ul():

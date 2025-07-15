@@ -12,6 +12,7 @@ from sqlalchemy import (
     Uuid,
     text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -21,6 +22,7 @@ from polar.exceptions import PolarError
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
+from polar.kit.tax import TaxabilityReason, TaxID, TaxIDType, TaxRate
 from polar.models.order_item import OrderItem
 
 if TYPE_CHECKING:
@@ -88,15 +90,35 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     refunded_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     refunded_tax_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
+    billing_name: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
     billing_address: Mapped[Address | None] = mapped_column(AddressType, nullable=True)
     stripe_invoice_id: Mapped[str | None] = mapped_column(
-        String, nullable=True, unique=True
+        String, nullable=True, unique=True, default=None
+    )
+
+    taxability_reason: Mapped[TaxabilityReason | None] = mapped_column(
+        String, nullable=True, default=None
+    )
+    tax_id: Mapped[TaxID | None] = mapped_column(TaxIDType, nullable=True, default=None)
+    tax_rate: Mapped[TaxRate | None] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=None
+    )
+    tax_calculation_processor_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
+    tax_transaction_processor_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
+
+    invoice_number: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    invoice_path: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
     )
 
     customer_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("customers.id"),
-        nullable=False,
+        Uuid, ForeignKey("customers.id"), nullable=False, index=True
     )
 
     @declared_attr
@@ -104,9 +126,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return relationship("Customer", lazy="raise")
 
     product_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("products.id"),
-        nullable=False,
+        Uuid, ForeignKey("products.id"), nullable=False
     )
 
     @declared_attr
@@ -126,9 +146,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
 
     subscription_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        ForeignKey("subscriptions.id"),
-        nullable=True,
+        Uuid, ForeignKey("subscriptions.id"), nullable=True
     )
 
     @declared_attr
@@ -236,3 +254,7 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         self.status = new_status
         self.refunded_amount = new_amount
         self.refunded_tax_amount = new_tax_amount
+
+    @property
+    def is_invoice_generated(self) -> bool:
+        return self.invoice_path is not None

@@ -4,6 +4,61 @@ sidebarTitle: API
 description: Stay up to date with the latest changes, improvements and deprecations to the Polar API.
 ---
 
+<Update label="2025-06-18">
+  ## Checkout API and Customer Session API changes
+
+To be more consistent across our API, we've renamed `customer_external_id` field to `external_customer_id` in the Checkout API and Customer Session API.
+
+- <Icon icon="circle-exclamation" size={16} color="orange" /> **Deprecated**:
+  `customer_external_id` field in the Checkout API and Customer Session API. Use
+  `external_customer_id` instead.
+
+## Benefit metadata in Customer State
+
+The customer state now includes the [benefit metadata](/api-reference/customers/state#response-benefit-metadata) in the `granted_benefits` list.
+
+</Update>
+
+<Update label="2025-06-17">
+  ## Webhook API endpoints are now documented
+
+The API endpoints for managing webhooks are now documented in the API reference, and fully supported in our SDK.
+
+[Read more](/api-reference/webhooks/endpoints/create)
+
+</Update>
+
+<Update label="2025-06-05">
+  ## Rate limits
+
+To ensure fair usage and maintain performance, we've introduced rate limits for the API. The limits are as follows:
+
+- **100 requests per second** per IP address.
+
+</Update>
+
+<Update label="2025-06-02">
+  ## Order invoice generation and retrieval
+
+Until now, the invoice was generated automatically when the order was created, allowing you to call [`GET /v1/orders/{id}/invoice`](/api-reference/orders/get-invoice) and [`GET /v1/customer-portal/orders/{id}/invoice`](/api-reference/customer-portal/orders/get-invoice) endpoints without any prior action.
+
+We now require you to explicitly generate the invoice by calling the [`POST /v1/orders/{id}/invoice`](/api-reference/orders/post-invoice) or [`POST /v1/customer-portal/orders/{id}/invoice`](/api-reference/customer-portal/orders/post-invoice) endpoints.
+
+This change allows us to better handle the invoice generation process, and to allow the customer to change the billing details (name and address) before generating the invoice. This can be done through the [`PATCH /v1/orders/{id}`](/api-reference/orders/patch) or [`PATCH /v1/customer-portal/orders/{id}`](/api-reference/customer-portal/orders/patch) endpoints.
+
+</Update>
+
+<Update label="2025-04-16">
+  ## Benefit metadata support and floating point numbers in metadata
+
+- <Icon icon="check" size={16} color="green" /> **Added**: Benefits now support
+  [metadata](/api-reference/benefits/create#body-metadata).
+- <Icon icon="check" size={16} color="green" /> **Added**: Metadata values now
+  support floating-point numbers. Before, only strings, integers and booleans
+  were supported.
+
+</Update>
+
 <Update label="2025-03-25">
   ## Checkout amount fields changes and depreciations
 

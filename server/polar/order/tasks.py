@@ -1,22 +1,18 @@
 import uuid
 
 import structlog
-from arq import Retry
-from babel.numbers import format_currency
+from dramatiq import Retry
 from sqlalchemy.orm import joinedload
 
-from polar.config import settings
 from polar.exceptions import PolarTaskError
-from polar.integrations.discord.internal_webhook import (
-    get_branded_discord_embed,
-    send_internal_webhook,
-)
 from polar.logging import Logger
 from polar.models import Customer, Order
 from polar.models.order import OrderBillingReason
-from polar.product.service.product import product as product_service
+from polar.payment_method.repository import PaymentMethodRepository
+from polar.product.repository import ProductRepository
+from polar.subscription.repository import SubscriptionRepository
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
-from polar.worker import AsyncSessionMaker, JobContext, compute_backoff, task
+from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry
 
 from .repository import OrderRepository
 from .service import order as order_service
@@ -27,6 +23,13 @@ MAX_RETRIES = 10
 
 
 class OrderTaskError(PolarTaskError): ...
+
+
+class SubscriptionDoesNotExist(OrderTaskError):
+    def __init__(self, subscription_id: uuid.UUID) -> None:
+        self.subscription_id = subscription_id
+        message = f"The subscription with id {subscription_id} does not exist."
+        super().__init__(message)
 
 
 class ProductDoesNotExist(OrderTaskError):
@@ -43,11 +46,51 @@ class OrderDoesNotExist(OrderTaskError):
         super().__init__(message)
 
 
-@task("order.balance")
-async def create_order_balance(
-    ctx: JobContext, order_id: uuid.UUID, charge_id: str
-) -> None:
-    async with AsyncSessionMaker(ctx) as session:
+class PaymentMethodDoesNotExist(OrderTaskError):
+    def __init__(self, payment_method_id: uuid.UUID) -> None:
+        self.payment_method_id = payment_method_id
+        message = f"The payment method with id {payment_method_id} does not exist."
+        super().__init__(message)
+
+
+@actor(actor_name="order.subscription_cycle", priority=TaskPriority.LOW)
+async def create_subscription_cycle_order(subscription_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.get_by_id(
+            subscription_id, options=repository.get_eager_options()
+        )
+        if subscription is None:
+            raise SubscriptionDoesNotExist(subscription_id)
+
+        await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+
+@actor(actor_name="order.trigger_payment", priority=TaskPriority.LOW)
+async def trigger_payment(order_id: uuid.UUID, payment_method_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrderRepository.from_session(session)
+        order = await repository.get_by_id(
+            order_id, options=repository.get_eager_options()
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        payment_method_repository = PaymentMethodRepository.from_session(session)
+        payment_method = await payment_method_repository.get_by_id_and_customer(
+            payment_method_id, order.customer_id
+        )
+        if payment_method is None:
+            raise PaymentMethodDoesNotExist(payment_method_id)
+
+        await order_service.trigger_payment(session, order, payment_method)
+
+
+@actor(actor_name="order.balance", priority=TaskPriority.LOW)
+async def create_order_balance(order_id: uuid.UUID, charge_id: str) -> None:
+    async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
         order = await repository.get_by_id(
             order_id,
@@ -62,88 +105,32 @@ async def create_order_balance(
             # Retry because Stripe webhooks order is not guaranteed,
             # so we might not have been able to handle subscription.created
             # or charge.succeeded yet!
-            if ctx["job_try"] <= MAX_RETRIES:
-                raise Retry(compute_backoff(ctx["job_try"])) from e
+            if can_retry():
+                raise Retry() from e
             # Raise the exception to be notified about it
             else:
                 raise
 
 
-@task("order.update_product_benefits_grants")
-async def update_product_benefits_grants(
-    ctx: JobContext, product_id: uuid.UUID
-) -> None:
-    async with AsyncSessionMaker(ctx) as session:
-        product = await product_service.get(session, product_id)
+@actor(actor_name="order.update_product_benefits_grants", priority=TaskPriority.MEDIUM)
+async def update_product_benefits_grants(product_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(product_id)
         if product is None:
             raise ProductDoesNotExist(product_id)
 
         await order_service.update_product_benefits_grants(session, product)
 
 
-@task("order.discord_notification")
-async def order_discord_notification(ctx: JobContext, order_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker(ctx) as session:
-        order_repository = OrderRepository.from_session(session)
-        order = await order_repository.get_by_id(
-            order_id,
-            options=order_repository.get_eager_options(
-                customer_load=joinedload(Order.customer).joinedload(
-                    Customer.organization
-                )
-            ),
+@actor(actor_name="order.invoice", priority=TaskPriority.LOW)
+async def order_invoice(order_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrderRepository.from_session(session)
+        order = await repository.get_by_id(
+            order_id, options=repository.get_eager_options()
         )
         if order is None:
             raise OrderDoesNotExist(order_id)
 
-        if order.billing_reason not in {
-            OrderBillingReason.purchase,
-            OrderBillingReason.subscription_create,
-        }:
-            return
-
-        product = order.product
-        customer = order.customer
-        organization = order.customer.organization
-        subscription = order.subscription
-
-        amount = format_currency(order.net_amount / 100, "USD", locale="en_US")
-        if subscription:
-            amount = f"{amount} / {subscription.recurring_interval}"
-
-        if order.billing_reason == OrderBillingReason.subscription_create:
-            description = "New subscription"
-        else:
-            description = "One-time purchase"
-
-        await send_internal_webhook(
-            {
-                "content": "New order",
-                "embeds": [
-                    get_branded_discord_embed(
-                        {
-                            "title": product.name,
-                            "description": description,
-                            "fields": [
-                                {
-                                    "name": "Organization",
-                                    "value": f"[{organization.name}]({
-                                        settings.generate_external_url(
-                                            f'/backoffice/organizations/{organization.id}'
-                                        )
-                                    })",
-                                },
-                                {
-                                    "name": "Amount",
-                                    "value": amount,
-                                },
-                                {
-                                    "name": "Customer",
-                                    "value": customer.email,
-                                },
-                            ],
-                        }
-                    )
-                ],
-            }
-        )
+        await order_service.generate_invoice(session, order)

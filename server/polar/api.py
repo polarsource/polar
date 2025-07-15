@@ -25,6 +25,7 @@ from polar.integrations.google.endpoints import router as google_router
 from polar.integrations.plain.endpoints import router as plain_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.license_key.endpoints import router as license_key_router
+from polar.login_code.endpoints import router as login_code_router
 from polar.magic_link.endpoints import router as magic_link_router
 from polar.meter.endpoints import router as meter_router
 from polar.metrics.endpoints import router as metrics_router
@@ -35,7 +36,8 @@ from polar.organization.endpoints import router as organization_router
 from polar.organization_access_token.endpoints import (
     router as organization_access_token_router,
 )
-from polar.personal_access_token.endpoints import router as pat_router
+from polar.payment.endpoints import router as payment_router
+from polar.payout.endpoints import router as payout_router
 from polar.product.endpoints import router as product_router
 from polar.refund.endpoints import router as refund_router
 from polar.storefront.endpoints import router as storefront_router
@@ -58,10 +60,10 @@ router.include_router(stripe_router)
 router.include_router(discord_router)
 # /magic-link
 router.include_router(magic_link_router)
+# /login-code
+router.include_router(login_code_router)
 # /notifications
 router.include_router(notifications_router)
-# /personal_access_tokens
-router.include_router(pat_router)
 # /accounts
 router.include_router(accounts_router)
 # /stream
@@ -124,3 +126,7 @@ router.include_router(meter_router)
 router.include_router(organization_access_token_router)
 # /customer-meters
 router.include_router(customer_meter_router)
+# /payments
+router.include_router(payment_router)
+# /payouts
+router.include_router(payout_router)

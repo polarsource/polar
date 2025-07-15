@@ -8,13 +8,13 @@ from sqlalchemy import UnaryExpression, asc, delete, desc
 from polar.auth.models import AuthSubject
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Benefit, Organization, ProductBenefit, User
 from polar.models.benefit import BenefitType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
-from polar.posthog import posthog as posthog_service
 from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
@@ -37,6 +37,7 @@ class BenefitService:
         *,
         type: Sequence[BenefitType] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
+        metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[BenefitSortProperty]] = [
             (BenefitSortProperty.created_at, True)
@@ -54,6 +55,9 @@ class BenefitService:
 
         if query is not None:
             statement = statement.where(Benefit.description.ilike(f"%{query}%"))
+
+        if metadata is not None:
+            statement = apply_metadata_clause(Benefit, statement, metadata)
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
@@ -92,23 +96,6 @@ class BenefitService:
         organization = await get_payload_organization(
             session, auth_subject, create_schema
         )
-
-        if (
-            create_schema.type == BenefitType.meter_credit
-            and not posthog_service.has_feature_flag(
-                auth_subject, "usage_based_billing"
-            )
-        ):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "type"),
-                        "msg": "Metered benefit is not generally available yet.",
-                        "input": create_schema.type,
-                    }
-                ]
-            )
 
         try:
             is_tax_applicable = getattr(create_schema, "is_tax_applicable")

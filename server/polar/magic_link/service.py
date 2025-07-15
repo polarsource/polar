@@ -15,8 +15,9 @@ from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
 from polar.models import MagicLink, User
 from polar.postgres import AsyncSession
-from polar.user.schemas.user import UserSignupAttribution
-from polar.user.service.user import user as user_service
+from polar.user.repository import UserRepository
+from polar.user.schemas import UserSignupAttribution
+from polar.user.service import user as user_service
 
 from .schemas import MagicLinkCreate, MagicLinkUpdate
 
@@ -40,7 +41,8 @@ class MagicLinkService(ResourceService[MagicLink, MagicLinkCreate, MagicLinkUpda
         signup_attribution: UserSignupAttribution | None = None,
         expires_at: datetime.datetime | None = None,
     ) -> tuple[MagicLink, str]:
-        user = await user_service.get_by_email(session, email)
+        user_repository = UserRepository.from_session(session)
+        user = await user_repository.get_by_email(email)
 
         token, token_hash = generate_token_hash_pair(
             secret=settings.SECRET, prefix=TOKEN_PREFIX

@@ -1,18 +1,15 @@
 from collections.abc import AsyncGenerator
-from typing import Annotated
 
 import structlog
 from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
 
-from polar.customer.schemas.customer import CustomerID
+from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import ResourceNotFound
-from polar.kit.csv import (
-    IterableCSVWriter,
-)
+from polar.kit.csv import IterableCSVWriter
+from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
-from polar.kit.sorting import Sorting, SortingGetter
 from polar.locker import Locker, get_locker
 from polar.models import Subscription
 from polar.openapi import APITag
@@ -21,10 +18,10 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 
-from . import auth
+from . import auth, sorting
 from .schemas import Subscription as SubscriptionSchema
 from .schemas import SubscriptionID, SubscriptionUpdate
-from .service import AlreadyCanceledSubscription, SubscriptionSortProperty
+from .service import AlreadyCanceledSubscription
 from .service import subscription as subscription_service
 
 log = structlog.get_logger()
@@ -39,19 +36,17 @@ SubscriptionNotFound = {
 }
 
 
-SearchSorting = Annotated[
-    list[Sorting[SubscriptionSortProperty]],
-    Depends(SortingGetter(SubscriptionSortProperty, ["-started_at"])),
-]
-
-
 @router.get(
-    "/", response_model=ListResource[SubscriptionSchema], summary="List Subscriptions"
+    "/",
+    response_model=ListResource[SubscriptionSchema],
+    summary="List Subscriptions",
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def list(
     auth_subject: auth.SubscriptionsRead,
     pagination: PaginationParamsQuery,
-    sorting: SearchSorting,
+    sorting: sorting.ListSorting,
+    metadata: MetadataQuery,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
@@ -60,6 +55,11 @@ async def list(
     ),
     customer_id: MultipleQueryFilter[CustomerID] | None = Query(
         None, title="CustomerID Filter", description="Filter by customer ID."
+    ),
+    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Query(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by customer external ID.",
     ),
     discount_id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="DiscountID Filter", description="Filter by discount ID."
@@ -76,8 +76,10 @@ async def list(
         organization_id=organization_id,
         product_id=product_id,
         customer_id=customer_id,
+        external_customer_id=external_customer_id,
         discount_id=discount_id,
         active=active,
+        metadata=metadata,
         pagination=pagination,
         sorting=sorting,
     )
@@ -154,7 +156,7 @@ async def get(
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
     """Get a subscription by ID."""
-    subscription = await subscription_service.user_get(session, auth_subject, id)
+    subscription = await subscription_service.get(session, auth_subject, id)
 
     if subscription is None:
         raise ResourceNotFound()
@@ -185,7 +187,7 @@ async def update(
     locker: Locker = Depends(get_locker),
 ) -> Subscription:
     """Update a subscription."""
-    subscription = await subscription_service.user_get(session, auth_subject, id)
+    subscription = await subscription_service.get(session, auth_subject, id)
     if subscription is None:
         raise ResourceNotFound()
 
@@ -220,7 +222,7 @@ async def revoke(
     locker: Locker = Depends(get_locker),
 ) -> Subscription:
     """Revoke a subscription, i.e cancel immediately."""
-    subscription = await subscription_service.user_get(session, auth_subject, id)
+    subscription = await subscription_service.get(session, auth_subject, id)
     if subscription is None:
         raise ResourceNotFound()
 

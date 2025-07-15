@@ -1,0 +1,51 @@
+---
+title: "Credits"
+description: "Crediting customers for Usage Based Billing"
+---
+
+Credits is the way to pre-pay for usage in Polar. It allows you to give your customers the ability to pre-pay for usage instead of risk getting a hefty bill at the end of the month.
+
+## How Credits Work
+
+When you ingest events into a Usage Meter, customers will be charged for the usage based on the product's pricing model.
+
+However, sometimes you may want to give your customers the ability to pre-pay for usage instead of risk getting a hefty bill at the end of the month.
+
+When you issue Credits to a customer, we first deduct the Credits from their Usage Meter balance. If the Usage Meter balance reaches 0, the customer will be charged for the overage.
+
+### Credits-only spending
+
+To avoid any overage charges, don't create any Metered price on your product. This way, billing won't be triggered at all for the meter
+
+## Issuing Credits with the Credits Benefit
+
+<img
+  className="block dark:hidden"
+  src="/assets/features/benefits/credits/credits.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/features/benefits/credits/credits.dark.png"
+/>
+
+The Credits benefit will credit a customer's Usage Meter balance at different points in time depending on the type of product the benefit is attached to.
+
+### Subscription Products
+
+The customer will be credited the amount of units specified in the benefit at the beginning of every subscription cycle period — monthly or yearly.
+
+### One-Time Products
+
+The customer will be credited the amount of units specified in the benefit once at the time of purchase.
+
+## Tracking customer's balance
+
+In your application, you'll likely need to track the customer's balance for a given meter. The easiest way to do this is to use the [Customer State](/integrate/customer-state), which will give you the overview of the customer, including the balance for each of their active meters.
+
+You can also specifically query the meters balance using the [Customer Meters API](/api-reference/customer-meters/list).
+
+<Warning>
+  Polar doesn't block usage if the customer exceeds their balance. You're
+  responsible for implementing the logic you need to prevent usage if they
+  exceed it.
+</Warning>

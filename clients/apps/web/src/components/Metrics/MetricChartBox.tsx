@@ -1,13 +1,11 @@
 'use client'
 
 import Spinner from '@/components/Shared/Spinner'
-import { ParsedMetricPeriod } from '@/hooks/queries'
-import {
-  computeCumulativeValue,
-  metricDisplayNames,
-  MetricMarksResolver,
-} from '@/utils/metrics'
+import { ParsedMetricsResponse } from '@/hooks/queries'
+import { getFormattedMetricValue } from '@/utils/metrics'
+import { ArrowOutwardOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
   Select,
@@ -17,187 +15,265 @@ import {
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
-import React, { useMemo } from 'react'
+import { Status } from '@polar-sh/ui/components/atoms/Status'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
+import React, { forwardRef, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { Modal } from '../Modal'
+import { useModal } from '../Modal/useModal'
 import MetricChart from './MetricChart'
+import { ShareChartModal } from './ShareChartModal'
 
 interface MetricChartBoxProps {
-  className?: string
-  data: ParsedMetricPeriod[]
+  metric: keyof schemas['Metrics']
+  onMetricChange?: (metric: keyof schemas['Metrics']) => void
+  data?: ParsedMetricsResponse
+  previousData?: ParsedMetricsResponse
   interval: schemas['TimeInterval']
-  metric?: schemas['Metric']
+  className?: string
   height?: number
-  maxTicks?: number
-  marks?: MetricMarksResolver
+  width?: number
   loading?: boolean
-  defaultMetric?: keyof schemas['Metrics']
   compact?: boolean
+  shareable?: boolean
+  simple?: boolean
 }
 
-const MetricChartBox: React.FC<MetricChartBoxProps> = ({
-  className,
-  data,
-  interval,
-  metric,
-  height = 300,
-  maxTicks,
-  marks,
-  loading,
-  compact = false,
-  defaultMetric,
-}) => {
-  const [selectedMetric, setSelectedMetric] = React.useState<
-    keyof schemas['Metrics'] | undefined
-  >(defaultMetric)
+const MetricChartBox = forwardRef<HTMLDivElement, MetricChartBoxProps>(
+  (
+    {
+      metric,
+      onMetricChange,
+      data,
+      previousData,
+      interval,
+      className,
+      height = 300,
+      width,
+      loading,
+      compact = false,
+      shareable = true,
+      simple = false,
+    },
+    ref,
+  ) => {
+    const {
+      isShown: isModalOpen,
+      show: showModal,
+      hide: hideModal,
+    } = useModal()
 
-  const [hoveredMetricPeriod, setHoveredMetricPeriod] =
-    React.useState<ParsedMetricPeriod | null>(null)
+    const selectedMetric = useMemo(() => data?.metrics[metric], [data, metric])
+    const [hoveredPeriodIndex, setHoveredPeriodIndex] = React.useState<
+      number | null
+    >(null)
 
-  const isMetricObject = metric && 'slug' in metric
+    const hoveredPeriod = useMemo(() => {
+      if (!data || !hoveredPeriodIndex) return null
+      return data.periods[hoveredPeriodIndex]
+    }, [data, hoveredPeriodIndex])
 
-  const metricValue = useMemo(() => {
-    if (!data || !metric) return 0
+    const hoveredPreviousPeriod = useMemo(() => {
+      if (!previousData || !hoveredPeriodIndex) return null
+      return previousData.periods[hoveredPeriodIndex]
+    }, [previousData, hoveredPeriodIndex])
 
-    const currentMetric = isMetricObject
-      ? metric
-      : selectedMetric
-        ? metric[selectedMetric]
-        : undefined
+    const metricValue = useMemo(() => {
+      if (!data) return 0
 
-    if (!currentMetric) return 0
+      const currentPeriod = hoveredPeriod
+        ? hoveredPeriod
+        : data.periods[data.periods.length - 1]
 
-    const currentMetricPeriod = hoveredMetricPeriod
-      ? hoveredMetricPeriod
-      : data[data.length - 1]
+      const value = hoveredPeriod ? currentPeriod[metric] : data.totals[metric]
 
-    const value = hoveredMetricPeriod
-      ? (currentMetricPeriod[
-          currentMetric.slug as keyof ParsedMetricPeriod
-        ] as number)
-      : computeCumulativeValue(
-          currentMetric,
-          data.map((period) => {
-            const value = period[currentMetric.slug as keyof ParsedMetricPeriod]
-            return typeof value === 'number' ? value : 0
-          }),
-        )
+      return getFormattedMetricValue(data.metrics[metric], value)
+    }, [hoveredPeriod, data, metric])
 
-    if (currentMetric?.type === 'currency') {
-      return `$${getCentsInDollarString(value ?? 0)}`
-    } else {
-      return value
-    }
-  }, [hoveredMetricPeriod, data, selectedMetric])
+    const trend = useMemo(() => {
+      if (!data || !previousData) return 0
 
-  return (
-    <ShadowBox
-      className={twMerge(
-        'dark:bg-polar-800 flex flex-col bg-gray-50 p-2 shadow-sm',
-        className,
-      )}
-    >
-      <div
+      const currentPeriod =
+        hoveredPeriod ?? data?.periods[data.periods.length - 1]
+      const previousPeriod =
+        hoveredPreviousPeriod ??
+        previousData?.periods[previousData?.periods.length - 1]
+
+      const currentValue = currentPeriod[metric]
+      const previousValue = previousPeriod[metric]
+
+      return ((currentValue - previousValue) / previousValue) * 100
+    }, [data, previousData, hoveredPeriod, hoveredPreviousPeriod, metric])
+
+    return (
+      <ShadowBox
+        ref={ref}
         className={twMerge(
-          'flex flex-row justify-between',
-          compact ? 'p-4' : 'p-6',
+          'dark:bg-polar-800 flex w-full flex-col bg-gray-50 p-2 shadow-sm',
+          className,
         )}
       >
         <div
           className={twMerge(
-            'flex w-full',
-            compact
-              ? 'flex-row items-center justify-between gap-x-4'
-              : 'flex-col gap-y-3',
+            'flex flex-col gap-6 md:flex-row md:items-start md:justify-between',
+            compact ? 'p-4' : 'p-6',
           )}
         >
-          {!isMetricObject ? (
-            <Select
-              value={selectedMetric}
-              onValueChange={(value) =>
-                setSelectedMetric(value as keyof schemas['Metrics'])
-              }
-            >
-              <SelectTrigger className="h-fit w-fit border-0 border-none bg-transparent p-0 shadow-none ring-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 dark:hover:bg-transparent">
-                <SelectValue placeholder="Select a metric" />
-              </SelectTrigger>
-              <SelectContent className="dark:bg-polar-800 dark:ring-polar-700 ring-1 ring-gray-200">
-                {Object.entries(metricDisplayNames).map(([key, value]) => (
-                  <SelectItem key={key} value={key}>
-                    {value}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <h3 className={compact ? 'text-base' : 'text-lg'}>
-              {metric.display_name}
-            </h3>
-          )}
-          <h2 className={compact ? 'text-base' : 'text-3xl'}>{metricValue}</h2>
-          {!compact && (
-            <div className="flex flex-row items-center gap-x-6">
-              <div className="flex flex-row items-center gap-x-2">
-                <span className="h-3 w-3 rounded-full border-2 border-blue-500" />
-                <span className="dark:text-polar-500 text-sm text-gray-500">
-                  Current Period
-                </span>
-              </div>
-              {hoveredMetricPeriod && (
-                <div className="flex flex-row items-center gap-x-2">
-                  <span className="h-3 w-3 rounded-full border-2 border-gray-500 dark:border-gray-700" />
-                  <span className="dark:text-polar-500 text-sm text-gray-500">
+          <div
+            className={twMerge(
+              'flex w-full',
+              compact
+                ? 'flex-row items-center justify-between gap-x-4'
+                : 'flex-col gap-y-4',
+            )}
+          >
+            {onMetricChange ? (
+              <Select value={metric} onValueChange={onMetricChange}>
+                <SelectTrigger className="dark:hover:bg-polar-700 -ml-3 -mt-2 h-fit w-fit rounded-lg border-0 border-none bg-transparent px-3 py-2 shadow-none ring-0 transition-colors hover:bg-gray-200 focus-visible:ring-0 focus-visible:ring-offset-0">
+                  <SelectValue placeholder="Select a metric" />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-polar-800 dark:ring-polar-700 ring-1 ring-gray-200">
+                  {data &&
+                    Object.values(data.metrics).map((metric) => (
+                      <SelectItem key={metric.slug} value={metric.slug}>
+                        {metric.display_name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <h3 className={compact ? 'text-base' : 'text-lg'}>
+                {selectedMetric?.display_name}
+              </h3>
+            )}
+            <h2 className={compact ? 'text-base' : 'text-5xl font-light'}>
+              {metricValue}
+            </h2>
+            {!compact && (
+              <div className="flex flex-row items-center gap-x-6">
+                <div className="flex flex-row items-center gap-x-2 text-sm">
+                  <span className="h-3 w-3 rounded-full border-2 border-blue-500" />
+                  {hoveredPeriod ? (
                     <FormattedDateTime
-                      datetime={hoveredMetricPeriod.timestamp}
+                      datetime={hoveredPeriod.timestamp}
                       dateStyle="medium"
                     />
-                  </span>
+                  ) : (
+                    <span className="dark:text-polar-500 text-gray-500">
+                      Current Period
+                    </span>
+                  )}
                 </div>
-              )}
+                {previousData && (
+                  <div className="flex flex-row items-center gap-x-2 text-sm">
+                    <span className="dark:border-polar-600 h-3 w-3 rounded-full border-2 border-gray-500" />
+                    {hoveredPreviousPeriod ? (
+                      <FormattedDateTime
+                        datetime={hoveredPreviousPeriod.timestamp}
+                        dateStyle="medium"
+                      />
+                    ) : (
+                      <span className="dark:text-polar-500 text-gray-500">
+                        Previous Period
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-row items-center gap-x-4">
+            {trend !== 0 && !isNaN(trend) && trend !== Infinity && (
+              <Status
+                status={
+                  trend > 0 ? `+${trend.toFixed(0)}%` : `${trend.toFixed(0)}%`
+                }
+                className={twMerge(
+                  'text-sm',
+                  trend > 0
+                    ? 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950'
+                    : 'bg-red-100 text-red-500 dark:bg-red-950',
+                )}
+              />
+            )}
+            {shareable && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hidden rounded-full md:block"
+                    onClick={showModal}
+                  >
+                    <ArrowOutwardOutlined fontSize="small" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Share Chart</TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        </div>
+        <div
+          className={twMerge(
+            'dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-3xl bg-white',
+            compact ? 'p-2' : 'p-4',
+          )}
+        >
+          {loading ? (
+            <div
+              style={{ height }}
+              className="flex flex-col items-center justify-center"
+            >
+              <Spinner />
+            </div>
+          ) : data && selectedMetric ? (
+            <MetricChart
+              height={height}
+              width={width}
+              data={data.periods}
+              previousData={previousData?.periods}
+              interval={interval}
+              metric={selectedMetric}
+              onDataIndexHover={(period) => {
+                setHoveredPeriodIndex(period as number)
+              }}
+              simple={simple}
+            />
+          ) : (
+            <div
+              className="flex w-full flex-col items-center justify-center"
+              style={{ height }}
+            >
+              <span className="text-lg">No data available</span>
             </div>
           )}
         </div>
-      </div>
-      <div
-        className={twMerge(
-          'dark:bg-polar-900 flex flex-col gap-y-2 rounded-3xl bg-white',
-          compact ? 'p-2' : 'p-4',
-        )}
-      >
-        {loading ? (
-          <div
-            style={{ height }}
-            className="flex flex-col items-center justify-center"
-          >
-            <Spinner />
-          </div>
-        ) : data && metric ? (
-          <MetricChart
-            height={height}
-            data={data}
-            interval={interval}
-            marks={marks}
-            maxTicks={maxTicks}
-            metric={
-              isMetricObject
-                ? metric
-                : metric[selectedMetric as keyof schemas['Metrics']]
-            }
-            onDataIndexHover={(period) =>
-              setHoveredMetricPeriod(data[period as number] ?? null)
+        {shareable && data && (
+          <Modal
+            className="lg:!w-fit"
+            isShown={isModalOpen}
+            hide={hideModal}
+            modalContent={
+              <ShareChartModal
+                data={data}
+                previousData={previousData}
+                interval={interval}
+                metric={selectedMetric?.slug as keyof schemas['Metrics']}
+                hide={hideModal}
+              />
             }
           />
-        ) : (
-          <div
-            className="flex flex-col items-center justify-center"
-            style={{ height }}
-          >
-            <span className="text-lg">No data available</span>
-          </div>
         )}
-      </div>
-    </ShadowBox>
-  )
-}
+      </ShadowBox>
+    )
+  },
+)
+
+MetricChartBox.displayName = 'MetricChartBox'
 
 export default MetricChartBox

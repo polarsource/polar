@@ -104,6 +104,19 @@ class DiscordClient:
         )
         return None
 
+    async def remove_member(self, guild_id: str, discord_user_id: str) -> None:
+        endpoint = f"/guilds/{guild_id}/members/{discord_user_id}"
+
+        response = await self.client.delete(endpoint)
+        self._handle_response(response)
+
+        log.info(
+            "discord.remove_member.success",
+            guild_id=guild_id,
+            discord_user_id=discord_user_id,
+        )
+        return None
+
     def _handle_response(self, response: httpx.Response) -> httpx.Response:
         response.raise_for_status()
         return response

@@ -7,6 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from polar.customer.repository import CustomerRepository
+from polar.event.service import event as event_service
+from polar.event.system import SystemEvent, build_system_event
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
@@ -160,8 +162,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 grant.properties,
                 attempt=attempt,
             )
-        except BenefitActionRequiredError:
-            grant.granted_at = None
+        except BenefitActionRequiredError as e:
+            grant.set_grant_failed(e)
         else:
             grant.properties = properties
             grant.set_granted()
@@ -173,6 +175,20 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             "benefit.granted",
             {"benefit_id": benefit.id, "benefit_type": benefit.type},
             customer_id=customer.id,
+        )
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.benefit_granted,
+                customer=customer,
+                organization=benefit.organization,
+                metadata={
+                    "benefit_id": str(benefit.id),
+                    "benefit_grant_id": str(grant.id),
+                    "benefit_type": benefit.type,
+                },
+            ),
         )
 
         log.info(
@@ -247,6 +263,20 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             "benefit.revoked",
             {"benefit_id": benefit.id, "benefit_type": benefit.type},
             customer_id=customer.id,
+        )
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.benefit_revoked,
+                customer=customer,
+                organization=benefit.organization,
+                metadata={
+                    "benefit_id": str(benefit.id),
+                    "benefit_grant_id": str(grant.id),
+                    "benefit_type": benefit.type,
+                },
+            ),
         )
 
         log.info(
@@ -326,7 +356,9 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id(grant.customer_id)
-        assert customer is not None
+        # Deleted customer, don't update the grant
+        if customer is None:
+            return grant
 
         previous_properties = grant.properties
         benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
@@ -338,13 +370,27 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 update=True,
                 attempt=attempt,
             )
-        except BenefitActionRequiredError:
-            grant.granted_at = None
+        except BenefitActionRequiredError as e:
+            grant.set_grant_failed(e)
         else:
             grant.properties = properties
             grant.set_granted()
 
         session.add(grant)
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.benefit_updated,
+                customer=customer,
+                organization=benefit.organization,
+                metadata={
+                    "benefit_id": str(benefit.id),
+                    "benefit_grant_id": str(grant.id),
+                    "benefit_type": benefit.type,
+                },
+            ),
+        )
 
         await self._send_webhook(
             session,
@@ -393,13 +439,27 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 grant.properties,
                 attempt=attempt,
             )
-        except BenefitActionRequiredError:
-            grant.granted_at = None
+        except BenefitActionRequiredError as e:
+            grant.set_grant_failed(e)
         else:
             grant.properties = properties
 
         grant.set_modified_at()
         session.add(grant)
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.benefit_cycled,
+                customer=customer,
+                organization=benefit.organization,
+                metadata={
+                    "benefit_id": str(benefit.id),
+                    "benefit_grant_id": str(grant.id),
+                    "benefit_type": benefit.type,
+                },
+            ),
+        )
 
         await self._send_webhook(
             session,

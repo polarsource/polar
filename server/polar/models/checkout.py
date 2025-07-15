@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 from uuid import UUID
 
 from sqlalchemy import (
@@ -54,6 +54,34 @@ class CheckoutStatus(StrEnum):
     failed = "failed"
 
 
+class CheckoutCustomerBillingAddressFields(TypedDict):
+    """
+    Deprecated: Use CheckoutBillingAddressFields instead.
+    """
+
+    country: bool
+    state: bool
+    city: bool
+    postal_code: bool
+    line1: bool
+    line2: bool
+
+
+class BillingAddressFieldMode(StrEnum):
+    required = "required"
+    optional = "optional"
+    disabled = "disabled"
+
+
+class CheckoutBillingAddressFields(TypedDict):
+    country: BillingAddressFieldMode
+    state: BillingAddressFieldMode
+    city: BillingAddressFieldMode
+    postal_code: BillingAddressFieldMode
+    line1: BillingAddressFieldMode
+    line2: BillingAddressFieldMode
+
+
 class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "checkouts"
 
@@ -79,10 +107,17 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     allow_discount_codes: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
     )
+    require_billing_address: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
+
+    tax_amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    tax_processor_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
 
     product_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("products.id", ondelete="cascade"), nullable=False
@@ -129,16 +164,17 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return relationship(Discount, lazy="joined")
 
     customer_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        ForeignKey("customers.id", ondelete="set null"),
-        nullable=True,
+        Uuid, ForeignKey("customers.id", ondelete="set null"), nullable=True
     )
 
     @declared_attr
     def customer(cls) -> Mapped[Customer | None]:
         return relationship(Customer, lazy="raise")
 
-    customer_external_id: Mapped[str | None] = mapped_column(
+    is_business_customer: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    external_customer_id: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )
     customer_name: Mapped[str | None] = mapped_column(
@@ -149,6 +185,9 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
     _customer_ip_address: Mapped[str | None] = mapped_column(
         "customer_ip_address", String, nullable=True, default=None
+    )
+    customer_billing_name: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
     )
     customer_billing_address: Mapped[Address | None] = mapped_column(
         AddressType, nullable=True, default=None
@@ -257,6 +296,50 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     attached_custom_fields: AssociationProxy[Sequence["AttachedCustomFieldMixin"]] = (
         association_proxy("product", "attached_custom_fields")
     )
+
+    @property
+    def customer_billing_address_fields(self) -> CheckoutCustomerBillingAddressFields:
+        address = self.customer_billing_address
+        country = address.country if address else None
+        is_us = country == "US"
+        require_billing_address = (
+            self.require_billing_address or self.is_business_customer or is_us
+        )
+        return {
+            "country": True,
+            "state": require_billing_address or country in {"US", "CA"},
+            "line1": require_billing_address,
+            "line2": False,
+            "city": require_billing_address,
+            "postal_code": require_billing_address,
+        }
+
+    @property
+    def billing_address_fields(self) -> CheckoutBillingAddressFields:
+        address = self.customer_billing_address
+        country = address.country if address else None
+        is_us = country == "US"
+        require_billing_address = (
+            self.require_billing_address or self.is_business_customer or is_us
+        )
+        return {
+            "country": BillingAddressFieldMode.required,
+            "state": BillingAddressFieldMode.required
+            if require_billing_address or country in {"US", "CA"}
+            else BillingAddressFieldMode.disabled,
+            "line1": BillingAddressFieldMode.required
+            if require_billing_address
+            else BillingAddressFieldMode.disabled,
+            "line2": BillingAddressFieldMode.optional
+            if require_billing_address
+            else BillingAddressFieldMode.disabled,
+            "city": BillingAddressFieldMode.required
+            if require_billing_address
+            else BillingAddressFieldMode.disabled,
+            "postal_code": BillingAddressFieldMode.required
+            if require_billing_address
+            else BillingAddressFieldMode.disabled,
+        }
 
 
 @event.listens_for(Checkout, "before_update")

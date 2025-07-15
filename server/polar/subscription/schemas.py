@@ -5,20 +5,23 @@ from typing import Annotated, Literal
 from babel.numbers import format_currency
 from fastapi import Path
 from pydantic import UUID4, AliasChoices, AliasPath, Field
+from pydantic.json_schema import SkipJsonSchema
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.kit.email import EmailStrDNS
 from polar.kit.metadata import MetadataOutputMixin
 from polar.kit.schemas import (
-    EmailStrDNS,
+    METER_ID_EXAMPLE,
     IDSchema,
     MergeJSONSchema,
     Schema,
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.meter.schemas import Meter
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.product.schemas import Product, ProductPrice
 
@@ -95,7 +98,7 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     customer_cancellation_reason: CustomerCancellationReason | None
     customer_cancellation_comment: str | None
 
-    price_id: UUID4 = Field(
+    price_id: SkipJsonSchema[UUID4] = Field(
         deprecated="Use `prices` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -122,9 +125,35 @@ SubscriptionDiscount = Annotated[
 ]
 
 
+class SubscriptionMeterBase(IDSchema, TimestampedSchema):
+    consumed_units: float = Field(
+        description="The number of consumed units so far in this billing period.",
+        examples=[25.0],
+    )
+    credited_units: int = Field(
+        description="The number of credited units so far in this billing period.",
+        examples=[100],
+    )
+    amount: int = Field(
+        description="The amount due in cents so far in this billing period.",
+        examples=[0],
+    )
+    meter_id: UUID4 = Field(
+        description="The ID of the meter.", examples=[METER_ID_EXAMPLE]
+    )
+
+
+class SubscriptionMeter(SubscriptionMeterBase):
+    """Current consumption and spending for a subscription meter."""
+
+    meter: Meter = Field(
+        description="The meter associated with this subscription.",
+    )
+
+
 class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, SubscriptionBase):
     customer: SubscriptionCustomer
-    user_id: UUID4 = Field(
+    user_id: SkipJsonSchema[UUID4] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -133,7 +162,7 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
         ),
         deprecated="Use `customer_id`.",
     )
-    user: SubscriptionUser = Field(
+    user: SkipJsonSchema[SubscriptionUser] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user",
@@ -145,7 +174,7 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
     product: Product
     discount: SubscriptionDiscount | None
 
-    price: ProductPrice = Field(
+    price: SkipJsonSchema[ProductPrice] = Field(
         deprecated="Use `prices` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -157,6 +186,9 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
 
     prices: list[ProductPrice] = Field(
         description="List of enabled prices for the subscription."
+    )
+    meters: list[SubscriptionMeter] = Field(
+        description="List of meters associated with the subscription."
     )
 
 
@@ -180,21 +212,17 @@ class SubscriptionUpdateProduct(Schema):
     )
 
 
-class SubscriptionCancel(Schema):
-    cancel_at_period_end: bool | None = Field(
-        None,
-        description=inspect.cleandoc(
-            """
-        Cancel an active subscription once the current period ends.
-
-        Or uncancel a subscription currently set to be revoked at period end.
-        """
+class SubscriptionUpdateDiscount(Schema):
+    discount_id: UUID4 | None = Field(
+        description=(
+            "Update the subscription to apply a new discount. "
+            "If set to `null`, the discount will be removed."
+            " The change will be applied on the next billing cycle."
         ),
     )
-    revoke: Literal[True] | None = Field(
-        None,
-        description="Cancel and revoke an active subscription immediately",
-    )
+
+
+class SubscriptionCancelBase(Schema):
     customer_cancellation_reason: CustomerCancellationReason | None = Field(
         None,
         description=inspect.cleandoc(
@@ -237,7 +265,28 @@ class SubscriptionCancel(Schema):
     )
 
 
+class SubscriptionCancel(SubscriptionCancelBase):
+    cancel_at_period_end: bool = Field(
+        description=inspect.cleandoc(
+            """
+        Cancel an active subscription once the current period ends.
+
+        Or uncancel a subscription currently set to be revoked at period end.
+        """
+        ),
+    )
+
+
+class SubscriptionRevoke(SubscriptionCancelBase):
+    revoke: Literal[True] = Field(
+        description="Cancel and revoke an active subscription immediately"
+    )
+
+
 SubscriptionUpdate = Annotated[
-    SubscriptionUpdateProduct | SubscriptionCancel,
+    SubscriptionUpdateProduct
+    | SubscriptionUpdateDiscount
+    | SubscriptionCancel
+    | SubscriptionRevoke,
     SetSchemaReference("SubscriptionUpdate"),
 ]

@@ -272,7 +272,7 @@ class DiscountUpdate(MetadataInputMixin, Schema):
         return self
 
 
-class DiscountProduct(ProductBase):
+class DiscountProduct(ProductBase, MetadataOutputMixin):
     """A product that a discount can be applied to."""
 
     ...

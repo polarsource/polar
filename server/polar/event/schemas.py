@@ -1,15 +1,32 @@
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import Path
-from pydantic import UUID4, AfterValidator, AwareDatetime, Field
+from pydantic import (
+    UUID4,
+    AfterValidator,
+    AliasChoices,
+    AwareDatetime,
+    Discriminator,
+    Field,
+)
+from pydantic.type_adapter import TypeAdapter
 
 from polar.customer.schemas.customer import Customer
+from polar.event.system import (
+    BenefitGrantMetadata,
+    MeterCreditedMetadata,
+    MeterResetMetadata,
+)
+from polar.event.system import (
+    SystemEvent as SystemEventEnum,
+)
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
-from polar.kit.schemas import IDSchema, Schema
+from polar.kit.schemas import ClassName, IDSchema, Schema, SetSchemaReference
 from polar.models.event import EventSource
 from polar.organization.schemas import OrganizationID
 
+_NAME_DESCRIPTION = "The name of the event."
 _SOURCE_DESCRIPTION = (
     "The source of the event. "
     "`system` events are created by Polar. "
@@ -72,10 +89,8 @@ class EventsIngestResponse(Schema):
     inserted: int = Field(description="Number of events inserted.")
 
 
-class Event(IDSchema, MetadataOutputMixin):
+class BaseEvent(IDSchema):
     timestamp: datetime = Field(description="The timestamp of the event.")
-    name: str = Field(..., description="The name of the event.")
-    source: EventSource = Field(..., description=_SOURCE_DESCRIPTION)
     organization_id: OrganizationID = Field(
         description="The ID of the organization owning the event."
     )
@@ -90,6 +105,102 @@ class Event(IDSchema, MetadataOutputMixin):
     external_customer_id: str | None = Field(
         description="ID of the customer in your system associated with the event."
     )
+
+
+class SystemEventBase(BaseEvent):
+    """An event created by Polar."""
+
+    source: Literal[EventSource.system] = Field(description=_SOURCE_DESCRIPTION)
+
+
+class MeterCreditEvent(SystemEventBase):
+    """An event created by Polar when credits are added to a customer meter."""
+
+    name: Literal[SystemEventEnum.meter_credited] = Field(description=_NAME_DESCRIPTION)
+    metadata: MeterCreditedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class MeterResetEvent(SystemEventBase):
+    """An event created by Polar when a customer meter is reset."""
+
+    name: Literal[SystemEventEnum.meter_reset] = Field(description=_NAME_DESCRIPTION)
+    metadata: MeterResetMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class BenefitGrantedEvent(SystemEventBase):
+    """An event created by Polar when a benefit is granted to a customer."""
+
+    name: Literal[SystemEventEnum.benefit_granted] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: BenefitGrantMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class BenefitCycledEvent(SystemEventBase):
+    """An event created by Polar when a benefit is cycled."""
+
+    name: Literal[SystemEventEnum.benefit_cycled] = Field(description=_NAME_DESCRIPTION)
+    metadata: BenefitGrantMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class BenefitUpdatedEvent(SystemEventBase):
+    """An event created by Polar when a benefit is updated."""
+
+    name: Literal[SystemEventEnum.benefit_updated] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: BenefitGrantMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class BenefitRevokedEvent(SystemEventBase):
+    """An event created by Polar when a benefit is revoked from a customer."""
+
+    name: Literal[SystemEventEnum.benefit_revoked] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: BenefitGrantMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+SystemEvent = Annotated[
+    MeterCreditEvent
+    | MeterResetEvent
+    | BenefitGrantedEvent
+    | BenefitCycledEvent
+    | BenefitUpdatedEvent
+    | BenefitRevokedEvent,
+    Discriminator("name"),
+    SetSchemaReference("SystemEvent"),
+    ClassName("SystemEvent"),
+]
+
+
+class UserEvent(BaseEvent, MetadataOutputMixin):
+    """An event you created through the ingestion API."""
+
+    name: str = Field(description=_NAME_DESCRIPTION)
+    source: Literal[EventSource.user] = Field(description=_SOURCE_DESCRIPTION)
+
+
+Event = Annotated[
+    SystemEvent | UserEvent,
+    Discriminator("source"),
+    SetSchemaReference("Event"),
+    ClassName("Event"),
+]
+
+EventTypeAdapter: TypeAdapter[Event] = TypeAdapter(Event)
 
 
 class EventName(Schema):

@@ -8,7 +8,7 @@ from polar.auth.scope import Scope
 from polar.models.organization import Organization
 
 _CheckoutRead = Authenticator(
-    required_scopes={Scope.checkouts_read, Scope.checkouts_write},
+    required_scopes={Scope.web_default, Scope.checkouts_read, Scope.checkouts_write},
     allowed_subjects={User, Organization},
 )
 CheckoutRead = Annotated[AuthSubject[User | Organization], Depends(_CheckoutRead)]

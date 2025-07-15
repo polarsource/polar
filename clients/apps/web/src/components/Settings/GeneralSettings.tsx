@@ -1,3 +1,5 @@
+'use client'
+
 import { ExpandMoreOutlined } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'

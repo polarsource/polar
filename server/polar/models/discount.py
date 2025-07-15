@@ -7,10 +7,11 @@ from uuid import UUID
 import stripe as stripe_lib
 from sqlalchemy import (
     TIMESTAMP,
+    Column,
     ForeignKey,
+    Index,
     Integer,
     String,
-    UniqueConstraint,
     Uuid,
     func,
     select,
@@ -57,7 +58,27 @@ class DiscountDuration(StrEnum):
 
 class Discount(MetadataMixin, RecordModel):
     __tablename__ = "discounts"
-    __table_args__ = (UniqueConstraint("organization_id", "code"),)
+
+    @declared_attr.directive
+    def __table_args__(cls) -> tuple[Index]:
+        # During tests this function is called multiple times which ends up adding the index
+        # multiple times -- leading to errors. We memoize this function to ensure we end up with
+        # the index just once.
+        if not hasattr(cls, "_memoized_indexes"):
+            _deleted_at_column = cast(
+                Column[datetime | None], cls.deleted_at
+            )  # cast to satisfy mypy
+            cls._memoized_indexes = (
+                Index(
+                    "ix_discounts_code_uniqueness",
+                    "organization_id",
+                    func.lower(cls.code),
+                    unique=True,
+                    # partial index
+                    postgresql_where=(_deleted_at_column.is_(None)),
+                ),
+            )
+        return cls._memoized_indexes
 
     name: Mapped[str] = mapped_column(CITEXT, nullable=False)
     type: Mapped[DiscountType] = mapped_column(String, nullable=False)
@@ -79,7 +100,10 @@ class Discount(MetadataMixin, RecordModel):
     )
 
     organization_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("organizations.id", ondelete="cascade"), nullable=False
+        Uuid,
+        ForeignKey("organizations.id", ondelete="cascade"),
+        nullable=False,
+        index=True,
     )
 
     @declared_attr
@@ -118,7 +142,7 @@ class Discount(MetadataMixin, RecordModel):
 
     def get_stripe_coupon_params(self) -> stripe_lib.Coupon.CreateParams:
         params: stripe_lib.Coupon.CreateParams = {
-            "name": self.name,
+            "name": self.name[:40],
             "duration": cast(Literal["once", "forever", "repeating"], self.duration),
             "metadata": {
                 "discount_id": str(self.id),

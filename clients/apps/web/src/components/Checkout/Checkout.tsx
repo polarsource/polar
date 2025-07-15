@@ -1,24 +1,24 @@
 'use client'
 
-import { CONFIG } from '@/utils/config'
+import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import {
   CheckoutForm,
   CheckoutProductSwitcher,
   CheckoutPWYWForm,
 } from '@polar-sh/checkout/components'
-import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import { useCheckoutFulfillmentListener } from '@polar-sh/checkout/hooks'
 import { useCheckout, useCheckoutForm } from '@polar-sh/checkout/providers'
 import type { CheckoutConfirmStripe } from '@polar-sh/sdk/models/components/checkoutconfirmstripe'
 import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/checkoutpublicconfirmed'
+import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
+import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
 import ShadowBox, {
   ShadowBoxOnMd,
 } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
-import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { CheckoutCard } from './CheckoutCard'
@@ -34,7 +34,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const {
     checkout,
     form,
-    update,
+    update: _update,
     confirm: _confirm,
     loading: confirmLoading,
     loadingLabel,
@@ -48,7 +48,6 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     theme,
   )
 
-  const router = useRouter()
   const [fullLoading, setFullLoading] = useState(false)
   const loading = useMemo(
     () => confirmLoading || fullLoading,
@@ -62,6 +61,25 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     () => fullfillmentLabel || loadingLabel,
     [fullfillmentLabel, loadingLabel],
   )
+  const checkoutConfirmedRedirect = useCheckoutConfirmedRedirect(
+    embed,
+    theme,
+    listenFulfillment,
+  )
+
+  const update = useCallback(
+    async (data: CheckoutUpdatePublic) => {
+      try {
+        return await _update(data)
+      } catch (error) {
+        if (error instanceof ExpiredCheckoutError) {
+          window.location.reload()
+        }
+        throw error
+      }
+    },
+    [_update],
+  )
 
   const confirm = useCallback(
     async (
@@ -74,63 +92,21 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
       try {
         confirmedCheckout = await _confirm(data, stripe, elements)
       } catch (error) {
+        if (error instanceof ExpiredCheckoutError) {
+          window.location.reload()
+        }
         setFullLoading(false)
         throw error
       }
 
-      if (checkout.embedOrigin) {
-        PolarEmbedCheckout.postMessage(
-          {
-            event: 'confirmed',
-          },
-          checkout.embedOrigin,
-        )
-      }
-
-      const parsedURL = new URL(confirmedCheckout.successUrl)
-      const isInternalURL = confirmedCheckout.successUrl.startsWith(
-        CONFIG.FRONTEND_BASE_URL,
-      )
-
-      if (isInternalURL) {
-        if (embed) {
-          parsedURL.searchParams.set('embed', 'true')
-          if (theme) {
-            parsedURL.searchParams.set('theme', theme)
-          }
-        }
-      }
-
-      parsedURL.searchParams.set(
-        'customer_session_token',
+      await checkoutConfirmedRedirect(
+        checkout,
         confirmedCheckout.customerSessionToken,
       )
 
-      // For external success URL, make sure the checkout is processed before redirecting
-      // It ensures the user will have an up-to-date status when they are redirected,
-      // especially if the external URL doesn't implement proper webhook handling
-      if (!isInternalURL) {
-        await listenFulfillment()
-      }
-
-      if (checkout.embedOrigin) {
-        PolarEmbedCheckout.postMessage(
-          {
-            event: 'success',
-            successURL: parsedURL.toString(),
-            redirect: !isInternalURL,
-          },
-          checkout.embedOrigin,
-        )
-      }
-
-      if (isInternalURL || !embed) {
-        router.push(parsedURL.toString())
-      }
-
       return confirmedCheckout
     },
-    [checkout, _confirm, embed, listenFulfillment, router, theme],
+    [_confirm, checkout, checkoutConfirmedRedirect],
   )
 
   if (embed) {

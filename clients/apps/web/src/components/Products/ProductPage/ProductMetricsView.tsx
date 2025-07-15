@@ -1,32 +1,30 @@
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
-import { ParsedMetricPeriod } from '@/hooks/queries'
+import { ParsedMetricsResponse } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 
 export interface ProductMetricsViewProps {
-  metrics?: schemas['Metrics']
-  periods?: ParsedMetricPeriod[]
+  data?: ParsedMetricsResponse
   interval: schemas['TimeInterval']
   loading: boolean
 }
 
 export const ProductMetricsView = ({
-  metrics,
+  data,
   loading,
-  periods,
   interval,
 }: ProductMetricsViewProps) => {
   return (
     <div className="flex flex-col gap-y-12">
       <MetricChartBox
-        data={periods ?? []}
+        data={data}
         loading={loading}
-        metric={metrics?.orders}
+        metric="orders"
         interval={interval}
       />
       <MetricChartBox
-        data={periods ?? []}
+        data={data}
         loading={loading}
-        metric={metrics?.revenue}
+        metric="revenue"
         interval={interval}
       />
     </div>

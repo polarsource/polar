@@ -9,7 +9,6 @@ from pydantic import (
     AfterValidator,
     BaseModel,
     ConfigDict,
-    EmailStr,
     Field,
     GetCoreSchemaHandler,
     GetJsonSchemaHandler,
@@ -17,10 +16,8 @@ from pydantic import (
     PlainSerializer,
 )
 from pydantic.json_schema import JsonSchemaValue
-from pydantic_core import CoreSchema, PydanticCustomError, core_schema
+from pydantic_core import CoreSchema, core_schema
 from slugify import slugify
-
-from .email import EmailNotValidError, validate_email
 
 
 class Schema(BaseModel):
@@ -54,22 +51,6 @@ def empty_str_to_none(value: str | None) -> str | None:
 
 EmptyStrToNoneValidator = AfterValidator(empty_str_to_none)
 EmptyStrToNone = Annotated[str | None, EmptyStrToNoneValidator]
-
-
-def _validate_email_dns(email: str) -> str:
-    try:
-        validate_email(email)
-    except EmailNotValidError as e:
-        raise PydanticCustomError(
-            "value_error",
-            "value is not a valid email address: {reason}",
-            {"reason": str(e)},
-        ) from e
-    else:
-        return email
-
-
-EmailStrDNS = Annotated[EmailStr, AfterValidator(_validate_email_dns)]
 
 
 def _validate_slug(value: str) -> str:
@@ -224,3 +205,4 @@ CUSTOMER_ID_EXAMPLE = "992fae2a-2a17-4b7a-8d9e-e287cf90131b"
 SUBSCRIPTION_ID_EXAMPLE = "e5149aae-e521-42b9-b24c-abb3d71eea2e"
 BENEFIT_GRANT_ID_EXAMPLE = "d322132c-a9d0-4e0d-b8d3-d81ad021a3a9"
 METER_ID_EXAMPLE = "d498a884-e2cd-4d3e-8002-f536468a8b22"
+CHECKOUT_ID_EXAMPLE = "e4b478fa-cd25-4253-9f1f-8a41e6370ede"

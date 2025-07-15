@@ -66,7 +66,7 @@ Once done, the script will automatically create `server/.env` and `clients/apps/
 If you want to work with GitHub login and issue funding, you'll need to have a [GitHub App](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/about-creating-github-apps) for your development environment. Our script is able to help in this task by passing the following parameters:
 
 ```sh
-./dev/setup-environment --setup-github-app --backend-external-url mydomain.ngrok.dev
+./dev/setup-environment --setup-github-app --backend-external-url https://mydomain.ngrok.dev
 ```
 
 Note that you'll need a valid external URL that'll route to your development server. For this task, we recommend to use [ngrok](https://ngrok.com/).
@@ -84,12 +84,28 @@ Your browser will open a new page and you'll be prompted to **create a GitHub Ap
 > [!NOTE]
 > Some functions, such as product creation, may not work as expected due to missing Stripe environment variables.
 
-You can create your own Stripe account and set up a sandbox environment for testing. Visit [Stripe](https://stripe.com) to sign up and access the sandbox. The minimal environment variables needed are:
+If you want to work with payments and subscriptions, you'll need to set up a Stripe development environment:
 
-- `POLAR_STRIPE_SECRET_KEY`: Located in your Stripe Dashboard under Developers > API Keys.
-- `POLAR_STRIPE_PUBLISHABLE_KEY`: Located in your Stripe Dashboard under Developers > API Keys.
+1. **Create a Stripe account** at [https://dashboard.stripe.com/register](https://dashboard.stripe.com/register)
 
-Currently, this setup script doesn't support creating a [Stripe Sandbox](https://docs.stripe.com/sandboxes) automatically. If you want a ready-to-use Stripe Sandbox, contact us, and we'll happily provide one.
+2. **Enable billing** in your Stripe account by visiting [Stripe Billing Starter Guide](https://dashboard.stripe.com/billing/starter-guide)
+
+3. **Copy your API keys** from the [Stripe API Keys page](https://dashboard.stripe.com/test/apikeys) and add them to your `server/.env` file:
+   ```
+   STRIPE_SECRET_KEY=sk_test_...
+   STRIPE_PUBLISHABLE_KEY=pk_test_...
+   ```
+
+4. **Create a webhook endpoint** to handle Stripe events:
+   - Go to [Stripe Webhooks](https://dashboard.stripe.com/test/webhooks)
+   - Click "Add endpoint"
+   - Set the endpoint URL to: `https://your-domain.ngrok-free.app/v1/integrations/stripe/webhook`
+   - Set enabled events to: `*` (all events)
+   - Set API version to: `2025-02-24.acacia`
+   - Copy the webhook signing secret and add it to your `server/.env` file:
+     ```
+     STRIPE_WEBHOOK_SECRET=whsec_...
+     ```
 
 ### Setup backend
 
@@ -154,7 +170,7 @@ cd server
 uv run task emails
 ```
 > [!NOTE]
-> If you're in local development, you should build the email renderer binary ,as it's required for first time.
+> If you're in local development, you should build the email renderer binary, as it's required for first time.
 
 **2. Apply the database migrations**
 

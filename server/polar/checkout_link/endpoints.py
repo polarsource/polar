@@ -162,6 +162,13 @@ async def redirect(
     ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     embed_origin: str | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
+    # Metadata that can be set from query parameters
+    reference_id: str | None = Query(None),
+    utm_source: str | None = Query(None),
+    utm_medium: str | None = Query(None),
+    utm_campaign: str | None = Query(None),
+    utm_term: str | None = Query(None),
+    utm_content: str | None = Query(None),
 ) -> RedirectResponse:
     """Use a checkout link to create a checkout session and redirect to it."""
     repository = CheckoutLinkRepository.from_session(session)
@@ -174,7 +181,17 @@ async def redirect(
 
     ip_address = request.client.host if request.client else None
     checkout = await checkout_service.checkout_link_create(
-        session, checkout_link, embed_origin, ip_geolocation_client, ip_address
+        session,
+        checkout_link,
+        embed_origin,
+        ip_geolocation_client,
+        ip_address,
+        reference_id=reference_id,
+        utm_source=utm_source,
+        utm_medium=utm_medium,
+        utm_campaign=utm_campaign,
+        utm_term=utm_term,
+        utm_content=utm_content,
     )
 
     # Add the query parameters from the request to the URL

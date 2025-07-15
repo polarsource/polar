@@ -1,9 +1,8 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { MeterIngestionGuide } from '@/components/Meter/MeterIngestionGuide'
 import { MeterPage } from '@/components/Meter/MeterPage'
-import { MeterUpdateModal } from '@/components/Meter/MeterUpdateModal'
-import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import Spinner from '@/components/Shared/Spinner'
 import { useMetersInfinite } from '@/hooks/queries/meters'
@@ -44,19 +43,19 @@ const ClientPage = ({
     defaultValue: '',
   })
 
-  const { data, hasNextPage, fetchNextPage } = useMetersInfinite(
+  const {
+    isShown: isEditMeterModalShown,
+    show: showEditMeterModal,
+    hide: hideEditMeterModal,
+  } = useModal()
+
+  const { data, hasNextPage, fetchNextPage, isLoading } = useMetersInfinite(
     organization.id,
     {
       sorting: [sorting],
       query,
     },
   )
-
-  const {
-    isShown: isEditMeterModalShown,
-    show: showEditMeterModal,
-    hide: hideEditMeterModal,
-  } = useModal()
 
   const meters = useMemo(
     () => data?.pages.flatMap((page) => page.items) ?? [],
@@ -114,6 +113,7 @@ const ClientPage = ({
           </Button>
         )
       }
+      className="h-full"
       contextViewPlacement="left"
       contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
       contextView={
@@ -192,21 +192,20 @@ const ClientPage = ({
       }
       wide
     >
-      {selectedMeter && (
-        <MeterPage meter={selectedMeter} organization={organization} />
+      {selectedMeter ? (
+        <MeterPage
+          meter={selectedMeter}
+          organization={organization}
+          isEditMeterModalShown={isEditMeterModalShown}
+          hideEditMeterModal={hideEditMeterModal}
+        />
+      ) : !isLoading ? (
+        <MeterIngestionGuide />
+      ) : (
+        <div className="flex h-full items-center justify-center">
+          <Spinner />
+        </div>
       )}
-
-      <InlineModal
-        isShown={isEditMeterModalShown}
-        hide={hideEditMeterModal}
-        modalContent={
-          selectedMeter ? (
-            <MeterUpdateModal meter={selectedMeter} hide={hideEditMeterModal} />
-          ) : (
-            <></>
-          )
-        }
-      />
     </DashboardBody>
   )
 }

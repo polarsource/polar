@@ -2,6 +2,7 @@ from polar.exceptions import PolarError
 from polar.models.benefit_grant import BenefitGrantScope, BenefitGrantScopeArgs
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
+from polar.subscription.repository import SubscriptionRepository
 
 
 class BenefitGrantScopeError(PolarError): ...
@@ -17,14 +18,10 @@ class InvalidScopeError(BenefitGrantScopeError):
 async def resolve_scope(
     session: AsyncSession, scope: BenefitGrantScopeArgs
 ) -> BenefitGrantScope:
-    # Avoids a circular import :(
-    from polar.subscription.service import (
-        subscription as subscription_service,
-    )
-
     resolved_scope: BenefitGrantScope = {}
     if subscription_id := scope.get("subscription_id"):
-        subscription = await subscription_service.get(session, subscription_id)
+        subscription_repository = SubscriptionRepository.from_session(session)
+        subscription = await subscription_repository.get_by_id(subscription_id)
         if subscription is None:
             raise InvalidScopeError(scope)
         resolved_scope["subscription"] = subscription

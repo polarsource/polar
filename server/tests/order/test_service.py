@@ -5,10 +5,12 @@ from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import pytest
 import stripe as stripe_lib
+from pydantic_extra_types.country import CountryAlpha2
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
+from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
@@ -16,6 +18,7 @@ from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
+from polar.kit.tax import TaxabilityReason, calculate_tax
 from polar.models import (
     Account,
     Customer,
@@ -35,15 +38,17 @@ from polar.models.product import ProductBillingType
 from polar.models.transaction import TransactionType
 from polar.order.service import (
     MissingCheckoutCustomer,
-    MissingStripeCustomerID,
+    NoPendingBillingEntries,
     NotAnOrderInvoice,
     NotASubscriptionInvoice,
+    NotRecurringProduct,
     OrderDoesNotExist,
+    OrderNotPending,
     RecurringProduct,
     SubscriptionDoesNotExist,
 )
 from polar.order.service import order as order_service
-from polar.product.guard import is_static_price
+from polar.product.guard import is_fixed_price, is_static_price
 from polar.transaction.service.balance import (
     PaymentTransactionForChargeDoesNotExist,
 )
@@ -55,9 +60,13 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.email import WatcherEmailRenderer, watch_email
 from tests.fixtures.random_objects import (
+    create_active_subscription,
+    create_billing_entry,
     create_checkout,
     create_customer,
     create_order,
+    create_payment,
+    create_subscription,
 )
 from tests.fixtures.stripe import construct_stripe_invoice
 from tests.transaction.conftest import create_transaction
@@ -96,11 +105,24 @@ def stripe_service_mock(mocker: MockerFixture, customer: Customer) -> MagicMock:
         address=customer.billing_address,
     )
 
+    mock.get_tax_rate.return_value = stripe_lib.TaxRate.construct_from(
+        {
+            "id": "STRIPE_TAX_RATE_ID",
+            "rate_type": "percentage",
+            "percentage": 20.0,
+            "flat_amount": None,
+            "display_name": "VAT",
+            "country": "FR",
+            "state": None,
+        },
+        key=None,
+    )
+
     return mock
 
 
 @pytest.fixture
-def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
+def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.order.service.enqueue_job")
 
 
@@ -114,6 +136,19 @@ def event_creation_time() -> tuple[datetime, int]:
     created_datetime = datetime.fromisoformat("2024-01-01T00:00:00Z")
     created_unix_timestamp = int(created_datetime.timestamp())
     return created_datetime, created_unix_timestamp
+
+
+@pytest.fixture
+def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
+    mock = AsyncMock(spec=calculate_tax)
+    mocker.patch("polar.order.service.calculate_tax", new=mock)
+    mock.return_value = {
+        "processor_id": "TAX_PROCESSOR_ID",
+        "amount": 100,
+        "taxability_reason": TaxabilityReason.standard_rated,
+        "tax_rate": {},
+    }
+    return mock
 
 
 @pytest.mark.asyncio
@@ -301,9 +336,57 @@ class TestList:
         assert len(orders) == 1
         assert orders[0].id == order2.id
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_metadata_filter(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order1 = await create_order(
+            save_fixture,
+            user_metadata={"reference_id": "ABC"},
+            product=product,
+            customer=customer,
+            stripe_invoice_id="INVOICE_1",
+        )
+        order2 = await create_order(
+            save_fixture,
+            user_metadata={"reference_id": "DEF"},
+            product=product,
+            customer=customer,
+            stripe_invoice_id="INVOICE_2",
+        )
+        await create_order(
+            save_fixture,
+            user_metadata={"reference_id": "GHI"},
+            product=product,
+            customer=customer,
+            stripe_invoice_id="INVOICE_3",
+        )
+
+        orders, total = await order_service.list(
+            session,
+            auth_subject,
+            metadata={"reference_id": ["ABC", "DEF"]},
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert len(orders) == 2
+        assert total == 2
+
+        assert order1 in orders
+        assert order2 in orders
+
 
 @pytest.mark.asyncio
-class TestCreateFromCheckout:
+class TestCreateFromCheckoutOneTime:
     async def test_recurring_product(
         self, save_fixture: SaveFixture, session: AsyncSession, product: Product
     ) -> None:
@@ -311,7 +394,7 @@ class TestCreateFromCheckout:
             save_fixture, products=[product], status=CheckoutStatus.confirmed
         )
         with pytest.raises(RecurringProduct):
-            await order_service.create_from_checkout(session, checkout, None)
+            await order_service.create_from_checkout_one_time(session, checkout)
 
     async def test_missing_customer(
         self,
@@ -323,37 +406,16 @@ class TestCreateFromCheckout:
             save_fixture, products=[product_one_time], status=CheckoutStatus.confirmed
         )
         with pytest.raises(MissingCheckoutCustomer):
-            await order_service.create_from_checkout(session, checkout, None)
-
-    async def test_missing_customer_stripe_id(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product_one_time: Product,
-    ) -> None:
-        customer = await create_customer(
-            save_fixture,
-            organization=product_one_time.organization,
-            stripe_customer_id=None,
-        )
-        checkout = await create_checkout(
-            save_fixture,
-            products=[product_one_time],
-            status=CheckoutStatus.confirmed,
-            customer=customer,
-        )
-        with pytest.raises(MissingStripeCustomerID):
-            await order_service.create_from_checkout(session, checkout, None)
+            await order_service.create_from_checkout_one_time(session, checkout)
 
     async def test_fixed(
         self,
         publish_checkout_event_mock: AsyncMock,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_one_time: Product,
         customer: Customer,
-        stripe_service_mock: MagicMock,
     ) -> None:
         checkout = await create_checkout(
             save_fixture,
@@ -362,31 +424,7 @@ class TestCreateFromCheckout:
             customer=customer,
         )
 
-        stripe_invoice = construct_stripe_invoice(
-            lines=[
-                {
-                    "price_id": price.stripe_price_id,
-                    "amount": cast(ProductPriceFixed, price).price_amount,
-                    "tax_amount": 0,
-                }
-                for price in product_one_time.prices
-                if is_static_price(price)
-            ]
-        )
-        stripe_service_mock.create_out_of_band_invoice.return_value = (
-            stripe_invoice,
-            {
-                price.stripe_price_id: line
-                for price, line in zip(product_one_time.prices, stripe_invoice.lines)
-                if is_static_price(price)
-            },
-        )
-
-        payment_intent = build_stripe_payment_intent(amount=checkout.total_amount)
-
-        order = await order_service.create_from_checkout(
-            session, checkout, payment_intent
-        )
+        order = await order_service.create_from_checkout_one_time(session, checkout)
 
         assert order.net_amount == checkout.net_amount
         assert order.discount_amount == 0
@@ -394,19 +432,6 @@ class TestCreateFromCheckout:
         assert order.customer == checkout.customer
         assert order.product == product_one_time
         assert len(order.items) == len(product_one_time.prices)
-
-        stripe_service_mock.create_out_of_band_invoice.assert_called_once_with(
-            customer=customer.stripe_customer_id,
-            currency=checkout.currency,
-            prices=[
-                price.stripe_price_id
-                for price in product_one_time.prices
-                if is_static_price(price)
-            ],
-            coupon=None,
-            automatic_tax=True,
-            metadata=ANY,
-        )
 
         enqueue_job_mock.assert_any_call(
             "benefit.enqueue_benefits_grants",
@@ -422,12 +447,11 @@ class TestCreateFromCheckout:
     async def test_custom(
         self,
         publish_checkout_event_mock: AsyncMock,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_one_time_custom_price: Product,
         customer: Customer,
-        stripe_service_mock: MagicMock,
     ) -> None:
         checkout = await create_checkout(
             save_fixture,
@@ -438,32 +462,7 @@ class TestCreateFromCheckout:
             currency="usd",
         )
 
-        stripe_service_mock.create_ad_hoc_custom_price.return_value = SimpleNamespace(
-            id="STRIPE_CUSTOM_PRICE_ID"
-        )
-        stripe_invoice = construct_stripe_invoice(
-            lines=[
-                {
-                    "price_id": "STRIPE_CUSTOM_PRICE_ID",
-                    "amount": 4242,
-                    "tax_amount": 0,
-                }
-                for price in product_one_time_custom_price.prices
-            ]
-        )
-        stripe_service_mock.create_out_of_band_invoice.return_value = (
-            stripe_invoice,
-            {
-                price: line
-                for price, line in zip(["STRIPE_CUSTOM_PRICE_ID"], stripe_invoice.lines)
-            },
-        )
-
-        payment_intent = build_stripe_payment_intent(amount=checkout.total_amount)
-
-        order = await order_service.create_from_checkout(
-            session, checkout, payment_intent
-        )
+        order = await order_service.create_from_checkout_one_time(session, checkout)
 
         assert order.net_amount == checkout.net_amount
         assert order.discount_amount == 0
@@ -471,15 +470,6 @@ class TestCreateFromCheckout:
         assert order.customer == checkout.customer
         assert order.product == product_one_time_custom_price
         assert len(order.items) == len(product_one_time_custom_price.prices)
-
-        stripe_service_mock.create_out_of_band_invoice.assert_called_once_with(
-            customer=customer.stripe_customer_id,
-            currency=checkout.currency,
-            prices=["STRIPE_CUSTOM_PRICE_ID"],
-            coupon=None,
-            automatic_tax=True,
-            metadata=ANY,
-        )
 
         enqueue_job_mock.assert_any_call(
             "benefit.enqueue_benefits_grants",
@@ -495,12 +485,11 @@ class TestCreateFromCheckout:
     async def test_free(
         self,
         publish_checkout_event_mock: AsyncMock,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_one_time_free_price: Product,
         customer: Customer,
-        stripe_service_mock: MagicMock,
     ) -> None:
         checkout = await create_checkout(
             save_fixture,
@@ -509,29 +498,7 @@ class TestCreateFromCheckout:
             customer=customer,
         )
 
-        stripe_invoice = construct_stripe_invoice(
-            lines=[
-                {
-                    "price_id": price.stripe_price_id,
-                    "amount": 0,
-                    "tax_amount": 0,
-                }
-                for price in product_one_time_free_price.prices
-                if is_static_price(price)
-            ]
-        )
-        stripe_service_mock.create_out_of_band_invoice.return_value = (
-            stripe_invoice,
-            {
-                price.stripe_price_id: line
-                for price, line in zip(
-                    product_one_time_free_price.prices, stripe_invoice.lines
-                )
-                if is_static_price(price)
-            },
-        )
-
-        order = await order_service.create_from_checkout(session, checkout, None)
+        order = await order_service.create_from_checkout_one_time(session, checkout)
 
         assert order.net_amount == 0
         assert order.discount_amount == 0
@@ -539,19 +506,6 @@ class TestCreateFromCheckout:
         assert order.customer == checkout.customer
         assert order.product == product_one_time_free_price
         assert len(order.items) == len(product_one_time_free_price.prices)
-
-        stripe_service_mock.create_out_of_band_invoice.assert_called_once_with(
-            customer=customer.stripe_customer_id,
-            currency="usd",
-            prices=[
-                price.stripe_price_id
-                for price in product_one_time_free_price.prices
-                if is_static_price(price)
-            ],
-            coupon=None,
-            automatic_tax=False,
-            metadata=ANY,
-        )
 
         enqueue_job_mock.assert_any_call(
             "benefit.enqueue_benefits_grants",
@@ -567,13 +521,12 @@ class TestCreateFromCheckout:
     async def test_fixed_discounted_100(
         self,
         publish_checkout_event_mock: AsyncMock,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_one_time: Product,
         discount_percentage_100: Discount,
         customer: Customer,
-        stripe_service_mock: MagicMock,
     ) -> None:
         checkout = await create_checkout(
             save_fixture,
@@ -587,29 +540,8 @@ class TestCreateFromCheckout:
             cast(ProductPriceFixed, price).price_amount
             for price in product_one_time.prices
         )
-        stripe_invoice = construct_stripe_invoice(
-            lines=[
-                {
-                    "price_id": price.stripe_price_id,
-                    "amount": cast(ProductPriceFixed, price).price_amount,
-                    "tax_amount": 0,
-                }
-                for price in product_one_time.prices
-                if is_static_price(price)
-            ],
-            discount=discount_percentage_100,
-            discount_amount=discount_amount,
-        )
-        stripe_service_mock.create_out_of_band_invoice.return_value = (
-            stripe_invoice,
-            {
-                price.stripe_price_id: line
-                for price, line in zip(product_one_time.prices, stripe_invoice.lines)
-                if is_static_price(price)
-            },
-        )
 
-        order = await order_service.create_from_checkout(session, checkout, None)
+        order = await order_service.create_from_checkout_one_time(session, checkout)
 
         assert order.net_amount == 0
         assert order.discount_amount == discount_amount
@@ -617,19 +549,6 @@ class TestCreateFromCheckout:
         assert order.customer == checkout.customer
         assert order.product == product_one_time
         assert len(order.items) == len(product_one_time.prices)
-
-        stripe_service_mock.create_out_of_band_invoice.assert_called_once_with(
-            customer=customer.stripe_customer_id,
-            currency="usd",
-            prices=[
-                price.stripe_price_id
-                for price in product_one_time.prices
-                if is_static_price(price)
-            ],
-            coupon=discount_percentage_100.stripe_coupon_id,
-            automatic_tax=False,
-            metadata=ANY,
-        )
 
         enqueue_job_mock.assert_any_call(
             "benefit.enqueue_benefits_grants",
@@ -640,6 +559,150 @@ class TestCreateFromCheckout:
         )
         publish_checkout_event_mock.assert_awaited_once_with(
             checkout.client_secret, CheckoutEvent.order_created
+        )
+
+
+@pytest.mark.asyncio
+class TestCreateFromCheckoutSubscription:
+    async def test_not_recurring_product(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        subscription: Subscription,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture, products=[product_one_time], status=CheckoutStatus.confirmed
+        )
+        with pytest.raises(NotRecurringProduct):
+            await order_service.create_from_checkout_subscription(
+                session, checkout, subscription, OrderBillingReason.subscription_create
+            )
+
+    async def test_missing_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture, products=[product], status=CheckoutStatus.confirmed
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        with pytest.raises(MissingCheckoutCustomer):
+            await order_service.create_from_checkout_subscription(
+                session, checkout, subscription, OrderBillingReason.subscription_create
+            )
+
+    async def test_fixed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        order = await order_service.create_from_checkout_subscription(
+            session, checkout, subscription, OrderBillingReason.subscription_create
+        )
+
+        assert order.net_amount == checkout.net_amount
+        assert order.discount_amount == 0
+        assert order.billing_reason == OrderBillingReason.subscription_create
+        assert order.customer == checkout.customer
+        assert order.product == product
+        assert len(order.items) == len(product.prices)
+
+
+@pytest.mark.asyncio
+class TestCreateSubscriptionOrder:
+    async def test_no_pending_billing_items(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        with pytest.raises(NoPendingBillingEntries):
+            await order_service.create_subscription_order(
+                session, subscription, OrderBillingReason.subscription_cycle
+            )
+
+    async def test_cycle_fixed_price(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        billing_entry = await create_billing_entry(
+            save_fixture,
+            customer=subscription.customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        assert len(order.items) == 1
+        order_item = order.items[0]
+        assert order_item.product_price == price
+        assert order_item.amount == billing_entry.amount
+        assert order_item.order == order
+
+        assert order.subtotal_amount == billing_entry.amount
+        assert order.status == OrderStatus.pending
+        assert order.billing_reason == OrderBillingReason.subscription_cycle
+        assert order.subscription == subscription
+
+        assert order.tax_amount == calculate_tax_mock.return_value["amount"]
+        assert (
+            order.tax_calculation_processor_id
+            == calculate_tax_mock.return_value["processor_id"]
+        )
+        assert (
+            order.taxability_reason
+            == calculate_tax_mock.return_value["taxability_reason"]
+        )
+        assert order.tax_rate == calculate_tax_mock.return_value["tax_rate"]
+        assert order.tax_transaction_processor_id is None
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        updated_billing_entry = await billing_entry_repository.get_by_id(
+            billing_entry.id
+        )
+        assert updated_billing_entry is not None
+        assert updated_billing_entry.order_item_id == order_item.id
+
+        enqueue_job_mock.assert_any_call(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=subscription.payment_method_id,
         )
 
 
@@ -664,7 +727,7 @@ class TestCreateOrderFromStripe:
 
     async def test_basic(
         self,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         subscription: Subscription,
         product: Product,
@@ -879,6 +942,39 @@ class TestCreateOrderFromStripe:
             checkout.client_secret, CheckoutEvent.order_created
         )
 
+    async def test_tax(
+        self,
+        stripe_service_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        subscription: Subscription,
+        product: Product,
+        event_creation_time: tuple[datetime, int],
+    ) -> None:
+        created_datetime, created_unix_timestamp = event_creation_time
+
+        invoice = construct_stripe_invoice(
+            amount_paid=100,
+            subscription_id=subscription.stripe_subscription_id,
+            lines=[
+                {
+                    "price_id": price.stripe_price_id,
+                    "amount": cast(ProductPriceFixed, price).price_amount,
+                    "tax_amount": 1,
+                }
+                for price in product.prices
+                if is_static_price(price)
+            ],
+            created=created_unix_timestamp,
+            customer_id=cast(str, subscription.customer.stripe_customer_id),
+        )
+
+        order = await order_service.create_order_from_stripe(session, invoice)
+
+        assert order.tax_amount == 1
+        assert order.tax_rate is not None
+        assert order.taxability_reason == TaxabilityReason.standard_rated
+
 
 @pytest.mark.asyncio
 class TestUpdateOrderFromStripe:
@@ -889,14 +985,13 @@ class TestUpdateOrderFromStripe:
 
     async def test_paid_charge(
         self,
-        enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product: Product,
         customer: Customer,
     ) -> None:
         invoice = construct_stripe_invoice(status="paid", lines=[])
-        order = await create_order(
+        await create_order(
             save_fixture,
             product=product,
             customer=customer,
@@ -908,13 +1003,8 @@ class TestUpdateOrderFromStripe:
         )
         assert updated_order.status == OrderStatus.paid
 
-        enqueue_job_mock.assert_any_call(
-            "order.balance", order_id=order.id, charge_id="CHARGE_ID"
-        )
-
     async def test_paid_out_of_band(
         self,
-        enqueue_job_mock: AsyncMock,
         stripe_service_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -927,7 +1017,7 @@ class TestUpdateOrderFromStripe:
         invoice = construct_stripe_invoice(
             status="paid", lines=[], metadata={"payment_intent_id": payment_intent.id}
         )
-        order = await create_order(
+        await create_order(
             save_fixture,
             product=product,
             customer=customer,
@@ -938,10 +1028,6 @@ class TestUpdateOrderFromStripe:
             session, invoice=invoice
         )
         assert updated_order.status == OrderStatus.paid
-
-        enqueue_job_mock.assert_any_call(
-            "order.balance", order_id=order.id, charge_id=payment_intent.latest_charge
-        )
 
 
 @pytest.mark.asyncio
@@ -1067,3 +1153,107 @@ async def test_send_confirmation_email(
             await order_service.send_confirmation_email(session, organization, order)
 
         await watch_email(_send_confirmation_email, email_sender.path)
+
+
+@pytest.mark.asyncio
+class TestHandlePayment:
+    async def test_order_not_pending(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Create an order that is already paid
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+            stripe_invoice_id=None,
+        )
+
+        with pytest.raises(OrderNotPending):
+            await order_service.handle_payment(session, order, None)
+
+    async def test_full_case_with_payment_and_tax(
+        self,
+        stripe_service_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Create a pending order with tax calculation processor ID
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        # Set tax_calculation_processor_id
+        order.tax_calculation_processor_id = "tax_calc_123"
+        await save_fixture(order)
+
+        # Create a payment
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_123",
+        )
+
+        # Mock stripe tax transaction creation
+        mock_tax_transaction = MagicMock()
+        mock_tax_transaction.id = "tax_txn_456"
+        stripe_service_mock.create_tax_transaction.return_value = mock_tax_transaction
+
+        # Call handle_payment
+        updated_order = await order_service.handle_payment(session, order, payment)
+
+        # Verify order status is updated to paid
+        assert updated_order.status == OrderStatus.paid
+        assert updated_order.tax_transaction_processor_id == "tax_txn_456"
+
+        # Verify enqueue_job was called to balance the order
+        enqueue_job_mock.assert_called_once_with(
+            "order.balance", order_id=order.id, charge_id="stripe_payment_123"
+        )
+
+        # Verify stripe tax transaction was created
+        stripe_service_mock.create_tax_transaction.assert_called_once_with(
+            "tax_calc_123", str(order.id)
+        )
+
+    async def test_stripe_order_not_pending(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Create a Stripe order that is already paid
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+
+        # Create a payment
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_123",
+        )
+
+        await order_service.handle_payment(session, order, payment)
+
+        # Verify enqueue_job was called to balance the order
+        enqueue_job_mock.assert_called_once_with(
+            "order.balance", order_id=order.id, charge_id="stripe_payment_123"
+        )

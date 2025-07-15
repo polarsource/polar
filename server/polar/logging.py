@@ -95,7 +95,7 @@ class Logging(Generic[RendererType]):
                         for logger in [
                             "uvicorn",
                             "sqlalchemy",
-                            "arq",
+                            "dramatiq",
                             "authlib",
                             "logfire",
                         ]

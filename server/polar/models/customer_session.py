@@ -24,7 +24,7 @@ class CustomerSession(RecordModel):
     )
 
     customer_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("customers.id", ondelete="cascade"), nullable=False
+        Uuid, ForeignKey("customers.id", ondelete="cascade"), nullable=False, index=True
     )
 
     @declared_attr

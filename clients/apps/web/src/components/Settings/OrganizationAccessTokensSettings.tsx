@@ -22,17 +22,6 @@ import {
 } from '@polar-sh/ui/components/atoms/Select'
 import ShadowListGroup from '@polar-sh/ui/components/atoms/ShadowListGroup'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@polar-sh/ui/components/ui/alert-dialog'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Form,
@@ -44,6 +33,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useState, type MouseEvent } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
+import { ConfirmModal } from '../Modal/ConfirmModal'
 import { toast, useToast } from '../Toast/use-toast'
 
 interface AccessTokenCreate {
@@ -62,8 +52,9 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
     AccessTokenCreate | AccessTokenUpdate
   >()
 
-  const selectableScopes =
-    enums.availableScopeValues as schemas['AvailableScope'][]
+  const sortedScopes = Array.from(enums.availableScopeValues).sort((a, b) =>
+    a.localeCompare(b),
+  )
   const [allSelected, setSelectAll] = useState(false)
 
   const onToggleAll = useCallback(
@@ -72,12 +63,12 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
 
       let values: Array<schemas['AvailableScope']> = []
       if (!allSelected) {
-        values = selectableScopes
+        values = sortedScopes
       }
       setValue('scopes', values)
       setSelectAll(!allSelected)
     },
-    [setValue, allSelected, selectableScopes],
+    [setValue, allSelected, sortedScopes],
   )
 
   return (
@@ -151,7 +142,7 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
         </div>
 
         <div className="flex flex-col gap-2">
-          {Object.values(selectableScopes).map((scope) => (
+          {sortedScopes.map((scope) => (
             <FormField
               key={scope}
               control={control}
@@ -321,6 +312,12 @@ const AccessTokenItem = ({
     hide: hideUpdateModal,
   } = useModal()
 
+  const {
+    isShown: deleteModalShown,
+    show: showDeleteModal,
+    hide: hideDeleteModal,
+  } = useModal()
+
   const deleteToken = useDeleteOrganizationAccessToken()
 
   const onDelete = useCallback(async () => {
@@ -378,32 +375,9 @@ const AccessTokenItem = ({
           <Button onClick={showUpdateModal} size="sm">
             Update
           </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm">
-                Revoke
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete your access token.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-destructive hover:bg-destructive/90 cursor-pointer text-white"
-                  asChild
-                >
-                  <span onClick={onDelete}>
-                    Delete Organization Access Token
-                  </span>
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <Button onClick={showDeleteModal} variant="destructive" size="sm">
+            Revoke
+          </Button>
         </div>
       </div>
       {rawToken && (
@@ -435,6 +409,16 @@ const AccessTokenItem = ({
             onHide={hideUpdateModal}
           />
         }
+      />
+      <ConfirmModal
+        isShown={deleteModalShown}
+        hide={hideDeleteModal}
+        onConfirm={onDelete}
+        title="Revoke Access Token"
+        description="This will permanently delete your access token."
+        destructive
+        destructiveText="Revoke"
+        confirmPrompt={token.comment}
       />
     </div>
   )

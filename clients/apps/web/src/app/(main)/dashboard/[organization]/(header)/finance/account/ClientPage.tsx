@@ -4,37 +4,59 @@ import AccountCreateModal from '@/components/Accounts/AccountCreateModal'
 import AccountSetup from '@/components/Accounts/AccountSetup'
 import AccountsList from '@/components/Accounts/AccountsList'
 import { Modal } from '@/components/Modal'
-import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
-import { useListAccounts, useOrganizationAccount } from '@/hooks/queries'
+import { useAuth } from '@/hooks'
+import {
+  useCreateIdentityVerification,
+  useListAccounts,
+  useOrganizationAccount,
+} from '@/hooks/queries'
 import { api } from '@/utils/client'
-import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
-import Banner from '@polar-sh/ui/components/molecules/Banner'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@polar-sh/ui/components/ui/accordion'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
+import { loadStripe } from '@stripe/stripe-js'
+import { CircleCheck, CircleDot } from 'lucide-react'
 import { useCallback, useState } from 'react'
 
-const OrganizationDetailsModal = ({
-  organization,
-  hideModal,
+const ReviewStep = ({
+  id,
+  title,
+  available,
+  done,
+  children,
 }: {
-  organization: schemas['Organization']
-  hideModal: () => void
+  id: string
+  title: string
+  available: boolean
+  done: boolean
+  children: React.ReactNode
 }) => {
+  const disabled = !available
   return (
-    <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
-      <div className="flex flex-row items-center gap-x-4">
-        <h2 className="text-xl">Organization Details</h2>
-      </div>
-      <OrganizationProfileSettings
-        organization={organization}
-        kyc={true}
-        onSubmitted={hideModal}
-      />
-    </div>
+    <AccordionItem value={id} disabled={disabled}>
+      <AccordionTrigger className={done ? 'opacity-50' : ''}>
+        <div className="flex items-center gap-2">
+          {done ? (
+            <CircleCheck className="h-4 w-4" />
+          ) : (
+            <CircleDot className="h-4 w-4" />
+          )}
+          {title}
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="dark:bg-polar-800 mb-4 rounded-xl bg-gray-100 p-4">
+        {children}
+      </AccordionContent>
+    </AccordionItem>
   )
 }
 
@@ -43,6 +65,7 @@ export default function ClientPage({
 }: {
   organization: schemas['Organization']
 }) {
+  const { currentUser, reloadUser } = useAuth()
   const { data: accounts } = useListAccounts()
   const {
     isShown: isShownSetupModal,
@@ -50,15 +73,35 @@ export default function ClientPage({
     hide: hideSetupModal,
   } = useModal()
 
-  const {
-    isShown: isOrganizationDetailsShown,
-    show: showOrganizationDetailsModal,
-    hide: hideOrganizationDetailsModal,
-  } = useModal()
+  const [requireDetails, setRequireDetails] = useState(
+    !organization.details_submitted_at,
+  )
+  const identityVerified = currentUser?.identity_verified
+  const identityVerificationStatus = currentUser?.identity_verification_status
 
-  const requireDetails = !organization.details_submitted_at
+  const [step, setStep] = useState<string | undefined>()
 
   const { data: organizationAccount } = useOrganizationAccount(organization.id)
+
+  const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
+  const createIdentityVerification = useCreateIdentityVerification()
+  const startIdentityVerification = useCallback(async () => {
+    const { data, error } = await createIdentityVerification.mutateAsync()
+    if (error) {
+      return
+    }
+    const stripe = await stripePromise
+    if (!stripe) {
+      return
+    }
+    const { error: stripeError } = await stripe.verifyIdentity(
+      data.client_secret,
+    )
+    if (stripeError) {
+      return
+    }
+    await reloadUser()
+  }, [createIdentityVerification, stripePromise, reloadUser])
 
   const [linkAccountLoading, setLinkAccountLoading] = useState(false)
   const onLinkAccount = useCallback(
@@ -78,41 +121,92 @@ export default function ClientPage({
 
   return (
     <div className="flex flex-col gap-y-6">
-      {requireDetails && (
-        <Banner
-          color="default"
-          right={
-            <Button size="sm" onClick={showOrganizationDetailsModal}>
-              Complete organization details
-            </Button>
-          }
+      <Accordion
+        type="single"
+        collapsible
+        className="w-full"
+        value={step}
+        onValueChange={setStep}
+      >
+        <ReviewStep
+          id="details"
+          title="Provide your organization details"
+          available={true}
+          done={!requireDetails}
         >
-          <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
-          <span className="text-sm">
-            Please share details of your use case for Polar for our compliance-
-            and{' '}
-            <a
-              href="https://docs.polar.sh/merchant-of-record/acceptable-use"
-              className="text-blue-500"
-              target="_blank"
-            >
-              acceptable use
-            </a>{' '}
-            reviews.
-          </span>
-        </Banner>
-      )}
-
-      {accounts ? (
-        <AccountSetup
-          organization={organization}
-          organizationAccount={organizationAccount}
-          loading={linkAccountLoading}
-          pauseActions={requireDetails}
-          onLinkAccount={onLinkAccount}
-          onAccountSetup={showSetupModal}
-        />
-      ) : null}
+          {requireDetails ? (
+            <div className="flex justify-center">
+              <div className="w-full lg:w-1/2">
+                <OrganizationProfileSettings
+                  organization={organization}
+                  kyc={true}
+                  onSubmitted={() => {
+                    setRequireDetails(false)
+                    if (!organizationAccount) {
+                      setStep('account')
+                    } else if (!identityVerified) {
+                      setStep('identity')
+                    } else {
+                      setStep(undefined)
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          ) : (
+            <p>Thank you, your organization details have been submitted.</p>
+          )}
+        </ReviewStep>
+        <ReviewStep
+          id="account"
+          title="Create a payout account"
+          available={!requireDetails}
+          done={!!organizationAccount}
+        >
+          {accounts ? (
+            <AccountSetup
+              organization={organization}
+              organizationAccount={organizationAccount}
+              loading={linkAccountLoading}
+              pauseActions={requireDetails}
+              onLinkAccount={onLinkAccount}
+              onAccountSetup={showSetupModal}
+            />
+          ) : null}
+        </ReviewStep>
+        <ReviewStep
+          id="identity"
+          title="Verify your identity"
+          available={!requireDetails && !!organizationAccount}
+          done={!!identityVerified}
+        >
+          <div className="flex flex-col gap-2">
+            {identityVerificationStatus === 'verified' && (
+              <p>Thank you, your identity has been verified!</p>
+            )}
+            {identityVerificationStatus === 'pending' && (
+              <p>
+                Your identity verification is pending. Please check back later.
+              </p>
+            )}
+            {identityVerificationStatus === 'failed' && (
+              <p>Your identity verification failed. Please try again.</p>
+            )}
+            {identityVerificationStatus &&
+              ['unverified', 'failed'].includes(identityVerificationStatus) && (
+                <div>
+                  <Button
+                    size="sm"
+                    onClick={startIdentityVerification}
+                    loading={createIdentityVerification.isPending}
+                  >
+                    Verify my identity
+                  </Button>
+                </div>
+              )}
+          </div>
+        </ReviewStep>
+      </Accordion>
 
       {accounts?.items && accounts.items.length > 0 ? (
         <ShadowBoxOnMd>
@@ -145,16 +239,6 @@ export default function ClientPage({
             returnPath={`/dashboard/${organization.slug}/finance/account`}
           />
         }
-      />
-      <InlineModal
-        modalContent={
-          <OrganizationDetailsModal
-            organization={organization}
-            hideModal={hideOrganizationDetailsModal}
-          />
-        }
-        isShown={isOrganizationDetailsShown}
-        hide={hideOrganizationDetailsModal}
       />
     </div>
   )

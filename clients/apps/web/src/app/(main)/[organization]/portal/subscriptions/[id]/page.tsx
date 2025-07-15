@@ -86,7 +86,7 @@ export default async function Page({
   return (
     <ClientPage
       subscription={subscription}
-      customerSessionToken={searchParams.customer_session_token}
+      customerSessionToken={searchParams.customer_session_token as string}
     />
   )
 }

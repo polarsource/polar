@@ -9,7 +9,7 @@ from polar.auth.models import is_user
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import OAuth2Token, Organization
 from polar.openapi import APITag
-from polar.organization.service import organization as organization_service
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -45,7 +45,7 @@ router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 @router.get(
     "/",
     summary="List Clients",
-    tags=["clients", APITag.documented],
+    tags=["clients", APITag.private],
     response_model=ListResource[OAuth2Client],
 )
 async def list(
@@ -65,7 +65,7 @@ async def list(
 @router.post(
     "/register",
     summary="Create Client",
-    tags=["clients", APITag.documented],
+    tags=["clients", APITag.private],
     name="oauth2:create_client",
 )
 async def create(
@@ -84,7 +84,7 @@ async def create(
 
 @router.get(
     "/register/{client_id}",
-    tags=["clients", APITag.documented],
+    tags=["clients", APITag.private],
     summary="Get Client",
     name="oauth2:get_client",
 )
@@ -103,7 +103,7 @@ async def get(
 
 @router.put(
     "/register/{client_id}",
-    tags=["clients", APITag.documented],
+    tags=["clients", APITag.private],
     summary="Update Client",
     name="oauth2:update_client",
 )
@@ -124,7 +124,7 @@ async def update(
 
 @router.delete(
     "/register/{client_id}",
-    tags=["clients", APITag.documented],
+    tags=["clients", APITag.private],
     summary="Delete Client",
     name="oauth2:delete_client",
 )
@@ -164,8 +164,9 @@ async def authorize(
     organizations: Sequence[Organization] | None = None
     if grant.sub_type == SubType.organization:
         assert is_user(auth_subject)
-        organizations = await organization_service.list_all_orgs_by_user_id(
-            session, auth_subject.subject.id
+        organization_repository = OrganizationRepository.from_session(session)
+        organizations = await organization_repository.get_all_by_user(
+            auth_subject.subject.id
         )
 
     return authorize_response_adapter.validate_python(

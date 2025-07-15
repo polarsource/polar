@@ -1,12 +1,14 @@
-from typing import cast
+from typing import Any, cast
 
+import dramatiq
 import httpx
 import pytest
 import respx
-from arq import Retry
+from dramatiq import Retry
 from pytest_mock import MockerFixture
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
+from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
 from polar.models.organization import Organization
 from polar.models.subscription import Subscription
@@ -18,12 +20,10 @@ from polar.models.webhook_endpoint import (
 from polar.models.webhook_event import WebhookEvent
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.tasks import (
-    MAX_RETRIES,
     _webhook_event_send,
     allowed_url,
     webhook_event_send,
 )
-from polar.worker import JobContext
 from tests.fixtures.database import SaveFixture
 
 
@@ -105,7 +105,6 @@ async def test_webhook_delivery(
     save_fixture: SaveFixture,
     respx_mock: respx.MockRouter,
     organization: Organization,
-    job_context: JobContext,
 ) -> None:
     respx_mock.post("https://example.com/hook").mock(return_value=httpx.Response(200))
 
@@ -120,7 +119,7 @@ async def test_webhook_delivery(
     event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
     await save_fixture(event)
 
-    await webhook_event_send(job_context, webhook_event_id=event.id)
+    await webhook_event_send(webhook_event_id=event.id)
 
 
 @pytest.mark.asyncio
@@ -129,7 +128,7 @@ async def test_webhook_delivery_500(
     save_fixture: SaveFixture,
     respx_mock: respx.MockRouter,
     organization: Organization,
-    job_context: JobContext,
+    current_message: dramatiq.Message[Any],
 ) -> None:
     respx_mock.post("https://example.com/hook").mock(return_value=httpx.Response(500))
 
@@ -145,22 +144,13 @@ async def test_webhook_delivery_500(
     await save_fixture(event)
 
     # failures
-    for job_try in range(MAX_RETRIES):
-        with pytest.raises(Retry):
-            job_context["job_try"] = job_try
-            await _webhook_event_send(
-                session=session,
-                ctx=job_context,
-                webhook_event_id=event.id,
-            )
+    with pytest.raises(Retry):
+        await _webhook_event_send(session=session, webhook_event_id=event.id)
 
     # does not raise on last attempt
-    job_context["job_try"] = MAX_RETRIES + 1
-    await _webhook_event_send(
-        session=session,
-        ctx=job_context,
-        webhook_event_id=event.id,
-    )
+    current_message.options["max_retries"] = settings.WEBHOOK_MAX_RETRIES
+    current_message.options["retries"] = settings.WEBHOOK_MAX_RETRIES
+    await _webhook_event_send(session=session, webhook_event_id=event.id)
 
 
 @pytest.mark.asyncio
@@ -169,7 +159,7 @@ async def test_webhook_delivery_http_error(
     save_fixture: SaveFixture,
     respx_mock: respx.MockRouter,
     organization: Organization,
-    job_context: JobContext,
+    current_message: dramatiq.Message[Any],
 ) -> None:
     respx_mock.post("https://example.com/hook").mock(
         side_effect=httpx.HTTPError("ERROR")
@@ -187,22 +177,14 @@ async def test_webhook_delivery_http_error(
     await save_fixture(event)
 
     # failures
-    for job_try in range(MAX_RETRIES):
+    for job_try in range(settings.WORKER_MAX_RETRIES):
         with pytest.raises(Retry):
-            job_context["job_try"] = job_try
-            await _webhook_event_send(
-                session=session,
-                ctx=job_context,
-                webhook_event_id=event.id,
-            )
+            await _webhook_event_send(session=session, webhook_event_id=event.id)
 
     # does not raise on last attempt
-    job_context["job_try"] = MAX_RETRIES + 1
-    await _webhook_event_send(
-        session=session,
-        ctx=job_context,
-        webhook_event_id=event.id,
-    )
+    current_message.options["max_retries"] = settings.WEBHOOK_MAX_RETRIES
+    current_message.options["retries"] = settings.WEBHOOK_MAX_RETRIES
+    await _webhook_event_send(session=session, webhook_event_id=event.id)
 
 
 @pytest.mark.asyncio
@@ -211,7 +193,6 @@ async def test_webhook_standard_webhooks_compatible(
     save_fixture: SaveFixture,
     respx_mock: respx.MockRouter,
     organization: Organization,
-    job_context: JobContext,
 ) -> None:
     secret = "mysecret"
     route_mock = respx_mock.post("https://example.com/hook").mock(
@@ -229,11 +210,7 @@ async def test_webhook_standard_webhooks_compatible(
     event = WebhookEvent(webhook_endpoint_id=endpoint.id, payload='{"foo":"bar"}')
     await save_fixture(event)
 
-    await _webhook_event_send(
-        session=session,
-        ctx=job_context,
-        webhook_event_id=event.id,
-    )
+    await _webhook_event_send(session=session, webhook_event_id=event.id)
 
     # Check that the generated signature is correct
     request = route_mock.calls.last.request

@@ -1,0 +1,113 @@
+---
+title: "Introduction"
+description: "Usage based billing using ingested events"
+---
+
+import Events from "/snippets/usage/events.mdx";
+import Meters from "/snippets/usage/meters.mdx";
+import MeteredPrice from "/snippets/usage/metered-price.mdx";
+import MeterCredits from "/snippets/usage/meter-credits.mdx";
+
+<Info>
+  Usage Based Billing is a new feature. We have a lot in store and welcome
+  feedback!
+</Info>
+
+## Overview
+
+Polar has a powerful Usage Based Billing infrastructure that allows you to charge your customers based on the usage of your application.
+
+This is done by ingesting events from your application, creating Meters to represent that usage, and then adding metered prices to Products to charge for it.
+
+## Concepts
+
+### Events
+
+<Events />
+
+### Meters
+
+<Meters />
+
+### Metered Price
+
+<MeteredPrice />
+
+### Meter Credits benefit
+
+<MeterCredits />
+
+### Diagram
+
+Here is a diagram of how the different components of Usage Based Billing work together:
+
+```mermaid
+flowchart TD
+App[Your Application]
+User[User]
+
+    subgraph Polar["Polar"]
+        API[Events Ingestion API]
+        DB[(Events database)]
+        Meters[Meters]
+        Products[Products]
+        Benefit[Meter Credits Benefit]
+
+        subgraph MeteredPrice["Metered Prices"]
+            Unit[Unit Pricing]
+        end
+    end
+
+
+    User -->|Uses| App
+    App -->|Sends events| API
+    API -->|Stores events| DB
+    Benefit -->|Stores credit events| DB
+
+    DB -->|Filtered & aggregated by| Meters
+    Meters -->|Associated with| Products
+    Benefit -->|Associated with| Meters
+
+    Products -.->|Apply| MeteredPrice
+```
+
+## Quickstart
+
+Get up and running in 5 minutes
+
+<Steps>
+  <Step title="Enable Usage Based Billing">
+    Usage Based Billing is currently in Alpha. Enable it by navigating to the Organization Settings and toggling the "Usage Based Billing" switch.
+
+  </Step>
+  <Step title="Create a Meter">
+    Meters consist of filters and an aggregation function.
+    The filter is used to filter the events that should be included in the meter and the aggregation function is used to compute the usage.
+
+    <img className="block dark:hidden" src="/assets/features/usage/create-meter.light.png" />
+    <img className="hidden dark:block" src="/assets/features/usage/create-meter.dark.png" />
+
+  </Step>
+  <Step title="Add metered price to a Product">
+    To enable usage based billing for a Product, you need to add a metered price to the Product. Metered prices are only applicable to Subscription Products.
+
+    <img className="block dark:hidden" src="/assets/features/usage/product-meter.light.png" />
+    <img className="hidden dark:block" src="/assets/features/usage/product-meter.dark.png" />
+
+  </Step>
+  <Step title="Ingest Events">
+
+    Now you're ready to ingest events from your application. Sending events which match the meter's filter will increment the meter's usage for the customer.
+
+    <img className="block dark:hidden" src="/assets/features/usage/ingest.light.png" />
+    <img className="hidden dark:block" src="/assets/features/usage/ingest.dark.png" />
+
+  </Step>
+  <Step title="Customer Usage">
+    Customers can view their estimated charges for each meter in the Customer Portal.
+
+    <img className="block dark:hidden" src="/assets/features/usage/portal.light.png" />
+    <img className="hidden dark:block" src="/assets/features/usage/portal.dark.png" />
+
+  </Step>
+</Steps>

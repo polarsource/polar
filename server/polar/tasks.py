@@ -17,7 +17,9 @@ from polar.notifications import tasks as notifications
 from polar.order import tasks as order
 from polar.organization import tasks as organization
 from polar.organization_access_token import tasks as organization_access_token
+from polar.payout import tasks as payout
 from polar.personal_access_token import tasks as personal_access_token
+from polar.processor_transaction import tasks as processor_transaction
 from polar.subscription import tasks as subscription
 from polar.transaction import tasks as transaction
 from polar.user import tasks as user
@@ -43,7 +45,9 @@ __all__ = [
     "notifications",
     "organization",
     "organization_access_token",
+    "payout",
     "personal_access_token",
+    "processor_transaction",
     "subscription",
     "transaction",
     "user",

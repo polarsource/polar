@@ -1,7 +1,10 @@
 'use client'
 
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
-import { useCustomerUpdateSubscription } from '@/hooks/queries'
+import {
+  useCustomerPaymentMethods,
+  useCustomerUpdateSubscription,
+} from '@/hooks/queries'
 import { hasLegacyRecurringPrices } from '@/utils/product'
 import { Client, schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -71,6 +74,38 @@ const CustomerChangePlanModal = ({
   const [selectedProduct, setSelectedProduct] = useState<
     schemas['ProductStorefront'] | null
   >(null)
+
+  const paymentMethods = useCustomerPaymentMethods(api)
+
+  const hasPaymentMethod = useMemo(() => {
+    return paymentMethods.data?.items.length ?? 0 > 0
+  }, [paymentMethods.data])
+
+  const needToAddPaymentMethod = useMemo(() => {
+    if (!selectedProduct) return false
+
+    const selectedPlanIsFree = selectedProduct?.prices.some(
+      (p) => p.amount_type === 'free',
+    )
+
+    if (selectedPlanIsFree) return false
+
+    return !hasPaymentMethod
+  }, [selectedProduct, hasPaymentMethod])
+
+  const canChangePlan = useMemo(() => {
+    if (!selectedProduct) return false
+    const isSamePlan = selectedProduct?.id === subscription.product_id
+    if (isSamePlan) return false
+
+    const selectedPlanIsFree = selectedProduct?.prices.some(
+      (p) => p.amount_type === 'free',
+    )
+
+    if (selectedPlanIsFree) return true
+
+    return hasPaymentMethod
+  }, [hasPaymentMethod, selectedProduct, subscription])
 
   const addedBenefits = useMemo(() => {
     if (!selectedProduct) return []
@@ -200,7 +235,7 @@ const CustomerChangePlanModal = ({
           {removedBenefits.length > 0 && (
             <div className="flex flex-col gap-y-4">
               <h3 className="text-sm font-medium text-red-400">
-                You&apos;ll will loose access to the following benefits
+                You&apos;ll lose access to the following benefits
               </h3>
               <div className="flex flex-col gap-y-2">
                 {removedBenefits.map((benefit) => (
@@ -220,8 +255,14 @@ const CustomerChangePlanModal = ({
             </p>
           )}
         </div>
+        {needToAddPaymentMethod && (
+          <p className="dark:text-polar-500 text-sm text-gray-500">
+            You need to add a payment method before updating your plan. Head to
+            the Customer Portal Settings to add a payment method.
+          </p>
+        )}
         <Button
-          disabled={!selectedProduct}
+          disabled={!canChangePlan}
           loading={updateSubscription.isPending}
           onClick={onConfirm}
           size="lg"

@@ -1,6 +1,7 @@
 from pydantic import UUID4
 
-from polar.kit.schemas import EmailStrDNS, Schema
+from polar.kit.email import EmailStrDNS
+from polar.kit.schemas import Schema
 
 
 class CustomerSessionCodeRequest(Schema):

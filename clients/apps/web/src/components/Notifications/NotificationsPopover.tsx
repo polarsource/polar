@@ -1,6 +1,11 @@
 import { useNotifications, useNotificationsMarkRead } from '@/hooks/queries'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import { Announcement, BoltOutlined, VerifiedUser } from '@mui/icons-material'
+import {
+  BoltOutlined,
+  FaceOutlined,
+  InfoOutlined,
+  ShoppingBagOutlined,
+} from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
@@ -13,7 +18,6 @@ import { getCentsInDollarString } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import DollarSignIcon from '../Icons/DollarSignIcon'
 import Icon from '../Icons/Icon'
 
 type NotificationSchema = schemas['NotificationsList']['notifications'][number]
@@ -119,7 +123,7 @@ export const List = ({
     <div className="h-full max-h-[800px] space-y-5 overflow-x-scroll">
       {notifications.length === 0 && (
         <div className="dark:text-polar-400 flex w-full flex-row items-center justify-center p-4 text-center text-sm text-black/60">
-          You don&apos;t have any notifications... yet!
+          You don&apos;t have any notifications
         </div>
       )}
       {notifications.map((n) => {
@@ -175,7 +179,7 @@ const MaintainerAccountUnderReview = ({
             of your account.
           </>
         ),
-        icon: <VerifiedUser />,
+        icon: <FaceOutlined fontSize="small" />,
       }}
     </Item>
   )
@@ -198,7 +202,7 @@ const MaintainerAccountReviewed = ({
             has been reviewed successfully. Transfers are resumed.
           </>
         ),
-        icon: <VerifiedUser />,
+        icon: <FaceOutlined fontSize="small" />,
       }}
     </Item>
   )
@@ -229,7 +233,7 @@ const MaintainerNewPaidSubscription = ({
             )}
           </>
         ),
-        icon: <DollarSignIcon />,
+        icon: <ShoppingBagOutlined fontSize="small" />,
       }}
     </Item>
   )
@@ -255,7 +259,7 @@ const MaintainerNewProductSale = ({
             (${getCentsInDollarString(payload.product_price_amount)})
           </>
         ),
-        icon: <DollarSignIcon />,
+        icon: <ShoppingBagOutlined fontSize="small" />,
       }}
     </Item>
   )
@@ -279,7 +283,7 @@ const MaintainerCreateAccount = ({
             now for {payload.organization_name} to receive funds.
           </>
         ),
-        icon: <Announcement />,
+        icon: <InfoOutlined fontSize="small" />,
       }}
     </Item>
   )

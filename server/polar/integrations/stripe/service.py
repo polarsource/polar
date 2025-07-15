@@ -90,6 +90,10 @@ class StripeService:
             obj["business_profile"] = {"name": name}
         await stripe_lib.Account.modify_async(id, **obj)
 
+    async def delete_account(self, id: str) -> stripe_lib.Account:
+        # TODO: Check if this fails when account balance is non-zero
+        return await stripe_lib.Account.delete_async(id)
+
     async def retrieve_balance(self, id: str) -> tuple[str, int]:
         # Return available balance in the account's default currency (we assume that
         # there is no balance in other currencies for now)

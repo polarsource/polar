@@ -254,5 +254,14 @@ async def get(
                 datatable.DatatableAttrColumn(
                     "next_review_threshold", "Next Review Threshold"
                 ),
+                datatable.DatatableActionsColumn(
+                    "",
+                    datatable.DatatableActionHTMX(
+                        "Delete",
+                        lambda r, i: str(r.url_for("accounts:delete", id=i.id)),
+                        target="#modal",
+                        hidden=lambda _, i: i.deleted_at is not None,
+                    ),
+                ),
             ).render(request, accounts):
                 pass

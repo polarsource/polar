@@ -1,7 +1,7 @@
 import contextlib
 import uuid
 from collections.abc import Generator
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any
 
 from babel.numbers import format_currency
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -24,7 +24,12 @@ from polar.user.repository import UserRepository
 from ..components import accordion, button, datatable, description_list, input, modal
 from ..layout import layout
 from ..responses import HXRedirectResponse
-from .forms import AccountReviewForm, UpdateOrganizationForm
+from .forms import (
+    AccountStatusFormAdapter,
+    ApproveAccountForm,
+    UnderReviewAccountForm,
+    UpdateOrganizationForm,
+)
 
 router = APIRouter()
 
@@ -186,18 +191,15 @@ async def update(
     if not organization:
         raise HTTPException(status_code=404)
 
-    form_class = UpdateOrganizationForm
     validation_error: ValidationError | None = None
 
     if request.method == "POST":
         data = await request.form()
         try:
-            form = form_class.model_validate(data)
-            if form.name:
-                organization.name = form.name
-            if form.slug:
-                organization.slug = form.slug
-            organization = await org_repo.update(organization, update_dict=form.model_dump(exclude_none=True))
+            form = UpdateOrganizationForm.model_validate(data)
+            organization = await org_repo.update(
+                organization, update_dict=form.model_dump(exclude_none=True)
+            )
             return HXRedirectResponse(
                 request, str(request.url_for("organizations:get", id=id)), 303
             )
@@ -206,7 +208,7 @@ async def update(
             validation_error = e
 
     with modal("Update Organization", open=True):
-        with form_class.render(
+        with UpdateOrganizationForm.render(
             {"name": organization.name, "slug": organization.slug},
             method="POST",
             action=str(request.url_for("organizations:update", id=id)),
@@ -222,32 +224,6 @@ async def update(
                     variant="primary",
                 ):
                     text("Update")
-
-
-@router.post("/{id}/account_status/{status}", name="organizations:account_status")
-async def account_status_update(
-    request: Request,
-    id: UUID4,
-    status: Literal["under_review", "denied"],
-    session: AsyncSession = Depends(get_db_session),
-) -> Any:
-    org_repo = OrganizationRepository.from_session(session)
-    organization = await org_repo.get_by_id(
-        id, options=(joinedload(Organization.account),)
-    )
-
-    if organization is None or organization.account is None:
-        raise HTTPException(status_code=404)
-
-    account = organization.account
-    if status == "denied":
-        await account_service.deny_account(account)
-    elif status == "under_review":
-        await account_service.set_account_under_review(account)
-
-    return HXRedirectResponse(
-        request, str(request.url_for("organizations:get", id=id)), 303
-    )
 
 
 @router.api_route("/{id}", name="organizations:get", methods=["GET", "POST"])
@@ -274,10 +250,15 @@ async def get(
         # It's a POST to the current page URL, not the status update URL
         data = await request.form()
         try:
-            account_review = AccountReviewForm.model_validate(data)
-            await account_service.confirm_account_reviewed(
-                session, account, account_review.next_review_threshold
-            )
+            account_status = AccountStatusFormAdapter.validate_python(data)
+            if account_status.action == "approve":
+                await account_service.confirm_account_reviewed(
+                    session, account, account_status.next_review_threshold
+                )
+            elif account_status.action == "deny":
+                await account_service.deny_account(session, account)
+            elif account_status.action == "under_review":
+                await account_service.set_account_under_review(session, account)
             return HXRedirectResponse(request, request.url, 303)
         except ValidationError as e:
             validation_error = e
@@ -361,45 +342,43 @@ async def get(
                                 ),
                             ).render(request, account):
                                 pass
-                            if account.status == Account.Status.UNDER_REVIEW:
-                                with tag.div(classes="card-actions"):
-                                    with AccountReviewForm.render(
+                            with tag.div(classes="card-actions"):
+                                if account.status == Account.Status.UNDER_REVIEW:
+                                    with ApproveAccountForm.render(
                                         account,
                                         method="POST",
                                         action=str(request.url),
                                         classes="flex flex-col gap-4",
                                         validation_error=validation_error,
                                     ):
-                                        with button(type="submit", variant="primary"):
+                                        with button(
+                                            name="action",
+                                            type="submit",
+                                            variant="primary",
+                                            value="approve",
+                                        ):
                                             text("Approve")
-                                    with tag.form(
-                                        method="POST",
-                                        action=str(
-                                            request.url_for(
-                                                "organizations:account_status",
-                                                id=organization.id,
-                                                status="denied",
-                                            )
-                                        ),
-                                    ):
-                                        with button(type="submit", variant="error"):
+                                        with button(
+                                            name="action",
+                                            type="submit",
+                                            variant="error",
+                                            value="deny",
+                                        ):
                                             text("Deny")
-                            elif (
-                                account.status == Account.Status.DENIED
-                                or account.status == Account.Status.ACTIVE
-                            ):
-                                with tag.div(classes="card-actions"):
-                                    with tag.form(
+                                else:
+                                    with UnderReviewAccountForm.render(
+                                        account,
                                         method="POST",
-                                        action=str(
-                                            request.url_for(
-                                                "organizations:account_status",
-                                                id=organization.id,
-                                                status="under_review",
-                                            )
-                                        ),
+                                        action=str(request.url),
+                                        classes="flex flex-col gap-4",
+                                        validation_error=validation_error,
                                     ):
-                                        with button(type="submit"):
+                                        with button(
+                                            name="action",
+                                            type="submit",
+                                            variant="primary",
+                                            value="under_review",
+                                        ):
                                             text("Set to Under Review")
 
                 with tag.div(classes="card card-border w-full shadow-sm"):

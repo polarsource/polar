@@ -69,6 +69,7 @@ export const MeterCreditBenefitForm = ({
         name="properties.units"
         rules={{
           min: 0,
+          max: 2147483647,
           required: 'This field is required',
         }}
         render={({ field }) => {

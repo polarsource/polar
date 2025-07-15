@@ -9,10 +9,15 @@ Congrats! You have a new subscriber on My Paid Tier ($5.00/month)!
     <meta name="color-scheme" content="light dark" />
     <meta name="supported-color-schemes" content="light dark" />
     <title></title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap"
+    />
     <style type="text/css" rel="stylesheet" media="all">
-      /* Base ------------------------------ */
+      /* Add fonts both as <link> and @import for maximum compatibility */
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap");
 
-      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap");
+      /* Base ------------------------------ */
 
       body {
         width: 100% !important;
@@ -50,7 +55,7 @@ Congrats! You have a new subscriber on My Paid Tier ($5.00/month)!
       body,
       td,
       th {
-        font-family: "Inter", Helvetica, Arial, sans-serif;
+        font-family: "Inter", system-ui, Helvetica, Arial, sans-serif;
       }
 
       h1 {
@@ -123,7 +128,7 @@ Congrats! You have a new subscriber on My Paid Tier ($5.00/month)!
         border-left: 18px solid #0062ff;
         display: inline-block;
         color: #fff !important;
-        font-weight: medium;
+        font-weight: 500;
         text-decoration: none;
         border-radius: 8px;
         -webkit-text-size-adjust: none;

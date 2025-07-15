@@ -44,6 +44,17 @@ class TransactionRepository(
         )
 
 
+class PaymentTransactionRepository(TransactionRepository):
+    def get_base_statement(
+        self, *, include_deleted: bool = False
+    ) -> Select[tuple[Transaction]]:
+        return (
+            super()
+            .get_base_statement(include_deleted=include_deleted)
+            .where(Transaction.type == TransactionType.payment)
+        )
+
+
 class BalanceTransactionRepository(TransactionRepository):
     async def get_all_unpaid_by_account(self, account: UUID) -> Sequence[Transaction]:
         statement = (

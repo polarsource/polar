@@ -37,6 +37,9 @@ class FormField:
         raise NotImplementedError()
 
 
+class SkipField: ...
+
+
 class InputField(FormField):
     def __init__(self, type: str = "text", **kwargs: Any) -> None:
         self.type = type
@@ -144,6 +147,13 @@ class SelectField(FormField):
         yield
 
 
+def _is_skipped_field(field: FieldInfo) -> bool:
+    for meta in field.metadata:
+        if meta is SkipField or isinstance(meta, SkipField):
+            return True
+    return False
+
+
 def _get_input_field(field: FieldInfo) -> FormField:
     for meta in field.metadata:
         if isinstance(meta, FormField):
@@ -166,6 +176,8 @@ class BaseForm(BaseModel):
         errors = validation_error.errors() if validation_error else []
         with tag.form(**kwargs):
             for key, field in cls.model_fields.items():
+                if _is_skipped_field(field):
+                    continue
                 input_field = _get_input_field(field)
                 with input_field.render(
                     key,

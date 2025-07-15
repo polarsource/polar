@@ -1,9 +1,11 @@
 import math
 
 import stripe as stripe_lib
+import structlog
 from sqlalchemy import select
 
 from polar.integrations.stripe.utils import get_expandable_id
+from polar.logging import Logger
 from polar.models import Transaction
 from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
@@ -14,6 +16,8 @@ from .platform_fee import platform_fee_transaction as platform_fee_transaction_s
 from .processor_fee import (
     processor_fee_transaction as processor_fee_transaction_service,
 )
+
+log: Logger = structlog.get_logger()
 
 
 class DisputeTransactionError(BaseTransactionServiceError): ...
@@ -40,6 +44,16 @@ class DisputeUnknownPaymentTransaction(DisputeTransactionError):
         message = (
             f"Dispute {dispute_id} created for charge {charge_id}, "
             "but the payment transaction is unknown."
+        )
+        super().__init__(message)
+
+
+class NotBalancedPaymentTransaction(DisputeTransactionError):
+    def __init__(self, payment_transaction: Transaction) -> None:
+        self.payment_transaction = payment_transaction
+        message = (
+            f"Payment transaction {payment_transaction.id} is not balanced, "
+            "cannot create dispute fees balances."
         )
         super().__init__(message)
 
@@ -143,9 +157,17 @@ class DisputeTransactionService(BaseTransactionService):
         all_fees = dispute_fees
         if dispute_reversal_transaction is not None:
             all_fees += dispute_reversal_fees
-        await self._create_dispute_fees_balances(
-            session, payment_transaction=payment_transaction, dispute_fees=all_fees
-        )
+
+        try:
+            await self._create_dispute_fees_balances(
+                session, payment_transaction=payment_transaction, dispute_fees=all_fees
+            )
+        except NotBalancedPaymentTransaction:
+            log.warning(
+                "Dispute fees balances could not be created for payment transaction",
+                payment_transaction_id=payment_transaction.id,
+                dispute_id=dispute.id,
+            )
 
         await session.flush()
 
@@ -226,6 +248,8 @@ class DisputeTransactionService(BaseTransactionService):
         balance_transactions_couples = await self._get_balance_transactions_for_payment(
             session, payment_transaction=payment_transaction
         )
+        if len(balance_transactions_couples) == 0:
+            raise NotBalancedPaymentTransaction(payment_transaction)
         return await platform_fee_transaction_service.create_dispute_fees_balances(
             session,
             dispute_fees=dispute_fees,

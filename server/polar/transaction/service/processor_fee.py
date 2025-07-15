@@ -14,6 +14,15 @@ from .base import BaseTransactionService, BaseTransactionServiceError
 class ProcessorFeeTransactionError(BaseTransactionServiceError): ...
 
 
+class BalanceTransactionNotFound(ProcessorFeeTransactionError):
+    def __init__(self, payment_transaction: Transaction) -> None:
+        message = (
+            f"Balance transaction not found for payment transaction "
+            f"{payment_transaction.id} with charge ID {payment_transaction.charge_id}"
+        )
+        super().__init__(message)
+
+
 class UnsupportedStripeFeeType(ProcessorFeeTransactionError):
     def __init__(self, description: str) -> None:
         self.description = description
@@ -73,24 +82,25 @@ class ProcessorFeeTransactionService(BaseTransactionService):
 
         charge = await stripe_service.get_charge(payment_transaction.charge_id)
 
-        # Payment fee
-        if charge.balance_transaction:
-            stripe_balance_transaction = await stripe_service.get_balance_transaction(
-                get_expandable_id(charge.balance_transaction)
-            )
-            payment_fee_transaction = Transaction(
-                type=TransactionType.processor_fee,
-                processor=Processor.stripe,
-                processor_fee_type=ProcessorFeeType.payment,
-                currency=payment_transaction.currency,
-                amount=-stripe_balance_transaction.fee,
-                account_currency=payment_transaction.currency,
-                account_amount=-stripe_balance_transaction.fee,
-                tax_amount=0,
-                incurred_by_transaction_id=payment_transaction.id,
-            )
-            session.add(payment_fee_transaction)
-            fee_transactions.append(payment_fee_transaction)
+        if charge.balance_transaction is None:
+            raise BalanceTransactionNotFound(payment_transaction)
+
+        stripe_balance_transaction = await stripe_service.get_balance_transaction(
+            get_expandable_id(charge.balance_transaction)
+        )
+        payment_fee_transaction = Transaction(
+            type=TransactionType.processor_fee,
+            processor=Processor.stripe,
+            processor_fee_type=ProcessorFeeType.payment,
+            currency=payment_transaction.currency,
+            amount=-stripe_balance_transaction.fee,
+            account_currency=payment_transaction.currency,
+            account_amount=-stripe_balance_transaction.fee,
+            tax_amount=0,
+            incurred_by_transaction=payment_transaction,
+        )
+        session.add(payment_fee_transaction)
+        fee_transactions.append(payment_fee_transaction)
 
         await session.flush()
 

@@ -7,9 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from tagflow import classes, tag, text
 
+from polar.account.repository import AccountRepository
+from polar.account.sorting import AccountSortProperty
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
-from polar.models import Organization, User, UserOrganization
+from polar.models import Account, Organization, User, UserOrganization
 from polar.models.user import IdentityVerificationStatus
 from polar.organization.repository import OrganizationRepository
 from polar.organization.sorting import OrganizationSortProperty
@@ -221,4 +223,36 @@ async def get(
                     clipboard=True,
                 ),
             ).render(request, orgs):
+                pass
+
+        ################
+        ### Accounts ###
+        ################
+        accounts = await AccountRepository.from_session(session).get_all(
+            AccountRepository.from_session(session)
+            .get_base_statement(include_deleted=True)
+            .where(Account.admin_id == user.id)
+        )
+
+        def _stripe_link(request: Request, value: Account) -> str:
+            return f"https://dashboard.stripe.com/connect/accounts/{value.stripe_id}"
+
+        with tag.div(classes="flex flex-col gap-4 pt-16"):
+            with tag.h2(classes="text-2xl"):
+                text("Accounts")
+            with datatable.Datatable[Account, AccountSortProperty](
+                datatable.DatatableAttrColumn("id", "ID", clipboard=True),
+                datatable.DatatableDateTimeColumn("created_at", "Created At"),
+                datatable.DatatableDateTimeColumn("deleted_at", "Deleted At"),
+                datatable.DatatableAttrColumn(
+                    "account_type",
+                    "Account Type",
+                    external_href=_stripe_link,
+                ),
+                datatable.DatatableAttrColumn("country", "Country"),
+                datatable.DatatableAttrColumn("currency", "Currency"),
+                datatable.DatatableAttrColumn(
+                    "next_review_threshold", "Next Review Threshold"
+                ),
+            ).render(request, accounts):
                 pass

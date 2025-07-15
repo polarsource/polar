@@ -9,8 +9,10 @@ from tagflow import classes, tag, text
 
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
-from polar.models import User
+from polar.models import Organization, User, UserOrganization
 from polar.models.user import IdentityVerificationStatus
+from polar.organization.repository import OrganizationRepository
+from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
 from polar.user import sorting
 from polar.user.repository import UserRepository
@@ -171,6 +173,9 @@ async def get(
         ],
         "users:get",
     ):
+        #################
+        ### User info ###
+        #################
         with tag.div(classes="flex flex-col gap-4"):
             with tag.h1(classes="text-4xl"):
                 text(user.email)
@@ -187,4 +192,33 @@ async def get(
                 ),
                 IdentityVerificationStatusDescriptionListItem("Identity"),
             ).render(request, user):
+                pass
+
+        #####################
+        ### Organizations ###
+        #####################
+        orgs = await OrganizationRepository.from_session(session).get_all(
+            OrganizationRepository.from_session(session)
+            .get_base_statement(include_deleted=True)
+            .join(UserOrganization)
+            .where(
+                UserOrganization.user_id == user.id,
+            )
+        )
+        with tag.div(classes="flex flex-col gap-4 pt-16"):
+            with tag.h2(classes="text-2xl"):
+                text("Organizations")
+            with datatable.Datatable[Organization, OrganizationSortProperty](
+                datatable.DatatableAttrColumn(
+                    "id", "ID", href_route_name="organizations:get", clipboard=True
+                ),
+                datatable.DatatableDateTimeColumn("created_at", "Created At"),
+                datatable.DatatableDateTimeColumn("deleted_at", "Deleted At"),
+                datatable.DatatableDateTimeColumn("blocked_at", "Blocked At"),
+                datatable.DatatableAttrColumn(
+                    "slug",
+                    "Slug",
+                    clipboard=True,
+                ),
+            ).render(request, orgs):
                 pass

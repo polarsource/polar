@@ -490,16 +490,6 @@
                 ]
               },
               {
-                "group": "OAuth 2.0 Clients",
-                "pages": [
-                  "api-reference/oauth2/clients/create",
-                  "api-reference/oauth2/clients/get",
-                  "api-reference/oauth2/clients/list",
-                  "api-reference/oauth2/clients/update",
-                  "api-reference/oauth2/clients/delete"
-                ]
-              },
-              {
                 "group": "Webhooks",
                 "pages": [
                   "api-reference/webhooks/endpoints/create",

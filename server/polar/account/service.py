@@ -82,6 +82,10 @@ class AccountService:
             account, update_dict=account_update.model_dump(exclude_unset=True)
         )
 
+    async def delete(self, session: AsyncSession, account: Account) -> Account:
+        repository = AccountRepository.from_session(session)
+        return await repository.soft_delete(account)
+
     async def create_account(
         self,
         session: AsyncSession,

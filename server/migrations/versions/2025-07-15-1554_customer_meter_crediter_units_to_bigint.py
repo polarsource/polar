@@ -1,7 +1,7 @@
 """customer_meter.crediter_units to bigint
 
 Revision ID: b61be376d0f9
-Revises: 6fdd959d5dbe
+Revises: 147a781fd5f3
 Create Date: 2025-07-15 15:54:58.432056
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "b61be376d0f9"
-down_revision = "6fdd959d5dbe"
+down_revision = "147a781fd5f3"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

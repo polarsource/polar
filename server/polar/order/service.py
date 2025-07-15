@@ -1203,7 +1203,6 @@ class OrderService:
 
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
         await self.send_webhook(session, order, WebhookEventType.order_created)
-        enqueue_job("order.discord_notification", order_id=order.id)
 
         if order.paid:
             await self._on_order_updated(

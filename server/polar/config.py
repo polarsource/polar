@@ -173,7 +173,6 @@ class Settings(BaseSettings):
     SENTRY_DSN: str | None = None
 
     # Discord
-    DISCORD_WEBHOOK_URL: str | None = None
     FAVICON_URL: str = "https://raw.githubusercontent.com/polarsource/polar/2648cf7472b5128704a097cd1eb3ae5f1dd847e5/docs/docs/assets/favicon.png"
     THUMBNAIL_URL: str = "https://raw.githubusercontent.com/polarsource/polar/4fd899222e200ca70982f437039f549b7a822ecc/clients/apps/web/public/email-logo-dark.png"
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { ComponentProps, useState } from 'react'
+import { ComponentProps, useCallback, useEffect, useRef, useState } from 'react'
 
 const Avatar = ({
   name,
@@ -24,15 +24,26 @@ const Avatar = ({
   const [hasLoaded, setHasLoaded] = useState(false)
   const [showInitials, setShowInitials] = useState(avatar_url === null)
 
-  const onLoad = () => {
+  const onLoad = useCallback(() => {
     setHasLoaded(true)
     setShowInitials(false)
-  }
+  }, [setHasLoaded, setShowInitials])
 
-  const onError = () => {
+  const imgRef = useRef<HTMLImageElement>(null)
+
+  const onError = useCallback(() => {
     setShowInitials(true)
     setHasLoaded(true)
-  }
+  }, [setHasLoaded, setShowInitials])
+
+  // We need to look at the `.complete`-property on the <img>
+  // in order to detect resources in the cache.
+  useEffect(() => {
+    if (imgRef.current && imgRef.current.complete) {
+      setHasLoaded(true)
+      setShowInitials(false)
+    }
+  }, [imgRef.current])
 
   return (
     <div
@@ -49,6 +60,7 @@ const Avatar = ({
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
+            ref={imgRef}
             alt={name}
             src={avatar_url}
             height={height}

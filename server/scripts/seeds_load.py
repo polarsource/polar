@@ -9,8 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 # Import tasks to register all dramatiq actors
 import polar.tasks  # noqa: F401
-from polar.account.schemas import AccountCreate
-from polar.account.service import account as account_service
 from polar.auth.models import AuthMethod, AuthSubject
 from polar.auth.scope import Scope as AuthScope
 from polar.benefit.service import benefit as benefit_service
@@ -19,7 +17,7 @@ from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesC
 from polar.config import settings
 from polar.customer.schemas.customer import CustomerCreate
 from polar.customer.service import customer as customer_service
-from polar.enums import AccountType, SubscriptionRecurringInterval
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import create_async_engine
 from polar.models.benefit import BenefitType
 from polar.models.product_price import ProductPriceAmountType
@@ -196,18 +194,6 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             email=org_data["email"],
         )
 
-        # Create account for organization
-        account = await account_service.create_account(
-            session=session,
-            admin=user,
-            account_create=AccountCreate(
-                account_type=AccountType.stripe,
-                country="US",
-            ),
-        )
-
-        # Link user to account
-        user.account = account
         auth_subject = AuthSubject(
             subject=user, scopes={AuthScope.admin}, method=AuthMethod.NONE
         )

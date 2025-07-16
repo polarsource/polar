@@ -239,7 +239,7 @@ class DatatableActionsColumn(Generic[M], DatatableColumn[M]):
             classes="dropdown menu w-52 rounded-box bg-base-100 shadow-sm",
             popover=True,
             id=f"popover-{popover_id}",
-            style=f"position-anchor:--anchor-{popover_id}",
+            style=f"position-anchor:--anchor-{popover_id}; position-try: flip-inline flip-block",
         ):
             for action in displayed_actions:
                 with tag.li():

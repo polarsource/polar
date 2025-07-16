@@ -203,7 +203,7 @@ export const ProductStep = () => {
                 Create Product
               </Button>
               <Link href={`/dashboard/${organization.slug}`}>
-                <Button variant="secondary">Cancel</Button>
+                <Button variant="secondary">Skip</Button>
               </Link>
             </div>
           </div>

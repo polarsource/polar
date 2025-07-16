@@ -52,6 +52,7 @@ class CustomerComparator(Relationship.Comparator[Customer]):
                 clause |= and_(
                     Event.external_customer_id.is_not(None),
                     Event.external_customer_id == other.external_id,
+                    Event.organization_id == other.organization_id,
                 )
             return clause
 
@@ -67,7 +68,8 @@ class CustomerComparator(Relationship.Comparator[Customer]):
                         Event.external_customer_id.is_(None),
                         ~exists(
                             select(1).where(
-                                Customer.external_id == Event.external_customer_id
+                                Customer.external_id == Event.external_customer_id,
+                                Customer.organization_id == Event.organization_id,
                             )
                         ),
                     ),
@@ -86,7 +88,8 @@ class CustomerComparator(Relationship.Comparator[Customer]):
                         Event.external_customer_id.is_not(None),
                         exists(
                             select(1).where(
-                                Customer.external_id == Event.external_customer_id
+                                Customer.external_id == Event.external_customer_id,
+                                Customer.organization_id == Event.organization_id,
                             )
                         ),
                     ),
@@ -126,7 +129,10 @@ class Event(Model, MetadataMixin):
             primaryjoin=(
                 "or_("
                 "Event.customer_id == Customer.id,"
+                "and_("
                 "Event.external_customer_id == Customer.external_id,"
+                "Event.organization_id == Customer.organization_id"
+                ")"
                 ")"
             ),
             comparator_factory=CustomerComparator,

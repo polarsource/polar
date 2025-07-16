@@ -1,11 +1,12 @@
 import pytest
+from sqlalchemy.orm import joinedload
 
 from polar.event.repository import EventRepository
 from polar.kit.utils import utc_now
 from polar.models import Customer, Event, Organization
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_event
+from tests.fixtures.random_objects import create_customer, create_event
 
 
 @pytest.fixture
@@ -147,3 +148,38 @@ class TestCustomerComparatorIs:
         result_is_not = await repository.get_one_or_none(statement)
 
         assert result_is_not is None
+
+
+@pytest.mark.asyncio
+class TestCustomerRelationship:
+    async def test_conflicting_external_id(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        """
+        Ensures that even if two customers have the same external ID on different organizations,
+        we do not join the customer from the second organization when querying an event from the first organization.
+        """
+        await create_customer(
+            save_fixture,
+            organization=organization_second,
+            external_id="EXTERNAL_ID_123",
+        )
+
+        event = await create_event(
+            save_fixture,
+            timestamp=utc_now(),
+            organization=organization,
+            external_customer_id="EXTERNAL_ID_123",
+        )
+
+        repository = EventRepository.from_session(session)
+        loaded_event = await repository.get_by_id(
+            event.id, options=(joinedload(Event.customer),)
+        )
+
+        assert loaded_event is not None
+        assert loaded_event.customer is None

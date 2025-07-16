@@ -1,9 +1,11 @@
 import inspect
+from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import (
+    TIMESTAMP,
     ColumnElement,
     ForeignKey,
     Index,
@@ -115,6 +117,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     invoice_number: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     invoice_path: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
+    )
+
+    next_payment_attempt_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
 
     customer_id: Mapped[UUID] = mapped_column(

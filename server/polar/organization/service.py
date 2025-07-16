@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 import structlog
@@ -10,6 +11,7 @@ from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
+from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Organization, User, UserOrganization
@@ -162,6 +164,50 @@ class OrganizationService:
         organization = await repository.update(organization, update_dict=update_dict)
 
         await self._after_update(session, organization)
+        return organization
+
+    async def delete(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> Organization:
+        """Anonymizes fields on the Organization that can contain PII and then
+        soft-deletes the Organization.
+
+        DOES NOT:
+        - Delete or anonymize Users related Organization
+        - Delete or anonymize Account of the Organization
+        - Delete or anonymize Customers, Products, Discounts, Benefits, Checkouts of the Organization
+        - Revoke Benefits granted
+        - Remove API tokens (organization or personal)
+        """
+        repository = OrganizationRepository.from_session(session)
+
+        update_dict: dict[str, Any] = {}
+
+        pii_fields = ["name", "slug", "website", "customer_invoice_prefix"]
+        github_fields = ["bio", "company", "blog", "location", "twitter_username"]
+        for pii_field in pii_fields + github_fields:
+            value = getattr(organization, pii_field)
+            if value:
+                update_dict[pii_field] = anonymize_for_deletion(value)
+
+        if organization.email:
+            update_dict["email"] = anonymize_email_for_deletion(organization.email)
+
+        if organization.avatar_url:
+            # Anonymize by setting to Polar logo
+            update_dict["avatar_url"] = (
+                "https://avatars.githubusercontent.com/u/105373340?s=48&v=4"
+            )
+        if organization.details:
+            update_dict["details"] = {}
+
+        if organization.socials:
+            update_dict["socials"] = []
+
+        organization = await repository.update(organization, update_dict=update_dict)
+        await repository.soft_delete(organization)
 
         return organization
 

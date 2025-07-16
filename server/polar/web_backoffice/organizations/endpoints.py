@@ -17,6 +17,7 @@ from polar.kit.schemas import empty_str_to_none
 from polar.models import Account, Organization
 from polar.organization import sorting
 from polar.organization.repository import OrganizationRepository
+from polar.organization.service import organization as organization_service
 from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
 from polar.user.repository import UserRepository
@@ -24,6 +25,7 @@ from polar.user.repository import UserRepository
 from ..components import accordion, button, datatable, description_list, input, modal
 from ..layout import layout
 from ..responses import HXRedirectResponse
+from ..toast import add_toast
 from .forms import (
     AccountStatusFormAdapter,
     ApproveAccountForm,
@@ -224,6 +226,65 @@ async def update(
                     variant="primary",
                 ):
                     text("Update")
+
+
+@router.api_route("/{id}/delete", name="organizations:delete", methods=["GET", "POST"])
+async def delete(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(id)
+    if not organization:
+        raise HTTPException(status_code=404)
+
+    if request.method == "POST":
+        await organization_service.delete(session, organization)
+        await add_toast(
+            request,
+            f"Organzation with ID {organization.id} has been deleted",
+            "success",
+        )
+
+        return
+
+    with modal(f"Delete Organization {organization.id}", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text("Are you sure you want to delete this Organization? ")
+
+            with tag.p():
+                text("Deleting this Organization DOES NOT:")
+            with tag.ul(classes="list-disc list-inside"):
+                with tag.li():
+                    text("Delete or anonymize Users related Organization")
+                with tag.li():
+                    text("Delete or anonymize Account of the Organization")
+                with tag.li():
+                    text(
+                        "Delete or anonymize Customers, Products, Discounts, Benefits, Checkouts of the Organization"
+                    )
+                with tag.li():
+                    text("Revoke Benefits granted")
+                with tag.li():
+                    text("Remove API tokens (organization or personal)")
+
+            with tag.p():
+                text("The User can be deleted separately")
+
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(method="dialog"):
+                    with button(
+                        type="button",
+                        variant="primary",
+                        hx_post=str(request.url),
+                        hx_target="#modal",
+                    ):
+                        text("Delete")
 
 
 @router.api_route("/{id}", name="organizations:get", methods=["GET", "POST"])

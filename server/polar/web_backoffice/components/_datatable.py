@@ -1,4 +1,6 @@
 import contextlib
+import random
+import string
 import typing
 from collections.abc import Callable, Generator, Sequence
 from datetime import datetime
@@ -217,24 +219,33 @@ class DatatableActionsColumn(Generic[M], DatatableColumn[M]):
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
         item_id = getattr(item, "id")
-        with tag.details(classes="dropdown"):
-            with tag.summary(type="button", classes="btn btn-ghost m-1"):
-                with tag.div(classes="font-normal icon-ellipsis-vertical"):
-                    pass
 
-            displayed_actions = [
-                action for action in self.actions if not action.is_hidden(request, item)
-            ]
-            if not displayed_actions:
-                return None
+        displayed_actions = [
+            action for action in self.actions if not action.is_hidden(request, item)
+        ]
+        if not displayed_actions:
+            return None
 
-            with tag.ul(
-                classes="menu dropdown-content bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm",
-            ):
-                for action in displayed_actions:
-                    with tag.li():
-                        with action.render(request, item):
-                            pass
+        popover_id = "".join(random.choice(string.ascii_letters) for i in range(6))
+        with tag.button(
+            classes="btn btn-ghost m-1",
+            style=f"anchor-name:--anchor-{popover_id}",
+            popovertarget=f"popover-{popover_id}",
+        ):
+            with tag.div(classes="font-normal icon-ellipsis-vertical"):
+                pass
+
+        with tag.ul(
+            classes="dropdown menu w-52 rounded-box bg-base-100 shadow-sm",
+            popover=True,
+            id=f"popover-{popover_id}",
+            style=f"position-anchor:--anchor-{popover_id}",
+        ):
+            for action in displayed_actions:
+                with tag.li():
+                    with action.render(request, item):
+                        pass
+
         return None
 
 

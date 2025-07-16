@@ -94,15 +94,15 @@ const MeterFilterInput: React.FC<{
             {isFilterClause(
               clause as unknown as schemas['Filter'] | schemas['FilterClause'],
             ) ? (
-              <div className="flex w-full flex-row items-center gap-x-2">
+              <div className="flex w-full flex-row items-start gap-x-2">
                 <div
                   className={twMerge(
-                    'text-muted-foreground flex w-8 items-center justify-center',
+                    'text-muted-foreground flex h-10 w-8 items-center justify-center',
                   )}
                 >
                   {index === 0 ? '•' : conjunction}
                 </div>
-                <div className="grid grow grid-cols-3 gap-x-2">
+                <div className="grid grow grid-cols-[1fr_1fr_1fr_auto] items-start gap-x-2">
                   <FormField
                     control={control}
                     name={`${prefix}.clauses.${index}.property`}
@@ -150,6 +150,7 @@ const MeterFilterInput: React.FC<{
                               )}
                             </SelectContent>
                           </Select>
+                          <FormMessage />
                         </FormItem>
                       )
                     }}
@@ -164,7 +165,7 @@ const MeterFilterInput: React.FC<{
                       const mostCommonEventName = eventNames?.[0]?.name
 
                       return (
-                        <FormItem className="flex grow flex-row items-center gap-x-2 space-y-0">
+                        <FormItem className="grow">
                           <FormControl>
                             <Input
                               {...field}
@@ -202,16 +203,21 @@ const MeterFilterInput: React.FC<{
                       )
                     }}
                   />
+                  <div className="flex h-10 items-center">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className={twMerge(
+                        'h-8 w-8',
+                        index === 0 ? 'invisible' : '',
+                      )}
+                      onClick={() => remove(index)}
+                    >
+                      <X className="h-2 w-2" />
+                    </Button>
+                  </div>
                 </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className={twMerge('h-8 w-8', index === 0 ? 'invisible' : '')}
-                  onClick={() => remove(index)}
-                >
-                  <X className="h-2 w-2" />
-                </Button>
               </div>
             ) : (
               <div className="flex flex-col gap-4">

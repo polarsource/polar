@@ -35,6 +35,7 @@ cli = typer.Typer()
 class ProductDict(TypedDict):
     name: str
     description: str
+    price: int
     recurring: bool
 
 
@@ -95,21 +96,25 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             {
                 "name": "Premium Business Suite",
                 "description": "Complete business management solution",
+                "price": 25000,
                 "recurring": True,
             },
             {
                 "name": "Starter Kit",
                 "description": "Everything you need to get started",
+                "price": 5000,
                 "recurring": False,
             },
             {
                 "name": "Enterprise Dashboard",
                 "description": "Advanced analytics and reporting",
+                "price": 5000,
                 "recurring": True,
             },
             {
                 "name": "Mobile App License",
                 "description": "Mobile companion app access",
+                "price": 5000,
                 "recurring": False,
             },
         ],
@@ -117,26 +122,31 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             {
                 "name": "Widget Pro",
                 "description": "Professional-grade widget with extended warranty",
+                "price": 19900,
                 "recurring": False,
             },
             {
                 "name": "Widget Subscription",
                 "description": "Monthly widget delivery service",
+                "price": 1900,
                 "recurring": True,
             },
             {
                 "name": "Widget Kit",
                 "description": "Complete widget toolkit for professionals",
+                "price": 9900,
                 "recurring": False,
             },
             {
                 "name": "Widget Plus",
                 "description": "Enhanced widget with premium features",
+                "price": 15900,
                 "recurring": True,
             },
             {
-                "name": "Widget Maintenance",
+                "name": "Widget Support Package",
                 "description": "Annual maintenance and support",
+                "price": 5000,
                 "recurring": True,
             },
         ],
@@ -144,16 +154,19 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             {
                 "name": "Placeholder Pro",
                 "description": "Professional placeholder service",
+                "price": 9999,
                 "recurring": True,
             },
             {
                 "name": "Demo Content Pack",
                 "description": "High-quality demo content and assets",
+                "price": 1999,
                 "recurring": False,
             },
             {
                 "name": "Placeholder API",
                 "description": "RESTful API for placeholder generation",
+                "price": 5000,
                 "recurring": True,
             },
         ],
@@ -230,10 +243,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         # Create products for organization
         for product_data in products_data.get(org_data["slug"], []):
             # Create price for product
-            price_amount = random.randint(1000, 10000)  # $10-$100 in cents
             price_create = ProductPriceFixedCreate(
                 amount_type=ProductPriceAmountType.fixed,
-                price_amount=price_amount,
+                price_amount=product_data["price"],
                 price_currency="usd",
             )
 

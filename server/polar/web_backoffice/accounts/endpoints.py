@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Generator
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from pydantic import UUID4
 from tagflow import classes, tag, text
 
@@ -81,14 +81,6 @@ async def delete(
         raise HTTPException(status_code=404)
 
     if request.method == "POST":
-        if account.stripe_id:
-            await stripe.delete_account(account.stripe_id)
-            await add_toast(
-                request,
-                f"Stripe Connect account with ID {account.stripe_id} has been deleted",
-                "success",
-            )
-
         await account_service.delete(session, account)
         await add_toast(
             request,
@@ -98,7 +90,7 @@ async def delete(
 
         return
 
-    with modal(f"Delete Stripe Account {account.id}", open=True):
+    with modal(f"Delete account {account.id}", open=True):
         with tag.div(classes="flex flex-col gap-4"):
             with tag.p():
                 text("Are you sure you want to delete this account? ")
@@ -106,10 +98,74 @@ async def delete(
                 with tag.form(method="dialog"):
                     with button(ghost=True):
                         text("Cancel")
-                with button(
-                    type="button",
-                    variant="primary",
-                    hx_post=str(request.url),
-                    hx_target="#modal",
+                with tag.form(method="dialog"):
+                    with button(
+                        type="button",
+                        variant="primary",
+                        hx_post=str(request.url),
+                        hx_target="#modal",
+                    ):
+                        text("Delete")
+
+
+@router.api_route(
+    "/{id}/delete-stripe", name="accounts:delete-stripe", methods=["GET", "POST"]
+)
+async def delete_stripe(
+    request: Request,
+    id: UUID4,
+    stripe_account_id: str | None = Form(None),
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = AccountRepository.from_session(session)
+    account = await repository.get_by_id(id)
+
+    if account is None:
+        raise HTTPException(status_code=404)
+    assert account.stripe_id
+
+    if request.method == "POST":
+        if stripe_account_id != account.stripe_id:
+            await add_toast(
+                request, "You entered the Stripe Account ID incorrectly", "error"
+            )
+            return
+
+        if not await stripe.account_exists(account.stripe_id):
+            await add_toast(
+                request, f"Stripe Account ID {account.stripe_id} doesn't exist", "error"
+            )
+            return
+
+        await stripe.delete_account(account.stripe_id)
+        await add_toast(
+            request,
+            f"Stripe Connect account with ID {account.stripe_id} has been deleted",
+            "success",
+        )
+
+        return
+
+    with modal(f"Delete Stripe Connect account {account.id}", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.form(hx_post=str(request.url), hx_target="#modal"):
+                with tag.p():
+                    with tag.span():
+                        text(
+                            f"Are you sure you want to delete this Stripe Connect account? Write in {account.stripe_id} below to confirm:"
+                        )
+                with tag.input(
+                    type="text",
+                    classes="input",
+                    name="stripe_account_id",
+                    placeholder=f"{account.stripe_id}",
                 ):
-                    text("Delete")
+                    pass
+                with tag.div(classes="modal-action"):
+                    with tag.form(method="dialog"):
+                        with button(ghost=True):
+                            text("Cancel")
+                    with tag.input(
+                        type="submit", classes="btn btn-primary", value="Delete"
+                    ):
+                        pass

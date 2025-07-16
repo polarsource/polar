@@ -90,6 +90,13 @@ class StripeService:
             obj["business_profile"] = {"name": name}
         await stripe_lib.Account.modify_async(id, **obj)
 
+    async def account_exists(self, id: str) -> bool:
+        try:
+            account = await stripe_lib.Account.retrieve_async(id)
+            return bool(account)
+        except stripe_lib.PermissionError:
+            return False
+
     async def delete_account(self, id: str) -> stripe_lib.Account:
         # TODO: Check if this fails when account balance is non-zero
         return await stripe_lib.Account.delete_async(id)

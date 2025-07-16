@@ -2671,9 +2671,23 @@ class TestConfirm:
     @pytest.mark.parametrize(
         "customer_billing_address,expected_tax_metadata",
         [
-            ({"country": "FR"}, {"tax_country": "FR"}),
             (
-                {"country": "CA", "state": "CA-QC"},
+                {
+                    "line1": "123 Main St",
+                    "postal_code": "75001",
+                    "city": "Paris",
+                    "country": "FR",
+                },
+                {"tax_country": "FR"},
+            ),
+            (
+                {
+                    "line1": "456 Oak Ave",
+                    "postal_code": "H2Y 1C6",
+                    "city": "Quebec",
+                    "state": "CA-QC",
+                    "country": "CA",
+                },
                 {"tax_country": "CA", "tax_state": "QC"},
             ),
         ],
@@ -3094,6 +3108,74 @@ class TestConfirm:
         assert checkout.customer == customer
         assert checkout.customer.email == customer.email
 
+    async def test_setup_intent_address_validation(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_discount_percentage_100: Checkout,
+    ) -> None:
+        # Test that address validation works for setup intents (first month free)
+        # where is_payment_required is False but is_payment_form_required is True
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        # Verify this is a setup intent scenario
+        assert checkout_discount_percentage_100.is_payment_required is False
+        assert checkout_discount_percentage_100.is_payment_setup_required is True
+        assert checkout_discount_percentage_100.is_payment_form_required is True
+
+        # Test that confirmation fails without billing address
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.confirm(
+                session,
+                locker,
+                auth_subject,
+                checkout_discount_percentage_100,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        # Missing billing address
+                    }
+                ),
+            )
+
+        errors = e.value.errors()
+        error_locations = {error["loc"] for error in errors}
+        assert ("body", "customer_billing_address") in error_locations
+
+        # Test that confirmation succeeds with complete billing address
+        checkout = await checkout_service.confirm(
+            session,
+            locker,
+            auth_subject,
+            checkout_discount_percentage_100,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {
+                        "line1": "123 Main St",
+                        "postal_code": "12345",
+                        "city": "New York",
+                        "state": "US-NY",
+                        "country": "US",
+                    },
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        stripe_service_mock.create_setup_intent.assert_called_once()
+
 
 @pytest.mark.asyncio
 class TestHandleSuccess:
@@ -3213,3 +3295,35 @@ class TestHandleFailure:
             await discount_redemption_repository.get_by_id(discount_redemption.id)
             is None
         )
+
+    async def test_valid_calculate_tax(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        calculate_tax_mock: AsyncMock,
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        calculate_tax_mock.return_value = {
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": 100,
+            "taxability_reason": TaxabilityReason.standard_rated,
+            "tax_rate": {},
+        }
+
+        price = product_one_time.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutPriceCreate(
+                product_price_id=price.id,
+                customer_billing_address=Address.model_validate({"country": "FR"}),
+            ),
+            auth_subject,
+        )
+
+        assert checkout.tax_amount == 100
+        assert checkout.tax_processor_id == "TAX_PROCESSOR_ID"
+        assert checkout.customer_billing_address is not None
+        assert checkout.customer_billing_address.country == "FR"

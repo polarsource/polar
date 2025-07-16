@@ -800,7 +800,7 @@ class CheckoutService:
         if (
             checkout.require_billing_address
             or checkout.is_business_customer
-            or checkout.is_payment_form_required
+            or (checkout.is_payment_setup_required and not checkout.is_payment_required)
         ):
             if (
                 checkout.customer_billing_address is None

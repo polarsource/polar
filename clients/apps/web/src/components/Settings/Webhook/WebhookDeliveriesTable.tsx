@@ -96,6 +96,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
   })
 
   const deliveries: DeliveryRow[] = deliveriesHook.data?.items || []
+  const rowCount = deliveriesHook.data?.pagination.total_count ?? 0
   const pageCount = deliveriesHook.data?.pagination.max_page ?? 1
 
   const columns: DataTableColumnDef<DeliveryRow>[] = [
@@ -202,6 +203,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
         <DataTable
           columns={columns}
           data={deliveries}
+          rowCount={rowCount}
           pageCount={pageCount}
           pagination={pagination}
           onPaginationChange={setPagination}

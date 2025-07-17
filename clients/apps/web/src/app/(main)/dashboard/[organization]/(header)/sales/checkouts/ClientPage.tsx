@@ -163,6 +163,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   })
 
   const checkouts = checkoutsHook.data?.items || []
+  const rowCount = checkoutsHook.data?.pagination.total_count ?? 0
   const pageCount = checkoutsHook.data?.pagination.max_page ?? 1
 
   const columns: DataTableColumnDef<schemas['Checkout']>[] = [
@@ -251,6 +252,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <DataTable
           columns={columns}
           data={checkouts}
+          rowCount={rowCount}
           pageCount={pageCount}
           pagination={pagination}
           onPaginationChange={setPagination}

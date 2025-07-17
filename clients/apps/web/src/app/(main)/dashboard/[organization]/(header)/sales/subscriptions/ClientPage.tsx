@@ -148,6 +148,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   })
 
   const subscriptions = subscriptionsHook.data?.items || []
+  const rowCount = subscriptionsHook.data?.pagination.total_count ?? 0
   const pageCount = subscriptionsHook.data?.pagination.max_page ?? 1
 
   const selectedSubscription = subscriptions.find(
@@ -298,6 +299,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <DataTable
             columns={columns}
             data={subscriptions}
+            rowCount={rowCount}
             pageCount={pageCount}
             pagination={pagination}
             onPaginationChange={setPagination}

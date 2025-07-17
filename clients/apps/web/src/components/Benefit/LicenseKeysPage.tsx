@@ -216,6 +216,7 @@ export const LicenseKeysPage = ({
           <h2 className="text-xl">License Keys</h2>
           <LicenseKeysList
             isLoading={isLoading}
+            rowCount={licenseKeys?.pagination.total_count ?? 0}
             pageCount={licenseKeys?.pagination.max_page ?? 1}
             licenseKeys={licenseKeys?.items ?? []}
             pagination={pagination}

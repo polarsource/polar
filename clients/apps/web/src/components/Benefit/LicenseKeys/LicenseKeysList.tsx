@@ -17,6 +17,7 @@ import { twMerge } from 'tailwind-merge'
 
 export interface LicenseKeysListProps {
   licenseKeys: schemas['LicenseKeyRead'][]
+  rowCount: number
   pageCount: number
   pagination: PaginationState
   setPagination: OnChangeFn<PaginationState>
@@ -29,6 +30,7 @@ export interface LicenseKeysListProps {
 
 export const LicenseKeysList = ({
   licenseKeys,
+  rowCount,
   pageCount,
   pagination,
   setPagination,
@@ -102,6 +104,7 @@ export const LicenseKeysList = ({
     <DataTable
       columns={columns}
       data={licenseKeys}
+      rowCount={rowCount}
       pageCount={pageCount}
       pagination={pagination}
       onPaginationChange={setPagination}

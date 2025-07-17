@@ -105,7 +105,7 @@ const CustomerCancellationModal = ({
       {...props}
       className="md:min-w-[600px]"
       modalContent={
-        <div className="flex flex-col gap-y-6 p-12">
+        <div className="flex flex-col gap-y-6 p-6 sm:p-12">
           <div className="flex flex-col gap-y-2">
             <h3 className="text-2xl">We&apos;re sorry to see you go!</h3>
             <p className="dark:text-polar-500 text-balance leading-relaxed text-gray-500">
@@ -167,7 +167,7 @@ const CustomerCancellationModal = ({
                 control={control}
                 name="cancellation_comment"
                 render={({ field }) => (
-                  <FormItem className="mt-8">
+                  <FormItem className="mt-6">
                     <FormControl>
                       <TextArea
                         {...field}
@@ -179,7 +179,7 @@ const CustomerCancellationModal = ({
                   </FormItem>
                 )}
               />
-              <div className="flex flex-row gap-x-4 pt-6">
+              <div className="flex flex-col gap-4 pt-6 sm:flex-row">
                 <Button
                   type="submit"
                   variant="destructive"

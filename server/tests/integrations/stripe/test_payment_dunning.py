@@ -24,7 +24,7 @@ from tests.fixtures.random_objects import (
 
 
 @pytest.fixture
-def stripe_charge():
+def stripe_charge() -> stripe_lib.Charge:
     return stripe_lib.Charge(
         id="ch_test_123",
         object="charge",
@@ -36,7 +36,7 @@ def stripe_charge():
 
 
 @pytest.fixture
-def stripe_payment_intent():
+def stripe_payment_intent() -> stripe_lib.PaymentIntent:
     return stripe_lib.PaymentIntent(
         id="pi_test_123",
         object="payment_intent",

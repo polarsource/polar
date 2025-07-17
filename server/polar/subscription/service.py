@@ -1407,5 +1407,30 @@ class SubscriptionService:
         result = await session.execute(statement)
         return result.scalars().all()
 
+    async def mark_past_due(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> Subscription:
+        """Mark a subscription as past due. Main use case is to set it when payment fails."""
+
+        previous_status = subscription.status
+        previous_ends_at = subscription.ends_at
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.update(
+            subscription, update_dict={"status": SubscriptionStatus.past_due}
+        )
+
+        # Trigger subscription updated events
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=previous_status,
+            previous_ends_at=previous_ends_at,
+        )
+        # Cancel all grants for this subscription
+        await self.enqueue_benefits_grants(session, subscription)
+
+        return subscription
+
 
 subscription = SubscriptionService()

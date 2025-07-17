@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, call
 import pytest
 import pytest_asyncio
 import stripe as stripe_lib
+from freezegun import freeze_time
 from pytest_mock import MockerFixture
 from sqlalchemy.util.typing import TypeAlias
 
@@ -1475,3 +1476,34 @@ async def test_send_confirmation_email(
             await subscription_service.send_confirmation_email(session, subscription)
 
         await watch_email(_send_confirmation_email, email_sender.path)
+
+
+@pytest.mark.asyncio
+class TestSubscriptionServiceDunning:
+    """Test subscription service dunning functionality"""
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_mark_past_due(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        # Set subscription to active status initially
+        subscription.status = SubscriptionStatus.active
+        await save_fixture(subscription)
+
+        result_subscription = await subscription_service.mark_past_due(
+            session, subscription
+        )
+
+        # Verify subscription status was updated to past_due
+        assert result_subscription.status == SubscriptionStatus.past_due
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="revoke",
+            customer_id=subscription.customer.id,
+            product_id=subscription.product.id,
+            subscription_id=subscription.id,
+        )

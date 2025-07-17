@@ -269,6 +269,16 @@ class Settings(BaseSettings):
         ".well-known",
     ]
 
+    # Dunning Configuration
+    DUNNING_FIRST_RETRY_DELAY: timedelta = timedelta(days=3)
+    DUNNING_RETRY_INTERVALS: list[timedelta] = [
+        timedelta(days=2),  # First retry after 2 days
+        timedelta(days=8),  # Second retry after 10 days (2 + 8)
+        timedelta(days=6),  # Third retry after 14 days (2 + 8 + 6)
+        timedelta(days=5),  # Fourth retry after 21 days (2 + 8 + 6 + 5)
+    ]
+    DUNNING_MAX_RETRIES: int = 4
+
     model_config = SettingsConfigDict(
         env_prefix="polar_",
         env_file_encoding="utf-8",

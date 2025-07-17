@@ -636,7 +636,7 @@ class TestGetMetrics:
         assert jun_15.new_subscriptions_revenue == 0
         assert jun_15.renewed_subscriptions == 0
         assert jun_15.renewed_subscriptions_revenue == 0
-        assert jun_15.active_subscriptions == 2
+        assert jun_15.active_subscriptions == 1
         assert jun_15.monthly_recurring_revenue == 0
 
         jun_16 = metrics.periods[167]
@@ -668,8 +668,8 @@ class TestGetMetrics:
         Tricky case: how a subscription that was canceled during the interval should be
         counted?
 
-        In the current implementation, the subscription is counted as if it was active
-        the whole interval.
+        In the current implementation, the subscription is not counted if it was canceled
+        during the interval.
 
         This behavior can be tweaked by changing the comparison from `>` to `>=` in the
         `get_active_subscriptions_cte` query.
@@ -703,11 +703,11 @@ class TestGetMetrics:
         assert jan.average_order_value == 0
         assert jan.one_time_products == 0
         assert jan.one_time_products_revenue == 0
-        assert jan.new_subscriptions == 1
+        assert jan.new_subscriptions == 0
         assert jan.new_subscriptions_revenue == 0
         assert jan.renewed_subscriptions == 0
         assert jan.renewed_subscriptions_revenue == 0
-        assert jan.active_subscriptions == 1
+        assert jan.active_subscriptions == 0
         assert jan.monthly_recurring_revenue == 0
 
         feb = metrics.periods[1]

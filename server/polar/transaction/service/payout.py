@@ -1,3 +1,5 @@
+import asyncio
+import random
 from collections.abc import Iterable
 from typing import cast
 
@@ -33,6 +35,13 @@ class UnmatchingTransfersAmount(PayoutTransactionError):
             f"Difference: {payout_amount - transfers_amount}"
         )
         super().__init__(message)
+
+
+class TransferError(PayoutTransactionError):
+    def __init__(self) -> None:
+        super().__init__(
+            "An error occurred while creating the transfer. Please contact us."
+        )
 
 
 class PayoutTransactionService(BaseTransactionService):
@@ -171,76 +180,121 @@ class PayoutTransactionService(BaseTransactionService):
             transaction.account_amount = 0
 
         # Make individual transfers with the payment transaction as source
-        assert account.stripe_id is not None
+        transfer_tasks: list[asyncio.Task[tuple[Transaction, int | None]]] = []
         for source_transaction, amount, balance_transaction in transfers:
-            if balance_transaction.transfer_id is None:
-                stripe_transfer = await stripe_service.transfer(
-                    account.stripe_id,
+            task = asyncio.create_task(
+                self._create_stripe_transfer(
+                    account,
+                    transaction,
+                    {
+                        "payout_id": str(payout.id),
+                        "payout_transaction_id": str(transaction.id),
+                    },
+                    source_transaction,
                     amount,
-                    source_transaction=source_transaction,
-                    metadata={
-                        "payout_id": str(payout.id),
-                        "payout_transaction_id": str(transaction.id),
-                    },
+                    balance_transaction,
                 )
-                balance_transaction.transfer_id = stripe_transfer.id
+            )
+            transfer_tasks.append(task)
 
-                # Immediately commit the transfer_id: it's now effective in Stripe,
-                # we don't want to lose it
-                session.add(balance_transaction)
-                await session.commit()
-            # Case where the transfer has already been made
-            # Legacy behavior from the time when we automatically
-            # transferred each balance
-            else:
-                stripe_transfer = await stripe_service.get_transfer(
-                    balance_transaction.transfer_id
+        transfer_results = await asyncio.gather(*transfer_tasks, return_exceptions=True)
+        error = False
+        for transfer_result in transfer_results:
+            if isinstance(transfer_result, BaseException):
+                log.error(
+                    "Error while creating transfer",
+                    error=transfer_result,
+                    account_id=account.id,
+                    payout_id=payout.id,
+                    transaction_id=transaction.id,
                 )
-                await stripe_service.update_transfer(
-                    stripe_transfer.id,
-                    metadata={
-                        "payout_id": str(payout.id),
-                        "payout_transaction_id": str(transaction.id),
-                    },
-                )
+                error = True
+                continue
 
-            # Different source and destination currencies: get the converted amount
+            balance_transaction, transfer_account_amount = transfer_result
+            session.add(balance_transaction)
             if transaction.currency != transaction.account_currency:
-                assert stripe_transfer.destination_payment is not None
-                stripe_destination_charge = await stripe_service.get_charge(
-                    get_expandable_id(stripe_transfer.destination_payment),
-                    stripe_account=account.stripe_id,
-                    expand=["balance_transaction"],
-                )
+                assert transfer_account_amount is not None
+                transaction.account_amount -= transfer_account_amount
 
-                # Case where the charge don't lead to a balance transaction,
-                # e.g. when the converted amount is 0
-                if stripe_destination_charge.balance_transaction is None:
-                    balance_transaction_amount = 0
-                else:
-                    stripe_destination_balance_transaction = cast(
-                        stripe_lib.BalanceTransaction,
-                        stripe_destination_charge.balance_transaction,
-                    )
-                    balance_transaction_amount = (
-                        stripe_destination_balance_transaction.amount
-                    )
-
-                transaction.account_amount -= balance_transaction_amount
-
-                log.info(
-                    (
-                        "Source and destination currency don't match. "
-                        "A conversion has been done by Stripe."
-                    ),
-                    source_currency=transaction.currency,
-                    destination_currency=transaction.account_currency,
-                    source_amount=amount,
-                    destination_amount=balance_transaction_amount,
-                    account_id=str(account.id),
-                )
+        if error:
+            # Put the account under review to make sure the user doesn't try to create another payout
+            # since we'll need a manual operation to fix the issue
+            account.status = Account.Status.UNDER_REVIEW
+            session.add(account)
+            # Commit, because we don't want to lose the transfers we created
+            await session.commit()
+            raise TransferError()
 
         return transaction
+
+    async def _create_stripe_transfer(
+        self,
+        account: Account,
+        transaction: Transaction,
+        metadata: dict[str, str],
+        source_transaction: str,
+        amount: int,
+        balance_transaction: Transaction,
+        *,
+        retry: int = 0,
+    ) -> tuple[Transaction, int | None]:
+        try:
+            # We use a semaphore to limit the number of concurrent requests to Stripe
+            async with asyncio.Semaphore(32):
+                if balance_transaction.transfer_id is None:
+                    assert account.stripe_id is not None
+                    stripe_transfer = await stripe_service.transfer(
+                        account.stripe_id,
+                        amount,
+                        source_transaction=source_transaction,
+                        metadata=metadata,
+                    )
+                    balance_transaction.transfer_id = stripe_transfer.id
+                # Case where the transfer has already been made
+                # Legacy behavior from the time when we automatically
+                # transferred each balance
+                else:
+                    stripe_transfer = await stripe_service.get_transfer(
+                        balance_transaction.transfer_id
+                    )
+                    await stripe_service.update_transfer(
+                        stripe_transfer.id, metadata=metadata
+                    )
+
+                # Different source and destination currencies: get the converted amount
+                account_amount: int | None = None
+                if transaction.currency != transaction.account_currency:
+                    assert stripe_transfer.destination_payment is not None
+                    stripe_destination_charge = await stripe_service.get_charge(
+                        get_expandable_id(stripe_transfer.destination_payment),
+                        stripe_account=account.stripe_id,
+                        expand=["balance_transaction"],
+                    )
+
+                    # Case where the charge don't lead to a balance transaction,
+                    # e.g. when the converted amount is 0
+                    if stripe_destination_charge.balance_transaction is None:
+                        account_amount = 0
+                    else:
+                        stripe_destination_balance_transaction = cast(
+                            stripe_lib.BalanceTransaction,
+                            stripe_destination_charge.balance_transaction,
+                        )
+                        account_amount = stripe_destination_balance_transaction.amount
+
+                return balance_transaction, account_amount
+        except stripe_lib.RateLimitError:
+            await asyncio.sleep(retry + random.random())
+            return await self._create_stripe_transfer(
+                account,
+                transaction,
+                metadata,
+                source_transaction,
+                amount,
+                balance_transaction,
+                retry=retry + 1,
+            )
 
 
 payout_transaction = PayoutTransactionService(Transaction)

@@ -1,10 +1,7 @@
-import uuid
 from datetime import timedelta
 
 import pytest
-import stripe as stripe_lib
 from freezegun import freeze_time
-from pytest_mock import MockerFixture
 
 from polar.integrations.stripe.payment import handle_failure
 from polar.kit.db.postgres import AsyncSession
@@ -21,36 +18,12 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_order,
 )
-
-
-@pytest.fixture
-def stripe_charge() -> stripe_lib.Charge:
-    return stripe_lib.Charge(
-        id="ch_test_123",
-        object="charge",
-        amount=2000,
-        currency="usd",
-        status="failed",
-        metadata={"checkout_id": str(uuid.uuid4())},
-    )
-
-
-@pytest.fixture
-def stripe_payment_intent() -> stripe_lib.PaymentIntent:
-    return stripe_lib.PaymentIntent(
-        id="pi_test_123",
-        object="payment_intent",
-        amount=2000,
-        currency="usd",
-        status="requires_payment_method",
-        metadata={"checkout_id": str(uuid.uuid4())},
-    )
+from tests.fixtures.stripe import build_stripe_charge
 
 
 @pytest.mark.asyncio
-class TestDunningIntegration:
-    """Integration tests for dunning functionality.
-    Dunning is the process of retrying failed payments for subscriptions. The subscription
+class TestHandleFailure:
+    """Integration tests for the failed payment. If it's an order, the subscription
     will be marked as past due, benefits will be revoked, and the order will have its next
     payment attempt scheduled."""
 
@@ -62,8 +35,6 @@ class TestDunningIntegration:
         subscription: Subscription,
         customer: Customer,
         product: Product,
-        stripe_charge: stripe_lib.Charge,
-        mocker: MockerFixture,
     ) -> None:
         """Test the complete dunning flow with actual repository calls"""
         # Given
@@ -78,14 +49,16 @@ class TestDunningIntegration:
         order.subscription.stripe_subscription_id = None
         await save_fixture(order)
 
-        mocker.patch(
-            "polar.integrations.stripe.payment.resolve_checkout", return_value=None
-        )
-        mocker.patch(
-            "polar.integrations.stripe.payment.resolve_order", return_value=order
-        )
-        mocker.patch(
-            "polar.integrations.stripe.payment.payment_service.upsert_from_stripe_charge"
+        # Create stripe charge with order_id metadata
+        stripe_charge = build_stripe_charge(
+            status="failed",
+            amount=2000,
+            metadata={"order_id": str(order.id)},
+            billing_details={"email": "test@example.com"},
+            payment_method_details={
+                "card": {"brand": "visa", "last4": "4242"},
+                "type": "card",
+            },
         )
 
         # When

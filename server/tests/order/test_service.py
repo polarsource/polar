@@ -1262,8 +1262,8 @@ class TestHandlePayment:
 
 
 @pytest.mark.asyncio
-class TestOrderServiceDunning:
-    """Test order service dunning functionality"""
+class TestHandlePaymentFailure:
+    """Test order service handle payment failure functionality"""
 
     @freeze_time("2024-01-01 12:00:00")
     async def test_handle_payment_failure_subscription_order(

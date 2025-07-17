@@ -88,6 +88,13 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "website": "https://placeholder.com",
             "bio": "Your go-to solution for all placeholder needs.",
         },
+        {
+            "name": "Admin Org",
+            "slug": "admin-org",
+            "email": "admin@polar.sh",
+            "website": "https://polar.sh",
+            "bio": "The admin organization of Polar",
+        },
     ]
 
     # Products data for each organization

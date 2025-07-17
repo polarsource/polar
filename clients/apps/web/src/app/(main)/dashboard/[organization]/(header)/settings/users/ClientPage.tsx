@@ -9,7 +9,12 @@ import { Add } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
+import {
+  DataTable,
+  DataTableColumnDef,
+  DataTableColumnHeader,
+} from '@polar-sh/ui/components/atoms/DataTable'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { useState } from 'react'
 
 export default function ClientPage({
@@ -22,6 +27,35 @@ export default function ClientPage({
   )
   const [showInviteDialog, setShowInviteDialog] = useState(false)
 
+  const columns: DataTableColumnDef<schemas['OrganizationMember']>[] = [
+    {
+      id: 'member',
+      accessorKey: 'email',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="User" />
+      ),
+      cell: ({ row: { original: member } }) => {
+        return (
+          <div className="flex flex-row items-center gap-2">
+            <Avatar avatar_url={member.avatar_url} name={member.email} />
+            <div className="fw-medium">{member.email}</div>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: 'created_at',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Joined on" />
+      ),
+      cell: ({ row: { original: member } }) => {
+        return <FormattedDateTime datetime={member.created_at} />
+      },
+    },
+  ]
+
   return (
     <DashboardBody wide>
       <div className="flex items-center justify-between">
@@ -32,28 +66,12 @@ export default function ClientPage({
       </div>
 
       <div className="mt-8">
-        {isLoading ? (
-          <div className="text-gray-500">Loading members...</div>
-        ) : (
-          <List size="small">
-            {members?.items?.map((member, index) => (
-              <ListItem
-                key={index}
-                className="flex items-center justify-between"
-              >
-                <div className="flex items-center gap-4">
-                  <Avatar
-                    src={member.avatar_url || undefined}
-                    alt={member.email}
-                    sx={{ width: 40, height: 40 }}
-                  />
-                  <div>
-                    <div className="font-medium">{member.email}</div>
-                  </div>
-                </div>
-              </ListItem>
-            )) || <div className="text-gray-500">No members found</div>}
-          </List>
+        {members && (
+          <DataTable
+            columns={columns}
+            data={members.items}
+            isLoading={isLoading}
+          />
         )}
       </div>
 

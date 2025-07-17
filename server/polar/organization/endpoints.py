@@ -8,7 +8,8 @@ from polar.models import Account, Organization
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
-from polar.user_organization.schemas import OrganizationMember
+from polar.user.service import user as user_service
+from polar.user_organization.schemas import OrganizationMember, OrganizationMemberInvite
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -214,3 +215,38 @@ async def members(
         items=[OrganizationMember.model_validate(m) for m in members],
         pagination=Pagination(total_count=len(members), max_page=1),
     )
+
+
+@router.post(
+    "/{id}/members/invite",
+    response_model=OrganizationMember,
+    tags=[APITag.private],
+    status_code=201,
+)
+async def invite_member(
+    id: OrganizationID,
+    invite_body: OrganizationMemberInvite,
+    auth_subject: auth.OrganizationsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationMember:
+    """Invite a user to join an organization."""
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    # Get or create user by email
+    user, _ = await user_service.get_by_email_or_create(session, invite_body.email)
+
+    # Add user to organization
+    await organization_service.add_user(session, organization, user)
+
+    # Get the user organization relationship to return
+    user_org = await user_organization_service.get_by_user_and_org(
+        session, user.id, organization.id
+    )
+
+    if user_org is None:
+        raise ResourceNotFound()
+
+    return OrganizationMember.model_validate(user_org)

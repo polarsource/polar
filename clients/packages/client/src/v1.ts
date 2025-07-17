@@ -584,6 +584,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/organizations/{id}/members/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite Member
+         * @description Invite a user to join an organization.
+         *
+         *     **Scopes**: `organizations:write`
+         */
+        post: operations["organizations:invite_member"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/subscriptions/": {
         parameters: {
             query?: never;
@@ -13927,6 +13949,15 @@ export interface components {
             /** Avatar Url */
             avatar_url: string | null;
         };
+        /** OrganizationMemberInvite */
+        OrganizationMemberInvite: {
+            /**
+             * Email
+             * Format: email
+             * @description Email address of the user to invite
+             */
+            email: string;
+        };
         /** OrganizationNotificationSettings */
         OrganizationNotificationSettings: {
             /** New Order */
@@ -17999,6 +18030,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListResource_OrganizationMember_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "organizations:invite_member": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationMemberInvite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationMember"];
                 };
             };
             /** @description Validation Error */

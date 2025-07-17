@@ -320,6 +320,10 @@ const organizationRoutesList = (org?: schemas['Organization']): Route[] => [
         title: 'Custom Fields',
         link: `/dashboard/${org?.slug}/settings/custom-fields`,
       },
+      {
+        title: 'Users',
+        link: `/dashboard/${org?.slug}/settings/users`,
+      },
     ],
   },
 ]

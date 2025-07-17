@@ -13922,6 +13922,12 @@ export interface components {
         };
         /** OrganizationMember */
         OrganizationMember: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description The time the OrganizationMember was creatd.
+             */
+            created_at: string;
             /** Email */
             email: string;
             /** Avatar Url */

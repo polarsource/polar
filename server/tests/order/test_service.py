@@ -1277,7 +1277,7 @@ class TestOrderServiceDunning:
     ) -> None:
         """Test that order service handles payment failure for subscription orders"""
 
-        # Create order with subscription
+        # Given
         order = await create_order(
             save_fixture,
             product=product,
@@ -1288,20 +1288,19 @@ class TestOrderServiceDunning:
         order.subscription.stripe_subscription_id = None
         await save_fixture(order)
 
-        # Mock the subscription service
         mock_mark_past_due = mocker.patch(
             "polar.subscription.service.subscription.mark_past_due"
         )
         mock_mark_past_due.return_value = subscription
 
+        # When
         result_order = await order_service.handle_payment_failure(session, order)
 
-        # Verify order was updated with retry date
+        # Then
         assert result_order.next_payment_attempt_at is not None
         expected_retry_date = utc_now() + timedelta(days=3)
         assert result_order.next_payment_attempt_at == expected_retry_date
 
-        # Verify subscription service was called
         mock_mark_past_due.assert_called_once_with(session, subscription)
 
     async def test_handle_payment_failure_stripe_subscription(
@@ -1314,7 +1313,7 @@ class TestOrderServiceDunning:
         mocker: MockerFixture,
     ) -> None:
         """Test that order service skips dunning for stripe subscription orders"""
-        # Create order without subscription
+        # Given
         order = await create_order(
             save_fixture,
             product=product,
@@ -1329,12 +1328,12 @@ class TestOrderServiceDunning:
             "polar.subscription.service.subscription.mark_past_due"
         )
 
+        # When
         result_order = await order_service.handle_payment_failure(session, order)
 
-        # Verify order was not modified
+        # Then
         assert result_order.next_payment_attempt_at is None
 
-        # Verify subscription service was not called
         mock_mark_past_due.assert_not_called()
 
     async def test_handle_payment_failure_non_subscription_order(
@@ -1346,8 +1345,7 @@ class TestOrderServiceDunning:
         mocker: MockerFixture,
     ) -> None:
         """Test that order service skips dunning for non-subscription orders"""
-
-        # Create order without subscription
+        # Given
         order = await create_order(
             save_fixture,
             product=product,
@@ -1361,12 +1359,12 @@ class TestOrderServiceDunning:
             "polar.subscription.service.subscription.mark_past_due"
         )
 
+        # When
         result_order = await order_service.handle_payment_failure(session, order)
 
-        # Verify order was not modified
+        # Then
         assert result_order.next_payment_attempt_at is None
 
-        # Verify subscription service was not called
         mock_mark_past_due.assert_not_called()
 
     @freeze_time("2024-01-01 12:00:00")
@@ -1380,7 +1378,7 @@ class TestOrderServiceDunning:
         mocker: MockerFixture,
     ) -> None:
         """Test that order service skips dunning on subsequent failures"""
-        # Create order with subscription that already has a retry attempt
+        # Given
         order = await create_order(
             save_fixture,
             product=product,
@@ -1391,15 +1389,14 @@ class TestOrderServiceDunning:
         order.next_payment_attempt_at = existing_retry_date
         await save_fixture(order)
 
-        # Mock the subscription service
         mock_mark_past_due = mocker.patch(
             "polar.subscription.service.subscription.mark_past_due"
         )
 
+        # When
         result_order = await order_service.handle_payment_failure(session, order)
 
-        # Verify order retry date was not modified
+        # Then
         assert result_order.next_payment_attempt_at == existing_retry_date
 
-        # Verify subscription service was not called
         mock_mark_past_due.assert_not_called()

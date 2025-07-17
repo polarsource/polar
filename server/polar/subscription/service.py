@@ -1410,7 +1410,8 @@ class SubscriptionService:
     async def mark_past_due(
         self, session: AsyncSession, subscription: Subscription
     ) -> Subscription:
-        """Mark a subscription as past due. Main use case is to set it when payment fails."""
+        """Mark a subscription as past due. Main use case is to set it when payment fails.
+        When this happens the customer will be notified and lose access to the benefits"""
 
         previous_status = subscription.status
         previous_ends_at = subscription.ends_at

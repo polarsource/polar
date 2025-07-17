@@ -1490,15 +1490,16 @@ class TestSubscriptionServiceDunning:
         subscription: Subscription,
         enqueue_job_mock: MagicMock,
     ) -> None:
-        # Set subscription to active status initially
+        # Given
         subscription.status = SubscriptionStatus.active
         await save_fixture(subscription)
 
+        # When
         result_subscription = await subscription_service.mark_past_due(
             session, subscription
         )
 
-        # Verify subscription status was updated to past_due
+        # Then
         assert result_subscription.status == SubscriptionStatus.past_due
         enqueue_job_mock.assert_any_call(
             "benefit.enqueue_benefits_grants",

@@ -277,7 +277,6 @@ class Settings(BaseSettings):
         timedelta(days=6),  # Third retry after 14 days (2 + 8 + 6)
         timedelta(days=5),  # Fourth retry after 21 days (2 + 8 + 6 + 5)
     ]
-    DUNNING_MAX_RETRIES: int = 4
 
     model_config = SettingsConfigDict(
         env_prefix="polar_",

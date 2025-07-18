@@ -797,11 +797,7 @@ class CheckoutService:
                     }
                 )
 
-        if (
-            checkout.require_billing_address
-            or checkout.is_business_customer
-            or (checkout.is_payment_setup_required and not checkout.is_payment_required)
-        ):
+        if checkout.require_billing_address or checkout.is_business_customer:
             if (
                 checkout.customer_billing_address is None
                 or not checkout.customer_billing_address.has_address()
@@ -1545,16 +1541,7 @@ class CheckoutService:
     async def _update_checkout_tax(
         self, session: AsyncSession, checkout: Checkout
     ) -> Checkout:
-        # For setup intents (first month free), we still need to validate the address
-        # even though no payment is currently required, because the subscription will
-        # need automatic tax enabled for future billing
-        if not (
-            (checkout.is_payment_required and checkout.product.is_tax_applicable)
-            or (
-                checkout.is_payment_setup_required
-                and checkout.product.is_tax_applicable
-            )
-        ):
+        if not (checkout.is_payment_form_required and checkout.product.is_tax_applicable):
             checkout.tax_amount = 0
             checkout.tax_processor_id = None
             return checkout

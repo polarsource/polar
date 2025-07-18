@@ -11,7 +11,7 @@ export function Button({ href, children, variant = 'primary' }: ButtonProps) {
     'px-[18px] py-[10px] rounded-lg font-medium text-white no-underline text-center block'
 
   const variantClasses = {
-    primary: 'bg-blue-600 hover:bg-blue-700',
+    primary: 'bg-brand hover:bg-brand',
     green: 'bg-green-600 hover:bg-green-700',
     red: 'bg-red-600 hover:bg-red-700',
   }

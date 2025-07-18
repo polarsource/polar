@@ -1,4 +1,5 @@
-import { Link, Preview, Section, Text } from '@react-email/components'
+import { Heading, Link, Preview, Section, Text } from '@react-email/components'
+import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
 import OrganizationHeader from '../components/OrganizationHeader'
@@ -38,23 +39,26 @@ export function SubscriptionCancellation({
     <Wrapper>
       <Preview>Your subscription to {product.name} has been canceled</Preview>
       <OrganizationHeader organization={organization} />
-      <Section>
-        <Text className="text-xl font-bold text-gray-900 dark:text-white">
+      <Section className="pt-10">
+        <Heading
+          as="h1"
+          className="text-xl font-bold text-gray-900 dark:text-white"
+        >
           Your subscription has been canceled
-        </Text>
-        <Text>
+        </Heading>
+        <BodyText>
           We're sorry to see you go! Your subscription to{' '}
           <span className="font-bold">{product.name}</span> will remain active
           until <span className="font-bold">{endDate}</span>, after which it
           will be canceled.
-        </Text>
-        <Text>
+        </BodyText>
+        <BodyText>
           If you change your mind, you can renew your subscription anytime
           before the end date.
-        </Text>
-        <Text>
+        </BodyText>
+        <BodyText>
           Meanwhile, you will continue to have access to the following benefits:
-        </Text>
+        </BodyText>
         <ul className="list-disc space-y-1 pl-6">
           {product.benefits.map((benefit, index) => (
             <li key={index}>{benefit.description}</li>

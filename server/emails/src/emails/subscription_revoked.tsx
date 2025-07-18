@@ -1,4 +1,5 @@
-import { Link, Preview, Section, Text } from '@react-email/components'
+import { Heading, Link, Preview, Section, Text } from '@react-email/components'
+import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
 import OrganizationHeader from '../components/OrganizationHeader'
@@ -25,17 +26,20 @@ export function SubscriptionRevoked({
     <Wrapper>
       <Preview>Your subscription to {product.name} has now ended</Preview>
       <OrganizationHeader organization={organization} />
-      <Section>
-        <Text className="text-xl font-bold text-gray-900 dark:text-white">
+      <Section className="pt-10">
+        <Heading
+          as="h1"
+          className="text-xl font-bold text-gray-900 dark:text-white"
+        >
           Your subscription has now ended
-        </Text>
-        <Text>
+        </Heading>
+        <BodyText>
           Thank you being a subscriber of{' '}
           <span className="font-bold">{product.name}</span>.
-        </Text>
-        <Text>
+        </BodyText>
+        <BodyText>
           We hope to see you again in the future - you're always welcome back.
-        </Text>
+        </BodyText>
       </Section>
       <Section className="my-8 text-center">
         <Button href={url}>View subscription</Button>

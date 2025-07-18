@@ -1391,6 +1391,7 @@ class SubscriptionService:
         *,
         subject_template: str,
         template_path: str,
+        extra_context: dict | None = None,
     ) -> None:
         email_renderer = get_email_renderer({"subscription": "polar.subscription"})
 
@@ -1411,18 +1412,24 @@ class SubscriptionService:
             session, customer
         )
 
+        context = {
+            "featured_organization": featured_organization,
+            "product": product,
+            "subscription": subscription,
+            "url": settings.generate_frontend_url(
+                f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
+            ),
+            "current_year": datetime.now().year,
+        }
+
+        # Add extra context if provided
+        if extra_context:
+            context.update(extra_context)
+
         subject, body = email_renderer.render_from_template(
             subject_template,
             template_path,
-            {
-                "featured_organization": featured_organization,
-                "product": product,
-                "subscription": subscription,
-                "url": settings.generate_frontend_url(
-                    f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
-                ),
-                "current_year": datetime.now().year,
-            },
+            context,
         )
 
         enqueue_email(

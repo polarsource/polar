@@ -1205,7 +1205,7 @@ class SubscriptionService:
 
         # Revokation both cancels & revokes simultaneously.
         # Send webhook for both, but avoid duplicate email to customers.
-        if revoked:
+        if not revoked:
             await self.send_cancellation_email(session, subscription)
 
     async def _on_subscription_revoked(

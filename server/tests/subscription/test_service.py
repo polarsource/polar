@@ -43,6 +43,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection
 from polar.models.checkout import CheckoutStatus
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import (
@@ -66,6 +67,7 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_canceled_subscription,
     create_checkout,
+    create_discount,
     create_event,
     create_meter,
     create_product,
@@ -529,6 +531,42 @@ class TestCycle:
         billing_entry = billing_entries[0]
         assert billing_entry.amount == 0
         assert billing_entry.currency == subscription.currency
+
+    async def test_discount_repetition(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amount=1000,
+            currency="usd",
+            duration=DiscountDuration.repeating,
+            duration_in_months=3,
+            organization=organization,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+
+        second_month_subscription = await subscription_service.cycle(
+            session, subscription
+        )
+        assert second_month_subscription.discount == discount
+
+        third_month_subscription = await subscription_service.cycle(
+            session, second_month_subscription
+        )
+        assert third_month_subscription.discount == discount
+
+        fourth_month_subscription = await subscription_service.cycle(
+            session, third_month_subscription
+        )
+        assert fourth_month_subscription.discount is None
 
 
 @pytest.mark.asyncio

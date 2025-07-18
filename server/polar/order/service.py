@@ -601,9 +601,10 @@ class OrderService:
 
         subtotal_amount = sum(item.amount for item in items)
 
-        # TODO: Discount handling
+        discount = subscription.discount
         discount_amount = 0
-        discount = None
+        if discount is not None:
+            discount_amount = discount.get_discount_amount(subtotal_amount)
 
         # Calculate tax
         tax_amount = 0
@@ -621,7 +622,7 @@ class OrderService:
             tax_calculation = await calculate_tax(
                 order_id,
                 subscription.currency,
-                subtotal_amount,
+                subtotal_amount - discount_amount,
                 product.stripe_product_id,
                 billing_address,
                 [tax_id] if tax_id is not None else [],

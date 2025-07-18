@@ -33,7 +33,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.checkout import CheckoutStatus
-from polar.models.discount import DiscountFixed
+from polar.models.discount import DiscountDuration, DiscountFixed, DiscountType
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.organization import Organization
 from polar.models.product import ProductBillingType
@@ -66,6 +66,7 @@ from tests.fixtures.random_objects import (
     create_billing_entry,
     create_checkout,
     create_customer,
+    create_discount,
     create_order,
     create_payment,
     create_subscription,
@@ -705,6 +706,57 @@ class TestCreateSubscriptionOrder:
             "order.trigger_payment",
             order_id=order.id,
             payment_method_id=subscription.payment_method_id,
+        )
+
+    async def test_cycle_discount(
+        self,
+        calculate_tax_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        await create_billing_entry(
+            save_fixture,
+            customer=subscription.customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        assert order.discount == discount
+        assert order.discount_amount == price.price_amount / 2
+        assert order.net_amount == order.subtotal_amount - order.discount_amount
+
+        calculate_tax_mock.assert_called_once_with(
+            order.id,
+            subscription.currency,
+            order.net_amount,
+            product.stripe_product_id,
+            customer.billing_address,
+            [],
         )
 
 

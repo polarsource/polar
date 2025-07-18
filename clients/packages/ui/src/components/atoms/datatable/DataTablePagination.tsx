@@ -52,7 +52,9 @@ export function DataTablePagination<TData>({
         </Select>
       </div>
       <div className="flex flex-1 items-center justify-start text-sm font-medium sm:w-[100px] sm:flex-none sm:justify-center">
-        Viewing {startItem}-{endItem} of {table.getRowCount()}
+        {startItem === 1 && endItem === table.getRowCount()
+            ? `Viewing all ${table.getRowCount()} records`
+            : `Viewing ${startItem}-${endItem} of ${table.getRowCount()}`}
       </div>
       <div className="flex items-center justify-end gap-2">
         <Button

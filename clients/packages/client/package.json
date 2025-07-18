@@ -27,7 +27,7 @@
     "access": "public"
   },
   "dependencies": {
-    "openapi-fetch": "^0.13.4",
+    "openapi-fetch": "^0.14.0",
     "openapi-typescript-helpers": "^0.0.15"
   }
 }

@@ -6,7 +6,8 @@ from typing import Annotated, Literal
 from babel.numbers import format_currency
 from pydantic import UUID4, BaseModel, Discriminator, computed_field
 
-from polar.email.renderer import get_email_renderer
+from polar.email.react import render_email_template
+from polar.kit.html import dangerously_strip_tags
 from polar.kit.schemas import Schema
 
 
@@ -30,10 +31,13 @@ class NotificationPayloadBase(BaseModel):
         pass
 
     def render(self) -> tuple[str, str]:
-        email_renderer = get_email_renderer()
-        return email_renderer.render_from_string(
-            self.subject(), self.body(), self.model_dump()
-        )
+        bodyHTML = self.body()
+        context = {
+            **self.model_dump(),
+            "bodyHTML": bodyHTML,
+            "preview": dangerously_strip_tags(bodyHTML),
+        }
+        return self.subject(), render_email_template("notification_generic", context)
 
 
 class NotificationBase(Schema):

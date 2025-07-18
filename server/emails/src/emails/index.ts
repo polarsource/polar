@@ -2,6 +2,7 @@ import { CustomerSessionCode } from './customer_session_code'
 import { EmailUpdate } from './email_update'
 import { LoginCode } from './login_code'
 import { MagicLink } from './magic_link'
+import { NotificationGeneric } from './notification_generic'
 import { OAuth2LeakedClient } from './oauth2_leaked_client'
 import { OAuth2LeakedToken } from './oauth2_leaked_token'
 import { OrderConfirmation } from './order_confirmation'
@@ -26,6 +27,7 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   subscription_confirmation: SubscriptionConfirmation,
   subscription_revoked: SubscriptionRevoked,
   subscription_uncanceled: SubscriptionUncanceled,
+  notification_generic: NotificationGeneric,
 }
 
 export default TEMPLATES

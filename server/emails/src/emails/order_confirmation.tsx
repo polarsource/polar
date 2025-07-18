@@ -60,7 +60,7 @@ export function OrderConfirmation({
 
 OrderConfirmation.PreviewProps = {
   organization: {
-    name: 'Acme Inc',
+    name: 'Acme Inc.',
     slug: 'acme-inc',
   },
   product: {

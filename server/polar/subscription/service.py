@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Literal, cast, overload
+from typing import Any, Literal, cast, overload
 
 import stripe as stripe_lib
 import structlog
@@ -1391,7 +1391,7 @@ class SubscriptionService:
         *,
         subject_template: str,
         template_path: str,
-        extra_context: dict | None = None,
+        extra_context: dict[str, Any] | None = None,
     ) -> None:
         email_renderer = get_email_renderer({"subscription": "polar.subscription"})
 

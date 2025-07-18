@@ -295,7 +295,7 @@ async def get(
 ) -> Any:
     repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(
-        id, options=(joinedload(Organization.account),)
+        id, options=(joinedload(Organization.account),), include_blocked=True
     )
 
     if organization is None:

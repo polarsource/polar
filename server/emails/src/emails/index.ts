@@ -2,7 +2,11 @@ import { CustomerSessionCode } from './customer_session_code'
 import { EmailUpdate } from './email_update'
 import { LoginCode } from './login_code'
 import { MagicLink } from './magic_link'
-import { NotificationGeneric } from './notification_generic'
+import { NotificationAccountReviewed } from './notification_account_reviewed'
+import { NotificationAccountUnderReview } from './notification_account_under_review'
+import { NotificationCreateAccount } from './notification_create_account'
+import { NotificationNewSale } from './notification_new_sale'
+import { NotificationNewSubscription } from './notification_new_subscription'
 import { OAuth2LeakedClient } from './oauth2_leaked_client'
 import { OAuth2LeakedToken } from './oauth2_leaked_token'
 import { OrderConfirmation } from './order_confirmation'
@@ -27,7 +31,11 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   subscription_confirmation: SubscriptionConfirmation,
   subscription_revoked: SubscriptionRevoked,
   subscription_uncanceled: SubscriptionUncanceled,
-  notification_generic: NotificationGeneric,
+  notification_under_review: NotificationAccountUnderReview,
+  notification_account_reviewed: NotificationAccountReviewed,
+  notification_new_sale: NotificationNewSale,
+  notification_new_subscription: NotificationNewSubscription,
+  notification_create_account: NotificationCreateAccount,
 }
 
 export default TEMPLATES

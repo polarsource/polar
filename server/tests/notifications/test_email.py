@@ -1,10 +1,9 @@
 import inspect
 import os
+import re
 
 import pytest
 
-from polar.kit import template
-from polar.kit.utils import utc_now
 from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
@@ -23,14 +22,13 @@ async def check_diff(email: tuple[str, str]) -> None:
     name = inspect.stack()[1].function
 
     if record:
-        with open(f"./tests/notifications/testdata/{name}.html", "w+") as f:
+        with open(f"./tests/notifications/testdata/{name}.html", "w") as f:
             f.write(expected)
             return
+    else:
+        with open(f"./tests/notifications/testdata/{name}.html") as f:
+            content = f.read()
 
-    content = template.render(
-        template.path(__file__, f"testdata/{name}.html"),
-        year=str(utc_now().year),
-    )
     assert content == expected
 
 
@@ -98,3 +96,33 @@ async def test_injection_payloads(payload: NotificationPayloadBase) -> None:
     assert str(123456 * 9) not in body
 
     assert "{{ 123456 * 9 }}" in body
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "payload",
+    [
+        MaintainerNewProductSaleNotificationPayload(
+            customer_name="John Doe",
+            product_name="Ice cream sandwich",
+            product_price_amount=500,
+            organization_name="Ice Cream Van",
+        ),
+        MaintainerCreateAccountNotificationPayload(
+            organization_name="John Doe",
+            url="https://example.com/url",
+        ),
+        MaintainerNewPaidSubscriptionNotificationPayload(
+            subscriber_name="John Doe",
+            tier_name="ColdMail Premium",
+            tier_price_amount=500,
+            tier_organization_name="ColdMail",
+            tier_price_recurring_interval="month",
+        ),
+    ],
+)
+async def test_no_leftover_placeholders(payload: NotificationPayloadBase) -> None:
+    subject, body = payload.render()
+
+    assert re.search(r"{ ?[^\s}]+ ?}", subject) is None
+    assert re.search(r"{ ?[^\s}]+ ?}", body) is None

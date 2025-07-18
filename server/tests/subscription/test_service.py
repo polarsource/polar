@@ -1479,7 +1479,7 @@ async def test_send_confirmation_email(
 
 
 @pytest.mark.asyncio
-class TestSubscriptionServiceDunning:
+class TestMarkPastDue:
     """Test subscription service dunning functionality"""
 
     @freeze_time("2024-01-01 12:00:00")

@@ -59,7 +59,7 @@ export function CustomerSessionCode({
 
 CustomerSessionCode.PreviewProps = {
   organization: {
-    name: 'Acme Inc',
+    name: 'Acme Inc.',
     slug: 'acme-inc',
   },
   code: 'ABC123',

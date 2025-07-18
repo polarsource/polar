@@ -85,7 +85,7 @@ export function SubscriptionCancellation({
 
 SubscriptionCancellation.PreviewProps = {
   organization: {
-    name: 'Acme Inc',
+    name: 'Acme Inc.',
     slug: 'acme-inc',
   },
   product: {

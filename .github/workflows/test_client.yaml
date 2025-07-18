@@ -1,8 +1,5 @@
 name: Client
 
-permissions:
-  contents: read
-
 on:
   push:
     branches: ["main"]

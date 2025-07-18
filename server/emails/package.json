@@ -8,7 +8,9 @@
   "scripts": {
     "dev": "email dev --dir src/emails",
     "clean": "rm -rf dist bin",
-    "build": "pnpm run clean && tsup && pkg package.json"
+    "build": "pnpm run clean && tsup && pkg package.json",
+    "format_check": "prettier src/** --check",
+    "format_write": "prettier src/** --write"
   },
   "packageManager": "pnpm@10.5.2",
   "dependencies": {
@@ -19,6 +21,7 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@react-email/preview-server": "4.1.3",
     "@types/node": "^22.14.1",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
@@ -26,7 +29,7 @@
     "prettier": "^3.5.3",
     "prettier-plugin-organize-imports": "^4.1.0",
     "prettier-plugin-tailwindcss": "^0.6.11",
-    "react-email": "^4.0.7",
+    "react-email": "^4.1.3",
     "tsup": "^8.4.0",
     "typescript": "^5.8.3"
   },

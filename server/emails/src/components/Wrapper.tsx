@@ -16,13 +16,17 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => {
       <Html lang="en">
         <Head>
           <Font
-            fontFamily="sans-serif"
+            fontFamily="Inter"
             fallbackFontFamily="sans-serif"
-            fontWeight="400"
+            fontWeight="100 900"
             fontStyle="normal"
+            webFont={{
+              url: 'https://fonts.gstatic.com/s/inter/v19/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2',
+              format: 'woff2',
+            }}
           />
         </Head>
-        <Container>{children}</Container>
+        <Container className="p-[20px]">{children}</Container>
       </Html>
     </Tailwind>
   )

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block body %}
+<h1>Your subscription payment is past due</h1>
+<p>We were unable to process your payment for your <strong>{{ product.name }}</strong> subscription. Your subscription is now past due and access to benefits has been temporarily suspended.</p>
+
+<p>To restore access to your subscription benefits, please update your payment method and complete the payment.</p>
+
+{% if payment_url %}
+<table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0" role="presentation">
+    <tr>
+        <td align="center">
+            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                <tr>
+                    <td align="center">
+                        <a href="{{ payment_url | safe }}" class="f-fallback button">Complete Payment</a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+{% endif %}
+
+<table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0" role="presentation">
+    <tr>
+        <td align="center">
+            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                <tr>
+                    <td align="center">
+                        <a href="{{ url | safe }}" class="f-fallback button">Manage my subscription</a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- Sub copy -->
+<table class="body-sub" role="presentation">
+    <tr>
+        <td>
+            <p class="f-fallback sub">If you're having trouble with the button above, copy and paste the URL below into your web browser:</p>
+            <p class="f-fallback sub"><a href="{{ url | safe }}">{{ url | safe }}</a></p>
+        </td>
+    </tr>
+</table>
+{% endblock %}

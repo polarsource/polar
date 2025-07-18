@@ -1380,6 +1380,35 @@ class SubscriptionService:
             extra_context=extra_context if extra_context else None,
         )
 
+    async def send_past_due_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        """Send past due email to customer with optional payment link."""
+        payment_url = None
+
+        # Try to get payment link from Stripe if available
+        if subscription.stripe_subscription_id:
+            try:
+                stripe_subscription = await stripe_lib.Subscription.retrieve_async(
+                    subscription.stripe_subscription_id
+                )
+                if stripe_subscription.latest_invoice:
+                    invoice_id = get_expandable_id(stripe_subscription.latest_invoice)
+                    invoice = await stripe_service.get_invoice(invoice_id)
+                    if invoice.hosted_invoice_url:
+                        payment_url = invoice.hosted_invoice_url
+            except Exception:
+                # If we can't get the payment link, continue without it
+                pass
+
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {{ product.name }} subscription payment is past due",
+            template_path="subscription/past_due.html",
+            extra_context={"payment_url": payment_url},
+        )
+
     async def _send_customer_email(
         self,
         session: AsyncSession,

@@ -1,5 +1,8 @@
 name: Server
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: ["main"]

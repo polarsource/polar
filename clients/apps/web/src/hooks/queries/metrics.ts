@@ -57,7 +57,7 @@ export const useMetrics = (
         periods: metrics.periods.map((period) => ({
           ...period,
           timestamp: new Date(period.timestamp),
-        })),
+        })) as ParsedMetricPeriod[],
       }
     },
     retry: defaultRetry,

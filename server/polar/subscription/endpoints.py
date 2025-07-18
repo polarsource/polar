@@ -152,7 +152,7 @@ async def export(
 )
 async def get(
     id: SubscriptionID,
-    auth_subject: auth.SubscriptionsWrite,
+    auth_subject: auth.SubscriptionsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
     """Get a subscription by ID."""

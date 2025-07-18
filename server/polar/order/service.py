@@ -602,7 +602,7 @@ class OrderService:
         subtotal_amount = sum(item.amount for item in items)
 
         # TODO: Discount handling
-        discount_amount = 0
+        discount_amount = 100
         discount = None
 
         # Calculate tax

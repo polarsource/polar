@@ -1,7 +1,8 @@
 import { useProducts, useSelectedProducts } from '@/hooks/queries'
-import { CheckOutlined, ExpandMoreOutlined } from '@mui/icons-material'
+import { ExpandMoreOutlined } from '@mui/icons-material'
 import { operations, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Command,
   CommandEmpty,
@@ -35,39 +36,57 @@ const ProductsCommandGroup = ({
   selectedProducts: schemas['Product'][]
   className?: string
 }) => {
+  const products = groupedProducts[productPriceType]
+  const selectedCount = products.filter((product) =>
+    selectedProducts.some(({ id }) => id === product.id),
+  ).length
+  const totalCount = products.length
+  const allSelected = selectedCount === totalCount && totalCount > 0
+
+  const getSubtitleText = () => {
+    if (allSelected) {
+      return `Unselect all ${totalCount} products`
+    } else if (selectedCount === 0) {
+      return `Select all ${totalCount} products`
+    } else {
+      return `${selectedCount} of ${totalCount} products selected`
+    }
+  }
+
   return (
     <CommandGroup className={className}>
       <CommandItem
-        className={twMerge(
-          'flex flex-row items-center justify-between text-black dark:text-white',
-        )}
-        key={productPriceType}
-        value={productPriceType}
         onSelect={() => onSelectProductType(productPriceType)}
+        className="px-2 py-3 text-black hover:bg-transparent aria-selected:bg-transparent data-[selected=true]:bg-transparent data-[selected=true]:text-black"
       >
-        <div className="flew-row flex items-center gap-2 font-medium">
-          <ProductPriceTypeLabel productPriceType={productPriceType} />
+        <div className="flex w-full flex-col gap-1">
+          <div className="flex w-full flex-row items-center justify-between">
+            <div className="flex flex-row items-center gap-2">
+              <Checkbox checked={allSelected} className="relative z-10" />
+              <div className="font-semibold">
+                <ProductPriceTypeLabel productPriceType={productPriceType} />
+              </div>
+            </div>
+            <span className="rounded-full bg-gray-100 px-2 text-xs font-medium dark:bg-gray-700 dark:text-gray-300">
+              {totalCount}
+            </span>
+          </div>
+          <div className="ml-6 text-left text-sm text-gray-500 dark:text-gray-400">
+            {getSubtitleText()}
+          </div>
         </div>
       </CommandItem>
       {groupedProducts[productPriceType].map((product) => {
         const isSelected = selectedProducts.some(({ id }) => id === product.id)
-
         return (
           <CommandItem
-            className={twMerge(
-              'flex flex-row items-center justify-between text-black dark:text-white',
-            )}
             key={product.id}
-            value={product.id}
             onSelect={() => onSelectProduct(product)}
           >
-            {`${product.name} ${product.is_archived ? '(Archived)' : ''}`}
-            <CheckOutlined
-              className={twMerge(
-                'mr-2 h-4 w-4',
-                isSelected ? 'visible' : 'invisible',
-              )}
-            />
+            <div className="flex flex-row items-center gap-2">
+              <Checkbox checked={isSelected} className="relative z-10" />
+              <span>{`${product.name} ${product.is_archived ? '(Archived)' : ''}`}</span>
+            </div>
           </CommandItem>
         )
       })}

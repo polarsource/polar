@@ -92,6 +92,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
         sorting={sorting}
         onSortingChange={setSorting}
         pagination={pagination}
+        rowCount={benefitGrants?.pagination.total_count ?? 0}
         pageCount={benefitGrants?.pagination.max_page ?? 1}
         onPaginationChange={setPagination}
         columns={[

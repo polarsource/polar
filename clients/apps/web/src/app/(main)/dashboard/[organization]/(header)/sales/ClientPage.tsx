@@ -119,6 +119,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   })
 
   const orders = ordersHook.data?.items || []
+  const rowCount = ordersHook.data?.pagination.total_count ?? 0
   const pageCount = ordersHook.data?.pagination.max_page ?? 1
 
   const columns: DataTableColumnDef<schemas['Order']>[] = [
@@ -269,6 +270,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <DataTable
             columns={columns}
             data={orders}
+            rowCount={rowCount}
             pageCount={pageCount}
             pagination={pagination}
             onPaginationChange={setPagination}

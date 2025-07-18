@@ -152,6 +152,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   })
 
   const discounts = discountsHook.data?.items || []
+  const rowCount = discountsHook.data?.pagination.total_count ?? 0
   const pageCount = discountsHook.data?.pagination.max_page ?? 1
 
   const columns: DataTableColumnDef<schemas['Discount']>[] = [
@@ -290,6 +291,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <DataTable
             columns={columns}
             data={discounts}
+            rowCount={rowCount}
             pageCount={pageCount}
             pagination={pagination}
             onPaginationChange={setPagination}

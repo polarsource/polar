@@ -111,6 +111,7 @@ export const platformFeesDisplayNames: {
 
 interface TransactionsListProps {
   transactions: schemas['Transaction'][]
+  rowCount: number
   pageCount: number
   pagination: DataTablePaginationState
   onPaginationChange?: DataTableOnChangeFn<DataTablePaginationState>
@@ -129,6 +130,7 @@ export const isTransaction = (
 
 const TransactionsList = ({
   transactions,
+  rowCount,
   pageCount,
   pagination,
   onPaginationChange,
@@ -257,6 +259,7 @@ const TransactionsList = ({
     <DataTable
       columns={columns}
       data={transactions}
+      rowCount={rowCount}
       pageCount={pageCount}
       pagination={pagination}
       onPaginationChange={onPaginationChange}

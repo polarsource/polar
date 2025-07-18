@@ -261,6 +261,7 @@ export default function ClientPage({
         <DataTable
           columns={columns}
           data={payouts?.items ?? []}
+          rowCount={payouts?.pagination.total_count ?? 0}
           pageCount={payouts?.pagination.max_page ?? 0}
           pagination={pagination}
           onPaginationChange={setPagination}

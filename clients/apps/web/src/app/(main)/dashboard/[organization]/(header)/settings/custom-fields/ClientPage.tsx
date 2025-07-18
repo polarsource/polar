@@ -121,6 +121,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   })
 
   const customFields = customFieldsHook.data?.items || []
+  const rowCount = customFieldsHook.data?.pagination.total_count ?? 0
   const pageCount = customFieldsHook.data?.pagination.max_page ?? 1
 
   const columns: DataTableColumnDef<schemas['CustomField']>[] = [
@@ -231,6 +232,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <DataTable
             columns={columns}
             data={customFields}
+            rowCount={rowCount}
             pageCount={pageCount}
             pagination={pagination}
             onPaginationChange={setPagination}

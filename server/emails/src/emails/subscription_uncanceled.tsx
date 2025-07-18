@@ -1,4 +1,5 @@
-import { Link, Preview, Section, Text } from '@react-email/components'
+import { Heading, Link, Preview, Section, Text } from '@react-email/components'
+import BodyText from '../components/BodyText'
 import Button from '../components/Button'
 import Footer from '../components/Footer'
 import OrganizationHeader from '../components/OrganizationHeader'
@@ -25,14 +26,17 @@ export function SubscriptionUncanceled({
     <Wrapper>
       <Preview>Your subscription to {product.name} is now uncanceled</Preview>
       <OrganizationHeader organization={organization} />
-      <Section>
-        <Text className="text-xl font-bold text-gray-900 dark:text-white">
+      <Section className="pt-10">
+        <Heading
+          as="h1"
+          className="text-xl font-bold text-gray-900 dark:text-white"
+        >
           Your subscription is now uncanceled
-        </Text>
-        <Text>
+        </Heading>
+        <BodyText>
           Your subscription to <span className="font-bold">{product.name}</span>{' '}
           is no longer canceled.
-        </Text>
+        </BodyText>
       </Section>
       <Section className="my-8 text-center">
         <Button href={url}>Manage my subscription</Button>

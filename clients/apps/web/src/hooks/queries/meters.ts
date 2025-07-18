@@ -116,7 +116,7 @@ export const useMeterQuantities = (
         quantities: result.quantities.map((quantity) => ({
           ...quantity,
           timestamp: new Date(quantity.timestamp),
-        })),
+        })) as ParsedMeterQuantities['quantities'],
       }
     },
     retry: defaultRetry,

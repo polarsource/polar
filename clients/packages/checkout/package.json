@@ -32,25 +32,25 @@
     }
   },
   "devDependencies": {
-    "@stripe/react-stripe-js": "^3.6.0",
-    "@stripe/stripe-js": "^7.1.0",
+    "@stripe/react-stripe-js": "^3.7.0",
+    "@stripe/stripe-js": "^7.5.0",
     "@types/react": "^18.3.18",
     "react": "^18.3.1",
-    "terser": "^5.39.0",
+    "terser": "^5.43.1",
     "tsconfig": "workspace:*",
-    "tsup": "^8.4.0",
+    "tsup": "^8.5.0",
     "typescript": "latest"
   },
   "publishConfig": {
     "access": "public"
   },
   "dependencies": {
-    "@polar-sh/sdk": "^0.34.3",
+    "@polar-sh/sdk": "^0.34.5",
     "@polar-sh/ui": "workspace:^",
-    "event-source-plus": "^0.1.8",
+    "event-source-plus": "^0.1.11",
     "eventemitter3": "^5.0.1",
-    "markdown-to-jsx": "^7.7.4",
-    "react-hook-form": "^7.55.0"
+    "markdown-to-jsx": "^7.7.12",
+    "react-hook-form": "^7.60.0"
   },
   "peerDependencies": {
     "@stripe/react-stripe-js": "^3.6.0",

@@ -20,14 +20,14 @@
   "devDependencies": {
     "openapi-typescript": "^7.8.0",
     "tsconfig": "workspace:*",
-    "tsup": "^8.4.0",
+    "tsup": "^8.5.0",
     "typescript": "latest"
   },
   "publishConfig": {
     "access": "public"
   },
   "dependencies": {
-    "openapi-fetch": "^0.13.4",
+    "openapi-fetch": "^0.14.0",
     "openapi-typescript-helpers": "^0.0.15"
   }
 }

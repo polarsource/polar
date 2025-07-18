@@ -639,7 +639,7 @@ export interface paths {
          * Get Subscription
          * @description Get a subscription by ID.
          *
-         *     **Scopes**: `subscriptions:write`
+         *     **Scopes**: `subscriptions:read` `subscriptions:write`
          */
         get: operations["subscriptions:get"];
         put?: never;

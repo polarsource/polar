@@ -5,7 +5,6 @@ import { queryClient } from '@/utils/api/query'
 import { CONFIG } from '@/utils/config'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryStreamedHydration } from '@tanstack/react-query-next-experimental'
-import { AppProgressBar as ProgressBar } from 'next-nprogress-bar'
 import { ThemeProvider } from 'next-themes'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
@@ -111,26 +110,6 @@ export function PolarQueryClientProvider({
     <QueryClientProvider client={queryClient}>
       <ReactQueryStreamedHydration>{children}</ReactQueryStreamedHydration>
     </QueryClientProvider>
-  )
-}
-
-export function PolarToploaderProvider({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return (
-    <>
-      {children}
-      <ProgressBar
-        height="2px"
-        color="#2960F6"
-        startPosition={0.08}
-        options={{ showSpinner: false }}
-        delay={500}
-        shallowRouting
-      />
-    </>
   )
 }
 

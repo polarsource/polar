@@ -20,7 +20,7 @@
   "devDependencies": {
     "openapi-typescript": "^7.8.0",
     "tsconfig": "workspace:*",
-    "tsup": "^8.4.0",
+    "tsup": "^8.5.0",
     "typescript": "latest"
   },
   "publishConfig": {

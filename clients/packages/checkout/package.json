@@ -38,7 +38,7 @@
     "react": "^18.3.1",
     "terser": "^5.39.0",
     "tsconfig": "workspace:*",
-    "tsup": "^8.4.0",
+    "tsup": "^8.5.0",
     "typescript": "latest"
   },
   "publishConfig": {
@@ -50,7 +50,7 @@
     "event-source-plus": "^0.1.8",
     "eventemitter3": "^5.0.1",
     "markdown-to-jsx": "^7.7.4",
-    "react-hook-form": "^7.55.0"
+    "react-hook-form": "^7.60.0"
   },
   "peerDependencies": {
     "@stripe/react-stripe-js": "^3.6.0",

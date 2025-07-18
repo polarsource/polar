@@ -1,5 +1,6 @@
 import { Button, Section, Text } from '@react-email/components'
 import Footer from '../components/Footer'
+import IntroWithHi from '../components/IntroWithHi'
 import PolarHeader from '../components/PolarHeader'
 import Wrapper from '../components/Wrapper'
 
@@ -13,17 +14,13 @@ export function MagicLink({
   return (
     <Wrapper>
       <PolarHeader />
-      <Section>
-        <Text>Hi,</Text>
-        <Text>
-          Here is your magic link to sign in to Polar. Click the button below to
-          complete the login process.{' '}
-          <span className="font-bold">
-            This link is only valid for the next {token_lifetime_minutes}{' '}
-            minutes
-          </span>
-        </Text>
-      </Section>
+      <IntroWithHi>
+        Here is your magic link to sign in to Polar. Click the button below to
+        complete the login process.{' '}
+        <span className="font-bold">
+          This link is only valid for the next {token_lifetime_minutes} minutes
+        </span>
+      </IntroWithHi>
       <Section className="text-center">
         <Button
           href={url}

@@ -26,7 +26,7 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => {
             }}
           />
         </Head>
-        <Container>{children}</Container>
+        <Container className="p-[20px]">{children}</Container>
       </Html>
     </Tailwind>
   )

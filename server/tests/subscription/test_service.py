@@ -1508,3 +1508,37 @@ class TestMarkPastDue:
             product_id=subscription.product.id,
             subscription_id=subscription.id,
         )
+
+
+@pytest.mark.asyncio
+class TestPastDueEmail:
+    """Test past due email functionality"""
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_past_due_email_sent(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+    ) -> None:
+        # Given
+        subscription.status = SubscriptionStatus.active
+        await save_fixture(subscription)
+
+        # Mock email sending
+        email_sender = mocker.patch("polar.subscription.service.enqueue_email")
+
+        # When
+        result_subscription = await subscription_service.mark_past_due(
+            session, subscription
+        )
+
+        # Then
+        assert result_subscription.status == SubscriptionStatus.past_due
+
+        # Verify past due email was sent
+        email_sender.assert_called()
+        call_args = email_sender.call_args
+        assert call_args[1]["to_email_addr"] == subscription.customer.email
+        assert "payment is past due" in call_args[1]["subject"]

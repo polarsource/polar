@@ -5,6 +5,9 @@ on:
     - cron: '0 7 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: none
+
 jobs:
   backup:
     runs-on: ubuntu-latest

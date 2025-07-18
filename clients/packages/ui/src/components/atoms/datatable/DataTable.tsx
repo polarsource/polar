@@ -37,6 +37,7 @@ export interface ReactQueryLoading {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  rowCount?: number
   pageCount?: number
   pagination?: PaginationState
   onPaginationChange?: OnChangeFn<PaginationState>
@@ -73,6 +74,7 @@ const queryIsDisabled = (s: ReactQueryLoading): boolean => {
 export function DataTable<TData, TValue>({
   columns,
   data,
+  rowCount,
   pageCount,
   pagination,
   onPaginationChange,
@@ -96,6 +98,7 @@ export function DataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     manualSorting: true,
+    rowCount,
     pageCount,
     onPaginationChange,
     onSortingChange,

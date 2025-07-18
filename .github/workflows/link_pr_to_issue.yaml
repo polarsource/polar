@@ -19,8 +19,14 @@ jobs:
           echo "Branch name: $BRANCH_NAME"
 
           # Extract pol-XXX pattern from branch name
-          TICKET_NUMBER=$(echo $BRANCH_NAME | grep -oE 'pol-[0-9]+')
+          TICKET_NUMBER=$(echo $BRANCH_NAME | grep -oE 'pol-[0-9]+' || echo "")
           echo "ticket_number=$TICKET_NUMBER" >> $GITHUB_OUTPUT
+
+          if [ -z "$TICKET_NUMBER" ]; then
+            echo "No ticket number found in branch name - skipping workflow"
+            exit 0
+          fi
+
           echo "Found ticket number: $TICKET_NUMBER"
 
       - name: Query Linear for GitHub issue

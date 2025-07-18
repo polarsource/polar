@@ -4,7 +4,6 @@ on:
   pull_request:
     types: [opened]
 
-# Security: Only run for internal contributors or approved external PRs
 permissions:
   pull-requests: write
   contents: read
@@ -54,9 +53,6 @@ jobs:
             -d "{\"query\":\"$(echo $QUERY | tr '\n' ' ' | sed 's/"/\\"/g')\",\"variables\":{\"id\":\"$TICKET_NUMBER\"}}" \
             https://api.linear.app/graphql)
 
-          echo "Linear API Response:"
-          echo "$RESPONSE" | jq '.'
-
           # Check if the issue exists
           ISSUE_EXISTS=$(echo "$RESPONSE" | jq -r '.data.issue != null')
           if [ "$ISSUE_EXISTS" != "true" ]; then
@@ -104,6 +100,6 @@ jobs:
             -H "Accept: application/vnd.github.v3+json" \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -d "{\"body\":$(echo "$NEW_BODY" | jq -Rs .)}" \
-            "${{ github.api_url }}/repos/${{ github.repository }}/pulls/$PR_NUMBER"
+            "${{ github.api_url }}/repos/${{ github.repository }}/pulls/$PR_NUMBER" > /dev/null
 
           echo "Updated PR #$PR_NUMBER description to include fix reference for GitHub issue #$GITHUB_ISSUE_NUMBER"

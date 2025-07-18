@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened]
     branches:
-      - "pol-*"
+      - pol-[0-9]+
 
 # Security: Only run for internal contributors or approved external PRs
 permissions:

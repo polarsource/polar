@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Literal, cast, overload
+from typing import Any, Literal, cast, overload
 
 import stripe as stripe_lib
 import structlog
@@ -1144,6 +1144,14 @@ class SubscriptionService:
         if became_activated:
             await self._on_subscription_activated(session, subscription)
 
+        # Handle past due status change
+        became_past_due = (
+            subscription.status == SubscriptionStatus.past_due
+            and previous_status != SubscriptionStatus.past_due
+        )
+        if became_past_due:
+            await self._on_subscription_past_due(session, subscription)
+
         is_canceled = subscription.ends_at and subscription.canceled_at
         updated_ends_at = subscription.ends_at != previous_ends_at
 
@@ -1200,6 +1208,15 @@ class SubscriptionService:
             session, subscription, WebhookEventType.subscription_uncanceled
         )
         await self.send_uncanceled_email(session, subscription)
+
+    async def _on_subscription_past_due(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        """Handle subscription becoming past due."""
+        # Note: No specific webhook event for past due - subscription_updated will handle it
+        await self.send_past_due_email(session, subscription)
 
     async def _on_subscription_canceled(
         self,
@@ -1346,6 +1363,35 @@ class SubscriptionService:
             template_path="subscription/revoked.html",
         )
 
+    async def send_past_due_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        """Send past due email to customer with optional payment link."""
+        payment_url = None
+
+        # Try to get payment link from Stripe if available
+        if subscription.stripe_subscription_id:
+            try:
+                stripe_subscription = await stripe_lib.Subscription.retrieve_async(
+                    subscription.stripe_subscription_id
+                )
+                if stripe_subscription.latest_invoice:
+                    invoice_id = get_expandable_id(stripe_subscription.latest_invoice)
+                    invoice = await stripe_service.get_invoice(invoice_id)
+                    if invoice.hosted_invoice_url:
+                        payment_url = invoice.hosted_invoice_url
+            except Exception:
+                # If we can't get the payment link, continue without it
+                pass
+
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {{ product.name }} subscription payment is past due",
+            template_path="subscription/past_due.html",
+            extra_context={"payment_url": payment_url},
+        )
+
     async def _send_customer_email(
         self,
         session: AsyncSession,
@@ -1353,6 +1399,7 @@ class SubscriptionService:
         *,
         subject_template: str,
         template_path: str,
+        extra_context: dict[str, Any] | None = None,
     ) -> None:
         email_renderer = get_email_renderer({"subscription": "polar.subscription"})
 
@@ -1373,18 +1420,24 @@ class SubscriptionService:
             session, customer
         )
 
+        context = {
+            "featured_organization": featured_organization,
+            "product": product,
+            "subscription": subscription,
+            "url": settings.generate_frontend_url(
+                f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
+            ),
+            "current_year": datetime.now().year,
+        }
+
+        # Add extra context if provided
+        if extra_context:
+            context.update(extra_context)
+
         subject, body = email_renderer.render_from_template(
             subject_template,
             template_path,
-            {
-                "featured_organization": featured_organization,
-                "product": product,
-                "subscription": subscription,
-                "url": settings.generate_frontend_url(
-                    f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
-                ),
-                "current_year": datetime.now().year,
-            },
+            context,
         )
 
         enqueue_email(

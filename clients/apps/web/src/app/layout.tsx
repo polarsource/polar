@@ -13,7 +13,6 @@ import {
   PolarNuqsProvider,
   PolarPostHogProvider,
   PolarQueryClientProvider,
-  PolarToploaderProvider,
 } from './providers'
 
 export const metadata: Metadata = {
@@ -107,14 +106,12 @@ export default async function RootLayout({
           userOrganizations={userOrganizations}
         >
           <PolarPostHogProvider>
-            <PolarToploaderProvider>
-              <PolarQueryClientProvider>
-                <PolarNuqsProvider>
-                  <SandboxBanner />
-                  {children}
-                </PolarNuqsProvider>
-              </PolarQueryClientProvider>
-            </PolarToploaderProvider>
+            <PolarQueryClientProvider>
+              <PolarNuqsProvider>
+                <SandboxBanner />
+                {children}
+              </PolarNuqsProvider>
+            </PolarQueryClientProvider>
           </PolarPostHogProvider>
         </UserContextProvider>
       </body>

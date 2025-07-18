@@ -126,8 +126,7 @@ async def handle_failure(
         await checkout_service.handle_failure(session, checkout, payment=payment)
 
     if order is not None:
-        # TODO: handle failure, trigger retry, etc.
-        pass
+        await order_service.handle_payment_failure(session, order)
 
 
 __all__ = [

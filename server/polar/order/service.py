@@ -42,6 +42,7 @@ from polar.kit.tax import (
     from_stripe_tax_rate,
     from_stripe_tax_rate_details,
 )
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
     Checkout,
@@ -76,6 +77,7 @@ from polar.payment.repository import PaymentRepository
 from polar.product.guard import is_custom_price
 from polar.product.repository import ProductPriceRepository
 from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.service import subscription as subscription_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
@@ -1241,6 +1243,47 @@ class OrderService:
                 "benefit.enqueue_benefit_grant_cycles",
                 subscription_id=order.subscription_id,
             )
+
+    async def handle_payment_failure(
+        self, session: AsyncSession, order: Order
+    ) -> Order:
+        """Handle payment failure for an order, initiating dunning if necessary."""
+        if order.subscription is None:
+            return order
+
+        if order.subscription.stripe_subscription_id is not None:
+            # If the subscription is managed by Stripe, we don't handle dunning. Stripe will handle it.
+            return order
+
+        if order.next_payment_attempt_at is None:
+            return await self._handle_first_dunning_attempt(session, order)
+
+        return await self._handle_consecutive_dunning_attempts(session, order)
+
+    async def _handle_first_dunning_attempt(
+        self, session: AsyncSession, order: Order
+    ) -> Order:
+        """Handle the first dunning attempt for an order, setting the next payment
+        attempt date and marking the subscription as past due.
+        """
+
+        first_retry_date = utc_now() + settings.DUNNING_FIRST_RETRY_DELAY
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.update(
+            order, update_dict={"next_payment_attempt_at": first_retry_date}
+        )
+
+        await subscription_service.mark_past_due(session, order.subscription)
+
+        return order
+
+    async def _handle_consecutive_dunning_attempts(
+        self, session: AsyncSession, order: Order
+    ) -> Order:
+        """Handle consecutive dunning attempts for an order."""
+        # TODO : Implement logic for handling consecutive dunning attempts
+        return order
 
 
 order = OrderService()

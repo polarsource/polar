@@ -21,6 +21,10 @@ interface DataTablePaginationProps<TData> {
 export function DataTablePagination<TData>({
   table,
 }: DataTablePaginationProps<TData>) {
+  const { pageIndex, pageSize } = table.getState().pagination
+  const startItem = pageIndex * pageSize + 1
+  const endItem = Math.min(startItem + pageSize - 1, table.getRowCount())
+
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 sm:flex-nowrap sm:justify-end sm:px-2 lg:gap-x-8">
       <div className="order-3 flex w-full flex-none items-center justify-between gap-2 sm:order-none sm:w-auto sm:justify-start">
@@ -44,8 +48,7 @@ export function DataTablePagination<TData>({
         </Select>
       </div>
       <div className="flex flex-1 items-center justify-start text-sm font-medium sm:w-[100px] sm:flex-none sm:justify-center">
-        Page {table.getState().pagination.pageIndex + 1} of{' '}
-        {Math.max(table.getPageCount(), 1)}
+        Viewing {startItem}-{endItem} of {table.getRowCount()}
       </div>
       <div className="flex items-center justify-end gap-2">
         <Button

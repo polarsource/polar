@@ -1,7 +1,8 @@
 'use client'
 
-import { useMeters } from '@/hooks/queries/meters'
+import { PlusIcon } from '@heroicons/react/24/outline'
 import { schemas } from '@polar-sh/client'
+import Alert from '@polar-sh/ui/components/atoms/Alert'
 import Input from '@polar-sh/ui/components/atoms/Input'
 import {
   Select,
@@ -19,7 +20,14 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { useCallback } from 'react'
 import { useFormContext } from 'react-hook-form'
+
+import CreateMeterModalContent from '@/components/Meter/CreateMeterModalContent'
+import { InlineModal } from '@/components/Modal/InlineModal'
+import { useModal } from '@/components/Modal/useModal'
+import { SpinnerNoMargin } from '@/components/Shared/Spinner'
+import { useMeters } from '@/hooks/queries/meters'
 
 export const MeterCreditBenefitForm = ({
   organization,
@@ -29,86 +37,157 @@ export const MeterCreditBenefitForm = ({
   const { data: meters } = useMeters(organization.id, {
     sorting: ['name'],
   })
-  const { control } = useFormContext<schemas['BenefitMeterCreditCreate']>()
+
+  const { control, setValue } =
+    useFormContext<schemas['BenefitMeterCreditCreate']>()
+
+  const {
+    isShown: isCreateMeterModalShown,
+    show: showCreateMeterModal,
+    hide: hideCreateMeterModal,
+  } = useModal(false)
+
+  const onSelectMeter = useCallback(
+    async (meter: schemas['Meter']) => {
+      // This is embarrassing but the <Select /> component has to re-render
+      // with the updated `meters` as options,
+      // before it'll accept this as a valid select value.
+      //
+      // This is an open issue with Radix UI since 2024
+      // (https://github.com/radix-ui/primitives/issues/2817)
+      setTimeout(() => setValue('properties.meter_id', meter.id), 200)
+    },
+    [setValue],
+  )
+
+  if (!meters) {
+    return (
+      <div className="flex w-full items-center justify-center py-4">
+        <SpinnerNoMargin />
+      </div>
+    )
+  }
 
   return (
     <>
-      {meters && meters.items && (
-        <FormField
-          control={control}
-          name="properties.meter_id"
-          rules={{
-            required: 'This field is required',
-          }}
-          render={({ field }) => {
-            return (
+      {meters.items.length === 0 ? (
+        <Alert color="gray">
+          <p className="text-center">
+            To start using meter credits,{' '}
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                showCreateMeterModal()
+              }}
+              type="button"
+              className="font-medium underline"
+            >
+              set up your first meter!
+            </button>
+          </p>
+        </Alert>
+      ) : (
+        <>
+          <FormField
+            control={control}
+            name="properties.meter_id"
+            rules={{
+              required: 'This field is required',
+            }}
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <div className="flex flex-row items-center justify-between gap-x-2">
+                    <FormLabel>Meter</FormLabel>
+                    <button
+                      type="button"
+                      className="flex flex-row items-center gap-x-1 text-sm font-medium text-gray-500"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        showCreateMeterModal()
+                      }}
+                    >
+                      <PlusIcon className="h-4 w-4" />
+                      Add Meter
+                    </button>
+                  </div>
+                  <FormControl>
+                    <Select {...field} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a meter" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {meters.items.map((meter) => (
+                          <SelectItem key={meter.id} value={meter.id}>
+                            {meter.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+          <FormField
+            control={control}
+            name="properties.units"
+            rules={{
+              min: 0,
+              max: 2147483647,
+              required: 'This field is required',
+            }}
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <FormLabel>Number of credited units</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                  <FormDescription>
+                    If the billing cycle is recurring, units will be credited at
+                    the beginning of each period.
+                  </FormDescription>
+                </FormItem>
+              )
+            }}
+          />
+          <FormField
+            control={control}
+            name="properties.rollover"
+            defaultValue={false}
+            render={({ field }) => (
               <FormItem>
-                <FormLabel>Meter</FormLabel>
+                <FormLabel>Rollover unused credits</FormLabel>
                 <FormControl>
-                  <Select {...field} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a meter" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {meters.items.map((meter) => (
-                        <SelectItem key={meter.id} value={meter.id}>
-                          {meter.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex flex-row items-center gap-x-2">
+                    <Checkbox
+                      defaultChecked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                    <p className="text-sm">
+                      Rollover unused credits to the next billing cycle
+                    </p>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
-            )
-          }}
-        />
+            )}
+          />
+        </>
       )}
-      <FormField
-        control={control}
-        name="properties.units"
-        rules={{
-          min: 0,
-          max: 2147483647,
-          required: 'This field is required',
-        }}
-        render={({ field }) => {
-          return (
-            <FormItem>
-              <FormLabel>Number of credited units</FormLabel>
-              <FormControl>
-                <Input type="number" {...field} />
-              </FormControl>
-              <FormMessage />
-              <FormDescription>
-                If the billing cycle is recurring, units will be credited at the
-                beginning of each period.
-              </FormDescription>
-            </FormItem>
-          )
-        }}
-      />
-      <FormField
-        control={control}
-        name="properties.rollover"
-        defaultValue={false}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Rollover unused credits</FormLabel>
-            <FormControl>
-              <div className="flex flex-row items-center gap-x-2">
-                <Checkbox
-                  defaultChecked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-                <p className="text-sm">
-                  Rollover unused credits to the next billing cycle
-                </p>
-              </div>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
+      <InlineModal
+        isShown={isCreateMeterModalShown}
+        hide={hideCreateMeterModal}
+        modalContent={
+          <CreateMeterModalContent
+            organization={organization}
+            onSelectMeter={onSelectMeter}
+            hideModal={hideCreateMeterModal}
+          />
+        }
       />
     </>
   )

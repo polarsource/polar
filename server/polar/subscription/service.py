@@ -1381,7 +1381,8 @@ class SubscriptionService:
                 "product": {
                     "name": product.name or "",
                     "benefits": [
-                        {"description": benefit} for benefit in product.benefits
+                        {"description": benefit.description or ""}
+                        for benefit in product.benefits
                     ],
                 },
                 "subscription": {

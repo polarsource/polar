@@ -36,6 +36,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountFixed
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.organization import Organization
+from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
@@ -73,7 +74,6 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_subscription,
 )
-from polar.models.payment import PaymentStatus
 from tests.fixtures.stripe import construct_stripe_invoice
 from tests.transaction.conftest import create_transaction
 

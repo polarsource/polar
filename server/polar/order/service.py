@@ -59,10 +59,12 @@ from polar.models import (
     Transaction,
     User,
 )
+from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription_meter import SubscriptionMeter
 from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -1319,14 +1321,15 @@ class OrderService:
 
         return order
 
-    async def _count_failed_payment_attempts(self, session: AsyncSession, order: Order) -> int:
+    async def _count_failed_payment_attempts(
+        self, session: AsyncSession, order: Order
+    ) -> int:
         """Count the number of failed payment attempts for an order."""
         from polar.payment.repository import PaymentRepository
 
         payment_repo = PaymentRepository.from_session(session)
         statement = payment_repo.get_base_statement().where(
-            Payment.order_id == order.id,
-            Payment.status == PaymentStatus.failed
+            Payment.order_id == order.id, Payment.status == PaymentStatus.failed
         )
         result = await session.execute(statement)
         return len(result.scalars().all())

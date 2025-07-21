@@ -7,6 +7,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models import Organization, Product
 from polar.models.order import OrderBillingReason, OrderStatus
+from polar.models.payment import PaymentStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
@@ -20,7 +21,6 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_subscription,
 )
-from polar.models.payment import PaymentStatus
 
 
 @pytest.mark.asyncio

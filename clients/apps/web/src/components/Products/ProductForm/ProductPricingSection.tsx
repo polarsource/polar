@@ -175,7 +175,7 @@ export const ProductPriceMeteredUnitItem: React.FC<
 > = ({ organization, index }) => {
   const { control, setValue } = useFormContext<ProductFormType>()
 
-  const { data: meters } = useMeters(organization.id, {
+  const { data: meters, refetch } = useMeters(organization.id, {
     sorting: ['name'],
   })
 
@@ -193,7 +193,18 @@ export const ProductPriceMeteredUnitItem: React.FC<
       //
       // This is an open issue with Radix UI since 2024
       // (https://github.com/radix-ui/primitives/issues/2817)
-      setTimeout(() => setValue(`prices.${index}.meter_id`, meter.id), 200)
+
+      // To work around this, we run an explicit `refetch` that we can await
+      // and then set the value in a double requestAnimationFrame callback.
+      // First rAF ensures this component is updated,
+      // second rAF ensures the <SelectContent /> was updated too.
+      await refetch()
+
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          setValue(`prices.${index}.meter_id`, meter.id)
+        })
+      })
     },
     [setValue, index],
   )
@@ -214,7 +225,6 @@ export const ProductPriceMeteredUnitItem: React.FC<
             <button
               onClick={(e) => {
                 e.preventDefault()
-                console.log('create meter modal wtf')
                 showCreateMeterModal()
               }}
               type="button"

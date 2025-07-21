@@ -34,7 +34,7 @@ export const MeterCreditBenefitForm = ({
 }: {
   organization: schemas['Organization']
 }) => {
-  const { data: meters } = useMeters(organization.id, {
+  const { data: meters, refetch } = useMeters(organization.id, {
     sorting: ['name'],
   })
 
@@ -55,7 +55,18 @@ export const MeterCreditBenefitForm = ({
       //
       // This is an open issue with Radix UI since 2024
       // (https://github.com/radix-ui/primitives/issues/2817)
-      setTimeout(() => setValue('properties.meter_id', meter.id), 200)
+
+      // To work around this, we run an explicit `refetch` that we can await
+      // and then set the value in a double requestAnimationFrame callback.
+      // First rAF ensures this component is updated,
+      // second rAF ensures the <SelectContent /> was updated too.
+      await refetch()
+
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          setValue('properties.meter_id', meter.id)
+        })
+      })
     },
     [setValue],
   )

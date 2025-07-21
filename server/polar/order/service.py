@@ -18,7 +18,7 @@ from polar.customer_meter.service import customer_meter as customer_meter_servic
 from polar.customer_portal.schemas.order import CustomerOrderUpdate
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
-from polar.email.renderer import get_email_renderer
+from polar.email.react import render_email_template
 from polar.email.sender import enqueue_email
 from polar.enums import PaymentProcessor
 from polar.event.service import event as event_service
@@ -1062,20 +1062,25 @@ class OrderService:
     async def send_confirmation_email(
         self, session: AsyncSession, organization: Organization, order: Order
     ) -> None:
-        email_renderer = get_email_renderer({"order": "polar.order"})
-
         product = order.product
         customer = order.customer
         token, _ = await customer_session_service.create_customer_session(
             session, customer
         )
 
-        subject, body = email_renderer.render_from_template(
-            "Your {{ product.name }} order confirmation",
-            "order/confirmation.html",
+        body = render_email_template(
+            "order_confirmation",
             {
-                "featured_organization": organization,
-                "product": product,
+                "organization": {
+                    "name": organization.name,
+                    "slug": organization.slug,
+                },
+                "product": {
+                    "name": product.name,
+                    "benefits": [
+                        {"description": benefit} for benefit in product.benefits
+                    ],
+                },
                 "url": settings.generate_frontend_url(
                     f"/{organization.slug}/portal?customer_session_token={token}&id={order.id}"
                 ),
@@ -1083,7 +1088,11 @@ class OrderService:
             },
         )
 
-        enqueue_email(to_email_addr=customer.email, subject=subject, html_content=body)
+        enqueue_email(
+            to_email_addr=customer.email,
+            subject=f"Your {product.name} order confirmation",
+            html_content=body,
+        )
 
     async def update_product_benefits_grants(
         self, session: AsyncSession, product: Product

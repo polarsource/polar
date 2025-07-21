@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 import stripe as stripe_lib
@@ -48,7 +48,6 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
-    HeldBalance,
     Order,
     OrderItem,
     Organization,
@@ -57,11 +56,11 @@ from polar.models import (
     Product,
     ProductPrice,
     Subscription,
-    SubscriptionMeter,
     Transaction,
     User,
 )
 from polar.models.order import OrderBillingReason, OrderStatus
+from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
@@ -1295,9 +1294,9 @@ class OrderService:
         self, session: AsyncSession, order: Order
     ) -> Order:
         """Handle consecutive dunning attempts for an order."""
-        retry_attempt = self._calculate_retry_attempt_from_order_age(order)
+        failed_attempts = await self._count_failed_payment_attempts(session, order)
 
-        if retry_attempt >= len(settings.DUNNING_RETRY_INTERVALS):
+        if failed_attempts >= len(settings.DUNNING_RETRY_INTERVALS):
             # No more retries, mark subscription as unpaid and clear retry date
             repository = OrderRepository.from_session(session)
             order = await repository.update(
@@ -1310,7 +1309,7 @@ class OrderService:
             return order
 
         # Schedule next retry using the appropriate interval
-        next_interval = settings.DUNNING_RETRY_INTERVALS[retry_attempt]
+        next_interval = settings.DUNNING_RETRY_INTERVALS[failed_attempts]
         next_retry_date = utc_now() + next_interval
 
         repository = OrderRepository.from_session(session)
@@ -1320,29 +1319,17 @@ class OrderService:
 
         return order
 
-    def _calculate_retry_attempt_from_order_age(self, order: Order) -> int:
-        """Calculate which retry attempt this is based on order age.
+    async def _count_failed_payment_attempts(self, session: AsyncSession, order: Order) -> int:
+        """Count the number of failed payment attempts for an order."""
+        from polar.payment.repository import PaymentRepository
 
-        This estimates the retry attempt by looking at how much time has passed
-        since the order was created and comparing it to the expected retry schedule.
-
-        Returns:
-            The zero-based retry attempt number in DUNNING_RETRY_INTERVALS
-        """
-        if order.next_payment_attempt_at is None:
-            return 0
-
-        time_since_creation = utc_now() - order.created_at
-
-        # Calculate cumulative time for each retry attempt
-        cumulative_time = timedelta(0)
-        for i, interval in enumerate(settings.DUNNING_RETRY_INTERVALS):
-            cumulative_time += interval
-            if time_since_creation <= cumulative_time + timedelta(hours=1):
-                return i
-
-        # If we're past all intervals, return the max attempt number
-        return len(settings.DUNNING_RETRY_INTERVALS)
+        payment_repo = PaymentRepository.from_session(session)
+        statement = payment_repo.get_base_statement().where(
+            Payment.order_id == order.id,
+            Payment.status == PaymentStatus.failed
+        )
+        result = await session.execute(statement)
+        return len(result.scalars().all())
 
     async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
         """Process a single order due for dunning payment retry."""

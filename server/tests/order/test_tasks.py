@@ -16,9 +16,11 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_customer,
     create_order,
+    create_payment,
     create_payment_method,
     create_subscription,
 )
+from polar.models.payment import PaymentStatus
 
 
 @pytest.mark.asyncio
@@ -275,12 +277,20 @@ class TestProcessDunning:
         order.next_payment_attempt_at = first_retry_time
         await save_fixture(order)
 
+        # Create one failed payment to simulate the first failure
+        await create_payment(
+            save_fixture,
+            organization,
+            status=PaymentStatus.failed,
+            order=order,
+        )
+
         # When: retry attempt fails
         result_order = await order_service.handle_payment_failure(session, order)
 
-        # Then: next retry is scheduled according to first interval
+        # Then: next retry is scheduled according to second interval (8 days)
         assert result_order.next_payment_attempt_at is not None
-        expected_next_attempt = utc_now() + timedelta(days=2)
+        expected_next_attempt = utc_now() + timedelta(days=8)
         time_diff = abs(
             (
                 result_order.next_payment_attempt_at - expected_next_attempt
@@ -316,8 +326,17 @@ class TestProcessDunning:
             billing_reason=OrderBillingReason.subscription_cycle,
         )
         order.next_payment_attempt_at = very_old_time
-        order.created_at = very_old_time  # Also set created_at to old time
         await save_fixture(order)
+
+        # Create 4 failed payments to exhaust all retry attempts
+        # DUNNING_RETRY_INTERVALS has 4 intervals, so 4 failures should exceed the limit
+        for _ in range(4):
+            await create_payment(
+                save_fixture,
+                organization,
+                status=PaymentStatus.failed,
+                order=order,
+            )
 
         # When: final retry attempt fails
         result_order = await order_service.handle_payment_failure(session, order)

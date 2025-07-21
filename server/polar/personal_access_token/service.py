@@ -77,7 +77,7 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
             {
                 "personal_access_token": personal_access_token.comment,
                 "notifier": notifier,
-                "url": url,
+                "url": url or "",
                 "current_year": datetime.now().year,
             },
         )

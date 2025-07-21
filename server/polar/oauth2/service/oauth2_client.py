@@ -98,7 +98,7 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
                 "token_type": token_type,
                 "client_name": client.client_name,
                 "notifier": notifier,
-                "url": url,
+                "url": url or "",
                 "current_year": datetime.datetime.now().year,
             },
         )

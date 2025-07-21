@@ -1379,7 +1379,7 @@ class SubscriptionService:
                     "slug": featured_organization.slug,
                 },
                 "product": {
-                    "name": product.name,
+                    "name": product.name or "",
                     "benefits": [
                         {"description": benefit} for benefit in product.benefits
                     ],
@@ -1387,7 +1387,7 @@ class SubscriptionService:
                 "subscription": {
                     "ends_at": subscription.ends_at.isoformat()
                     if subscription.ends_at
-                    else None,
+                    else "",
                 },
                 "url": settings.generate_frontend_url(
                     f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"

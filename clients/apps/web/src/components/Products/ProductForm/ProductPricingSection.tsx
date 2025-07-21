@@ -390,8 +390,6 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   const amountType = watch(`prices.${index}.amount_type`)
   const recurringInterval = watch('recurring_interval')
 
-  const { data: meters } = useMeters(organization.id)
-
   const prices = watch('prices')
   const staticPriceIndex = prices
     ? (prices as schemas['ProductPrice'][]).findIndex(isStaticPrice)

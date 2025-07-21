@@ -5,10 +5,14 @@ import re
 import pytest
 
 from polar.notifications.notification import (
+    MaintainerAccountReviewedNotificationPayload,
+    MaintainerAccountUnderReviewNotificationPayload,
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
+    NotificationPayload,
     NotificationPayloadBase,
+    NotificationType,
 )
 
 
@@ -99,30 +103,43 @@ async def test_injection_payloads(payload: NotificationPayloadBase) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "payload",
-    [
-        MaintainerNewProductSaleNotificationPayload(
-            customer_name="John Doe",
-            product_name="Ice cream sandwich",
-            product_price_amount=500,
-            organization_name="Ice Cream Van",
-        ),
-        MaintainerCreateAccountNotificationPayload(
-            organization_name="John Doe",
-            url="https://example.com/url",
-        ),
-        MaintainerNewPaidSubscriptionNotificationPayload(
-            subscriber_name="John Doe",
-            tier_name="ColdMail Premium",
-            tier_price_amount=500,
-            tier_organization_name="ColdMail",
-            tier_price_recurring_interval="month",
-        ),
-    ],
-)
-async def test_no_leftover_placeholders(payload: NotificationPayloadBase) -> None:
-    subject, body = payload.render()
+async def test_all_notification_types() -> None:
+    n: NotificationPayload
+    for notification_type in NotificationType:
+        if notification_type == NotificationType.maintainer_create_account:
+            n = MaintainerCreateAccountNotificationPayload(
+                organization_name="John Doe",
+                url="https://example.com/url",
+            )
+        elif notification_type == NotificationType.maintainer_account_under_review:
+            n = MaintainerAccountUnderReviewNotificationPayload(
+                account_type="Stripe Connect Express",
+            )
+        elif notification_type == NotificationType.maintainer_account_reviewed:
+            n = MaintainerAccountReviewedNotificationPayload(
+                account_type="Stripe Connect Express",
+            )
+        elif notification_type == NotificationType.maintainer_new_product_sale:
+            n = MaintainerNewProductSaleNotificationPayload(
+                customer_name="John Doe",
+                product_name="Ice cream sandwich",
+                product_price_amount=500,
+                organization_name="Ice Cream Van",
+            )
+        elif notification_type == NotificationType.maintainer_new_paid_subscription:
+            n = MaintainerNewPaidSubscriptionNotificationPayload(
+                subscriber_name="John Doe",
+                tier_name="ColdMail Premium",
+                tier_price_amount=500,
+                tier_organization_name="ColdMail",
+                tier_price_recurring_interval="month",
+            )
+        else:
+            raise TypeError(f"Missing test case for {notification_type}")
 
+    # Check that it renders!
+    subject, body = n.render()
+
+    # Check that there are no leftover placeholders
     assert re.search(r"{ ?[^\s}]+ ?}", subject) is None
     assert re.search(r"{ ?[^\s}]+ ?}", body) is None

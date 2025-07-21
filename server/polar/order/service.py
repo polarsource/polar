@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
 import stripe as stripe_lib
@@ -745,6 +745,10 @@ class OrderService:
         if order.status == OrderStatus.pending:
             update_dict["status"] = OrderStatus.paid
 
+        # Clear retry attempt date on successful payment
+        if order.next_payment_attempt_at is not None:
+            update_dict["next_payment_attempt_at"] = None
+
         # Balance the order in the ledger
         if payment is not None:
             enqueue_job(
@@ -763,6 +767,14 @@ class OrderService:
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(order, update_dict=update_dict)
+
+        # If this was a subscription retry success, reactivate the subscription
+        if (
+            previous_status == OrderStatus.pending
+            and order.subscription is not None
+            and order.subscription.status == SubscriptionStatus.past_due
+        ):
+            await subscription_service.mark_active(session, order.subscription)
 
         if update_dict:
             await self._on_order_updated(session, order, previous_status)
@@ -1268,7 +1280,7 @@ class OrderService:
         attempt date and marking the subscription as past due.
         """
 
-        first_retry_date = utc_now() + settings.DUNNING_FIRST_RETRY_DELAY
+        first_retry_date = utc_now() + settings.DUNNING_RETRY_INTERVALS[0]
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(
@@ -1283,8 +1295,54 @@ class OrderService:
         self, session: AsyncSession, order: Order
     ) -> Order:
         """Handle consecutive dunning attempts for an order."""
-        # TODO : Implement logic for handling consecutive dunning attempts
+        retry_attempt = self._calculate_retry_attempt_from_order_age(order)
+
+        if retry_attempt >= len(settings.DUNNING_RETRY_INTERVALS):
+            # No more retries, mark subscription as unpaid and clear retry date
+            repository = OrderRepository.from_session(session)
+            order = await repository.update(
+                order, update_dict={"next_payment_attempt_at": None}
+            )
+
+            if order.subscription is not None:
+                await subscription_service.cancel(session, order.subscription)
+
+            return order
+
+        # Schedule next retry using the appropriate interval
+        next_interval = settings.DUNNING_RETRY_INTERVALS[retry_attempt]
+        next_retry_date = utc_now() + next_interval
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.update(
+            order, update_dict={"next_payment_attempt_at": next_retry_date}
+        )
+
         return order
+
+    def _calculate_retry_attempt_from_order_age(self, order: Order) -> int:
+        """Calculate which retry attempt this is based on order age.
+
+        This estimates the retry attempt by looking at how much time has passed
+        since the order was created and comparing it to the expected retry schedule.
+
+        Returns:
+            The zero-based retry attempt number in DUNNING_RETRY_INTERVALS
+        """
+        if order.next_payment_attempt_at is None:
+            return 0
+
+        time_since_creation = utc_now() - order.created_at
+
+        # Calculate cumulative time for each retry attempt
+        cumulative_time = timedelta(0)
+        for i, interval in enumerate(settings.DUNNING_RETRY_INTERVALS):
+            cumulative_time += interval
+            if time_since_creation <= cumulative_time + timedelta(hours=1):
+                return i
+
+        # If we're past all intervals, return the max attempt number
+        return len(settings.DUNNING_RETRY_INTERVALS)
 
     async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
         """Process a single order due for dunning payment retry."""

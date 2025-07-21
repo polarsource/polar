@@ -1301,7 +1301,7 @@ class TestHandlePaymentFailure:
 
         # Then
         assert result_order.next_payment_attempt_at is not None
-        expected_retry_date = utc_now() + timedelta(days=3)
+        expected_retry_date = utc_now() + timedelta(days=2)
         assert result_order.next_payment_attempt_at == expected_retry_date
 
         mock_mark_past_due.assert_called_once_with(session, subscription)

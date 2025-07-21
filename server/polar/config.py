@@ -270,7 +270,6 @@ class Settings(BaseSettings):
     ]
 
     # Dunning Configuration
-    DUNNING_FIRST_RETRY_DELAY: timedelta = timedelta(days=3)
     DUNNING_RETRY_INTERVALS: list[timedelta] = [
         timedelta(days=2),  # First retry after 2 days
         timedelta(days=8),  # Second retry after 10 days (2 + 8)

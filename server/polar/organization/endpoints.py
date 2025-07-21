@@ -1,6 +1,6 @@
 import datetime
 
-from fastapi import Depends, Query
+from fastapi import Depends, Query, Response, status
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
@@ -226,12 +226,12 @@ async def members(
     "/{id}/members/invite",
     response_model=OrganizationMember,
     tags=[APITag.private],
-    status_code=201,
 )
 async def invite_member(
     id: OrganizationID,
     invite_body: OrganizationMemberInvite,
     auth_subject: auth.OrganizationsWrite,
+    response: Response,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationMember:
     """Invite a user to join an organization."""
@@ -242,6 +242,14 @@ async def invite_member(
 
     # Get or create user by email
     user, _ = await user_service.get_by_email_or_create(session, invite_body.email)
+
+    # Check if user is already member of organization
+    user_org = await user_organization_service.get_by_user_and_org(
+        session, user.id, organization.id
+    )
+    if user_org is not None:
+        response.status_code = status.HTTP_200_OK
+        return OrganizationMember.model_validate(user_org)
 
     # Add user to organization
     await organization_service.add_user(session, organization, user)
@@ -276,4 +284,5 @@ async def invite_member(
     if user_org is None:
         raise ResourceNotFound()
 
+    response.status_code = status.HTTP_201_CREATED
     return OrganizationMember.model_validate(user_org)

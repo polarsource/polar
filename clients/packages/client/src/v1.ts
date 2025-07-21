@@ -1073,6 +1073,28 @@ export interface paths {
         patch: operations["webhooks:update_webhook_endpoint"];
         trace?: never;
     };
+    "/v1/webhooks/endpoints/{id}/secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Reset Webhook Endpoint Secret
+         * @description Regenerate a webhook endpoint secret.
+         *
+         *     **Scopes**: `webhooks:write`
+         */
+        patch: operations["webhooks:reset_webhook_endpoint_secret"];
+        trace?: never;
+    };
     "/v1/webhooks/deliveries": {
         parameters: {
             query?: never;
@@ -16430,6 +16452,11 @@ export interface components {
             /** @description The format of the webhook payload. */
             format: components["schemas"]["WebhookFormat"];
             /**
+             * Secret
+             * @description The secret used to sign the webhook events.
+             */
+            secret: string;
+            /**
              * Organization Id
              * Format: uuid4
              * @description The organization ID associated with the webhook endpoint.
@@ -16452,13 +16479,13 @@ export interface components {
              * @description The URL where the webhook events will be sent.
              */
             url: string;
-            /** @description The format of the webhook payload. */
-            format: components["schemas"]["WebhookFormat"];
             /**
              * Secret
-             * @description The secret used to sign the webhook events.
+             * @deprecated
              */
-            secret: string;
+            secret?: string | null;
+            /** @description The format of the webhook payload. */
+            format: components["schemas"]["WebhookFormat"];
             /**
              * Events
              * @description The events that will trigger the webhook.
@@ -16477,9 +16504,12 @@ export interface components {
         WebhookEndpointUpdate: {
             /** Url */
             url?: string | null;
-            format?: components["schemas"]["WebhookFormat"] | null;
-            /** Secret */
+            /**
+             * Secret
+             * @deprecated
+             */
             secret?: string | null;
+            format?: components["schemas"]["WebhookFormat"] | null;
             /** Events */
             events?: components["schemas"]["WebhookEventType"][] | null;
         };
@@ -19065,6 +19095,47 @@ export interface operations {
         };
         responses: {
             /** @description Webhook endpoint updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookEndpoint"];
+                };
+            };
+            /** @description Webhook endpoint not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "webhooks:reset_webhook_endpoint_secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The webhook endpoint ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Webhook endpoint secret reset. */
             200: {
                 headers: {
                     [name: string]: unknown;

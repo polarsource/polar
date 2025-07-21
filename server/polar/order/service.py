@@ -1078,7 +1078,8 @@ class OrderService:
                 "product": {
                     "name": product.name,
                     "benefits": [
-                        {"description": benefit} for benefit in product.benefits
+                        {"description": benefit.description}
+                        for benefit in product.benefits
                     ],
                 },
                 "url": settings.generate_frontend_url(

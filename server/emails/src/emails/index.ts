@@ -11,6 +11,7 @@ import { OAuth2LeakedClient } from './oauth2_leaked_client'
 import { OAuth2LeakedToken } from './oauth2_leaked_token'
 import { OrderConfirmation } from './order_confirmation'
 import { OrganizationAccessTokenLeaked } from './organization_access_token_leaked'
+import { OrganizationInvite } from './organization_invite'
 import { PersonalAccessTokenLeaked } from './personal_access_token_leaked'
 import { SubscriptionCancellation } from './subscription_cancellation'
 import { SubscriptionConfirmation } from './subscription_confirmation'
@@ -26,6 +27,7 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   oauth2_leaked_token: OAuth2LeakedToken,
   order_confirmation: OrderConfirmation,
   organization_access_token_leaked: OrganizationAccessTokenLeaked,
+  organization_invite: OrganizationInvite,
   personal_access_token_leaked: PersonalAccessTokenLeaked,
   subscription_cancellation: SubscriptionCancellation,
   subscription_confirmation: SubscriptionConfirmation,

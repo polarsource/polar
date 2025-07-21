@@ -1,7 +1,12 @@
+import datetime
+
 from fastapi import Depends, Query
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
+from polar.config import settings
+from polar.email.react import render_email_template
+from polar.email.sender import enqueue_email
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
@@ -240,6 +245,32 @@ async def invite_member(
 
     # Add user to organization
     await organization_service.add_user(session, organization, user)
+
+    # Get the inviter's email (from auth subject)
+    inviter_email = (
+        auth_subject.subject.email
+        if hasattr(auth_subject.subject, "email")
+        else "A team member"
+    )
+
+    # Send invitation email
+    body = render_email_template(
+        "organization_invite",
+        {
+            "organization_name": organization.name,
+            "inviter_email": inviter_email,
+            "invite_url": settings.generate_frontend_url(
+                f"/dashboard/{organization.slug}"
+            ),
+            "current_year": datetime.datetime.now().year,
+        },
+    )
+
+    enqueue_email(
+        to_email_addr=invite_body.email,
+        subject=f"You've been invited to join {organization.name} on Polar",
+        html_content=body,
+    )
 
     # Get the user organization relationship to return
     user_org = await user_organization_service.get_by_user_and_org(

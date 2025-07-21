@@ -1444,8 +1444,8 @@ class TestHandlePaymentFailure:
 
         # Then
         assert result_order.next_payment_attempt_at is not None
-        # Should schedule second retry (8 days from now, as per DUNNING_RETRY_INTERVALS[1])
-        expected_retry_date = utc_now() + timedelta(days=8)
+        # Should schedule second retry (5 days from now, as per DUNNING_RETRY_INTERVALS[1])
+        expected_retry_date = utc_now() + timedelta(days=5)
         assert result_order.next_payment_attempt_at == expected_retry_date
 
         mock_mark_past_due.assert_not_called()
@@ -1495,8 +1495,8 @@ class TestHandlePaymentFailure:
 
         # Then
         assert result_order.next_payment_attempt_at is not None
-        # Should schedule third retry (6 days from now, as per DUNNING_RETRY_INTERVALS[2])
-        expected_retry_date = utc_now() + timedelta(days=6)
+        # Should schedule third retry (7 days from now, as per DUNNING_RETRY_INTERVALS[2])
+        expected_retry_date = utc_now() + timedelta(days=7)
         assert result_order.next_payment_attempt_at == expected_retry_date
 
         mock_mark_past_due.assert_not_called()
@@ -1590,8 +1590,8 @@ class TestHandlePaymentFailure:
 
         # Then
         assert result_order.next_payment_attempt_at is not None
-        # Should schedule second retry (8 days) since only 1 failed payment exists
-        expected_retry_date = utc_now() + timedelta(days=8)
+        # Should schedule second retry (5 days) since only 1 failed payment exists
+        expected_retry_date = utc_now() + timedelta(days=5)
         assert result_order.next_payment_attempt_at == expected_retry_date
 
         mock_mark_past_due.assert_not_called()

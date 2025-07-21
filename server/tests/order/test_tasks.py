@@ -288,9 +288,9 @@ class TestProcessDunning:
         # When: retry attempt fails
         result_order = await order_service.handle_payment_failure(session, order)
 
-        # Then: next retry is scheduled according to second interval (8 days)
+        # Then: next retry is scheduled according to second interval (5 days)
         assert result_order.next_payment_attempt_at is not None
-        expected_next_attempt = utc_now() + timedelta(days=8)
+        expected_next_attempt = utc_now() + timedelta(days=5)
         time_diff = abs(
             (
                 result_order.next_payment_attempt_at - expected_next_attempt

@@ -40,7 +40,6 @@ class TestProcessDunning:
             product=product,
             customer=customer,
             status=OrderStatus.pending,
-            billing_reason=OrderBillingReason.purchase,
         )
         order.next_payment_attempt_at = past_time
         await save_fixture(order)
@@ -68,7 +67,6 @@ class TestProcessDunning:
             product=product,
             customer=customer,
             status=OrderStatus.pending,
-            billing_reason=OrderBillingReason.purchase,
         )
         order.next_payment_attempt_at = future_time
         await save_fixture(order)
@@ -103,7 +101,6 @@ class TestProcessDunning:
             customer=customer,
             subscription=subscription,
             status=OrderStatus.pending,
-            billing_reason=OrderBillingReason.subscription_cycle,
         )
         order.next_payment_attempt_at = past_time
         await save_fixture(order)
@@ -213,7 +210,7 @@ class TestProcessDunning:
             product=product,
             customer=customer,
             status=SubscriptionStatus.past_due,
-            stripe_subscription_id=None,  # Ensure it uses our dunning logic
+            stripe_subscription_id=None,
         )
         payment_method = await create_payment_method(save_fixture, customer=customer)
         subscription.payment_method = payment_method
@@ -231,11 +228,15 @@ class TestProcessDunning:
         order.next_payment_attempt_at = past_time
         await save_fixture(order)
 
-        mock_payment = mocker.MagicMock()
-        mock_payment.processor_id = "ch_test123"
+        payment = await create_payment(
+            save_fixture,
+            organization=customer.organization,
+            status=PaymentStatus.succeeded,
+            order=order,
+        )
 
         # When: payment succeeds
-        result_order = await order_service.handle_payment(session, order, mock_payment)
+        result_order = await order_service.handle_payment(session, order, payment)
 
         # Then: order is paid, dunning cleared, and subscription reactivated
         assert result_order.status == OrderStatus.paid
@@ -262,10 +263,10 @@ class TestProcessDunning:
             product=product,
             customer=customer,
             status=SubscriptionStatus.past_due,
-            stripe_subscription_id=None,  # Ensure it uses our dunning logic
+            stripe_subscription_id=None,
         )
 
-        first_retry_time = utc_now() - timedelta(hours=1)  # Retry was due 1 hour ago
+        first_retry_time = utc_now() - timedelta(hours=1)
         order = await create_order(
             save_fixture,
             product=product,
@@ -277,7 +278,6 @@ class TestProcessDunning:
         order.next_payment_attempt_at = first_retry_time
         await save_fixture(order)
 
-        # Create one failed payment to simulate the first failure
         await create_payment(
             save_fixture,
             organization,
@@ -313,10 +313,10 @@ class TestProcessDunning:
             product=product,
             customer=customer,
             status=SubscriptionStatus.past_due,
-            stripe_subscription_id=None,  # Ensure it uses our dunning logic
+            stripe_subscription_id=None,
         )
 
-        very_old_time = utc_now() - timedelta(days=30)  # Way past all retry intervals
+        very_old_time = utc_now() - timedelta(days=30)
         order = await create_order(
             save_fixture,
             product=product,
@@ -329,7 +329,6 @@ class TestProcessDunning:
         await save_fixture(order)
 
         # Create 4 failed payments to exhaust all retry attempts
-        # DUNNING_RETRY_INTERVALS has 4 intervals, so 4 failures should exceed the limit
         for _ in range(4):
             await create_payment(
                 save_fixture,

@@ -1,5 +1,6 @@
 import uuid
 
+import sentry_sdk
 import structlog
 from dramatiq import Retry
 from sqlalchemy.orm import joinedload
@@ -151,6 +152,7 @@ async def process_dunning() -> None:
             try:
                 await order_service.process_dunning_order(session, order)
             except Exception as e:
+                sentry_sdk.capture_exception(e, extra={"order_id": str(order.id)})
                 log.error(
                     "Failed to process dunning order",
                     order_id=order.id,

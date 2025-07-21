@@ -1324,9 +1324,6 @@ class OrderService:
     async def _count_failed_payment_attempts(
         self, session: AsyncSession, order: Order
     ) -> int:
-        """Count the number of failed payment attempts for an order."""
-        from polar.payment.repository import PaymentRepository
-
         payment_repo = PaymentRepository.from_session(session)
         statement = payment_repo.get_base_statement().where(
             Payment.order_id == order.id, Payment.status == PaymentStatus.failed

@@ -918,7 +918,7 @@
           "mcp"
         ],
         "summary": "Get Subscription",
-        "description": "Get a subscription by ID.\n\n**Scopes**: `subscriptions:write`",
+        "description": "Get a subscription by ID.\n\n**Scopes**: `subscriptions:read` `subscriptions:write`",
         "operationId": "subscriptions:get",
         "parameters": [
           {
@@ -2534,22 +2534,22 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Webhooks.CreateWebhookEndpoint(ctx, components.WebhookEndpointCreate{\n        URL: \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n        Format: components.WebhookFormatSlack,\n        Secret: \"f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA\",\n        Events: []components.WebhookEventType{\n            components.WebhookEventTypeSubscriptionUncanceled,\n        },\n        OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.WebhookEndpoint != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Webhooks.CreateWebhookEndpoint(ctx, components.WebhookEndpointCreate{\n        URL: \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n        Format: components.WebhookFormatSlack,\n        Events: []components.WebhookEventType{\n            components.WebhookEventTypeSubscriptionUncanceled,\n        },\n        OrganizationID: polargo.String(\"1dbfc517-0bbf-4301-9ba8-555ca42b9737\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.WebhookEndpoint != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.webhooks.create_webhook_endpoint(request={\n        \"url\": \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n        \"format_\": polar_sdk.WebhookFormat.SLACK,\n        \"secret\": \"f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA\",\n        \"events\": [\n            polar_sdk.WebhookEventType.SUBSCRIPTION_UNCANCELED,\n        ],\n        \"organization_id\": \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.webhooks.create_webhook_endpoint(request={\n        \"url\": \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n        \"format_\": polar_sdk.WebhookFormat.SLACK,\n        \"events\": [\n            polar_sdk.WebhookEventType.SUBSCRIPTION_UNCANCELED,\n        ],\n        \"organization_id\": \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.webhooks.createWebhookEndpoint({\n    url: \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n    format: \"slack\",\n    secret: \"f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA\",\n    events: [\n      \"subscription.uncanceled\",\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.webhooks.createWebhookEndpoint({\n    url: \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n    format: \"slack\",\n    events: [\n      \"subscription.uncanceled\",\n    ],\n    organizationId: \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\WebhookEndpointCreate(\n    url: 'https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0',\n    format: Components\\WebhookFormat::Slack,\n    secret: 'f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA',\n    events: [\n        Components\\WebhookEventType::SubscriptionUncanceled,\n    ],\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->webhooks->createWebhookEndpoint(\n    request: $request\n);\n\nif ($response->webhookEndpoint !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\WebhookEndpointCreate(\n    url: 'https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0',\n    format: Components\\WebhookFormat::Slack,\n    events: [\n        Components\\WebhookEventType::SubscriptionUncanceled,\n    ],\n    organizationId: '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n);\n\n$response = $sdk->webhooks->createWebhookEndpoint(\n    request: $request\n);\n\nif ($response->webhookEndpoint !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -2718,22 +2718,22 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Webhooks.UpdateWebhookEndpoint(ctx, \"<value>\", components.WebhookEndpointUpdate{\n        URL: polargo.String(\"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\"),\n        Secret: polargo.String(\"f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.WebhookEndpoint != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Webhooks.UpdateWebhookEndpoint(ctx, \"<value>\", components.WebhookEndpointUpdate{\n        URL: polargo.String(\"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.WebhookEndpoint != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.webhooks.update_webhook_endpoint(id=\"<value>\", webhook_endpoint_update={\n        \"url\": \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n        \"secret\": \"f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA\",\n    })\n\n    # Handle response\n    print(res)"
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.webhooks.update_webhook_endpoint(id=\"<value>\", webhook_endpoint_update={\n        \"url\": \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.webhooks.updateWebhookEndpoint({\n    id: \"<value>\",\n    webhookEndpointUpdate: {\n      url: \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n      secret: \"f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.webhooks.updateWebhookEndpoint({\n    id: \"<value>\",\n    webhookEndpointUpdate: {\n      url: \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$webhookEndpointUpdate = new Components\\WebhookEndpointUpdate(\n    url: 'https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0',\n    secret: 'f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA',\n);\n\n$response = $sdk->webhooks->updateWebhookEndpoint(\n    id: '<value>',\n    webhookEndpointUpdate: $webhookEndpointUpdate\n\n);\n\nif ($response->webhookEndpoint !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$webhookEndpointUpdate = new Components\\WebhookEndpointUpdate(\n    url: 'https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0',\n);\n\n$response = $sdk->webhooks->updateWebhookEndpoint(\n    id: '<value>',\n    webhookEndpointUpdate: $webhookEndpointUpdate\n\n);\n\nif ($response->webhookEndpoint !== null) {\n    // handle response\n}"
           }
         ]
       },
@@ -2813,6 +2813,94 @@
             "lang": "php",
             "label": "PHP (SDK)",
             "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->webhooks->deleteWebhookEndpoint(\n    id: '<value>'\n);\n\nif ($response->statusCode === 200) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
+    "/v1/webhooks/endpoints/{id}/secret": {
+      "patch": {
+        "tags": [
+          "webhooks",
+          "documented"
+        ],
+        "summary": "Reset Webhook Endpoint Secret",
+        "description": "Regenerate a webhook endpoint secret.\n\n**Scopes**: `webhooks:write`",
+        "operationId": "webhooks:reset_webhook_endpoint_secret",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The webhook endpoint ID.",
+              "title": "Id"
+            },
+            "description": "The webhook endpoint ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook endpoint secret reset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpoint"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Webhook endpoint not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "webhooks",
+        "x-speakeasy-name-override": "reset_webhook_endpoint_secret",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.Webhooks.ResetWebhookEndpointSecret(ctx, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.WebhookEndpoint != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.webhooks.reset_webhook_endpoint_secret(id=\"<value>\")\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.webhooks.resetWebhookEndpointSecret({\n    id: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n\n\n$response = $sdk->webhooks->resetWebhookEndpointSecret(\n    id: '<value>'\n);\n\nif ($response->webhookEndpoint !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -10645,7 +10733,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListResource_Union_PaymentMethodCard__PaymentMethodGeneric__"
+                  "$ref": "#/components/schemas/ListResource_CustomerPaymentMethod_"
                 }
               }
             }
@@ -10692,7 +10780,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Customers.ListPaymentMethods(ctx, operations.CustomerPortalCustomersListPaymentMethodsSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    }, polargo.Int64(1), polargo.Int64(10))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceUnionPaymentMethodCardPaymentMethodGeneric != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Customers.ListPaymentMethods(ctx, operations.CustomerPortalCustomersListPaymentMethodsSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    }, polargo.Int64(1), polargo.Int64(10))\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ListResourceCustomerPaymentMethod != nil {\n        for {\n            // handle items\n\n            res, err = res.Next()\n\n            if err != nil {\n                // handle error\n            }\n\n            if res == nil {\n                break\n            }\n        }\n    }\n}"
           },
           {
             "lang": "python",
@@ -10741,15 +10829,8 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/PaymentMethodCard"
-                    },
-                    {
-                      "$ref": "#/components/schemas/PaymentMethodGeneric"
-                    }
-                  ],
-                  "title": "Response Customer Portal:Customers:Add Payment Method"
+                  "$ref": "#/components/schemas/CustomerPaymentMethod",
+                  "title": "CustomerPaymentMethod"
                 }
               }
             }
@@ -10777,7 +10858,7 @@
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Customers.AddPaymentMethod(ctx, components.CustomerPaymentMethodCreate{\n        ConfirmationTokenID: \"<id>\",\n        SetDefault: false,\n        ReturnURL: \"https://yearly-custom.net/\",\n    }, operations.CustomerPortalCustomersAddPaymentMethodSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ResponseCustomerPortalCustomersAddPaymentMethod != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Customers.AddPaymentMethod(ctx, components.CustomerPaymentMethodCreate{\n        ConfirmationTokenID: \"<id>\",\n        SetDefault: false,\n        ReturnURL: \"https://yearly-custom.net/\",\n    }, operations.CustomerPortalCustomersAddPaymentMethodSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerPaymentMethod != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
@@ -10792,7 +10873,7 @@
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Components\\CustomerPaymentMethodCreate(\n    confirmationTokenId: '<id>',\n    setDefault: false,\n    returnUrl: 'https://yearly-custom.net/',\n);\n$requestSecurity = new Operations\\CustomerPortalCustomersAddPaymentMethodSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->customers->addPaymentMethod(\n    request: $request,\n    security: $requestSecurity\n);\n\nif ($response->responseCustomerPortalCustomersAddPaymentMethod !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$request = new Components\\CustomerPaymentMethodCreate(\n    confirmationTokenId: '<id>',\n    setDefault: false,\n    returnUrl: 'https://yearly-custom.net/',\n);\n$requestSecurity = new Operations\\CustomerPortalCustomersAddPaymentMethodSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->customers->addPaymentMethod(\n    request: $request,\n    security: $requestSecurity\n);\n\nif ($response->customerPaymentMethod !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -19964,6 +20045,7 @@
         "properties": {
           "units": {
             "type": "integer",
+            "maximum": 2147483647,
             "exclusiveMinimum": 0,
             "title": "Units"
           },
@@ -28307,6 +28389,16 @@
         "title": "CustomerOrganization",
         "description": "Schema of an organization and related data for customer portal."
       },
+      "CustomerPaymentMethod": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PaymentMethodCard"
+          },
+          {
+            "$ref": "#/components/schemas/PaymentMethodGeneric"
+          }
+        ]
+      },
       "CustomerPaymentMethodCreate": {
         "properties": {
           "confirmation_token_id": {
@@ -35174,6 +35266,27 @@
         ],
         "title": "ListResource[CustomerOrder]"
       },
+      "ListResource_CustomerPaymentMethod_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerPaymentMethod",
+              "title": "CustomerPaymentMethod"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "title": "ListResource[CustomerPaymentMethod]"
+      },
       "ListResource_CustomerSubscription_": {
         "properties": {
           "items": {
@@ -35473,33 +35586,6 @@
           "pagination"
         ],
         "title": "ListResource[Subscription]"
-      },
-      "ListResource_Union_PaymentMethodCard__PaymentMethodGeneric__": {
-        "properties": {
-          "items": {
-            "items": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/PaymentMethodCard"
-                },
-                {
-                  "$ref": "#/components/schemas/PaymentMethodGeneric"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Items"
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/Pagination"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "pagination"
-        ],
-        "title": "ListResource[Union[PaymentMethodCard, PaymentMethodGeneric]]"
       },
       "ListResource_WebhookDelivery_": {
         "properties": {
@@ -42713,6 +42799,14 @@
             "$ref": "#/components/schemas/WebhookFormat",
             "description": "The format of the webhook payload."
           },
+          "secret": {
+            "type": "string",
+            "title": "Secret",
+            "description": "The secret used to sign the webhook events.",
+            "examples": [
+              "polar_whs_ovyN6cPrTv56AApvzCaJno08SSmGJmgbWilb33N2JuK"
+            ]
+          },
           "organization_id": {
             "type": "string",
             "format": "uuid4",
@@ -42735,6 +42829,7 @@
           "id",
           "url",
           "format",
+          "secret",
           "organization_id",
           "events"
         ],
@@ -42754,18 +42849,26 @@
               "https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0"
             ]
           },
+          "secret": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 32,
+                "description": "The secret used to sign the webhook events.",
+                "examples": [
+                  "polar_whs_ovyN6cPrTv56AApvzCaJno08SSmGJmgbWilb33N2JuK"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret",
+            "deprecated": true
+          },
           "format": {
             "$ref": "#/components/schemas/WebhookFormat",
             "description": "The format of the webhook payload."
-          },
-          "secret": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Secret",
-            "description": "The secret used to sign the webhook events.",
-            "examples": [
-              "f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA"
-            ]
           },
           "events": {
             "items": {
@@ -42802,7 +42905,6 @@
         "required": [
           "url",
           "format",
-          "secret",
           "events"
         ],
         "title": "WebhookEndpointCreate",
@@ -42828,6 +42930,23 @@
             ],
             "title": "Url"
           },
+          "secret": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 32,
+                "description": "The secret used to sign the webhook events.",
+                "examples": [
+                  "polar_whs_ovyN6cPrTv56AApvzCaJno08SSmGJmgbWilb33N2JuK"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret",
+            "deprecated": true
+          },
           "format": {
             "anyOf": [
               {
@@ -42838,22 +42957,6 @@
                 "type": "null"
               }
             ]
-          },
-          "secret": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "description": "The secret used to sign the webhook events.",
-                "examples": [
-                  "f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Secret"
           },
           "events": {
             "anyOf": [

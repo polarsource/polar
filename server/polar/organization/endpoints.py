@@ -272,7 +272,7 @@ async def invite_member(
 
     enqueue_email(
         to_email_addr=invite_body.email,
-        subject=f"You've been invited to join {organization.name} on Polar",
+        subject=f"You've added to {organization.name} on Polar",
         html_content=body,
     )
 

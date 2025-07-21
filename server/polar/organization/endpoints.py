@@ -247,18 +247,14 @@ async def invite_member(
     await organization_service.add_user(session, organization, user)
 
     # Get the inviter's email (from auth subject)
-    inviter_email = (
-        auth_subject.subject.email
-        if hasattr(auth_subject.subject, "email")
-        else "A team member"
-    )
+    inviter_email = auth_subject.subject.email
 
     # Send invitation email
     body = render_email_template(
         "organization_invite",
         {
             "organization_name": organization.name,
-            "inviter_email": inviter_email,
+            "inviter_email": inviter_email or "",
             "invite_url": settings.generate_frontend_url(
                 f"/dashboard/{organization.slug}"
             ),

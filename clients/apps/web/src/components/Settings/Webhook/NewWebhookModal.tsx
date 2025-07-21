@@ -11,7 +11,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { FieldEvents, FieldFormat, FieldSecret, FieldUrl } from './WebhookForm'
+import { FieldEvents, FieldFormat, FieldUrl } from './WebhookForm'
 
 export default function NewWebhookModal({
   organization,
@@ -83,7 +83,6 @@ export default function NewWebhookModal({
           >
             <FieldUrl />
             <FieldFormat />
-            <FieldSecret isUpdate={false} />
             <FieldEvents />
 
             <Button

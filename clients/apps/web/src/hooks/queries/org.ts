@@ -15,6 +15,21 @@ export const useListOrganizationMembers = (id: string) =>
     retry: defaultRetry,
   })
 
+export const useInviteOrganizationMember = (id: string) =>
+  useMutation({
+    mutationFn: (email: string) => {
+      return api.POST('/v1/organizations/{id}/members/invite', {
+        params: { path: { id } },
+        body: { email },
+      })
+    },
+    onSuccess: async (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['organizationMembers', id],
+      })
+    },
+  })
+
 export const useListOrganizations = (
   params: operations['organizations:list']['parameters']['query'],
   enabled: boolean = true,

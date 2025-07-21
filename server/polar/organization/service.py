@@ -238,7 +238,7 @@ class OrganizationService:
                 organization_id=organization.id,
                 user_id=user.id,
             )
-            await session.rollback()
+            await nested.rollback()
             # Update
             stmt = (
                 sql.Update(UserOrganization)

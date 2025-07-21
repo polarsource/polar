@@ -173,7 +173,7 @@ class OrganizationAccessTokenService:
             {
                 "organization_access_token": organization_access_token.comment,
                 "notifier": notifier,
-                "url": url,
+                "url": url or "",
                 "current_year": datetime.now().year,
             },
         )

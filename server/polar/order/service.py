@@ -63,6 +63,7 @@ from polar.models import (
 )
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.product import ProductBillingType
+from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -1283,6 +1284,51 @@ class OrderService:
     ) -> Order:
         """Handle consecutive dunning attempts for an order."""
         # TODO : Implement logic for handling consecutive dunning attempts
+        return order
+
+    async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
+        """Process a single order due for dunning payment retry."""
+        if order.subscription is None:
+            log.warning(
+                "Order has no subscription, skipping dunning",
+                order_id=order.id,
+            )
+            return order
+
+        if order.subscription.status == SubscriptionStatus.canceled:
+            log.info(
+                "Order subscription is cancelled, removing order from dunning process",
+                order_id=order.id,
+                subscription_id=order.subscription.id,
+            )
+
+            repository = OrderRepository.from_session(session)
+            order = await repository.update(
+                order, update_dict={"next_payment_attempt_at": None}
+            )
+            return order
+
+        if order.subscription.payment_method_id is None:
+            log.warning(
+                "Order subscription has no payment method, skipping dunning",
+                order_id=order.id,
+                subscription_id=order.subscription.id,
+            )
+            return order
+
+        log.info(
+            "Processing dunning order",
+            order_id=order.id,
+            subscription_id=order.subscription.id,
+        )
+
+        # Enqueue a payment retry for this order
+        enqueue_job(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=order.subscription.payment_method_id,
+        )
+
         return order
 
 

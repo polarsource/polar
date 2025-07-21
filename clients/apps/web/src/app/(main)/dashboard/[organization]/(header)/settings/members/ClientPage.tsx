@@ -1,6 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { useToast } from '@/components/Toast/use-toast'
 import {
   useInviteOrganizationMember,
   useListOrganizationMembers,
@@ -92,6 +93,7 @@ function InviteDialog({
   organizationId: string
   onClose: () => void
 }) {
+  const { toast } = useToast()
   const [email, setEmail] = useState('')
   const inviteMember = useInviteOrganizationMember(organizationId)
 
@@ -100,15 +102,28 @@ function InviteDialog({
 
     try {
       const result = await inviteMember.mutateAsync(email)
-      if (result.data) {
+      if (result.response.status == 200) {
+        toast({
+          title: 'Member already added',
+          description: 'User is already a member of this organization',
+        })
+      } else if (result.data) {
+        toast({
+          title: 'Member added',
+          description: 'User successfully added to organization',
+        })
         onClose()
       } else if (result.error) {
-        console.error('Failed to invite user:', result.error)
-        alert('Failed to invite user. Please try again.')
+        toast({
+          title: 'Invite failed',
+          description: 'Failed to invite user. Please try again.',
+        })
       }
     } catch (error) {
-      console.error('Failed to invite user:', error)
-      alert('Failed to invite user. Please try again.')
+      toast({
+        title: 'Invite failed',
+        description: 'Failed to invite user. Please try again.',
+      })
     }
   }
 

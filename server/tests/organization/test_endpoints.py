@@ -204,7 +204,7 @@ class TestInviteOrganization:
             f"/v1/organizations/{organization.id}/members/invite",
             json={"email": email_already_in_org},
         )
-        assert response.status_code == 201
+        assert response.status_code == 200
         json = response.json()
         assert json["email"] == email_already_in_org
 

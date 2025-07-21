@@ -31,7 +31,7 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   subscription_confirmation: SubscriptionConfirmation,
   subscription_revoked: SubscriptionRevoked,
   subscription_uncanceled: SubscriptionUncanceled,
-  notification_under_review: NotificationAccountUnderReview,
+  notification_account_under_review: NotificationAccountUnderReview,
   notification_account_reviewed: NotificationAccountReviewed,
   notification_new_sale: NotificationNewSale,
   notification_new_subscription: NotificationNewSubscription,

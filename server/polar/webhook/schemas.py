@@ -60,6 +60,11 @@ class WebhookEndpointCreate(Schema):
     """
 
     url: EndpointURL
+    secret: EndpointSecret | None = Field(
+        default=None,
+        deprecated="The secret is now generated on the backend.",
+        min_length=32,
+    )
     format: EndpointFormat
     events: EndpointEvents
     organization_id: OrganizationID | None = Field(
@@ -77,6 +82,11 @@ class WebhookEndpointUpdate(Schema):
     """
 
     url: EndpointURL | None = None
+    secret: EndpointSecret | None = Field(
+        default=None,
+        deprecated="The secret should is now generated on the backend.",
+        min_length=32,
+    )
     format: EndpointFormat | None = None
     events: EndpointEvents | None = None
 

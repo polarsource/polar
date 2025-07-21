@@ -108,9 +108,12 @@ class WebhookService:
         organization = await get_payload_organization(
             session, auth_subject, create_schema
         )
-        secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
+        if create_schema.secret is not None:
+            secret = create_schema.secret
+        else:
+            secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
         endpoint = WebhookEndpoint(
-            **create_schema.model_dump(by_alias=True),
+            **create_schema.model_dump(exclude={"secret"}, by_alias=True),
             secret=secret,
             organization=organization,
         )

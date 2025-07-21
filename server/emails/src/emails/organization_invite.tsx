@@ -16,27 +16,21 @@ export function OrganizationInvite({
 }) {
   return (
     <Wrapper>
-      <Preview>
-        You've been invited to join {organization_name} on Polar
-      </Preview>
+      <Preview>You've been added to {organization_name} on Polar</Preview>
       <PolarHeader />
       <IntroWithHi>
-        {inviter_email} has invited you to join{' '}
+        {inviter_email} has added you to{' '}
         <span className="font-bold">{organization_name}</span> on Polar.
       </IntroWithHi>
       <Section>
         <Text>
-          As a member of {organization_name}, you'll be able to collaborate on
-          projects, manage products, and access organization resources.
+          As a member of {organization_name} you're now able to manage{' '}
+          {organization_name}'s products, customers, and subscriptions on Polar.
         </Text>
       </Section>
       <Section className="text-center">
-        <Button href={invite_url}>Accept Invitation</Button>
+        <Button href={invite_url}>Go to the Polar dashboard</Button>
       </Section>
-      <Text className="text-gray-500">
-        If you don't want to accept this invitation, you can safely ignore this
-        email.
-      </Text>
       <Footer />
     </Wrapper>
   )

@@ -6,9 +6,12 @@ from polar.kit.address import Address
 from polar.kit.email import EmailStrDNS
 from polar.kit.http import get_safe_return_url
 from polar.kit.schemas import (
+    ClassName,
     EmptyStrToNoneValidator,
     IDSchema,
+    MergeJSONSchema,
     Schema,
+    SetSchemaReference,
     TimestampedSchema,
 )
 from polar.kit.tax import TaxID
@@ -37,7 +40,12 @@ class CustomerPortalCustomerUpdate(Schema):
     tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
 
 
-CustomerPaymentMethod = PaymentMethodCard | PaymentMethodGeneric
+CustomerPaymentMethod = Annotated[
+    PaymentMethodCard | PaymentMethodGeneric,
+    SetSchemaReference("CustomerPaymentMethod"),
+    MergeJSONSchema({"title": "CustomerPaymentMethod"}),
+    ClassName("CustomerPaymentMethod"),
+]
 
 CustomerPaymentMethodTypeAdapter: TypeAdapter[CustomerPaymentMethod] = TypeAdapter(
     CustomerPaymentMethod

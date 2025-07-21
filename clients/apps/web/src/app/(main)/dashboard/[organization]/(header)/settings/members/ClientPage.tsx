@@ -16,6 +16,7 @@ import {
   DataTableColumnHeader,
 } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import Input from '@polar-sh/ui/components/atoms/Input'
 import { useState } from 'react'
 
 export default function ClientPage({
@@ -131,13 +132,13 @@ function InviteDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="w-full max-w-md rounded-lg bg-white p-6 dark:bg-gray-900">
         <h3 className="mb-4 text-lg font-medium">Invite User</h3>
-        <input
+        <Input
           type="email"
           placeholder="Enter email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mb-4 w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-700"
           autoFocus
+          className="mb-4"
         />
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>

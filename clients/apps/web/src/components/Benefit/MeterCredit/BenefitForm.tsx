@@ -1,6 +1,6 @@
 'use client'
 
-import { PlusIcon } from '@heroicons/react/24/outline'
+import { PlusIcon } from '@heroicons/react/20/solid'
 import { schemas } from '@polar-sh/client'
 import Alert from '@polar-sh/ui/components/atoms/Alert'
 import Input from '@polar-sh/ui/components/atoms/Input'
@@ -72,8 +72,7 @@ export const MeterCreditBenefitForm = ({
     <>
       {meters.items.length === 0 ? (
         <Alert color="gray">
-          <p className="text-center">
-            To start using meter credits,{' '}
+          <p className="text-center text-sm">
             <button
               onClick={(e) => {
                 e.preventDefault()
@@ -82,8 +81,9 @@ export const MeterCreditBenefitForm = ({
               type="button"
               className="font-medium underline"
             >
-              set up your first meter!
-            </button>
+              Set up your first meter
+            </button>{' '}
+            to start using meter credits
           </p>
         </Alert>
       ) : (

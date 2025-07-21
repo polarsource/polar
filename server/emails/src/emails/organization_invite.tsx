@@ -43,9 +43,9 @@ export function OrganizationInvite({
 }
 
 OrganizationInvite.PreviewProps = {
-  organization_name: 'Acme Corp',
+  organization_name: 'Acme Inc.',
   inviter_email: 'admin@acme.com',
-  invite_url: 'https://polar.sh/dashboard/acme-corp',
+  invite_url: 'https://polar.sh/dashboard/acme-inc',
 }
 
 export default OrganizationInvite

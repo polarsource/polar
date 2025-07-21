@@ -571,16 +571,12 @@ class OrderService:
 
         # Record tax transaction
         if checkout.tax_processor_id is not None:
-            try:
-                transaction = await stripe_service.create_tax_transaction(
-                    checkout.tax_processor_id, str(order.id)
-                )
-                await repository.update(
-                    order, update_dict={"tax_transaction_processor_id": transaction.id}
-                )
-            except stripe_lib.InvalidRequestError:
-                # FIXME: temp workaround to unblock an order
-                pass
+            transaction = await stripe_service.create_tax_transaction(
+                checkout.tax_processor_id, str(order.id)
+            )
+            await repository.update(
+                order, update_dict={"tax_transaction_processor_id": transaction.id}
+            )
 
         await self._on_order_created(session, order)
 

@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import UnaryExpression, asc, desc, select
+from sqlalchemy import UnaryExpression, asc, desc, func, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.repository import AccountRepository
@@ -1324,12 +1324,12 @@ class OrderService:
     async def _count_failed_payment_attempts(
         self, session: AsyncSession, order: Order
     ) -> int:
-        payment_repo = PaymentRepository.from_session(session)
-        statement = payment_repo.get_base_statement().where(
-            Payment.order_id == order.id, Payment.status == PaymentStatus.failed
+        statement = select(func.count(Payment.id)).where(
+            Payment.order_id == order.id,
+            Payment.status == PaymentStatus.failed,
         )
         result = await session.execute(statement)
-        return len(result.scalars().all())
+        return result.scalar() or 0
 
     async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
         """Process a single order due for dunning payment retry."""

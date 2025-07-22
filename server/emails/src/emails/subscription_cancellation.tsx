@@ -56,14 +56,18 @@ export function SubscriptionCancellation({
           If you change your mind, you can renew your subscription anytime
           before the end date.
         </BodyText>
-        <BodyText>
-          Meanwhile, you will continue to have access to the following benefits:
-        </BodyText>
-        <ul className="list-disc space-y-1 pl-6">
-          {product.benefits.map((benefit, index) => (
-            <li key={index}>{benefit.description}</li>
-          ))}
-        </ul>
+        {product.benefits.length > 0 && (
+          <>
+            <BodyText>
+              Meanwhile, you will continue to have access to the following benefits:
+            </BodyText>
+            <ul className="list-disc space-y-1 pl-6">
+              {product.benefits.map((benefit, index) => (
+                <li key={index}>{benefit.description}</li>
+              ))}
+            </ul>
+          </>
+        )}
       </Section>
       <Section className="my-8 text-center">
         <Button href={url}>Manage my subscription</Button>

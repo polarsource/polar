@@ -160,7 +160,7 @@ class SubscriptionRepository(
                         == SubscriptionRecurringInterval.month,
                         Subscription.amount,
                     ),
-                ).nulls_last()
+                )
             case SubscriptionSortProperty.product:
                 return Product.name
             case SubscriptionSortProperty.discount:

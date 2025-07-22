@@ -170,6 +170,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     {
       accessorKey: 'created_at',
       enableSorting: true,
+      size: 70,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Date" />
       ),
@@ -183,6 +184,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     {
       accessorKey: 'status',
       enableSorting: true,
+      size: 50,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),

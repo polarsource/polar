@@ -70,6 +70,32 @@ class OrderRepository(
         )
         return await self.get_all(statement)
 
+    async def acquire_payment_lock(self, order_id: UUID) -> bool:
+        """
+        Attempt to acquire a payment lock for an order atomically.
+
+        Returns:
+            True if lock was acquired, False if already locked
+        """
+        from sqlalchemy import update
+
+        result = await self.session.execute(
+            update(Order)
+            .where(Order.id == order_id, Order.payment_lock_acquired_at.is_(None))
+            .values(payment_lock_acquired_at=utc_now())
+        )
+        return result.rowcount > 0
+
+    async def release_payment_lock(self, order_id: UUID) -> None:
+        """Release a payment lock for an order."""
+        from sqlalchemy import update
+
+        await self.session.execute(
+            update(Order)
+            .where(Order.id == order_id)
+            .values(payment_lock_acquired_at=None)
+        )
+
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Order]]:

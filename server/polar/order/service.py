@@ -261,6 +261,13 @@ class OrderNotPending(OrderError):
         super().__init__(message)
 
 
+class PaymentAlreadyInProgress(OrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = f"Payment for order {order.id} is already in progress"
+        super().__init__(message)
+
+
 def _is_empty_customer_address(customer_address: dict[str, Any] | None) -> bool:
     return customer_address is None or customer_address["country"] is None
 
@@ -717,25 +724,47 @@ class OrderService:
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
 
-        if payment_method.processor == PaymentProcessor.stripe:
-            metadata: dict[str, Any] = {"order_id": str(order.id)}
-            if order.tax_rate is not None:
-                metadata["tax_amount"] = order.tax_amount
-                metadata["tax_country"] = order.tax_rate["country"]
-                metadata["tax_state"] = order.tax_rate["state"]
+        if order.payment_lock_acquired_at is not None:
+            log.warn("Payment already in progress", order_id=order.id)
+            raise PaymentAlreadyInProgress(order)
 
-            stripe_customer_id = order.customer.stripe_customer_id
-            assert stripe_customer_id is not None
-            await stripe_service.create_payment_intent(
-                amount=order.total_amount,
-                currency=order.currency,
-                payment_method=payment_method.processor_id,
-                customer=stripe_customer_id,
-                confirm=True,
-                off_session=True,
-                statement_descriptor_suffix=order.organization.statement_descriptor,
-                metadata=metadata,
+        try:
+            # Acquire a payment lock to prevent concurrent payments
+            repository = OrderRepository.from_session(session)
+            lock_acquired = await repository.acquire_payment_lock(order.id)
+            if not lock_acquired:
+                log.warn("Payment already in progress", order_id=order.id)
+                raise PaymentAlreadyInProgress(order)
+
+            if payment_method.processor == PaymentProcessor.stripe:
+                metadata: dict[str, Any] = {"order_id": str(order.id)}
+                if order.tax_rate is not None:
+                    metadata["tax_amount"] = order.tax_amount
+                    metadata["tax_country"] = order.tax_rate["country"]
+                    metadata["tax_state"] = order.tax_rate["state"]
+
+                stripe_customer_id = order.customer.stripe_customer_id
+                assert stripe_customer_id is not None
+                await stripe_service.create_payment_intent(
+                    amount=order.total_amount,
+                    currency=order.currency,
+                    payment_method=payment_method.processor_id,
+                    customer=stripe_customer_id,
+                    confirm=True,
+                    off_session=True,
+                    statement_descriptor_suffix=order.organization.statement_descriptor,
+                    metadata=metadata,
+                )
+        except Exception as exc:
+            log.exception(
+                "Failed to trigger payment for order",
+                order_id=order.id,
+                payment_method_id=payment_method.id,
+                error=str(exc),
             )
+            # Release the payment lock on failure
+            await repository.release_payment_lock(order.id)
+            raise
 
     async def handle_payment(
         self, session: AsyncSession, order: Order, payment: Payment | None
@@ -753,6 +782,14 @@ class OrderService:
         # Clear retry attempt date on successful payment
         if order.next_payment_attempt_at is not None:
             update_dict["next_payment_attempt_at"] = None
+
+        # Clear payment lock on successful payment
+        if order.payment_lock_acquired_at is not None:
+            log.info(
+                "Clearing payment lock on order due to successful payment",
+                order_id=order.id,
+            )
+            update_dict["payment_lock_acquired_at"] = None
 
         # Balance the order in the ledger
         if payment is not None:
@@ -1276,6 +1313,15 @@ class OrderService:
         self, session: AsyncSession, order: Order
     ) -> Order:
         """Handle payment failure for an order, initiating dunning if necessary."""
+        # Clear payment lock on failure
+        if order.payment_lock_acquired_at is not None:
+            log.info(
+                "Clearing payment lock on order due to payment failure",
+                order_id=order.id,
+            )
+            repository = OrderRepository.from_session(session)
+            await repository.release_payment_lock(order.id)
+
         if order.subscription is None:
             return order
 

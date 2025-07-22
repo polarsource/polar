@@ -163,11 +163,30 @@ export const CustomerContextView = ({
         )}
       </ShadowBox>
       <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:gap-0 md:shadow-sm lg:rounded-2xl">
-        {!customer.deleted_at && <DetailRow label="ID" value={customer.id} />}
-        <DetailRow label="Email" value={customer.email} />
-        <DetailRow label="Name" value={customer.name} />
-        <DetailRow label="Tax ID" value={customer.tax_id} />
+        {!customer.deleted_at && (
+          <DetailRow
+            labelClassName="flex-none basis-24"
+            label="ID"
+            value={customer.id}
+          />
+        )}
         <DetailRow
+          labelClassName="flex-none basis-24"
+          label="Email"
+          value={customer.email}
+        />
+        <DetailRow
+          labelClassName="flex-none basis-24"
+          label="Name"
+          value={customer.name}
+        />
+        <DetailRow
+          labelClassName="flex-none basis-24"
+          label="Tax ID"
+          value={customer.tax_id}
+        />
+        <DetailRow
+          labelClassName="flex-none basis-24"
           label="Created At"
           value={<FormattedDateTime datetime={customer.created_at} />}
         />
@@ -175,15 +194,33 @@ export const CustomerContextView = ({
       <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:shadow-sm lg:rounded-2xl">
         <h4 className="text-lg">Billing Address</h4>
         <div className="flex flex-col gap-4 md:gap-0">
-          <DetailRow label="Line 1" value={customer.billing_address?.line1} />
-          <DetailRow label="Line 2" value={customer.billing_address?.line2} />
-          <DetailRow label="City" value={customer.billing_address?.city} />
-          <DetailRow label="State" value={customer.billing_address?.state} />
           <DetailRow
+            labelClassName="flex-none basis-24"
+            label="Line 1"
+            value={customer.billing_address?.line1}
+          />
+          <DetailRow
+            labelClassName="flex-none basis-24"
+            label="Line 2"
+            value={customer.billing_address?.line2}
+          />
+          <DetailRow
+            labelClassName="flex-none basis-24"
+            label="City"
+            value={customer.billing_address?.city}
+          />
+          <DetailRow
+            labelClassName="flex-none basis-24"
+            label="State"
+            value={customer.billing_address?.state}
+          />
+          <DetailRow
+            labelClassName="flex-none basis-24"
             label="Postal Code"
             value={customer.billing_address?.postal_code}
           />
           <DetailRow
+            labelClassName="flex-none basis-24"
             label="Country"
             value={customer.billing_address?.country}
           />

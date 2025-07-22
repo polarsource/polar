@@ -123,6 +123,31 @@ export const useEditWebhookEndpoint = () =>
     },
   })
 
+export const useResetSecretWebhookEndpoint = () =>
+  useMutation({
+    mutationFn: (variables: { id: string }) =>
+      api.PATCH('/v1/webhooks/endpoints/{id}/secret', {
+        params: {
+          path: {
+            id: variables.id,
+          },
+        },
+      }),
+    onSuccess: (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['webhookEndpoints', 'list'],
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['webhookEndpoint', 'id', _variables.id],
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['webhookDeliveries', 'list'],
+      })
+    },
+  })
+
 export const useDeleteWebhookEndpoint = () =>
   useMutation({
     mutationFn: (variables: { id: string }) =>

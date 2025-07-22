@@ -26,6 +26,7 @@ from .held_balance import HeldBalance
 from .issue_reward import IssueReward
 from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
+from .login_code import LoginCode
 from .magic_link import MagicLink
 from .meter import Meter
 from .notification import Notification
@@ -44,6 +45,7 @@ from .payout import Payout
 from .personal_access_token import PersonalAccessToken
 from .pledge import Pledge
 from .pledge_transaction import PledgeTransaction
+from .processor_transaction import ProcessorTransaction
 from .product import Product
 from .product_benefit import ProductBenefit
 from .product_custom_field import ProductCustomField
@@ -100,6 +102,7 @@ __all__ = [
     "IssueReward",
     "LicenseKey",
     "LicenseKeyActivation",
+    "LoginCode",
     "MagicLink",
     "Meter",
     "Notification",
@@ -119,6 +122,7 @@ __all__ = [
     "PersonalAccessToken",
     "Pledge",
     "PledgeTransaction",
+    "ProcessorTransaction",
     "Product",
     "ProductBenefit",
     "ProductCustomField",

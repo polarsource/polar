@@ -148,6 +148,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   })
 
   const subscriptions = subscriptionsHook.data?.items || []
+  const rowCount = subscriptionsHook.data?.pagination.total_count ?? 0
   const pageCount = subscriptionsHook.data?.pagination.max_page ?? 1
 
   const selectedSubscription = subscriptions.find(
@@ -167,6 +168,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       id: 'customer',
       accessorKey: 'customer',
       enableSorting: true,
+      size: 150,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Customer" />
       ),
@@ -178,7 +180,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
               avatar_url={customer.avatar_url}
               name={customer.name || customer.email}
             />
-            <div className="fw-medium">{customer.email}</div>
+            <div className="fw-medium overflow-hidden text-ellipsis">
+              {customer.email}
+            </div>
           </div>
         )
       },
@@ -186,6 +190,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     {
       accessorKey: 'status',
       enableSorting: true,
+      size: 50,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),
@@ -196,6 +201,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     {
       accessorKey: 'started_at',
       enableSorting: true,
+      size: 85,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Subscription Date" />
       ),
@@ -206,6 +212,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     {
       accessorKey: 'current_period_end',
       enableSorting: true,
+      size: 85,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Renewal Date" />
       ),
@@ -298,6 +305,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <DataTable
             columns={columns}
             data={subscriptions}
+            rowCount={rowCount}
             pageCount={pageCount}
             pagination={pagination}
             onPaginationChange={setPagination}

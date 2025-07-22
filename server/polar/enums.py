@@ -1,5 +1,8 @@
+from datetime import datetime
 from enum import StrEnum
 from typing import Literal
+
+from dateutil.relativedelta import relativedelta
 
 
 class Platforms(StrEnum):
@@ -27,6 +30,13 @@ class SubscriptionRecurringInterval(StrEnum):
 
     def as_literal(self) -> Literal["month", "year"]:
         return self.value
+
+    def get_next_period(self, d: datetime, leap: int = 1) -> datetime:
+        match self:
+            case SubscriptionRecurringInterval.month:
+                return d + relativedelta(months=leap)
+            case SubscriptionRecurringInterval.year:
+                return d + relativedelta(years=leap)
 
 
 class SubscriptionProrationBehavior(StrEnum):

@@ -10,11 +10,9 @@ from polar.integrations.stripe.utils import get_expandable_id
 from polar.models import Pledge, Transaction
 from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
+from polar.worker import enqueue_job
 
 from .base import BaseTransactionService, BaseTransactionServiceError
-from .processor_fee import (
-    processor_fee_transaction as processor_fee_transaction_service,
-)
 
 
 class PaymentTransactionError(BaseTransactionServiceError): ...
@@ -102,14 +100,11 @@ class PaymentTransactionService(BaseTransactionService):
             payment_user=None,
         )
 
-        # Compute and link fees
-        transaction_fees = await processor_fee_transaction_service.create_payment_fees(
-            session, payment_transaction=transaction
-        )
-        transaction.incurred_transactions = transaction_fees
-
         session.add(transaction)
         await session.flush()
+
+        # Enqueue fees creation
+        enqueue_job("processor_fee.create_payment_fees", transaction.id)
 
         return transaction
 

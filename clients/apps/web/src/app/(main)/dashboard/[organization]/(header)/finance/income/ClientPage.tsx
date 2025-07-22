@@ -66,7 +66,8 @@ export default function ClientPage({
     ...getAPIParams(pagination, sorting),
   })
   const balances = balancesHook.data?.items || []
-  const balancesCount = balancesHook.data?.pagination.max_page ?? 1
+  const rowCount = balancesHook.data?.pagination.total_count ?? 0
+  const pageCount = balancesHook.data?.pagination.max_page ?? 1
 
   return (
     <div className="flex flex-col gap-y-6">
@@ -81,7 +82,8 @@ export default function ClientPage({
       )}
       <TransactionsList
         transactions={balances}
-        pageCount={balancesCount}
+        rowCount={rowCount}
+        pageCount={pageCount}
         pagination={pagination}
         onPaginationChange={setPagination}
         sorting={sorting}

@@ -35,18 +35,31 @@ const ProductsCommandGroup = ({
   selectedProducts: schemas['Product'][]
   className?: string
 }) => {
+  const areAllSelected = useMemo(() => {
+    return groupedProducts[productPriceType].every((product) =>
+      selectedProducts.some(({ id }) => id === product.id),
+    )
+  }, [groupedProducts, productPriceType, selectedProducts])
+
   return (
     <CommandGroup className={className}>
       <CommandItem
         className={twMerge(
-          'flex flex-row items-center justify-between text-black dark:text-white',
+          'flex flex-row items-center justify-between py-2 text-black dark:text-white',
         )}
         key={productPriceType}
         value={productPriceType}
         onSelect={() => onSelectProductType(productPriceType)}
       >
-        <div className="flew-row flex items-center gap-2 font-medium">
+        <div className="flew-row flex items-center gap-2 font-semibold">
           <ProductPriceTypeLabel productPriceType={productPriceType} />
+        </div>
+        <div className="flex items-center font-light">
+          {!areAllSelected ? (
+            <>Select all {groupedProducts[productPriceType].length}</>
+          ) : (
+            <>Unselect all</>
+          )}
         </div>
       </CommandItem>
       {groupedProducts[productPriceType].map((product) => {

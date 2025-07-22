@@ -1,4 +1,7 @@
-import { twMerge } from 'tailwind-merge'
+'use client'
+
+import { cn } from '@/lib/utils'
+import { ComponentProps, useCallback, useEffect, useRef, useState } from 'react'
 
 const Avatar = ({
   name,
@@ -15,38 +18,59 @@ const Avatar = ({
 }) => {
   const initials = getInitials(name)
 
-  let showInitials = true
-  if (avatar_url) {
-    // Skip rendering initials in case of `avatar_url`
-    // Unless from Gravatar since they offer a transparent image in case of no avatar
-    // Also have to check for `http` first to avoid running `new URL` on internal NextJS asset paths
-    const avatarHost = avatar_url.startsWith('http')
-      ? new URL(avatar_url).host
-      : null
-    showInitials = avatarHost === 'www.gravatar.com'
-  }
+  // We render the image with opacity: 0 until it's successfully loaded.
+  // Not doing so can result in a flash of the `alt` text when a 404
+  // is returned from browser cache.
+  const [hasLoaded, setHasLoaded] = useState(false)
+  const [showInitials, setShowInitials] = useState(avatar_url === null)
+
+  const onLoad = useCallback(() => {
+    setHasLoaded(true)
+    setShowInitials(false)
+  }, [setHasLoaded, setShowInitials])
+
+  const imgRef = useRef<HTMLImageElement>(null)
+
+  const onError = useCallback(() => {
+    setShowInitials(true)
+    setHasLoaded(true)
+  }, [setHasLoaded, setShowInitials])
+
+  // We need to look at the `.complete`-property on the <img>
+  // in order to detect resources in the cache.
+  useEffect(() => {
+    if (imgRef.current && imgRef.current.complete) {
+      setHasLoaded(true)
+      setShowInitials(false)
+    }
+  }, [imgRef.current])
 
   return (
     <div
-      className={twMerge(
+      className={cn(
         'dark:bg-polar-900 dark:border-polar-700 relative z-[2] flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-200 bg-gray-50 text-sm',
         className,
       )}
     >
-      {showInitials && (
+      {!avatar_url || showInitials ? (
         <div className="absolute inset-0 flex items-center justify-center bg-transparent">
           <span>{initials}</span>
         </div>
-      )}
-      {avatar_url && (
+      ) : (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
+            ref={imgRef}
             alt={name}
             src={avatar_url}
             height={height}
             width={width}
-            className="z-[1] aspect-square rounded-full object-cover"
+            onLoad={onLoad}
+            onError={onError}
+            className={cn(
+              'z-[1] aspect-square rounded-full object-cover',
+              hasLoaded ? 'opacity-100' : 'opacity-0',
+            )}
           />
         </>
       )}
@@ -54,7 +78,11 @@ const Avatar = ({
   )
 }
 
-export default Avatar
+const AvatarWrapper = (props: ComponentProps<typeof Avatar>) => {
+  return <Avatar {...props} key={props.avatar_url} />
+}
+
+export default AvatarWrapper
 
 const getInitials = (fullName: string) => {
   const allNames = fullName.trim().split(' ')

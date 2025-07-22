@@ -7,10 +7,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
 from tagflow import classes, tag, text
 
+from polar.account.repository import AccountRepository
+from polar.account.sorting import AccountSortProperty
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
-from polar.models import User
+from polar.models import Account, Organization, User, UserOrganization
 from polar.models.user import IdentityVerificationStatus
+from polar.organization.repository import OrganizationRepository
+from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
 from polar.user import sorting
 from polar.user.repository import UserRepository
@@ -171,6 +175,9 @@ async def get(
         ],
         "users:get",
     ):
+        #################
+        ### User info ###
+        #################
         with tag.div(classes="flex flex-col gap-4"):
             with tag.h1(classes="text-4xl"):
                 text(user.email)
@@ -187,4 +194,89 @@ async def get(
                 ),
                 IdentityVerificationStatusDescriptionListItem("Identity"),
             ).render(request, user):
+                pass
+
+        #####################
+        ### Organizations ###
+        #####################
+        orgs = await OrganizationRepository.from_session(session).get_all(
+            OrganizationRepository.from_session(session)
+            .get_base_statement(include_deleted=True)
+            .join(UserOrganization)
+            .where(
+                UserOrganization.user_id == user.id,
+            )
+        )
+        with tag.div(classes="flex flex-col gap-4 pt-16"):
+            with tag.h2(classes="text-2xl"):
+                text("Organizations")
+            with datatable.Datatable[Organization, OrganizationSortProperty](
+                datatable.DatatableAttrColumn(
+                    "id", "ID", href_route_name="organizations:get", clipboard=True
+                ),
+                datatable.DatatableDateTimeColumn("created_at", "Created At"),
+                datatable.DatatableDateTimeColumn("deleted_at", "Deleted At"),
+                datatable.DatatableDateTimeColumn("blocked_at", "Blocked At"),
+                datatable.DatatableAttrColumn(
+                    "slug",
+                    "Slug",
+                    clipboard=True,
+                ),
+                datatable.DatatableActionsColumn(
+                    "",
+                    datatable.DatatableActionHTMX(
+                        "Delete Organization",
+                        lambda r, i: str(r.url_for("organizations:delete", id=i.id)),
+                        target="#modal",
+                        hidden=lambda _, i: i.deleted_at is not None,
+                    ),
+                ),
+            ).render(request, orgs):
+                pass
+
+        ################
+        ### Accounts ###
+        ################
+        accounts = await AccountRepository.from_session(session).get_all(
+            AccountRepository.from_session(session)
+            .get_base_statement(include_deleted=True)
+            .where(Account.admin_id == user.id)
+        )
+
+        def _stripe_link(request: Request, value: Account) -> str:
+            return f"https://dashboard.stripe.com/connect/accounts/{value.stripe_id}"
+
+        with tag.div(classes="flex flex-col gap-4 pt-16"):
+            with tag.h2(classes="text-2xl"):
+                text("Accounts")
+            with datatable.Datatable[Account, AccountSortProperty](
+                datatable.DatatableAttrColumn("id", "ID", clipboard=True),
+                datatable.DatatableDateTimeColumn("created_at", "Created At"),
+                datatable.DatatableDateTimeColumn("deleted_at", "Deleted At"),
+                datatable.DatatableAttrColumn(
+                    "account_type",
+                    "Account Type",
+                    external_href=_stripe_link,
+                ),
+                datatable.DatatableAttrColumn("country", "Country"),
+                datatable.DatatableAttrColumn("currency", "Currency"),
+                datatable.DatatableAttrColumn(
+                    "next_review_threshold", "Next Review Threshold"
+                ),
+                datatable.DatatableActionsColumn(
+                    "",
+                    datatable.DatatableActionHTMX(
+                        "Delete Stripe Connect account",
+                        lambda r, i: str(r.url_for("accounts:delete-stripe", id=i.id)),
+                        target="#modal",
+                        hidden=lambda _, i: not i.stripe_id,
+                    ),
+                    datatable.DatatableActionHTMX(
+                        "Delete account",
+                        lambda r, i: str(r.url_for("accounts:delete", id=i.id)),
+                        target="#modal",
+                        hidden=lambda _, i: i.deleted_at is not None,
+                    ),
+                ),
+            ).render(request, accounts):
                 pass

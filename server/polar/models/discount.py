@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID
 
 import stripe as stripe_lib
+from dateutil.relativedelta import relativedelta
 from sqlalchemy import (
     TIMESTAMP,
     Column,
@@ -157,6 +158,20 @@ class Discount(MetadataMixin, RecordModel):
         if len(self.products) == 0:
             return True
         return product in self.products
+
+    def is_repetition_expired(
+        self, started_at: datetime, current_period_start: datetime
+    ) -> bool:
+        if self.duration == DiscountDuration.once:
+            return True
+        if self.duration == DiscountDuration.forever:
+            return False
+        if self.duration_in_months is None:
+            return False
+
+        # -1 because the first month counts as a first repetition
+        end_at = started_at + relativedelta(months=self.duration_in_months - 1)
+        return current_period_start > end_at
 
     __mapper_args__ = {
         "polymorphic_on": "type",

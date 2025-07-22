@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -12,6 +13,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
+from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
     Order,
@@ -54,6 +56,20 @@ class OrderRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_due_dunning_orders(self, *, options: Options = ()) -> Sequence[Order]:
+        """Get orders that are due for dunning retry based on next_payment_attempt_at."""
+
+        statement = (
+            self.get_base_statement()
+            .where(
+                Order.next_payment_attempt_at.is_not(None),
+                Order.next_payment_attempt_at <= utc_now(),
+            )
+            .order_by(Order.next_payment_attempt_at.asc())
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Order]]:
@@ -86,7 +102,9 @@ class OrderRepository(
         discount_load: "_AbstractLoad | None" = None,
     ) -> Options:
         return (
-            customer_load if customer_load else joinedload(Order.customer),
+            customer_load
+            if customer_load
+            else joinedload(Order.customer).joinedload(Customer.organization),
             discount_load if discount_load else joinedload(Order.discount),
             product_load if product_load else joinedload(Order.product),
             joinedload(Order.subscription).joinedload(Subscription.customer),

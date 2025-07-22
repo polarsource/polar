@@ -7,13 +7,18 @@ import WebhookContextView from '@/components/Settings/Webhook/WebhookContextView
 import DeliveriesTable from '@/components/Settings/Webhook/WebhookDeliveriesTable'
 import { toast } from '@/components/Toast/use-toast'
 import { getStatusRedirect } from '@/components/Toast/utils'
-import { useDeleteWebhookEndpoint, useWebhookEndpoint } from '@/hooks/queries'
+import {
+  useDeleteWebhookEndpoint,
+  useResetSecretWebhookEndpoint,
+  useWebhookEndpoint,
+} from '@/hooks/queries'
 import {
   DataTablePaginationState,
   DataTableSortingState,
 } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { useParams, useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
@@ -27,19 +32,42 @@ export default function ClientPage({
   sorting: DataTableSortingState
 }) {
   const { id }: { id: string } = useParams()
+  const router = useRouter()
 
   const { data: endpoint } = useWebhookEndpoint(id)
+
+  const {
+    hide: hideResetModal,
+    isShown: isResetModalShown,
+    show: showResetModal,
+  } = useModal()
+  const resetSecretWebhookEndpoint = useResetSecretWebhookEndpoint()
+  const handleResetSecret = useCallback(async () => {
+    if (!endpoint) return
+    const { error } = await resetSecretWebhookEndpoint.mutateAsync({
+      id: endpoint.id,
+    })
+    if (error) {
+      toast({
+        title: 'Webhook Secret Reset Failed',
+        description: `Error resetting Webhook Secret: ${error.detail}`,
+      })
+      return
+    }
+
+    hideResetModal()
+    toast({
+      title: 'Webhook Secret Reset',
+      description: 'Webhook Secret was reset successfully',
+    })
+  }, [resetSecretWebhookEndpoint, hideResetModal, endpoint])
 
   const {
     hide: hideDeleteModal,
     isShown: isArchiveModalShown,
     show: showArchiveModal,
   } = useModal()
-
-  const router = useRouter()
-
   const deleteWebhookEndpoint = useDeleteWebhookEndpoint()
-
   const handleDeleteWebhookEndpoint = useCallback(async () => {
     if (!endpoint) return
 
@@ -74,15 +102,26 @@ export default function ClientPage({
     <DashboardBody
       title="Webhook"
       header={
-        <Button variant="destructive" onClick={showArchiveModal}>
-          Delete
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={showResetModal}>
+            Reset Secret
+          </Button>
+          <Button variant="destructive" onClick={showArchiveModal}>
+            Delete
+          </Button>
+        </div>
       }
       contextView={<WebhookContextView endpoint={endpoint} />}
       className="gap-y-8"
       wide
     >
-      <h3 className="text-lg">{endpoint.url}</h3>
+      <div className="flex flex-col gap-4">
+        <h3 className="text-lg">{endpoint.url}</h3>
+        <CopyToClipboardInput
+          value={endpoint.secret}
+          buttonLabel="Copy Secret"
+        />
+      </div>
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xl font-medium">Deliveries</h2>
@@ -95,6 +134,16 @@ export default function ClientPage({
         />
       </div>
 
+      <ConfirmModal
+        title="Reset Webhook Secret"
+        description={
+          'This action will reset the webhook secret and invalidate the previous one. Are you sure you want to continue?'
+        }
+        destructiveText="Reset Secret"
+        onConfirm={handleResetSecret}
+        isShown={isResetModalShown}
+        hide={hideResetModal}
+      />
       <ConfirmModal
         title="Delete Webhook Endpoint"
         description={

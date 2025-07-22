@@ -4,7 +4,6 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   FieldEvents,
   FieldFormat,
-  FieldSecret,
   FieldUrl,
 } from '@/components/Settings/Webhook/WebhookForm'
 import { toast } from '@/components/Toast/use-toast'
@@ -60,7 +59,6 @@ export default function WebhookContextView({
           >
             <FieldUrl />
             <FieldFormat />
-            <FieldSecret isUpdate={true} />
             <FieldEvents />
 
             <Button

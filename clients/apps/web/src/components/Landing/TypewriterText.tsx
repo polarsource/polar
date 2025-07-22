@@ -1,9 +1,15 @@
 'use client'
 
-import { animate, motion, useMotionValue, useTransform } from 'framer-motion'
+import {
+  animate,
+  motion,
+  useMotionValue,
+  useTransform,
+  Variants,
+} from 'framer-motion'
 import { useEffect } from 'react'
 
-const cursorVariants = {
+const cursorVariants: Variants = {
   blinking: {
     opacity: [0, 0, 1, 1],
     transition: {

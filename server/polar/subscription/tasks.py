@@ -34,6 +34,19 @@ class SubscriptionTierDoesNotExist(SubscriptionTaskError):
         super().__init__(message)
 
 
+@actor(actor_name="subscription.cycle", priority=TaskPriority.LOW)
+async def subscription_cycle(subscription_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.get_by_id(
+            subscription_id, options=repository.get_eager_options()
+        )
+        if subscription is None:
+            raise SubscriptionDoesNotExist(subscription_id)
+
+        await subscription_service.cycle(session, subscription)
+
+
 @actor(
     actor_name="subscription.subscription.update_product_benefits_grants",
     priority=TaskPriority.MEDIUM,

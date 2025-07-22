@@ -10,10 +10,10 @@ export default async function Layout({
   children: React.ReactNode
 }) {
   const cookieStore = await cookies()
-  const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true'
+  const defaultCollapsed = cookieStore.get('sidebar_state')?.value === 'false'
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
+    <SidebarProvider defaultOpen={!defaultCollapsed}>
       <DashboardLayout type="account">
         <DashboardBody wrapperClassName="md:gap-y-8 !max-w-screen-sm">
           <div className="flex flex-col gap-y-12">{children}</div>

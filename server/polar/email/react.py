@@ -1,11 +1,13 @@
 import json
 import subprocess
-from typing import Any
 
 from polar.config import settings
 
+# Disallow `None` as that would show up as `null` in the eamil
+type JSONProperty = str | int | dict[str, "JSONProperty"] | list["JSONProperty"]
 
-def render_email_template(template: str, props: dict[str, Any]) -> str:
+
+def render_email_template(template: str, props: dict[str, JSONProperty]) -> str:
     process = subprocess.Popen(
         [settings.EMAIL_RENDERER_BINARY_PATH, template, json.dumps(props)],
         stdout=subprocess.PIPE,

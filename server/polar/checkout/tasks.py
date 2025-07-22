@@ -10,22 +10,23 @@ from .service import checkout as checkout_service
 class CheckoutTaskError(PolarTaskError): ...
 
 
+class CheckoutDoesNotExist(CheckoutTaskError):
+    def __init__(self, checkout_id: uuid.UUID) -> None:
+        self.checkout_id = checkout_id
+        message = f"The checkout with id {checkout_id} does not exist."
+        super().__init__(message)
+
+
 @actor(actor_name="checkout.handle_free_success", priority=TaskPriority.HIGH)
 async def handle_free_success(checkout_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
-        await checkout_service.handle_free_success(session, checkout_id)
-
-
-@actor(actor_name="checkout.payment_success", priority=TaskPriority.HIGH)
-async def payment_success(checkout_id: uuid.UUID, payment_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker() as session:
-        await checkout_service.handle_payment_success(session, checkout_id, payment_id)
-
-
-@actor(actor_name="checkout.payment_failed", priority=TaskPriority.HIGH)
-async def payment_failed(checkout_id: uuid.UUID, payment_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker() as session:
-        await checkout_service.handle_payment_failed(session, checkout_id)
+        repository = CheckoutRepository.from_session(session)
+        checkout = await repository.get_by_id(
+            checkout_id, options=repository.get_eager_options()
+        )
+        if checkout is None:
+            raise CheckoutDoesNotExist(checkout_id)
+        await checkout_service.handle_success(session, checkout)
 
 
 @actor(

@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -11,10 +11,6 @@ from polar.postgres import AsyncSession
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
 )
-from polar.transaction.service.payment import (  # type: ignore[attr-defined]
-    processor_fee_transaction_service,
-)
-from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.stripe import build_stripe_balance_transaction, build_stripe_charge
 
@@ -26,20 +22,16 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
-@pytest.fixture(autouse=True)
-def create_payment_fees_mock(mocker: MockerFixture) -> AsyncMock:
-    return mocker.patch.object(
-        processor_fee_transaction_service,
-        "create_payment_fees",
-        spec=ProcessorFeeTransactionService.create_payment_fees,
-        return_value=[],
-    )
+@pytest.fixture
+def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.transaction.service.payment.enqueue_job")
 
 
 @pytest.mark.asyncio
 class TestCreatePayment:
     async def test_existing_transaction(
         self,
+        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         pledge: Pledge,
@@ -64,14 +56,12 @@ class TestCreatePayment:
         )
         await save_fixture(existing_transaction)
 
-        # then
-        session.expunge_all()
-
         transaction = await payment_transaction_service.create_payment(
             session, charge=stripe_charge
         )
 
         assert transaction.id == existing_transaction.id
+        enqueue_job_mock.assert_not_called()
 
     @pytest.mark.parametrize(
         "risk_level,risk_score",
@@ -87,7 +77,7 @@ class TestCreatePayment:
         save_fixture: SaveFixture,
         pledge: Pledge,
         customer: Customer,
-        stripe_service_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
         risk_level: str | None,
         risk_score: int | None,
     ) -> None:
@@ -105,13 +95,6 @@ class TestCreatePayment:
             },
         )
 
-        stripe_service_mock.get_balance_transaction.return_value = (
-            stripe_balance_transaction
-        )
-
-        # then
-        session.expunge_all()
-
         transaction = await payment_transaction_service.create_payment(
             session, charge=stripe_charge
         )
@@ -123,12 +106,16 @@ class TestCreatePayment:
         assert transaction.risk_level == risk_level
         assert transaction.risk_score == risk_score
 
+        enqueue_job_mock.assert_called_once_with(
+            "processor_fee.create_payment_fees", transaction.id
+        )
+
     async def test_tax_metadata(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         pledge: Pledge,
-        stripe_service_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
     ) -> None:
         pledge.payment_id = "STRIPE_PAYMENT_ID"
         await save_fixture(pledge)
@@ -142,13 +129,6 @@ class TestCreatePayment:
             metadata={"tax_country": "US", "tax_state": "NY", "tax_amount": "100"},
         )
 
-        stripe_service_mock.get_balance_transaction.return_value = (
-            stripe_balance_transaction
-        )
-
-        # then
-        session.expunge_all()
-
         transaction = await payment_transaction_service.create_payment(
             session, charge=stripe_charge
         )
@@ -157,3 +137,7 @@ class TestCreatePayment:
         assert transaction.tax_amount == 100
         assert transaction.tax_country == "US"
         assert transaction.tax_state == "NY"
+
+        enqueue_job_mock.assert_called_once_with(
+            "processor_fee.create_payment_fees", transaction.id
+        )

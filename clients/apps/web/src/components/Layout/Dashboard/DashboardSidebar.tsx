@@ -158,7 +158,9 @@ export const DashboardSidebar = ({
                   ))}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => router.push('/dashboard/create')}
+                    onClick={() =>
+                      router.push('/dashboard/create?existing_org=1')
+                    }
                   >
                     New Organization
                   </DropdownMenuItem>

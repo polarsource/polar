@@ -10,6 +10,7 @@ from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.customer.schemas.state import CustomerState
 from polar.exceptions import PolarError, ResourceNotFound
+from polar.kit.crypto import generate_token
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
@@ -34,6 +35,7 @@ from polar.models.webhook_endpoint import (
     WebhookEventType,
     WebhookFormat,
 )
+from polar.oauth2.constants import WEBHOOK_SECRET_PREFIX
 from polar.organization.resolver import get_payload_organization
 from polar.webhook.schemas import (
     WebhookEndpointCreate,
@@ -106,11 +108,16 @@ class WebhookService:
         organization = await get_payload_organization(
             session, auth_subject, create_schema
         )
+        if create_schema.secret is not None:
+            secret = create_schema.secret
+        else:
+            secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
         endpoint = WebhookEndpoint(
-            **create_schema.model_dump(by_alias=True), organization=organization
+            **create_schema.model_dump(exclude={"secret"}, by_alias=True),
+            secret=secret,
+            organization=organization,
         )
         session.add(endpoint)
-        await session.flush()
         return endpoint
 
     async def update_endpoint(
@@ -125,7 +132,13 @@ class WebhookService:
         ).items():
             setattr(endpoint, attr, value)
         session.add(endpoint)
-        await session.flush()
+        return endpoint
+
+    async def reset_endpoint_secret(
+        self, session: AsyncSession, *, endpoint: WebhookEndpoint
+    ) -> WebhookEndpoint:
+        endpoint.secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
+        session.add(endpoint)
         return endpoint
 
     async def delete_endpoint(
@@ -135,7 +148,6 @@ class WebhookService:
     ) -> WebhookEndpoint:
         endpoint.deleted_at = utc_now()
         session.add(endpoint)
-        await session.flush()
         return endpoint
 
     async def list_deliveries(

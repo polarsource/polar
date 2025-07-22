@@ -1,14 +1,17 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 from typing import Any, cast
 from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import pytest
 import stripe as stripe_lib
+from freezegun import freeze_time
+from pydantic_extra_types.country import CountryAlpha2
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
+from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
@@ -16,7 +19,8 @@ from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
-from polar.kit.tax import TaxabilityReason
+from polar.kit.tax import TaxabilityReason, calculate_tax
+from polar.kit.utils import utc_now
 from polar.models import (
     Account,
     Customer,
@@ -29,21 +33,26 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.checkout import CheckoutStatus
-from polar.models.discount import DiscountFixed
+from polar.models.discount import DiscountDuration, DiscountFixed, DiscountType
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.organization import Organization
+from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
+from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
 from polar.order.service import (
     MissingCheckoutCustomer,
+    NoPendingBillingEntries,
     NotAnOrderInvoice,
     NotASubscriptionInvoice,
+    NotRecurringProduct,
     OrderDoesNotExist,
+    OrderNotPending,
     RecurringProduct,
     SubscriptionDoesNotExist,
 )
 from polar.order.service import order as order_service
-from polar.product.guard import is_static_price
+from polar.product.guard import is_fixed_price, is_static_price
 from polar.transaction.service.balance import (
     PaymentTransactionForChargeDoesNotExist,
 )
@@ -55,8 +64,16 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.email import WatcherEmailRenderer, watch_email
 from tests.fixtures.random_objects import (
+    create_active_subscription,
+    create_billing_entry,
+    create_canceled_subscription,
     create_checkout,
+    create_customer,
+    create_discount,
     create_order,
+    create_payment,
+    create_payment_method,
+    create_subscription,
 )
 from tests.fixtures.stripe import construct_stripe_invoice
 from tests.transaction.conftest import create_transaction
@@ -112,7 +129,7 @@ def stripe_service_mock(mocker: MockerFixture, customer: Customer) -> MagicMock:
 
 
 @pytest.fixture
-def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
+def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.order.service.enqueue_job")
 
 
@@ -126,6 +143,19 @@ def event_creation_time() -> tuple[datetime, int]:
     created_datetime = datetime.fromisoformat("2024-01-01T00:00:00Z")
     created_unix_timestamp = int(created_datetime.timestamp())
     return created_datetime, created_unix_timestamp
+
+
+@pytest.fixture
+def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
+    mock = AsyncMock(spec=calculate_tax)
+    mocker.patch("polar.order.service.calculate_tax", new=mock)
+    mock.return_value = {
+        "processor_id": "TAX_PROCESSOR_ID",
+        "amount": 100,
+        "taxability_reason": TaxabilityReason.standard_rated,
+        "tax_rate": {},
+    }
+    return mock
 
 
 @pytest.mark.asyncio
@@ -363,7 +393,7 @@ class TestList:
 
 
 @pytest.mark.asyncio
-class TestCreateFromCheckout:
+class TestCreateFromCheckoutOneTime:
     async def test_recurring_product(
         self, save_fixture: SaveFixture, session: AsyncSession, product: Product
     ) -> None:
@@ -371,7 +401,7 @@ class TestCreateFromCheckout:
             save_fixture, products=[product], status=CheckoutStatus.confirmed
         )
         with pytest.raises(RecurringProduct):
-            await order_service.create_from_checkout(session, checkout)
+            await order_service.create_from_checkout_one_time(session, checkout)
 
     async def test_missing_customer(
         self,
@@ -383,12 +413,12 @@ class TestCreateFromCheckout:
             save_fixture, products=[product_one_time], status=CheckoutStatus.confirmed
         )
         with pytest.raises(MissingCheckoutCustomer):
-            await order_service.create_from_checkout(session, checkout)
+            await order_service.create_from_checkout_one_time(session, checkout)
 
     async def test_fixed(
         self,
         publish_checkout_event_mock: AsyncMock,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_one_time: Product,
@@ -401,7 +431,7 @@ class TestCreateFromCheckout:
             customer=customer,
         )
 
-        order = await order_service.create_from_checkout(session, checkout)
+        order = await order_service.create_from_checkout_one_time(session, checkout)
 
         assert order.net_amount == checkout.net_amount
         assert order.discount_amount == 0
@@ -424,7 +454,7 @@ class TestCreateFromCheckout:
     async def test_custom(
         self,
         publish_checkout_event_mock: AsyncMock,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_one_time_custom_price: Product,
@@ -439,7 +469,7 @@ class TestCreateFromCheckout:
             currency="usd",
         )
 
-        order = await order_service.create_from_checkout(session, checkout)
+        order = await order_service.create_from_checkout_one_time(session, checkout)
 
         assert order.net_amount == checkout.net_amount
         assert order.discount_amount == 0
@@ -462,7 +492,7 @@ class TestCreateFromCheckout:
     async def test_free(
         self,
         publish_checkout_event_mock: AsyncMock,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_one_time_free_price: Product,
@@ -475,7 +505,7 @@ class TestCreateFromCheckout:
             customer=customer,
         )
 
-        order = await order_service.create_from_checkout(session, checkout)
+        order = await order_service.create_from_checkout_one_time(session, checkout)
 
         assert order.net_amount == 0
         assert order.discount_amount == 0
@@ -498,7 +528,7 @@ class TestCreateFromCheckout:
     async def test_fixed_discounted_100(
         self,
         publish_checkout_event_mock: AsyncMock,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_one_time: Product,
@@ -518,7 +548,7 @@ class TestCreateFromCheckout:
             for price in product_one_time.prices
         )
 
-        order = await order_service.create_from_checkout(session, checkout)
+        order = await order_service.create_from_checkout_one_time(session, checkout)
 
         assert order.net_amount == 0
         assert order.discount_amount == discount_amount
@@ -537,6 +567,253 @@ class TestCreateFromCheckout:
         publish_checkout_event_mock.assert_awaited_once_with(
             checkout.client_secret, CheckoutEvent.order_created
         )
+
+
+@pytest.mark.asyncio
+class TestCreateFromCheckoutSubscription:
+    async def test_not_recurring_product(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        subscription: Subscription,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture, products=[product_one_time], status=CheckoutStatus.confirmed
+        )
+        with pytest.raises(NotRecurringProduct):
+            await order_service.create_from_checkout_subscription(
+                session, checkout, subscription, OrderBillingReason.subscription_create
+            )
+
+    async def test_missing_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture, products=[product], status=CheckoutStatus.confirmed
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        with pytest.raises(MissingCheckoutCustomer):
+            await order_service.create_from_checkout_subscription(
+                session, checkout, subscription, OrderBillingReason.subscription_create
+            )
+
+    async def test_fixed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        order = await order_service.create_from_checkout_subscription(
+            session, checkout, subscription, OrderBillingReason.subscription_create
+        )
+
+        assert order.net_amount == checkout.net_amount
+        assert order.discount_amount == 0
+        assert order.billing_reason == OrderBillingReason.subscription_create
+        assert order.customer == checkout.customer
+        assert order.product == product
+        assert len(order.items) == len(product.prices)
+
+
+@pytest.mark.asyncio
+class TestCreateSubscriptionOrder:
+    async def test_no_pending_billing_items(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        with pytest.raises(NoPendingBillingEntries):
+            await order_service.create_subscription_order(
+                session, subscription, OrderBillingReason.subscription_cycle
+            )
+
+    async def test_cycle_fixed_price(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        billing_entry = await create_billing_entry(
+            save_fixture,
+            customer=subscription.customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        assert len(order.items) == 1
+        order_item = order.items[0]
+        assert order_item.product_price == price
+        assert order_item.amount == billing_entry.amount
+        assert order_item.order == order
+
+        assert order.subtotal_amount == billing_entry.amount
+        assert order.status == OrderStatus.pending
+        assert order.billing_reason == OrderBillingReason.subscription_cycle
+        assert order.subscription == subscription
+
+        assert order.tax_amount == calculate_tax_mock.return_value["amount"]
+        assert (
+            order.tax_calculation_processor_id
+            == calculate_tax_mock.return_value["processor_id"]
+        )
+        assert (
+            order.taxability_reason
+            == calculate_tax_mock.return_value["taxability_reason"]
+        )
+        assert order.tax_rate == calculate_tax_mock.return_value["tax_rate"]
+        assert order.tax_transaction_processor_id is None
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        updated_billing_entry = await billing_entry_repository.get_by_id(
+            billing_entry.id
+        )
+        assert updated_billing_entry is not None
+        assert updated_billing_entry.order_item_id == order_item.id
+
+        enqueue_job_mock.assert_any_call(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=subscription.payment_method_id,
+        )
+
+    async def test_cycle_discount(
+        self,
+        calculate_tax_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        await create_billing_entry(
+            save_fixture,
+            customer=subscription.customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        assert order.discount == discount
+        assert order.discount_amount == price.price_amount / 2
+        assert order.net_amount == order.subtotal_amount - order.discount_amount
+
+        calculate_tax_mock.assert_called_once_with(
+            order.id,
+            subscription.currency,
+            order.net_amount,
+            product.stripe_product_id,
+            customer.billing_address,
+            [],
+        )
+
+    async def test_cycle_free_order(
+        self,
+        enqueue_job_mock: MagicMock,
+        calculate_tax_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        await create_billing_entry(
+            save_fixture,
+            customer=subscription.customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        calculate_tax_mock.return_value = {
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": 0,
+            "taxability_reason": TaxabilityReason.not_subject_to_tax,
+            "tax_rate": {},
+        }
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        assert order.net_amount == 0
+        assert order.status == OrderStatus.paid
+
+        enqueued_jobs = [call[0][0] for call in enqueue_job_mock.call_args_list]
+        assert "order.trigger_payment" not in enqueued_jobs
 
 
 @pytest.mark.asyncio
@@ -560,7 +837,7 @@ class TestCreateOrderFromStripe:
 
     async def test_basic(
         self,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         subscription: Subscription,
         product: Product,
@@ -778,7 +1055,7 @@ class TestCreateOrderFromStripe:
     async def test_tax(
         self,
         stripe_service_mock: MagicMock,
-        enqueue_job_mock: AsyncMock,
+        enqueue_job_mock: MagicMock,
         session: AsyncSession,
         subscription: Subscription,
         product: Product,
@@ -818,14 +1095,13 @@ class TestUpdateOrderFromStripe:
 
     async def test_paid_charge(
         self,
-        enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product: Product,
         customer: Customer,
     ) -> None:
         invoice = construct_stripe_invoice(status="paid", lines=[])
-        order = await create_order(
+        await create_order(
             save_fixture,
             product=product,
             customer=customer,
@@ -837,13 +1113,8 @@ class TestUpdateOrderFromStripe:
         )
         assert updated_order.status == OrderStatus.paid
 
-        enqueue_job_mock.assert_any_call(
-            "order.balance", order_id=order.id, charge_id="CHARGE_ID"
-        )
-
     async def test_paid_out_of_band(
         self,
-        enqueue_job_mock: AsyncMock,
         stripe_service_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -856,7 +1127,7 @@ class TestUpdateOrderFromStripe:
         invoice = construct_stripe_invoice(
             status="paid", lines=[], metadata={"payment_intent_id": payment_intent.id}
         )
-        order = await create_order(
+        await create_order(
             save_fixture,
             product=product,
             customer=customer,
@@ -867,10 +1138,6 @@ class TestUpdateOrderFromStripe:
             session, invoice=invoice
         )
         assert updated_order.status == OrderStatus.paid
-
-        enqueue_job_mock.assert_any_call(
-            "order.balance", order_id=order.id, charge_id=payment_intent.latest_charge
-        )
 
 
 @pytest.mark.asyncio
@@ -996,3 +1263,558 @@ async def test_send_confirmation_email(
             await order_service.send_confirmation_email(session, organization, order)
 
         await watch_email(_send_confirmation_email, email_sender.path)
+
+
+@pytest.mark.asyncio
+class TestHandlePayment:
+    async def test_order_not_pending(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Create an order that is already paid
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+            stripe_invoice_id=None,
+        )
+
+        with pytest.raises(OrderNotPending):
+            await order_service.handle_payment(session, order, None)
+
+    async def test_full_case_with_payment_and_tax(
+        self,
+        stripe_service_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Create a pending order with tax calculation processor ID
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        # Set tax_calculation_processor_id
+        order.tax_calculation_processor_id = "tax_calc_123"
+        await save_fixture(order)
+
+        # Create a payment
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_123",
+        )
+
+        # Mock stripe tax transaction creation
+        mock_tax_transaction = MagicMock()
+        mock_tax_transaction.id = "tax_txn_456"
+        stripe_service_mock.create_tax_transaction.return_value = mock_tax_transaction
+
+        # Call handle_payment
+        updated_order = await order_service.handle_payment(session, order, payment)
+
+        # Verify order status is updated to paid
+        assert updated_order.status == OrderStatus.paid
+        assert updated_order.tax_transaction_processor_id == "tax_txn_456"
+
+        # Verify enqueue_job was called to balance the order
+        enqueue_job_mock.assert_called_once_with(
+            "order.balance", order_id=order.id, charge_id="stripe_payment_123"
+        )
+
+        # Verify stripe tax transaction was created
+        stripe_service_mock.create_tax_transaction.assert_called_once_with(
+            "tax_calc_123", str(order.id)
+        )
+
+    async def test_stripe_order_not_pending(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Create a Stripe order that is already paid
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+        )
+
+        # Create a payment
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_123",
+        )
+
+        await order_service.handle_payment(session, order, payment)
+
+        # Verify enqueue_job was called to balance the order
+        enqueue_job_mock.assert_called_once_with(
+            "order.balance", order_id=order.id, charge_id="stripe_payment_123"
+        )
+
+
+@pytest.mark.asyncio
+class TestHandlePaymentFailure:
+    """Test order service handle payment failure functionality"""
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_handle_payment_failure_subscription_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """Test that order service handles payment failure for subscription orders"""
+
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+        )
+        order.next_payment_attempt_at = None
+        order.subscription.stripe_subscription_id = None
+        await save_fixture(order)
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+        mock_mark_past_due.return_value = subscription
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        assert result_order.next_payment_attempt_at is not None
+        expected_retry_date = utc_now() + timedelta(days=2)
+        assert result_order.next_payment_attempt_at == expected_retry_date
+
+        mock_mark_past_due.assert_called_once_with(session, subscription)
+
+    async def test_handle_payment_failure_stripe_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        subscription: Subscription,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """Test that order service skips dunning for stripe subscription orders"""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+        )
+        order.next_payment_attempt_at = None
+        order.subscription.stripe_subscription_id = "sub_stripe_123"
+        await save_fixture(order)
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        assert result_order.next_payment_attempt_at is None
+
+        mock_mark_past_due.assert_not_called()
+
+    async def test_handle_payment_failure_non_subscription_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """Test that order service skips dunning for non-subscription orders"""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=None,
+        )
+        order.next_payment_attempt_at = None
+        await save_fixture(order)
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        assert result_order.next_payment_attempt_at is None
+
+        mock_mark_past_due.assert_not_called()
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_handle_payment_failure_subsequent_failure(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """Test that order service skips dunning on subsequent failures"""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+        )
+        existing_retry_date = utc_now() + timedelta(days=1)
+        order.next_payment_attempt_at = existing_retry_date
+        await save_fixture(order)
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        assert result_order.next_payment_attempt_at == existing_retry_date
+
+        mock_mark_past_due.assert_not_called()
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_handle_payment_failure_consecutive_first_retry(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """Test that order service schedules first retry after one failed payment"""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+        )
+        order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
+        order.subscription.stripe_subscription_id = None
+        await save_fixture(order)
+
+        # Create one failed payment for this order
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            order=order,
+        )
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        assert result_order.next_payment_attempt_at is not None
+        # Should schedule second retry (5 days from now, as per DUNNING_RETRY_INTERVALS[1])
+        expected_retry_date = utc_now() + timedelta(days=5)
+        assert result_order.next_payment_attempt_at == expected_retry_date
+
+        mock_mark_past_due.assert_not_called()
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_handle_payment_failure_consecutive_second_retry(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """Test that order service schedules second retry after two failed payments"""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+        )
+        order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
+        order.subscription.stripe_subscription_id = None
+        await save_fixture(order)
+
+        # Create two failed payments for this order
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            order=order,
+        )
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            order=order,
+        )
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        assert result_order.next_payment_attempt_at is not None
+        # Should schedule third retry (7 days from now, as per DUNNING_RETRY_INTERVALS[2])
+        expected_retry_date = utc_now() + timedelta(days=7)
+        assert result_order.next_payment_attempt_at == expected_retry_date
+
+        mock_mark_past_due.assert_not_called()
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_handle_payment_failure_final_attempt_cancels_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """Test that order service cancels subscription after final retry attempt"""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+        )
+        order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
+        order.subscription.stripe_subscription_id = None
+        await save_fixture(order)
+
+        # Create 4 failed payments for this order (equal to DUNNING_RETRY_INTERVALS length)
+        for _ in range(4):
+            await create_payment(
+                save_fixture,
+                order.organization,
+                status=PaymentStatus.failed,
+                order=order,
+            )
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+        mock_cancel = mocker.patch("polar.subscription.service.subscription.cancel")
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        assert result_order.next_payment_attempt_at is None
+        mock_cancel.assert_called_once_with(session, subscription)
+        mock_mark_past_due.assert_not_called()
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_handle_payment_failure_only_failed_payments_counted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """Test that order service only counts failed payments, not successful ones"""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+        )
+        order.next_payment_attempt_at = utc_now() - timedelta(days=1)  # Past due
+        order.subscription.stripe_subscription_id = None
+        await save_fixture(order)
+
+        # Create one failed payment and one successful payment for this order
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            order=order,
+        )
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.succeeded,
+            order=order,
+        )
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+
+        # When
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Then
+        assert result_order.next_payment_attempt_at is not None
+        # Should schedule second retry (5 days) since only 1 failed payment exists
+        expected_retry_date = utc_now() + timedelta(days=5)
+        assert result_order.next_payment_attempt_at == expected_retry_date
+
+        mock_mark_past_due.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestProcessDunningOrder:
+    """Test order service process dunning order functionality"""
+
+    async def test_process_dunning_order_no_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Test that process_dunning_order logs warning for orders without subscription"""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=None,
+        )
+
+        # When
+        await order_service.process_dunning_order(session, order)
+
+        # Then
+        assert "Order has no subscription, skipping dunning" in caplog.text
+
+    async def test_process_dunning_order_cancelled_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Test that process_dunning_order removes retry date for cancelled subscriptions"""
+        # Given - create a subscription and manually set it to canceled status
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            customer=customer,
+            product=product,
+        )
+        subscription.status = SubscriptionStatus.canceled
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription.payment_method = payment_method
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+        )
+        order.next_payment_attempt_at = utc_now() + timedelta(days=1)
+        await save_fixture(order)
+
+        # When
+        order = await order_service.process_dunning_order(session, order)
+
+        # Then
+        assert order.next_payment_attempt_at is None
+
+    async def test_process_dunning_order_no_payment_method(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        subscription: Subscription,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Test that process_dunning_order logs warning for subscriptions without payment method"""
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+        )
+        subscription.payment_method_id = None
+        await save_fixture(subscription)
+
+        # When
+        order = await order_service.process_dunning_order(session, order)
+
+        # Then
+        assert (
+            "Order subscription has no payment method, skipping dunning" in caplog.text
+        )
+
+    async def test_process_dunning_order_success(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        subscription: Subscription,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        """Test that process_dunning_order successfully enqueues payment retry"""
+        # Given
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription.payment_method_id = payment_method.id
+
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+        )
+
+        # When
+        order = await order_service.process_dunning_order(session, order)
+
+        # Then
+        enqueue_job_mock.assert_called_once_with(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=payment_method.id,
+        )

@@ -82,6 +82,10 @@ class AccountService:
             account, update_dict=account_update.model_dump(exclude_unset=True)
         )
 
+    async def delete(self, session: AsyncSession, account: Account) -> Account:
+        repository = AccountRepository.from_session(session)
+        return await repository.soft_delete(account)
+
     async def create_account(
         self,
         session: AsyncSession,
@@ -253,6 +257,19 @@ class AccountService:
 
         if account.account_type == AccountType.stripe and account.stripe_id:
             await stripe.update_account(account.stripe_id, name)
+
+    async def deny_account(self, session: AsyncSession, account: Account) -> Account:
+        account.status = Account.Status.DENIED
+        session.add(account)
+        return account
+
+    async def set_account_under_review(
+        self, session: AsyncSession, account: Account
+    ) -> Account:
+        account.status = Account.Status.UNDER_REVIEW
+        session.add(account)
+        enqueue_job("account.under_review", account_id=account.id)
+        return account
 
 
 account = AccountService()

@@ -6,7 +6,7 @@ from sqlalchemy import or_, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.config import settings
-from polar.email.renderer import get_email_renderer
+from polar.email.react import render_email_template
 from polar.email.sender import enqueue_email
 from polar.enums import TokenType
 from polar.kit.crypto import get_token_hash
@@ -72,24 +72,19 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
         personal_access_token.set_deleted_at()
         session.add(personal_access_token)
 
-        email_renderer = get_email_renderer(
-            {"personal_access_token": "polar.personal_access_token"}
-        )
-
-        subject, body = email_renderer.render_from_template(
-            "Security Notice - Your Polar Personal Access Token has been leaked",
-            "personal_access_token/leaked_token.html",
+        body = render_email_template(
+            "personal_access_token_leaked",
             {
                 "personal_access_token": personal_access_token.comment,
                 "notifier": notifier,
-                "url": url,
+                "url": url or "",
                 "current_year": datetime.now().year,
             },
         )
 
         enqueue_email(
             to_email_addr=personal_access_token.user.email,
-            subject=subject,
+            subject="Security Notice - Your Polar Personal Access Token has been leaked",
             html_content=body,
         )
 

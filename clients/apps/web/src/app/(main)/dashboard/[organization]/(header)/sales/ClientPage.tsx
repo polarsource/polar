@@ -119,6 +119,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   })
 
   const orders = ordersHook.data?.items || []
+  const rowCount = ordersHook.data?.pagination.total_count ?? 0
   const pageCount = ordersHook.data?.pagination.max_page ?? 1
 
   const columns: DataTableColumnDef<schemas['Order']>[] = [
@@ -137,7 +138,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
               avatar_url={customer.avatar_url}
               name={customer.name || customer.email}
             />
-            <div className="fw-medium">{customer.email}</div>
+            <div className="fw-medium overflow-hidden text-ellipsis">
+              {customer.email}
+            </div>
           </div>
         )
       },
@@ -145,6 +148,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     {
       accessorKey: 'net_amount',
       enableSorting: true,
+      size: 50,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Amount" />
       ),
@@ -176,6 +180,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     {
       accessorKey: 'status',
       enableSorting: true,
+      size: 50,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),
@@ -188,6 +193,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     {
       accessorKey: 'created_at',
       enableSorting: true,
+      size: 50,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Date" />
       ),
@@ -269,6 +275,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <DataTable
             columns={columns}
             data={orders}
+            rowCount={rowCount}
             pageCount={pageCount}
             pagination={pagination}
             onPaginationChange={setPagination}

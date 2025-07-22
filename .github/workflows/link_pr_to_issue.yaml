@@ -1,0 +1,111 @@
+name: Link PR to GitHub Issue via Linear
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  link-pr-to-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract ticket number from branch name
+        id: extract-ticket
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          echo "Branch name: $BRANCH_NAME"
+
+          # Extract pol-XXX pattern from branch name
+          TICKET_NUMBER=$(echo $BRANCH_NAME | grep -oE 'pol-[0-9]+' || echo "")
+          echo "ticket_number=$TICKET_NUMBER" >> $GITHUB_OUTPUT
+
+          if [ -z "$TICKET_NUMBER" ]; then
+            echo "No ticket number found in branch name - skipping workflow"
+            exit 0
+          fi
+
+          echo "Found ticket number: $TICKET_NUMBER"
+
+      - name: Query Linear for GitHub issue
+        id: query-linear
+        if: steps.extract-ticket.outputs.ticket_number
+        run: |
+          TICKET_NUMBER="${{ steps.extract-ticket.outputs.ticket_number }}"
+
+          # GraphQL query to get issue and its GitHub integration via attachments
+          QUERY='query GetIssue($id: String!) {
+            issue(id: $id) {
+              id
+              title
+              url
+              attachments {
+                nodes {
+                  id
+                  title
+                  url
+                  subtitle
+                }
+              }
+            }
+          }'
+
+          # Make GraphQL request to Linear
+          RESPONSE=$(curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: ${{ secrets.LINEAR_API_KEY }}" \
+            -d "{\"query\":\"$(echo $QUERY | tr '\n' ' ' | sed 's/"/\\"/g')\",\"variables\":{\"id\":\"$TICKET_NUMBER\"}}" \
+            https://api.linear.app/graphql)
+
+          # Check if the issue exists
+          ISSUE_EXISTS=$(echo "$RESPONSE" | jq -r '.data.issue != null')
+          if [ "$ISSUE_EXISTS" != "true" ]; then
+            echo "Issue $TICKET_NUMBER not found in Linear"
+            exit 0
+          fi
+
+          # Extract GitHub issue number from attachments
+          GITHUB_ISSUE_NUMBER=$(echo "$RESPONSE" | jq -r '
+            .data.issue.attachments.nodes[] |
+            select(.url | contains("github.com/") and contains("/issues/")) |
+            .url | split("/issues/")[1] | split("/")[0]
+          ')
+
+          if [ -n "$GITHUB_ISSUE_NUMBER" ] && [ "$GITHUB_ISSUE_NUMBER" != "null" ]; then
+            echo "github_issue_number=$GITHUB_ISSUE_NUMBER" >> $GITHUB_OUTPUT
+            echo "Found GitHub issue number: $GITHUB_ISSUE_NUMBER"
+          else
+            echo "No GitHub issue found for Linear ticket $TICKET_NUMBER"
+            exit 0
+          fi
+
+      - name: Update PR description
+        if: steps.query-linear.outputs.github_issue_number
+        run: |
+          GITHUB_ISSUE_NUMBER="${{ steps.query-linear.outputs.github_issue_number }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          CURRENT_BODY="${{ github.event.pull_request.body }}"
+
+          # Check if the fix reference already exists in the description
+          if echo "$CURRENT_BODY" | grep -q "Fix #$GITHUB_ISSUE_NUMBER"; then
+            echo "PR description already contains fix reference for issue #$GITHUB_ISSUE_NUMBER"
+            exit 0
+          fi
+
+          # Prepare the new body with fix reference at the top
+          if [ -n "$CURRENT_BODY" ] && [ "$CURRENT_BODY" != "null" ]; then
+            NEW_BODY=$(printf "Fix #%s\n\n%s" "$GITHUB_ISSUE_NUMBER" "$CURRENT_BODY")
+          else
+            NEW_BODY="Fix #$GITHUB_ISSUE_NUMBER"
+          fi
+
+          # Update the PR description
+          curl -s -X PATCH \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d "{\"body\":$(echo "$NEW_BODY" | jq -Rs .)}" \
+            "${{ github.api_url }}/repos/${{ github.repository }}/pulls/$PR_NUMBER" > /dev/null
+
+          echo "Updated PR #$PR_NUMBER description to include fix reference for GitHub issue #$GITHUB_ISSUE_NUMBER"

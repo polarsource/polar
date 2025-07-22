@@ -13,9 +13,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Page({
-  searchParams: { slug, auto },
+  searchParams: { slug, auto, existing_org },
 }: {
-  searchParams: { slug?: string; auto?: string }
+  searchParams: { slug?: string; auto?: string; existing_org?: boolean }
 }) {
   let validationErrors: schemas['ValidationError'][] = []
   let error: string | undefined = undefined
@@ -42,5 +42,11 @@ export default async function Page({
     }
   }
 
-  return <ClientPage validationErrors={validationErrors} error={error} />
+  return (
+    <ClientPage
+      hasExistingOrg={!!existing_org}
+      validationErrors={validationErrors}
+      error={error}
+    />
+  )
 }

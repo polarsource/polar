@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 from babel.numbers import format_currency
 from pydantic import UUID4, BaseModel, Discriminator, computed_field
 
-from polar.email.renderer import get_email_renderer
+from polar.email.react import render_email_template
 from polar.kit.schemas import Schema
 
 
@@ -19,20 +19,18 @@ class NotificationType(StrEnum):
 
 
 class NotificationPayloadBase(BaseModel):
-    @classmethod
     @abstractmethod
-    def subject(cls) -> str:
+    def subject(self) -> str:
         pass
 
     @classmethod
     @abstractmethod
-    def body(cls) -> str:
+    def template_name(cls) -> str:
         pass
 
     def render(self) -> tuple[str, str]:
-        email_renderer = get_email_renderer()
-        return email_renderer.render_from_string(
-            self.subject(), self.body(), self.model_dump()
+        return self.subject(), render_email_template(
+            self.template_name(), self.model_dump()
         )
 
 
@@ -45,29 +43,12 @@ class NotificationBase(Schema):
 class MaintainerAccountUnderReviewNotificationPayload(NotificationPayloadBase):
     account_type: str
 
-    @classmethod
-    def subject(cls) -> str:
+    def subject(self) -> str:
         return "Your Polar account is being reviewed"
 
     @classmethod
-    def body(cls) -> str:
-        return """Hi there,<br><br>
-
-Sorry, we don't mean to scare you. Account reviews are completely normal and
-part of our ongoing compliance efforts here at Polar.<br><br>
-
-Currently, your {{account_type}} and organizations connected to it is being
-reviewed as part of this automated process.<br><br>
-
-We perform them ahead of the first payout and then automatically after certain sales thresholds.<br><br>
-
-You can read more about our account reviews here:<br>
-https://dub.sh/polar-review
-
-So no cause to be concerned. Typically, our reviews are completed within 24-48h.<br><br>
-
-We'll reach out shortly in case we need any further information from you for our review.<br><br>
-"""
+    def template_name(cls) -> str:
+        return "notification_account_under_review"
 
 
 class MaintainerAccountUnderReviewNotification(NotificationBase):
@@ -78,19 +59,12 @@ class MaintainerAccountUnderReviewNotification(NotificationBase):
 class MaintainerAccountReviewedNotificationPayload(NotificationPayloadBase):
     account_type: str
 
-    @classmethod
-    def subject(cls) -> str:
-        return "Your Polar account is now completed"
+    def subject(self) -> str:
+        return "Your Polar account review is now complete"
 
     @classmethod
-    def body(cls) -> str:
-        return """Hi,<br><br>
-
-We are pleased to inform you that the review of your Polar account has been
-successfully completed.<br><br>
-
-We appreciate your patience throughout this process.<br><br>
-"""
+    def template_name(cls) -> str:
+        return "notification_account_reviewed"
 
 
 class MaintainerAccountReviewedNotification(NotificationBase):
@@ -111,16 +85,18 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
             return ""
         return format_currency(self.tier_price_amount / 100, "USD", locale="en_US")
 
-    @classmethod
-    def subject(cls) -> str:
-        return "Congrats! You have a new subscriber on {{tier_name}} ({{ formatted_price_amount if tier_price_amount else 'free' }}/{{tier_price_recurring_interval}})!"
+    def subject(self) -> str:
+        if self.tier_price_amount:
+            price = (
+                f"{self.formatted_price_amount}/{self.tier_price_recurring_interval} "
+            )
+        else:
+            price = "free"
+        return f"Congrats! You have a new subscriber on {self.tier_name} ({price})!"
 
     @classmethod
-    def body(cls) -> str:
-        return """Congratulations!<br><br>
-
-{{subscriber_name}} is now subscribing to <strong>{{tier_name}}</strong> for {{ formatted_price_amount if tier_price_amount else "free" }}/{{tier_price_recurring_interval}}.<br><br>
-"""
+    def template_name(cls) -> str:
+        return "notification_new_subscription"
 
 
 class MaintainerNewPaidSubscriptionNotification(NotificationBase):
@@ -138,16 +114,12 @@ class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
     def formatted_price_amount(self) -> str:
         return format_currency(self.product_price_amount / 100, "USD", locale="en_US")
 
-    @classmethod
-    def subject(cls) -> str:
-        return "Congrats! You've made a new sale ({{ formatted_price_amount }})!"
+    def subject(self) -> str:
+        return f"Congrats! You've made a new sale ({self.formatted_price_amount})!"
 
     @classmethod
-    def body(cls) -> str:
-        return """Congratulations!<br><br>
-
-{{customer_name}} purchased <strong>{{product_name}}</strong> for {{formatted_price_amount}}.<br><br>
-"""
+    def template_name(cls) -> str:
+        return "notification_new_sale"
 
 
 class MaintainerNewProductSaleNotification(NotificationBase):
@@ -159,44 +131,14 @@ class MaintainerCreateAccountNotificationPayload(NotificationPayloadBase):
     organization_name: str
     url: str
 
-    @classmethod
-    def subject(cls) -> str:
-        return "Create a payout account for {{organization_name}} now to receive funds"
+    def subject(self) -> str:
+        return (
+            f"Create a payout account for {self.organization_name} now to receive funds"
+        )
 
     @classmethod
-    def body(cls) -> str:
-        return """<h1>Hi,</h1>
-
-<p>Now that you got your first payment to {{organization_name}}, you should create a payout account in order to receive your funds.</p>
-
-<p>We support Stripe and Open Collective. This operation only takes a few minutes and allows you to receive your money immediately.</p>
-
-<table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0" role="presentation">
-    <tr>
-        <td align="center">
-            <!-- Border based button
-https://litmus.com/blog/a-guide-to-bulletproof-buttons-in-email-design -->
-            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
-                <tr>
-                    <td align="center">
-                        <a href="{{url}}" class="f-fallback button">Create my payout account</a>
-                    </td>
-                </tr>
-            </table>
-        </td>
-    </tr>
-</table>
-<!-- Sub copy -->
-<table class="body-sub" role="presentation">
-    <tr>
-        <td>
-            <p class="f-fallback sub">If you're having trouble with the button above, copy and paste the URL below into
-                your web browser.</p>
-            <p class="f-fallback sub"><a href="{{url}}">{{url}}</a></p>
-        </td>
-    </tr>
-</table>
-"""
+    def template_name(cls) -> str:
+        return "notification_create_account"
 
 
 class MaintainerCreateAccountNotification(NotificationBase):

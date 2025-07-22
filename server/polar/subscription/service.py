@@ -9,18 +9,20 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, selectinload
 
-from polar.auth.models import (
-    AuthSubject,
-)
+from polar.auth.models import AuthSubject
+from polar.billing_entry.repository import BillingEntryRepository
+from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.config import settings
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
-from polar.email.renderer import get_email_renderer
+from polar.email.react import render_email_template
 from polar.email.sender import enqueue_email
-from polar.enums import SubscriptionProrationBehavior
+from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.event.service import event as event_service
+from polar.event.system import SystemEvent, build_system_event
 from polar.exceptions import (
     BadRequest,
     PolarError,
@@ -40,10 +42,12 @@ from polar.logging import Logger
 from polar.models import (
     Benefit,
     BenefitGrant,
+    BillingEntry,
     Checkout,
     Customer,
     Discount,
     Organization,
+    Payment,
     PaymentMethod,
     Product,
     ProductBenefit,
@@ -52,6 +56,7 @@ from polar.models import (
     SubscriptionProductPrice,
     User,
 )
+from polar.models.billing_entry import BillingEntryDirection
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -105,14 +110,10 @@ class MissingCheckoutCustomer(SubscriptionError):
         super().__init__(message)
 
 
-class MissingStripeCustomerID(SubscriptionError):
-    def __init__(self, checkout: Checkout, customer: Customer) -> None:
-        self.checkout = checkout
-        self.customer = customer
-        message = (
-            f"Checkout {checkout.id}'s customer {customer.id} "
-            "is missing a Stripe customer ID."
-        )
+class InactiveSubscription(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = f"Subscription {subscription.id} is not active."
         super().__init__(message)
 
 
@@ -149,6 +150,17 @@ class SubscriptionUpdatePending(SubscriptionError):
         super().__init__(message, 409)
 
 
+class MissingStripeCustomerID(SubscriptionError):
+    def __init__(self, checkout: Checkout, customer: Customer) -> None:
+        self.checkout = checkout
+        self.customer = customer
+        message = (
+            f"Checkout {checkout.id}'s customer {customer.id} "
+            "is missing a Stripe customer ID."
+        )
+        super().__init__(message)
+
+
 @overload
 def _from_timestamp(t: int) -> datetime: ...
 
@@ -172,6 +184,7 @@ class SubscriptionService:
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
         discount_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
         metadata: MetadataQuery | None = None,
@@ -196,6 +209,9 @@ class SubscriptionService:
 
         if customer_id is not None:
             statement = statement.where(Subscription.customer_id.in_(customer_id))
+
+        if external_customer_id is not None:
+            statement = statement.where(Customer.external_id.in_(external_customer_id))
 
         if discount_id is not None:
             statement = statement.where(Subscription.discount_id.in_(discount_id))
@@ -250,11 +266,104 @@ class SubscriptionService:
         self,
         session: AsyncSession,
         checkout: Checkout,
-        intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent | None,
-    ) -> Subscription:
-        idempotency_key = (
-            f"subscription_{checkout.id}{'' if intent is None else f'_{intent.id}'}"
+        payment_method: PaymentMethod | None = None,
+    ) -> tuple[Subscription, bool]:
+        product = checkout.product
+        if not product.is_recurring:
+            raise NotARecurringProduct(checkout, product)
+
+        customer = checkout.customer
+        if customer is None:
+            raise MissingCheckoutCustomer(checkout)
+
+        prices = product.prices
+        recurring_interval: SubscriptionRecurringInterval
+        if product.is_legacy_recurring_price:
+            prices = [checkout.product_price]
+            recurring_interval = prices[0].recurring_interval
+        else:
+            assert product.recurring_interval is not None
+            recurring_interval = product.recurring_interval
+
+        subscription_product_prices: list[SubscriptionProductPrice] = []
+        for price in prices:
+            subscription_product_prices.append(
+                SubscriptionProductPrice.from_price(price, checkout.amount)
+            )
+
+        subscription = checkout.subscription
+        created = False
+        previous_ends_at = subscription.ends_at if subscription else None
+        previous_status = subscription.status if subscription else None
+
+        current_period_start = utc_now()
+        current_period_end = recurring_interval.get_next_period(current_period_start)
+
+        # New subscription
+        if subscription is None:
+            subscription = Subscription(
+                started_at=current_period_start,
+                cancel_at_period_end=False,
+                customer=customer,
+            )
+            created = True
+
+        # Even when updating from a free subscription, we change the current period:
+        # we start a billing cycle from the checkout date.
+        subscription.current_period_start = current_period_start
+        subscription.current_period_end = current_period_end
+
+        subscription.recurring_interval = recurring_interval
+        subscription.status = SubscriptionStatus.active
+        subscription.payment_method = payment_method
+        subscription.product = product
+        subscription.subscription_product_prices = subscription_product_prices
+        subscription.discount = checkout.discount
+        subscription.checkout = checkout
+        subscription.user_metadata = checkout.user_metadata
+        subscription.custom_field_data = checkout.custom_field_data
+
+        repository = SubscriptionRepository.from_session(session)
+        if created:
+            subscription = await repository.create(subscription, flush=True)
+            await self._after_subscription_created(session, subscription)
+        else:
+            subscription = await repository.update(subscription, flush=True)
+            assert previous_status is not None
+            await self._after_subscription_updated(
+                session,
+                subscription,
+                previous_status=previous_status,
+                previous_ends_at=previous_ends_at,
+            )
+
+        # Link potential discount redemption to the subscription
+        if subscription.discount is not None:
+            discount_redemption_repository = DiscountRedemptionRepository.from_session(
+                session
+            )
+            await discount_redemption_repository.set_subscription_by_checkout(
+                checkout.id, subscription.id
+            )
+
+        # Enqueue the benefits grants for the subscription
+        await self.enqueue_benefits_grants(session, subscription)
+
+        # Notify checkout channel that a subscription has been created from it
+        await publish_checkout_event(
+            checkout.client_secret, CheckoutEvent.subscription_created
         )
+
+        return subscription, created
+
+    async def create_or_update_from_checkout_stripe(
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        payment: Payment | None = None,
+        payment_method: PaymentMethod | None = None,
+    ) -> tuple[Subscription, bool]:
+        idempotency_key = f"subscription_{checkout.id}{'' if payment is None else f'_{payment.processor_id}'}"
         product = checkout.product
         if not product.is_recurring:
             raise NotARecurringProduct(checkout, product)
@@ -267,19 +376,6 @@ class SubscriptionService:
         if stripe_customer_id is None:
             raise MissingStripeCustomerID(checkout, customer)
 
-        stripe_payment_method = (
-            await stripe_service.get_payment_method(
-                get_expandable_id(intent.payment_method)
-            )
-            if intent and intent.payment_method
-            else None
-        )
-        payment_method: PaymentMethod | None = None
-        if stripe_payment_method is not None:
-            payment_method = await payment_method_service.upsert_from_stripe(
-                session, customer, stripe_payment_method
-            )
-
         metadata = {
             "type": ProductType.product,
             "product_id": str(checkout.product_id),
@@ -288,8 +384,8 @@ class SubscriptionService:
         invoice_metadata = {
             "checkout_id": str(checkout.id),
         }
-        if intent is not None and isinstance(intent, stripe_lib.PaymentIntent):
-            invoice_metadata["payment_intent_id"] = intent.id
+        if payment is not None:
+            invoice_metadata["charge_id"] = payment.processor_id
 
         stripe_price_ids: list[str] = []
         subscription_product_prices: list[SubscriptionProductPrice] = []
@@ -380,7 +476,7 @@ class SubscriptionService:
             )
         await stripe_service.set_automatically_charged_subscription(
             stripe_subscription.id,
-            stripe_payment_method.id if stripe_payment_method else None,
+            payment_method.processor_id if payment_method else None,
             idempotency_key=f"{idempotency_key}_payment_method",
         )
 
@@ -437,19 +533,72 @@ class SubscriptionService:
             checkout.client_secret, CheckoutEvent.subscription_created
         )
 
-        # Sanity check to make sure we didn't mess up the amount.
-        # Don't raise an error so the order can be successfully completed nonetheless.
-        if (
-            isinstance(intent, stripe_lib.PaymentIntent)
-            and stripe_invoice.total != intent.amount
-        ):
-            log.error(
-                "Mismatch between payment intent and invoice amount",
-                subscription=subscription.id,
-                checkout=checkout.id,
-                payment_intent=intent.id,
-                invoice=stripe_invoice.id,
+        return subscription, new_subscription
+
+    async def cycle(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> Subscription:
+        if not subscription.active:
+            raise InactiveSubscription(subscription)
+
+        if subscription.cancel_at_period_end:
+            raise NotImplementedError("Revoke method")
+        else:
+            current_period_end = subscription.current_period_end
+            subscription.current_period_start = current_period_end
+            subscription.current_period_end = (
+                subscription.recurring_interval.get_next_period(current_period_end)
             )
+
+        # Check if discount is still applicable
+        if subscription.discount is not None:
+            assert subscription.started_at is not None
+            if subscription.discount.is_repetition_expired(
+                subscription.started_at, subscription.current_period_start
+            ):
+                subscription.discount = None
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.update(subscription)
+
+        # Add event and billing entry for the new period
+        event = await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_cycled,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata={
+                    "subscription_id": str(subscription.id),
+                },
+            ),
+        )
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        for subscription_product_price in subscription.subscription_product_prices:
+            product_price = subscription_product_price.product_price
+            if is_static_price(product_price):
+                await billing_entry_repository.create(
+                    BillingEntry(
+                        start_timestamp=subscription.current_period_start,
+                        end_timestamp=subscription.current_period_end,
+                        direction=BillingEntryDirection.debit,
+                        amount=subscription_product_price.amount,
+                        currency=subscription.currency,
+                        customer=subscription.customer,
+                        product_price=product_price,
+                        subscription=subscription,
+                        event=event,
+                    ),
+                )
+
+        enqueue_job("order.subscription_cycle", subscription.id)
+
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=subscription.status,
+            previous_ends_at=subscription.ends_at,
+        )
 
         return subscription
 
@@ -958,6 +1107,8 @@ class SubscriptionService:
         ) in await billing_entry_service.compute_pending_subscription_line_items(
             session, subscription
         ):
+            if not isinstance(line_item, MeteredLineItem):
+                continue
             subscription_meter_line = subscription.get_meter(line_item.price.meter)
             if subscription_meter_line is not None:
                 subscription_meter_line.consumed_units += Decimal(
@@ -1161,8 +1312,8 @@ class SubscriptionService:
         return await self._send_customer_email(
             session,
             subscription,
-            subject_template="Your {{ product.name }} subscription",
-            template_path="subscription/confirmation.html",
+            subject_template="Your {product.name} subscription",
+            template_name="subscription_confirmation",
         )
 
     async def send_uncanceled_email(
@@ -1171,8 +1322,8 @@ class SubscriptionService:
         return await self._send_customer_email(
             session,
             subscription,
-            subject_template="Your {{ product.name }} subscription is uncanceled",
-            template_path="subscription/uncanceled.html",
+            subject_template="Your {product.name} subscription is uncanceled",
+            template_name="subscription_uncanceled",
         )
 
     async def send_cancellation_email(
@@ -1181,8 +1332,8 @@ class SubscriptionService:
         return await self._send_customer_email(
             session,
             subscription,
-            subject_template="Your {{ product.name }} subscription cancellation",
-            template_path="subscription/cancellation.html",
+            subject_template="Your {product.name} subscription cancellation",
+            template_name="subscription_cancellation",
         )
 
     async def send_revoked_email(
@@ -1191,8 +1342,8 @@ class SubscriptionService:
         return await self._send_customer_email(
             session,
             subscription,
-            subject_template="Your {{ product.name }} subscription has ended",
-            template_path="subscription/revoked.html",
+            subject_template="Your {product.name} subscription has ended",
+            template_name="subscription_revoked",
         )
 
     async def _send_customer_email(
@@ -1201,10 +1352,8 @@ class SubscriptionService:
         subscription: Subscription,
         *,
         subject_template: str,
-        template_path: str,
+        template_name: str,
     ) -> None:
-        email_renderer = get_email_renderer({"subscription": "polar.subscription"})
-
         product = subscription.product
         organization_repository = OrganizationRepository.from_session(session)
         featured_organization = await organization_repository.get_by_id(
@@ -1222,19 +1371,33 @@ class SubscriptionService:
             session, customer
         )
 
-        subject, body = email_renderer.render_from_template(
-            subject_template,
-            template_path,
+        body = render_email_template(
+            template_name,
             {
-                "featured_organization": featured_organization,
-                "product": product,
-                "subscription": subscription,
+                "organization": {
+                    "name": featured_organization.name,
+                    "slug": featured_organization.slug,
+                },
+                "product": {
+                    "name": product.name or "",
+                    "benefits": [
+                        {"description": benefit.description or ""}
+                        for benefit in product.benefits
+                    ],
+                },
+                "subscription": {
+                    "ends_at": subscription.ends_at.isoformat()
+                    if subscription.ends_at
+                    else "",
+                },
                 "url": settings.generate_frontend_url(
                     f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
                 ),
                 "current_year": datetime.now().year,
             },
         )
+
+        subject = subject_template.format(product=product)
 
         enqueue_email(
             to_email_addr=subscription.customer.email,
@@ -1263,6 +1426,55 @@ class SubscriptionService:
 
         result = await session.execute(statement)
         return result.scalars().all()
+
+    async def mark_past_due(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> Subscription:
+        """Mark a subscription as past due. Main use case is to set it when payment fails.
+        When this happens the customer will be notified and lose access to the benefits"""
+
+        previous_status = subscription.status
+        previous_ends_at = subscription.ends_at
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.update(
+            subscription, update_dict={"status": SubscriptionStatus.past_due}
+        )
+
+        # Trigger subscription updated events
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=previous_status,
+            previous_ends_at=previous_ends_at,
+        )
+        # Cancel all grants for this subscription
+        await self.enqueue_benefits_grants(session, subscription)
+
+        return subscription
+
+    async def mark_active(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> Subscription:
+        """Mark a subscription as active. Used when payment succeeds after being past due."""
+
+        previous_status = subscription.status
+        previous_ends_at = subscription.ends_at
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.update(
+            subscription, update_dict={"status": SubscriptionStatus.active}
+        )
+
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=previous_status,
+            previous_ends_at=previous_ends_at,
+        )
+        await self.enqueue_benefits_grants(session, subscription)
+
+        return subscription
 
 
 subscription = SubscriptionService()

@@ -1,14 +1,20 @@
-from fastapi import Depends, Query
+import datetime
+
+from fastapi import Depends, Query, Response, status
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
+from polar.config import settings
+from polar.email.react import render_email_template
+from polar.email.sender import enqueue_email
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
-from polar.user_organization.schemas import OrganizationMember
+from polar.user.service import user as user_service
+from polar.user_organization.schemas import OrganizationMember, OrganizationMemberInvite
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -214,3 +220,69 @@ async def members(
         items=[OrganizationMember.model_validate(m) for m in members],
         pagination=Pagination(total_count=len(members), max_page=1),
     )
+
+
+@router.post(
+    "/{id}/members/invite",
+    response_model=OrganizationMember,
+    tags=[APITag.private],
+)
+async def invite_member(
+    id: OrganizationID,
+    invite_body: OrganizationMemberInvite,
+    auth_subject: auth.OrganizationsWrite,
+    response: Response,
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationMember:
+    """Invite a user to join an organization."""
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    # Get or create user by email
+    user, _ = await user_service.get_by_email_or_create(session, invite_body.email)
+
+    # Check if user is already member of organization
+    user_org = await user_organization_service.get_by_user_and_org(
+        session, user.id, organization.id
+    )
+    if user_org is not None:
+        response.status_code = status.HTTP_200_OK
+        return OrganizationMember.model_validate(user_org)
+
+    # Add user to organization
+    await organization_service.add_user(session, organization, user)
+
+    # Get the inviter's email (from auth subject)
+    inviter_email = auth_subject.subject.email
+
+    # Send invitation email
+    body = render_email_template(
+        "organization_invite",
+        {
+            "organization_name": organization.name,
+            "inviter_email": inviter_email or "",
+            "invite_url": settings.generate_frontend_url(
+                f"/dashboard/{organization.slug}"
+            ),
+            "current_year": datetime.datetime.now().year,
+        },
+    )
+
+    enqueue_email(
+        to_email_addr=invite_body.email,
+        subject=f"You've added to {organization.name} on Polar",
+        html_content=body,
+    )
+
+    # Get the user organization relationship to return
+    user_org = await user_organization_service.get_by_user_and_org(
+        session, user.id, organization.id
+    )
+
+    if user_org is None:
+        raise ResourceNotFound()
+
+    response.status_code = status.HTTP_201_CREATED
+    return OrganizationMember.model_validate(user_org)

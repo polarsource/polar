@@ -7,7 +7,7 @@ from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
-from .schemas import Storefront
+from .schemas import OrganizationSlugLookup, Storefront
 from .service import storefront as storefront_service
 
 router = APIRouter(prefix="/storefronts", tags=["storefronts", APITag.private])
@@ -58,3 +58,39 @@ async def get(slug: str, session: AsyncSession = Depends(get_db_session)) -> Sto
             },
         }
     )
+
+
+@router.get(
+    "/lookup/product/{product_id}",
+    responses={404: OrganizationNotFound},
+)
+async def get_organization_slug_by_product_id(
+    product_id: str, session: AsyncSession = Depends(get_db_session)
+) -> OrganizationSlugLookup:
+    """Get organization slug by product ID for legacy redirect purposes."""
+    organization_slug = await storefront_service.get_organization_slug_by_product_id(
+        session, product_id
+    )
+    if organization_slug is None:
+        raise ResourceNotFound()
+
+    return OrganizationSlugLookup(organization_slug=organization_slug)
+
+
+@router.get(
+    "/lookup/subscription/{subscription_id}",
+    responses={404: OrganizationNotFound},
+)
+async def get_organization_slug_by_subscription_id(
+    subscription_id: str, session: AsyncSession = Depends(get_db_session)
+) -> OrganizationSlugLookup:
+    """Get organization slug by subscription ID for legacy redirect purposes."""
+    organization_slug = (
+        await storefront_service.get_organization_slug_by_subscription_id(
+            session, subscription_id
+        )
+    )
+    if organization_slug is None:
+        raise ResourceNotFound()
+
+    return OrganizationSlugLookup(organization_slug=organization_slug)

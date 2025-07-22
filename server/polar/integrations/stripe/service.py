@@ -90,6 +90,17 @@ class StripeService:
             obj["business_profile"] = {"name": name}
         await stripe_lib.Account.modify_async(id, **obj)
 
+    async def account_exists(self, id: str) -> bool:
+        try:
+            account = await stripe_lib.Account.retrieve_async(id)
+            return bool(account)
+        except stripe_lib.PermissionError:
+            return False
+
+    async def delete_account(self, id: str) -> stripe_lib.Account:
+        # TODO: Check if this fails when account balance is non-zero
+        return await stripe_lib.Account.delete_async(id)
+
     async def retrieve_balance(self, id: str) -> tuple[str, int]:
         # Return available balance in the account's default currency (we assume that
         # there is no balance in other currencies for now)
@@ -380,16 +391,18 @@ class StripeService:
         account_id: str | None = None,
         payout: str | None = None,
         type: str | None = None,
+        expand: list[str] | None = None,
     ) -> AsyncIterator[stripe_lib.BalanceTransaction]:
         params: stripe_lib.BalanceTransaction.ListParams = {
             "limit": 100,
             "stripe_account": account_id,
-            "expand": ["data.source"],
         }
         if payout is not None:
             params["payout"] = payout
         if type is not None:
             params["type"] = type
+        if expand is not None:
+            params["expand"] = expand
 
         result = await stripe_lib.BalanceTransaction.list_async(**params)
         return result.auto_paging_iter()

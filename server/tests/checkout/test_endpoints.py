@@ -50,7 +50,7 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
     mock = AsyncMock(spec=calculate_tax)
     mocker.patch("polar.checkout.service.calculate_tax", new=mock)
-    mock.return_value = "TAX_PROCESSOR_ID", 0
+    mock.return_value = {"processor_id": "TAX_PROCESSOR_ID", "amount": 0}
     return mock
 
 

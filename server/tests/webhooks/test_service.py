@@ -45,7 +45,6 @@ class TestCreateEndpoint:
         create_schema = WebhookEndpointCreate(
             url=webhook_url,
             format=WebhookFormat.raw,
-            secret="SECRET",
             events=[],
             organization_id=uuid.uuid4(),
         )
@@ -65,7 +64,6 @@ class TestCreateEndpoint:
         create_schema = WebhookEndpointCreate(
             url=webhook_url,
             format=WebhookFormat.raw,
-            secret="SECRET",
             events=[],
             organization_id=None,
         )
@@ -73,7 +71,7 @@ class TestCreateEndpoint:
         endpoint = await webhook_service.create_endpoint(
             session, auth_subject, create_schema
         )
-        assert endpoint.organization_id == organization.id
+        assert endpoint.organization == organization
 
 
 @pytest.mark.asyncio
@@ -84,14 +82,29 @@ class TestUpdateEndpoint:
     async def test_organization_endpoint_valid(
         self, session: AsyncSession, webhook_endpoint_organization: WebhookEndpoint
     ) -> None:
-        update_schema = WebhookEndpointUpdate(secret="UPDATED_SECRET")
+        update_schema = WebhookEndpointUpdate(
+            url=cast(HttpsUrl, "https://example.com/hook-updated")
+        )
 
         updated_endpoint = await webhook_service.update_endpoint(
-            session,
-            endpoint=webhook_endpoint_organization,
-            update_schema=update_schema,
+            session, endpoint=webhook_endpoint_organization, update_schema=update_schema
         )
-        assert updated_endpoint.secret == "UPDATED_SECRET"
+        assert updated_endpoint.url == "https://example.com/hook-updated"
+
+
+@pytest.mark.asyncio
+class TestResetEndpointSecret:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
+    )
+    async def test_organization_endpoint_valid(
+        self, session: AsyncSession, webhook_endpoint_organization: WebhookEndpoint
+    ) -> None:
+        old_secret = webhook_endpoint_organization.secret
+        updated_endpoint = await webhook_service.reset_endpoint_secret(
+            session, endpoint=webhook_endpoint_organization
+        )
+        assert updated_endpoint.secret != old_secret
 
 
 @pytest.mark.asyncio

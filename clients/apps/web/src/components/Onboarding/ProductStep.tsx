@@ -44,7 +44,7 @@ export const ProductStep = () => {
   >([])
 
   const benefits = useBenefits(organization.id, {
-    limit: 100,
+    limit: 200,
   })
   const organizationBenefits = useMemo(
     () => benefits.data?.items ?? [],
@@ -203,7 +203,7 @@ export const ProductStep = () => {
                 Create Product
               </Button>
               <Link href={`/dashboard/${organization.slug}`}>
-                <Button variant="secondary">Cancel</Button>
+                <Button variant="secondary">Skip</Button>
               </Link>
             </div>
           </div>

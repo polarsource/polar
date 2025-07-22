@@ -30,15 +30,17 @@ export interface OrganizationStepProps {
   slug?: string
   validationErrors?: schemas['ValidationError'][]
   error?: string
+  hasExistingOrg: boolean
 }
 
 export const OrganizationStep = ({
   slug: initialSlug,
   validationErrors,
   error,
+  hasExistingOrg,
 }: OrganizationStepProps) => {
   const posthog = usePostHog()
-  const { currentUser, setUserOrganizations, userOrganizations } = useAuth()
+  const { currentUser, setUserOrganizations } = useAuth()
 
   const form = useForm<{ name: string; slug: string; terms: boolean }>({
     defaultValues: {
@@ -117,9 +119,13 @@ export const OrganizationStep = ({
     await revalidate(`users:${currentUser?.id}:organizations`)
     setUserOrganizations((orgs) => [...orgs, organization])
 
+    let queryParams = ''
+    if (hasExistingOrg) {
+      queryParams = '?existing_org=1'
+    }
     router.push(
       getStatusRedirect(
-        `/dashboard/${organization.slug}/onboarding/product`,
+        `/dashboard/${organization.slug}/onboarding/product${queryParams}`,
         'Organization created',
         'You can now create your first product',
       ),
@@ -283,7 +289,7 @@ export const OrganizationStep = ({
                 >
                   Create
                 </Button>
-                {userOrganizations.length > 0 && (
+                {hasExistingOrg && (
                   <Link href={`/dashboard`} className="w-full">
                     <Button variant="secondary" fullWidth>
                       Back to Dashboard

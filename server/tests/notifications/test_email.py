@@ -1,15 +1,18 @@
 import inspect
 import os
+import re
 
 import pytest
 
-from polar.kit import template
-from polar.kit.utils import utc_now
 from polar.notifications.notification import (
+    MaintainerAccountReviewedNotificationPayload,
+    MaintainerAccountUnderReviewNotificationPayload,
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
+    NotificationPayload,
     NotificationPayloadBase,
+    NotificationType,
 )
 
 
@@ -23,14 +26,13 @@ async def check_diff(email: tuple[str, str]) -> None:
     name = inspect.stack()[1].function
 
     if record:
-        with open(f"./tests/notifications/testdata/{name}.html", "w+") as f:
+        with open(f"./tests/notifications/testdata/{name}.html", "w") as f:
             f.write(expected)
             return
+    else:
+        with open(f"./tests/notifications/testdata/{name}.html") as f:
+            content = f.read()
 
-    content = template.render(
-        template.path(__file__, f"testdata/{name}.html"),
-        year=str(utc_now().year),
-    )
     assert content == expected
 
 
@@ -74,27 +76,70 @@ async def test_MaintainerCreateAccountNotificationPayload() -> None:
     "payload",
     [
         MaintainerNewProductSaleNotificationPayload(
-            customer_name="{{ 21 * 2 }}",
-            product_name="{{ 21 * 2 }}",
+            customer_name="{{ 123456 * 9 }}",
+            product_name="{{ 123456 * 9 }}",
             product_price_amount=500,
-            organization_name="{{ 21 * 2 }}",
+            organization_name="{{ 123456 * 9 }}",
         ),
         MaintainerCreateAccountNotificationPayload(
-            organization_name="{{ 21 * 2 }}",
+            organization_name="{{ 123456 * 9 }}",
             url="https://example.com/url",
         ),
         MaintainerNewPaidSubscriptionNotificationPayload(
             subscriber_name="John Doe",
-            tier_name="{{ 21 * 2 }}",
+            tier_name="{{ 123456 * 9 }}",
             tier_price_amount=500,
-            tier_organization_name="{{ 21 * 2 }}",
+            tier_organization_name="{{ 123456 * 9 }}",
             tier_price_recurring_interval="month",
         ),
     ],
 )
 async def test_injection_payloads(payload: NotificationPayloadBase) -> None:
     subject, body = payload.render()
-    assert "42" not in subject
-    assert "42" not in body
+    assert str(123456 * 9) not in subject
+    assert str(123456 * 9) not in body
 
-    assert "{{ 21 * 2 }}" in body
+    assert "{{ 123456 * 9 }}" in body
+
+
+@pytest.mark.asyncio
+async def test_all_notification_types() -> None:
+    n: NotificationPayload
+    for notification_type in NotificationType:
+        if notification_type == NotificationType.maintainer_create_account:
+            n = MaintainerCreateAccountNotificationPayload(
+                organization_name="John Doe",
+                url="https://example.com/url",
+            )
+        elif notification_type == NotificationType.maintainer_account_under_review:
+            n = MaintainerAccountUnderReviewNotificationPayload(
+                account_type="Stripe Connect Express",
+            )
+        elif notification_type == NotificationType.maintainer_account_reviewed:
+            n = MaintainerAccountReviewedNotificationPayload(
+                account_type="Stripe Connect Express",
+            )
+        elif notification_type == NotificationType.maintainer_new_product_sale:
+            n = MaintainerNewProductSaleNotificationPayload(
+                customer_name="John Doe",
+                product_name="Ice cream sandwich",
+                product_price_amount=500,
+                organization_name="Ice Cream Van",
+            )
+        elif notification_type == NotificationType.maintainer_new_paid_subscription:
+            n = MaintainerNewPaidSubscriptionNotificationPayload(
+                subscriber_name="John Doe",
+                tier_name="ColdMail Premium",
+                tier_price_amount=500,
+                tier_organization_name="ColdMail",
+                tier_price_recurring_interval="month",
+            )
+        else:
+            raise TypeError(f"Missing test case for {notification_type}")
+
+    # Check that it renders!
+    subject, body = n.render()
+
+    # Check that there are no leftover placeholders
+    assert re.search(r"{ ?[^\s}]+ ?}", subject) is None
+    assert re.search(r"{ ?[^\s}]+ ?}", body) is None

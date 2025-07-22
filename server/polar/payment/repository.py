@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, select
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.enums import PaymentProcessor
@@ -12,6 +12,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import Payment, UserOrganization
+from polar.models.payment import PaymentStatus
 
 from .sorting import PaymentSortProperty
 
@@ -64,3 +65,12 @@ class PaymentRepository(
                 return Payment.amount
             case PaymentSortProperty.method:
                 return Payment.method
+
+    async def count_failed_payments_for_order(self, order_id: UUID) -> int:
+        """Count the number of failed payments for a specific order."""
+        statement = select(func.count(Payment.id)).where(
+            Payment.order_id == order_id,
+            Payment.status == PaymentStatus.failed,
+        )
+        result = await self.session.execute(statement)
+        return result.scalar() or 0

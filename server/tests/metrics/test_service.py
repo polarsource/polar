@@ -47,6 +47,7 @@ class DiscountFixture(TypedDict):
 class SubscriptionFixture(TypedDict):
     started_at: date
     ended_at: NotRequired[date]
+    ends_at: NotRequired[date]
     product: str
     discount: NotRequired[str]
 
@@ -173,6 +174,11 @@ async def _create_fixtures(
             ended_at=(
                 _date_to_datetime(subscription_fixture["ended_at"])
                 if "ended_at" in subscription_fixture
+                else None
+            ),
+            ends_at=(
+                _date_to_datetime(subscription_fixture["ends_at"])
+                if "ends_at" in subscription_fixture
                 else None
             ),
             discount=discounts[subscription_fixture["discount"]]
@@ -636,7 +642,7 @@ class TestGetMetrics:
         assert jun_15.new_subscriptions_revenue == 0
         assert jun_15.renewed_subscriptions == 0
         assert jun_15.renewed_subscriptions_revenue == 0
-        assert jun_15.active_subscriptions == 2
+        assert jun_15.active_subscriptions == 1
         assert jun_15.monthly_recurring_revenue == 0
 
         jun_16 = metrics.periods[167]
@@ -668,8 +674,8 @@ class TestGetMetrics:
         Tricky case: how a subscription that was canceled during the interval should be
         counted?
 
-        In the current implementation, the subscription is counted as if it was active
-        the whole interval.
+        In the current implementation, the subscription is not counted if it was canceled
+        during the interval.
 
         This behavior can be tweaked by changing the comparison from `>` to `>=` in the
         `get_active_subscriptions_cte` query.
@@ -703,6 +709,67 @@ class TestGetMetrics:
         assert jan.average_order_value == 0
         assert jan.one_time_products == 0
         assert jan.one_time_products_revenue == 0
+        assert jan.new_subscriptions == 0
+        assert jan.new_subscriptions_revenue == 0
+        assert jan.renewed_subscriptions == 0
+        assert jan.renewed_subscriptions_revenue == 0
+        assert jan.active_subscriptions == 0
+        assert jan.monthly_recurring_revenue == 0
+
+        feb = metrics.periods[1]
+        assert feb.orders == 0
+        assert feb.revenue == 0
+        assert feb.cumulative_revenue == 0
+        assert feb.average_order_value == 0
+        assert feb.one_time_products == 0
+        assert feb.one_time_products_revenue == 0
+        assert feb.new_subscriptions == 0
+        assert feb.new_subscriptions_revenue == 0
+        assert feb.renewed_subscriptions == 0
+        assert feb.renewed_subscriptions_revenue == 0
+        assert feb.active_subscriptions == 0
+        assert feb.monthly_recurring_revenue == 0
+
+    @pytest.mark.auth
+    async def test_values_subscription_due_cancellation(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        user: User,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscriptions: dict[str, SubscriptionFixture] = {
+            "subscription_1": {
+                "started_at": date(2024, 1, 1),
+                "ends_at": date(2024, 3, 15),
+                "product": "free_subscription",
+            }
+        }
+        await _create_fixtures(
+            save_fixture, customer, organization, PRODUCTS, subscriptions, {}
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 3, 1),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+        )
+
+        assert len(metrics.periods) == 3
+
+        jan = metrics.periods[0]
+        assert jan.orders == 0
+        assert jan.revenue == 0
+        assert jan.cumulative_revenue == 0
+        assert jan.average_order_value == 0
+        assert jan.one_time_products == 0
+        assert jan.one_time_products_revenue == 0
         assert jan.new_subscriptions == 1
         assert jan.new_subscriptions_revenue == 0
         assert jan.renewed_subscriptions == 0
@@ -721,8 +788,22 @@ class TestGetMetrics:
         assert feb.new_subscriptions_revenue == 0
         assert feb.renewed_subscriptions == 0
         assert feb.renewed_subscriptions_revenue == 0
-        assert feb.active_subscriptions == 0
+        assert feb.active_subscriptions == 1
         assert feb.monthly_recurring_revenue == 0
+
+        mar = metrics.periods[2]
+        assert mar.orders == 0
+        assert mar.revenue == 0
+        assert mar.cumulative_revenue == 0
+        assert mar.average_order_value == 0
+        assert mar.one_time_products == 0
+        assert mar.one_time_products_revenue == 0
+        assert mar.new_subscriptions == 0
+        assert mar.new_subscriptions_revenue == 0
+        assert mar.renewed_subscriptions == 0
+        assert mar.renewed_subscriptions_revenue == 0
+        assert mar.active_subscriptions == 0
+        assert mar.monthly_recurring_revenue == 0
 
     @pytest.mark.auth
     async def test_mrr_subscription_forever_discount(

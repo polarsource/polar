@@ -111,6 +111,29 @@ async def update_webhook_endpoint(
     )
 
 
+@router.patch(
+    "/endpoints/{id}/secret",
+    response_model=WebhookEndpointSchema,
+    responses={
+        200: {"description": "Webhook endpoint secret reset."},
+        404: WebhookEndpointNotFound,
+    },
+)
+async def reset_webhook_endpoint_secret(
+    id: WebhookEndpointID,
+    auth_subject: WebhooksWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> WebhookEndpoint:
+    """
+    Regenerate a webhook endpoint secret.
+    """
+    endpoint = await webhook_service.get_endpoint(session, auth_subject, id)
+    if not endpoint:
+        raise ResourceNotFound()
+
+    return await webhook_service.reset_endpoint_secret(session, endpoint=endpoint)
+
+
 @router.delete(
     "/endpoints/{id}",
     status_code=204,

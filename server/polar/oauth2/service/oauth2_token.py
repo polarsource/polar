@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from polar.config import settings
-from polar.email.renderer import get_email_renderer
+from polar.email.react import render_email_template
 from polar.email.sender import enqueue_email
 from polar.enums import TokenType
 from polar.exceptions import PolarError
@@ -84,8 +84,6 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
         session.add(oauth2_token)
 
         # Notify
-        email_renderer = get_email_renderer({"oauth2": "polar.oauth2"})
-
         recipients: list[str]
         sub = oauth2_token.sub
         if isinstance(sub, User):
@@ -100,20 +98,21 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
         # The `if` statement handles the case where we might detect a leaked token
         # of a deleted client
         if oauth2_client is not None:
-            subject, body = email_renderer.render_from_template(
-                "Security Notice - Your Polar Access Token has been leaked",
-                "oauth2/leaked_token.html",
+            body = render_email_template(
+                "oauth2_leaked_token",
                 {
                     "client_name": oauth2_client.client_name,
                     "notifier": notifier,
-                    "url": url,
+                    "url": url or "",
                     "current_year": datetime.datetime.now().year,
                 },
             )
 
             for recipient in recipients:
                 enqueue_email(
-                    to_email_addr=recipient, subject=subject, html_content=body
+                    to_email_addr=recipient,
+                    subject="Security Notice - Your Polar Access Token has been leaked",
+                    html_content=body,
                 )
 
         log.info(

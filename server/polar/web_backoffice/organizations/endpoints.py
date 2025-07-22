@@ -17,14 +17,21 @@ from polar.kit.schemas import empty_str_to_none
 from polar.models import Account, Organization
 from polar.organization import sorting
 from polar.organization.repository import OrganizationRepository
+from polar.organization.service import organization as organization_service
 from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
 from polar.user.repository import UserRepository
 
-from ..components import accordion, button, datatable, description_list, input
+from ..components import accordion, button, datatable, description_list, input, modal
 from ..layout import layout
 from ..responses import HXRedirectResponse
-from .forms import AccountReviewForm
+from ..toast import add_toast
+from .forms import (
+    AccountStatusFormAdapter,
+    ApproveAccountForm,
+    UnderReviewAccountForm,
+    UpdateOrganizationForm,
+)
 
 router = APIRouter()
 
@@ -175,6 +182,111 @@ async def list(
                 pass
 
 
+@router.api_route("/{id}/update", name="organizations:update", methods=["GET", "POST"])
+async def update(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(id)
+    if not organization:
+        raise HTTPException(status_code=404)
+
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = UpdateOrganizationForm.model_validate(data)
+            organization = await org_repo.update(
+                organization, update_dict=form.model_dump(exclude_none=True)
+            )
+            return HXRedirectResponse(
+                request, str(request.url_for("organizations:get", id=id)), 303
+            )
+
+        except ValidationError as e:
+            validation_error = e
+
+    with modal("Update Organization", open=True):
+        with UpdateOrganizationForm.render(
+            {"name": organization.name, "slug": organization.slug},
+            method="POST",
+            action=str(request.url_for("organizations:update", id=id)),
+            classes="flex flex-col gap-4",
+            validation_error=validation_error,
+        ):
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
+                    text("Update")
+
+
+@router.api_route("/{id}/delete", name="organizations:delete", methods=["GET", "POST"])
+async def delete(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(id)
+    if not organization:
+        raise HTTPException(status_code=404)
+
+    if request.method == "POST":
+        await organization_service.delete(session, organization)
+        await add_toast(
+            request,
+            f"Organzation with ID {organization.id} has been deleted",
+            "success",
+        )
+
+        return
+
+    with modal(f"Delete Organization {organization.id}", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text("Are you sure you want to delete this Organization? ")
+
+            with tag.p():
+                text("Deleting this Organization DOES NOT:")
+            with tag.ul(classes="list-disc list-inside"):
+                with tag.li():
+                    text("Delete or anonymize Users related Organization")
+                with tag.li():
+                    text("Delete or anonymize Account of the Organization")
+                with tag.li():
+                    text(
+                        "Delete or anonymize Customers, Products, Discounts, Benefits, Checkouts of the Organization"
+                    )
+                with tag.li():
+                    text("Revoke Benefits granted")
+                with tag.li():
+                    text("Remove API tokens (organization or personal)")
+
+            with tag.p():
+                text("The User can be deleted separately")
+
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(method="dialog"):
+                    with button(
+                        type="button",
+                        variant="primary",
+                        hx_post=str(request.url),
+                        hx_target="#modal",
+                    ):
+                        text("Delete")
+
+
 @router.api_route("/{id}", name="organizations:get", methods=["GET", "POST"])
 async def get(
     request: Request,
@@ -183,7 +295,7 @@ async def get(
 ) -> Any:
     repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(
-        id, options=(joinedload(Organization.account),)
+        id, options=(joinedload(Organization.account),), include_blocked=True
     )
 
     if organization is None:
@@ -195,12 +307,19 @@ async def get(
     account = organization.account
     validation_error: ValidationError | None = None
     if account and request.method == "POST":
+        # This part handles the "Approve" action
+        # It's a POST to the current page URL, not the status update URL
         data = await request.form()
         try:
-            account_review = AccountReviewForm.model_validate(data)
-            await account_service.confirm_account_reviewed(
-                session, account, account_review.next_review_threshold
-            )
+            account_status = AccountStatusFormAdapter.validate_python(data)
+            if account_status.action == "approve":
+                await account_service.confirm_account_reviewed(
+                    session, account, account_status.next_review_threshold
+                )
+            elif account_status.action == "deny":
+                await account_service.deny_account(session, account)
+            elif account_status.action == "under_review":
+                await account_service.set_account_under_review(session, account)
             return HXRedirectResponse(request, request.url, 303)
         except ValidationError as e:
             validation_error = e
@@ -214,8 +333,16 @@ async def get(
         "organizations:get",
     ):
         with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text(organization.name)
+            with tag.div(classes="flex justify-between items-center"):
+                with tag.h1(classes="text-4xl"):
+                    text(organization.name)
+                with button(
+                    hx_get=str(
+                        request.url_for("organizations:update", id=organization.id)
+                    ),
+                    hx_target="#modal",
+                ):
+                    text("Edit")
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 with description_list.DescriptionList[Organization](
                     description_list.DescriptionListAttrItem(
@@ -276,16 +403,44 @@ async def get(
                                 ),
                             ).render(request, account):
                                 pass
-                            if account.status == Account.Status.UNDER_REVIEW:
-                                with tag.div(classes="card-actions"):
-                                    with AccountReviewForm.render(
+                            with tag.div(classes="card-actions"):
+                                if account.status == Account.Status.UNDER_REVIEW:
+                                    with ApproveAccountForm.render(
                                         account,
                                         method="POST",
+                                        action=str(request.url),
                                         classes="flex flex-col gap-4",
                                         validation_error=validation_error,
                                     ):
-                                        with button(type="submit", variant="primary"):
+                                        with button(
+                                            name="action",
+                                            type="submit",
+                                            variant="primary",
+                                            value="approve",
+                                        ):
                                             text("Approve")
+                                        with button(
+                                            name="action",
+                                            type="submit",
+                                            variant="error",
+                                            value="deny",
+                                        ):
+                                            text("Deny")
+                                else:
+                                    with UnderReviewAccountForm.render(
+                                        account,
+                                        method="POST",
+                                        action=str(request.url),
+                                        classes="flex flex-col gap-4",
+                                        validation_error=validation_error,
+                                    ):
+                                        with button(
+                                            name="action",
+                                            type="submit",
+                                            variant="primary",
+                                            value="under_review",
+                                        ):
+                                            text("Set to Under Review")
 
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):

@@ -18,7 +18,7 @@ from polar.kit.db.postgres import (
     create_sync_engine as _create_sync_engine,
 )
 
-ProcessName: TypeAlias = Literal["app", "worker", "script", "backoffice"]
+ProcessName: TypeAlias = Literal["app", "worker", "scheduler", "script"]
 
 
 def create_async_engine(process_name: ProcessName) -> AsyncEngine:
@@ -28,6 +28,7 @@ def create_async_engine(process_name: ProcessName) -> AsyncEngine:
         debug=settings.DEBUG,
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
     )
 
 
@@ -38,6 +39,7 @@ def create_sync_engine(process_name: ProcessName) -> Engine:
         debug=settings.DEBUG,
         pool_size=settings.DATABASE_SYNC_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
     )
 
 

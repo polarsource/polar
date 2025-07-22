@@ -262,6 +262,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/login-code/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request Login Code
+         * @description Request a login code.
+         */
+        post: operations["login_code:request_login_code"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/login-code/authenticate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Authenticate Login Code
+         * @description Authenticate with a login code.
+         */
+        post: operations["login_code:authenticate_login_code"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/notifications": {
         parameters: {
             query?: never;
@@ -544,6 +584,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/organizations/{id}/members/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite Member
+         * @description Invite a user to join an organization.
+         *
+         *     **Scopes**: `organizations:write`
+         */
+        post: operations["organizations:invite_member"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/subscriptions/": {
         parameters: {
             query?: never;
@@ -599,7 +661,7 @@ export interface paths {
          * Get Subscription
          * @description Get a subscription by ID.
          *
-         *     **Scopes**: `subscriptions:write`
+         *     **Scopes**: `subscriptions:read` `subscriptions:write`
          */
         get: operations["subscriptions:get"];
         put?: never;
@@ -1031,6 +1093,28 @@ export interface paths {
          *     **Scopes**: `webhooks:write`
          */
         patch: operations["webhooks:update_webhook_endpoint"];
+        trace?: never;
+    };
+    "/v1/webhooks/endpoints/{id}/secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Reset Webhook Endpoint Secret
+         * @description Regenerate a webhook endpoint secret.
+         *
+         *     **Scopes**: `webhooks:write`
+         */
+        patch: operations["webhooks:reset_webhook_endpoint_secret"];
         trace?: never;
     };
     "/v1/webhooks/deliveries": {
@@ -1689,6 +1773,46 @@ export interface paths {
          * @description Get an organization storefront by slug.
          */
         get: operations["storefronts:get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefronts/lookup/product/{product_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Organization Slug By Product Id
+         * @description Get organization slug by product ID for legacy redirect purposes.
+         */
+        get: operations["storefronts:get_organization_slug_by_product_id"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storefronts/lookup/subscription/{subscription_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Organization Slug By Subscription Id
+         * @description Get organization slug by subscription ID for legacy redirect purposes.
+         */
+        get: operations["storefronts:get_organization_slug_by_subscription_id"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4200,6 +4324,11 @@ export interface components {
              * @description The ID of the Discord role to grant.
              */
             role_id: string;
+            /**
+             * Kick Member
+             * @description Whether to kick the member from the Discord server on revocation.
+             */
+            kick_member: boolean;
         };
         /**
          * BenefitDiscordProperties
@@ -4216,6 +4345,11 @@ export interface components {
              * @description The ID of the Discord role to grant.
              */
             role_id: string;
+            /**
+             * Kick Member
+             * @description Whether to kick the member from the Discord server on revocation.
+             */
+            kick_member: boolean;
             /** Guild Token */
             readonly guild_token: string;
         };
@@ -5595,6 +5729,11 @@ export interface components {
         "Body_email-update_verify_email_update": {
             /** Token */
             token: string;
+        };
+        /** Body_login_code:authenticate_login_code */
+        Body_login_code_authenticate_login_code: {
+            /** Code */
+            code: string;
         };
         /** Body_oauth2:consent */
         Body_oauth2_consent: {
@@ -12194,6 +12333,17 @@ export interface components {
             items: components["schemas"]["Payment"][];
             pagination: components["schemas"]["Pagination"];
         };
+        /** LoginCodeRequest */
+        LoginCodeRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Return To */
+            return_to?: string | null;
+            attribution?: components["schemas"]["UserSignupAttribution"] | null;
+        };
         /** MagicLinkRequest */
         MagicLinkRequest: {
             /**
@@ -13794,10 +13944,25 @@ export interface components {
         };
         /** OrganizationMember */
         OrganizationMember: {
+            /**
+             * Created At
+             * Format: date-time
+             * @description The time the OrganizationMember was creatd.
+             */
+            created_at: string;
             /** Email */
             email: string;
             /** Avatar Url */
             avatar_url: string | null;
+        };
+        /** OrganizationMemberInvite */
+        OrganizationMemberInvite: {
+            /**
+             * Email
+             * Format: email
+             * @description Email address of the user to invite
+             */
+            email: string;
         };
         /** OrganizationNotificationSettings */
         OrganizationNotificationSettings: {
@@ -13855,6 +14020,17 @@ export interface components {
              * Format: uuid4
              */
             account_id: string;
+        };
+        /**
+         * OrganizationSlugLookup
+         * @description Schema for organization slug lookup response.
+         */
+        OrganizationSlugLookup: {
+            /**
+             * Organization Slug
+             * @description The slug of the organization that owns the product or subscription.
+             */
+            organization_slug: string;
         };
         /** OrganizationSocialLink */
         OrganizationSocialLink: {
@@ -16313,6 +16489,11 @@ export interface components {
             /** @description The format of the webhook payload. */
             format: components["schemas"]["WebhookFormat"];
             /**
+             * Secret
+             * @description The secret used to sign the webhook events.
+             */
+            secret: string;
+            /**
              * Organization Id
              * Format: uuid4
              * @description The organization ID associated with the webhook endpoint.
@@ -16335,13 +16516,13 @@ export interface components {
              * @description The URL where the webhook events will be sent.
              */
             url: string;
-            /** @description The format of the webhook payload. */
-            format: components["schemas"]["WebhookFormat"];
             /**
              * Secret
-             * @description The secret used to sign the webhook events.
+             * @deprecated
              */
-            secret: string;
+            secret?: string | null;
+            /** @description The format of the webhook payload. */
+            format: components["schemas"]["WebhookFormat"];
             /**
              * Events
              * @description The events that will trigger the webhook.
@@ -16360,9 +16541,12 @@ export interface components {
         WebhookEndpointUpdate: {
             /** Url */
             url?: string | null;
-            format?: components["schemas"]["WebhookFormat"] | null;
-            /** Secret */
+            /**
+             * Secret
+             * @deprecated
+             */
             secret?: string | null;
+            format?: components["schemas"]["WebhookFormat"] | null;
             /** Events */
             events?: components["schemas"]["WebhookEventType"][] | null;
         };
@@ -17150,6 +17334,75 @@ export interface operations {
             };
         };
     };
+    "login_code:request_login_code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "login_code:authenticate_login_code": {
+        parameters: {
+            query: {
+                email: string;
+                return_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_login_code_authenticate_login_code"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "notifications:get": {
         parameters: {
             query?: never;
@@ -17796,6 +18049,41 @@ export interface operations {
             };
         };
     };
+    "organizations:invite_member": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationMemberInvite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationMember"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "subscriptions:list": {
         parameters: {
             query?: {
@@ -17805,6 +18093,8 @@ export interface operations {
                 product_id?: string | string[] | null;
                 /** @description Filter by customer ID. */
                 customer_id?: string | string[] | null;
+                /** @description Filter by customer external ID. */
+                external_customer_id?: string | string[] | null;
                 /** @description Filter by discount ID. */
                 discount_id?: string | string[] | null;
                 /** @description Filter by active or inactive subscription. */
@@ -18877,6 +19167,47 @@ export interface operations {
         };
         responses: {
             /** @description Webhook endpoint updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookEndpoint"];
+                };
+            };
+            /** @description Webhook endpoint not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "webhooks:reset_webhook_endpoint_secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The webhook endpoint ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Webhook endpoint secret reset. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -20709,6 +21040,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Storefront"];
+                };
+            };
+            /** @description Organization not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "storefronts:get_organization_slug_by_product_id": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationSlugLookup"];
+                };
+            };
+            /** @description Organization not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "storefronts:get_organization_slug_by_subscription_id": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subscription_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationSlugLookup"];
                 };
             };
             /** @description Organization not found. */

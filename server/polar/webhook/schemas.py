@@ -31,8 +31,7 @@ EndpointSecret = Annotated[
     str,
     Field(
         description="The secret used to sign the webhook events.",
-        examples=["f_z6mfSpxkjogyw3FkA2aH2gYE5huxruNf34MpdWMcA"],
-        min_length=1,
+        examples=["polar_whs_ovyN6cPrTv56AApvzCaJno08SSmGJmgbWilb33N2JuK"],
     ),
 ]
 EndpointEvents = Annotated[
@@ -48,6 +47,7 @@ class WebhookEndpoint(IDSchema, TimestampedSchema):
 
     url: EndpointURL
     format: EndpointFormat
+    secret: EndpointSecret
     organization_id: UUID4 = Field(
         description="The organization ID associated with the webhook endpoint."
     )
@@ -60,8 +60,12 @@ class WebhookEndpointCreate(Schema):
     """
 
     url: EndpointURL
+    secret: EndpointSecret | None = Field(
+        default=None,
+        deprecated="The secret is now generated on the backend.",
+        min_length=32,
+    )
     format: EndpointFormat
-    secret: EndpointSecret
     events: EndpointEvents
     organization_id: OrganizationID | None = Field(
         None,
@@ -78,8 +82,12 @@ class WebhookEndpointUpdate(Schema):
     """
 
     url: EndpointURL | None = None
+    secret: EndpointSecret | None = Field(
+        default=None,
+        deprecated="The secret should is now generated on the backend.",
+        min_length=32,
+    )
     format: EndpointFormat | None = None
-    secret: EndpointSecret | None = None
     events: EndpointEvents | None = None
 
 

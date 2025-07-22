@@ -1,4 +1,4 @@
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
 from sqlalchemy import Engine
 from sqlalchemy import create_engine as _create_engine
@@ -21,14 +21,19 @@ def create_async_engine(
     application_name: str | None = None,
     pool_size: int | None = None,
     pool_recycle: int | None = None,
+    command_timeout: float | None = None,
     debug: bool = False,
 ) -> AsyncEngine:
+    connect_args: dict[str, Any] = {}
+    if application_name is not None:
+        connect_args["server_settings"] = {"application_name": application_name}
+    if command_timeout is not None:
+        connect_args["command_timeout"] = command_timeout
+
     return _create_async_engine(
         dsn,
         echo=debug,
-        connect_args={"server_settings": {"application_name": application_name}}
-        if application_name
-        else {},
+        connect_args=connect_args,
         pool_size=pool_size,
         pool_recycle=pool_recycle,
     )
@@ -40,12 +45,18 @@ def create_sync_engine(
     application_name: str | None = None,
     pool_size: int | None = None,
     pool_recycle: int | None = None,
+    command_timeout: float | None = None,
     debug: bool = False,
 ) -> Engine:
+    connect_args: dict[str, Any] = {}
+    if application_name is not None:
+        connect_args["application_name"] = application_name
+    if command_timeout is not None:
+        connect_args["options"] = f"-c statement_timeout={int(command_timeout * 1000)}"
     return _create_engine(
         dsn,
         echo=debug,
-        connect_args={"application_name": application_name} if application_name else {},
+        connect_args=connect_args,
         pool_size=pool_size,
         pool_recycle=pool_recycle,
     )

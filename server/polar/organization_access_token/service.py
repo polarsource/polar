@@ -9,7 +9,7 @@ from sqlalchemy import UnaryExpression, asc, desc
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
-from polar.email.renderer import get_email_renderer
+from polar.email.react import render_email_template
 from polar.email.sender import enqueue_email
 from polar.enums import TokenType
 from polar.integrations.loops.service import loops as loops_service
@@ -168,17 +168,12 @@ class OrganizationAccessTokenService:
         repository = OrganizationAccessTokenRepository.from_session(session)
         await repository.soft_delete(organization_access_token)
 
-        email_renderer = get_email_renderer(
-            {"organization_access_token": "polar.organization_access_token"}
-        )
-
-        subject, body = email_renderer.render_from_template(
-            "Security Notice - Your Polar Organization Access Token has been leaked",
-            "organization_access_token/leaked_token.html",
+        body = render_email_template(
+            "organization_access_token_leaked",
             {
                 "organization_access_token": organization_access_token.comment,
                 "notifier": notifier,
-                "url": url,
+                "url": url or "",
                 "current_year": datetime.now().year,
             },
         )
@@ -189,7 +184,7 @@ class OrganizationAccessTokenService:
         for organization_member in organization_members:
             enqueue_email(
                 to_email_addr=organization_member.user.email,
-                subject=subject,
+                subject="Security Notice - Your Polar Organization Access Token has been leaked",
                 html_content=body,
             )
 

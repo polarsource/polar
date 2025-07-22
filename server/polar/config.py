@@ -92,6 +92,10 @@ class Settings(BaseSettings):
     # Magic link
     MAGIC_LINK_TTL_SECONDS: int = 60 * 30  # 30 minutes
 
+    # Login code
+    LOGIN_CODE_TTL_SECONDS: int = 60 * 30  # 30 minutes
+    LOGIN_CODE_LENGTH: int = 6
+
     # Email verification
     EMAIL_VERIFICATION_TTL_SECONDS: int = 60 * 30  # 30 minutes
 
@@ -111,6 +115,7 @@ class Settings(BaseSettings):
     DATABASE_POOL_SIZE: int = 5
     DATABASE_SYNC_POOL_SIZE: int = 1  # Specific pool size for sync connection: since we only use it in OAuth2 router, don't waste resources.
     DATABASE_POOL_RECYCLE_SECONDS: int = 600  # 10 minutes
+    DATABASE_COMMAND_TIMEOUT_SECONDS: float = 30.0
 
     # Redis
     REDIS_HOST: str = "127.0.0.1"
@@ -169,7 +174,6 @@ class Settings(BaseSettings):
     SENTRY_DSN: str | None = None
 
     # Discord
-    DISCORD_WEBHOOK_URL: str | None = None
     FAVICON_URL: str = "https://raw.githubusercontent.com/polarsource/polar/2648cf7472b5128704a097cd1eb3ae5f1dd847e5/docs/docs/assets/favicon.png"
     THUMBNAIL_URL: str = "https://raw.githubusercontent.com/polarsource/polar/4fd899222e200ca70982f437039f549b7a822ecc/clients/apps/web/public/email-logo-dark.png"
 
@@ -264,6 +268,14 @@ class Settings(BaseSettings):
         "finance",
         # Misc
         ".well-known",
+    ]
+
+    # Dunning Configuration
+    DUNNING_RETRY_INTERVALS: list[timedelta] = [
+        timedelta(days=2),  # First retry after 2 days
+        timedelta(days=5),  # Second retry after 7 days (2 + 5)
+        timedelta(days=7),  # Third retry after 14 days (2 + 5 + 7)
+        timedelta(days=7),  # Fourth retry after 21 days (2 + 5 + 7 + 7)
     ]
 
     model_config = SettingsConfigDict(

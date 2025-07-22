@@ -37,6 +37,7 @@ export interface ReactQueryLoading {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  rowCount?: number
   pageCount?: number
   pagination?: PaginationState
   onPaginationChange?: OnChangeFn<PaginationState>
@@ -73,6 +74,7 @@ const queryIsDisabled = (s: ReactQueryLoading): boolean => {
 export function DataTable<TData, TValue>({
   columns,
   data,
+  rowCount,
   pageCount,
   pagination,
   onPaginationChange,
@@ -96,6 +98,7 @@ export function DataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     manualSorting: true,
+    rowCount,
     pageCount,
     onPaginationChange,
     onSortingChange,
@@ -138,7 +141,10 @@ export function DataTable<TData, TValue>({
               >
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead
+                      key={header.id}
+                      style={{ width: header.column.getSize() }}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -197,7 +203,10 @@ export function DataTable<TData, TValue>({
                         return (
                           <React.Fragment key={cell.id}>
                             {colSpan ? (
-                              <TableCell colSpan={colSpan}>
+                              <TableCell
+                                colSpan={colSpan}
+                                style={{ width: cell.column.getSize() }}
+                              >
                                 {flexRender(
                                   cell.column.columnDef.cell,
                                   cell.getContext(),

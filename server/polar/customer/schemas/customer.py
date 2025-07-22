@@ -22,7 +22,7 @@ from polar.kit.tax import TaxID
 from polar.organization.schemas import OrganizationID
 
 CustomerID = Annotated[UUID4, Path(description="The customer ID.")]
-CustomerExternalID = Annotated[str, Path(description="The customer external ID.")]
+ExternalCustomerID = Annotated[str, Path(description="The customer external ID.")]
 
 _external_id_description = (
     "The ID of the customer in your system. "
@@ -111,10 +111,10 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         description="Timestamp for when the customer was soft deleted."
     )
 
-    @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=blank"])
+    @computed_field(examples=["https://www.gravatar.com/avatar/xxx?d=404"])
     def avatar_url(self) -> str:
         email_hash = hashlib.sha256(self.email.lower().encode()).hexdigest()
-        return f"https://www.gravatar.com/avatar/{email_hash}?d=blank"
+        return f"https://www.gravatar.com/avatar/{email_hash}?d=404"
 
 
 class Customer(CustomerBase):

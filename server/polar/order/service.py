@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import UnaryExpression, asc, desc, func, select
+from sqlalchemy import UnaryExpression, asc, desc, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.repository import AccountRepository
@@ -61,7 +61,6 @@ from polar.models import (
 )
 from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderBillingReason, OrderStatus
-from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_meter import SubscriptionMeter
@@ -1296,11 +1295,15 @@ class OrderService:
         self, session: AsyncSession, order: Order
     ) -> Order:
         """Handle consecutive dunning attempts for an order."""
-        failed_attempts = await self._count_failed_payment_attempts(session, order)
+        payment_repository = PaymentRepository.from_session(session)
+        failed_attempts = await payment_repository.count_failed_payments_for_order(
+            order.id
+        )
+
+        repository = OrderRepository.from_session(session)
 
         if failed_attempts >= len(settings.DUNNING_RETRY_INTERVALS):
             # No more retries, mark subscription as unpaid and clear retry date
-            repository = OrderRepository.from_session(session)
             order = await repository.update(
                 order, update_dict={"next_payment_attempt_at": None}
             )
@@ -1314,22 +1317,11 @@ class OrderService:
         next_interval = settings.DUNNING_RETRY_INTERVALS[failed_attempts]
         next_retry_date = utc_now() + next_interval
 
-        repository = OrderRepository.from_session(session)
         order = await repository.update(
             order, update_dict={"next_payment_attempt_at": next_retry_date}
         )
 
         return order
-
-    async def _count_failed_payment_attempts(
-        self, session: AsyncSession, order: Order
-    ) -> int:
-        statement = select(func.count(Payment.id)).where(
-            Payment.order_id == order.id,
-            Payment.status == PaymentStatus.failed,
-        )
-        result = await session.execute(statement)
-        return result.scalar() or 0
 
     async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
         """Process a single order due for dunning payment retry."""

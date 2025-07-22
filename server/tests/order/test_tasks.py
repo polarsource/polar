@@ -11,7 +11,7 @@ from polar.models.payment import PaymentStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
-from polar.order.tasks import process_dunning
+from polar.order.tasks import process_dunning, process_dunning_order
 from polar.subscription.repository import SubscriptionRepository
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -25,7 +25,7 @@ from tests.fixtures.random_objects import (
 
 @pytest.mark.asyncio
 class TestProcessDunning:
-    async def test_order_without_subscription_skipped(
+    async def test_enqueues_tasks_for_due_orders(
         self,
         save_fixture: SaveFixture,
         product: Product,
@@ -44,13 +44,16 @@ class TestProcessDunning:
         order.next_payment_attempt_at = past_time
         await save_fixture(order)
 
-        enqueue_job_mock = mocker.patch("polar.order.service.enqueue_job")
+        enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
 
         # When
         await process_dunning()
 
         # Then
-        enqueue_job_mock.assert_not_called()
+        enqueue_job_mock.assert_called_once_with(
+            "order.process_dunning_order",
+            order.id,
+        )
 
     async def test_order_in_future_skipped(
         self,
@@ -71,13 +74,77 @@ class TestProcessDunning:
         order.next_payment_attempt_at = future_time
         await save_fixture(order)
 
-        enqueue_job_mock = mocker.patch("polar.order.service.enqueue_job")
+        enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
 
         # When
         await process_dunning()
 
         # Then
         enqueue_job_mock.assert_not_called()
+
+    async def test_enqueues_multiple_due_orders(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Given
+        customer = await create_customer(save_fixture, organization=organization)
+        past_time = utc_now() - timedelta(hours=1)
+
+        order1 = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        order1.next_payment_attempt_at = past_time
+        await save_fixture(order1)
+
+        order2 = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        order2.next_payment_attempt_at = past_time
+        await save_fixture(order2)
+
+        enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
+
+        # When
+        await process_dunning()
+
+        # Then
+        assert enqueue_job_mock.call_count == 2
+        enqueue_job_mock.assert_any_call("order.process_dunning_order", order1.id)
+        enqueue_job_mock.assert_any_call("order.process_dunning_order", order2.id)
+
+
+@pytest.mark.asyncio
+class TestProcessDunningOrder:
+    async def test_order_without_subscription_skipped(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        # Given
+        customer = await create_customer(save_fixture, organization=organization)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=None,
+        )
+
+        # When
+        await process_dunning_order(order.id)
+
+        # Then
+        assert "Order has no subscription, skipping dunning" in caplog.text
 
     async def test_cancelled_subscription_order_cleared_from_dunning(
         self,
@@ -106,7 +173,7 @@ class TestProcessDunning:
         await save_fixture(order)
 
         # When
-        await process_dunning()
+        await process_dunning_order(order.id)
 
         # Then
         repository = OrderRepository.from_session(session)
@@ -119,7 +186,7 @@ class TestProcessDunning:
         save_fixture: SaveFixture,
         product: Product,
         organization: Organization,
-        mocker: MockerFixture,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         # Given
         customer = await create_customer(save_fixture, organization=organization)
@@ -132,7 +199,6 @@ class TestProcessDunning:
         subscription.payment_method_id = None
         await save_fixture(subscription)
 
-        past_time = utc_now() - timedelta(hours=1)
         order = await create_order(
             save_fixture,
             product=product,
@@ -141,16 +207,14 @@ class TestProcessDunning:
             status=OrderStatus.pending,
             billing_reason=OrderBillingReason.subscription_cycle,
         )
-        order.next_payment_attempt_at = past_time
-        await save_fixture(order)
-
-        enqueue_job_mock = mocker.patch("polar.order.service.enqueue_job")
 
         # When
-        await process_dunning()
+        await process_dunning_order(order.id)
 
         # Then
-        enqueue_job_mock.assert_not_called()
+        assert (
+            "Order subscription has no payment method, skipping dunning" in caplog.text
+        )
 
     async def test_valid_order_triggers_payment_retry(
         self,
@@ -171,7 +235,6 @@ class TestProcessDunning:
         subscription.payment_method = payment_method
         await save_fixture(subscription)
 
-        past_time = utc_now() - timedelta(hours=1)
         order = await create_order(
             save_fixture,
             product=product,
@@ -180,13 +243,11 @@ class TestProcessDunning:
             status=OrderStatus.pending,
             billing_reason=OrderBillingReason.subscription_cycle,
         )
-        order.next_payment_attempt_at = past_time
-        await save_fixture(order)
 
         enqueue_job_mock = mocker.patch("polar.order.service.enqueue_job")
 
         # When
-        await process_dunning()
+        await process_dunning_order(order.id)
 
         # Then
         enqueue_job_mock.assert_called_once_with(
@@ -230,7 +291,7 @@ class TestProcessDunning:
 
         payment = await create_payment(
             save_fixture,
-            organization=customer.organization,
+            organization,
             status=PaymentStatus.succeeded,
             order=order,
         )

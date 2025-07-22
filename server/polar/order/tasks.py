@@ -1,6 +1,5 @@
 import uuid
 
-import sentry_sdk
 import structlog
 from dramatiq import Retry
 from sqlalchemy.orm import joinedload
@@ -13,7 +12,14 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
-from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor, can_retry
+from polar.worker import (
+    AsyncSessionMaker,
+    CronTrigger,
+    TaskPriority,
+    actor,
+    can_retry,
+    enqueue_job,
+)
 
 from .repository import OrderRepository
 from .service import order as order_service
@@ -149,13 +155,18 @@ async def process_dunning() -> None:
         due_orders = await order_repository.get_due_dunning_orders()
 
     for order in due_orders:
-        async with AsyncSessionMaker() as session:
-            try:
-                await order_service.process_dunning_order(session, order)
-            except Exception as e:
-                sentry_sdk.capture_exception(e, extra={"order_id": str(order.id)})
-                log.error(
-                    "Failed to process dunning order",
-                    order_id=order.id,
-                    error=str(e),
-                )
+        enqueue_job("order.process_dunning_order", order.id)
+
+
+@actor(actor_name="order.process_dunning_order", priority=TaskPriority.MEDIUM)
+async def process_dunning_order(order_id: uuid.UUID) -> None:
+    """Process a single order due for dunning (payment retry)."""
+    async with AsyncSessionMaker() as session:
+        order_repository = OrderRepository.from_session(session)
+        order = await order_repository.get_by_id(
+            order_id, options=order_repository.get_eager_options()
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        await order_service.process_dunning_order(session, order)

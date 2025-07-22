@@ -5,12 +5,14 @@
 <p>We're sorry to see you go! Your subscription to <strong>{{ product.name }}</strong> will remain active until <strong>{{ subscription.ends_at.strftime("%B %d, %Y") }}</strong>, after which it will be canceled.</p>
 <p>If you change your mind, you can renew your subscription anytime before the end date.</p>
 
+{% if product.benefits %}
 <p>Meanwhile, you will continue to have access to the following benefits:</p>
 <ul>
-  {% for benefit in product.benefits %}
+    {% for benefit in product.benefits %}
     <li>{{ benefit.description }}</li>
-  {% endfor %}
+    {% endfor %}
 </ul>
+{% endif %}
 
 <table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0" role="presentation">
     <tr>

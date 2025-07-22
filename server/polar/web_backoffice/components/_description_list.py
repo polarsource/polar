@@ -2,7 +2,8 @@ import contextlib
 from collections.abc import Generator
 from datetime import datetime
 from inspect import isgenerator
-from typing import Generic, TypeVar
+from operator import attrgetter
+from typing import Any, Generic, TypeVar
 
 from fastapi import Request
 from tagflow import tag, text
@@ -51,8 +52,11 @@ class DescriptionListAttrItem(Generic[M], DescriptionListItem[M]):
                     pass
         return None
 
+    def get_raw_value(self, item: M) -> Any | None:
+        return attrgetter(self.attr)(item)
+
     def get_value(self, item: M) -> str | None:
-        value = getattr(item, self.attr)
+        value = self.get_raw_value(item)
         if value is None:
             return None
         return str(value)
@@ -60,7 +64,7 @@ class DescriptionListAttrItem(Generic[M], DescriptionListItem[M]):
 
 class DescriptionListDateTimeItem(DescriptionListAttrItem[M]):
     def get_value(self, item: M) -> str | None:
-        value: datetime | None = getattr(item, self.attr)
+        value: datetime | None = self.get_raw_value(item)
         if value is None:
             return None
         return formatters.datetime(value)
@@ -85,7 +89,7 @@ class DescriptionListLinkItem(DescriptionListAttrItem[M]):
 
 class DescriptionListCurrencyItem(DescriptionListAttrItem[M]):
     def get_value(self, item: M) -> str | None:
-        value: int | None = getattr(item, self.attr)
+        value: int | None = self.get_raw_value(item)
         if value is None:
             return None
         return formatters.currency(value, self.get_currency(item))

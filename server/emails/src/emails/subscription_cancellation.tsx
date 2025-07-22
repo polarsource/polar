@@ -23,6 +23,23 @@ interface SubscriptionCancellationProps {
   current_year: number
 }
 
+function BenefitsSection({ benefits }: { benefits: Array<{ description: string }> }) {
+  // Only render if there are actual benefits to display
+  if (benefits.length === 0) {
+    return null
+  }
+  return (
+    <>
+      <BodyText>Meanwhile, you will continue to have access to the following benefits:</BodyText>
+      <ul className="list-disc space-y-1 pl-6">
+        {benefits.map((benefit, index) => (
+          <li key={index}>{benefit.description}</li>
+        ))}
+      </ul>
+    </>
+  )
+}
+
 export function SubscriptionCancellation({
   organization,
   product,
@@ -56,18 +73,7 @@ export function SubscriptionCancellation({
           If you change your mind, you can renew your subscription anytime
           before the end date.
         </BodyText>
-        {product.benefits.length > 0 && (
-          <>
-            <BodyText>
-              Meanwhile, you will continue to have access to the following benefits:
-            </BodyText>
-            <ul className="list-disc space-y-1 pl-6">
-              {product.benefits.map((benefit, index) => (
-                <li key={index}>{benefit.description}</li>
-              ))}
-            </ul>
-          </>
-        )}
+        <BenefitsSection benefits={product.benefits} />
       </Section>
       <Section className="my-8 text-center">
         <Button href={url}>Manage my subscription</Button>

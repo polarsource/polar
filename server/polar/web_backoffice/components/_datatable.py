@@ -6,7 +6,8 @@ from collections.abc import Callable, Generator, Sequence
 from datetime import datetime
 from enum import Enum, auto
 from inspect import isgenerator
-from typing import Generic, Protocol, TypeVar
+from operator import attrgetter
+from typing import Any, Generic, Protocol, TypeVar
 
 from fastapi import Request
 from fastapi.datastructures import URL
@@ -39,9 +40,16 @@ class DatatableColumn(Generic[M]):
             yield
 
 
-class DatatableAttrColumn(Generic[M, PE], DatatableColumn[M]):
-    attr: str
+class DatatableSortingColumn(Generic[M, PE], DatatableColumn[M]):
     sorting: PE | None
+
+    def __init__(self, label: str, sorting: PE | None = None) -> None:
+        self.sorting = sorting
+        super().__init__(label)
+
+
+class DatatableAttrColumn(Generic[M, PE], DatatableSortingColumn[M, PE]):
+    attr: str
     clipboard: bool
     href_getter: Callable[[Request, M], str | None] | None
     external_href: bool
@@ -89,7 +97,6 @@ class DatatableAttrColumn(Generic[M, PE], DatatableColumn[M]):
         external_href: Callable[[Request, M], str | None] | None = None,
     ) -> None:
         self.attr = attr
-        self.sorting = sorting
         self.clipboard = clipboard
 
         self.href_getter = None
@@ -102,7 +109,7 @@ class DatatableAttrColumn(Generic[M, PE], DatatableColumn[M]):
                 r.url_for(href_route_name, id=getattr(i, "id"))
             )
 
-        super().__init__(label or attr)
+        super().__init__(label or attr, sorting)
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
         value = self.get_value(item)
@@ -122,8 +129,11 @@ class DatatableAttrColumn(Generic[M, PE], DatatableColumn[M]):
                     pass
         return None
 
+    def get_raw_value(self, item: M) -> Any | None:
+        return attrgetter(self.attr)(item)
+
     def get_value(self, item: M) -> str | None:
-        value = getattr(item, self.attr)
+        value = self.get_raw_value(item)
         if value is None:
             return None
         return str(value)
@@ -131,7 +141,7 @@ class DatatableAttrColumn(Generic[M, PE], DatatableColumn[M]):
 
 class DatatableDateTimeColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
     def get_value(self, item: M) -> str | None:
-        value: datetime | None = getattr(item, self.attr)
+        value: datetime | None = self.get_raw_value(item)
         if value is None:
             return None
         return formatters.datetime(value)
@@ -139,7 +149,7 @@ class DatatableDateTimeColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
 
 class DatatableBooleanColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
     def render(self, request: Request, item: M) -> Generator[None] | None:
-        value: bool | None = getattr(item, self.attr)
+        value = self.get_raw_value(item)
         with tag.div():
             if value is None:
                 text("—")
@@ -278,7 +288,7 @@ class Datatable(Generic[M, PE]):
                         for column in self.columns:
                             with tag.th():
                                 if (
-                                    not isinstance(column, DatatableAttrColumn)
+                                    not isinstance(column, DatatableSortingColumn)
                                     or column.sorting is None
                                 ):
                                     text(column.label)
@@ -319,7 +329,7 @@ class Datatable(Generic[M, PE]):
         yield
 
     def _get_column_sort(
-        self, sorting: list[Sorting[PE]] | None, column: DatatableAttrColumn[M, PE]
+        self, sorting: list[Sorting[PE]] | None, column: DatatableSortingColumn[M, PE]
     ) -> SortWay | None:
         if sorting is None or column.sorting is None:
             return None
@@ -334,7 +344,7 @@ class Datatable(Generic[M, PE]):
         self,
         request: Request,
         sorting: list[Sorting[PE]] | None,
-        column: DatatableAttrColumn[M, PE],
+        column: DatatableSortingColumn[M, PE],
     ) -> URL:
         url = request.url.remove_query_params("sorting")
 

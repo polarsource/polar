@@ -899,6 +899,7 @@ async def create_subscription(
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
+    ends_at: datetime | None = None,
     current_period_start: datetime | None = None,
     current_period_end: datetime | None = None,
     discount: Discount | None = None,
@@ -916,16 +917,16 @@ async def create_subscription(
     if product.is_legacy_recurring_price:
         recurring_interval = product.prices[0].recurring_interval
 
-    ends_at = None
     canceled_at = None
-    if revoke:
-        ended_at = now
-        ends_at = now
-        canceled_at = now
-        status = SubscriptionStatus.canceled
-    elif cancel_at_period_end:
-        ends_at = current_period_end
-        canceled_at = now
+    if ends_at is None:
+        if revoke:
+            ended_at = now
+            ends_at = now
+            canceled_at = now
+            status = SubscriptionStatus.canceled
+        elif cancel_at_period_end:
+            ends_at = current_period_end
+            canceled_at = now
 
     subscription = Subscription(
         stripe_subscription_id=stripe_subscription_id,

@@ -279,9 +279,16 @@ def get_active_subscriptions_cte(
                         <= interval.sql_date_trunc(timestamp_column),
                     ),
                     or_(
-                        Subscription.ended_at.is_(None),
+                        func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(
+                            None
+                        ),
                         interval.sql_date_trunc(
-                            cast(SQLColumnExpression[datetime], Subscription.ended_at)
+                            cast(
+                                SQLColumnExpression[datetime],
+                                func.coalesce(
+                                    Subscription.ended_at, Subscription.ends_at
+                                ),
+                            )
                         )
                         > interval.sql_date_trunc(timestamp_column),
                     ),

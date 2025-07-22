@@ -179,7 +179,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
               avatar_url={customer.avatar_url}
               name={customer.name || customer.email}
             />
-            <div className="fw-medium">{customer.email}</div>
+            <div className="fw-medium overflow-hidden text-ellipsis">
+              {customer.email}
+            </div>
           </div>
         )
       },

@@ -35,7 +35,7 @@ class ProductDict(TypedDict):
     name: str
     description: str
     price: int
-    recurring: bool
+    recurring: SubscriptionRecurringInterval | None
 
 
 class BenefitDict(TypedDict):
@@ -81,11 +81,11 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "bio": "Manufacturing high-quality widgets since 1985.",
         },
         {
-            "name": "Placeholder Enterprises",
-            "slug": "placeholder-enterprises",
-            "email": "hello@placeholder.com",
-            "website": "https://placeholder.com",
-            "bio": "Your go-to solution for all placeholder needs.",
+            "name": "ColdMail Inc.",
+            "slug": "coldmail",
+            "email": "hello@coldmail.com",
+            "website": "https://coldmail.com",
+            "bio": "Online mail services like it's 1999!",
         },
         {
             "name": "Admin Org",
@@ -103,25 +103,25 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 "name": "Premium Business Suite",
                 "description": "Complete business management solution",
                 "price": 25000,
-                "recurring": True,
+                "recurring": SubscriptionRecurringInterval.month,
             },
             {
                 "name": "Starter Kit",
                 "description": "Everything you need to get started",
                 "price": 5000,
-                "recurring": False,
+                "recurring": None,
             },
             {
                 "name": "Enterprise Dashboard",
                 "description": "Advanced analytics and reporting",
                 "price": 5000,
-                "recurring": True,
+                "recurring": SubscriptionRecurringInterval.month,
             },
             {
                 "name": "Mobile App License",
                 "description": "Mobile companion app access",
                 "price": 5000,
-                "recurring": False,
+                "recurring": None,
             },
         ],
         "widget-industries": [
@@ -129,51 +129,93 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 "name": "Widget Pro",
                 "description": "Professional-grade widget with extended warranty",
                 "price": 19900,
-                "recurring": False,
+                "recurring": None,
             },
             {
                 "name": "Widget Subscription",
                 "description": "Monthly widget delivery service",
                 "price": 1900,
-                "recurring": True,
+                "recurring": SubscriptionRecurringInterval.month,
             },
             {
                 "name": "Widget Kit",
                 "description": "Complete widget toolkit for professionals",
                 "price": 9900,
-                "recurring": False,
+                "recurring": None,
             },
             {
                 "name": "Widget Plus",
                 "description": "Enhanced widget with premium features",
                 "price": 15900,
-                "recurring": True,
+                "recurring": SubscriptionRecurringInterval.month,
             },
             {
                 "name": "Widget Support Package",
                 "description": "Annual maintenance and support",
                 "price": 5000,
-                "recurring": True,
+                "recurring": SubscriptionRecurringInterval.month,
             },
         ],
-        "placeholder-enterprises": [
+        "coldmail": [
             {
-                "name": "Placeholder Pro",
-                "description": "Professional placeholder service",
-                "price": 9999,
-                "recurring": True,
+                "name": "ColdMail 10 GB",
+                "description": "ColdMail with 10 GB of storage",
+                "price": 1500,
+                "recurring": SubscriptionRecurringInterval.month,
             },
             {
-                "name": "Demo Content Pack",
-                "description": "High-quality demo content and assets",
-                "price": 1999,
-                "recurring": False,
+                "name": "ColdMail 10 GB",
+                "description": "ColdMail with 10 GB of storage",
+                "price": 15000,
+                "recurring": SubscriptionRecurringInterval.year,
             },
             {
-                "name": "Placeholder API",
-                "description": "RESTful API for placeholder generation",
+                "name": "ColdMail 50 GB",
+                "description": "ColdMail with 50 GB of storage",
                 "price": 5000,
-                "recurring": True,
+                "recurring": SubscriptionRecurringInterval.month,
+            },
+            {
+                "name": "ColdMail 50 GB",
+                "description": "ColdMail with 50 GB of storage",
+                "price": 50000,
+                "recurring": SubscriptionRecurringInterval.year,
+            },
+            {
+                "name": "ColdMail 100 GB",
+                "description": "ColdMail with 100 GB of storage",
+                "price": 8000,
+                "recurring": SubscriptionRecurringInterval.month,
+            },
+            {
+                "name": "ColdMail 100 GB",
+                "description": "ColdMail with 100 GB of storage",
+                "price": 80000,
+                "recurring": SubscriptionRecurringInterval.year,
+            },
+            {
+                "name": "TemperateDocs Basic",
+                "description": "TemperateDocs with basic document editing",
+                "price": 3000,
+                "recurring": SubscriptionRecurringInterval.month,
+            },
+            {
+                "name": "TemperateDocs Basic",
+                "description": "TemperateDocs with basic document editing",
+                "price": 30000,
+                "recurring": SubscriptionRecurringInterval.year,
+            },
+            {
+                "name": "TemperateDocs Pro",
+                "description": "TemperateDocs with sheets, slides, and PDF export",
+                "price": 6000,
+                "recurring": SubscriptionRecurringInterval.month,
+            },
+            {
+                "name": "TemperateDocs Pro",
+                "description": "TemperateDocs with sheets, slides, and PDF export",
+                "price": 60000,
+                "recurring": SubscriptionRecurringInterval.year,
             },
         ],
     }
@@ -257,9 +299,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 name=product_data["name"],
                 description=product_data["description"],
                 organization_id=organization.id,
-                recurring_interval=SubscriptionRecurringInterval.month
-                if product_data["recurring"]
-                else None,
+                recurring_interval=product_data.get("recurring", None),
                 prices=[price_create],
             )
 

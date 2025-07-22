@@ -759,6 +759,58 @@ class TestCreateSubscriptionOrder:
             [],
         )
 
+    async def test_cycle_free_order(
+        self,
+        enqueue_job_mock: MagicMock,
+        calculate_tax_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        await create_billing_entry(
+            save_fixture,
+            customer=subscription.customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        calculate_tax_mock.return_value = {
+            "processor_id": "TAX_PROCESSOR_ID",
+            "amount": 0,
+            "taxability_reason": TaxabilityReason.not_subject_to_tax,
+            "tax_rate": {},
+        }
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        assert order.net_amount == 0
+        assert order.status == OrderStatus.paid
+
+        enqueued_jobs = [call[0][0] for call in enqueue_job_mock.call_args_list]
+        assert "order.trigger_payment" not in enqueued_jobs
+
 
 @pytest.mark.asyncio
 class TestCreateOrderFromStripe:

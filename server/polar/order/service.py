@@ -694,13 +694,17 @@ class OrderService:
                     ),
                 )
 
-        # TODO: if amount is 0, mark it as paid and don't trigger payment
-
-        enqueue_job(
-            "order.trigger_payment",
-            order_id=order.id,
-            payment_method_id=subscription.payment_method_id,
-        )
+        # If the order total amount is zero, mark it as paid immediately
+        if order.total_amount <= 0:
+            order = await repository.update(
+                order, update_dict={"status": OrderStatus.paid}
+            )
+        else:
+            enqueue_job(
+                "order.trigger_payment",
+                order_id=order.id,
+                payment_method_id=subscription.payment_method_id,
+            )
 
         await self._on_order_created(session, order)
 

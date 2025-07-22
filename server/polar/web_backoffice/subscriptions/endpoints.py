@@ -76,11 +76,12 @@ async def list(
     repository = SubscriptionRepository.from_session(session)
     statement = (
         repository.get_base_statement()
-        .join(Customer, Subscription.customer_id == Customer.id, isouter=True)
-        .join(Product, Subscription.product_id == Product.id, isouter=True)
+        .join(Customer, Subscription.customer_id == Customer.id)
+        .join(Product, Subscription.product_id == Product.id)
+        .join(Organization, Product.organization_id == Organization.id)
         .options(
             contains_eager(Subscription.customer),
-            contains_eager(Subscription.product).joinedload(Product.organization),
+            contains_eager(Subscription.product).contains_eager(Product.organization),
         )
     )
 

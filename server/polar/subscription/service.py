@@ -1446,14 +1446,12 @@ class SubscriptionService:
             subscription, update_dict={"status": SubscriptionStatus.active}
         )
 
-        # Trigger subscription updated events
         await self._after_subscription_updated(
             session,
             subscription,
             previous_status=previous_status,
             previous_ends_at=previous_ends_at,
         )
-        # Grant benefits for this subscription
         await self.enqueue_benefits_grants(session, subscription)
 
         return subscription

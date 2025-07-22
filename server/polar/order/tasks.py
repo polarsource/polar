@@ -148,7 +148,8 @@ async def process_dunning() -> None:
         order_repository = OrderRepository.from_session(session)
         due_orders = await order_repository.get_due_dunning_orders()
 
-        for order in due_orders:
+    for order in due_orders:
+        async with AsyncSessionMaker() as session:
             try:
                 await order_service.process_dunning_order(session, order)
             except Exception as e:
@@ -158,4 +159,3 @@ async def process_dunning() -> None:
                     order_id=order.id,
                     error=str(e),
                 )
-                continue

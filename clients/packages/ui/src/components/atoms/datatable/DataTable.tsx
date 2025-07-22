@@ -141,7 +141,10 @@ export function DataTable<TData, TValue>({
               >
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead
+                      key={header.id}
+                      style={{ width: header.column.getSize() }}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -200,7 +203,10 @@ export function DataTable<TData, TValue>({
                         return (
                           <React.Fragment key={cell.id}>
                             {colSpan ? (
-                              <TableCell colSpan={colSpan}>
+                              <TableCell
+                                colSpan={colSpan}
+                                style={{ width: cell.column.getSize() }}
+                              >
                                 {flexRender(
                                   cell.column.columnDef.cell,
                                   cell.getContext(),

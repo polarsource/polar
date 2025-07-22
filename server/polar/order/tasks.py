@@ -12,7 +12,14 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
-from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry
+from polar.worker import (
+    AsyncSessionMaker,
+    CronTrigger,
+    TaskPriority,
+    actor,
+    can_retry,
+    enqueue_job,
+)
 
 from .repository import OrderRepository
 from .service import order as order_service
@@ -134,3 +141,32 @@ async def order_invoice(order_id: uuid.UUID) -> None:
             raise OrderDoesNotExist(order_id)
 
         await order_service.generate_invoice(session, order)
+
+
+@actor(
+    actor_name="order.process_dunning",
+    cron_trigger=CronTrigger.from_crontab("0 * * * *"),
+    priority=TaskPriority.MEDIUM,
+)
+async def process_dunning() -> None:
+    """Process all orders that are due for dunning (payment retry)."""
+    async with AsyncSessionMaker() as session:
+        order_repository = OrderRepository.from_session(session)
+        due_orders = await order_repository.get_due_dunning_orders()
+
+    for order in due_orders:
+        enqueue_job("order.process_dunning_order", order.id)
+
+
+@actor(actor_name="order.process_dunning_order", priority=TaskPriority.MEDIUM)
+async def process_dunning_order(order_id: uuid.UUID) -> None:
+    """Process a single order due for dunning (payment retry)."""
+    async with AsyncSessionMaker() as session:
+        order_repository = OrderRepository.from_session(session)
+        order = await order_repository.get_by_id(
+            order_id, options=order_repository.get_eager_options()
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        await order_service.process_dunning_order(session, order)

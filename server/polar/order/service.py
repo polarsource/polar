@@ -48,7 +48,6 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
-    HeldBalance,
     Order,
     OrderItem,
     Organization,
@@ -57,12 +56,14 @@ from polar.models import (
     Product,
     ProductPrice,
     Subscription,
-    SubscriptionMeter,
     Transaction,
     User,
 )
+from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.product import ProductBillingType
+from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription_meter import SubscriptionMeter
 from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -745,6 +746,10 @@ class OrderService:
         if order.status == OrderStatus.pending:
             update_dict["status"] = OrderStatus.paid
 
+        # Clear retry attempt date on successful payment
+        if order.next_payment_attempt_at is not None:
+            update_dict["next_payment_attempt_at"] = None
+
         # Balance the order in the ledger
         if payment is not None:
             enqueue_job(
@@ -763,6 +768,14 @@ class OrderService:
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(order, update_dict=update_dict)
+
+        # If this was a subscription retry success, reactivate the subscription
+        if (
+            previous_status == OrderStatus.pending
+            and order.subscription is not None
+            and order.subscription.status == SubscriptionStatus.past_due
+        ):
+            await subscription_service.mark_active(session, order.subscription)
 
         if update_dict:
             await self._on_order_updated(session, order, previous_status)
@@ -1278,7 +1291,7 @@ class OrderService:
         attempt date and marking the subscription as past due.
         """
 
-        first_retry_date = utc_now() + settings.DUNNING_FIRST_RETRY_DELAY
+        first_retry_date = utc_now() + settings.DUNNING_RETRY_INTERVALS[0]
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(
@@ -1293,7 +1306,77 @@ class OrderService:
         self, session: AsyncSession, order: Order
     ) -> Order:
         """Handle consecutive dunning attempts for an order."""
-        # TODO : Implement logic for handling consecutive dunning attempts
+        payment_repository = PaymentRepository.from_session(session)
+        failed_attempts = await payment_repository.count_failed_payments_for_order(
+            order.id
+        )
+
+        repository = OrderRepository.from_session(session)
+
+        if failed_attempts >= len(settings.DUNNING_RETRY_INTERVALS):
+            # No more retries, mark subscription as unpaid and clear retry date
+            order = await repository.update(
+                order, update_dict={"next_payment_attempt_at": None}
+            )
+
+            if order.subscription is not None:
+                await subscription_service.cancel(session, order.subscription)
+
+            return order
+
+        # Schedule next retry using the appropriate interval
+        next_interval = settings.DUNNING_RETRY_INTERVALS[failed_attempts]
+        next_retry_date = utc_now() + next_interval
+
+        order = await repository.update(
+            order, update_dict={"next_payment_attempt_at": next_retry_date}
+        )
+
+        return order
+
+    async def process_dunning_order(self, session: AsyncSession, order: Order) -> Order:
+        """Process a single order due for dunning payment retry."""
+        if order.subscription is None:
+            log.warning(
+                "Order has no subscription, skipping dunning",
+                order_id=order.id,
+            )
+            return order
+
+        if order.subscription.status == SubscriptionStatus.canceled:
+            log.info(
+                "Order subscription is cancelled, removing order from dunning process",
+                order_id=order.id,
+                subscription_id=order.subscription.id,
+            )
+
+            repository = OrderRepository.from_session(session)
+            order = await repository.update(
+                order, update_dict={"next_payment_attempt_at": None}
+            )
+            return order
+
+        if order.subscription.payment_method_id is None:
+            log.warning(
+                "Order subscription has no payment method, skipping dunning",
+                order_id=order.id,
+                subscription_id=order.subscription.id,
+            )
+            return order
+
+        log.info(
+            "Processing dunning order",
+            order_id=order.id,
+            subscription_id=order.subscription.id,
+        )
+
+        # Enqueue a payment retry for this order
+        enqueue_job(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=order.subscription.payment_method_id,
+        )
+
         return order
 
 

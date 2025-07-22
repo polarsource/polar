@@ -1453,5 +1453,28 @@ class SubscriptionService:
 
         return subscription
 
+    async def mark_active(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> Subscription:
+        """Mark a subscription as active. Used when payment succeeds after being past due."""
+
+        previous_status = subscription.status
+        previous_ends_at = subscription.ends_at
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.update(
+            subscription, update_dict={"status": SubscriptionStatus.active}
+        )
+
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=previous_status,
+            previous_ends_at=previous_ends_at,
+        )
+        await self.enqueue_benefits_grants(session, subscription)
+
+        return subscription
+
 
 subscription = SubscriptionService()

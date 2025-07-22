@@ -71,7 +71,7 @@ class TestHandleFailure:
         updated_order = await order_repo.get_by_id(order.id)
         assert updated_order is not None
         assert updated_order.next_payment_attempt_at is not None
-        expected_retry_date = utc_now() + timedelta(days=3)
+        expected_retry_date = utc_now() + timedelta(days=2)
         assert updated_order.next_payment_attempt_at == expected_retry_date
 
         updated_subscription = await subscription_repo.get_by_id(subscription.id)

@@ -1,5 +1,7 @@
 import contextlib
 from collections.abc import Generator
+from enum import StrEnum
+from inspect import isclass
 from typing import Any, TypeAlias
 
 from pydantic import AfterValidator, BaseModel, ValidationError
@@ -70,6 +72,39 @@ class InputField(FormField):
                     **self.kwargs,
                 ):
                     pass
+            for error in errors:
+                with tag.div(classes="validator-hint text-error"):
+                    text(error["msg"])
+        yield
+
+
+class CheckboxField(FormField):
+    def __init__(self, **kwargs: Any) -> None:
+        self.kwargs = kwargs
+
+    @contextlib.contextmanager
+    def render(
+        self,
+        id: str,
+        label: str,
+        *,
+        required: bool = False,
+        value: Any | None = None,
+        errors: list[ErrorDetails] = [],
+    ) -> Generator[None]:
+        with tag.div(classes="flex flex-col"):
+            with tag.label(classes="label", **{"for": id}):
+                with tag.input(
+                    id=id,
+                    name=id,
+                    type="checkbox",
+                    required=required,
+                    checked=value,
+                    classes="checkbox",
+                    **self.kwargs,
+                ):
+                    pass
+                text(label)
             for error in errors:
                 with tag.div(classes="validator-hint text-error"):
                     text(error["msg"])
@@ -158,6 +193,15 @@ def _get_input_field(field: FieldInfo) -> FormField:
     for meta in field.metadata:
         if isinstance(meta, FormField):
             return meta
+
+    if field.annotation:
+        if field.annotation is bool:
+            return CheckboxField()
+        if isclass(field.annotation) and issubclass(field.annotation, StrEnum):
+            return SelectField(
+                options=[(item.value, item.name) for item in field.annotation]
+            )
+
     return InputField()
 
 

@@ -243,7 +243,7 @@ async def delete(
         await organization_service.delete(session, organization)
         await add_toast(
             request,
-            f"Organzation with ID {organization.id} has been deleted",
+            f"Organization with ID {organization.id} has been deleted",
             "success",
         )
 

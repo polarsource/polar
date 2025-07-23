@@ -1,10 +1,10 @@
 import contextlib
 import uuid
 from collections.abc import Generator
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import UUID4, BeforeValidator
+from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import classes, tag, text
@@ -18,11 +18,15 @@ from polar.order.sorting import OrderSortProperty
 from polar.postgres import AsyncSession, get_db_session
 from polar.subscription import sorting
 from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.service import subscription as subscription_service
 from polar.subscription.sorting import SubscriptionSortProperty
+from polar.web_backoffice.responses import HXRedirectResponse
 
-from ..components import datatable, description_list, input
+from ..components import button, datatable, description_list, input, modal
 from ..formatters import currency
 from ..layout import layout
+from ..toast import add_toast
+from .forms import CancelForm
 
 router = APIRouter()
 
@@ -288,6 +292,24 @@ async def get(
             with tag.div(classes="flex justify-between items-center"):
                 with tag.h1(classes="text-4xl"):
                     text(f"Subscription {subscription.id}")
+                if subscription.can_cancel():
+                    with button(
+                        hx_get=str(
+                            request.url_for("subscriptions:cancel", id=subscription.id)
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Cancel")
+                if subscription.can_uncancel():
+                    with button(
+                        hx_get=str(
+                            request.url_for(
+                                "subscriptions:uncancel", id=subscription.id
+                            )
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Uncancel")
 
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Subscription Details
@@ -398,3 +420,99 @@ async def get(
                     datatable.DatatableAttrColumn("status", "Status"),
                 ).render(request, orders):
                     pass
+
+
+@router.api_route("/{id}/cancel", name="subscriptions:cancel", methods=["GET", "POST"])
+async def cancel(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    subscription_repository = SubscriptionRepository.from_session(session)
+    subscription = await subscription_repository.get_by_id(id)
+
+    if subscription is None:
+        raise HTTPException(status_code=404)
+
+    if not subscription.can_cancel():
+        await add_toast(request, "This subscription is already canceled.", "error")
+        return
+
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = CancelForm.model_validate(data)
+            await subscription_service._perform_cancellation(
+                session,
+                subscription,
+                customer_reason=form.customer_cancellation_reason,
+                customer_comment=form.customer_cancellation_comment,
+                immediately=form.revoke,
+            )
+            return HXRedirectResponse(
+                request, str(request.url_for("subscriptions:get", id=id)), 303
+            )
+        except ValidationError as e:
+            validation_error = e
+
+    with modal("Cancel subscription", open=True):
+        with CancelForm.render(
+            method="POST",
+            action=str(request.url_for("subscriptions:cancel", id=id)),
+            classes="flex flex-col gap-4",
+            validation_error=validation_error,
+            hx_boost="true",
+            hx_target="#modal",
+        ):
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(type="submit", variant="primary"):
+                    text("Submit")
+
+
+@router.api_route(
+    "/{id}/uncancel", name="subscriptions:uncancel", methods=["GET", "POST"]
+)
+async def uncancel(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    subscription_repository = SubscriptionRepository.from_session(session)
+    subscription = await subscription_repository.get_by_id(id)
+
+    if subscription is None:
+        raise HTTPException(status_code=404)
+
+    if not subscription.can_uncancel():
+        await add_toast(request, "This subscription cannot be uncanceled.", "error")
+        return
+
+    if request.method == "POST":
+        await subscription_service.uncancel(session, subscription)
+        return HXRedirectResponse(
+            request, str(request.url_for("subscriptions:get", id=id)), 303
+        )
+
+    with modal("Uncancel subscription", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text("Are you sure you want to uncancel this subscription? ")
+                text(
+                    "The billing cycle will be resumed, and the subscription will be active again."
+                )
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="button",
+                    variant="primary",
+                    hx_post=str(request.url),
+                    hx_target="#modal",
+                ):
+                    text("Submit")

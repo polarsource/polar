@@ -151,7 +151,6 @@ class CustomerOrderService:
     async def retry_payment(self, session: AsyncSession, order: Order) -> None:
         """Retry payment for an order with scheduled dunning retry."""
 
-        # Validate order state
         if order.status != OrderStatus.pending:
             raise OrderNotEligibleForRetry(order)
 
@@ -164,11 +163,9 @@ class CustomerOrderService:
         if order.subscription.payment_method_id is None:
             raise OrderNotEligibleForRetry(order)
 
-        # Check if payment is already in progress
         if order.payment_lock_acquired_at is not None:
             raise PaymentAlreadyInProgress(order)
 
-        # Get payment method
         payment_method_repository = PaymentMethodRepository.from_session(session)
         payment_method = await payment_method_repository.get_by_id(
             order.subscription.payment_method_id

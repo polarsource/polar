@@ -67,17 +67,7 @@ async def _get_auth_subject(
 
     # Web session
     if user_session is not None:
-        user = user_session.user
-        scopes = {Scope.web_default}
-        if user.github_username in {
-            "birkjernstrom",
-            "frankie567",
-            "emilwidlund",
-            "malthejorgensen",
-            "psincraian",
-        }:
-            scopes.add(Scope.admin)
-        return AuthSubject(user, scopes, AuthMethod.COOKIE)
+        return AuthSubject(user_session.user, {Scope.web_default}, AuthMethod.COOKIE)
 
     oauth2_token, oauth2_authorization_set = oauth2_credentials
     personal_access_token, personal_access_token_authorization_set = (
@@ -280,6 +270,3 @@ WebUserOrAnonymous = Annotated[
 
 _WebUser = Authenticator(allowed_subjects={User}, required_scopes={Scope.web_default})
 WebUser = Annotated[AuthSubject[User], Depends(_WebUser)]
-
-_AdminUser = Authenticator(allowed_subjects={User}, required_scopes={Scope.admin})
-AdminUser = Annotated[AuthSubject[User], Depends(_AdminUser)]

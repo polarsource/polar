@@ -18,13 +18,7 @@ async def get_admin(
         # On localhost allow "admin@polar.sh"
         return user_session
 
-    if user.github_username not in {
-        "birkjernstrom",
-        "frankie567",
-        "emilwidlund",
-        "malthejorgensen",
-        "psincraian",
-    }:
+    if not user.is_admin:
         raise HTTPException(status_code=403, detail="Forbidden")
 
     return user_session

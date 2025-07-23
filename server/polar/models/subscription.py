@@ -281,6 +281,9 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             return False
         return True
 
+    def can_uncancel(self) -> bool:
+        return self.cancel_at_period_end and self.status == SubscriptionStatus.active
+
     def set_started_at(self) -> None:
         """
         Stores the starting date when the subscription

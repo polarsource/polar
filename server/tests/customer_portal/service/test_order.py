@@ -1,5 +1,4 @@
-from unittest.mock import patch
-
+from unittest.mock import Mock
 import pytest
 
 from polar.auth.models import AuthSubject
@@ -218,6 +217,7 @@ class TestRetryPayment:
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
     async def test_successful_retry(
         self,
+        mocker: Mock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product: Product,
@@ -232,9 +232,14 @@ class TestRetryPayment:
         order.subscription.payment_method_id = payment_method.id
         await save_fixture(order)
 
-        with patch("polar.order.service.order.trigger_payment") as mock_trigger:
-            mock_trigger.return_value = None
+        enqueue_job_mock = mocker.patch(
+            "polar.customer_portal.service.order.enqueue_job"
+        )
 
-            await customer_order_service.retry_payment(session, order)
+        await customer_order_service.retry_payment(session, order)
 
-            mock_trigger.assert_called_once_with(session, order, payment_method)
+        enqueue_job_mock.assert_called_once_with(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=payment_method.id,
+        )

@@ -18,6 +18,7 @@ from polar.models.product import ProductBillingType
 from polar.order.service import InvoiceDoesNotExist
 from polar.order.service import order as order_service
 from polar.payment_method.repository import PaymentMethodRepository
+from polar.worker import enqueue_job
 
 from ..repository.order import CustomerOrderRepository
 from ..schemas.order import CustomerOrderInvoice, CustomerOrderUpdate
@@ -174,9 +175,12 @@ class CustomerOrderService:
         if payment_method is None:
             raise OrderNotEligibleForRetry(order)
 
-        # Trigger payment. Don't use the job queue here, as this is a manual retry and we
-        # want feedback if the payment intent succeeded.
-        await order_service.trigger_payment(session, order, payment_method)
+        # Trigger payment using the job queue for manual retry
+        enqueue_job(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=order.subscription.payment_method_id,
+        )
 
 
 customer_order = CustomerOrderService()

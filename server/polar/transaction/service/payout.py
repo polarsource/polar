@@ -241,7 +241,7 @@ class PayoutTransactionService(BaseTransactionService):
     ) -> tuple[Transaction, int | None]:
         try:
             # We use a semaphore to limit the number of concurrent requests to Stripe
-            async with asyncio.Semaphore(32):
+            async with asyncio.Semaphore(4):
                 if balance_transaction.transfer_id is None:
                     assert account.stripe_id is not None
                     stripe_transfer = await stripe_service.transfer(

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import UUID4, AliasChoices, AliasPath, Field
 from pydantic.json_schema import SkipJsonSchema
 
@@ -46,6 +48,9 @@ class CustomerOrder(OrderBase):
     )
     subscription: CustomerOrderSubscription | None
     items: list[OrderItemSchema] = Field(description="Line items composing the order.")
+    next_payment_attempt_at: datetime | None = Field(
+        None, description="When the next payment retry is scheduled"
+    )
 
 
 class CustomerOrderInvoice(Schema):

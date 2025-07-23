@@ -11,7 +11,6 @@ class Scope(StrEnum):
     email = "email"
     user_read = "user:read"
 
-    admin = "admin"  # Admin scope. For Polar staff only.
     web_default = "web_default"  # Web default scope. For users logged in on the web.
 
     organizations_read = "organizations:read"
@@ -102,7 +101,7 @@ class Scope(StrEnum):
         return json_schema
 
 
-RESERVED_SCOPES = {Scope.admin, Scope.web_default}
+RESERVED_SCOPES = {Scope.web_default}
 SCOPES_SUPPORTED = [s.value for s in Scope if s not in RESERVED_SCOPES]
 SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.openid: "OpenID",

@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, select, update
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import selectinload
 
@@ -69,6 +69,27 @@ class OrderRepository(
             .options(*options)
         )
         return await self.get_all(statement)
+
+    async def acquire_payment_lock(self, order_id: UUID) -> bool:
+        """
+        Attempt to acquire a payment lock for an order atomically.
+
+        Returns:
+            True if lock was acquired, False if already locked
+        """
+
+        result = await self.session.execute(
+            update(Order)
+            .where(Order.id == order_id, Order.payment_lock_acquired_at.is_(None))
+            .values(payment_lock_acquired_at=utc_now())
+        )
+        return result.rowcount > 0
+
+    async def release_payment_lock(self, order: Order, *, flush: bool = False) -> Order:
+        """Release a payment lock for an order."""
+        return await self.update(
+            order, update_dict={"payment_lock_acquired_at": None}, flush=flush
+        )
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

@@ -123,6 +123,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
 
+    payment_lock_acquired_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+
     customer_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("customers.id"), nullable=False, index=True
     )

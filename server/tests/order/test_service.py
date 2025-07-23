@@ -48,6 +48,7 @@ from polar.order.service import (
     NotRecurringProduct,
     OrderDoesNotExist,
     OrderNotPending,
+    PaymentAlreadyInProgress,
     RecurringProduct,
     SubscriptionDoesNotExist,
 )
@@ -1818,3 +1819,89 @@ class TestProcessDunningOrder:
             order_id=order.id,
             payment_method_id=payment_method.id,
         )
+
+
+@pytest.mark.asyncio
+class TestTriggerPayment:
+    """Test payment lock mechanism in trigger_payment service method."""
+
+    async def test_trigger_payment_when_already_locked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that trigger_payment raises PaymentAlreadyInProgress when order is already locked."""
+        # Given
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        order.payment_lock_acquired_at = utc_now()
+        await save_fixture(order)
+
+        # When/Then
+        with pytest.raises(PaymentAlreadyInProgress):
+            await order_service.trigger_payment(session, order, payment_method)
+
+    async def test_trigger_payment_acquires_lock_successfully(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that trigger_payment acquires lock and processes payment normally."""
+        # Given
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        await save_fixture(order)
+
+        # When
+        await order_service.trigger_payment(session, order, payment_method)
+
+        # Then
+        stripe_service_mock.create_payment_intent.assert_called_once()
+
+        await session.refresh(order)
+        assert order.payment_lock_acquired_at is not None
+
+    async def test_trigger_payment_releases_lock_on_failure(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that lock is released when payment processing fails."""
+        # Given
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        await save_fixture(order)
+
+        stripe_service_mock.create_payment_intent.side_effect = Exception(
+            "Payment failed"
+        )
+
+        # When/Then
+        with pytest.raises(Exception, match="Payment failed"):
+            await order_service.trigger_payment(session, order, payment_method)
+
+        await session.refresh(order)
+        assert order.payment_lock_acquired_at is None

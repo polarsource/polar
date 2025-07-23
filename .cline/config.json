@@ -1,0 +1,13 @@
+{
+  "auto_reference": {
+    "enabled": true,
+    "files": [
+      ".github/copilot-instructions.md"
+    ]
+  },
+  "enforcement": {
+    "level": "suggest",
+    "auto_fix": false,
+    "show_examples": true
+  }
+}

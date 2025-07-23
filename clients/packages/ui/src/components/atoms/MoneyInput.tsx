@@ -21,6 +21,7 @@ interface Props {
   disabled?: boolean
   preSlot?: React.ReactNode
   postSlot?: React.ReactNode
+  step?: number
 }
 
 const getCents = (value: string): number => {
@@ -45,9 +46,10 @@ const MoneyInput = (props: Props) => {
     preSlot,
     postSlot,
     onChange: _onChange,
-    onBlur,
+    onBlur: _onBlur,
     onFocus,
     disabled,
+    step = 0.1,
   } = props
   const [previousValue, setPreviousValue] = useState<number | undefined>(value)
   const [internalValue, setInternalValue] = useState<string | undefined>(
@@ -63,28 +65,140 @@ const MoneyInput = (props: Props) => {
 
   const onChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
-      if (_onChange) {
-        const newValue = getCents(e.target.value)
-        setPreviousValue(newValue)
-        _onChange(newValue)
+      const input = e.target.value
+
+      // Strip everything except numbers, commas, and periods
+      // (people can paste in anything, so the keydown handler is not enough)
+      const cleaned = input.replace(/[^0-9,.]/g, '')
+
+      // By default, parse the full value as a whole number, stripping out decimal separators
+      //
+      // Leave a trailing comma, otherwise people can't type in decimals
+      // (the onBlur handler will strip it if it's dangling on blur)
+      let newValue = cleaned.replace(/[,.](?!$)/g, '').replace(/,$/, '.')
+
+      // However, if we detect a decimal separator, round it to 2 decimal places
+      //
+      // We support period decimal separator (enforced when typing)
+      // but also support comma decimal separators (might be pasted in)
+      const decimalMatch = cleaned.match(/([.,])([0-9]+)$/)
+
+      if (decimalMatch) {
+        const maxDecimalPrecision = 2
+
+        const decimalPart = decimalMatch[2]
+
+        const integerPart = cleaned
+          .slice(0, -decimalMatch[0].length)
+          .replace(/[,.]/g, '')
+
+        const parsedValue = Number.parseFloat(
+          `${integerPart}.${decimalPart.slice(0, maxDecimalPrecision)}`,
+        )
+
+        if (!Number.isNaN(parsedValue)) {
+          newValue = parsedValue.toFixed(
+            Math.min(maxDecimalPrecision, decimalPart.length),
+          )
+        }
       }
-      setInternalValue(e.target.value)
+
+      if (_onChange) {
+        const centsValue = getCents(newValue)
+        setPreviousValue(centsValue)
+        _onChange(centsValue)
+      }
+
+      setInternalValue(newValue)
     },
     [_onChange],
   )
 
-  const onInput = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    const regex = /^\d+([\.,]\d{0,2})?$/
-    if (!regex.test(value)) {
-      e.target.value = Number.parseFloat(value).toFixed(2)
-    }
-  }
+  const onBlur = useCallback(
+    (e: FocusEvent<HTMLInputElement>) => {
+      // Strip trailing decimal point
+      if (internalValue?.endsWith('.')) {
+        const strippedValue = internalValue.replace(/\.$/, '')
+
+        if (_onChange) {
+          const centsValue = getCents(strippedValue)
+          setPreviousValue(centsValue)
+          _onChange(centsValue)
+        }
+
+        setInternalValue(strippedValue)
+      }
+
+      if (_onBlur) {
+        _onBlur(e)
+      }
+    },
+    [_onBlur, _onChange, internalValue],
+  )
+
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // Allow only digits, decimal point, and control keys
+      if (
+        !/[0-9.,]/.test(e.key) &&
+        !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(
+          e.key,
+        ) &&
+        !e.ctrlKey &&
+        !e.metaKey
+      ) {
+        e.preventDefault()
+      }
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        const parsedValue = Number.parseFloat(e.currentTarget.value)
+
+        const newValue = (
+          !Number.isNaN(parsedValue) ? parsedValue + step : step
+        ).toFixed(2)
+
+        if (_onChange) {
+          const centsValue = getCents(newValue)
+          setPreviousValue(centsValue)
+          _onChange(centsValue)
+        }
+
+        setInternalValue(newValue)
+      }
+
+      if (e.key === 'ArrowDown') {
+        const parsedValue = Number.parseFloat(e.currentTarget.value)
+
+        const newValue = Math.max(
+          0,
+          !Number.isNaN(parsedValue) ? parsedValue - step : -step,
+        ).toFixed(2)
+
+        if (_onChange) {
+          const centsValue = getCents(newValue)
+          setPreviousValue(centsValue)
+          _onChange(centsValue)
+        }
+
+        setInternalValue(newValue)
+      }
+
+      // Prevent multiple decimal points
+      if (
+        (e.key === '.' || e.key === ',') &&
+        e.currentTarget.value.includes('.')
+      ) {
+        e.preventDefault()
+      }
+    },
+    [step, _onChange],
+  )
 
   return (
     <Input
-      type="number"
-      step={0.1}
+      type="text"
+      inputMode="decimal"
       id={id}
       name={name}
       className={twMerge(
@@ -93,15 +207,12 @@ const MoneyInput = (props: Props) => {
       )}
       value={internalValue}
       onChange={onChange}
-      onInput={onInput}
+      onKeyDown={onKeyDown}
       placeholder={placeholder ? `${placeholder / 100}` : undefined}
       preSlot={preSlot ? preSlot : <DollarSign className="h-4 w-4" />}
       postSlot={postSlot}
       onBlur={onBlur}
       onFocus={onFocus}
-      onWheel={(e) => {
-        ;(e.target as HTMLInputElement).blur()
-      }}
       disabled={disabled}
     />
   )

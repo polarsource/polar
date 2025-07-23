@@ -64,6 +64,62 @@ uv run alembic revision --autogenerate -m "<description>"
 - **Models**: Note that SQLAlchemy models are an exception to the modular structure and are defined globally in `server/polar/models`.
 - **API Client Generation**: The frontend's TypeScript client is generated from the backend's OpenAPI schema. After making changes to the API, you may need to run `pnpm run generate` in `clients/packages/client` to update the client.
 
+### Import Organization
+- **imports at module top**: Import statements like `from sqlalchemy import update, select` should be at the top of the file, not inside methods or functions.
+- **Follow modular structure**: Import models from `polar.models`, services from their respective modules, following the established patterns.
+- **Dependency injection**: Use FastAPI's dependency injection system for repositories and services.
+
+### Repository Layer Standards
+- **Accept domain objects over IDs**: Repository methods should prefer accepting domain objects (e.g., `Order`) instead of just UUIDs when the calling code already has the object.
+    ```python
+    # Preferred
+    async def release_payment_lock(self, order: Order, *, flush: bool = False) -> Order:
+        return await self.update(order, update_dict={"payment_lock_acquired_at": None}, flush=flush)
+
+    # Avoid when object is available
+    async def release_payment_lock(self, order_id: UUID) -> None:
+        # ...
+    ```
+- **Return updated objects**: Repository methods should return updated domain objects to provide the caller with the latest state.
+- **Use flush parameters**: Include `flush: bool = False` parameters for controlling transaction boundaries. It should always be a keyword argument, after `*` to avoid confusion.
+- **Inherit from RepositoryBase**: Follow the established repository inheritance patterns.
+
+### Service Layer Standards
+- **Proper exception handling**: Use appropriate HTTP status codes in custom exceptions:
+    - `409` for conflicts (e.g., `PaymentAlreadyInProgress`)
+    - `422` for validation errors
+    - `404` for not found errors
+    ```python
+    class PaymentAlreadyInProgress(OrderError):
+        def __init__(self, order: Order) -> None:
+            self.order = order
+            message = f"Payment for order {order.id} is already in progress"
+            super().__init__(message, 409)  # Include status code
+    ```
+- **Meaningful error messages**: Include relevant entity IDs and context in error messages for debugging.
+- **Async patterns**: Use proper async/await patterns with SQLAlchemy sessions.
+- **Session management**: Use dependency injection for database sessions, don't create sessions manually.
+
+### Exception Handling Standards
+- **Inherit from appropriate base classes**: Custom exceptions should inherit from domain-specific error classes (e.g., `OrderError`).
+- **Include HTTP status codes**: Pass status codes as the second parameter to the parent constructor for known errors.
+- **Contextual information**: Store relevant domain objects as attributes for error handling and logging.
+
+### SQLAlchemy & Database Standards
+- **Use ORM patterns consistently**: Prefer SQLAlchemy ORM methods over raw SQL.
+- **Session management**: Use `AsyncSession` with proper dependency injection.
+- **Repository patterns**: Encapsulate database logic in repository classes inheriting from `RepositoryBase`.
+
+### Testing Standards
+- **Avoid redundant fixture setup**: Don't manually set data that fixtures already provide (e.g., `customer.stripe_customer_id` when the `customer` fixture includes it).
+- **Descriptive test names**: Use method names that clearly describe the behavior being tested.
+- **Encapsulate test logic**: Use class based tests. Usually we have one class per method that we want to test, and each test case is a different scenario for that method.
+- **test_task and test_endpoints**: are an E2E test where mocking is not used. They should be used to test the actual behavior of the application, including database interactions and external services if possible.
+- **Proper mocking**: Mock external services (Stripe, etc.) using the established patterns with `MagicMock`.
+- **Use existing fixtures**: Leverage `SaveFixture`, `AsyncSession`, and other established test utilities.
+- **Test structure**: Follow the existing patterns with `pytest.mark.asyncio` and class-based test organization.
+
+
 ## Frontend Conventions
 
 - **Modular Structure**: The code is organized in a modular way, with features grouped into their own folders.

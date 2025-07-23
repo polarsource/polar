@@ -1865,7 +1865,6 @@ class TestTriggerPayment:
             customer=customer,
             status=OrderStatus.pending,
         )
-        order.customer.stripe_customer_id = "cus_test123"
         await save_fixture(order)
 
         # When
@@ -1894,7 +1893,6 @@ class TestTriggerPayment:
             customer=customer,
             status=OrderStatus.pending,
         )
-        order.customer.stripe_customer_id = "cus_test123"
         await save_fixture(order)
 
         stripe_service_mock.create_payment_intent.side_effect = Exception(

@@ -265,7 +265,7 @@ class PaymentAlreadyInProgress(OrderError):
     def __init__(self, order: Order) -> None:
         self.order = order
         message = f"Payment for order {order.id} is already in progress"
-        super().__init__(message)
+        super().__init__(message, 409)
 
 
 def _is_empty_customer_address(customer_address: dict[str, Any] | None) -> bool:
@@ -763,7 +763,7 @@ class OrderService:
                 error=str(exc),
             )
             # Release the payment lock on failure
-            await repository.release_payment_lock(order.id)
+            order = await repository.release_payment_lock(order, flush=True)
             raise
 
     async def handle_payment(
@@ -1320,7 +1320,7 @@ class OrderService:
                 order_id=order.id,
             )
             repository = OrderRepository.from_session(session)
-            await repository.release_payment_lock(order.id)
+            order = await repository.release_payment_lock(order)
 
         if order.subscription is None:
             return order

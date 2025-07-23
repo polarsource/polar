@@ -63,6 +63,19 @@ const MoneyInput = (props: Props) => {
     }
   }, [value, previousValue])
 
+  const updateValue = useCallback(
+    (newValue: string) => {
+      if (_onChange) {
+        const centsValue = getCents(newValue)
+        setPreviousValue(centsValue)
+        _onChange(centsValue)
+      }
+
+      setInternalValue(newValue)
+    },
+    [_onChange],
+  )
+
   const onChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       const input = e.target.value
@@ -103,15 +116,9 @@ const MoneyInput = (props: Props) => {
         }
       }
 
-      if (_onChange) {
-        const centsValue = getCents(newValue)
-        setPreviousValue(centsValue)
-        _onChange(centsValue)
-      }
-
-      setInternalValue(newValue)
+      updateValue(newValue)
     },
-    [_onChange],
+    [updateValue],
   )
 
   const onBlur = useCallback(
@@ -120,20 +127,14 @@ const MoneyInput = (props: Props) => {
       if (internalValue?.endsWith('.')) {
         const strippedValue = internalValue.replace(/\.$/, '')
 
-        if (_onChange) {
-          const centsValue = getCents(strippedValue)
-          setPreviousValue(centsValue)
-          _onChange(centsValue)
-        }
-
-        setInternalValue(strippedValue)
+        updateValue(strippedValue)
       }
 
       if (_onBlur) {
         _onBlur(e)
       }
     },
-    [_onBlur, _onChange, internalValue],
+    [_onBlur, internalValue, updateValue],
   )
 
   const onKeyDown = useCallback(
@@ -158,13 +159,7 @@ const MoneyInput = (props: Props) => {
           !Number.isNaN(parsedValue) ? parsedValue + step : step
         ).toFixed(2)
 
-        if (_onChange) {
-          const centsValue = getCents(newValue)
-          setPreviousValue(centsValue)
-          _onChange(centsValue)
-        }
-
-        setInternalValue(newValue)
+        updateValue(newValue)
       }
 
       if (e.key === 'ArrowDown') {
@@ -175,13 +170,7 @@ const MoneyInput = (props: Props) => {
           !Number.isNaN(parsedValue) ? parsedValue - step : -step,
         ).toFixed(2)
 
-        if (_onChange) {
-          const centsValue = getCents(newValue)
-          setPreviousValue(centsValue)
-          _onChange(centsValue)
-        }
-
-        setInternalValue(newValue)
+        updateValue(newValue)
       }
 
       // Prevent multiple decimal points
@@ -192,7 +181,7 @@ const MoneyInput = (props: Props) => {
         e.preventDefault()
       }
     },
-    [step, _onChange],
+    [step, updateValue],
   )
 
   return (

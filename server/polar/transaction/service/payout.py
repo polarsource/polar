@@ -44,6 +44,9 @@ class TransferError(PayoutTransactionError):
         )
 
 
+payout_transfer_semaphore = asyncio.Semaphore(8)
+
+
 class PayoutTransactionService(BaseTransactionService):
     async def create(
         self,
@@ -241,7 +244,7 @@ class PayoutTransactionService(BaseTransactionService):
     ) -> tuple[Transaction, int | None]:
         try:
             # We use a semaphore to limit the number of concurrent requests to Stripe
-            async with asyncio.Semaphore(4):
+            async with payout_transfer_semaphore:
                 if balance_transaction.transfer_id is None:
                     assert account.stripe_id is not None
                     stripe_transfer = await stripe_service.transfer(

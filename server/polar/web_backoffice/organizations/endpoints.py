@@ -26,6 +26,9 @@ from polar.user.repository import UserRepository
 from polar.web_backoffice.components.account_review._payment_verdict import (
     PaymentVerdict,
 )
+from polar.web_backoffice.components.account_review._acceptable_use import (
+    AcceptableUseVerdict,
+)
 
 from ..components import accordion, button, datatable, description_list, input, modal
 from ..layout import layout
@@ -168,6 +171,20 @@ async def get_payment_statistics(
         "p50_risk": p50_risk,
         "p90_risk": p90_risk,
         "risk_level": risk_level,
+    }
+
+
+async def get_acceptable_use_verdict(
+    session: AsyncSession, organization_id: UUID4
+) -> dict[str, Any]:
+    """Get acceptable use policy compliance verdict."""
+    # TODO: Implement actual compliance check logic
+    # For now, return mock data
+    return {
+        "verdict": "UNCERTAIN",
+        "risk_score": 45.5,
+        "violated_sections": ["Content Policy", "Payment Processing"],
+        "reason": "Organization requires manual review due to unclear business model description and potential high-risk payment patterns."
     }
 
 
@@ -607,6 +624,10 @@ async def account_review(
     payment_stats = await get_payment_statistics(session, organization.id)
     payment_verdict = PaymentVerdict(payment_stats)
 
+    # Get acceptable use verdict
+    acceptable_use_data = await get_acceptable_use_verdict(session, organization.id)
+    acceptable_use_verdict = AcceptableUseVerdict(acceptable_use_data)
+
     account = organization.account
 
     with layout(
@@ -721,3 +742,8 @@ async def account_review(
                                     rel="noopener noreferrer",
                                 ):
                                     text("View in Stripe")
+
+            with tag.div(classes="grid grid-cols-1 gap-4"):
+                with tag.div(classes="card card-border w-full shadow-sm"):
+                    with acceptable_use_verdict.render():
+                        pass

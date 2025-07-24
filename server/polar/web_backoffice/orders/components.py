@@ -43,7 +43,7 @@ def orders_datatable(
     items: Sequence[Order],
     sorting: list[Sorting[OrderSortProperty]] | None = None,
 ) -> Generator[None]:
-    with datatable.Datatable[Order, OrderSortProperty](
+    d = datatable.Datatable[Order, OrderSortProperty](
         datatable.DatatableAttrColumn(
             "id", "ID", clipboard=True, href_route_name="orders:get"
         ),
@@ -63,6 +63,8 @@ def orders_datatable(
             "net_amount", "Net Amount", sorting=OrderSortProperty.net_amount
         ),
         datatable.DatatableAttrColumn("billing_reason", "Billing Reason"),
-    ).render(request, items, sorting=sorting):
+    )
+
+    with d.render(request, items, sorting=sorting):
         pass
     yield

@@ -58,6 +58,9 @@ class DatatableColumn(Generic[M]):
         else:
             yield
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(label={self.label!r})"
+
 
 class DatatableSortingColumn(Generic[M, PE], DatatableColumn[M]):
     """A datatable column that supports sorting functionality.
@@ -238,6 +241,9 @@ class DatatableAttrColumn(Generic[M, PE], DatatableSortingColumn[M, PE]):
         if value is None:
             return None
         return str(value)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(attr={self.attr!r}, label={self.label!r})"
 
 
 class DatatableDateTimeColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
@@ -676,6 +682,9 @@ class Datatable(Generic[M, PE]):
                 url = url.include_query_params(sorting=column.sorting.value)
 
         return url
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(columns={self.columns!r}, empty_message={self.empty_message!r})"
 
 
 @contextlib.contextmanager

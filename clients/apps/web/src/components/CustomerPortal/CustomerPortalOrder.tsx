@@ -2,6 +2,7 @@
 
 import { BenefitGrant } from '@/components/Benefit/BenefitGrant'
 import { useCustomerBenefitGrants } from '@/hooks/queries'
+import { useRetryPayment } from '@/hooks/useRetryPayment'
 import { Client, schemas } from '@polar-sh/client'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
@@ -11,6 +12,7 @@ import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
 import { DetailRow } from '../Shared/DetailRow'
+import { RetryPaymentButton } from './RetryPaymentButton'
 
 const statusColors = {
   paid: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
@@ -39,6 +41,9 @@ const CustomerPortalOrder = ({
     sorting: ['type'],
   })
 
+  const { retryPayment, isRetrying, isLoading } =
+    useRetryPayment(customerSessionToken)
+
   const isPartiallyOrFullyRefunded = useMemo(() => {
     return order.status === 'partially_refunded' || order.status === 'refunded'
   }, [order])
@@ -51,6 +56,13 @@ const CustomerPortalOrder = ({
           <Status
             status={order.status.split('_').join(' ')}
             className={twMerge(statusColors[order.status], 'capitalize')}
+          />
+          <RetryPaymentButton
+            order={order}
+            onRetry={retryPayment}
+            isRetrying={isRetrying(order.id)}
+            isLoading={isLoading(order.id)}
+            themingPreset={themingPreset}
           />
         </div>
 

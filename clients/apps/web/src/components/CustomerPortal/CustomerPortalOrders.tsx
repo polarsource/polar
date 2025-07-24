@@ -1,3 +1,4 @@
+import { useRetryPayment } from '@/hooks/useRetryPayment'
 import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
@@ -11,6 +12,7 @@ import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import { OrderStatus } from '../Orders/OrderStatus'
 import CustomerPortalOrder from './CustomerPortalOrder'
+import { RetryPaymentButton } from './RetryPaymentButton'
 
 export interface CustomerPortalOrdersProps {
   organization: schemas['Organization']
@@ -24,6 +26,8 @@ export const CustomerPortalOrders = ({
   customerSessionToken,
 }: CustomerPortalOrdersProps) => {
   const api = createClientSideAPI(customerSessionToken)
+  const { retryPayment, isRetrying, isLoading } =
+    useRetryPayment(customerSessionToken)
 
   const themingPreset = useThemePreset(
     organization.slug === 'midday' ? 'midday' : 'polar',
@@ -78,36 +82,48 @@ export const CustomerPortalOrders = ({
           {
             accessorKey: 'id',
             header: '',
-            cell: ({ row }) => (
-              <span className="flex justify-end">
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setSelectedOrder(row.original)
-                    showOrderModal()
-                  }}
-                  className={twMerge(
-                    'hidden md:flex',
-                    themingPreset.polar.buttonSecondary,
-                  )}
-                  size="sm"
-                >
-                  View Order
-                </Button>
-                <Link
-                  className="md:hidden"
-                  href={`/${organization.slug}/portal/orders/${row.original.id}?customer_session_token=${customerSessionToken}`}
-                >
+            cell: ({ row }) => {
+              const order = row.original
+
+              return (
+                <span className="flex justify-end gap-2">
+                  <RetryPaymentButton
+                    order={order}
+                    onRetry={retryPayment}
+                    isRetrying={isRetrying(order.id)}
+                    isLoading={isLoading(order.id)}
+                    themingPreset={themingPreset}
+                    className="hidden md:flex"
+                  />
                   <Button
                     variant="secondary"
+                    onClick={() => {
+                      setSelectedOrder(order)
+                      showOrderModal()
+                    }}
+                    className={twMerge(
+                      'hidden md:flex',
+                      themingPreset.polar.buttonSecondary,
+                    )}
                     size="sm"
-                    className={twMerge(themingPreset.polar.buttonSecondary)}
                   >
                     View Order
                   </Button>
-                </Link>
-              </span>
-            ),
+                  <Link
+                    className="md:hidden"
+                    href={`/${organization.slug}/portal/orders/${order.id}?customer_session_token=${customerSessionToken}`}
+                  >
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className={twMerge(themingPreset.polar.buttonSecondary)}
+                    >
+                      View Order
+                    </Button>
+                  </Link>
+                </span>
+              )
+            },
           },
         ]}
       />

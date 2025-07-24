@@ -2594,6 +2594,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/customer-portal/orders/{id}/retry-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry Payment
+         * @description Manually retry payment for a failed order.
+         *
+         *     **Scopes**: `customer_portal:write`
+         */
+        post: operations["customer_portal:orders:retry_payment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/customer-portal/organizations/{slug}": {
         parameters: {
             query?: never;
@@ -8988,6 +9010,11 @@ export interface components {
              * @description Line items composing the order.
              */
             items: components["schemas"]["OrderItemSchema"][];
+            /**
+             * Next Payment Attempt At
+             * @description When the next payment retry is scheduled
+             */
+            next_payment_attempt_at?: string | null;
         };
         /**
          * CustomerOrderInvoice
@@ -9183,6 +9210,7 @@ export interface components {
             /** Products */
             products: components["schemas"]["CustomerProduct"][];
         };
+        CustomerPaymentMethod: components["schemas"]["PaymentMethodCard"] | components["schemas"]["PaymentMethodGeneric"];
         /** CustomerPaymentMethodCreate */
         CustomerPaymentMethodCreate: {
             /** Confirmation Token Id */
@@ -12189,6 +12217,12 @@ export interface components {
             items: components["schemas"]["CustomerOrder"][];
             pagination: components["schemas"]["Pagination"];
         };
+        /** ListResource[CustomerPaymentMethod] */
+        ListResource_CustomerPaymentMethod_: {
+            /** Items */
+            items: components["schemas"]["CustomerPaymentMethod"][];
+            pagination: components["schemas"]["Pagination"];
+        };
         /** ListResource[CustomerSubscription] */
         ListResource_CustomerSubscription_: {
             /** Items */
@@ -12307,12 +12341,6 @@ export interface components {
         ListResource_Transaction_: {
             /** Items */
             items: components["schemas"]["Transaction"][];
-            pagination: components["schemas"]["Pagination"];
-        };
-        /** ListResource[Union[PaymentMethodCard, PaymentMethodGeneric]] */
-        ListResource_Union_PaymentMethodCard__PaymentMethodGeneric__: {
-            /** Items */
-            items: (components["schemas"]["PaymentMethodCard"] | components["schemas"]["PaymentMethodGeneric"])[];
             pagination: components["schemas"]["Pagination"];
         };
         /** ListResource[WebhookDelivery] */
@@ -13463,6 +13491,16 @@ export interface components {
              */
             product_price_id: string | null;
         };
+        /** OrderNotEligibleForRetry */
+        OrderNotEligibleForRetry: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "OrderNotEligibleForRetry";
+            /** Detail */
+            detail: string;
+        };
         /** OrderProduct */
         OrderProduct: {
             /** Metadata */
@@ -14117,6 +14155,16 @@ export interface components {
             max_page: number;
         };
         Payment: components["schemas"]["CardPayment"] | components["schemas"]["GenericPayment"];
+        /** PaymentAlreadyInProgress */
+        PaymentAlreadyInProgress: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "PaymentAlreadyInProgress";
+            /** Detail */
+            detail: string;
+        };
         /** PaymentError */
         PaymentError: {
             /**
@@ -15286,7 +15334,7 @@ export interface components {
          * Scope
          * @enum {string}
          */
-        Scope: "openid" | "profile" | "email" | "user:read" | "admin" | "web_default" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "transactions:read" | "transactions:write" | "payouts:read" | "payouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "orders:write" | "refunds:read" | "refunds:write" | "payments:read" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notifications:read" | "notifications:write" | "notification_recipients:read" | "notification_recipients:write";
+        Scope: "openid" | "profile" | "email" | "user:read" | "web_default" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "transactions:read" | "transactions:write" | "payouts:read" | "payouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "orders:write" | "refunds:read" | "refunds:write" | "payments:read" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notifications:read" | "notifications:write" | "notification_recipients:read" | "notification_recipients:write";
         /**
          * Status
          * @enum {string}
@@ -18065,7 +18113,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            201: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22198,7 +22246,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ListResource_Union_PaymentMethodCard__PaymentMethodGeneric__"];
+                    "application/json": components["schemas"]["ListResource_CustomerPaymentMethod_"];
                 };
             };
             /** @description Validation Error */
@@ -22231,7 +22279,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaymentMethodCard"] | components["schemas"]["PaymentMethodGeneric"];
+                    "application/json": components["schemas"]["CustomerPaymentMethod"];
                 };
             };
             /** @description Validation Error */
@@ -23032,6 +23080,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MissingInvoiceBillingDetails"] | components["schemas"]["NotPaidOrder"];
+                };
+            };
+        };
+    };
+    "customer_portal:orders:retry_payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The order ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Order not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Payment already in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentAlreadyInProgress"];
+                };
+            };
+            /** @description Order not eligible for retry. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderNotEligibleForRetry"];
                 };
             };
         };
@@ -25287,7 +25385,7 @@ export const propertyAggregationFuncValues: ReadonlyArray<components["schemas"][
 export const refundReasonValues: ReadonlyArray<components["schemas"]["RefundReason"]> = ["duplicate", "fraudulent", "customer_request", "service_disruption", "satisfaction_guarantee", "other"];
 export const refundSortPropertyValues: ReadonlyArray<components["schemas"]["RefundSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
 export const refundStatusValues: ReadonlyArray<components["schemas"]["RefundStatus"]> = ["pending", "succeeded", "failed", "canceled"];
-export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "admin", "web_default", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "transactions:read", "transactions:write", "payouts:read", "payouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "orders:write", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notifications:read", "notifications:write", "notification_recipients:read", "notification_recipients:write"];
+export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "web_default", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "transactions:read", "transactions:write", "payouts:read", "payouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "orders:write", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notifications:read", "notifications:write", "notification_recipients:read", "notification_recipients:write"];
 export const statusValues: ReadonlyArray<components["schemas"]["Status"]> = ["created", "onboarding_started", "under_review", "denied", "active"];
 export const subTypeValues: ReadonlyArray<components["schemas"]["SubType"]> = ["user", "organization"];
 export const subscriptionProrationBehaviorValues: ReadonlyArray<components["schemas"]["SubscriptionProrationBehavior"]> = ["invoice", "prorate"];

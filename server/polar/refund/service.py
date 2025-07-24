@@ -375,8 +375,7 @@ class RefundService(ResourceServiceReader[Refund]):
         order: Order,
         stripe_amount: int,
     ) -> tuple[RefundAmount, RefundTaxAmount]:
-        remaining_balance = order.get_remaining_balance()
-        if stripe_amount == remaining_balance:
+        if stripe_amount == order.remaining_balance:
             return order.refundable_amount, order.refundable_tax_amount
 
         if not order.taxed:

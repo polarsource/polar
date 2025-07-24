@@ -133,28 +133,23 @@ async def list(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.h1(classes="text-4xl"):
                 text("Organizations")
-            with tag.div(classes="w-full flex flex-row gap-2"):
-                with tag.form(method="GET"):
-                    with input.search("query", query):
-                        pass
-                with tag.form(
-                    method="GET",
-                    _="""
-                    on change from <select/> in me
-                        call me.submit()
-                    end
-                    """,
-                ):
-                    with input.select(
-                        [
+            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
+                with input.search("query", query):
+                    pass
+                with input.select(
+                    [
+                        ("All Account Statuses", ""),
+                        *[
                             (status.get_display_name(), status.value)
                             for status in Account.Status
                         ],
-                        account_status,
-                        name="account_status",
-                        placeholder="Account Status",
-                    ):
-                        pass
+                    ],
+                    account_status.value if account_status else "",
+                    name="account_status",
+                ):
+                    pass
+                with button(type="submit"):
+                    text("Filter")
             with datatable.Datatable[Organization, OrganizationSortProperty](
                 datatable.DatatableAttrColumn(
                     "id", "ID", href_route_name="organizations:get", clipboard=True
@@ -357,7 +352,9 @@ async def get(
                     description_list.DescriptionListDateTimeItem(
                         "created_at", "Created At"
                     ),
-                    description_list.DescriptionListLinkItem("website", "Website"),
+                    description_list.DescriptionListLinkItem(
+                        "website", "Website", external=True
+                    ),
                     description_list.DescriptionListAttrItem(
                         "email", "Support email", clipboard=True
                     ),

@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import UnaryExpression, asc, desc, select
+from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.repository import AccountRepository
@@ -329,22 +329,7 @@ class OrderService:
         if metadata is not None:
             statement = apply_metadata_clause(Order, statement, metadata)
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
-        for criterion, is_desc in sorting:
-            clause_function = desc if is_desc else asc
-            if criterion == OrderSortProperty.created_at:
-                order_by_clauses.append(clause_function(Order.created_at))
-            elif criterion in {OrderSortProperty.amount, OrderSortProperty.net_amount}:
-                order_by_clauses.append(clause_function(Order.net_amount))
-            elif criterion == OrderSortProperty.customer:
-                order_by_clauses.append(clause_function(Customer.email))
-            elif criterion == OrderSortProperty.product:
-                order_by_clauses.append(clause_function(Product.name))
-            elif criterion == OrderSortProperty.discount:
-                order_by_clauses.append(clause_function(Discount.name))
-            elif criterion == OrderSortProperty.subscription:
-                order_by_clauses.append(clause_function(Order.subscription_id))
-        statement = statement.order_by(*order_by_clauses)
+        statement = repository.apply_sorting(statement, sorting)
 
         return await paginate(session, statement, pagination=pagination)
 

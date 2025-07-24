@@ -31,7 +31,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useState, type MouseEvent } from 'react'
+import { useCallback, useMemo, useState, type MouseEvent } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { toast, useToast } from '../Toast/use-toast'
@@ -48,14 +48,20 @@ interface AccessTokenUpdate {
 }
 
 const AccessTokenForm = ({ update }: { update?: boolean }) => {
-  const { control, setValue } = useFormContext<
+  const { control, setValue, watch } = useFormContext<
     AccessTokenCreate | AccessTokenUpdate
   >()
 
   const sortedScopes = Array.from(enums.availableScopeValues).sort((a, b) =>
     a.localeCompare(b),
   )
-  const [allSelected, setSelectAll] = useState(false)
+
+  const currentScopes = watch('scopes')
+
+  const allSelected = useMemo(
+    () => sortedScopes.every((scope) => currentScopes.includes(scope)),
+    [currentScopes, sortedScopes],
+  )
 
   const onToggleAll = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
@@ -66,7 +72,6 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
         values = sortedScopes
       }
       setValue('scopes', values)
-      setSelectAll(!allSelected)
     },
     [setValue, allSelected, sortedScopes],
   )

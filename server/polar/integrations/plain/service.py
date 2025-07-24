@@ -33,7 +33,7 @@ from plain_client import (
     UpsertCustomerOnCreateInput,
     UpsertCustomerOnUpdateInput,
 )
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager
 
 from polar.config import settings
@@ -333,13 +333,7 @@ class PlainService:
                 isouter=True,
             )
             .join(User, User.id == UserOrganization.user_id)
-            .join(Customer, Customer.organization_id == Organization.id, isouter=True)
-            .where(
-                or_(
-                    func.lower(Customer.email) == email.lower(),
-                    func.lower(User.email) == email.lower(),
-                )
-            )
+            .where(func.lower(User.email) == email.lower())
         )
         result = await session.execute(statement)
         organizations = result.unique().scalars().all()
@@ -635,7 +629,7 @@ class PlainService:
             .limit(3)
             .options(
                 contains_eager(Order.product),
-                contains_eager(Order.customer),
+                contains_eager(Order.customer).joinedload(Customer.organization),
             )
         )
         result = await session.execute(statement)
@@ -650,8 +644,55 @@ class PlainService:
             return {
                 "componentContainer": {
                     "containerContent": [
-                        {"componentText": {"text": product.name}},
+                        {
+                            "componentRow": {
+                                "rowMainContent": [
+                                    {"componentText": {"text": product.name}},
+                                ],
+                                "rowAsideContent": [
+                                    {
+                                        "componentRowContentInput": {
+                                            "componentLinkButton": {
+                                                "linkButtonLabel": "Backoffice ↗",
+                                                "linkButtonUrl": settings.generate_external_url(
+                                                    f"/backoffice/orders/{order.id}"
+                                                ),
+                                            }
+                                        }
+                                    }
+                                ],
+                            }
+                        },
                         {"componentDivider": {"dividerSpacingSize": "M"}},
+                        {
+                            "componentRow": {
+                                "rowMainContent": [
+                                    {
+                                        "componentText": {
+                                            "text": "Organization",
+                                            "textSize": "S",
+                                            "textColor": "MUTED",
+                                        }
+                                    },
+                                    {
+                                        "componentText": {
+                                            "text": order.customer.organization.name
+                                        }
+                                    },
+                                ],
+                                "rowAsideContent": [
+                                    {
+                                        "componentLinkButton": {
+                                            "linkButtonLabel": "Backoffice ↗",
+                                            "linkButtonUrl": settings.generate_external_url(
+                                                f"/backoffice/organizations/{order.customer.organization_id}"
+                                            ),
+                                        }
+                                    }
+                                ],
+                            }
+                        },
+                        {"componentSpacer": {"spacerSize": "M"}},
                         {
                             "componentRow": {
                                 "rowMainContent": [
@@ -728,32 +769,6 @@ class PlainService:
                                     order.currency.upper(),
                                     locale="en_US",
                                 )
-                            }
-                        },
-                        {
-                            "componentRow": {
-                                "rowMainContent": [
-                                    {
-                                        "componentText": {
-                                            "text": "Stripe Invoice ID",
-                                            "textSize": "S",
-                                            "textColor": "MUTED",
-                                        }
-                                    },
-                                    {
-                                        "componentText": {
-                                            "text": order.stripe_invoice_id,
-                                        }
-                                    },
-                                ],
-                                "rowAsideContent": [
-                                    {
-                                        "componentLinkButton": {
-                                            "linkButtonLabel": "Stripe ↗",
-                                            "linkButtonUrl": f"https://dashboard.stripe.com/invoices/{order.stripe_invoice_id}",
-                                        }
-                                    }
-                                ],
                             }
                         },
                     ]

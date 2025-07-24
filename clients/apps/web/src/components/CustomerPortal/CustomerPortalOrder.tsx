@@ -41,7 +41,8 @@ const CustomerPortalOrder = ({
     sorting: ['type'],
   })
 
-  const { retryPayment, isRetrying } = useRetryPayment(customerSessionToken)
+  const { retryPayment, isRetrying, isLoading } =
+    useRetryPayment(customerSessionToken)
 
   const isPartiallyOrFullyRefunded = useMemo(() => {
     return order.status === 'partially_refunded' || order.status === 'refunded'
@@ -60,6 +61,7 @@ const CustomerPortalOrder = ({
             order={order}
             onRetry={retryPayment}
             isRetrying={isRetrying(order.id)}
+            isLoading={isLoading(order.id)}
             themingPreset={themingPreset}
           />
         </div>

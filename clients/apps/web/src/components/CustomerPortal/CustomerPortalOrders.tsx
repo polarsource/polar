@@ -1,5 +1,5 @@
-import { createClientSideAPI } from '@/utils/client'
 import { useRetryPayment } from '@/hooks/useRetryPayment'
+import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
@@ -26,7 +26,8 @@ export const CustomerPortalOrders = ({
   customerSessionToken,
 }: CustomerPortalOrdersProps) => {
   const api = createClientSideAPI(customerSessionToken)
-  const { retryPayment, isRetrying } = useRetryPayment(customerSessionToken)
+  const { retryPayment, isRetrying, isLoading } =
+    useRetryPayment(customerSessionToken)
 
   const themingPreset = useThemePreset(
     organization.slug === 'midday' ? 'midday' : 'polar',
@@ -83,13 +84,14 @@ export const CustomerPortalOrders = ({
             header: '',
             cell: ({ row }) => {
               const order = row.original
-              
+
               return (
                 <span className="flex justify-end gap-2">
                   <RetryPaymentButton
                     order={order}
                     onRetry={retryPayment}
                     isRetrying={isRetrying(order.id)}
+                    isLoading={isLoading(order.id)}
                     themingPreset={themingPreset}
                     className="hidden md:flex"
                   />

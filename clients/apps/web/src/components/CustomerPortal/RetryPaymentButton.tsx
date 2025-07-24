@@ -8,6 +8,7 @@ interface RetryPaymentButtonProps {
   order: schemas['CustomerOrder']
   onRetry: (orderId: string) => void
   isRetrying: boolean
+  isLoading: boolean
   themingPreset?: ThemingPresetProps
   size?: 'sm' | 'lg' | 'default'
   className?: string
@@ -17,6 +18,7 @@ export const RetryPaymentButton = ({
   order,
   onRetry,
   isRetrying,
+  isLoading,
   themingPreset,
   size = 'sm',
   className,
@@ -29,7 +31,7 @@ export const RetryPaymentButton = ({
     <Button
       variant="secondary"
       onClick={() => onRetry(order.id)}
-      loading={isRetrying}
+      loading={isLoading}
       disabled={isRetrying}
       size={size}
       className={twMerge(themingPreset?.polar.buttonSecondary, className)}

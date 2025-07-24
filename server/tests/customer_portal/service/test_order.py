@@ -1,4 +1,5 @@
 from unittest.mock import Mock
+
 import pytest
 
 from polar.auth.models import AuthSubject

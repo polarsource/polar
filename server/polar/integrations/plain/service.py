@@ -496,121 +496,158 @@ class PlainService:
         if len(customers) == 0:
             return None
 
-        def _get_customer_container(customer: Customer) -> dict[str, Any]:
+        def _get_customer_container(customer: Customer) -> ComponentContainerInput:
             country: pycountry.db.Country | None = None
             if customer.billing_address and customer.billing_address.country:
                 country = pycountry.countries.get(
                     alpha_2=customer.billing_address.country
                 )
-            return {
-                "componentContainer": {
-                    "containerContent": [
-                        {"componentText": {"text": customer.name or customer.email}},
-                        {"componentDivider": {"dividerSpacingSize": "M"}},
-                        {
-                            "componentRow": {
-                                "rowMainContent": [
-                                    {
-                                        "componentText": {
-                                            "text": "ID",
-                                            "textSize": "S",
-                                            "textColor": "MUTED",
-                                        }
-                                    },
-                                    {"componentText": {"text": customer.id}},
-                                ],
-                                "rowAsideContent": [
-                                    {
-                                        "componentCopyButton": {
-                                            "copyButtonValue": customer.id,
-                                            "copyButtonTooltipLabel": "Copy Customer ID",
-                                        }
-                                    }
-                                ],
-                            }
-                        },
-                        {"componentSpacer": {"spacerSize": "M"}},
-                        {
-                            "componentText": {
-                                "text": "Created At",
-                                "textSize": "S",
-                                "textColor": "MUTED",
-                            }
-                        },
-                        {
-                            "componentText": {
-                                "text": customer.created_at.date().isoformat()
-                            }
-                        },
-                        *(
-                            [
-                                {"componentSpacer": {"spacerSize": "M"}},
-                                {
-                                    "componentRow": {
-                                        "rowMainContent": [
-                                            {
-                                                "componentText": {
-                                                    "text": "Country",
-                                                    "textSize": "S",
-                                                    "textColor": "MUTED",
-                                                }
-                                            },
-                                            {
-                                                "componentText": {
-                                                    "text": country.name,
-                                                }
-                                            },
-                                        ],
-                                        "rowAsideContent": [
-                                            {"componentText": {"text": country.flag}}
-                                        ],
-                                    }
-                                },
-                            ]
-                            if country
-                            else []
-                        ),
-                        {"componentSpacer": {"spacerSize": "M"}},
-                        {
-                            "componentRow": {
-                                "rowMainContent": [
-                                    {
-                                        "componentText": {
-                                            "text": "Stripe Customer ID",
-                                            "textSize": "S",
-                                            "textColor": "MUTED",
-                                        }
-                                    },
-                                    {
-                                        "componentText": {
-                                            "text": customer.stripe_customer_id,
-                                        }
-                                    },
-                                ],
-                                "rowAsideContent": [
-                                    {
-                                        "componentLinkButton": {
-                                            "linkButtonLabel": "Stripe ↗",
-                                            "linkButtonUrl": f"https://dashboard.stripe.com/customers/{customer.stripe_customer_id}",
-                                        }
-                                    }
-                                ],
-                            }
-                        },
-                    ]
-                }
-            }
+            return ComponentContainerInput(
+                container_content=[
+                    ComponentContainerContentInput(
+                        component_text=ComponentTextInput(
+                            text=customer.name or customer.email or "Unknown"
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_divider=ComponentDividerInput(
+                            divider_spacing_size=ComponentDividerSpacingSize.M
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_row=ComponentRowInput(
+                            row_main_content=[
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text="ID",
+                                        text_size=ComponentTextSize.S,
+                                        text_color=ComponentTextColor.MUTED,
+                                    )
+                                ),
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text=str(customer.id)
+                                    )
+                                ),
+                            ],
+                            row_aside_content=[
+                                ComponentRowContentInput(
+                                    component_copy_button=ComponentCopyButtonInput(
+                                        copy_button_value=str(customer.id),
+                                        copy_button_tooltip_label="Copy Customer ID",
+                                    )
+                                )
+                            ],
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_spacer=ComponentSpacerInput(
+                            spacer_size=ComponentSpacerSize.M
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_text=ComponentTextInput(
+                            text="Created At",
+                            text_size=ComponentTextSize.S,
+                            text_color=ComponentTextColor.MUTED,
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_text=ComponentTextInput(
+                            text=customer.created_at.date().isoformat()
+                        )
+                    ),
+                    *(
+                        [
+                            ComponentContainerContentInput(
+                                component_spacer=ComponentSpacerInput(
+                                    spacer_size=ComponentSpacerSize.M
+                                )
+                            ),
+                            ComponentContainerContentInput(
+                                component_row=ComponentRowInput(
+                                    row_main_content=[
+                                        ComponentRowContentInput(
+                                            component_text=ComponentTextInput(
+                                                text="Country",
+                                                text_size=ComponentTextSize.S,
+                                                text_color=ComponentTextColor.MUTED,
+                                            )
+                                        ),
+                                        ComponentRowContentInput(
+                                            component_text=ComponentTextInput(
+                                                text=country.name,
+                                            )
+                                        ),
+                                    ],
+                                    row_aside_content=[
+                                        ComponentRowContentInput(
+                                            component_text=ComponentTextInput(
+                                                text=country.flag
+                                            )
+                                        )
+                                    ],
+                                )
+                            ),
+                        ]
+                        if country
+                        else []
+                    ),
+                    ComponentContainerContentInput(
+                        component_spacer=ComponentSpacerInput(
+                            spacer_size=ComponentSpacerSize.M
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_row=ComponentRowInput(
+                            row_main_content=[
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text="Stripe Customer ID",
+                                        text_size=ComponentTextSize.S,
+                                        text_color=ComponentTextColor.MUTED,
+                                    )
+                                ),
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text=customer.stripe_customer_id or "N/A",
+                                    )
+                                ),
+                            ],
+                            row_aside_content=[
+                                ComponentRowContentInput(
+                                    component_link_button=ComponentLinkButtonInput(
+                                        link_button_label="Stripe ↗",
+                                        link_button_url=f"https://dashboard.stripe.com/customers/{customer.stripe_customer_id}",
+                                    )
+                                )
+                            ],
+                        )
+                    ),
+                ]
+            )
 
-        components = []
+        components: list[ComponentInput] = []
         for i, customer in enumerate(customers):
-            components.append(_get_customer_container(customer))
+            components.append(
+                ComponentInput(component_container=_get_customer_container(customer))
+            )
             if i < len(customers) - 1:
-                components.append({"componentDivider": {"dividerSpacingSize": "M"}})
+                components.append(
+                    ComponentInput(
+                        component_divider=ComponentDividerInput(
+                            divider_spacing_size=ComponentDividerSpacingSize.M
+                        )
+                    )
+                )
 
         return CustomerCard(
             key=CustomerCardKey.customer,
             timeToLiveSeconds=86400,
-            components=components,
+            components=[
+                component.model_dump(by_alias=True, exclude_none=True)
+                for component in components
+            ],
         )
 
     async def _get_order_card(
@@ -638,153 +675,192 @@ class PlainService:
         if len(orders) == 0:
             return None
 
-        def _get_order_container(order: Order) -> dict[str, Any]:
+        def _get_order_container(order: Order) -> ComponentContainerInput:
             product = order.product
 
-            return {
-                "componentContainer": {
-                    "containerContent": [
-                        {
-                            "componentRow": {
-                                "rowMainContent": [
-                                    {"componentText": {"text": product.name}},
-                                ],
-                                "rowAsideContent": [
-                                    {
-                                        "componentRowContentInput": {
-                                            "componentLinkButton": {
-                                                "linkButtonLabel": "Backoffice ↗",
-                                                "linkButtonUrl": settings.generate_external_url(
-                                                    f"/backoffice/orders/{order.id}"
-                                                ),
-                                            }
-                                        }
-                                    }
-                                ],
-                            }
-                        },
-                        {"componentDivider": {"dividerSpacingSize": "M"}},
-                        {
-                            "componentRow": {
-                                "rowMainContent": [
-                                    {
-                                        "componentText": {
-                                            "text": "Organization",
-                                            "textSize": "S",
-                                            "textColor": "MUTED",
-                                        }
-                                    },
-                                    {
-                                        "componentText": {
-                                            "text": order.customer.organization.name
-                                        }
-                                    },
-                                ],
-                                "rowAsideContent": [
-                                    {
-                                        "componentLinkButton": {
-                                            "linkButtonLabel": "Backoffice ↗",
-                                            "linkButtonUrl": settings.generate_external_url(
-                                                f"/backoffice/organizations/{order.customer.organization_id}"
-                                            ),
-                                        }
-                                    }
-                                ],
-                            }
-                        },
-                        {"componentSpacer": {"spacerSize": "M"}},
-                        {
-                            "componentRow": {
-                                "rowMainContent": [
-                                    {
-                                        "componentText": {
-                                            "text": "ID",
-                                            "textSize": "S",
-                                            "textColor": "MUTED",
-                                        }
-                                    },
-                                    {"componentText": {"text": order.id}},
-                                ],
-                                "rowAsideContent": [
-                                    {
-                                        "componentCopyButton": {
-                                            "copyButtonValue": order.id,
-                                            "copyButtonTooltipLabel": "Copy Order ID",
-                                        }
-                                    }
-                                ],
-                            }
-                        },
-                        {"componentSpacer": {"spacerSize": "M"}},
-                        {
-                            "componentText": {
-                                "text": "Date",
-                                "textSize": "S",
-                                "textColor": "MUTED",
-                            }
-                        },
-                        {
-                            "componentText": {
-                                "text": order.created_at.date().isoformat()
-                            }
-                        },
-                        {"componentSpacer": {"spacerSize": "M"}},
-                        {
-                            "componentText": {
-                                "text": "Billing Reason",
-                                "textSize": "S",
-                                "textColor": "MUTED",
-                            }
-                        },
-                        {"componentText": {"text": order.billing_reason}},
-                        {"componentDivider": {"dividerSpacingSize": "M"}},
-                        {"componentSpacer": {"spacerSize": "M"}},
-                        {
-                            "componentText": {
-                                "text": "Amount",
-                                "textSize": "S",
-                                "textColor": "MUTED",
-                            }
-                        },
-                        {
-                            "componentText": {
-                                "text": format_currency(
-                                    order.net_amount / 100,
-                                    order.currency.upper(),
-                                    locale="en_US",
+            return ComponentContainerInput(
+                container_content=[
+                    ComponentContainerContentInput(
+                        component_row=ComponentRowInput(
+                            row_main_content=[
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(text=product.name)
+                                ),
+                            ],
+                            row_aside_content=[
+                                ComponentRowContentInput(
+                                    component_link_button=ComponentLinkButtonInput(
+                                        link_button_label="Backoffice ↗",
+                                        link_button_url=settings.generate_external_url(
+                                            f"/backoffice/orders/{order.id}"
+                                        ),
+                                    )
                                 )
-                            }
-                        },
-                        {
-                            "componentText": {
-                                "text": "Tax Amount",
-                                "textSize": "S",
-                                "textColor": "MUTED",
-                            }
-                        },
-                        {
-                            "componentText": {
-                                "text": format_currency(
-                                    order.tax_amount / 100,
-                                    order.currency.upper(),
-                                    locale="en_US",
+                            ],
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_divider=ComponentDividerInput(
+                            divider_spacing_size=ComponentDividerSpacingSize.M
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_row=ComponentRowInput(
+                            row_main_content=[
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text="Organization",
+                                        text_size=ComponentTextSize.S,
+                                        text_color=ComponentTextColor.MUTED,
+                                    )
+                                ),
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text=order.customer.organization.name
+                                    )
+                                ),
+                            ],
+                            row_aside_content=[
+                                ComponentRowContentInput(
+                                    component_link_button=ComponentLinkButtonInput(
+                                        link_button_label="Backoffice ↗",
+                                        link_button_url=settings.generate_external_url(
+                                            f"/backoffice/organizations/{order.customer.organization_id}"
+                                        ),
+                                    )
                                 )
-                            }
-                        },
-                    ]
-                }
-            }
+                            ],
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_spacer=ComponentSpacerInput(
+                            spacer_size=ComponentSpacerSize.M
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_row=ComponentRowInput(
+                            row_main_content=[
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text="ID",
+                                        text_size=ComponentTextSize.S,
+                                        text_color=ComponentTextColor.MUTED,
+                                    )
+                                ),
+                                ComponentRowContentInput(
+                                    component_text=ComponentTextInput(
+                                        text=str(order.id)
+                                    )
+                                ),
+                            ],
+                            row_aside_content=[
+                                ComponentRowContentInput(
+                                    component_copy_button=ComponentCopyButtonInput(
+                                        copy_button_value=str(order.id),
+                                        copy_button_tooltip_label="Copy Order ID",
+                                    )
+                                )
+                            ],
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_spacer=ComponentSpacerInput(
+                            spacer_size=ComponentSpacerSize.M
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_text=ComponentTextInput(
+                            text="Date",
+                            text_size=ComponentTextSize.S,
+                            text_color=ComponentTextColor.MUTED,
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_text=ComponentTextInput(
+                            text=order.created_at.date().isoformat()
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_spacer=ComponentSpacerInput(
+                            spacer_size=ComponentSpacerSize.M
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_text=ComponentTextInput(
+                            text="Billing Reason",
+                            text_size=ComponentTextSize.S,
+                            text_color=ComponentTextColor.MUTED,
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_text=ComponentTextInput(text=order.billing_reason)
+                    ),
+                    ComponentContainerContentInput(
+                        component_divider=ComponentDividerInput(
+                            divider_spacing_size=ComponentDividerSpacingSize.M
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_spacer=ComponentSpacerInput(
+                            spacer_size=ComponentSpacerSize.M
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_text=ComponentTextInput(
+                            text="Amount",
+                            text_size=ComponentTextSize.S,
+                            text_color=ComponentTextColor.MUTED,
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_text=ComponentTextInput(
+                            text=format_currency(
+                                order.net_amount / 100,
+                                order.currency.upper(),
+                                locale="en_US",
+                            )
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_text=ComponentTextInput(
+                            text="Tax Amount",
+                            text_size=ComponentTextSize.S,
+                            text_color=ComponentTextColor.MUTED,
+                        )
+                    ),
+                    ComponentContainerContentInput(
+                        component_text=ComponentTextInput(
+                            text=format_currency(
+                                order.tax_amount / 100,
+                                order.currency.upper(),
+                                locale="en_US",
+                            )
+                        )
+                    ),
+                ]
+            )
 
-        components = []
+        components: list[ComponentInput] = []
         for i, order in enumerate(orders):
-            components.append(_get_order_container(order))
+            components.append(
+                ComponentInput(component_container=_get_order_container(order))
+            )
             if i < len(orders) - 1:
-                components.append({"componentDivider": {"dividerSpacingSize": "M"}})
+                components.append(
+                    ComponentInput(
+                        component_divider=ComponentDividerInput(
+                            divider_spacing_size=ComponentDividerSpacingSize.M
+                        )
+                    )
+                )
 
         return CustomerCard(
             key=CustomerCardKey.order,
             timeToLiveSeconds=86400,
-            components=components,
+            components=[
+                component.model_dump(by_alias=True, exclude_none=True)
+                for component in components
+            ],
         )
 
     @contextlib.asynccontextmanager

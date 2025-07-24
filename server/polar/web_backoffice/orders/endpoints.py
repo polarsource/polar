@@ -16,11 +16,11 @@ from polar.models import Customer, Order, Organization, Product
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.order import sorting
 from polar.order.repository import OrderRepository
-from polar.order.sorting import OrderSortProperty
 from polar.postgres import AsyncSession, get_db_session
 
 from ..components import button, datatable, description_list, input
 from ..layout import layout
+from .components import orders_datatable
 
 router = APIRouter()
 
@@ -47,16 +47,6 @@ class TaxRateItem(description_list.DescriptionListItem[Order]):
 
 
 # Table Columns
-class StatusColumn(datatable.DatatableSortingColumn[Order, OrderSortProperty]):
-    def __init__(self, label: str) -> None:
-        super().__init__(label, sorting=OrderSortProperty.status)
-
-    def render(self, request: Request, item: Order) -> Generator[None] | None:
-        with order_status_badge(item.status):
-            pass
-        return None
-
-
 @contextlib.contextmanager
 def order_status_badge(status: OrderStatus) -> Generator[None]:
     with tag.div(classes="badge"):
@@ -188,27 +178,7 @@ async def list(
                 with button(type="submit"):
                     text("Filter")
 
-            with datatable.Datatable[Order, OrderSortProperty](
-                datatable.DatatableAttrColumn(
-                    "id", "ID", clipboard=True, href_route_name="orders:get"
-                ),
-                datatable.DatatableDateTimeColumn(
-                    "created_at", "Created", sorting=OrderSortProperty.created_at
-                ),
-                StatusColumn("Status"),
-                datatable.DatatableAttrColumn(
-                    "customer.email", "Customer", sorting=OrderSortProperty.customer
-                ),
-                datatable.DatatableAttrColumn(
-                    "invoice_number",
-                    "Invoice",
-                    sorting=OrderSortProperty.invoice_number,
-                ),
-                datatable.DatatableCurrencyColumn(
-                    "net_amount", "Net Amount", sorting=OrderSortProperty.net_amount
-                ),
-                datatable.DatatableAttrColumn("billing_reason", "Billing Reason"),
-            ).render(request, items, sorting=sorting):
+            with orders_datatable(request, items, sorting=sorting):
                 pass
             with datatable.pagination(request, pagination, count):
                 pass

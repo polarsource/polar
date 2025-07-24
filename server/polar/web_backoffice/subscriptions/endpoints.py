@@ -14,7 +14,6 @@ from polar.kit.schemas import empty_str_to_none
 from polar.models import Customer, Order, Organization, Product, Subscription
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
-from polar.order.sorting import OrderSortProperty
 from polar.postgres import AsyncSession, get_db_session
 from polar.subscription import sorting
 from polar.subscription.repository import SubscriptionRepository
@@ -23,8 +22,8 @@ from polar.subscription.sorting import SubscriptionSortProperty
 from polar.web_backoffice.responses import HXRedirectResponse
 
 from ..components import button, datatable, description_list, input, modal
-from ..formatters import currency
 from ..layout import layout
+from ..orders.components import orders_datatable
 from ..toast import add_toast
 from .forms import CancelForm
 
@@ -60,17 +59,6 @@ class OrganizationColumn(
         self.href_getter = lambda r, i: str(
             r.url_for("organizations:get", id=i.product.organization_id)
         )
-
-
-class OrderAmountColumn(datatable.DatatableAttrColumn[Order, OrderSortProperty]):
-    def __init__(self, label: str) -> None:
-        super().__init__("total_amount", label)
-
-    def get_value(self, item: Order) -> str | None:
-        value: int | None = self.get_raw_value(item)
-        if value is None:
-            return None
-        return currency(value, item.currency)
 
 
 @contextlib.contextmanager
@@ -227,6 +215,7 @@ async def get(
     orders_statement = (
         order_repository.get_base_statement()
         .where(Order.subscription_id == subscription.id)
+        .options(joinedload(Order.customer))
         .order_by(Order.created_at.desc())
     )
     orders = await order_repository.get_all(orders_statement)
@@ -375,12 +364,7 @@ async def get(
             with tag.div(classes="flex flex-col gap-4"):
                 with tag.h2(classes="text-2xl"):
                     text("Orders")
-                with datatable.Datatable[Order, OrderSortProperty](
-                    datatable.DatatableAttrColumn("id", "Order ID", clipboard=True),
-                    datatable.DatatableDateTimeColumn("created_at", "Created At"),
-                    OrderAmountColumn("Amount"),
-                    datatable.DatatableAttrColumn("status", "Status"),
-                ).render(request, orders):
+                with orders_datatable(request, orders):
                     pass
 
 

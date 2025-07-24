@@ -15,12 +15,31 @@ M = TypeVar("M")
 
 
 class DescriptionListItem(Generic[M]):
+    """Base class for description list items.
+
+    Provides the foundation for all description list item types. Subclasses must
+    implement the render method to define how the item content is displayed.
+
+    Args:
+        M: Type parameter representing the model type that this item will display.
+    """
+
     label: str
 
     def __init__(self, label: str) -> None:
+        """
+        Args:
+            label: The text to display as the item label.
+        """
         self.label = label
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
+        """Render the item content for a specific data object.
+
+        Args:
+            request: The FastAPI request object.
+            item: The data object to render information from.
+        """
         raise NotImplementedError()
 
     @contextlib.contextmanager
@@ -33,17 +52,38 @@ class DescriptionListItem(Generic[M]):
 
 
 class DescriptionListAttrItem(Generic[M], DescriptionListItem[M]):
+    """A description list item that displays an attribute value from the model.
+
+    This item extracts and displays a specific attribute from the data object.
+    It supports optional clipboard functionality for copying the displayed value.
+
+    Args:
+        M: Type parameter for the model type.
+    """
+
     attr: str
     clipboard: bool
 
     def __init__(
         self, attr: str, label: str | None = None, *, clipboard: bool = False
     ) -> None:
+        """
+        Args:
+            attr: The attribute name to extract from data objects (supports dot notation).
+            label: The label text. If None, uses the attribute name.
+            clipboard: If True, adds a clipboard button to copy the value.
+        """
         self.attr = attr
         self.clipboard = clipboard
         super().__init__(label or attr)
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
+        """Render the attribute value as a description list item.
+
+        Args:
+            request: The FastAPI request object.
+            item: The data object to extract the attribute from.
+        """
         value = self.get_value(item)
         with tag.div(classes="flex items-center gap-1"):
             text(value if value is not None else "—")
@@ -53,9 +93,33 @@ class DescriptionListAttrItem(Generic[M], DescriptionListItem[M]):
         return None
 
     def get_raw_value(self, item: M) -> Any | None:
+        """Extract the raw attribute value from the data object.
+
+        Args:
+            item: The data object to extract from.
+
+        Returns:
+            The raw attribute value
+
+        Raises:
+            AttributeError: If the attribute does not exist on the item.
+        """
         return attrgetter(self.attr)(item)
 
     def get_value(self, item: M) -> str | None:
+        """Get the formatted string value for display.
+
+        This method can be overridden in subclasses to provide custom formatting.
+
+        Args:
+            item: The data object to extract from.
+
+        Returns:
+            The formatted string value, or None if the raw value is None.
+
+        Raises:
+            AttributeError: If the attribute does not exist on the item.
+        """
         value = self.get_raw_value(item)
         if value is None:
             return None
@@ -63,7 +127,28 @@ class DescriptionListAttrItem(Generic[M], DescriptionListItem[M]):
 
 
 class DescriptionListDateTimeItem(DescriptionListAttrItem[M]):
+    """A description list item that displays datetime attributes with proper formatting.
+
+    Extends DescriptionListAttrItem to format datetime values using the backoffice
+    datetime formatter. Raw datetime objects are converted to user-friendly
+    formatted strings.
+
+    Args:
+        M: Type parameter for the model type.
+    """
+
     def get_value(self, item: M) -> str | None:
+        """Get the formatted datetime string for display.
+
+        Args:
+            item: The data object to extract the datetime from.
+
+        Returns:
+            A formatted datetime string, or None if the raw value is None.
+
+        Raises:
+            AttributeError: If the attribute does not exist on the item.
+        """
         value: datetime | None = self.get_raw_value(item)
         if value is None:
             return None
@@ -71,7 +156,22 @@ class DescriptionListDateTimeItem(DescriptionListAttrItem[M]):
 
 
 class DescriptionListLinkItem(DescriptionListAttrItem[M]):
+    """A description list item that displays attribute values as external links.
+
+    Extends DescriptionListAttrItem to render the attribute value as a clickable
+    external link that opens in a new tab. Useful for URLs.
+
+    Args:
+        M: Type parameter for the model type.
+    """
+
     def render(self, request: Request, item: M) -> Generator[None] | None:
+        """Render the attribute value as an external link.
+
+        Args:
+            request: The FastAPI request object.
+            item: The data object to extract the link from.
+        """
         value = self.get_value(item)
         with tag.div(classes="flex items-center gap-1"):
             if value is not None:
@@ -88,22 +188,72 @@ class DescriptionListLinkItem(DescriptionListAttrItem[M]):
 
 
 class DescriptionListCurrencyItem(DescriptionListAttrItem[M]):
+    """A description list item that displays currency values with proper formatting.
+
+    Extends DescriptionListAttrItem to format integer currency values (in cents)
+    using the backoffice currency formatter. The currency type can be customized
+    by overriding the get_currency method.
+
+    Args:
+        M: Type parameter for the model type.
+    """
+
     def get_value(self, item: M) -> str | None:
+        """Get the formatted currency string for display.
+
+        Args:
+            item: The data object to extract the currency value from.
+
+        Returns:
+            A formatted currency string, or None if the raw value is None.
+        """
         value: int | None = self.get_raw_value(item)
         if value is None:
             return None
         return formatters.currency(value, self.get_currency(item))
 
     def get_currency(self, item: M) -> str:
-        return "usd"
+        """Get the currency code for formatting.
+
+        By default, tries to extract the attribute 'currency' from the item,
+        falling back to "usd" if not present. This can be overridden in subclasses
+        to provide custom currency handling.
+
+        Args:
+            item: The data object (unused in base implementation).
+
+        Returns:
+            The currency code.
+        """
+        return getattr(item, "currency", "usd")
 
 
 class DescriptionList(Generic[M]):
+    """A complete description list component for displaying structured data.
+
+    Renders a formatted description list (HTML <dl>) with labels and values.
+    Each item is rendered with its label and corresponding value.
+
+    Args:
+        M: Type parameter for the model type being displayed.
+    """
+
     def __init__(self, *items: DescriptionListItem[M]) -> None:
+        """
+        Args:
+            *items: Variable number of DescriptionListItem instances that define
+                the list structure and content.
+        """
         self.items = items
 
     @contextlib.contextmanager
     def render(self, request: Request, data: M) -> Generator[None]:
+        """Render the complete description list with all items.
+
+        Args:
+            request: The FastAPI request object for URL generation.
+            data: The data object to display information from.
+        """
         with tag.dl(classes="divide-y divide-gray-100"):
             with tag.div(classes="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0"):
                 for item in self.items:

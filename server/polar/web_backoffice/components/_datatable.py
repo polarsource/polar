@@ -270,6 +270,48 @@ class DatatableDateTimeColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
         return formatters.datetime(value)
 
 
+class DatatableCurrencyColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
+    """A datatable column that displays currency values with proper formatting.
+
+    Extends DatatableAttrColumn to format integer currency values (in cents)
+    using the backoffice currency formatter. The currency type can be customized
+    by overriding the get_currency method.
+
+    Args:
+        M: Type parameter for the model type.
+        PE: Type parameter for the sorting field enum.
+    """
+
+    def get_value(self, item: M) -> str | None:
+        """Get the formatted currency string for display.
+
+        Args:
+            item: The model item to extract the currency value from.
+
+        Returns:
+            A formatted currency string, or None if the raw value is None.
+        """
+        value: int | None = self.get_raw_value(item)
+        if value is None:
+            return None
+        return formatters.currency(value, self.get_currency(item))
+
+    def get_currency(self, item: M) -> str:
+        """Get the currency code for formatting.
+
+        By default, tries to extract the attribute 'currency' from the item,
+        falling back to "usd" if not present. This can be overridden in subclasses
+        to provide custom currency handling.
+
+        Args:
+            item: The data object (unused in base implementation).
+
+        Returns:
+            The currency code.
+        """
+        return getattr(item, "currency", "usd")
+
+
 class DatatableBooleanColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
     """A datatable column that displays boolean attributes with icons.
 

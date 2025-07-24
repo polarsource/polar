@@ -139,7 +139,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const subscriptionsHook = useListSubscriptions(organization.id, {
     ...getAPIParams(pagination, sorting),
-    ...(productId ? { productId } : {}),
+    ...(productId ? { product_id: productId } : {}),
     ...(status !== 'any'
       ? {
           active: status === 'active',

@@ -25,8 +25,8 @@ def _validate_email_dns(email: str) -> str:
     except EmailNotValidError as e:
         raise PydanticCustomError(
             "value_error",
-            "value is not a valid email address: {reason}",
-            {"reason": str(e)},
+            "{email} is not a valid email address: {reason}",
+            {"email": email, "reason": str(e)},
         ) from e
     else:
         return email

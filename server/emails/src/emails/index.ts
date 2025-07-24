@@ -15,11 +15,10 @@ import { OrganizationInvite } from './organization_invite'
 import { PersonalAccessTokenLeaked } from './personal_access_token_leaked'
 import { SubscriptionCancellation } from './subscription_cancellation'
 import { SubscriptionConfirmation } from './subscription_confirmation'
-import { SubscriptionDowngrade } from './subscription_downgrade'
 import { SubscriptionPastDue } from './subscription_past_due'
 import { SubscriptionRevoked } from './subscription_revoked'
 import { SubscriptionUncanceled } from './subscription_uncanceled'
-import { SubscriptionUpgrade } from './subscription_upgrade'
+import { SubscriptionUpdated } from './subscription_updated'
 
 const TEMPLATES: Record<string, React.FC<any>> = {
   magic_link: MagicLink,
@@ -35,10 +34,9 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   subscription_cancellation: SubscriptionCancellation,
   subscription_confirmation: SubscriptionConfirmation,
   subscription_past_due: SubscriptionPastDue,
-  subscription_downgrade: SubscriptionDowngrade,
   subscription_revoked: SubscriptionRevoked,
   subscription_uncanceled: SubscriptionUncanceled,
-  subscription_upgrade: SubscriptionUpgrade,
+  subscription_updated: SubscriptionUpdated,
   notification_account_under_review: NotificationAccountUnderReview,
   notification_account_reviewed: NotificationAccountReviewed,
   notification_new_sale: NotificationNewSale,

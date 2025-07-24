@@ -791,7 +791,7 @@ class SubscriptionService:
         session.add(subscription)
 
         # Send product change email notification
-        await self.send_product_change_email(
+        await self.send_subscription_updated_email(
             session, subscription, previous_product, product
         )
 
@@ -1421,38 +1421,23 @@ class SubscriptionService:
             extra_context=extra_context if extra_context else None,
         )
 
-    async def send_product_change_email(
+    async def send_subscription_updated_email(
         self,
         session: AsyncSession,
         subscription: Subscription,
         previous_product: Product,
         new_product: Product,
     ) -> None:
-        # Determine if it's an upgrade or downgrade based on price
-        previous_prices = previous_product.prices
-        new_prices = new_product.prices
-
-        # Get the total price for comparison
-        previous_price = sum(price.price_amount for price in previous_prices)
-        new_price = sum(price.price_amount for price in new_prices)
-
-        is_upgrade = new_price > previous_price
-
-        template_name = (
-            "subscription_upgrade" if is_upgrade else "subscription_downgrade"
-        )
-        subject = f"Your subscription {'upgrade' if is_upgrade else 'change'} to {new_product.name}"
-
+        subject = f"Your subscription has changed to {new_product.name}"
         return await self._send_customer_email(
             session,
             subscription,
             subject_template=subject,
-            template_name=template_name,
+            template_name="subscription_updated",
             extra_context={
                 "previous_product": {
                     "name": previous_product.name or "",
                 },
-                "is_upgrade": is_upgrade,
             },
         )
 

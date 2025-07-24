@@ -15,12 +15,14 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { type MouseEvent } from 'react'
 
 import ImageUpload from '@/components/Form/ImageUpload'
 import { AddOutlined, ClearOutlined } from '@mui/icons-material'
 import { enums } from '@polar-sh/client'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import Link from 'next/link'
+import { useCallback, useMemo } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { EnhancedOAuth2ClientConfiguration } from './NewOAuthClientModal'
 
@@ -252,31 +254,61 @@ export const FieldRedirectURIs = () => {
 }
 
 export const FieldScopes = () => {
-  const form = useFormContext<EnhancedOAuth2ClientConfiguration>()
+  const { control, watch, setValue } =
+    useFormContext<EnhancedOAuth2ClientConfiguration>()
   const sortedAvailableScopes = Array.from(enums.availableScopeValues).sort(
     (a, b) => a.localeCompare(b),
   )
 
+  const currentScopes = watch('scope')
+
+  const allSelected = useMemo(
+    () => sortedAvailableScopes.every((scope) => currentScopes.includes(scope)),
+    [currentScopes, sortedAvailableScopes],
+  )
+
+  const onToggleAll = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault()
+
+      let values: typeof currentScopes = []
+      if (!allSelected) {
+        values = sortedAvailableScopes
+      }
+
+      console.log({ values, allSelected })
+
+      setValue('scope', values)
+    },
+    [setValue, allSelected, sortedAvailableScopes],
+  )
+
   return (
-    <div className="flex flex-col gap-6">
-      <h2 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-        Scopes
-      </h2>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-row items-center">
+        <h2 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+          Scopes
+        </h2>
+
+        <div className="flex-auto text-right">
+          <Button onClick={onToggleAll} variant="secondary" size="sm">
+            {!allSelected ? 'Select All' : 'Unselect All'}
+          </Button>
+        </div>
+      </div>
 
       <div className="flex flex-col gap-2">
         {sortedAvailableScopes.map((scope) => (
           <FormField
             key={scope}
-            control={form.control}
+            control={control}
             name="scope"
             render={({ field }) => {
               return (
                 <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                   <FormControl>
                     <Checkbox
-                      defaultChecked={
-                        field.value && field.value.includes(scope)
-                      }
+                      checked={field.value?.includes(scope)}
                       onCheckedChange={(checked) => {
                         if (checked) {
                           field.onChange([...(field.value || []), scope])

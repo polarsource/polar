@@ -2,7 +2,7 @@ import builtins
 import contextlib
 import uuid
 from collections.abc import Generator
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
@@ -18,6 +18,7 @@ from polar.order import sorting
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession, get_db_session
 
+from .. import formatters
 from ..components import button, datatable, description_list, input
 from ..layout import layout
 from .components import orders_datatable
@@ -44,6 +45,14 @@ class TaxRateItem(description_list.DescriptionListItem[Order]):
     def render(self, request: Request, item: Order) -> Generator[None] | None:
         text(f"{self.rate:.2f}%")
         return None
+
+
+class TaxIDItem(description_list.DescriptionListAttrItem[Order]):
+    def get_value(self, item: Order) -> Any:
+        value = self.get_raw_value(item)
+        if value is None:
+            return None
+        return formatters.tax_id(value)
 
 
 # Table Columns
@@ -388,16 +397,7 @@ async def get(
                                     )
                                 )
                             if order.tax_id:
-                                tax_items.extend(
-                                    [
-                                        description_list.DescriptionListAttrItem(
-                                            "tax_id.1", "Tax ID Type"
-                                        ),
-                                        description_list.DescriptionListAttrItem(
-                                            "tax_id.0", "Tax ID Number"
-                                        ),
-                                    ]
-                                )
+                                tax_items.append(TaxIDItem("tax_id", "Tax ID"))
                             if order.tax_rate and order.tax_rate.get("basis_points"):
                                 basis_points = order.tax_rate["basis_points"]
                                 if basis_points is not None:

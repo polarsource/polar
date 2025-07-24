@@ -32,6 +32,7 @@ from .sorting import OrganizationAccessTokenSortProperty
 log: Logger = structlog.get_logger()
 
 TOKEN_PREFIX = "polar_oat_"
+TOKEN_PREFIX_SANDBOX = "polar_sandbox_oat_"
 
 
 class OrganizationAccessTokenService:
@@ -105,8 +106,14 @@ class OrganizationAccessTokenService:
         organization = await get_payload_organization(
             session, auth_subject, create_schema
         )
+
+        if settings.is_sandbox():
+            token_prefix = TOKEN_PREFIX_SANDBOX
+        else:
+            token_prefix = TOKEN_PREFIX
+
         token, token_hash = generate_token_hash_pair(
-            secret=settings.SECRET, prefix=TOKEN_PREFIX
+            secret=settings.SECRET, prefix=token_prefix
         )
         organization_access_token = OrganizationAccessToken(
             **create_schema.model_dump(

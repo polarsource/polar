@@ -213,11 +213,6 @@ async def get(
     if order is None:
         raise HTTPException(status_code=404)
 
-    # Calculate amounts
-    net_amount = order.subtotal_amount - order.discount_amount
-    total_amount = net_amount + order.tax_amount
-    refundable_amount = total_amount - order.refunded_amount - order.refunded_tax_amount
-
     with layout(
         request,
         [

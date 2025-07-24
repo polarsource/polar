@@ -51,6 +51,9 @@ class DescriptionListItem(Generic[M]):
         else:
             yield
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(label={self.label!r})"
+
 
 class DescriptionListAttrItem(Generic[M], DescriptionListItem[M]):
     """A description list item that displays an attribute value from the model.
@@ -125,6 +128,9 @@ class DescriptionListAttrItem(Generic[M], DescriptionListItem[M]):
         if value is None:
             return None
         return str(value)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(attr={self.attr!r}, label={self.label!r}, clipboard={self.clipboard})"
 
 
 class DescriptionListDateTimeItem(DescriptionListAttrItem[M]):
@@ -209,6 +215,9 @@ class DescriptionListLinkItem(DescriptionListAttrItem[M]):
                 text("—")
         return None
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(attr={self.attr!r}, label={self.label!r}, external={self.external!r})"
+
 
 class DescriptionListCurrencyItem(DescriptionListAttrItem[M]):
     """A description list item that displays currency values with proper formatting.
@@ -286,6 +295,9 @@ class DescriptionList(Generic[M]):
                             with item._do_render(request, data):
                                 pass
         yield
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(items={self.items!r})"
 
 
 __all__ = [

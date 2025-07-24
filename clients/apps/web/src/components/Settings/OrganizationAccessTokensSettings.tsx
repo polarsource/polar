@@ -133,7 +133,7 @@ const AccessTokenForm = ({ update }: { update?: boolean }) => {
           )}
         />
       )}
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-row items-center">
           <h2 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
             Scopes

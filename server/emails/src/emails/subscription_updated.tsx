@@ -5,7 +5,7 @@ import Footer from '../components/Footer'
 import OrganizationHeader from '../components/OrganizationHeader'
 import Wrapper from '../components/Wrapper'
 
-interface SubscriptionUpgradeProps {
+interface SubscriptionUpdatedProps {
   organization: {
     name: string
     slug: string
@@ -20,31 +20,31 @@ interface SubscriptionUpgradeProps {
   url: string
 }
 
-export function SubscriptionUpgrade({
+export function SubscriptionUpdated({
   organization,
   product,
   previous_product,
   url,
-}: SubscriptionUpgradeProps) {
+}: SubscriptionUpdatedProps) {
   return (
     <Wrapper>
-      <Preview>Your subscription has been upgraded to {product.name}!</Preview>
+      <Preview>Your subscription has been updated to {product.name}</Preview>
       <OrganizationHeader organization={organization} />
       <Section className="pt-10">
         <Heading
           as="h1"
           className="text-xl font-bold text-gray-900 dark:text-white"
         >
-          Your subscription has been upgraded!
+          Your subscription has been updated
         </Heading>
         <BodyText>
-          Great news! Your subscription has been successfully upgraded from{' '}
+          Your subscription has been successfully changed from{' '}
           <span className="font-medium">{previous_product.name}</span> to{' '}
           <span className="font-bold">{product.name}</span>.
         </BodyText>
         {product.benefits && product.benefits.length > 0 && (
           <>
-            <BodyText>Your new subscription includes:</BodyText>
+            <BodyText>Your subscription now includes:</BodyText>
             <ul className="mt-2 list-disc pl-6">
               {product.benefits.map((benefit, index) => (
                 <li
@@ -58,8 +58,9 @@ export function SubscriptionUpgrade({
           </>
         )}
         <BodyText>
-          The changes take effect immediately and will be reflected in your next
-          billing cycle.
+          The changes take effect immediately. Your new billing amount will be
+          reflected in your next billing cycle, and you'll receive a prorated
+          credit for any unused time on your previous plan.
         </BodyText>
       </Section>
       <Section className="my-8 text-center">
@@ -84,23 +85,23 @@ export function SubscriptionUpgrade({
   )
 }
 
-SubscriptionUpgrade.PreviewProps = {
+SubscriptionUpdated.PreviewProps = {
   organization: {
     name: 'Acme Inc.',
     slug: 'acme-inc',
   },
   product: {
-    name: 'Pro Plan',
+    name: 'Basic Plan',
     benefits: [
-      { description: 'Unlimited projects' },
-      { description: 'Priority support' },
-      { description: 'Advanced analytics' },
+      { description: 'Up to 3 projects' },
+      { description: 'Community support' },
+      { description: 'Basic analytics' },
     ],
   },
   previous_product: {
-    name: 'Basic Plan',
+    name: 'Pro Plan',
   },
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }
 
-export default SubscriptionUpgrade
+export default SubscriptionUpdated

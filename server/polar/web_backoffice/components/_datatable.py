@@ -594,6 +594,7 @@ class Datatable(Generic[M, PE]):
             request: The FastAPI request object for URL generation.
             items: The sequence of model items to display in the table.
             sorting: Current sorting configuration for sortable columns.
+            If None, no sorting controls are rendered.
         """
         with tag.div(
             classes="overflow-x-auto rounded-box bg-base-100 border-1 border-gray-600"
@@ -604,7 +605,8 @@ class Datatable(Generic[M, PE]):
                         for column in self.columns:
                             with tag.th():
                                 if (
-                                    not isinstance(column, DatatableSortingColumn)
+                                    sorting is None
+                                    or not isinstance(column, DatatableSortingColumn)
                                     or column.sorting is None
                                 ):
                                     text(column.label)

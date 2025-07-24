@@ -13,9 +13,12 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Customer, Order, Product
+from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
 from polar.order.service import InvoiceDoesNotExist
 from polar.order.service import order as order_service
+from polar.payment_method.repository import PaymentMethodRepository
+from polar.worker import enqueue_job
 
 from ..repository.order import CustomerOrderRepository
 from ..schemas.order import CustomerOrderInvoice, CustomerOrderUpdate
@@ -29,6 +32,20 @@ class InvoiceNotAvailable(CustomerOrderError):
         self.order = order
         message = "The invoice is not available for this order."
         super().__init__(message, 404)
+
+
+class OrderNotEligibleForRetry(CustomerOrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = "Order is not eligible for payment retry."
+        super().__init__(message, 422)
+
+
+class PaymentAlreadyInProgress(CustomerOrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = "Payment for order is already in progress."
+        super().__init__(message, 409)
 
 
 class CustomerOrderSortProperty(StrEnum):
@@ -131,6 +148,39 @@ class CustomerOrderService:
 
         url, _ = await invoice_service.get_order_invoice_url(order)
         return CustomerOrderInvoice(url=url)
+
+    async def retry_payment(self, session: AsyncSession, order: Order) -> None:
+        """Retry payment for an order with scheduled dunning retry."""
+
+        if order.status != OrderStatus.pending:
+            raise OrderNotEligibleForRetry(order)
+
+        if order.next_payment_attempt_at is None:
+            raise OrderNotEligibleForRetry(order)
+
+        if order.subscription is None:
+            raise OrderNotEligibleForRetry(order)
+
+        if order.subscription.payment_method_id is None:
+            raise OrderNotEligibleForRetry(order)
+
+        if order.payment_lock_acquired_at is not None:
+            raise PaymentAlreadyInProgress(order)
+
+        payment_method_repository = PaymentMethodRepository.from_session(session)
+        payment_method = await payment_method_repository.get_by_id(
+            order.subscription.payment_method_id
+        )
+
+        if payment_method is None:
+            raise OrderNotEligibleForRetry(order)
+
+        # Trigger payment using the job queue for manual retry
+        enqueue_job(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=order.subscription.payment_method_id,
+        )
 
 
 customer_order = CustomerOrderService()

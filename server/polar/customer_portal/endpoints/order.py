@@ -15,6 +15,7 @@ from polar.order.service import (
     InvoiceAlreadyExists,
     MissingInvoiceBillingDetails,
     NotPaidOrder,
+    PaymentAlreadyInProgress,
 )
 from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
@@ -24,7 +25,7 @@ from polar.subscription.schemas import SubscriptionID
 
 from .. import auth
 from ..schemas.order import CustomerOrder, CustomerOrderInvoice, CustomerOrderUpdate
-from ..service.order import CustomerOrderSortProperty
+from ..service.order import CustomerOrderSortProperty, OrderNotEligibleForRetry
 from ..service.order import customer_order as customer_order_service
 
 router = APIRouter(prefix="/orders", tags=["orders", APITag.documented])
@@ -174,3 +175,33 @@ async def invoice(
         raise ResourceNotFound()
 
     return await customer_order_service.get_order_invoice(order)
+
+
+@router.post(
+    "/{id}/retry-payment",
+    status_code=202,
+    summary="Retry Payment",
+    responses={
+        404: OrderNotFound,
+        409: {
+            "description": "Payment already in progress.",
+            "model": PaymentAlreadyInProgress.schema(),
+        },
+        422: {
+            "description": "Order not eligible for retry.",
+            "model": OrderNotEligibleForRetry.schema(),
+        },
+    },
+)
+async def retry_payment(
+    id: OrderID,
+    auth_subject: auth.CustomerPortalWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Manually retry payment for a failed order."""
+    order = await customer_order_service.get_by_id(session, auth_subject, id)
+
+    if order is None:
+        raise ResourceNotFound()
+
+    await customer_order_service.retry_payment(session, order)

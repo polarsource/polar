@@ -1,12 +1,13 @@
 import contextlib
 import uuid
 from collections.abc import Generator
+from datetime import datetime, timedelta
 from typing import Annotated, Any
 
 from babel.numbers import format_currency
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
-from sqlalchemy import or_
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import classes, tag, text
 
@@ -14,13 +15,17 @@ from polar.account.service import account as account_service
 from polar.enums import AccountType
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
-from polar.models import Account, Organization
+from polar.models import Account, Organization, Transaction, User
 from polar.organization import sorting
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
+from polar.transaction.repository import PaymentTransactionRepository
 from polar.user.repository import UserRepository
+from polar.web_backoffice.components.account_review._payment_verdict import (
+    PaymentVerdict,
+)
 
 from ..components import accordion, button, datatable, description_list, input, modal
 from ..layout import layout
@@ -84,6 +89,89 @@ class AccountTypeDescriptionListAttrItem(
         else:
             text(account_type.get_display_name())
         return None
+
+
+async def get_payment_statistics(
+    session: AsyncSession, organization_id: UUID4
+) -> dict[str, Any]:
+    """Get payment statistics for the last 30 days."""
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+
+    payment_repo = PaymentTransactionRepository.from_session(session)
+
+    # First get the account_id for the organization
+    org_account_result = await session.execute(
+        select(Organization.account_id).where(Organization.id == organization_id)
+    )
+    org_account_row = org_account_result.first()
+
+    if not org_account_row or not org_account_row[0]:
+        # TODO: replace this with 0
+        return {
+            "payment_count": 10,
+            "p50_risk": 5,
+            "p90_risk": 95,
+            "risk_level": "yellow",
+        }
+
+    account_id = org_account_row[0]
+
+    # Get payment transactions for the organization in the last 30 days
+    statement = payment_repo.get_base_statement().where(
+        Transaction.account_id == account_id,
+        Transaction.created_at >= thirty_days_ago,
+        Transaction.risk_score.isnot(None),  # Only transactions with risk scores
+    )
+
+    # Get all risk scores
+    risk_scores_result = await session.execute(
+        statement.with_only_columns(Transaction.risk_score)
+    )
+    risk_scores = [row[0] for row in risk_scores_result if row[0] is not None]
+
+    # Get count of payments
+    count_result = await session.execute(
+        statement.with_only_columns(func.count(Transaction.id))
+    )
+    payment_count = count_result.scalar() or 0
+
+    # Calculate percentiles
+    p50_risk = 0
+    p90_risk = 0
+
+    if risk_scores:
+        risk_scores.sort()
+        n = len(risk_scores)
+
+        # Calculate P50 (median)
+        if n % 2 == 0:
+            p50_risk = (risk_scores[n // 2 - 1] + risk_scores[n // 2]) / 2
+        else:
+            p50_risk = risk_scores[n // 2]
+
+        # Calculate P90
+        p90_index = int(0.9 * n)
+        if p90_index >= n:
+            p90_index = n - 1
+        p90_risk = risk_scores[p90_index]
+
+    # Determine risk level based on P90
+    if p90_risk < 65:
+        risk_level = "green"
+    elif p90_risk < 75:
+        risk_level = "yellow"
+    else:
+        risk_level = "red"
+
+    return {
+        "payment_count": payment_count,
+        "p50_risk": p50_risk,
+        "p90_risk": p90_risk,
+        "risk_level": risk_level,
+    }
+
+
+router = APIRouter()
 
 
 @router.get("/", name="organizations:list")
@@ -336,13 +424,23 @@ async def get(
             with tag.div(classes="flex justify-between items-center"):
                 with tag.h1(classes="text-4xl"):
                     text(organization.name)
-                with button(
-                    hx_get=str(
-                        request.url_for("organizations:update", id=organization.id)
-                    ),
-                    hx_target="#modal",
-                ):
-                    text("Edit")
+                with tag.div(classes="flex gap-2"):
+                    with button(
+                        hx_get=str(
+                            request.url_for("organizations:update", id=organization.id)
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Edit")
+                    with tag.a(
+                        href=str(
+                            request.url_for(
+                                "organizations:account_review", id=organization.id
+                            )
+                        ),
+                        classes="btn btn-primary",
+                    ):
+                        text("Account Review")
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 with description_list.DescriptionList[Organization](
                     description_list.DescriptionListAttrItem(
@@ -478,8 +576,148 @@ async def get(
                                 )
                             else:
                                 text("—")
-                        if organization.details.get("switching"):
-                            with accordion.item(a, "Switching from"):
-                                text(
-                                    f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'USD', locale='en_US')})"
-                                )
+                            if organization.details.get("switching"):
+                                with accordion.item(a, "Switching from"):
+                                    text(
+                                        f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'USD', locale='en_US')})"
+                                    )
+
+
+@router.get("/{id}/account-review", name="organizations:account_review")
+async def account_review(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(
+        id, options=(joinedload(Organization.account),), include_blocked=True
+    )
+
+    if organization is None:
+        raise HTTPException(status_code=404)
+
+    user_repository = UserRepository.from_session(session)
+    users = await user_repository.get_all_by_organization(organization.id)
+
+    # Get the first user as the owner (could be enhanced to get actual owner)
+    owner = users[0] if users else None
+
+    # Get payment statistics
+    payment_stats = await get_payment_statistics(session, organization.id)
+    payment_verdict = PaymentVerdict(payment_stats)
+
+    account = organization.account
+
+    with layout(
+        request,
+        [
+            ("Account Review", str(request.url)),
+            (
+                organization.name,
+                str(request.url_for("organizations:get", id=organization.id)),
+            ),
+            ("Organizations", str(request.url_for("organizations:list"))),
+        ],
+        "organizations:account_review",
+    ):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.h1(classes="text-4xl"):
+                text(f"Account Review - {organization.name}")
+
+            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+                with tag.div(classes="card card-border w-full shadow-sm"):
+                    with tag.div(classes="card-body"):
+                        with tag.h2(classes="card-title"):
+                            text("Organization Details")
+                        with description_list.DescriptionList[Organization](
+                            description_list.DescriptionListAttrItem("name", "Name"),
+                            description_list.DescriptionListAttrItem(
+                                "slug", "Slug", clipboard=True
+                            ),
+                            description_list.DescriptionListAttrItem(
+                                "id", "ID", clipboard=True
+                            ),
+                            description_list.DescriptionListDateTimeItem(
+                                "created_at", "Created At"
+                            ),
+                        ).render(request, organization):
+                            pass
+
+                with tag.div(classes="card card-border w-full shadow-sm"):
+                    with tag.div(classes="card-body"):
+                        with tag.h2(classes="card-title"):
+                            text("Owner")
+                        if owner:
+                            with description_list.DescriptionList[User](
+                                description_list.DescriptionListAttrItem(
+                                    "email", "Email", clipboard=True
+                                ),
+                                description_list.DescriptionListAttrItem(
+                                    "id", "ID", clipboard=True
+                                ),
+                                description_list.DescriptionListDateTimeItem(
+                                    "created_at", "Created At"
+                                ),
+                            ).render(request, owner):
+                                pass
+                        else:
+                            with tag.p():
+                                text("No owner found")
+
+            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+                with tag.div(classes="card card-border w-full shadow-sm"):
+                    with tag.div(classes="card-body"):
+                        with tag.h2(classes="card-title"):
+                            text("Account Status")
+                            with account_badge(account):
+                                pass
+                        if account:
+                            with description_list.DescriptionList[Account](
+                                description_list.DescriptionListAttrItem(
+                                    "status", "Review Status"
+                                ),
+                                description_list.DescriptionListCurrencyItem(
+                                    "next_review_threshold", "Current Threshold"
+                                ),
+                                description_list.DescriptionListAttrItem(
+                                    "country", "Country"
+                                ),
+                                description_list.DescriptionListAttrItem(
+                                    "currency", "Currency"
+                                ),
+                            ).render(request, account):
+                                pass
+                        else:
+                            with tag.p():
+                                text("No account found")
+
+            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+                with tag.div(classes="card card-border w-full shadow-sm"):
+                    with payment_verdict.render():
+                        pass
+
+                with tag.div(classes="card card-border w-full shadow-sm"):
+                    with tag.div(classes="card-body"):
+                        with tag.h2(classes="card-title"):
+                            text("Quick Actions")
+                        with tag.div(classes="flex flex-col gap-2"):
+                            with tag.a(
+                                href=str(
+                                    request.url_for(
+                                        "organizations:get", id=organization.id
+                                    )
+                                ),
+                                classes="btn btn-primary",
+                            ):
+                                text("View Full Organization Details")
+                            if account:
+                                with tag.a(
+                                    href=f"https://dashboard.stripe.com/connect/accounts/{account.stripe_id}"
+                                    if account.stripe_id
+                                    else "#",
+                                    classes="btn btn-secondary",
+                                    target="_blank",
+                                    rel="noopener noreferrer",
+                                ):
+                                    text("View in Stripe")

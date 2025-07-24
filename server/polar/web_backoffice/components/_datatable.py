@@ -23,12 +23,31 @@ M = TypeVar("M", contravariant=True)
 
 
 class DatatableColumn(Generic[M]):
+    """Base class for datatable columns.
+
+    Provides the foundation for all datatable column types. Subclasses must
+    implement the render method to define how the column content is displayed.
+
+    Args:
+        M: Type parameter representing the model type that this column will display.
+    """
+
     label: str
 
     def __init__(self, label: str) -> None:
+        """
+        Args:
+            label: The text to display in the column header.
+        """
         self.label = label
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
+        """Render the column content for a specific item.
+
+        Args:
+            request: The FastAPI request object.
+            item: The data item to render in this column.
+        """
         raise NotImplementedError()
 
     @contextlib.contextmanager
@@ -41,14 +60,41 @@ class DatatableColumn(Generic[M]):
 
 
 class DatatableSortingColumn(Generic[M, PE], DatatableColumn[M]):
+    """A datatable column that supports sorting functionality.
+
+    Extends DatatableColumn to add sorting capabilities. This is detected by
+    Datatable when generating sorting controls in the header.
+
+    Args:
+        M: Type parameter for the model type.
+        PE: Type parameter for the sorting field enum.
+
+    """
+
     sorting: PE | None
 
     def __init__(self, label: str, sorting: PE | None = None) -> None:
+        """
+        Args:
+            label: The text to display in the column header.
+            sorting: The sorting field identifier for this column.
+        """
         self.sorting = sorting
         super().__init__(label)
 
 
 class DatatableAttrColumn(Generic[M, PE], DatatableSortingColumn[M, PE]):
+    """A datatable column that displays an attribute value from the model.
+
+    This column extracts and displays a specific attribute from each model item.
+    It supports optional clipboard functionality, linking to other pages, and
+    custom value formatting through subclassing.
+
+    Args:
+        M: Type parameter for the model type.
+        PE: Type parameter for the sorting field enum.
+    """
+
     attr: str
     clipboard: bool
     href_getter: Callable[[Request, M], str | None] | None
@@ -63,7 +109,16 @@ class DatatableAttrColumn(Generic[M, PE], DatatableSortingColumn[M, PE]):
         clipboard: bool = False,
         href_route_name: str,
         sorting: PE | None = None,
-    ) -> None: ...
+    ) -> None:
+        """
+        Args:
+            attr: The attribute name to extract from the model item (supports dot notation).
+            label: The column header text. If None, uses the attribute name.
+            clipboard: If True, adds a clipboard button to copy the cell value.
+            href_route_name: Route name to generate internal links (uses item.id as parameter).
+            sorting: The sorting field identifier for this column.
+        """
+        ...
 
     @typing.overload
     def __init__(
@@ -74,7 +129,16 @@ class DatatableAttrColumn(Generic[M, PE], DatatableSortingColumn[M, PE]):
         clipboard: bool = False,
         external_href: Callable[[Request, M], str | None],
         sorting: PE | None = None,
-    ) -> None: ...
+    ) -> None:
+        """
+        Args:
+            attr: The attribute name to extract from the model item (supports dot notation).
+            label: The column header text. If None, uses the attribute name.
+            clipboard: If True, adds a clipboard button to copy the cell value.
+            external_href: Function to generate external links from request and item.
+            sorting: The sorting field identifier for this column.
+        """
+        ...
 
     @typing.overload
     def __init__(
@@ -84,7 +148,14 @@ class DatatableAttrColumn(Generic[M, PE], DatatableSortingColumn[M, PE]):
         *,
         sorting: PE | None = None,
         clipboard: bool = False,
-    ) -> None: ...
+    ) -> None:
+        """
+        Args:
+            attr: The attribute name to extract from the model item (supports dot notation).
+            label: The column header text. If None, uses the attribute name.
+            sorting: The sorting field identifier for this column.
+            clipboard: If True, adds a clipboard button to copy the cell value.
+        """
 
     def __init__(
         self,
@@ -112,6 +183,12 @@ class DatatableAttrColumn(Generic[M, PE], DatatableSortingColumn[M, PE]):
         super().__init__(label or attr, sorting)
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
+        """Render the attribute value as a table cell.
+
+        Args:
+            request: The FastAPI request object.
+            item: The model item to extract the attribute from.
+        """
         value = self.get_value(item)
         href = self.href_getter(request, item) if self.href_getter else None
         with tag.div(classes="flex items-center gap-1"):
@@ -129,10 +206,34 @@ class DatatableAttrColumn(Generic[M, PE], DatatableSortingColumn[M, PE]):
                     pass
         return None
 
-    def get_raw_value(self, item: M) -> Any | None:
+    def get_raw_value(self, item: M) -> Any:
+        """Extract the raw attribute value from the model item.
+
+        Args:
+            item: The model item to extract from.
+
+        Returns:
+            The raw attribute value.
+
+        Raises:
+            AttributeError: If the attribute does not exist on the item.
+        """
         return attrgetter(self.attr)(item)
 
     def get_value(self, item: M) -> str | None:
+        """Get the formatted string value for display.
+
+        This method can be overridden in subclasses to provide custom formatting.
+
+        Args:
+            item: The model item to extract from.
+
+        Returns:
+            The formatted string value, or None if the raw value is None.
+
+        Raises:
+            AttributeError: If the attribute does not exist on the item.
+        """
         value = self.get_raw_value(item)
         if value is None:
             return None
@@ -140,7 +241,29 @@ class DatatableAttrColumn(Generic[M, PE], DatatableSortingColumn[M, PE]):
 
 
 class DatatableDateTimeColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
+    """A datatable column that displays datetime attributes with proper formatting.
+
+    Extends DatatableAttrColumn to format datetime values using the backoffice
+    datetime formatter. Raw datetime objects are converted to user-friendly
+    formatted strings.
+
+    Args:
+        M: Type parameter for the model type.
+        PE: Type parameter for the sorting field enum.
+    """
+
     def get_value(self, item: M) -> str | None:
+        """Get the formatted datetime string for display.
+
+        Args:
+            item: The model item to extract the datetime from.
+
+        Returns:
+            A formatted datetime string, or None if the raw value is None.
+
+        Raises:
+            AttributeError: If the attribute does not exist on the item.
+        """
         value: datetime | None = self.get_raw_value(item)
         if value is None:
             return None
@@ -148,7 +271,24 @@ class DatatableDateTimeColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
 
 
 class DatatableBooleanColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
+    """A datatable column that displays boolean attributes with icons.
+
+    Extends DatatableAttrColumn to render boolean values as visual icons
+    instead of text. True values show a check icon, False values show an X icon,
+    and None values show a dash.
+
+    Args:
+        M: Type parameter for the model type.
+        PE: Type parameter for the sorting field enum.
+    """
+
     def render(self, request: Request, item: M) -> Generator[None] | None:
+        """Render the boolean value as an icon.
+
+        Args:
+            request: The FastAPI request object.
+            item: The model item to extract the boolean from.
+        """
         value = self.get_raw_value(item)
         with tag.div():
             if value is None:
@@ -164,21 +304,71 @@ class DatatableBooleanColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
 
 
 class DatatableAction(Protocol[M]):
-    @contextlib.contextmanager
-    def render(self, request: Request, item: M) -> Generator[None]: ...
+    """Protocol defining the interface for datatable row actions.
 
-    def is_hidden(self, request: Request, item: M) -> bool: ...
+    Actions appear in action columns and provide interactive functionality
+    for each row item. Implementations can be links, HTMX requests, or
+    custom interactive elements.
+
+    Args:
+        M: Type parameter for the model type.
+    """
+
+    @contextlib.contextmanager
+    def render(self, request: Request, item: M) -> Generator[None]:
+        """Render the action element for a specific item.
+
+        Args:
+            request: The FastAPI request object.
+            item: The model item this action applies to.
+        """
+        ...
+
+    def is_hidden(self, request: Request, item: M) -> bool:
+        """Determine if this action should be hidden for a specific item.
+
+        Args:
+            request: The FastAPI request object.
+            item: The model item to check visibility for.
+
+        Returns:
+            True if the action should be hidden, False otherwise.
+        """
+        ...
 
 
 class DatatableActionLink(DatatableAction[M]):
+    """A datatable action that renders as a navigation link.
+
+    Creates a standard HTML anchor link that navigates to another page.
+    The href can be static or dynamically generated based on the request
+    and item data.
+
+    Args:
+        M: Type parameter for the model type.
+    """
+
     def __init__(
         self, label: str, href: str | URL | Callable[[Request, M], str]
     ) -> None:
+        """Initialize the action link.
+
+        Args:
+            label: The text to display for the link.
+            href: The URL to link to. Can be a static string/URL or a callable
+                that generates the URL from request and item.
+        """
         self.label = label
         self.href = href
 
     @contextlib.contextmanager
     def render(self, request: Request, item: M) -> Generator[None]:
+        """Render the action as a link.
+
+        Args:
+            request: The FastAPI request object.
+            item: The model item this action applies to.
+        """
         href: str
         if callable(self.href):
             href = self.href(request, item)
@@ -189,10 +379,25 @@ class DatatableActionLink(DatatableAction[M]):
         yield
 
     def is_hidden(self, request: Request, item: M) -> bool:
+        """Check if the action should be hidden.
+
+        Returns:
+            Always False - link actions are never hidden by default.
+        """
         return False
 
 
 class DatatableActionHTMX(DatatableAction[M]):
+    """A datatable action that performs an HTMX request.
+
+    Creates a button that triggers an HTMX GET request and updates a target
+    element with the response. Useful for loading modals, updating page
+    sections, or other dynamic interactions.
+
+    Args:
+        M: Type parameter for the model type.
+    """
+
     def __init__(
         self,
         label: str,
@@ -200,6 +405,15 @@ class DatatableActionHTMX(DatatableAction[M]):
         target: str,
         hidden: Callable[[Request, M], bool] | None = None,
     ) -> None:
+        """
+        Args:
+            label: The text to display on the button.
+            href: The URL to request. Can be static or a callable that generates
+                the URL based on request and item data.
+            target: The HTMX selector for the element to update with the response.
+            hidden: Optional function to determine if action should be hidden
+                for specific items.
+        """
         self.label = label
         self.href = href
         self.target = target
@@ -207,6 +421,12 @@ class DatatableActionHTMX(DatatableAction[M]):
 
     @contextlib.contextmanager
     def render(self, request: Request, item: M) -> Generator[None]:
+        """Render the action as an HTMX button.
+
+        Args:
+            request: The FastAPI request object.
+            item: The model item this action applies to.
+        """
         href: str
         if callable(self.href):
             href = self.href(request, item)
@@ -217,19 +437,48 @@ class DatatableActionHTMX(DatatableAction[M]):
         yield
 
     def is_hidden(self, request: Request, item: M) -> bool:
+        """Check if the action should be hidden for a specific item.
+
+        Args:
+            request: The FastAPI request object.
+            item: The model item to check visibility for.
+
+        Returns:
+            True if the action should be hidden, False otherwise.
+        """
         if self.hidden is None:
             return False
         return self.hidden(request, item)
 
 
 class DatatableActionsColumn(Generic[M], DatatableColumn[M]):
+    """A datatable column that displays a dropdown menu of actions for each row.
+
+    Creates a column with an ellipsis button that opens a popover menu containing
+    action items. Actions that are hidden for specific items are automatically
+    filtered out. If no actions are visible, no button is rendered.
+
+    Args:
+        M: Type parameter for the model type.
+    """
+
     def __init__(self, label: str, *actions: DatatableAction[M]) -> None:
+        """
+        Args:
+            label: The column header text.
+            *actions: Variable number of DatatableAction instances to include
+                in the dropdown menu.
+        """
         self.actions = actions
         super().__init__(label)
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
-        item_id = getattr(item, "id")
+        """Render the actions dropdown for a specific item.
 
+        Args:
+            request: The FastAPI request object.
+            item: The model item to render actions for.
+        """
         displayed_actions = [
             action for action in self.actions if not action.is_hidden(request, item)
         ]
@@ -265,9 +514,27 @@ class SortWay(Enum):
 
 
 class Datatable(Generic[M, PE]):
+    """A complete datatable component with sorting and customizable columns.
+
+    Renders a responsive table with configurable columns, automatic sorting controls,
+    and empty state handling. Columns can display attributes, custom content, or
+    action menus.
+
+    Args:
+        M: Type parameter for the model type being displayed.
+        PE: Type parameter for the sorting field enum.
+    """
+
     def __init__(
         self, *columns: DatatableColumn[M], empty_message: str | None = None
     ) -> None:
+        """
+        Args:
+            *columns: Variable number of DatatableColumn instances that define
+                the table structure and content.
+            empty_message: Custom message to display when no items are present.
+                Defaults to "No items found".
+        """
         self.columns = columns
         self.empty_message = empty_message or "No items found"
 
@@ -279,6 +546,13 @@ class Datatable(Generic[M, PE]):
         *,
         sorting: list[Sorting[PE]] | None = None,
     ) -> Generator[None]:
+        """Render the complete datatable with headers, data, and sorting controls.
+
+        Args:
+            request: The FastAPI request object for URL generation.
+            items: The sequence of model items to display in the table.
+            sorting: Current sorting configuration for sortable columns.
+        """
         with tag.div(
             classes="overflow-x-auto rounded-box bg-base-100 border-1 border-gray-600"
         ):
@@ -364,6 +638,22 @@ class Datatable(Generic[M, PE]):
 def pagination(
     request: Request, pagination: PaginationParams, count: int
 ) -> Generator[None]:
+    """Render pagination controls for a datatable.
+
+    Creates a pagination component with item count display and previous/next
+    navigation buttons. The buttons are automatically disabled when at the
+    first or last page. URLs preserve existing query parameters while updating
+    the page parameter.
+
+    Args:
+        request: The FastAPI request object for URL generation.
+        pagination: Pagination parameters containing current page and limit.
+        count: Total number of items across all pages.
+
+    Example:
+        >>> with pagination(request, PaginationParams(page=2, limit=10), 50):
+        ...     pass
+    """
     start = (pagination.page - 1) * pagination.limit + 1
     end = min(pagination.page * pagination.limit, count)
 

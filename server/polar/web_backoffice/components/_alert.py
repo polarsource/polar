@@ -15,6 +15,23 @@ def alert(
     soft: bool = False,
     **kwargs: Any,
 ) -> Generator[None]:
+    """Create a styled alert component using DaisyUI classes.
+
+    Generates an alert div with configurable styling variants and modifiers.
+    The alert uses semantic role="alert" for accessibility and can be customized
+    with different visual styles.
+
+    Args:
+        variant: The alert style variant. One of "info", "success", "warning", or "error".
+            If None, uses the default alert styling.
+        dash: If True, applies dash styling modifier (alert-dash class).
+        soft: If True, applies soft styling modifier (alert-soft class).
+        **kwargs: Additional HTML attributes to pass to the alert div element.
+
+    Example:
+        >>> with alert(variant="success", soft=True):
+        ...     text("Operation completed successfully!")
+    """
     variants = {
         "info": "alert-info",
         "success": "alert-success",

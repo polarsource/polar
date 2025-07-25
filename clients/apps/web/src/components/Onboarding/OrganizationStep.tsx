@@ -229,7 +229,7 @@ export const OrganizationStep = ({
 
                       <div>
                         <p className="mb-1 font-medium text-red-600 dark:text-red-400">
-                          ✗ What we don't support:
+                          ✗ What we don&apos;t support:
                         </p>
                         <ul className="dark:text-polar-300 space-y-1 text-gray-600">
                           <li>
@@ -287,7 +287,7 @@ export const OrganizationStep = ({
                                 className="cursor-pointer font-medium leading-relaxed"
                               >
                                 I understand the restrictions above and agree to
-                                Polar's terms
+                                Polar&apos;s terms
                               </label>
                               <ul className="dark:text-polar-300 ml-1 mt-3 list-inside list-disc space-y-1.5 text-gray-600">
                                 <li>
@@ -298,8 +298,9 @@ export const OrganizationStep = ({
                                   >
                                     Account Reviews Policy
                                   </a>
-                                  {' - '}I'll comply with KYC/AML requirements
-                                  including website and social verification
+                                  {' - '}I&apos;ll comply with KYC/AML
+                                  requirements including website and social
+                                  verification
                                 </li>
                                 <li>
                                   <a

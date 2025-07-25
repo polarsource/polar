@@ -18,7 +18,7 @@ from polar.config import settings
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
-from polar.email.react import render_email_template
+from polar.email.react import JSONProperty, render_email_template
 from polar.email.sender import enqueue_email
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.service import event as event_service
@@ -684,6 +684,10 @@ class SubscriptionService:
         product_id: uuid.UUID,
         proration_behavior: SubscriptionProrationBehavior | None = None,
     ) -> Subscription:
+        previous_product = subscription.product
+        previous_status = subscription.status
+        previous_ends_at = subscription.ends_at
+
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id_and_organization(
             product_id,
@@ -785,6 +789,20 @@ class SubscriptionService:
         )
 
         session.add(subscription)
+
+        # Send product change email notification
+        await self.send_subscription_updated_email(
+            session, subscription, previous_product, product
+        )
+
+        # Trigger subscription updated events and re-evaluate benefits
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=previous_status,
+            previous_ends_at=previous_ends_at,
+        )
+
         return subscription
 
     async def update_discount(
@@ -1346,6 +1364,26 @@ class SubscriptionService:
             template_name="subscription_revoked",
         )
 
+    async def send_subscription_updated_email(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        previous_product: Product,
+        new_product: Product,
+    ) -> None:
+        subject = f"Your subscription has changed to {new_product.name}"
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template=subject,
+            template_name="subscription_updated",
+            extra_template_data={
+                "previous_product": {
+                    "name": previous_product.name or "",
+                },
+            },
+        )
+
     async def _send_customer_email(
         self,
         session: AsyncSession,
@@ -1353,6 +1391,7 @@ class SubscriptionService:
         *,
         subject_template: str,
         template_name: str,
+        extra_template_data: dict[str, JSONProperty] | None = None,
     ) -> None:
         product = subscription.product
         organization_repository = OrganizationRepository.from_session(session)
@@ -1371,31 +1410,35 @@ class SubscriptionService:
             session, customer
         )
 
-        body = render_email_template(
-            template_name,
-            {
-                "organization": {
-                    "name": featured_organization.name,
-                    "slug": featured_organization.slug,
-                },
-                "product": {
-                    "name": product.name or "",
-                    "benefits": [
-                        {"description": benefit.description or ""}
-                        for benefit in product.benefits
-                    ],
-                },
-                "subscription": {
-                    "ends_at": subscription.ends_at.isoformat()
-                    if subscription.ends_at
-                    else "",
-                },
-                "url": settings.generate_frontend_url(
-                    f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
-                ),
-                "current_year": datetime.now().year,
+        template_data: dict[str, JSONProperty] = {
+            "organization": {
+                "name": featured_organization.name,
+                "slug": featured_organization.slug,
+                "proration_behavior": featured_organization.proration_behavior,
             },
-        )
+            "product": {
+                "name": product.name or "",
+                "benefits": [
+                    {"description": benefit.description or ""}
+                    for benefit in product.benefits
+                ],
+            },
+            "subscription": {
+                "ends_at": subscription.ends_at.isoformat()
+                if subscription.ends_at
+                else "",
+            },
+            "url": settings.generate_frontend_url(
+                f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
+            ),
+            "current_year": datetime.now().year,
+        }
+
+        # Merge extra template data if provided
+        if extra_template_data:
+            template_data.update(extra_template_data)
+
+        body = render_email_template(template_name, template_data)
 
         subject = subject_template.format(product=product)
 

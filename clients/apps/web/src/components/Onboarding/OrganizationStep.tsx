@@ -45,17 +45,11 @@ export const OrganizationStep = ({
   const form = useForm<{
     name: string
     slug: string
-    noPhysicalGoods: boolean
-    noHumanServices: boolean
-    onlyDigitalGoods: boolean
     terms: boolean
   }>({
     defaultValues: {
       name: initialSlug || '',
       slug: initialSlug || '',
-      noPhysicalGoods: false,
-      noHumanServices: false,
-      onlyDigitalGoods: false,
       terms: false,
     },
   })
@@ -91,9 +85,6 @@ export const OrganizationStep = ({
 
   const name = watch('name')
   const slug = watch('slug')
-  const noPhysicalGoods = watch('noPhysicalGoods')
-  const noHumanServices = watch('noHumanServices')
-  const onlyDigitalGoods = watch('onlyDigitalGoods')
   const terms = watch('terms')
 
   useEffect(() => {
@@ -110,18 +101,9 @@ export const OrganizationStep = ({
   const onSubmit = async (data: {
     name: string
     slug: string
-    noPhysicalGoods: boolean
-    noHumanServices: boolean
-    onlyDigitalGoods: boolean
     terms: boolean
   }) => {
-    if (
-      !data.terms ||
-      !data.noPhysicalGoods ||
-      !data.noHumanServices ||
-      !data.onlyDigitalGoods
-    )
-      return
+    if (!data.terms) return
 
     const params = {
       name: data.name,
@@ -222,121 +204,63 @@ export const OrganizationStep = ({
                 />
 
                 <div className="dark:text-polar-400 mt-2 text-gray-600">
-                  <div className="mb-4">
-                    <p className="mb-3 text-sm font-medium">
-                      I confirm my use case matches these key characteristics:
-                    </p>
+                  {/* Information Box */}
+                  <div className="dark:bg-polar-800 dark:border-polar-700 mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <div className="mb-3 flex items-center gap-2">
+                      <div className="dark:bg-polar-600 flex h-6 w-6 items-center justify-center rounded-full bg-gray-300">
+                        <span className="text-xs font-medium">!</span>
+                      </div>
+                      <h3 className="text-sm font-semibold">
+                        What you can sell on Polar
+                      </h3>
+                    </div>
 
-                    <FormField
-                      control={control}
-                      name="noPhysicalGoods"
-                      rules={{
-                        required: 'You must confirm this requirement',
-                      }}
-                      render={({ field }) => (
-                        <FormItem className="mb-3">
-                          <div className="flex flex-row items-start gap-x-3">
-                            <Checkbox
-                              id="noPhysicalGoods"
-                              checked={field.value}
-                              onCheckedChange={(checked) => {
-                                const value = checked ? true : false
-                                setValue('noPhysicalGoods', value)
-                              }}
-                              className="mt-0.5"
-                            />
-                            <label
-                              htmlFor="noPhysicalGoods"
-                              className="text-sm leading-relaxed"
-                            >
-                              I will not sell any physical goods
-                            </label>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="space-y-3 text-sm">
+                      <div>
+                        <p className="font-medium text-green-600 dark:text-green-400">
+                          ✓ What we support:
+                        </p>
+                        <p className="dark:text-polar-300 mt-1 text-gray-600">
+                          Digital products, SaaS subscriptions, software
+                          licenses, digital downloads, and other digital goods
+                          that comply with our{' '}
+                          <a
+                            href="https://docs.polar.sh/merchant-of-record/acceptable-use"
+                            className="text-blue-500 underline dark:text-blue-400"
+                            target="_blank"
+                          >
+                            acceptable use policy
+                          </a>
+                        </p>
+                      </div>
 
-                    <FormField
-                      control={control}
-                      name="noHumanServices"
-                      rules={{
-                        required: 'You must confirm this requirement',
-                      }}
-                      render={({ field }) => (
-                        <FormItem className="mb-3">
-                          <div className="flex flex-row items-start gap-x-3">
-                            <Checkbox
-                              id="noHumanServices"
-                              checked={field.value}
-                              onCheckedChange={(checked) => {
-                                const value = checked ? true : false
-                                setValue('noHumanServices', value)
-                              }}
-                              className="mt-0.5"
-                            />
-                            <label
-                              htmlFor="noHumanServices"
-                              className="text-sm leading-relaxed"
-                            >
-                              I will not sell human services, i.e custom web
-                              development, design or consultancy
-                            </label>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={control}
-                      name="onlyDigitalGoods"
-                      rules={{
-                        required: 'You must confirm this requirement',
-                      }}
-                      render={({ field }) => (
-                        <FormItem className="mb-3">
-                          <div className="flex flex-row items-start gap-x-3">
-                            <Checkbox
-                              id="onlyDigitalGoods"
-                              checked={field.value}
-                              onCheckedChange={(checked) => {
-                                const value = checked ? true : false
-                                setValue('onlyDigitalGoods', value)
-                              }}
-                              className="mt-0.5"
-                            />
-                            <label
-                              htmlFor="onlyDigitalGoods"
-                              className="text-sm leading-relaxed"
-                            >
-                              I will only sell digital goods and services (SaaS)
-                              within the{' '}
-                              <a
-                                href="https://docs.polar.sh/merchant-of-record/acceptable-use"
-                                className="text-blue-500 dark:text-blue-400"
-                                target="_blank"
-                              >
-                                acceptable use policy
-                              </a>
-                            </label>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      <div>
+                        <p className="font-medium text-red-600 dark:text-red-400">
+                          ✗ What we don't support:
+                        </p>
+                        <ul className="dark:text-polar-300 mt-1 space-y-1 text-gray-600">
+                          <li>
+                            • Physical goods or products requiring shipping
+                          </li>
+                          <li>
+                            • Human services (custom development, design,
+                            consultancy)
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
                   </div>
 
                   <FormField
                     control={control}
                     name="terms"
                     rules={{
-                      required: 'You have to accept the terms',
+                      required: 'You must accept the terms to continue',
                     }}
                     render={({ field }) => {
                       return (
                         <FormItem>
-                          <div className="flex flex-row items-center gap-x-3">
+                          <div className="flex flex-row items-start gap-x-3">
                             <Checkbox
                               id="terms"
                               checked={field.value}
@@ -344,51 +268,54 @@ export const OrganizationStep = ({
                                 const value = checked ? true : false
                                 setValue('terms', value)
                               }}
+                              className="mt-0.5"
                             />
-                            <label
-                              htmlFor="terms"
-                              className="text-sm font-medium"
-                            >
-                              I agree to the terms below
-                            </label>
+                            <div className="text-sm">
+                              <label
+                                htmlFor="terms"
+                                className="font-medium leading-relaxed"
+                              >
+                                I understand the product restrictions above and
+                                agree to the following terms:
+                              </label>
+                              <ul className="ml-1 mt-2 list-inside list-disc space-y-1">
+                                <li>
+                                  <a
+                                    href="https://docs.polar.sh/merchant-of-record/account-reviews"
+                                    className="text-blue-500 dark:text-blue-400"
+                                    target="_blank"
+                                  >
+                                    Account Reviews
+                                  </a>
+                                  {' - '}I&apos;ll comply with all reviews and
+                                  requests for compliance materials (KYC/AML).
+                                </li>
+                                <li>
+                                  <a
+                                    href="https://polar.sh/legal/terms"
+                                    className="text-blue-500 dark:text-blue-400"
+                                    target="_blank"
+                                  >
+                                    Terms of Service
+                                  </a>
+                                </li>
+                                <li>
+                                  <a
+                                    href="https://polar.sh/legal/privacy"
+                                    className="text-blue-500 dark:text-blue-400"
+                                    target="_blank"
+                                  >
+                                    Privacy Policy
+                                  </a>
+                                </li>
+                              </ul>
+                            </div>
                           </div>
                           <FormMessage />
                         </FormItem>
                       )
                     }}
                   />
-                  <hr className="my-4" />
-                  <ul className="ml-1 list-inside list-disc space-y-2 text-xs">
-                    <li>
-                      <a
-                        href="https://docs.polar.sh/merchant-of-record/account-reviews"
-                        className="text-blue-500 dark:text-blue-400"
-                        target="_blank"
-                      >
-                        Account Reviews
-                      </a>
-                      . I&apos;ll comply with all reviews and requests for
-                      compliance materials (KYC/AML).
-                    </li>
-                    <li>
-                      <a
-                        href="https://polar.sh/legal/terms"
-                        className="text-blue-500 dark:text-blue-400"
-                        target="_blank"
-                      >
-                        Terms of Service
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        href="https://polar.sh/legal/privacy"
-                        className="text-blue-500 dark:text-blue-400"
-                        target="_blank"
-                      >
-                        Privacy Policy
-                      </a>
-                    </li>
-                  </ul>
                 </div>
               </div>
               {errors.root && (
@@ -400,14 +327,7 @@ export const OrganizationStep = ({
                 <Button
                   type="submit"
                   loading={createOrganization.isPending}
-                  disabled={
-                    name.length === 0 ||
-                    slug.length === 0 ||
-                    !noPhysicalGoods ||
-                    !noHumanServices ||
-                    !onlyDigitalGoods ||
-                    !terms
-                  }
+                  disabled={name.length === 0 || slug.length === 0 || !terms}
                 >
                   Create
                 </Button>

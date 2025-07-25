@@ -1471,6 +1471,7 @@ class SubscriptionService:
             "organization": {
                 "name": featured_organization.name,
                 "slug": featured_organization.slug,
+                "proration_behavior": featured_organization.proration_behavior,
             },
             "product": {
                 "name": product.name or "",

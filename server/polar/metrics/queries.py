@@ -47,11 +47,12 @@ def _get_metrics_columns(
     timestamp_column: ColumnElement[datetime],
     interval: TimeInterval,
     metrics: list["type[Metric]"],
+    now: datetime,
 ) -> Generator[ColumnElement[int] | ColumnElement[float], None, None]:
     return (
-        func.coalesce(metric.get_sql_expression(timestamp_column, interval), 0).label(
-            metric.slug
-        )
+        func.coalesce(
+            metric.get_sql_expression(timestamp_column, interval, now), 0
+        ).label(metric.slug)
         for metric in metrics
         if metric.query == metric_cte
     )
@@ -64,6 +65,7 @@ class QueryCallable(Protocol):
         interval: TimeInterval,
         auth_subject: AuthSubject[User | Organization],
         metrics: list["type[Metric]"],
+        now: datetime,
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
@@ -117,6 +119,7 @@ def get_orders_cte(
     interval: TimeInterval,
     auth_subject: AuthSubject[User | Organization],
     metrics: list["type[Metric]"],
+    now: datetime,
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
@@ -137,7 +140,7 @@ def get_orders_cte(
         select(
             timestamp_column.label("timestamp"),
             *_get_metrics_columns(
-                MetricQuery.orders, timestamp_column, interval, metrics
+                MetricQuery.orders, timestamp_column, interval, metrics, now
             ),
         )
         .select_from(
@@ -165,6 +168,7 @@ def get_cumulative_orders_cte(
     interval: TimeInterval,
     auth_subject: AuthSubject[User | Organization],
     metrics: list["type[Metric]"],
+    now: datetime,
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
@@ -185,7 +189,7 @@ def get_cumulative_orders_cte(
         select(
             timestamp_column.label("timestamp"),
             *_get_metrics_columns(
-                MetricQuery.cumulative_orders, timestamp_column, interval, metrics
+                MetricQuery.cumulative_orders, timestamp_column, interval, metrics, now
             ),
         )
         .select_from(
@@ -213,6 +217,7 @@ def get_active_subscriptions_cte(
     interval: TimeInterval,
     auth_subject: AuthSubject[User | Organization],
     metrics: list["type[Metric]"],
+    now: datetime,
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
@@ -263,7 +268,11 @@ def get_active_subscriptions_cte(
         select(
             timestamp_column.label("timestamp"),
             *_get_metrics_columns(
-                MetricQuery.active_subscriptions, timestamp_column, interval, metrics
+                MetricQuery.active_subscriptions,
+                timestamp_column,
+                interval,
+                metrics,
+                now,
             ),
         )
         .select_from(
@@ -306,6 +315,7 @@ def get_checkouts_cte(
     interval: TimeInterval,
     auth_subject: AuthSubject[User | Organization],
     metrics: list["type[Metric]"],
+    now: datetime,
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
     product_id: Sequence[uuid.UUID] | None = None,
@@ -358,7 +368,7 @@ def get_checkouts_cte(
         select(
             timestamp_column.label("timestamp"),
             *_get_metrics_columns(
-                MetricQuery.checkouts, timestamp_column, interval, metrics
+                MetricQuery.checkouts, timestamp_column, interval, metrics, now
             ),
         )
         .select_from(

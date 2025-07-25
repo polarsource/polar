@@ -806,6 +806,61 @@ class TestGetMetrics:
         assert mar.monthly_recurring_revenue == 0
 
     @pytest.mark.auth
+    async def test_committed_mrr(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        user: User,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """
+        We have two flavors of MRR:
+        * MRR considers the active subscriptions on the given date
+        * Committed MRR (CMRR) considers only the active subscriptions that are not due to cancel in the future
+        """
+        subscriptions: dict[str, SubscriptionFixture] = {
+            "subscription_1": {
+                "started_at": date(2024, 1, 1),
+                "product": "monthly_subscription",
+            },
+            "subscription_2": {
+                "started_at": date(2024, 2, 1),
+                "ends_at": date(2024, 3, 1),
+                "product": "monthly_subscription",
+            },
+        }
+        await _create_fixtures(
+            save_fixture, customer, organization, PRODUCTS, subscriptions, {}
+        )
+
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 3, 1),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            now=datetime(2024, 2, 15, tzinfo=UTC),
+        )
+
+        assert len(metrics.periods) == 3
+
+        jan = metrics.periods[0]
+        assert jan.monthly_recurring_revenue == 100_00
+        assert jan.committed_monthly_recurring_revenue == 100_00
+
+        feb = metrics.periods[1]
+        assert feb.monthly_recurring_revenue == 200_00
+        assert feb.committed_monthly_recurring_revenue == 100_00
+
+        mar = metrics.periods[2]
+        assert mar.monthly_recurring_revenue == 100_00
+        assert mar.committed_monthly_recurring_revenue == 100_00
+
+    @pytest.mark.auth
     async def test_mrr_subscription_forever_discount(
         self,
         save_fixture: SaveFixture,

@@ -106,7 +106,7 @@ export const OrganizationStep = ({
     if (!data.terms) return
 
     const params = {
-      name: data.name,
+      ...data,
       slug: slug as string,
     }
     posthog.capture('dashboard:organizations:create:submit', params)

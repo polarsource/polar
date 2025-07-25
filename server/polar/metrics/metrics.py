@@ -87,6 +87,23 @@ class RevenueMetric(Metric):
         return sum
 
 
+class NetRevenueMetric(Metric):
+    slug = "net_revenue"
+    display_name = "Net Revenue"
+    type = MetricType.currency
+    query = MetricQuery.orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(Order.payout_amount)
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
 class CumulativeRevenueMetric(Metric):
     slug = "cumulative_revenue"
     display_name = "Cumulative Revenue"
@@ -104,6 +121,23 @@ class CumulativeRevenueMetric(Metric):
         return last
 
 
+class NetCumulativeRevenueMetric(Metric):
+    slug = "net_cumulative_revenue"
+    display_name = "Net Cumulative Revenue"
+    type = MetricType.currency
+    query = MetricQuery.cumulative_orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(Order.payout_amount)
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return last
+
+
 class AverageOrderValueMetric(Metric):
     slug = "average_order_value"
     display_name = "Average Order Value"
@@ -115,6 +149,23 @@ class AverageOrderValueMetric(Metric):
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
         return func.cast(func.ceil(func.avg(Order.net_amount)), Integer)
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return statistics.fmean
+
+
+class NetAverageOrderValueMetric(Metric):
+    slug = "net_average_order_value"
+    display_name = "Net Average Order Value"
+    type = MetricType.currency
+    query = MetricQuery.orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.cast(func.ceil(func.avg(Order.payout_amount)), Integer)
 
     @classmethod
     def get_cumulative_function(cls) -> CumulativeFunction:
@@ -149,6 +200,23 @@ class OneTimeProductsRevenueMetric(Metric):
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
         return func.sum(Order.net_amount).filter(Order.subscription_id.is_(None))
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
+class OneTimeProductsNetRevenueMetric(Metric):
+    slug = "one_time_products_net_revenue"
+    display_name = "One-Time Products Net Revenue"
+    type = MetricType.currency
+    query = MetricQuery.orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(Order.payout_amount).filter(Order.subscription_id.is_(None))
 
     @classmethod
     def get_cumulative_function(cls) -> CumulativeFunction:
@@ -199,6 +267,28 @@ class NewSubscriptionsRevenueMetric(Metric):
         return sum
 
 
+class NewSubscriptionsNetRevenueMetric(Metric):
+    slug = "new_subscriptions_net_revenue"
+    display_name = "New Subscriptions Net Revenue"
+    type = MetricType.currency
+    query = MetricQuery.orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(Order.payout_amount).filter(
+            i.sql_date_trunc(
+                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            )
+            == i.sql_date_trunc(t)
+        )
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
 class RenewedSubscriptionsMetric(Metric):
     slug = "renewed_subscriptions"
     display_name = "Renewed Subscriptions"
@@ -232,6 +322,28 @@ class RenewedSubscriptionsRevenueMetric(Metric):
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
         return func.sum(Order.net_amount).filter(
+            i.sql_date_trunc(
+                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            )
+            != i.sql_date_trunc(t)
+        )
+
+    @classmethod
+    def get_cumulative_function(cls) -> CumulativeFunction:
+        return sum
+
+
+class RenewedSubscriptionsNetRevenueMetric(Metric):
+    slug = "renewed_subscriptions_net_revenue"
+    display_name = "Renewed Subscriptions Net Revenue"
+    type = MetricType.currency
+    query = MetricQuery.orders
+
+    @classmethod
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
+    ) -> ColumnElement[int]:
+        return func.sum(Order.payout_amount).filter(
             i.sql_date_trunc(
                 cast(SQLColumnExpression[datetime], Subscription.started_at)
             )
@@ -404,14 +516,20 @@ class CheckoutsConversionMetric(Metric):
 METRICS: list[type[Metric]] = [
     OrdersMetric,
     RevenueMetric,
+    NetRevenueMetric,
     CumulativeRevenueMetric,
+    NetCumulativeRevenueMetric,
     AverageOrderValueMetric,
+    NetAverageOrderValueMetric,
     OneTimeProductsMetric,
     OneTimeProductsRevenueMetric,
+    OneTimeProductsNetRevenueMetric,
     NewSubscriptionsMetric,
     NewSubscriptionsRevenueMetric,
+    NewSubscriptionsNetRevenueMetric,
     RenewedSubscriptionsMetric,
     RenewedSubscriptionsRevenueMetric,
+    RenewedSubscriptionsNetRevenueMetric,
     ActiveSubscriptionsMetric,
     MonthlyRecurringRevenueMetric,
     CommittedMonthlyRecurringRevenueMetric,

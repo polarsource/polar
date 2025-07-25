@@ -79,9 +79,16 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
             )
             balance_transactions_list.append(balance_transactions)
 
-            await platform_fee_transaction_service.create_fees_reversal_balances(
-                session, balance_transactions=balance_transactions
+            platform_fee_transactions = (
+                await platform_fee_transaction_service.create_fees_reversal_balances(
+                    session, balance_transactions=balance_transactions
+                )
             )
+            if held_balance.order:
+                held_balance.order.platform_fee_amount = sum(
+                    incoming.amount for _, incoming in platform_fee_transactions
+                )
+                session.add(held_balance.order)
 
             await refund_transaction_service.create_reversal_balances_for_payment(
                 session, payment_transaction=held_balance.payment_transaction

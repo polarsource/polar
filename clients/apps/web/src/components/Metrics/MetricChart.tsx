@@ -139,7 +139,6 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
                   })
                 case 'year':
                   return value.toLocaleDateString('en-US', {
-                    month: 'short',
                     year: 'numeric',
                   })
                 default:

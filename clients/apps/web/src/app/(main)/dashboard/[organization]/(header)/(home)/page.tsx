@@ -20,22 +20,5 @@ export default async function Page({
     params.organization,
   )
 
-  const startOfMonth = new Date()
-  startOfMonth.setUTCHours(0, 0, 0, 0)
-  startOfMonth.setUTCDate(1)
-
-  const today = new Date()
-
-  const startOfMonthThreeMonthsAgo = new Date()
-  startOfMonthThreeMonthsAgo.setUTCHours(0, 0, 0, 0)
-  startOfMonthThreeMonthsAgo.setUTCDate(1)
-  startOfMonthThreeMonthsAgo.setUTCMonth(startOfMonth.getMonth() - 5)
-
-  return (
-    <ClientPage
-      organization={organization}
-      startDate={startOfMonthThreeMonthsAgo}
-      endDate={today}
-    />
-  )
+  return <ClientPage organization={organization} />
 }

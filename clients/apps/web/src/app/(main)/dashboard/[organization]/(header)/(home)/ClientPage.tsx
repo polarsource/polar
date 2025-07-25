@@ -75,8 +75,6 @@ const HeroChart = ({ organization }: HeroChartProps) => {
 
 interface OverviewPageProps {
   organization: schemas['Organization']
-  startDate: Date
-  endDate: Date
 }
 
 export default function OverviewPage({ organization }: OverviewPageProps) {

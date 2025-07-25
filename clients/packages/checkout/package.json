@@ -11,7 +11,8 @@
     "directory": "clients/packages/checkout"
   },
   "scripts": {
-    "build": "rm -rf dist/ && tsup"
+    "build": "rm -rf dist/ && tsup",
+    "dev": "tsup --watch"
   },
   "exports": {
     "./embed": {

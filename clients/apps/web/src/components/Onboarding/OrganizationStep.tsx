@@ -42,10 +42,20 @@ export const OrganizationStep = ({
   const posthog = usePostHog()
   const { currentUser, setUserOrganizations } = useAuth()
 
-  const form = useForm<{ name: string; slug: string; terms: boolean }>({
+  const form = useForm<{
+    name: string
+    slug: string
+    noPhysicalGoods: boolean
+    noHumanServices: boolean
+    onlyDigitalGoods: boolean
+    terms: boolean
+  }>({
     defaultValues: {
       name: initialSlug || '',
       slug: initialSlug || '',
+      noPhysicalGoods: false,
+      noHumanServices: false,
+      onlyDigitalGoods: false,
       terms: false,
     },
   })
@@ -81,6 +91,9 @@ export const OrganizationStep = ({
 
   const name = watch('name')
   const slug = watch('slug')
+  const noPhysicalGoods = watch('noPhysicalGoods')
+  const noHumanServices = watch('noHumanServices')
+  const onlyDigitalGoods = watch('onlyDigitalGoods')
   const terms = watch('terms')
 
   useEffect(() => {
@@ -97,12 +110,21 @@ export const OrganizationStep = ({
   const onSubmit = async (data: {
     name: string
     slug: string
+    noPhysicalGoods: boolean
+    noHumanServices: boolean
+    onlyDigitalGoods: boolean
     terms: boolean
   }) => {
-    if (!data.terms) return
+    if (
+      !data.terms ||
+      !data.noPhysicalGoods ||
+      !data.noHumanServices ||
+      !data.onlyDigitalGoods
+    )
+      return
 
     const params = {
-      ...data,
+      name: data.name,
       slug: slug as string,
     }
     posthog.capture('dashboard:organizations:create:submit', params)
@@ -200,6 +222,111 @@ export const OrganizationStep = ({
                 />
 
                 <div className="dark:text-polar-400 mt-2 text-gray-600">
+                  <div className="mb-4">
+                    <p className="mb-3 text-sm font-medium">
+                      I confirm my use case matches these key characteristics:
+                    </p>
+
+                    <FormField
+                      control={control}
+                      name="noPhysicalGoods"
+                      rules={{
+                        required: 'You must confirm this requirement',
+                      }}
+                      render={({ field }) => (
+                        <FormItem className="mb-3">
+                          <div className="flex flex-row items-start gap-x-3">
+                            <Checkbox
+                              id="noPhysicalGoods"
+                              checked={field.value}
+                              onCheckedChange={(checked) => {
+                                const value = checked ? true : false
+                                setValue('noPhysicalGoods', value)
+                              }}
+                              className="mt-0.5"
+                            />
+                            <label
+                              htmlFor="noPhysicalGoods"
+                              className="text-sm leading-relaxed"
+                            >
+                              I will not sell any physical goods
+                            </label>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="noHumanServices"
+                      rules={{
+                        required: 'You must confirm this requirement',
+                      }}
+                      render={({ field }) => (
+                        <FormItem className="mb-3">
+                          <div className="flex flex-row items-start gap-x-3">
+                            <Checkbox
+                              id="noHumanServices"
+                              checked={field.value}
+                              onCheckedChange={(checked) => {
+                                const value = checked ? true : false
+                                setValue('noHumanServices', value)
+                              }}
+                              className="mt-0.5"
+                            />
+                            <label
+                              htmlFor="noHumanServices"
+                              className="text-sm leading-relaxed"
+                            >
+                              I will not sell human services, i.e custom web
+                              development, design or consultancy
+                            </label>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="onlyDigitalGoods"
+                      rules={{
+                        required: 'You must confirm this requirement',
+                      }}
+                      render={({ field }) => (
+                        <FormItem className="mb-3">
+                          <div className="flex flex-row items-start gap-x-3">
+                            <Checkbox
+                              id="onlyDigitalGoods"
+                              checked={field.value}
+                              onCheckedChange={(checked) => {
+                                const value = checked ? true : false
+                                setValue('onlyDigitalGoods', value)
+                              }}
+                              className="mt-0.5"
+                            />
+                            <label
+                              htmlFor="onlyDigitalGoods"
+                              className="text-sm leading-relaxed"
+                            >
+                              I will only sell digital goods and services (SaaS)
+                              within the{' '}
+                              <a
+                                href="https://docs.polar.sh/merchant-of-record/acceptable-use"
+                                className="text-blue-500 dark:text-blue-400"
+                                target="_blank"
+                              >
+                                acceptable use policy
+                              </a>
+                            </label>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <FormField
                     control={control}
                     name="terms"
@@ -214,7 +341,6 @@ export const OrganizationStep = ({
                               id="terms"
                               checked={field.value}
                               onCheckedChange={(checked) => {
-                                // String | boolean type for some reason
                                 const value = checked ? true : false
                                 setValue('terms', value)
                               }}
@@ -223,7 +349,7 @@ export const OrganizationStep = ({
                               htmlFor="terms"
                               className="text-sm font-medium"
                             >
-                              I confirm and agree to the terms below
+                              I agree to the terms below
                             </label>
                           </div>
                           <FormMessage />
@@ -233,17 +359,6 @@ export const OrganizationStep = ({
                   />
                   <hr className="my-4" />
                   <ul className="ml-1 list-inside list-disc space-y-2 text-xs">
-                    <li>
-                      <a
-                        href="https://docs.polar.sh/merchant-of-record/acceptable-use"
-                        className="text-blue-500 dark:text-blue-400"
-                        target="_blank"
-                      >
-                        Acceptable Use Policy
-                      </a>
-                      . I&apos;ll only sell digital products and SaaS that
-                      complies with it or risk suspension.
-                    </li>
                     <li>
                       <a
                         href="https://docs.polar.sh/merchant-of-record/account-reviews"
@@ -285,7 +400,14 @@ export const OrganizationStep = ({
                 <Button
                   type="submit"
                   loading={createOrganization.isPending}
-                  disabled={name.length === 0 || slug.length === 0 || !terms}
+                  disabled={
+                    name.length === 0 ||
+                    slug.length === 0 ||
+                    !noPhysicalGoods ||
+                    !noHumanServices ||
+                    !onlyDigitalGoods ||
+                    !terms
+                  }
                 >
                   Create
                 </Button>

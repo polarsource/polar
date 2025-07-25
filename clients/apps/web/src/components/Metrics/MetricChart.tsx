@@ -1,5 +1,5 @@
 import { ParsedMetricPeriod } from '@/hooks/queries'
-import { getFormattedMetricValue } from '@/utils/metrics'
+import { getFormattedMetricValue, getTimestampFormatter } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import {
   CartesianGrid,
@@ -58,6 +58,8 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
     }))
 
     const isDark = resolvedTheme === 'dark'
+
+    const timestampFormatter = getTimestampFormatter(interval)
 
     return (
       <ChartContainer
@@ -118,69 +120,45 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
                   ]
                 : undefined
             }
-            tickFormatter={(value) => {
-              switch (interval) {
-                case 'hour':
-                  return value.toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false,
-                  })
-                case 'day':
-                case 'week':
-                  return value.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: '2-digit',
-                  })
-                case 'month':
-                  return value.toLocaleDateString('en-US', {
-                    month: 'short',
-                    year: 'numeric',
-                  })
-                case 'year':
-                  return value.toLocaleDateString('en-US', {
-                    year: 'numeric',
-                  })
-                default:
-                  return value.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: '2-digit',
-                  })
-              }
-            }}
+            tickFormatter={timestampFormatter}
           />
           <ChartTooltip
-            cursor={false}
+            cursor={true}
             content={
-              <ChartTooltipContent
-                className="text-black dark:text-white"
-                indicator="dot"
-                labelKey="metric"
-                formatter={(value, name) => {
-                  const formattedValue = getFormattedMetricValue(
-                    metric,
-                    value as number,
-                  )
-                  return (
-                    <div className="flex flex-row justify-between gap-x-8">
-                      <div className="flex flex-row items-center gap-x-2">
-                        <span
-                          className={twMerge(
-                            'h-2 w-2 rounded-full',
-                            name === 'current'
-                              ? 'bg-primary dark:bg-primary'
-                              : 'dark:bg-polar-500 bg-gray-500',
-                          )}
-                        />
-                        <span className="capitalize">
-                          {name.toString().split('_').join(' ')}
-                        </span>
+              // Tooltip content is useful only if we show previous data
+              previousData ? (
+                <ChartTooltipContent
+                  className="text-black dark:text-white"
+                  indicator="dot"
+                  labelKey="metric"
+                  formatter={(value, name) => {
+                    const formattedValue = getFormattedMetricValue(
+                      metric,
+                      value as number,
+                    )
+                    return (
+                      <div className="flex flex-row justify-between gap-x-8">
+                        <div className="flex flex-row items-center gap-x-2">
+                          <span
+                            className={twMerge(
+                              'h-2 w-2 rounded-full',
+                              name === 'current'
+                                ? 'bg-primary dark:bg-primary'
+                                : 'dark:bg-polar-500 bg-gray-500',
+                            )}
+                          />
+                          <span className="capitalize">
+                            {name.toString().split('_').join(' ')}
+                          </span>
+                        </div>
+                        <span>{formattedValue}</span>
                       </div>
-                      <span>{formattedValue}</span>
-                    </div>
-                  )
-                }}
-              />
+                    )
+                  }}
+                />
+              ) : (
+                <></>
+              )
             }
           />
           {previousData && (

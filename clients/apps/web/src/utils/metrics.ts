@@ -71,26 +71,36 @@ export const getTimestampFormatter = (
   switch (interval) {
     case 'hour':
       return (value: Date) =>
-        value.toLocaleString(locale, {
-          dateStyle: 'medium',
-          timeStyle: 'short',
+        value.toLocaleTimeString(locale, {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
         })
     case 'day':
     case 'week':
       return (value: Date) =>
         value.toLocaleDateString(locale, {
-          dateStyle: 'medium',
+          month: 'short',
+          day: '2-digit',
         })
     case 'month':
-      return (value: Date) => format(value, 'MMMM yyyy')
+      return (value: Date) =>
+        value.toLocaleDateString(locale, {
+          month: 'short',
+          year: 'numeric',
+        })
     case 'year':
-      return (value: Date) => format(value, 'yyyy')
+      return (value: Date) =>
+        value.toLocaleDateString(locale, {
+          year: 'numeric',
+        })
+    default:
+      return (value: Date) =>
+        value.toLocaleDateString(locale, {
+          month: 'short',
+          day: '2-digit',
+        })
   }
-}
-
-export const getTicks = (timestamps: Date[], maxTicks: number = 10): Date[] => {
-  const step = Math.ceil(timestamps.length / maxTicks)
-  return timestamps.filter((_, index) => index % step === 0)
 }
 
 export const dateRangeToInterval = (startDate: Date, endDate: Date) => {

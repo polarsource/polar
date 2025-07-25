@@ -9,6 +9,7 @@ interface SubscriptionUpdatedProps {
   organization: {
     name: string
     slug: string
+    proration_behavior: 'always_invoice' | 'create_prorations'
   }
   product: {
     name: string
@@ -59,8 +60,10 @@ export function SubscriptionUpdated({
         )}
         <BodyText>
           The changes take effect immediately. Your new billing amount will be
-          reflected in your next billing cycle, and you'll receive a prorated
-          credit for any unused time on your previous plan.
+          reflected in your next billing cycle
+          {organization.proration_behavior == 'create_prorations'
+            ? ' as well as the pro-rata changes within this cycle.'
+            : '. If needed, your card will be charged the pro-rata amount for the change at this time.'}
         </BodyText>
       </Section>
       <Section className="my-8 text-center">
@@ -89,6 +92,7 @@ SubscriptionUpdated.PreviewProps = {
   organization: {
     name: 'Acme Inc.',
     slug: 'acme-inc',
+    proration_behavior: 'create_prorations',
   },
   product: {
     name: 'Basic Plan',

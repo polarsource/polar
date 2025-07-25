@@ -42,7 +42,11 @@ export const OrganizationStep = ({
   const posthog = usePostHog()
   const { currentUser, setUserOrganizations } = useAuth()
 
-  const form = useForm<{ name: string; slug: string; terms: boolean }>({
+  const form = useForm<{
+    name: string
+    slug: string
+    terms: boolean
+  }>({
     defaultValues: {
       name: initialSlug || '',
       slug: initialSlug || '',
@@ -200,80 +204,130 @@ export const OrganizationStep = ({
                 />
 
                 <div className="dark:text-polar-400 mt-2 text-gray-600">
+                  {/* Simple Product Restrictions */}
+                  <div className="dark:bg-polar-800 dark:border-polar-700 mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <div className="mb-3 flex items-center gap-2">
+                      <div className="dark:bg-polar-600 flex h-6 w-6 items-center justify-center rounded-full bg-gray-300">
+                        <span className="text-xs font-medium">!</span>
+                      </div>
+                      <h3 className="text-sm font-semibold">
+                        Product Restrictions
+                      </h3>
+                    </div>
+
+                    <div className="space-y-3 text-sm">
+                      <div>
+                        <p className="mb-1 font-medium text-green-600 dark:text-green-400">
+                          ✓ What we support:
+                        </p>
+                        <p className="dark:text-polar-300 text-gray-600">
+                          SaaS subscriptions, digital downloads, software
+                          licenses, online courses, and other purely digital
+                          products.
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="mb-1 font-medium text-red-600 dark:text-red-400">
+                          ✗ What we don&apos;t support:
+                        </p>
+                        <ul className="dark:text-polar-300 space-y-1 text-gray-600">
+                          <li>
+                            • Physical goods or products requiring shipping
+                          </li>
+                          <li>
+                            • Human services (custom development, design and
+                            consultancy)
+                          </li>
+                          <li>• Marketplaces</li>
+                          <li>
+                            • Anything in our list of{' '}
+                            <a
+                              href="https://docs.polar.sh/merchant-of-record/acceptable-use"
+                              className="text-blue-500 underline dark:text-blue-400"
+                              target="_blank"
+                            >
+                              prohibited products
+                            </a>
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div className="dark:border-polar-700 border-t border-gray-200 pt-2">
+                        <p className="dark:text-polar-300 text-sm font-medium text-gray-700">
+                          Transactions that violate our policy will be canceled
+                          and refunded.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   <FormField
                     control={control}
                     name="terms"
                     rules={{
-                      required: 'You have to accept the terms',
+                      required: 'You must accept the terms to continue',
                     }}
                     render={({ field }) => {
                       return (
                         <FormItem>
-                          <div className="flex flex-row items-center gap-x-3">
+                          <div className="dark:border-polar-700 dark:bg-polar-900 flex flex-row items-start gap-x-3 rounded-lg border border-gray-200 bg-white p-4">
                             <Checkbox
                               id="terms"
                               checked={field.value}
                               onCheckedChange={(checked) => {
-                                // String | boolean type for some reason
                                 const value = checked ? true : false
                                 setValue('terms', value)
                               }}
+                              className="mt-1"
                             />
-                            <label
-                              htmlFor="terms"
-                              className="text-sm font-medium"
-                            >
-                              I confirm and agree to the terms below
-                            </label>
+                            <div className="text-sm">
+                              <label
+                                htmlFor="terms"
+                                className="cursor-pointer font-medium leading-relaxed"
+                              >
+                                I understand the restrictions above and agree to
+                                Polar&apos;s terms
+                              </label>
+                              <ul className="dark:text-polar-300 ml-1 mt-3 list-inside list-disc space-y-1.5 text-gray-600">
+                                <li>
+                                  <a
+                                    href="https://docs.polar.sh/merchant-of-record/account-reviews"
+                                    className="text-blue-600 hover:underline dark:text-blue-400"
+                                    target="_blank"
+                                  >
+                                    Account Reviews Policy
+                                  </a>
+                                  {' - '}I&apos;ll comply with KYC/AML
+                                  requirements including website and social
+                                  verification
+                                </li>
+                                <li>
+                                  <a
+                                    href="https://polar.sh/legal/terms"
+                                    className="text-blue-600 hover:underline dark:text-blue-400"
+                                    target="_blank"
+                                  >
+                                    Terms of Service
+                                  </a>
+                                </li>
+                                <li>
+                                  <a
+                                    href="https://polar.sh/legal/privacy"
+                                    className="text-blue-600 hover:underline dark:text-blue-400"
+                                    target="_blank"
+                                  >
+                                    Privacy Policy
+                                  </a>
+                                </li>
+                              </ul>
+                            </div>
                           </div>
                           <FormMessage />
                         </FormItem>
                       )
                     }}
                   />
-                  <hr className="my-4" />
-                  <ul className="ml-1 list-inside list-disc space-y-2 text-xs">
-                    <li>
-                      <a
-                        href="https://docs.polar.sh/merchant-of-record/acceptable-use"
-                        className="text-blue-500 dark:text-blue-400"
-                        target="_blank"
-                      >
-                        Acceptable Use Policy
-                      </a>
-                      . I&apos;ll only sell digital products and SaaS that
-                      complies with it or risk suspension.
-                    </li>
-                    <li>
-                      <a
-                        href="https://docs.polar.sh/merchant-of-record/account-reviews"
-                        className="text-blue-500 dark:text-blue-400"
-                        target="_blank"
-                      >
-                        Account Reviews
-                      </a>
-                      . I&apos;ll comply with all reviews and requests for
-                      compliance materials (KYC/AML).
-                    </li>
-                    <li>
-                      <a
-                        href="https://polar.sh/legal/terms"
-                        className="text-blue-500 dark:text-blue-400"
-                        target="_blank"
-                      >
-                        Terms of Service
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        href="https://polar.sh/legal/privacy"
-                        className="text-blue-500 dark:text-blue-400"
-                        target="_blank"
-                      >
-                        Privacy Policy
-                      </a>
-                    </li>
-                  </ul>
                 </div>
               </div>
               {errors.root && (

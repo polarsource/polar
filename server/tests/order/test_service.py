@@ -39,7 +39,7 @@ from polar.models.organization import Organization
 from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
-from polar.models.transaction import TransactionType
+from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.order.service import (
     MissingCheckoutCustomer,
     NoPendingBillingEntries,
@@ -1205,13 +1205,42 @@ class TestCreateOrderBalance:
             Transaction(
                 type=TransactionType.balance,
                 amount=order.net_amount,
-                account_id=organization_account.id,
+                account=organization_account,
             ),
         )
+
         platform_fee_transaction_service_mock = mocker.patch(
             "polar.order.service.platform_fee_transaction_service",
             spec=PlatformFeeTransactionService,
         )
+        platform_fee_transaction_service_mock.create_fees_reversal_balances.return_value = [
+            (
+                Transaction(
+                    type=TransactionType.balance,
+                    amount=-100,
+                    platform_fee_type=PlatformFeeType.payment,
+                ),
+                Transaction(
+                    type=TransactionType.balance,
+                    amount=100,
+                    platform_fee_type=PlatformFeeType.payment,
+                    account=organization_account,
+                ),
+            ),
+            (
+                Transaction(
+                    type=TransactionType.balance,
+                    amount=-50,
+                    platform_fee_type=PlatformFeeType.payment,
+                ),
+                Transaction(
+                    type=TransactionType.balance,
+                    amount=50,
+                    platform_fee_type=PlatformFeeType.payment,
+                    account=organization_account,
+                ),
+            ),
+        ]
 
         await order_service.create_order_balance(session, order, "CHARGE_ID")
 
@@ -1234,6 +1263,7 @@ class TestCreateOrderBalance:
         )
 
         platform_fee_transaction_service_mock.create_fees_reversal_balances.assert_called_once()
+        assert order.platform_fee_amount == 150
 
         updated_payment_transaction = await payment_transaction_service.get(
             session,

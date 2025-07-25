@@ -12845,22 +12845,34 @@ export interface components {
             orders: number;
             /** Revenue */
             revenue: number;
+            /** Net Revenue */
+            net_revenue: number;
             /** Cumulative Revenue */
             cumulative_revenue: number;
+            /** Net Cumulative Revenue */
+            net_cumulative_revenue: number;
             /** Average Order Value */
             average_order_value: number;
+            /** Net Average Order Value */
+            net_average_order_value: number;
             /** One Time Products */
             one_time_products: number;
             /** One Time Products Revenue */
             one_time_products_revenue: number;
+            /** One Time Products Net Revenue */
+            one_time_products_net_revenue: number;
             /** New Subscriptions */
             new_subscriptions: number;
             /** New Subscriptions Revenue */
             new_subscriptions_revenue: number;
+            /** New Subscriptions Net Revenue */
+            new_subscriptions_net_revenue: number;
             /** Renewed Subscriptions */
             renewed_subscriptions: number;
             /** Renewed Subscriptions Revenue */
             renewed_subscriptions_revenue: number;
+            /** Renewed Subscriptions Net Revenue */
+            renewed_subscriptions_net_revenue: number;
             /** Active Subscriptions */
             active_subscriptions: number;
             /** Monthly Recurring Revenue */
@@ -12883,14 +12895,20 @@ export interface components {
         Metrics: {
             orders: components["schemas"]["Metric"];
             revenue: components["schemas"]["Metric"];
+            net_revenue: components["schemas"]["Metric"];
             cumulative_revenue: components["schemas"]["Metric"];
+            net_cumulative_revenue: components["schemas"]["Metric"];
             average_order_value: components["schemas"]["Metric"];
+            net_average_order_value: components["schemas"]["Metric"];
             one_time_products: components["schemas"]["Metric"];
             one_time_products_revenue: components["schemas"]["Metric"];
+            one_time_products_net_revenue: components["schemas"]["Metric"];
             new_subscriptions: components["schemas"]["Metric"];
             new_subscriptions_revenue: components["schemas"]["Metric"];
+            new_subscriptions_net_revenue: components["schemas"]["Metric"];
             renewed_subscriptions: components["schemas"]["Metric"];
             renewed_subscriptions_revenue: components["schemas"]["Metric"];
+            renewed_subscriptions_net_revenue: components["schemas"]["Metric"];
             active_subscriptions: components["schemas"]["Metric"];
             monthly_recurring_revenue: components["schemas"]["Metric"];
             committed_monthly_recurring_revenue: components["schemas"]["Metric"];
@@ -12960,22 +12978,34 @@ export interface components {
             orders: number;
             /** Revenue */
             revenue: number;
+            /** Net Revenue */
+            net_revenue: number;
             /** Cumulative Revenue */
             cumulative_revenue: number;
+            /** Net Cumulative Revenue */
+            net_cumulative_revenue: number;
             /** Average Order Value */
             average_order_value: number;
+            /** Net Average Order Value */
+            net_average_order_value: number;
             /** One Time Products */
             one_time_products: number;
             /** One Time Products Revenue */
             one_time_products_revenue: number;
+            /** One Time Products Net Revenue */
+            one_time_products_net_revenue: number;
             /** New Subscriptions */
             new_subscriptions: number;
             /** New Subscriptions Revenue */
             new_subscriptions_revenue: number;
+            /** New Subscriptions Net Revenue */
+            new_subscriptions_net_revenue: number;
             /** Renewed Subscriptions */
             renewed_subscriptions: number;
             /** Renewed Subscriptions Revenue */
             renewed_subscriptions_revenue: number;
+            /** Renewed Subscriptions Net Revenue */
+            renewed_subscriptions_net_revenue: number;
             /** Active Subscriptions */
             active_subscriptions: number;
             /** Monthly Recurring Revenue */

@@ -15,7 +15,17 @@ from polar.account.service import account as account_service
 from polar.enums import AccountType
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
-from polar.models import Account, Organization, Transaction, User
+from polar.models import (
+    Account,
+    Benefit,
+    Checkout,
+    Organization,
+    Product,
+    ProductBenefit,
+    Transaction,
+    User,
+    WebhookEndpoint,
+)
 from polar.organization import sorting
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
@@ -23,11 +33,15 @@ from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
 from polar.transaction.repository import PaymentTransactionRepository
 from polar.user.repository import UserRepository
+from polar.web_backoffice.components.account_review._acceptable_use import (
+    AcceptableUseVerdict,
+)
 from polar.web_backoffice.components.account_review._payment_verdict import (
     PaymentVerdict,
 )
-from polar.web_backoffice.components.account_review._acceptable_use import (
-    AcceptableUseVerdict,
+from polar.web_backoffice.components.account_review._setup_verdict import (
+    SetupVerdict,
+    check_domain_match,
 )
 
 from ..components import accordion, button, datatable, description_list, input, modal
@@ -174,6 +188,78 @@ async def get_payment_statistics(
     }
 
 
+async def get_setup_verdict(
+    organization: Organization, session: AsyncSession
+) -> SetupVerdict:
+    """Get setup verdict for an organization."""
+    # Check domain validation - do checkout success URLs match organization domain?
+    domain_match_result = await session.execute(
+        select(func.count(Checkout.id))
+        .join(Product, Checkout.product_id == Product.id)
+        .where(
+            Product.organization_id == organization.id,
+            Checkout._success_url.is_not(None),
+        )
+    )
+    success_urls_count = domain_match_result.scalar() or 0
+
+    # For those with success URLs, check domain matches
+    if success_urls_count > 0:
+        domain_match_query = await session.execute(
+            select(Checkout._success_url)
+            .join(Product, Checkout.product_id == Product.id)
+            .where(
+                Product.organization_id == organization.id,
+                Checkout._success_url.is_not(None),
+            )
+        )
+        success_urls = [row[0] for row in domain_match_query.fetchall() if row[0]]
+        # Get organization domain - check if organization has a domain attribute
+        org_domain = (
+            getattr(organization, "domain", None) or f"{organization.slug}.polar.sh"
+        )
+        domain_matches = check_domain_match(org_domain, success_urls)
+    else:
+        domain_matches = False
+
+    # Check benefits configuration
+    benefits_result = await session.execute(
+        select(func.count(Benefit.id))
+        .join(ProductBenefit, Benefit.id == ProductBenefit.benefit_id)
+        .join(Product, ProductBenefit.product_id == Product.id)
+        .where(Product.organization_id == organization.id)
+    )
+    benefits_count = benefits_result.scalar() or 0
+
+    # Check webhook endpoints
+    webhook_result = await session.execute(
+        select(func.count(WebhookEndpoint.id)).where(
+            WebhookEndpoint.organization_id == organization.id
+        )
+    )
+    webhook_count = webhook_result.scalar() or 0
+
+    # Calculate setup score (0-3 scale)
+    setup_score = sum(
+        [
+            1 if domain_matches else 0,
+            1 if benefits_count > 0 else 0,
+            1 if webhook_count > 0 else 0,
+        ]
+    )
+
+    return SetupVerdict(
+        {
+            "domain_validation": domain_matches,
+            "benefits_configured": benefits_count > 0,
+            "webhooks_configured": webhook_count > 0,
+            "setup_score": setup_score,
+            "benefits_count": benefits_count,
+            "webhook_count": webhook_count,
+        }
+    )
+
+
 async def get_acceptable_use_verdict(
     session: AsyncSession, organization_id: UUID4
 ) -> dict[str, Any]:
@@ -184,7 +270,7 @@ async def get_acceptable_use_verdict(
         "verdict": "UNCERTAIN",
         "risk_score": 45.5,
         "violated_sections": ["Content Policy", "Payment Processing"],
-        "reason": "Organization requires manual review due to unclear business model description and potential high-risk payment patterns."
+        "reason": "Organization requires manual review due to unclear business model description and potential high-risk payment patterns.",
     }
 
 
@@ -628,6 +714,9 @@ async def account_review(
     acceptable_use_data = await get_acceptable_use_verdict(session, organization.id)
     acceptable_use_verdict = AcceptableUseVerdict(acceptable_use_data)
 
+    # Get setup verdict
+    setup_verdict = await get_setup_verdict(organization, session)
+
     account = organization.account
 
     with layout(
@@ -713,37 +802,15 @@ async def account_review(
                             with tag.p():
                                 text("No account found")
 
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+            with tag.div(classes="grid grid-cols-1 lg:grid-cols-3 gap-4"):
                 with tag.div(classes="card card-border w-full shadow-sm"):
-                    with payment_verdict.render():
+                    with acceptable_use_verdict.render():
                         pass
 
                 with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Quick Actions")
-                        with tag.div(classes="flex flex-col gap-2"):
-                            with tag.a(
-                                href=str(
-                                    request.url_for(
-                                        "organizations:get", id=organization.id
-                                    )
-                                ),
-                                classes="btn btn-primary",
-                            ):
-                                text("View Full Organization Details")
-                            if account:
-                                with tag.a(
-                                    href=f"https://dashboard.stripe.com/connect/accounts/{account.stripe_id}"
-                                    if account.stripe_id
-                                    else "#",
-                                    classes="btn btn-secondary",
-                                    target="_blank",
-                                    rel="noopener noreferrer",
-                                ):
-                                    text("View in Stripe")
+                    with setup_verdict.render():
+                        pass
 
-            with tag.div(classes="grid grid-cols-1 gap-4"):
                 with tag.div(classes="card card-border w-full shadow-sm"):
-                    with acceptable_use_verdict.render():
+                    with payment_verdict.render():
                         pass

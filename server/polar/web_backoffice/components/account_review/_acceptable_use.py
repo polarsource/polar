@@ -43,11 +43,11 @@ class AcceptableUseVerdict:
     def assessment_text(self) -> str:
         """Get detailed compliance assessment text."""
         base_text = f"Compliance assessment shows {self.risk_level_text.lower()} (score: {self.risk_score:.1f}/100). {self.reason}"
-        
+
         if self.violated_sections:
             sections_text = ", ".join(self.violated_sections)
             base_text += f" Violated sections: {sections_text}."
-        
+
         return base_text
 
     @contextlib.contextmanager
@@ -58,9 +58,7 @@ class AcceptableUseVerdict:
                 classes=f"px-2 py-1 rounded text-xs font-medium {self.verdict_classes}"
             ):
                 text(self.verdict_text)
-            
-            with tag.span(classes="text-sm text-gray-600"):
-                text(f"Risk Score: {self.risk_score:.1f}/100")
+
             yield
 
     @contextlib.contextmanager

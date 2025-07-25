@@ -12823,6 +12823,8 @@ export interface components {
             active_subscriptions: number;
             /** Monthly Recurring Revenue */
             monthly_recurring_revenue: number;
+            /** Committed Monthly Recurring Revenue */
+            committed_monthly_recurring_revenue: number;
             /** Checkouts */
             checkouts: number;
             /** Succeeded Checkouts */
@@ -12849,6 +12851,7 @@ export interface components {
             renewed_subscriptions_revenue: components["schemas"]["Metric"];
             active_subscriptions: components["schemas"]["Metric"];
             monthly_recurring_revenue: components["schemas"]["Metric"];
+            committed_monthly_recurring_revenue: components["schemas"]["Metric"];
             checkouts: components["schemas"]["Metric"];
             succeeded_checkouts: components["schemas"]["Metric"];
             checkouts_conversion: components["schemas"]["Metric"];
@@ -12935,6 +12938,8 @@ export interface components {
             active_subscriptions: number;
             /** Monthly Recurring Revenue */
             monthly_recurring_revenue: number;
+            /** Committed Monthly Recurring Revenue */
+            committed_monthly_recurring_revenue: number;
             /** Checkouts */
             checkouts: number;
             /** Succeeded Checkouts */
@@ -13557,7 +13562,7 @@ export interface components {
          * OrderSortProperty
          * @enum {string}
          */
-        OrderSortProperty: "created_at" | "-created_at" | "amount" | "-amount" | "net_amount" | "-net_amount" | "customer" | "-customer" | "product" | "-product" | "discount" | "-discount" | "subscription" | "-subscription";
+        OrderSortProperty: "created_at" | "-created_at" | "status" | "-status" | "invoice_number" | "-invoice_number" | "amount" | "-amount" | "net_amount" | "-net_amount" | "customer" | "-customer" | "product" | "-product" | "discount" | "-discount" | "subscription" | "-subscription";
         /**
          * OrderStatus
          * @enum {string}
@@ -25356,7 +25361,7 @@ export const oAuth2ClientConfigurationUpdateToken_endpoint_auth_methodValues: Re
 export const oAuth2ClientConfigurationUpdateGrant_typesValues: ReadonlyArray<components["schemas"]["OAuth2ClientConfigurationUpdate"]["grant_types"]> = ["authorization_code", "refresh_token"];
 export const oAuthPlatformValues: ReadonlyArray<components["schemas"]["OAuthPlatform"]> = ["github", "github_repository_benefit", "google"];
 export const orderBillingReasonValues: ReadonlyArray<components["schemas"]["OrderBillingReason"]> = ["purchase", "subscription_create", "subscription_cycle", "subscription_update"];
-export const orderSortPropertyValues: ReadonlyArray<components["schemas"]["OrderSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "net_amount", "-net_amount", "customer", "-customer", "product", "-product", "discount", "-discount", "subscription", "-subscription"];
+export const orderSortPropertyValues: ReadonlyArray<components["schemas"]["OrderSortProperty"]> = ["created_at", "-created_at", "status", "-status", "invoice_number", "-invoice_number", "amount", "-amount", "net_amount", "-net_amount", "customer", "-customer", "product", "-product", "discount", "-discount", "subscription", "-subscription"];
 export const orderStatusValues: ReadonlyArray<components["schemas"]["OrderStatus"]> = ["pending", "paid", "refunded", "partially_refunded"];
 export const organizationAccessTokenSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationAccessTokenSortProperty"]> = ["created_at", "-created_at", "comment", "-comment", "last_used_at", "-last_used_at", "organization_id", "-organization_id"];
 export const organizationAvatarFileCreateServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileCreate"]["service"]> = ["organization_avatar"];

@@ -276,8 +276,6 @@ export const FieldScopes = () => {
         values = sortedAvailableScopes
       }
 
-      console.log({ values, allSelected })
-
       setValue('scope', values)
     },
     [setValue, allSelected, sortedAvailableScopes],

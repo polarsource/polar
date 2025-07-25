@@ -2,7 +2,6 @@ from fastapi import Depends, Request
 from fastapi.exceptions import HTTPException
 
 from polar.auth.service import auth as auth_service
-from polar.config import Environment, settings
 from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_session
 
@@ -17,10 +16,6 @@ async def get_admin(
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     user = user_session.user
-
-    if settings.ENV == Environment.development and user.email == "admin@polar.sh":
-        # On localhost allow "admin@polar.sh"
-        return user_session
 
     if not user.is_admin:
         raise HTTPException(status_code=403, detail="Forbidden")

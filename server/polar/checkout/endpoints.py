@@ -193,7 +193,7 @@ async def client_get(
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """Get a checkout session by client secret."""
-    return await checkout_service.get_by_client_secret(session, client_secret)
+    return await checkout_service.get_or_recreate_by_client_secret(session, client_secret)
 
 
 @inner_router.post(
@@ -236,8 +236,18 @@ async def client_update(
     locker: Locker = Depends(get_locker),
 ) -> Checkout:
     """Update a checkout session by client secret."""
-    checkout = await checkout_service.get_by_client_secret(session, client_secret)
+    checkout = await checkout_service.get_or_recreate_by_client_secret(session, client_secret)
 
+    # If we got a new checkout (different client_secret), we need to handle it specially
+    if checkout.client_secret != client_secret:
+        # For a new checkout, we can apply the update immediately without going through the full update flow
+        # since it's a fresh session
+        checkout = await checkout_service.update(
+            session, locker, checkout, checkout_update, ip_geolocation_client
+        )
+        # The frontend should detect the new client_secret and redirect
+        return checkout
+    
     return await checkout_service.update(
         session, locker, checkout, checkout_update, ip_geolocation_client
     )
@@ -267,7 +277,14 @@ async def client_confirm(
 
     Orders and subscriptions will be processed.
     """
-    checkout = await checkout_service.get_by_client_secret(session, client_secret)
+    checkout = await checkout_service.get_or_recreate_by_client_secret(session, client_secret)
+
+    # If we got a new checkout (different client_secret), the frontend should handle the redirect
+    # We cannot complete the confirmation with a new session immediately as it may need
+    # additional customer input/validation
+    if checkout.client_secret != client_secret:
+        # Return the new checkout so frontend can redirect to the new session
+        return checkout
 
     return await checkout_service.confirm(
         session, locker, auth_subject, checkout, checkout_confirm

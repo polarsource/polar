@@ -29,6 +29,7 @@ from polar.organization.service import organization as organization_service
 from polar.product.schemas import ProductCreate, ProductPriceFixedCreate
 from polar.product.service import product as product_service
 from polar.redis import Redis, create_redis
+from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.worker import JobQueueManager
 
@@ -42,6 +43,7 @@ class OrganizationDict(TypedDict):
     website: str
     bio: str
     products: NotRequired[list["ProductDict"]]
+    is_admin: NotRequired[bool]
 
 
 class ProductDict(TypedDict):
@@ -294,6 +296,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "email": "admin@polar.sh",
             "website": "https://polar.sh",
             "bio": "The admin organization of Polar",
+            "is_admin": True,
         },
     ]
 
@@ -339,6 +342,10 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         user = await user_service.create_by_email(
             session=session,
             email=org_data["email"],
+        )
+        user_repository = UserRepository.from_session(session)
+        await user_repository.update(
+            user, update_dict={"is_admin": org_data.get("is_admin", False)}
         )
 
         auth_subject = AuthSubject(subject=user, scopes=set(), session=None)

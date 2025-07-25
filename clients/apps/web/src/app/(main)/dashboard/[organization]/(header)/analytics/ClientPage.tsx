@@ -100,6 +100,7 @@ export default function ClientPage({
   const generalEvents: (keyof schemas['Metrics'])[] = [
     'revenue',
     'monthly_recurring_revenue',
+    'committed_monthly_recurring_revenue',
     'orders',
     'average_order_value',
     'cumulative_revenue',

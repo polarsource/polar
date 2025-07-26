@@ -1545,6 +1545,7 @@ class TestMarkPastDue:
     @freeze_time("2024-01-01 12:00:00")
     async def test_mark_past_due(
         self,
+        mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription: Subscription,
@@ -1553,6 +1554,19 @@ class TestMarkPastDue:
         # Given
         subscription.status = SubscriptionStatus.active
         await save_fixture(subscription)
+
+        # Mock the Stripe calls in send_past_due_email
+        stripe_subscription_mock = mocker.patch(
+            "polar.subscription.service.stripe_lib.Subscription.retrieve_async"
+        )
+        stripe_subscription_mock.return_value = mocker.MagicMock(latest_invoice=None)
+
+        invoice_mock = mocker.patch(
+            "polar.subscription.service.stripe_service.get_invoice"
+        )
+        invoice_mock.return_value = mocker.MagicMock(hosted_invoice_url=None)
+
+        mocker.patch("polar.subscription.service.enqueue_email")
 
         # When
         result_subscription = await subscription_service.mark_past_due(
@@ -1582,6 +1596,19 @@ class TestMarkPastDue:
         subscription.status = SubscriptionStatus.active
         await save_fixture(subscription)
 
+        # Mock the Stripe calls in send_past_due_email
+        stripe_subscription_mock = mocker.patch(
+            "polar.subscription.service.stripe_lib.Subscription.retrieve_async"
+        )
+        stripe_subscription_mock.return_value = mocker.MagicMock(latest_invoice=None)
+
+        invoice_mock = mocker.patch(
+            "polar.subscription.service.stripe_service.get_invoice"
+        )
+        invoice_mock.return_value = mocker.MagicMock(hosted_invoice_url=None)
+
+        mocker.patch("polar.subscription.service.enqueue_email")
+
         send_past_due_email_mock = mocker.patch.object(
             subscription_service, "send_past_due_email"
         )
@@ -1603,10 +1630,30 @@ class TestMarkPastDue:
         save_fixture: SaveFixture,
         subscription: Subscription,
         enqueue_job_mock: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         # Given
         subscription.status = SubscriptionStatus.past_due
         await save_fixture(subscription)
+
+        # Mock the Stripe calls in send_past_due_email
+        stripe_subscription_mock = mocker.patch(
+            "polar.subscription.service.stripe_lib.Subscription.retrieve_async"
+        )
+        stripe_subscription_mock.return_value = mocker.MagicMock(latest_invoice=None)
+
+        invoice_mock = mocker.patch(
+            "polar.subscription.service.stripe_service.get_invoice"
+        )
+        invoice_mock.return_value = mocker.MagicMock(hosted_invoice_url=None)
+
+        mocker.patch("polar.subscription.service.enqueue_email")
+
+        # Mock Stripe service to return a proper subscription
+        canceled_subscription = cloned_stripe_canceled_subscription(
+            subscription, revoke=True
+        )
+        stripe_service_mock.cancel_subscription.return_value = canceled_subscription
 
         send_cancellation_email_mock = mocker.patch.object(
             subscription_service, "send_cancellation_email"
@@ -1628,10 +1675,30 @@ class TestMarkPastDue:
         save_fixture: SaveFixture,
         subscription: Subscription,
         enqueue_job_mock: MagicMock,
+        stripe_service_mock: MagicMock,
     ) -> None:
         # Given
         subscription.status = SubscriptionStatus.active
         await save_fixture(subscription)
+
+        # Mock the Stripe calls in send_past_due_email
+        stripe_subscription_mock = mocker.patch(
+            "polar.subscription.service.stripe_lib.Subscription.retrieve_async"
+        )
+        stripe_subscription_mock.return_value = mocker.MagicMock(latest_invoice=None)
+
+        invoice_mock = mocker.patch(
+            "polar.subscription.service.stripe_service.get_invoice"
+        )
+        invoice_mock.return_value = mocker.MagicMock(hosted_invoice_url=None)
+
+        mocker.patch("polar.subscription.service.enqueue_email")
+
+        # Mock Stripe service to return a proper subscription
+        canceled_subscription = cloned_stripe_canceled_subscription(
+            subscription, revoke=True
+        )
+        stripe_service_mock.cancel_subscription.return_value = canceled_subscription
 
         send_cancellation_email_mock = mocker.patch.object(
             subscription_service, "send_cancellation_email"

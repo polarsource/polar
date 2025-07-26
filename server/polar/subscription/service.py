@@ -1159,7 +1159,7 @@ class SubscriptionService:
             previous_status
         )
 
-        if cancellation_changed:
+        if cancellation_changed and not became_past_due:
             await self._on_subscription_canceled(
                 session,
                 subscription,

@@ -89,7 +89,7 @@ def test_generator(overrides: dict[str, Any], id: str, invoice: Invoice) -> None
     path = Path(__file__).parent / f"test_invoice_{id}.pdf"
     path.unlink(missing_ok=True)
 
-    generator = InvoiceGenerator(invoice.copy(update=overrides))
+    generator = InvoiceGenerator(invoice.model_copy(update=overrides))
     generator.generate()
     generator.output(str(path))
 

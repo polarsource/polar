@@ -18,7 +18,7 @@ from polar.config import settings
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
-from polar.email.react import render_email_template
+from polar.email.react import JSONProperty, render_email_template
 from polar.email.sender import enqueue_email
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.service import event as event_service
@@ -1378,35 +1378,6 @@ class SubscriptionService:
             subject_template="Your {product.name} subscription payment is past due",
             template_name="subscription_past_due",
             extra_context=extra_context if extra_context else None,
-        )
-
-    async def send_past_due_email(
-        self, session: AsyncSession, subscription: Subscription
-    ) -> None:
-        """Send past due email to customer with optional payment link."""
-        payment_url = None
-
-        # Try to get payment link from Stripe if available
-        if subscription.stripe_subscription_id:
-            try:
-                stripe_subscription = await stripe_lib.Subscription.retrieve_async(
-                    subscription.stripe_subscription_id
-                )
-                if stripe_subscription.latest_invoice:
-                    invoice_id = get_expandable_id(stripe_subscription.latest_invoice)
-                    invoice = await stripe_service.get_invoice(invoice_id)
-                    if invoice.hosted_invoice_url:
-                        payment_url = invoice.hosted_invoice_url
-            except Exception:
-                # If we can't get the payment link, continue without it
-                pass
-
-        return await self._send_customer_email(
-            session,
-            subscription,
-            subject_template="Your {{ product.name }} subscription payment is past due",
-            template_path="subscription/past_due.html",
-            extra_context={"payment_url": payment_url},
         )
 
     async def _send_customer_email(

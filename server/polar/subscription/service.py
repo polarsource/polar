@@ -1380,7 +1380,6 @@ class SubscriptionService:
             extra_context=extra_context if extra_context else None,
         )
 
-
     async def _send_customer_email(
         self,
         session: AsyncSession,
@@ -1388,6 +1387,7 @@ class SubscriptionService:
         *,
         subject_template: str,
         template_name: str,
+        extra_context: dict[str, JSONProperty] | None = None,
     ) -> None:
         product = subscription.product
         organization_repository = OrganizationRepository.from_session(session)
@@ -1406,31 +1406,34 @@ class SubscriptionService:
             session, customer
         )
 
-        body = render_email_template(
-            template_name,
-            {
-                "organization": {
-                    "name": featured_organization.name,
-                    "slug": featured_organization.slug,
-                },
-                "product": {
-                    "name": product.name or "",
-                    "benefits": [
-                        {"description": benefit.description or ""}
-                        for benefit in product.benefits
-                    ],
-                },
-                "subscription": {
-                    "ends_at": subscription.ends_at.isoformat()
-                    if subscription.ends_at
-                    else "",
-                },
-                "url": settings.generate_frontend_url(
-                    f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
-                ),
-                "current_year": datetime.now().year,
+        context = {
+            "organization": {
+                "name": featured_organization.name,
+                "slug": featured_organization.slug,
             },
-        )
+            "product": {
+                "name": product.name or "",
+                "benefits": [
+                    {"description": benefit.description or ""}
+                    for benefit in product.benefits
+                ],
+            },
+            "subscription": {
+                "ends_at": subscription.ends_at.isoformat()
+                if subscription.ends_at
+                else "",
+            },
+            "url": settings.generate_frontend_url(
+                f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
+            ),
+            "current_year": datetime.now().year,
+        }
+
+        # Add extra context if provided
+        if extra_context:
+            context.update(extra_context)
+
+        body = render_email_template(template_name, context)  # type: ignore
 
         subject = subject_template.format(product=product)
 

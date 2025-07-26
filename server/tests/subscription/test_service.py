@@ -1569,7 +1569,7 @@ class TestMarkPastDue:
             subscription_id=subscription.id,
         )
 
-        @freeze_time("2024-01-01 12:00:00")
+    @freeze_time("2024-01-01 12:00:00")
     async def test_mark_past_due_sends_email(
         self,
         mocker: MockerFixture,
@@ -1643,4 +1643,6 @@ class TestMarkPastDue:
         # Then
         assert result_subscription.status == SubscriptionStatus.canceled
         # Should send cancellation email since it was previously active
-        send_cancellation_email_mock.assert_called_once_with(session, result_subscription)
+        send_cancellation_email_mock.assert_called_once_with(
+            session, result_subscription
+        )

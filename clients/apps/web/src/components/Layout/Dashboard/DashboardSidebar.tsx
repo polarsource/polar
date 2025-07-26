@@ -22,6 +22,12 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@polar-sh/ui/components/ui/tooltip'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
 import Link from 'next/link'
@@ -70,8 +76,17 @@ export const DashboardSidebar = ({
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
         >
-          <NotificationsPopover />
-          <SidebarTrigger />
+          <NotificationsPopover isCollapsed={isCollapsed} />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <SidebarTrigger />
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </motion.div>
       </SidebarHeader>
 

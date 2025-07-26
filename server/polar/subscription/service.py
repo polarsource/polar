@@ -1144,6 +1144,13 @@ class SubscriptionService:
         if became_activated:
             await self._on_subscription_activated(session, subscription)
 
+        became_past_due = (
+            subscription.status == SubscriptionStatus.past_due
+            and previous_status != SubscriptionStatus.past_due
+        )
+        if became_past_due:
+            await self._on_subscription_past_due(session, subscription)
+
         is_canceled = subscription.ends_at and subscription.canceled_at
         updated_ends_at = subscription.ends_at != previous_ends_at
 
@@ -1154,7 +1161,10 @@ class SubscriptionService:
 
         if cancellation_changed:
             await self._on_subscription_canceled(
-                session, subscription, revoked=became_revoked
+                session,
+                subscription,
+                revoked=became_revoked,
+                previous_status=previous_status,
             )
 
         became_uncanceled = previous_ends_at and not is_canceled
@@ -1191,6 +1201,16 @@ class SubscriptionService:
         await self.send_confirmation_email(session, subscription)
         await self._send_new_subscription_notification(session, subscription)
 
+    async def _on_subscription_past_due(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        await self._send_webhook(
+            session, subscription, WebhookEventType.subscription_updated
+        )
+        await self.send_past_due_email(session, subscription)
+
     async def _on_subscription_uncanceled(
         self,
         session: AsyncSession,
@@ -1206,6 +1226,7 @@ class SubscriptionService:
         session: AsyncSession,
         subscription: Subscription,
         revoked: bool = False,
+        previous_status: SubscriptionStatus | None = None,
     ) -> None:
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_canceled
@@ -1213,7 +1234,9 @@ class SubscriptionService:
 
         # Revokation both cancels & revokes simultaneously.
         # Send webhook for both, but avoid duplicate email to customers.
-        if revoked:
+        # Don't send cancellation email if subscription was previously past due
+        # (customer already received past due email)
+        if revoked and previous_status != SubscriptionStatus.past_due:
             await self.send_cancellation_email(session, subscription)
 
     async def _on_subscription_revoked(

@@ -1517,6 +1517,28 @@ async def test_send_confirmation_email(
 
 
 @pytest.mark.asyncio
+@pytest.mark.email_subscription_past_due
+async def test_send_past_due_email(
+    mocker: MockerFixture,
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    product: Product,
+    customer: Customer,
+) -> None:
+    with WatcherEmailRenderer() as email_sender:
+        mocker.patch("polar.subscription.service.enqueue_email", email_sender)
+
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async def _send_past_due_email() -> None:
+            await subscription_service.send_past_due_email(session, subscription)
+
+        await watch_email(_send_past_due_email, email_sender.path)
+
+
+@pytest.mark.asyncio
 class TestMarkPastDue:
     """Test subscription service dunning functionality"""
 
@@ -1546,3 +1568,79 @@ class TestMarkPastDue:
             product_id=subscription.product.id,
             subscription_id=subscription.id,
         )
+
+        @freeze_time("2024-01-01 12:00:00")
+    async def test_mark_past_due_sends_email(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        # Given
+        subscription.status = SubscriptionStatus.active
+        await save_fixture(subscription)
+
+        send_past_due_email_mock = mocker.patch.object(
+            subscription_service, "send_past_due_email"
+        )
+
+        # When
+        result_subscription = await subscription_service.mark_past_due(
+            session, subscription
+        )
+
+        # Then
+        assert result_subscription.status == SubscriptionStatus.past_due
+        send_past_due_email_mock.assert_called_once_with(session, subscription)
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_cancel_past_due_subscription_no_cancellation_email(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        # Given
+        subscription.status = SubscriptionStatus.past_due
+        await save_fixture(subscription)
+
+        send_cancellation_email_mock = mocker.patch.object(
+            subscription_service, "send_cancellation_email"
+        )
+
+        # When
+        result_subscription = await subscription_service.cancel(session, subscription)
+
+        # Then
+        assert result_subscription.status == SubscriptionStatus.canceled
+        # Should not send cancellation email since it was previously past due
+        send_cancellation_email_mock.assert_not_called()
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_cancel_active_subscription_sends_cancellation_email(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        # Given
+        subscription.status = SubscriptionStatus.active
+        await save_fixture(subscription)
+
+        send_cancellation_email_mock = mocker.patch.object(
+            subscription_service, "send_cancellation_email"
+        )
+
+        # When
+        result_subscription = await subscription_service.cancel(session, subscription)
+
+        # Then
+        assert result_subscription.status == SubscriptionStatus.canceled
+        # Should send cancellation email since it was previously active
+        send_cancellation_email_mock.assert_called_once_with(session, result_subscription)

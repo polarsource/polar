@@ -41,6 +41,13 @@ class MeterUpdate(Schema, MetadataInputMixin):
     name: str | None = Field(None, description=NAME_DESCRIPTION, min_length=3)
     filter: Filter | None = Field(None, description=_filter_description)
     aggregation: Aggregation | None = Field(None, description=_aggregation_description)
+    is_archived: bool | None = Field(
+        None,
+        description=(
+            "Whether the meter is archived. "
+            "Archived meters are no longer used for billing."
+        ),
+    )
 
 
 class Meter(IDSchema, TimestampedSchema, MetadataOutputMixin):
@@ -49,6 +56,9 @@ class Meter(IDSchema, TimestampedSchema, MetadataOutputMixin):
     aggregation: Aggregation = Field(..., description=_aggregation_description)
     organization_id: UUID4 = Field(
         ..., description="The ID of the organization owning the meter."
+    )
+    archived_at: datetime | None = Field(
+        None, description="Whether the meter is archived and the time it was archived."
     )
 
 

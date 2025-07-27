@@ -17,6 +17,7 @@ import { SubscriptionCancellation } from './subscription_cancellation'
 import { SubscriptionConfirmation } from './subscription_confirmation'
 import { SubscriptionRevoked } from './subscription_revoked'
 import { SubscriptionUncanceled } from './subscription_uncanceled'
+import { SubscriptionUpdated } from './subscription_updated'
 
 const TEMPLATES: Record<string, React.FC<any>> = {
   magic_link: MagicLink,
@@ -33,6 +34,7 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   subscription_confirmation: SubscriptionConfirmation,
   subscription_revoked: SubscriptionRevoked,
   subscription_uncanceled: SubscriptionUncanceled,
+  subscription_updated: SubscriptionUpdated,
   notification_account_under_review: NotificationAccountUnderReview,
   notification_account_reviewed: NotificationAccountReviewed,
   notification_new_sale: NotificationNewSale,

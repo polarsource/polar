@@ -1,6 +1,8 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { Modal } from '@/components/Modal'
+import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
 import {
   useInviteOrganizationMember,
@@ -27,7 +29,11 @@ export default function ClientPage({
   const { data: members, isLoading } = useListOrganizationMembers(
     organization.id,
   )
-  const [showInviteDialog, setShowInviteDialog] = useState(false)
+  const {
+    show: openInviteMemberModal,
+    hide: hideInviteMemberModal,
+    isShown: isInviteMemberModalShown,
+  } = useModal()
 
   const columns: DataTableColumnDef<schemas['OrganizationMember']>[] = [
     {
@@ -59,35 +65,46 @@ export default function ClientPage({
   ]
 
   return (
-    <DashboardBody wide>
-      <div className="flex items-center justify-between">
-        <div>Manage users who have access to this organization</div>
-        <Button onClick={() => setShowInviteDialog(true)} variant="default">
-          <Add fontSize="small" /> Invite User
+    <DashboardBody
+      wrapperClassName="!max-w-screen-sm"
+      className="flex flex-col gap-y-8"
+      header={
+        <Button onClick={openInviteMemberModal} variant="default">
+          <Add className="mr-2" fontSize="small" />
+          <span>Invite</span>
         </Button>
-      </div>
+      }
+    >
+      <p className="dark:text-polar-500 text-gray-500">
+        Manage users who have access to this organization. All members are
+        entitled to view and manage organization settings, products,
+        subscriptions, etc.
+      </p>
 
-      <div className="mt-8">
-        {members && (
-          <DataTable
-            columns={columns}
-            data={members.items}
-            isLoading={isLoading}
-          />
-        )}
-      </div>
-
-      {showInviteDialog && (
-        <InviteDialog
-          organizationId={organization.id}
-          onClose={() => setShowInviteDialog(false)}
+      {members && (
+        <DataTable
+          columns={columns}
+          data={members.items}
+          isLoading={isLoading}
         />
       )}
+
+      <Modal
+        className="!max-w-screen-sm"
+        modalContent={
+          <InviteMemberModal
+            organizationId={organization.id}
+            onClose={hideInviteMemberModal}
+          />
+        }
+        isShown={isInviteMemberModalShown}
+        hide={hideInviteMemberModal}
+      />
     </DashboardBody>
   )
 }
 
-function InviteDialog({
+function InviteMemberModal({
   organizationId,
   onClose,
 }: {
@@ -129,29 +146,26 @@ function InviteDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 dark:bg-gray-900">
-        <h3 className="mb-4 text-lg font-medium">Invite User</h3>
-        <Input
-          type="email"
-          placeholder="Enter email address"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoFocus
-          className="mb-4"
-        />
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleInvite}
-            disabled={!email || inviteMember.isPending}
-            loading={inviteMember.isPending}
-          >
-            Send Invite
-          </Button>
-        </div>
+    <div className="flex w-full flex-col gap-y-6 p-8">
+      <h3 className="text-lg font-medium">Invite User</h3>
+      <Input
+        type="email"
+        placeholder="Enter email address"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        autoFocus
+      />
+      <div className="flex gap-2">
+        <Button
+          onClick={handleInvite}
+          disabled={!email || inviteMember.isPending}
+          loading={inviteMember.isPending}
+        >
+          Send Invite
+        </Button>
+        <Button variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
       </div>
     </div>
   )

@@ -32,6 +32,20 @@ run()
 
 [Read more](https://github.com/polarsource/polar-js)
 
+<Note>
+**camelCase vs. snake_case**
+
+Our API (and docs) is designed with `snake_case`. However, our TS SDK currently
+converts this to camelCase to follow JS/TS convention. You should automatically
+see the camelCase parameters suggested in modern IDEs due to typing, but it's
+worth keeping in mind switching between code & docs.
+
+We aim to introduce the ability to toggle this in the future, i.e using
+`snake_case` even in TypeScript to more easily map it to our documentation and
+design of the API itself.
+</Note>
+
+
 ### Framework Adapters
 
 Implement Checkout & Webhook handlers in 5 lines of code.

@@ -3,6 +3,8 @@ import uuid
 from collections.abc import Generator
 from typing import Annotated, Any
 
+import structlog
+
 from babel.numbers import format_currency
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
@@ -31,6 +33,8 @@ from .forms import (
     UnderReviewAccountForm,
     UpdateOrganizationForm,
 )
+
+log = structlog.get_logger()
 
 router = APIRouter()
 
@@ -318,21 +322,75 @@ async def get(
     if request.method == "POST":
         # This part handles the "Approve" action
         # It's a POST to the current page URL, not the status update URL
+        log.info(
+            "Processing organization review action from web backoffice",
+            organization_id=organization.id,
+            organization_name=organization.name,
+            current_status=organization.status.value,
+            request_method=request.method,
+        )
+        
         data = await request.form()
         try:
             account_status = AccountStatusFormAdapter.validate_python(data)
+            
+            log.info(
+                "Organization review action validated",
+                organization_id=organization.id,
+                organization_name=organization.name,
+                action=account_status.action,
+                next_review_threshold=getattr(account_status, 'next_review_threshold', None),
+            )
+            
             if account_status.action == "approve":
+                log.info(
+                    "Web backoffice: Approving organization review",
+                    organization_id=organization.id,
+                    organization_name=organization.name,
+                    next_review_threshold=account_status.next_review_threshold,
+                )
                 await organization_service.confirm_organization_reviewed(
                     session, organization, account_status.next_review_threshold
                 )
+                log.info(
+                    "Web backoffice: Organization review approved successfully",
+                    organization_id=organization.id,
+                    organization_name=organization.name,
+                )
             elif account_status.action == "deny":
+                log.warning(
+                    "Web backoffice: Denying organization",
+                    organization_id=organization.id,
+                    organization_name=organization.name,
+                )
                 await organization_service.deny_organization(session, organization)
+                log.info(
+                    "Web backoffice: Organization denied successfully",
+                    organization_id=organization.id,
+                    organization_name=organization.name,
+                )
             elif account_status.action == "under_review":
+                log.info(
+                    "Web backoffice: Setting organization under review",
+                    organization_id=organization.id,
+                    organization_name=organization.name,
+                )
                 await organization_service.set_organization_under_review(
                     session, organization
                 )
+                log.info(
+                    "Web backoffice: Organization set under review successfully",
+                    organization_id=organization.id,
+                    organization_name=organization.name,
+                )
             return HXRedirectResponse(request, request.url, 303)
         except ValidationError as e:
+            log.error(
+                "Web backoffice: Validation error in organization review action",
+                organization_id=organization.id,
+                organization_name=organization.name,
+                error=str(e),
+            )
             validation_error = e
 
     with layout(

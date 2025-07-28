@@ -14,7 +14,7 @@ from polar.integrations.loops.service import loops as loops_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import Account, Organization, User, UserOrganization
+from polar.models import Organization, User, UserOrganization
 from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
@@ -301,11 +301,28 @@ class OrganizationService:
     async def check_review_threshold(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
+        log.info(
+            "Checking organization review threshold",
+            organization_id=organization.id,
+            organization_name=organization.name,
+            current_status=organization.status.value,
+        )
+
         if organization.is_under_review():
+            log.info(
+                "Organization already under review, skipping threshold check",
+                organization_id=organization.id,
+                organization_name=organization.name,
+            )
             return organization
 
         account = organization.account
         if account is None:
+            log.info(
+                "Organization has no account, skipping review threshold check",
+                organization_id=organization.id,
+                organization_name=organization.name,
+            )
             return organization
 
         transfers_sum = await transaction_service.get_transactions_sum(
@@ -315,10 +332,33 @@ class OrganizationService:
             account.next_review_threshold is not None
             and transfers_sum >= account.next_review_threshold
         ):
+            log.warning(
+                "Organization review threshold exceeded, setting under review",
+                organization_id=organization.id,
+                organization_name=organization.name,
+                account_id=account.id,
+                transfers_sum=transfers_sum,
+                threshold=account.next_review_threshold,
+            )
+
             organization.status = Organization.Status.UNDER_REVIEW
             session.add(organization)
 
             enqueue_job("organization.under_review", organization_id=organization.id)
+
+            log.info(
+                "Organization set under review and task enqueued",
+                organization_id=organization.id,
+                organization_name=organization.name,
+            )
+        else:
+            log.debug(
+                "Organization review threshold not exceeded",
+                organization_id=organization.id,
+                organization_name=organization.name,
+                transfers_sum=transfers_sum,
+                threshold=account.next_review_threshold,
+            )
 
         return organization
 
@@ -328,31 +368,90 @@ class OrganizationService:
         organization: Organization,
         next_review_threshold: int,
     ) -> Organization:
+        log.info(
+            "Confirming organization review - marking as active",
+            organization_id=organization.id,
+            organization_name=organization.name,
+            previous_status=organization.status.value,
+            next_review_threshold=next_review_threshold,
+        )
+
         organization.status = Organization.Status.ACTIVE
 
         # Update the account's next review threshold
         if organization.account:
+            log.info(
+                "Updating account next review threshold",
+                organization_id=organization.id,
+                account_id=organization.account.id,
+                old_threshold=organization.account.next_review_threshold,
+                new_threshold=next_review_threshold,
+            )
             organization.account.next_review_threshold = next_review_threshold
             session.add(organization.account)
+        else:
+            log.warning(
+                "Organization has no account when confirming review",
+                organization_id=organization.id,
+                organization_name=organization.name,
+            )
 
         session.add(organization)
         enqueue_job("organization.reviewed", organization_id=organization.id)
+
+        log.info(
+            "Organization review confirmed and notification task enqueued",
+            organization_id=organization.id,
+            organization_name=organization.name,
+            new_status=organization.status.value,
+        )
+
         return organization
 
     async def deny_organization(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
+        log.warning(
+            "Denying organization - marking as denied",
+            organization_id=organization.id,
+            organization_name=organization.name,
+            previous_status=organization.status.value,
+        )
+
         organization.status = Organization.Status.DENIED
         session.add(organization)
+
+        log.info(
+            "Organization denied and saved",
+            organization_id=organization.id,
+            organization_name=organization.name,
+            new_status=organization.status.value,
+        )
+
         return organization
 
     async def set_organization_under_review(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
+        log.info(
+            "Manually setting organization under review",
+            organization_id=organization.id,
+            organization_name=organization.name,
+            previous_status=organization.status.value,
+        )
+
         organization.status = Organization.Status.UNDER_REVIEW
 
         session.add(organization)
         enqueue_job("organization.under_review", organization_id=organization.id)
+
+        log.info(
+            "Organization set under review and notification task enqueued",
+            organization_id=organization.id,
+            organization_name=organization.name,
+            new_status=organization.status.value,
+        )
+
         return organization
 
     async def _after_update(

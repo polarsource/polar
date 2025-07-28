@@ -7,14 +7,14 @@ export default function PricingCTA() {
         Start selling in minutes
       </h2>
 
-      <p className="max-w-sm text-center text-gray-500 dark:text-gray-400">
+      <p className="dark:text-polar-400 max-w-sm text-center text-gray-500">
         We pride ourselves on being the fastest way to integrate payments into
         your stack.
       </p>
 
       <GetStartedButton
         size="lg"
-        className="rounded-full bg-white font-medium text-black hover:bg-gray-100 dark:bg-white dark:text-black"
+        className="dark:bg-polar-700 dark:hover:bg-polar-600 rounded-full border bg-white font-medium text-black hover:bg-white dark:text-white"
       />
     </div>
   )

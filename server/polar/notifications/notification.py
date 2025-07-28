@@ -13,6 +13,10 @@ from polar.kit.schemas import Schema
 class NotificationType(StrEnum):
     maintainer_account_under_review = "MaintainerAccountUnderReviewNotification"
     maintainer_account_reviewed = "MaintainerAccountReviewedNotification"
+    maintainer_organization_under_review = (
+        "MaintainerOrganizationUnderReviewNotification"
+    )
+    maintainer_organization_reviewed = "MaintainerOrganizationReviewedNotification"
     maintainer_new_paid_subscription = "MaintainerNewPaidSubscriptionNotification"
     maintainer_new_product_sale = "MaintainerNewProductSaleNotification"
     maintainer_create_account = "MaintainerCreateAccountNotification"
@@ -70,6 +74,38 @@ class MaintainerAccountReviewedNotificationPayload(NotificationPayloadBase):
 class MaintainerAccountReviewedNotification(NotificationBase):
     type: Literal[NotificationType.maintainer_account_reviewed]
     payload: MaintainerAccountReviewedNotificationPayload
+
+
+class MaintainerOrganizationUnderReviewNotificationPayload(NotificationPayloadBase):
+    organization_name: str
+
+    def subject(self) -> str:
+        return f"Your organization {self.organization_name} is being reviewed"
+
+    @classmethod
+    def template_name(cls) -> str:
+        return "notification_organization_under_review"
+
+
+class MaintainerOrganizationUnderReviewNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_organization_under_review]
+    payload: MaintainerOrganizationUnderReviewNotificationPayload
+
+
+class MaintainerOrganizationReviewedNotificationPayload(NotificationPayloadBase):
+    organization_name: str
+
+    def subject(self) -> str:
+        return f"Your organization {self.organization_name} review is now complete"
+
+    @classmethod
+    def template_name(cls) -> str:
+        return "notification_organization_reviewed"
+
+
+class MaintainerOrganizationReviewedNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_organization_reviewed]
+    payload: MaintainerOrganizationReviewedNotificationPayload
 
 
 class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
@@ -149,6 +185,8 @@ class MaintainerCreateAccountNotification(NotificationBase):
 NotificationPayload = (
     MaintainerAccountUnderReviewNotificationPayload
     | MaintainerAccountReviewedNotificationPayload
+    | MaintainerOrganizationUnderReviewNotificationPayload
+    | MaintainerOrganizationReviewedNotificationPayload
     | MaintainerNewPaidSubscriptionNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
     | MaintainerCreateAccountNotificationPayload
@@ -157,6 +195,8 @@ NotificationPayload = (
 Notification = Annotated[
     MaintainerAccountUnderReviewNotification
     | MaintainerAccountReviewedNotification
+    | MaintainerOrganizationUnderReviewNotification
+    | MaintainerOrganizationReviewedNotification
     | MaintainerNewPaidSubscriptionNotification
     | MaintainerNewProductSaleNotification
     | MaintainerCreateAccountNotification,

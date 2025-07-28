@@ -10,6 +10,8 @@ from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
+    MaintainerOrganizationReviewedNotificationPayload,
+    MaintainerOrganizationUnderReviewNotificationPayload,
     NotificationPayload,
     NotificationPayloadBase,
     NotificationType,
@@ -118,6 +120,14 @@ async def test_all_notification_types() -> None:
         elif notification_type == NotificationType.maintainer_account_reviewed:
             n = MaintainerAccountReviewedNotificationPayload(
                 account_type="Stripe Connect Express",
+            )
+        elif notification_type == NotificationType.maintainer_organization_under_review:
+            n = MaintainerOrganizationUnderReviewNotificationPayload(
+                organization_name="Test Organization",
+            )
+        elif notification_type == NotificationType.maintainer_organization_reviewed:
+            n = MaintainerOrganizationReviewedNotificationPayload(
+                organization_name="Test Organization",
             )
         elif notification_type == NotificationType.maintainer_new_product_sale:
             n = MaintainerNewProductSaleNotificationPayload(

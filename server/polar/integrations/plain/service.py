@@ -3,10 +3,12 @@ import asyncio
 import contextlib
 import uuid
 from collections.abc import AsyncIterator, Coroutine
+from logging import Logger
 from typing import Any
 
 import pycountry
 import pycountry.db
+import structlog
 from babel.numbers import format_currency
 from plain_client import (
     ComponentContainerContentInput,
@@ -56,6 +58,8 @@ from .schemas import (
     CustomerCardsRequest,
     CustomerCardsResponse,
 )
+
+log: Logger = structlog.get_logger()
 
 
 class PlainServiceError(PolarError): ...
@@ -123,6 +127,9 @@ class PlainService:
     async def create_account_review_thread(
         self, session: AsyncSession, account: Account
     ) -> None:
+        log.warning(
+            "Deprecated: create_account_review_thread is deprecated and will be removed in a future version. Use create_organization_review_thread instead."
+        )
         user_repository = UserRepository.from_session(session)
         admin = await user_repository.get_by_id(account.admin_id)
         if admin is None:
@@ -192,6 +199,80 @@ class PlainService:
             if thread_result.error is not None:
                 raise AccountReviewThreadCreationError(
                     account.id, thread_result.error.message
+                )
+
+    async def create_organization_review_thread(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        user_repository = UserRepository.from_session(session)
+        # Get the first user associated with the organization
+        users = await user_repository.get_all_by_organization(organization.id)
+        if not users:
+            raise AccountAdminDoesNotExistError(organization.id)
+
+        admin = users[0]  # Take the first user as admin
+
+        async with self._get_plain_client() as plain:
+            customer_result = await plain.upsert_customer(
+                UpsertCustomerInput(
+                    identifier=UpsertCustomerIdentifierInput(email_address=admin.email),
+                    on_create=UpsertCustomerOnCreateInput(
+                        external_id=str(admin.id),
+                        full_name=admin.email,
+                        email=EmailAddressInput(
+                            email=admin.email, is_verified=admin.email_verified
+                        ),
+                    ),
+                    on_update=UpsertCustomerOnUpdateInput(
+                        external_id=OptionalStringInput(value=str(admin.id)),
+                        email=EmailAddressInput(
+                            email=admin.email, is_verified=admin.email_verified
+                        ),
+                    ),
+                )
+            )
+            if customer_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    organization.id, customer_result.error.message
+                )
+
+            thread_result = await plain.create_thread(
+                CreateThreadInput(
+                    customer_identifier=CustomerIdentifierInput(
+                        external_id=str(admin.id)
+                    ),
+                    title="Organization Review",
+                    label_type_ids=["lt_01JFG7F4N67FN3MAWK06FJ8FPG"],
+                    components=[
+                        ComponentInput(
+                            component_text=ComponentTextInput(
+                                text=f"The organization `{organization.name}` ({organization.id}) should be reviewed, as it hit a threshold."
+                            )
+                        ),
+                        ComponentInput(
+                            component_spacer=ComponentSpacerInput(
+                                spacer_size=ComponentSpacerSize.M
+                            )
+                        ),
+                        ComponentInput(
+                            component_link_button=ComponentLinkButtonInput(
+                                link_button_url=settings.generate_external_url(
+                                    f"/backoffice/organizations/{organization.id}"
+                                ),
+                                link_button_label="Review organization ↗",
+                            )
+                        ),
+                        ComponentInput(
+                            component_container=self._get_organization_component_container(
+                                organization
+                            )
+                        ),
+                    ],
+                )
+            )
+            if thread_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    organization.id, thread_result.error.message
                 )
 
     async def _get_user_card(

@@ -14,10 +14,12 @@ from polar.integrations.loops.service import loops as loops_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import Organization, User, UserOrganization
+from polar.models import Account, Organization, User, UserOrganization
+from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
 from polar.posthog import posthog
+from polar.transaction.service.transaction import transaction as transaction_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
@@ -295,6 +297,63 @@ class OrganizationService:
             },
         )
         return invoice_number
+
+    async def check_review_threshold(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        if organization.is_under_review():
+            return organization
+
+        account = organization.account
+        if account is None:
+            return organization
+
+        transfers_sum = await transaction_service.get_transactions_sum(
+            session, account.id, type=TransactionType.balance
+        )
+        if (
+            account.next_review_threshold is not None
+            and transfers_sum >= account.next_review_threshold
+        ):
+            organization.status = Organization.Status.UNDER_REVIEW
+            session.add(organization)
+
+            enqueue_job("organization.under_review", organization_id=organization.id)
+
+        return organization
+
+    async def confirm_organization_reviewed(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        next_review_threshold: int,
+    ) -> Organization:
+        organization.status = Organization.Status.ACTIVE
+
+        # Update the account's next review threshold
+        if organization.account:
+            organization.account.next_review_threshold = next_review_threshold
+            session.add(organization.account)
+
+        session.add(organization)
+        enqueue_job("organization.reviewed", organization_id=organization.id)
+        return organization
+
+    async def deny_organization(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        organization.status = Organization.Status.DENIED
+        session.add(organization)
+        return organization
+
+    async def set_organization_under_review(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        organization.status = Organization.Status.UNDER_REVIEW
+
+        session.add(organization)
+        enqueue_job("organization.under_review", organization_id=organization.id)
+        return organization
 
     async def _after_update(
         self,

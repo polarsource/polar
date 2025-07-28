@@ -112,8 +112,8 @@ class Organization(RecordModel):
     account_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("accounts.id", ondelete="set null"), nullable=True
     )
-    status: Mapped[Account.Status] = mapped_column(
-        StringEnum(Account.Status), nullable=False, default=Account.Status.CREATED
+    status: Mapped[Status] = mapped_column(
+        StringEnum(Status), nullable=False, default=Status.CREATED
     )
 
     @declared_attr
@@ -199,6 +199,9 @@ class Organization(RecordModel):
         return SubscriptionProrationBehavior(
             self.subscription_settings["proration_behavior"]
         )
+
+    def is_under_review(self) -> bool:
+        return self.status == Organization.Status.UNDER_REVIEW
 
     @declared_attr
     def all_products(cls) -> Mapped[list["Product"]]:

@@ -10,7 +10,6 @@ from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import classes, tag, text
 
-from polar.account.service import account as account_service
 from polar.enums import AccountType
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
@@ -37,6 +36,22 @@ router = APIRouter()
 
 
 @contextlib.contextmanager
+def organization_status_badge(organization: Organization) -> Generator[None]:
+    with tag.div(classes="badge"):
+        if organization.status == Organization.Status.ACTIVE:
+            classes("badge-success")
+        elif (
+            organization.status == Organization.Status.UNDER_REVIEW
+            or organization.status == Organization.Status.DENIED
+        ):
+            classes("badge-warning")
+        else:
+            classes("badge-neutral")
+        text(organization.status.get_display_name())
+    yield
+
+
+@contextlib.contextmanager
 def account_badge(account: Account | None) -> Generator[None]:
     with tag.div(classes="badge"):
         if account is None:
@@ -56,12 +71,11 @@ def account_badge(account: Account | None) -> Generator[None]:
     yield
 
 
-class AccountColumn(
+class StatusColumn(
     datatable.DatatableAttrColumn[Organization, OrganizationSortProperty]
 ):
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
-        account = item.account
-        with account_badge(account):
+        with organization_status_badge(item):
             pass
         return None
 
@@ -92,7 +106,7 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     query: str | None = Query(None),
-    account_status: Annotated[
+    organization_status: Annotated[
         Account.Status | None, BeforeValidator(empty_str_to_none), Query()
     ] = None,
     session: AsyncSession = Depends(get_db_session),
@@ -115,8 +129,8 @@ async def list(
                     Organization.slug.ilike(f"%{query}%"),
                 )
             )
-    if account_status:
-        statement = statement.where(Account.status == account_status)
+    if organization_status:
+        statement = statement.where(Organization.status == organization_status)
 
     statement = repository.apply_sorting(statement, sorting)
     items, count = await repository.paginate(
@@ -138,14 +152,14 @@ async def list(
                     pass
                 with input.select(
                     [
-                        ("All Account Statuses", ""),
+                        ("All Organization Statuses", ""),
                         *[
                             (status.get_display_name(), status.value)
                             for status in Account.Status
                         ],
                     ],
-                    account_status.value if account_status else "",
-                    name="account_status",
+                    organization_status.value if organization_status else "",
+                    name="organization_status",
                 ):
                     pass
                 with button(type="submit"):
@@ -159,7 +173,7 @@ async def list(
                     "Created At",
                     sorting=OrganizationSortProperty.created_at,
                 ),
-                AccountColumn("account", "Account"),
+                StatusColumn("status", "Status"),
                 datatable.DatatableAttrColumn(
                     "name",
                     "Name",
@@ -301,20 +315,22 @@ async def get(
 
     account = organization.account
     validation_error: ValidationError | None = None
-    if account and request.method == "POST":
+    if request.method == "POST":
         # This part handles the "Approve" action
         # It's a POST to the current page URL, not the status update URL
         data = await request.form()
         try:
             account_status = AccountStatusFormAdapter.validate_python(data)
             if account_status.action == "approve":
-                await account_service.confirm_account_reviewed(
-                    session, account, account_status.next_review_threshold
+                await organization_service.confirm_organization_reviewed(
+                    session, organization, account_status.next_review_threshold
                 )
             elif account_status.action == "deny":
-                await account_service.deny_account(session, account)
+                await organization_service.deny_organization(session, organization)
             elif account_status.action == "under_review":
-                await account_service.set_account_under_review(session, account)
+                await organization_service.set_organization_under_review(
+                    session, organization
+                )
             return HXRedirectResponse(request, request.url, 303)
         except ValidationError as e:
             validation_error = e
@@ -379,7 +395,7 @@ async def get(
                     with tag.div(classes="card-body"):
                         with tag.h2(classes="card-title"):
                             text("Account")
-                            with account_badge(organization.account):
+                            with organization_status_badge(organization):
                                 pass
                         if account:
                             with description_list.DescriptionList[Account](
@@ -401,7 +417,7 @@ async def get(
                             ).render(request, account):
                                 pass
                             with tag.div(classes="card-actions"):
-                                if account.status == Account.Status.UNDER_REVIEW:
+                                if organization.status == Organization.Status.UNDER_REVIEW:
                                     with ApproveAccountForm.render(
                                         account,
                                         method="POST",

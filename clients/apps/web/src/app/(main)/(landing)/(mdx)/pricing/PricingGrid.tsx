@@ -49,7 +49,7 @@ export default function PricingGrid() {
       <p className="dark:text-polar-600 mx-auto max-w-md text-pretty text-center text-base text-gray-400">
         Large or fast-growing business?{' '}
         <Link
-          href="/support"
+          href="https://docs.polar.sh/support"
           className="dark:hover:text-polar-500 font-medium text-inherit underline decoration-1 underline-offset-2 hover:text-gray-500 hover:no-underline"
         >
           Reach out to us

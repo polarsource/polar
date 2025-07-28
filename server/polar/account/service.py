@@ -17,8 +17,8 @@ from polar.integrations.open_collective.service import open_collective
 from polar.integrations.stripe.service import stripe
 from polar.kit.pagination import PaginationParams
 from polar.models import Account, Organization, User
-from polar.organization.repository import OrganizationRepository
 from polar.models.transaction import TransactionType
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.worker import enqueue_job
@@ -118,12 +118,14 @@ class AccountService:
             # Trigger organization reviews for all organizations using this account
             organization_repository = OrganizationRepository.from_session(session)
             organizations = await organization_repository.get_all_by_account(account.id)
-            
+
             for organization in organizations:
                 if not organization.is_under_review():
                     organization.status = Organization.Status.UNDER_REVIEW
                     session.add(organization)
-                    enqueue_job("organization.under_review", organization_id=organization.id)
+                    enqueue_job(
+                        "organization.under_review", organization_id=organization.id
+                    )
 
         return account
 

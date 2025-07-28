@@ -4,7 +4,6 @@ from collections.abc import Generator
 from typing import Annotated, Any
 
 import structlog
-
 from babel.numbers import format_currency
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
@@ -329,19 +328,21 @@ async def get(
             current_status=organization.status.value,
             request_method=request.method,
         )
-        
+
         data = await request.form()
         try:
             account_status = AccountStatusFormAdapter.validate_python(data)
-            
+
             log.info(
                 "Organization review action validated",
                 organization_id=organization.id,
                 organization_name=organization.name,
                 action=account_status.action,
-                next_review_threshold=getattr(account_status, 'next_review_threshold', None),
+                next_review_threshold=getattr(
+                    account_status, "next_review_threshold", None
+                ),
             )
-            
+
             if account_status.action == "approve":
                 log.info(
                     "Web backoffice: Approving organization review",
@@ -475,7 +476,10 @@ async def get(
                             ).render(request, account):
                                 pass
                             with tag.div(classes="card-actions"):
-                                if organization.status == Organization.Status.UNDER_REVIEW:
+                                if (
+                                    organization.status
+                                    == Organization.Status.UNDER_REVIEW
+                                ):
                                     with ApproveAccountForm.render(
                                         account,
                                         method="POST",

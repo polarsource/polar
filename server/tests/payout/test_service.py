@@ -75,10 +75,8 @@ class TestCreate:
         # Set organization status to under review (migrated from account reviews)
         organization.status = Organization.Status.UNDER_REVIEW
         await save_fixture(organization)
-        
-        account = await create_account(
-            save_fixture, organization, user
-        )
+
+        account = await create_account(save_fixture, organization, user)
 
         with pytest.raises(UnderReviewAccount):
             await payout_service.create(session, locker, account=account)

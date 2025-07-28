@@ -59,9 +59,16 @@ class InsufficientBalance(PayoutError):
 
 
 class UnderReviewAccount(PayoutError):
-    def __init__(self, account: Account) -> None:
+    def __init__(
+        self, account: Account, organization_names: list[str] | None = None
+    ) -> None:
         self.account = account
-        message = f"The account {account.id} is under review and can't receive payouts."
+        self.organization_names = organization_names or []
+        if organization_names:
+            org_list = ", ".join(organization_names)
+            message = f"The account {account.id} has organizations under review ({org_list}) and can't receive payouts."
+        else:
+            message = f"The account {account.id} has organizations under review and can't receive payouts."
         super().__init__(message, 400)
 
 
@@ -133,6 +140,21 @@ class PayoutAlreadyTriggered(PayoutError):
 
 
 class PayoutService:
+    async def _check_organizations_under_review(
+        self, session: AsyncSession, account: Account
+    ) -> list[str]:
+        """Check if any organizations associated with the account are under review.
+        Returns a list of organization names that are under review."""
+        organization_repository = OrganizationRepository.from_session(session)
+        organizations = await organization_repository.get_all_by_account(account.id)
+
+        under_review_orgs = []
+        for org in organizations:
+            if org.is_under_review():
+                under_review_orgs.append(org.name)
+
+        return under_review_orgs
+
     async def list(
         self,
         session: AsyncSession,
@@ -179,8 +201,16 @@ class PayoutService:
     async def estimate(
         self, session: AsyncSession, *, account: Account
     ) -> PayoutEstimate:
-        if account.is_under_review():
-            raise UnderReviewAccount(account)
+        under_review_orgs = await self._check_organizations_under_review(
+            session, account
+        )
+        if under_review_orgs:
+            log.warning(
+                "Payout estimate blocked - organizations under review",
+                account_id=account.id,
+                under_review_organizations=under_review_orgs,
+            )
+            raise UnderReviewAccount(account, under_review_orgs)
         if not account.is_payout_ready():
             raise NotReadyAccount(account)
 
@@ -217,8 +247,16 @@ class PayoutService:
             timeout=datetime.timedelta(hours=1).total_seconds(),
             blocking_timeout=1,
         ):
-            if account.is_under_review():
-                raise UnderReviewAccount(account)
+            under_review_orgs = await self._check_organizations_under_review(
+                session, account
+            )
+            if under_review_orgs:
+                log.warning(
+                    "Payout creation blocked - organizations under review",
+                    account_id=account.id,
+                    under_review_organizations=under_review_orgs,
+                )
+                raise UnderReviewAccount(account, under_review_orgs)
             if not account.is_payout_ready():
                 raise NotReadyAccount(account)
 

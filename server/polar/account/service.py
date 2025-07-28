@@ -17,6 +17,7 @@ from polar.integrations.open_collective.service import open_collective
 from polar.integrations.stripe.service import stripe
 from polar.kit.pagination import PaginationParams
 from polar.models import Account, Organization, User
+from polar.organization.repository import OrganizationRepository
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transaction import transaction as transaction_service
@@ -114,11 +115,15 @@ class AccountService:
             account.next_review_threshold is not None
             and transfers_sum >= account.next_review_threshold
         ):
-            account.status = Account.Status.UNDER_REVIEW
-            await self._sync_organization_status(session, account)
-            session.add(account)
-
-            enqueue_job("account.under_review", account_id=account.id)
+            # Trigger organization reviews for all organizations using this account
+            organization_repository = OrganizationRepository.from_session(session)
+            organizations = await organization_repository.get_all_by_account(account.id)
+            
+            for organization in organizations:
+                if not organization.is_under_review():
+                    organization.status = Organization.Status.UNDER_REVIEW
+                    session.add(organization)
+                    enqueue_job("organization.under_review", organization_id=organization.id)
 
         return account
 

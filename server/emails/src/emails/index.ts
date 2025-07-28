@@ -7,6 +7,8 @@ import { NotificationAccountUnderReview } from './notification_account_under_rev
 import { NotificationCreateAccount } from './notification_create_account'
 import { NotificationNewSale } from './notification_new_sale'
 import { NotificationNewSubscription } from './notification_new_subscription'
+import { NotificationOrganizationReviewed } from './notification_organization_reviewed'
+import { NotificationOrganizationUnderReview } from './notification_organization_under_review'
 import { OAuth2LeakedClient } from './oauth2_leaked_client'
 import { OAuth2LeakedToken } from './oauth2_leaked_token'
 import { OrderConfirmation } from './order_confirmation'
@@ -35,6 +37,8 @@ const TEMPLATES: Record<string, React.FC<any>> = {
   subscription_uncanceled: SubscriptionUncanceled,
   notification_account_under_review: NotificationAccountUnderReview,
   notification_account_reviewed: NotificationAccountReviewed,
+  notification_organization_under_review: NotificationOrganizationUnderReview,
+  notification_organization_reviewed: NotificationOrganizationReviewed,
   notification_new_sale: NotificationNewSale,
   notification_new_subscription: NotificationNewSubscription,
   notification_create_account: NotificationCreateAccount,

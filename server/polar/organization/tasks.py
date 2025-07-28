@@ -9,6 +9,7 @@ from polar.integrations.plain.service import plain as plain_service
 from polar.models import Organization
 from polar.notifications.notification import (
     MaintainerOrganizationReviewedNotificationPayload,
+    MaintainerOrganizationUnderReviewNotificationPayload,
     NotificationType,
 )
 from polar.notifications.service import PartialNotification
@@ -91,8 +92,8 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
             session=session,
             user_id=organization.account.admin_id,
             notif=PartialNotification(
-                type=NotificationType.maintainer_organization_reviewed,
-                payload=MaintainerOrganizationReviewedNotificationPayload(
+                type=NotificationType.maintainer_organization_under_review,
+                payload=MaintainerOrganizationUnderReviewNotificationPayload(
                     organization_name=organization.name
                 ),
             ),

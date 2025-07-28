@@ -1,3 +1,7 @@
 ---
 openapi: post /v1/customer-portal/license-keys/activate
 ---
+
+<Note>
+  This endpoint is only for license keys that have the **activations** on the benefit enabled. If your license key does **not** support activations, you **should** use this endpoint. Instead, you should use the [validate endpoint](/api-reference/customer-portal/license-keys/validate) to check or use the license key.
+</Note>

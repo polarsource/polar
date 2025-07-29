@@ -4,7 +4,6 @@ import uuid
 from collections.abc import Sequence
 
 import stripe as stripe_lib
-from sqlalchemy import update as sqlalchemy_update
 from sqlalchemy.orm.strategy_options import joinedload
 
 from polar.account.repository import AccountRepository
@@ -115,7 +114,6 @@ class AccountService:
             and transfers_sum >= account.next_review_threshold
         ):
             account.status = Account.Status.UNDER_REVIEW
-            await self._sync_organization_status(session, account)
             session.add(account)
 
             enqueue_job("account.under_review", account_id=account.id)
@@ -127,7 +125,6 @@ class AccountService:
     ) -> Account:
         account.status = Account.Status.ACTIVE
         account.next_review_threshold = next_review_threshold
-        await self._sync_organization_status(session, account)
         session.add(account)
         enqueue_job("account.reviewed", account_id=account.id)
         return account
@@ -174,7 +171,6 @@ class AccountService:
             users=[],
             organizations=[],
         )
-        await self._sync_organization_status(session, account)
 
         campaign = await campaign_service.get_eligible(session, admin)
         if campaign:
@@ -203,30 +199,13 @@ class AccountService:
             account.country = stripe_account.country
         account.data = stripe_account.to_dict()
 
-        if all(
-            (
-                not account.is_active(),
-                not account.is_under_review(),
-                account.currency is not None,
-                account.is_details_submitted,
-                account.is_charges_enabled,
-                account.is_payouts_enabled,
-            )
-        ):
-            account.status = Account.Status.ACTIVE
-
-        # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
-        if any(
-            (
-                not account.is_details_submitted,
-                not account.is_charges_enabled,
-                not account.is_payouts_enabled,
-            )
-        ):
-            account.status = Account.Status.ONBOARDING_STARTED
-
-        await self._sync_organization_status(session, account)
         session.add(account)
+
+        # Update organization status based on Stripe account capabilities
+        # Import here to avoid circular imports
+        from polar.organization.service import organization as organization_service
+
+        await organization_service.update_status_from_stripe_account(session, account)
 
         return account
 
@@ -265,7 +244,6 @@ class AccountService:
 
     async def deny_account(self, session: AsyncSession, account: Account) -> Account:
         account.status = Account.Status.DENIED
-        await self._sync_organization_status(session, account)
         session.add(account)
         return account
 
@@ -274,21 +252,9 @@ class AccountService:
     ) -> Account:
         account.status = Account.Status.UNDER_REVIEW
 
-        await self._sync_organization_status(session, account)
         session.add(account)
         enqueue_job("account.under_review", account_id=account.id)
         return account
-
-    async def _sync_organization_status(
-        self, session: AsyncSession, account: Account
-    ) -> None:
-        """Sync account status to all related organizations."""
-
-        await session.execute(
-            sqlalchemy_update(Organization)
-            .where(Organization.account_id == account.id)
-            .values(status=account.status)
-        )
 
 
 account = AccountService()

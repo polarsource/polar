@@ -1,8 +1,19 @@
 import uuid
 
+from sqlalchemy.orm import joinedload
+
 from polar.account.repository import AccountRepository
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
+from polar.integrations.plain.service import plain as plain_service
+from polar.models import Organization
+from polar.notifications.notification import (
+    MaintainerAccountReviewedNotificationPayload,
+    MaintainerAccountUnderReviewNotificationPayload,
+    NotificationType,
+)
+from polar.notifications.service import PartialNotification
+from polar.notifications.service import notifications as notification_service
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .repository import OrganizationRepository
@@ -60,3 +71,60 @@ async def organization_account_set(organization_id: uuid.UUID) -> None:
             raise AccountDoesNotExist(organization.account_id)
 
         await held_balance_service.release_account(session, account)
+
+
+@actor(actor_name="organization.under_review", priority=TaskPriority.LOW)
+async def organization_under_review(organization_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(
+            organization_id, options=(joinedload(Organization.account),)
+        )
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
+
+        await plain_service.create_account_review_thread(session, organization)
+
+        # Get organization admin
+        admin_user = await repository.get_admin_user(session, organization)
+        if admin_user:
+            await notification_service.send_to_user(
+                session=session,
+                user_id=admin_user.id,
+                notif=PartialNotification(
+                    type=NotificationType.maintainer_account_under_review,
+                    payload=MaintainerAccountUnderReviewNotificationPayload(
+                        account_type="organization"
+                    ),
+                ),
+            )
+
+
+@actor(actor_name="organization.reviewed", priority=TaskPriority.LOW)
+async def organization_reviewed(organization_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(organization_id)
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
+
+        # Release held balance if account exists
+        if organization.account_id:
+            account_repository = AccountRepository.from_session(session)
+            account = await account_repository.get_by_id(organization.account_id)
+            if account:
+                await held_balance_service.release_account(session, account)
+
+        # Get organization admin
+        admin_user = await repository.get_admin_user(session, organization)
+        if admin_user:
+            await notification_service.send_to_user(
+                session=session,
+                user_id=admin_user.id,
+                notif=PartialNotification(
+                    type=NotificationType.maintainer_account_reviewed,
+                    payload=MaintainerAccountReviewedNotificationPayload(
+                        account_type="organization"
+                    ),
+                ),
+            )

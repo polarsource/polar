@@ -5,6 +5,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
+from sqlalchemy import update as sqlalchemy_update
 from sqlalchemy.exc import IntegrityError
 
 from polar.account.service import account as account_service
@@ -14,10 +15,12 @@ from polar.integrations.loops.service import loops as loops_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import Organization, User, UserOrganization
+from polar.models import Account, Organization, User, UserOrganization
+from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
 from polar.posthog import posthog
+from polar.transaction.service.transaction import transaction as transaction_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
@@ -304,6 +307,112 @@ class OrganizationService:
         await webhook_service.send(
             session, organization, WebhookEventType.organization_updated, organization
         )
+
+    async def check_review_threshold(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        if organization.is_under_review():
+            return organization
+
+        transfers_sum = await transaction_service.get_transactions_sum(
+            session, organization.account_id, type=TransactionType.balance
+        )
+        if (
+            organization.next_review_threshold >= 0
+            and transfers_sum >= organization.next_review_threshold
+        ):
+            organization.status = Organization.Status.UNDER_REVIEW
+            await self._sync_account_status(session, organization)
+            session.add(organization)
+
+            enqueue_job("organization.under_review", organization_id=organization.id)
+
+        return organization
+
+    async def confirm_organization_reviewed(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        next_review_threshold: int,
+    ) -> Organization:
+        organization.status = Organization.Status.ACTIVE
+        organization.next_review_threshold = next_review_threshold
+        await self._sync_account_status(session, organization)
+        session.add(organization)
+        enqueue_job("organization.reviewed", organization_id=organization.id)
+        return organization
+
+    async def deny_organization(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        organization.status = Organization.Status.DENIED
+        await self._sync_account_status(session, organization)
+        session.add(organization)
+        return organization
+
+    async def set_organization_under_review(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        organization.status = Organization.Status.UNDER_REVIEW
+        await self._sync_account_status(session, organization)
+        session.add(organization)
+        enqueue_job("organization.under_review", organization_id=organization.id)
+        return organization
+
+    async def update_status_from_stripe_account(
+        self, session: AsyncSession, account: Account
+    ) -> None:
+        """Update organization status based on Stripe account capabilities."""
+        repository = OrganizationRepository.from_session(session)
+        organizations = await repository.get_all_by_account(account.id)
+
+        for organization in organizations:
+            # Don't override organizations that are under review or denied
+            if organization.status in (
+                Organization.Status.UNDER_REVIEW,
+                Organization.Status.DENIED,
+            ):
+                continue
+
+            # If account is fully set up, set organization to ACTIVE
+            if all(
+                (
+                    account.currency is not None,
+                    account.is_details_submitted,
+                    account.is_charges_enabled,
+                    account.is_payouts_enabled,
+                )
+            ):
+                organization.status = Organization.Status.ACTIVE
+            else:
+                # If Stripe capabilities are missing, set to ONBOARDING_STARTED
+                organization.status = Organization.Status.ONBOARDING_STARTED
+
+            await self._sync_account_status(session, organization)
+            session.add(organization)
+
+    async def _sync_account_status(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        """Sync organization status to the related account."""
+        if not organization.account_id:
+            return
+
+        # Map organization status to account status
+        status_mapping = {
+            Organization.Status.ONBOARDING_STARTED: Account.Status.ONBOARDING_STARTED,
+            Organization.Status.ACTIVE: Account.Status.ACTIVE,
+            Organization.Status.UNDER_REVIEW: Account.Status.UNDER_REVIEW,
+            Organization.Status.DENIED: Account.Status.DENIED,
+        }
+
+        if organization.status in status_mapping:
+            account_status = status_mapping[organization.status]
+            await session.execute(
+                sqlalchemy_update(Account)
+                .where(Account.id == organization.account_id)
+                .values(status=account_status)
+            )
 
 
 organization = OrganizationService()

@@ -39,7 +39,6 @@ from sqlalchemy.orm import contains_eager
 from polar.config import settings
 from polar.exceptions import PolarError
 from polar.models import (
-    Account,
     Customer,
     Order,
     Organization,
@@ -121,12 +120,16 @@ class PlainService:
         return CustomerCardsResponse(cards=cards)
 
     async def create_account_review_thread(
-        self, session: AsyncSession, account: Account
+        self, session: AsyncSession, organization: Organization
     ) -> None:
         user_repository = UserRepository.from_session(session)
-        admin = await user_repository.get_by_id(account.admin_id)
+        if organization.account is None:
+            from polar.organization.tasks import OrganizationAccountNotSet
+
+            raise OrganizationAccountNotSet(organization.id)
+        admin = await user_repository.get_by_id(organization.account.admin_id)
         if admin is None:
-            raise AccountAdminDoesNotExistError(account.id)
+            raise AccountAdminDoesNotExistError(organization.account.admin_id)
 
         async with self._get_plain_client() as plain:
             customer_result = await plain.upsert_customer(
@@ -149,7 +152,7 @@ class PlainService:
             )
             if customer_result.error is not None:
                 raise AccountReviewThreadCreationError(
-                    account.id, customer_result.error.message
+                    organization.account.id, customer_result.error.message
                 )
 
             thread_result = await plain.create_thread(
@@ -162,7 +165,7 @@ class PlainService:
                     components=[
                         ComponentInput(
                             component_text=ComponentTextInput(
-                                text=f"The account `{account.id}` should be reviewed, as it hit a threshold. It's used by the following organizations:"
+                                text=f"The organization `{organization.slug}` should be reviewed, as it hit a threshold. It's used by the following organizations:"
                             )
                         ),
                         ComponentInput(
@@ -173,25 +176,17 @@ class PlainService:
                         ComponentInput(
                             component_link_button=ComponentLinkButtonInput(
                                 link_button_url=settings.generate_external_url(
-                                    f"/backoffice/organizations/{account.organizations[0].id}"
+                                    f"/backoffice/organizations/{organization.id}"
                                 ),
                                 link_button_label="Review account ↗",
                             )
-                        ),
-                        *(
-                            ComponentInput(
-                                component_container=self._get_organization_component_container(
-                                    organization
-                                )
-                            )
-                            for organization in account.organizations
                         ),
                     ],
                 )
             )
             if thread_result.error is not None:
                 raise AccountReviewThreadCreationError(
-                    account.id, thread_result.error.message
+                    organization.account.id, thread_result.error.message
                 )
 
     async def _get_user_card(
@@ -865,11 +860,24 @@ class PlainService:
 
     @contextlib.asynccontextmanager
     async def _get_plain_client(self) -> AsyncIterator[Plain]:
-        async with Plain(
-            "https://core-api.uk.plain.com/graphql/v1",
-            {"Authorization": f"Bearer {settings.PLAIN_TOKEN}"},
-        ) as plain:
-            yield plain
+        if settings.ENV == "development":
+            # Mock Plain client for local development
+            from unittest.mock import AsyncMock, MagicMock
+
+            mock_result = MagicMock()
+            mock_result.error = None
+
+            mock_plain = AsyncMock()
+            mock_plain.upsert_customer.return_value = mock_result
+            mock_plain.create_thread.return_value = mock_result
+
+            yield mock_plain
+        else:
+            async with Plain(
+                "https://core-api.uk.plain.com/graphql/v1",
+                {"Authorization": f"Bearer {settings.PLAIN_TOKEN}"},
+            ) as plain:
+                yield plain
 
 
 plain = PlainService()

@@ -112,8 +112,8 @@ class Organization(RecordModel):
     account_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("accounts.id", ondelete="set null"), nullable=True
     )
-    status: Mapped[Account.Status] = mapped_column(
-        StringEnum(Account.Status), nullable=False, default=Account.Status.CREATED
+    status: Mapped[Organization.Status] = mapped_column(
+        StringEnum(Organization.Status), nullable=False, default=Organization.Status.CREATED
     )
 
     @declared_attr

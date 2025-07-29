@@ -86,7 +86,9 @@ class BalanceTransactionService(BaseTransactionService):
         if destination_account is not None:
             # Check organization review threshold instead of account
             organization_repository = OrganizationRepository.from_session(session)
-            organizations = await organization_repository.get_all_by_account(destination_account.id)
+            organizations = await organization_repository.get_all_by_account(
+                destination_account.id
+            )
             for organization in organizations:
                 await organization_service.check_review_threshold(session, organization)
 

@@ -24,7 +24,7 @@ def upgrade() -> None:
         "organizations",
         sa.Column("next_review_threshold", sa.Integer(), nullable=True),
     )
-    
+
     # Copy existing next_review_threshold values from accounts to organizations
     op.execute("""
         UPDATE organizations
@@ -33,14 +33,14 @@ def upgrade() -> None:
         WHERE organizations.account_id = accounts.id
           AND accounts.next_review_threshold IS NOT NULL
     """)
-    
+
     # Update any remaining NULL values to 0
     op.execute("""
         UPDATE organizations 
         SET next_review_threshold = 0 
         WHERE next_review_threshold IS NULL
     """)
-    
+
     # Make the column non-nullable with default 0
     op.alter_column(
         "organizations",
@@ -49,22 +49,16 @@ def upgrade() -> None:
         nullable=False,
         server_default="0",
     )
-    
+
     # Add check constraint to ensure next_review_threshold is not negative
     op.create_check_constraint(
-        "next_review_threshold_positive",
-        "organizations",
-        "next_review_threshold >= 0"
+        "next_review_threshold_positive", "organizations", "next_review_threshold >= 0"
     )
 
 
 def downgrade() -> None:
     # Remove the check constraint
-    op.drop_constraint(
-        "next_review_threshold_positive",
-        "organizations",
-        type_="check"
-    )
-    
+    op.drop_constraint("next_review_threshold_positive", "organizations", type_="check")
+
     # Remove next_review_threshold column from organizations table
     op.drop_column("organizations", "next_review_threshold")

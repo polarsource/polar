@@ -85,7 +85,9 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
 
         # Create Plain thread for review (if account exists)
         if organization.account:
-            await plain_service.create_account_review_thread(session, organization.account)
+            await plain_service.create_account_review_thread(
+                session, organization.account
+            )
 
         # Get organization admin
         admin_user = await repository.get_admin_user(session, organization)

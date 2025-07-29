@@ -329,7 +329,9 @@ async def get(
             elif account_status.action == "deny":
                 await organization_service.deny_organization(session, organization)
             elif account_status.action == "under_review":
-                await organization_service.set_organization_under_review(session, organization)
+                await organization_service.set_organization_under_review(
+                    session, organization
+                )
             return HXRedirectResponse(request, request.url, 303)
         except ValidationError as e:
             validation_error = e
@@ -421,26 +423,26 @@ async def get(
                         with tag.div(classes="card-actions"):
                             if organization.status == Organization.Status.UNDER_REVIEW:
                                 with ApproveAccountForm.render(
-                                        account,
-                                        method="POST",
-                                        action=str(request.url),
-                                        classes="flex flex-col gap-4",
-                                        validation_error=validation_error,
+                                    account,
+                                    method="POST",
+                                    action=str(request.url),
+                                    classes="flex flex-col gap-4",
+                                    validation_error=validation_error,
+                                ):
+                                    with button(
+                                        name="action",
+                                        type="submit",
+                                        variant="primary",
+                                        value="approve",
                                     ):
-                                        with button(
-                                            name="action",
-                                            type="submit",
-                                            variant="primary",
-                                            value="approve",
-                                        ):
-                                            text("Approve")
-                                        with button(
-                                            name="action",
-                                            type="submit",
-                                            variant="error",
-                                            value="deny",
-                                        ):
-                                            text("Deny")
+                                        text("Approve")
+                                    with button(
+                                        name="action",
+                                        type="submit",
+                                        variant="error",
+                                        value="deny",
+                                    ):
+                                        text("Deny")
                             else:
                                 with UnderReviewAccountForm.render(
                                     account,

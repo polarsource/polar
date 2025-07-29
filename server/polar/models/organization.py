@@ -89,7 +89,9 @@ class Organization(RecordModel):
     __tablename__ = "organizations"
     __table_args__ = (
         UniqueConstraint("slug"),
-        CheckConstraint("next_review_threshold >= 0", name="next_review_threshold_positive"),
+        CheckConstraint(
+            "next_review_threshold >= 0", name="next_review_threshold_positive"
+        ),
     )
 
     name: Mapped[str] = mapped_column(String, nullable=False, index=True)

@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any, TypedDict
 from uuid import UUID
 
@@ -19,6 +20,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.config import settings
 from polar.enums import SubscriptionProrationBehavior
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy import StringEnum
 
 from .account import Account
 
@@ -67,6 +69,22 @@ _default_subscription_settings: OrganizationSubscriptionSettings = {
 
 
 class Organization(RecordModel):
+    class Status(StrEnum):
+        CREATED = "created"
+        ONBOARDING_STARTED = "onboarding_started"
+        UNDER_REVIEW = "under_review"
+        DENIED = "denied"
+        ACTIVE = "active"
+
+        def get_display_name(self) -> str:
+            return {
+                Organization.Status.CREATED: "Created",
+                Organization.Status.ONBOARDING_STARTED: "Onboarding Started",
+                Organization.Status.UNDER_REVIEW: "Under Review",
+                Organization.Status.DENIED: "Denied",
+                Organization.Status.ACTIVE: "Active",
+            }[self]
+
     __tablename__ = "organizations"
     __table_args__ = (UniqueConstraint("slug"),)
 
@@ -93,6 +111,11 @@ class Organization(RecordModel):
 
     account_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("accounts.id", ondelete="set null"), nullable=True
+    )
+    status: Mapped[Status] = mapped_column(
+        StringEnum(Status),
+        nullable=False,
+        default=Status.CREATED,
     )
 
     @declared_attr

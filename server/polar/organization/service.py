@@ -5,6 +5,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
+from sqlalchemy import update as sqlalchemy_update
 from sqlalchemy.exc import IntegrityError
 
 from polar.account.service import account as account_service
@@ -321,6 +322,7 @@ class OrganizationService:
             and transfers_sum >= organization.next_review_threshold
         ):
             organization.status = Organization.Status.UNDER_REVIEW
+            await self._sync_account_status(session, organization)
             session.add(organization)
 
             enqueue_job("organization.under_review", organization_id=organization.id)
@@ -335,6 +337,7 @@ class OrganizationService:
     ) -> Organization:
         organization.status = Organization.Status.ACTIVE
         organization.next_review_threshold = next_review_threshold
+        await self._sync_account_status(session, organization)
         session.add(organization)
         enqueue_job("organization.reviewed", organization_id=organization.id)
         return organization
@@ -343,6 +346,7 @@ class OrganizationService:
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
         organization.status = Organization.Status.DENIED
+        await self._sync_account_status(session, organization)
         session.add(organization)
         return organization
 
@@ -350,6 +354,7 @@ class OrganizationService:
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
         organization.status = Organization.Status.UNDER_REVIEW
+        await self._sync_account_status(session, organization)
         session.add(organization)
         enqueue_job("organization.under_review", organization_id=organization.id)
         return organization
@@ -383,7 +388,31 @@ class OrganizationService:
                 # If Stripe capabilities are missing, set to ONBOARDING_STARTED
                 organization.status = Organization.Status.ONBOARDING_STARTED
 
+            await self._sync_account_status(session, organization)
             session.add(organization)
+
+    async def _sync_account_status(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        """Sync organization status to the related account."""
+        if not organization.account_id:
+            return
+
+        # Map organization status to account status
+        status_mapping = {
+            Organization.Status.ONBOARDING_STARTED: Account.Status.ONBOARDING_STARTED,
+            Organization.Status.ACTIVE: Account.Status.ACTIVE,
+            Organization.Status.UNDER_REVIEW: Account.Status.UNDER_REVIEW,
+            Organization.Status.DENIED: Account.Status.DENIED,
+        }
+
+        if organization.status in status_mapping:
+            account_status = status_mapping[organization.status]
+            await session.execute(
+                sqlalchemy_update(Account)
+                .where(Account.id == organization.account_id)
+                .values(status=account_status)
+            )
 
 
 organization = OrganizationService()

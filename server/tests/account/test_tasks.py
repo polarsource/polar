@@ -16,6 +16,7 @@ from polar.notifications.service import NotificationsService
 from polar.notifications.service import notifications as notification_service
 from tests.account.conftest import create_account
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_organization
 
 
 @pytest.mark.asyncio
@@ -37,6 +38,7 @@ class TestAccountUnderReview:
         account = await create_account(
             save_fixture, admin=user, status=Account.Status.UNDER_REVIEW
         )
+        organization = await create_organization(save_fixture, account=account)
 
         # then
         session.expunge_all()

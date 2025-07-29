@@ -199,29 +199,13 @@ class AccountService:
             account.country = stripe_account.country
         account.data = stripe_account.to_dict()
 
-        if all(
-            (
-                not account.is_active(),
-                not account.is_under_review(),
-                account.currency is not None,
-                account.is_details_submitted,
-                account.is_charges_enabled,
-                account.is_payouts_enabled,
-            )
-        ):
-            account.status = Account.Status.ACTIVE
-
-        # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
-        if any(
-            (
-                not account.is_details_submitted,
-                not account.is_charges_enabled,
-                not account.is_payouts_enabled,
-            )
-        ):
-            account.status = Account.Status.ONBOARDING_STARTED
-
         session.add(account)
+
+        # Update organization status based on Stripe account capabilities
+        # Import here to avoid circular imports
+        from polar.organization.service import organization as organization_service
+
+        await organization_service.update_status_from_stripe_account(session, account)
 
         return account
 

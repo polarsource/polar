@@ -14,7 +14,7 @@ from polar.integrations.loops.service import loops as loops_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import Organization, User, UserOrganization
+from polar.models import Account, Organization, User, UserOrganization
 from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
@@ -353,6 +353,37 @@ class OrganizationService:
         session.add(organization)
         enqueue_job("organization.under_review", organization_id=organization.id)
         return organization
+
+    async def update_status_from_stripe_account(
+        self, session: AsyncSession, account: Account
+    ) -> None:
+        """Update organization status based on Stripe account capabilities."""
+        repository = OrganizationRepository.from_session(session)
+        organizations = await repository.get_all_by_account(account.id)
+
+        for organization in organizations:
+            # Don't override organizations that are under review or denied
+            if organization.status in (
+                Organization.Status.UNDER_REVIEW,
+                Organization.Status.DENIED,
+            ):
+                continue
+
+            # If account is fully set up, set organization to ACTIVE
+            if all(
+                (
+                    account.currency is not None,
+                    account.is_details_submitted,
+                    account.is_charges_enabled,
+                    account.is_payouts_enabled,
+                )
+            ):
+                organization.status = Organization.Status.ACTIVE
+            else:
+                # If Stripe capabilities are missing, set to ONBOARDING_STARTED
+                organization.status = Organization.Status.ONBOARDING_STARTED
+
+            session.add(organization)
 
 
 organization = OrganizationService()

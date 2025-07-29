@@ -10,7 +10,6 @@ from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import classes, tag, text
 
-from polar.account.service import account as account_service
 from polar.enums import AccountType
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
@@ -53,6 +52,22 @@ def account_badge(account: Account | None) -> Generator[None]:
             else:
                 classes("badge-neutral")
             text(account.status.get_display_name())
+    yield
+
+
+@contextlib.contextmanager
+def organization_badge(organization: Organization) -> Generator[None]:
+    with tag.div(classes="badge"):
+        if organization.status == Organization.Status.ACTIVE:
+            classes("badge-success")
+        elif (
+            organization.status == Organization.Status.UNDER_REVIEW
+            or organization.status == Organization.Status.DENIED
+        ):
+            classes("badge-warning")
+        else:
+            classes("badge-secondary")
+        text(organization.status.get_display_name())
     yield
 
 
@@ -308,13 +323,13 @@ async def get(
         try:
             account_status = AccountStatusFormAdapter.validate_python(data)
             if account_status.action == "approve":
-                await account_service.confirm_account_reviewed(
-                    session, account, account_status.next_review_threshold
+                await organization_service.confirm_organization_reviewed(
+                    session, organization, account_status.next_review_threshold
                 )
             elif account_status.action == "deny":
-                await account_service.deny_account(session, account)
+                await organization_service.deny_organization(session, organization)
             elif account_status.action == "under_review":
-                await account_service.set_account_under_review(session, account)
+                await organization_service.set_organization_under_review(session, organization)
             return HXRedirectResponse(request, request.url, 303)
         except ValidationError as e:
             validation_error = e
@@ -378,9 +393,15 @@ async def get(
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
                         with tag.h2(classes="card-title"):
-                            text("Account")
-                            with account_badge(organization.account):
+                            text("Review Status")
+                            with organization_badge(organization):
                                 pass
+                        with description_list.DescriptionList[Organization](
+                            description_list.DescriptionListCurrencyItem(
+                                "next_review_threshold", "Next Review Threshold"
+                            ),
+                        ).render(request, organization):
+                            pass
                         if account:
                             with description_list.DescriptionList[Account](
                                 description_list.DescriptionListAttrItem(
@@ -395,14 +416,11 @@ async def get(
                                 description_list.DescriptionListAttrItem(
                                     "currency", "Currency"
                                 ),
-                                description_list.DescriptionListCurrencyItem(
-                                    "next_review_threshold", "Next Review Threshold"
-                                ),
                             ).render(request, account):
                                 pass
-                            with tag.div(classes="card-actions"):
-                                if account.status == Account.Status.UNDER_REVIEW:
-                                    with ApproveAccountForm.render(
+                        with tag.div(classes="card-actions"):
+                            if organization.status == Organization.Status.UNDER_REVIEW:
+                                with ApproveAccountForm.render(
                                         account,
                                         method="POST",
                                         action=str(request.url),
@@ -423,21 +441,21 @@ async def get(
                                             value="deny",
                                         ):
                                             text("Deny")
-                                else:
-                                    with UnderReviewAccountForm.render(
-                                        account,
-                                        method="POST",
-                                        action=str(request.url),
-                                        classes="flex flex-col gap-4",
-                                        validation_error=validation_error,
+                            else:
+                                with UnderReviewAccountForm.render(
+                                    account,
+                                    method="POST",
+                                    action=str(request.url),
+                                    classes="flex flex-col gap-4",
+                                    validation_error=validation_error,
+                                ):
+                                    with button(
+                                        name="action",
+                                        type="submit",
+                                        variant="primary",
+                                        value="under_review",
                                     ):
-                                        with button(
-                                            name="action",
-                                            type="submit",
-                                            variant="primary",
-                                            value="under_review",
-                                        ):
-                                            text("Set to Under Review")
+                                        text("Set to Under Review")
 
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):

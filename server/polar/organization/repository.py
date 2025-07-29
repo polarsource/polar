@@ -3,7 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import Select, select
 
-from polar.auth.models import AuthSubject, User, is_organization, is_user
+from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -12,7 +12,8 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.repository.base import Options
-from polar.models import Organization, UserOrganization
+from polar.models import Account, Organization, User, UserOrganization
+from polar.postgres import AsyncSession
 
 from .sorting import OrganizationSortProperty
 
@@ -97,3 +98,21 @@ class OrganizationRepository(
             )
 
         return statement
+
+    async def get_admin_user(
+        self, session: AsyncSession, organization: Organization
+    ) -> User | None:
+        """Get the admin user of the organization from the associated account."""
+        if not organization.account_id:
+            return None
+
+        statement = (
+            select(User)
+            .join(Account, Account.admin_id == User.id)
+            .where(
+                Account.id == organization.account_id,
+                User.deleted_at.is_(None),
+            )
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()

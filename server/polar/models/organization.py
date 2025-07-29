@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
+    CheckConstraint,
     ColumnElement,
     ForeignKey,
     Integer,
@@ -86,7 +87,10 @@ class Organization(RecordModel):
             }[self]
 
     __tablename__ = "organizations"
-    __table_args__ = (UniqueConstraint("slug"),)
+    __table_args__ = (
+        UniqueConstraint("slug"),
+        CheckConstraint("next_review_threshold >= 0", name="next_review_threshold_positive"),
+    )
 
     name: Mapped[str] = mapped_column(String, nullable=False, index=True)
     slug: Mapped[str] = mapped_column(CITEXT, nullable=False, unique=True)
@@ -116,6 +120,9 @@ class Organization(RecordModel):
         StringEnum(Status),
         nullable=False,
         default=Status.CREATED,
+    )
+    next_review_threshold: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
     )
 
     @declared_attr
@@ -224,6 +231,12 @@ class Organization(RecordModel):
         if self.blocked_at is not None:
             return True
         return False
+
+    def is_under_review(self) -> bool:
+        return self.status == Organization.Status.UNDER_REVIEW
+
+    def is_active(self) -> bool:
+        return self.status == Organization.Status.ACTIVE
 
     @property
     def statement_descriptor(self) -> str:

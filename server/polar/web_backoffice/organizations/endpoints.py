@@ -407,7 +407,7 @@ async def get(
                         if account:
                             with description_list.DescriptionList[Account](
                                 description_list.DescriptionListAttrItem(
-                                    "id", "ID", clipboard=True
+                                    "id", "Account Id", clipboard=True
                                 ),
                                 AccountTypeDescriptionListAttrItem(
                                     "account_type", "Account Type"

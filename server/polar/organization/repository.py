@@ -115,4 +115,4 @@ class OrganizationRepository(
             )
         )
         result = await session.execute(statement)
-        return result.scalar_one_or_none()
+        return result.unique().scalar_one_or_none()

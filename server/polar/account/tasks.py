@@ -14,6 +14,7 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notification_service
+from polar.organization.repository import OrganizationRepository
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 
@@ -37,7 +38,10 @@ async def account_under_review(account_id: uuid.UUID) -> None:
         if account is None:
             raise AccountDoesNotExist(account_id)
 
-        await plain_service.create_account_review_thread(session, account)
+        organization_repository = OrganizationRepository.from_session(session)
+        organizations = await organization_repository.get_all_by_account(account_id)
+        for organization in organizations:
+            await plain_service.create_account_review_thread(session, organization)
 
         await notification_service.send_to_user(
             session=session,

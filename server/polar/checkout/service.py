@@ -45,6 +45,7 @@ from polar.kit.tax import TaxID, to_stripe_tax_id, validate_tax_id
 from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import (
+    Account,
     Checkout,
     CheckoutLink,
     Customer,
@@ -1047,7 +1048,7 @@ class CheckoutService:
             auth_subject,
             options=(
                 contains_eager(ProductPrice.product).options(
-                    joinedload(Product.organization),
+                    joinedload(Product.organization).joinedload(Organization.account).joinedload(Account.admin),
                     selectinload(Product.prices),
                 ),
             ),
@@ -1826,6 +1827,17 @@ class CheckoutService:
             product,
             {"organization", "prices", "product_medias", "attached_custom_fields"},
         )
+        # Separately load the account information if organization exists
+        if product.organization:
+            await session.refresh(
+                product.organization,
+                attribute_names=["account"],
+            )
+            if product.organization.account:
+                await session.refresh(
+                    product.organization.account,
+                    attribute_names=["admin"],
+                )
         return product
 
 

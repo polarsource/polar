@@ -117,6 +117,11 @@ async def create_organization(
     save_fixture: SaveFixture, name_prefix: str = "testorg", **kwargs: Any
 ) -> Organization:
     name = rstr(name_prefix)
+    # Create organizations in the past so they are grandfathered for payment readiness
+    # unless created_at is explicitly provided
+    if 'created_at' not in kwargs:
+        kwargs['created_at'] = datetime(2025, 7, 1, tzinfo=UTC)
+    
     organization = Organization(
         name=name,
         slug=name,

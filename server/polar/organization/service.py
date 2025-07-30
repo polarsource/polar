@@ -9,7 +9,6 @@ import structlog
 from pydantic import BaseModel, Field
 from sqlalchemy import update as sqlalchemy_update
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import joinedload
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
@@ -20,11 +19,12 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
 from polar.models import Account, Organization, User, UserOrganization
-from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.organization_access_token.repository import OrganizationAccessTokenRepository
 from polar.postgres import AsyncSession, sql
 from polar.posthog import posthog
+from polar.product.repository import ProductRepository
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
@@ -461,63 +461,36 @@ class OrganizationService:
         organization: Organization,
     ) -> PaymentStatusResponse:
         """Get payment status and onboarding steps for an organization."""
-        from polar.models import Product
-
         steps = []
 
         # Step 1: Create a product
-        product_count = await session.scalar(
-            sql.select(sql.func.count(Product.id)).where(
-                Product.organization_id == organization.id,
-                Product.is_archived.is_(False),
-            )
+        product_repository = ProductRepository.from_session(session)
+        product_count = await product_repository.count_by_organization_id(
+            organization.id, is_archived=False
         )
         steps.append(
             PaymentStep(
                 id=PaymentStepID.CREATE_PRODUCT,
                 title="Create a product",
                 description="Create your first product to start accepting payments",
-                completed=bool(product_count and product_count > 0),
+                completed=product_count > 0,
             )
         )
 
         # Step 2: Integrate with Polar (create API key)
-        # Check if any users in the organization have created Organization Access Tokens
-        org_count = (
-            await session.scalar(
-                sql.select(sql.func.count(OrganizationAccessToken.id)).where(
-                    OrganizationAccessToken.organization_id == organization.id,
-                    OrganizationAccessToken.deleted_at.is_(None),
-                )
-            )
-            or 0
-        )
-
-        has_api_key = org_count > 0
+        token_repository = OrganizationAccessTokenRepository.from_session(session)
+        api_key_count = await token_repository.count_by_organization_id(organization.id)
         steps.append(
             PaymentStep(
                 id=PaymentStepID.INTEGRATE_API,
                 title="Integrate with Polar",
                 description="Create an API key to integrate Polar with your application",
-                completed=has_api_key,
+                completed=api_key_count > 0,
             )
         )
 
         # Step 3: Finish account setup
-        account_setup_complete = False
-        if organization.account:
-            # Check all account requirements
-            account_setup_complete = (
-                organization.details_submitted_at is not None
-                and organization.account.is_details_submitted
-                and organization.account.is_charges_enabled
-                and organization.account.is_payouts_enabled
-                and (
-                    organization.account.admin.identity_verification_status
-                    in ["verified", "pending"]
-                )
-            )
-
+        account_setup_complete = self._is_account_setup_complete(organization)
         steps.append(
             PaymentStep(
                 id=PaymentStepID.SETUP_ACCOUNT,
@@ -531,6 +504,22 @@ class OrganizationService:
             payment_ready=organization.is_payment_ready(),
             steps=steps,
             organization_status=organization.status,
+        )
+
+    def _is_account_setup_complete(self, organization: Organization) -> bool:
+        """Check if the organization's account setup is complete."""
+        if not organization.account:
+            return False
+
+        return (
+            organization.details_submitted_at is not None
+            and organization.account.is_details_submitted
+            and organization.account.is_charges_enabled
+            and organization.account.is_payouts_enabled
+            and (
+                organization.account.admin.identity_verification_status
+                in ["verified", "pending"]
+            )
         )
 
 

@@ -1048,7 +1048,9 @@ class CheckoutService:
             auth_subject,
             options=(
                 contains_eager(ProductPrice.product).options(
-                    joinedload(Product.organization).joinedload(Organization.account).joinedload(Account.admin),
+                    joinedload(Product.organization)
+                    .joinedload(Organization.account)
+                    .joinedload(Account.admin),
                     selectinload(Product.prices),
                 ),
             ),

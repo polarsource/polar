@@ -215,10 +215,10 @@ async def get_payment_status(
 ) -> OrganizationPaymentStatus:
     """Get payment status and onboarding steps for an organization."""
     organization = await organization_service.get(
-        session, 
-        auth_subject, 
+        session,
+        auth_subject,
         id,
-        options=(joinedload(Organization.account).joinedload(Account.admin),)
+        options=(joinedload(Organization.account).joinedload(Account.admin),),
     )
 
     if organization is None:
@@ -230,7 +230,10 @@ async def get_payment_status(
 
     return OrganizationPaymentStatus(
         payment_ready=payment_status.payment_ready,
-        steps=[OrganizationPaymentStep(**step.model_dump()) for step in payment_status.steps],
+        steps=[
+            OrganizationPaymentStep(**step.model_dump())
+            for step in payment_status.steps
+        ],
         organization_status=payment_status.organization_status,
     )
 

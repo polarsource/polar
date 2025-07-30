@@ -10,7 +10,14 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Account, CheckoutProduct, Product, ProductPrice, UserOrganization
+from polar.models import (
+    Account,
+    CheckoutProduct,
+    Product,
+    ProductPrice,
+    UserOrganization,
+)
+from polar.postgres import sql
 
 
 class ProductRepository(
@@ -54,7 +61,9 @@ class ProductRepository(
 
     def get_eager_options(self) -> Options:
         return (
-            joinedload(Product.organization).joinedload(Organization.account).joinedload(Account.admin),
+            joinedload(Product.organization)
+            .joinedload(Organization.account)
+            .joinedload(Account.admin),
             selectinload(Product.product_medias),
             selectinload(Product.attached_custom_fields),
             selectinload(Product.all_prices),
@@ -81,6 +90,24 @@ class ProductRepository(
             )
 
         return statement
+
+    async def count_by_organization_id(
+        self,
+        organization_id: UUID,
+        *,
+        is_archived: bool | None = None,
+    ) -> int:
+        """Count products for an organization with optional archived filter."""
+        statement = sql.select(sql.func.count(Product.id)).where(
+            Product.organization_id == organization_id,
+            Product.deleted_at.is_(None),
+        )
+
+        if is_archived is not None:
+            statement = statement.where(Product.is_archived.is_(is_archived))
+
+        count = await self.session.scalar(statement)
+        return count or 0
 
 
 class ProductPriceRepository(

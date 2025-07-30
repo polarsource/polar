@@ -126,7 +126,9 @@ class ResourceAlreadyExists(PolarError):
 
 class PaymentNotReady(PolarError):
     def __init__(
-        self, message: str = "Organization is not ready to accept payments", status_code: int = 403
+        self,
+        message: str = "Organization is not ready to accept payments",
+        status_code: int = 403,
     ) -> None:
         super().__init__(message, status_code)
 

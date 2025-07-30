@@ -57,6 +57,48 @@ class TestAccountUnderReview:
         send_to_user_mock.assert_called_once()
         create_account_review_thread_mock.assert_called_once()
 
+    async def test_organization_account_relationship_loaded(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+    ) -> None:
+        """Test that Organization.account relationship is properly loaded to avoid lazy='raise' error"""
+        account = await create_account(
+            save_fixture, admin=user, status=Account.Status.UNDER_REVIEW
+        )
+        organization = await create_organization(save_fixture, account=account)
+
+        session.expunge_all()
+
+        # Mock only the notification service, not plain_service.create_account_review_thread
+        # This ensures that the actual method runs and would fail if organization.account
+        # is not properly loaded due to lazy='raise'
+        send_to_user_mock = mocker.patch.object(
+            notification_service,
+            "send_to_user",
+            spec=NotificationsService.send_to_user,
+        )
+
+        # Mock the Plain client to avoid external API calls
+        mock_plain_client = mocker.patch(
+            "polar.integrations.plain.service.PlainService._get_plain_client"
+        )
+        mock_plain_instance = mocker.AsyncMock()
+        mock_result = mocker.MagicMock()
+        mock_result.error = None
+        mock_plain_instance.upsert_customer.return_value = mock_result
+        mock_plain_instance.create_thread.return_value = mock_result
+        mock_plain_client.return_value.__aenter__.return_value = mock_plain_instance
+
+        # This should not raise InvalidRequestError about Organization.account lazy='raise'
+        await account_under_review(account.id)
+
+        send_to_user_mock.assert_called_once()
+        mock_plain_instance.upsert_customer.assert_called_once()
+        mock_plain_instance.create_thread.assert_called_once()
+
 
 @pytest.mark.asyncio
 class TestAccountReviewed:

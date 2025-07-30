@@ -6,7 +6,7 @@ from polar.account.repository import AccountRepository
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.plain.service import plain as plain_service
-from polar.models import Account
+from polar.models import Account, Organization
 from polar.notifications.notification import (
     MaintainerAccountReviewedNotificationPayload,
     MaintainerAccountUnderReviewNotificationPayload,
@@ -39,7 +39,9 @@ async def account_under_review(account_id: uuid.UUID) -> None:
             raise AccountDoesNotExist(account_id)
 
         organization_repository = OrganizationRepository.from_session(session)
-        organizations = await organization_repository.get_all_by_account(account_id)
+        organizations = await organization_repository.get_all_by_account(
+            account_id, options=(joinedload(Organization.account),)
+        )
         for organization in organizations:
             await plain_service.create_account_review_thread(session, organization)
 

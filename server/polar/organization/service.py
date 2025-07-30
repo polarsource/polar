@@ -9,6 +9,7 @@ import structlog
 from pydantic import BaseModel, Field
 from sqlalchemy import update as sqlalchemy_update
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
@@ -16,8 +17,10 @@ from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.pagination import PaginationParams
+from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
 from polar.models import Account, Organization, User, UserOrganization
+from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
@@ -30,9 +33,12 @@ from .repository import OrganizationRepository
 from .schemas import OrganizationCreate, OrganizationUpdate
 from .sorting import OrganizationSortProperty
 
+log = structlog.get_logger(__name__)
+
 
 class PaymentStepID(StrEnum):
     """Enum for payment onboarding step identifiers."""
+
     CREATE_PRODUCT = "create_product"
     INTEGRATE_API = "integrate_api"
     SETUP_ACCOUNT = "setup_account"
@@ -103,10 +109,14 @@ class OrganizationService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
+        *,
+        options: Options = (),
     ) -> Organization | None:
         repository = OrganizationRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
-            Organization.id == id
+        statement = (
+            repository.get_readable_statement(auth_subject)
+            .where(Organization.id == id)
+            .options(*options)
         )
         return await repository.get_one_or_none(statement)
 
@@ -472,44 +482,18 @@ class OrganizationService:
         )
 
         # Step 2: Integrate with Polar (create API key)
-        # Check if any users in the organization have created OAuth2 clients or Personal Access Tokens
-        from polar.models import OAuth2Client, PersonalAccessToken, UserOrganization
-
-        # Get organization users
-        org_user_ids = await session.scalars(
-            sql.select(UserOrganization.user_id).where(
-                UserOrganization.organization_id == organization.id
+        # Check if any users in the organization have created Organization Access Tokens
+        org_count = (
+            await session.scalar(
+                sql.select(sql.func.count(OrganizationAccessToken.id)).where(
+                    OrganizationAccessToken.organization_id == organization.id,
+                    OrganizationAccessToken.deleted_at.is_(None),
+                )
             )
+            or 0
         )
-        org_user_ids_list = list(org_user_ids)
 
-        # Check for OAuth2 clients
-        oauth_client_count = 0
-        if org_user_ids_list:
-            oauth_client_count = (
-                await session.scalar(
-                    sql.select(sql.func.count(OAuth2Client.id)).where(
-                        OAuth2Client.user_id.in_(org_user_ids_list),
-                        OAuth2Client.deleted_at.is_(None),
-                    )
-                )
-                or 0
-            )
-
-        # Check for Personal Access Tokens
-        pat_count = 0
-        if org_user_ids_list:
-            pat_count = (
-                await session.scalar(
-                    sql.select(sql.func.count(PersonalAccessToken.id)).where(
-                        PersonalAccessToken.user_id.in_(org_user_ids_list),
-                        PersonalAccessToken.deleted_at.is_(None),
-                    )
-                )
-                or 0
-            )
-
-        has_api_key = (oauth_client_count + pat_count) > 0
+        has_api_key = org_count > 0
         steps.append(
             PaymentStep(
                 id=PaymentStepID.INTEGRATE_API,
@@ -528,7 +512,10 @@ class OrganizationService:
                 and organization.account.is_details_submitted
                 and organization.account.is_charges_enabled
                 and organization.account.is_payouts_enabled
-                and organization.account.admin.identity_verified
+                and (
+                    organization.account.admin.identity_verification_status
+                    in ["verified", "pending"]
+                )
             )
 
         steps.append(

@@ -1,6 +1,7 @@
 import datetime
 
 from fastapi import Depends, Query, Response, status
+from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
@@ -213,7 +214,12 @@ async def get_payment_status(
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationPaymentStatus:
     """Get payment status and onboarding steps for an organization."""
-    organization = await organization_service.get(session, auth_subject, id)
+    organization = await organization_service.get(
+        session, 
+        auth_subject, 
+        id,
+        options=(joinedload(Organization.account).joinedload(Account.admin),)
+    )
 
     if organization is None:
         raise ResourceNotFound()
@@ -226,7 +232,6 @@ async def get_payment_status(
         payment_ready=payment_status.payment_ready,
         steps=[OrganizationPaymentStep(**step.model_dump()) for step in payment_status.steps],
         organization_status=payment_status.organization_status,
-        account_status=payment_status.account_status,
     )
 
 

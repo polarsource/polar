@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, TypedDict
 from uuid import UUID
@@ -22,7 +22,6 @@ from polar.config import settings
 from polar.enums import SubscriptionProrationBehavior
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
-from polar.kit.timezone import utc_now
 
 from .account import Account
 
@@ -259,7 +258,7 @@ class Organization(RecordModel):
         # If the organization was created before, we don't want to block payments.
         # Organizations created before Jul 30, 2025 are grandfathered in
         # Use timezone-aware comparison
-        cutoff_date = datetime(2025, 7, 30, tzinfo=utc_now().tzinfo)
+        cutoff_date = datetime(2025, 7, 30, tzinfo=UTC)
         if self.created_at <= cutoff_date:
             return True
 

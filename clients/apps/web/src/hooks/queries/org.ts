@@ -200,3 +200,16 @@ export const useDeleteOrganizationAccessToken = () =>
       })
     },
   })
+
+export const useOrganizationPaymentStatus = (id: string, enabled: boolean = true) =>
+  useQuery({
+    queryKey: ['organizations', 'payment-status', id],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/payment-status', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: enabled && !!id,
+  })

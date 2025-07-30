@@ -3,13 +3,14 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
+import PaymentOnboardingStepper from '@/components/Onboarding/PaymentOnboardingStepper'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
 import CheckoutsWidget from '@/components/Widgets/CheckoutsWidget'
 import { MonthWidget } from '@/components/Widgets/MonthWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { SubscribersWidget } from '@/components/Widgets/SubscribersWidget'
-import { useMetrics } from '@/hooks/queries'
+import { useMetrics, useOrganizationPaymentStatus } from '@/hooks/queries'
 import { getChartRangeParams, getPreviousParams } from '@/utils/metrics'
 import { ArrowOutwardOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
@@ -78,6 +79,8 @@ interface OverviewPageProps {
 }
 
 export default function OverviewPage({ organization }: OverviewPageProps) {
+  const { data: paymentStatus } = useOrganizationPaymentStatus(organization.id)
+  
   const motionVariants = {
     variants: {
       initial: { opacity: 0 },
@@ -101,6 +104,9 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
           <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
         </Link>
       </div>
+      {paymentStatus && !paymentStatus.payment_ready && (
+        <PaymentOnboardingStepper organization={organization} />
+      )}
       <HeroChart organization={organization} />
       <motion.div
         className="grid grid-cols-1 gap-6 md:gap-10 xl:grid-cols-3"

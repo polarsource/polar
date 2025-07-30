@@ -24,6 +24,8 @@ from .schemas import Organization as OrganizationSchema
 from .schemas import (
     OrganizationCreate,
     OrganizationID,
+    OrganizationPaymentStatus,
+    OrganizationPaymentStep,
     OrganizationSetAccount,
     OrganizationUpdate,
 )
@@ -195,6 +197,36 @@ async def set_account(
 
     return await organization_service.set_account(
         session, auth_subject, organization, set_account.account_id
+    )
+
+
+@router.get(
+    "/{id}/payment-status",
+    response_model=OrganizationPaymentStatus,
+    tags=[APITag.private],
+    summary="Get Organization Payment Status",
+    responses={404: OrganizationNotFound},
+)
+async def get_payment_status(
+    id: OrganizationID,
+    auth_subject: auth.OrganizationsRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationPaymentStatus:
+    """Get payment status and onboarding steps for an organization."""
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    payment_status = await organization_service.get_payment_status(
+        session, organization
+    )
+
+    return OrganizationPaymentStatus(
+        payment_ready=payment_status.payment_ready,
+        steps=[OrganizationPaymentStep(**step.model_dump()) for step in payment_status.steps],
+        organization_status=payment_status.organization_status,
+        account_status=payment_status.account_status,
     )
 
 

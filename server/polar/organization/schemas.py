@@ -29,6 +29,9 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.models.organization import (
+    Organization as OrganizationModel,
+)
+from polar.models.organization import (
     OrganizationNotificationSettings,
     OrganizationSubscriptionSettings,
 )
@@ -288,6 +291,23 @@ class OrganizationStripePortalSession(Schema):
 class CreditBalance(Schema):
     amount: CurrencyAmount = Field(
         description="The customers credit balance. A negative value means that Polar owes this customer money (credit), a positive number means that the customer owes Polar money (debit)."
+    )
+
+
+class OrganizationPaymentStep(Schema):
+    id: str = Field(description="Step identifier")
+    title: str = Field(description="Step title")
+    description: str = Field(description="Step description")
+    completed: bool = Field(description="Whether the step is completed")
+
+
+class OrganizationPaymentStatus(Schema):
+    payment_ready: bool = Field(
+        description="Whether the organization is ready to accept payments"
+    )
+    steps: list[OrganizationPaymentStep] = Field(description="List of onboarding steps")
+    organization_status: OrganizationModel.Status = Field(
+        description="Current organization status"
     )
 
 

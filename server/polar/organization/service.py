@@ -1,10 +1,12 @@
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
 import structlog
+from pydantic import BaseModel, Field
 from sqlalchemy import update as sqlalchemy_update
 from sqlalchemy.exc import IntegrityError
 
@@ -27,6 +29,35 @@ from polar.worker import enqueue_job
 from .repository import OrganizationRepository
 from .schemas import OrganizationCreate, OrganizationUpdate
 from .sorting import OrganizationSortProperty
+
+
+class PaymentStepID(StrEnum):
+    """Enum for payment onboarding step identifiers."""
+    CREATE_PRODUCT = "create_product"
+    INTEGRATE_API = "integrate_api"
+    SETUP_ACCOUNT = "setup_account"
+
+
+class PaymentStep(BaseModel):
+    """Service-level model for payment onboarding steps."""
+
+    id: str = Field(description="Step identifier")
+    title: str = Field(description="Step title")
+    description: str = Field(description="Step description")
+    completed: bool = Field(description="Whether the step is completed")
+
+
+class PaymentStatusResponse(BaseModel):
+    """Service-level response for payment status."""
+
+    payment_ready: bool = Field(
+        description="Whether the organization is ready to accept payments"
+    )
+    steps: list[PaymentStep] = Field(description="List of onboarding steps")
+    organization_status: Organization.Status = Field(
+        description="Current organization status"
+    )
+
 
 log = structlog.get_logger()
 
@@ -413,6 +444,107 @@ class OrganizationService:
                 .where(Account.id == organization.account_id)
                 .values(status=account_status)
             )
+
+    async def get_payment_status(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> PaymentStatusResponse:
+        """Get payment status and onboarding steps for an organization."""
+        from polar.models import Product
+
+        steps = []
+
+        # Step 1: Create a product
+        product_count = await session.scalar(
+            sql.select(sql.func.count(Product.id)).where(
+                Product.organization_id == organization.id,
+                Product.is_archived.is_(False),
+            )
+        )
+        steps.append(
+            PaymentStep(
+                id=PaymentStepID.CREATE_PRODUCT,
+                title="Create a product",
+                description="Create your first product to start accepting payments",
+                completed=bool(product_count and product_count > 0),
+            )
+        )
+
+        # Step 2: Integrate with Polar (create API key)
+        # Check if any users in the organization have created OAuth2 clients or Personal Access Tokens
+        from polar.models import OAuth2Client, PersonalAccessToken, UserOrganization
+
+        # Get organization users
+        org_user_ids = await session.scalars(
+            sql.select(UserOrganization.user_id).where(
+                UserOrganization.organization_id == organization.id
+            )
+        )
+        org_user_ids_list = list(org_user_ids)
+
+        # Check for OAuth2 clients
+        oauth_client_count = 0
+        if org_user_ids_list:
+            oauth_client_count = (
+                await session.scalar(
+                    sql.select(sql.func.count(OAuth2Client.id)).where(
+                        OAuth2Client.user_id.in_(org_user_ids_list),
+                        OAuth2Client.deleted_at.is_(None),
+                    )
+                )
+                or 0
+            )
+
+        # Check for Personal Access Tokens
+        pat_count = 0
+        if org_user_ids_list:
+            pat_count = (
+                await session.scalar(
+                    sql.select(sql.func.count(PersonalAccessToken.id)).where(
+                        PersonalAccessToken.user_id.in_(org_user_ids_list),
+                        PersonalAccessToken.deleted_at.is_(None),
+                    )
+                )
+                or 0
+            )
+
+        has_api_key = (oauth_client_count + pat_count) > 0
+        steps.append(
+            PaymentStep(
+                id=PaymentStepID.INTEGRATE_API,
+                title="Integrate with Polar",
+                description="Create an API key to integrate Polar with your application",
+                completed=has_api_key,
+            )
+        )
+
+        # Step 3: Finish account setup
+        account_setup_complete = False
+        if organization.account:
+            # Check all account requirements
+            account_setup_complete = (
+                organization.details_submitted_at is not None
+                and organization.account.is_details_submitted
+                and organization.account.is_charges_enabled
+                and organization.account.is_payouts_enabled
+                and organization.account.admin.identity_verified
+            )
+
+        steps.append(
+            PaymentStep(
+                id=PaymentStepID.SETUP_ACCOUNT,
+                title="Finish account setup",
+                description="Complete your account details and verify your identity",
+                completed=account_setup_complete,
+            )
+        )
+
+        return PaymentStatusResponse(
+            payment_ready=organization.is_payment_ready(),
+            steps=steps,
+            organization_status=organization.status,
+        )
 
 
 organization = OrganizationService()

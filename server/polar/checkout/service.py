@@ -28,6 +28,7 @@ from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.exceptions import (
     NotPermitted,
+    PaymentNotReady,
     PolarError,
     PolarRequestValidationError,
     ResourceNotFound,
@@ -275,6 +276,10 @@ class CheckoutService:
 
         if product.organization.is_blocked():
             raise NotPermitted()
+
+        # Check if organization can accept payments
+        if not product.organization.is_payment_ready():
+            raise PaymentNotReady()
 
         if checkout_create.amount is not None and is_custom_price(price):
             if (
@@ -623,6 +628,10 @@ class CheckoutService:
 
         product = products[0]
         price = product.prices[0]
+
+        # Check if organization can accept payments
+        if not product.organization.is_payment_ready():
+            raise PaymentNotReady()
 
         amount = 0
         currency = "usd"

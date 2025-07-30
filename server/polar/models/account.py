@@ -162,3 +162,15 @@ class Account(RecordModel):
             if fee_in_cents - int(fee_in_cents) >= 0.5
             else math.floor(fee_in_cents)
         )
+
+    def is_account_ready(self) -> bool:
+        """Check if account is ready to accept payments"""
+        # Details must be submitted
+        if not self.is_details_submitted:
+            return False
+
+        # Charges and payouts must be enabled
+        if not self.is_charges_enabled or not self.is_payouts_enabled:
+            return False
+
+        return True

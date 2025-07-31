@@ -38,7 +38,7 @@ router = APIRouter(
 
 
 ActivationNotPermitted = {
-    "description": "License key activation not required or permitted (limit reached).",
+    "description": "License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.",
     "model": NotPermitted.schema(),
 }
 

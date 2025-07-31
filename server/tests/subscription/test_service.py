@@ -532,6 +532,7 @@ class TestCycle:
         assert billing_entry.amount == 0
         assert billing_entry.currency == subscription.currency
 
+    @freeze_time("2024-01-15")
     async def test_discount_repetition(
         self,
         session: AsyncSession,

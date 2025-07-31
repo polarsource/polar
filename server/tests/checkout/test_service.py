@@ -3272,7 +3272,6 @@ class TestConfirm:
         # Setup Stripe mocks
         confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
         confirmation_token.payment_method_preview = {"id": "pm_test"}
-        stripe_service_mock.get_confirmation_token.return_value = confirmation_token
 
         payment_intent = MagicMock(spec=stripe_lib.PaymentIntent)
         payment_intent.id = "pi_test"
@@ -3344,7 +3343,6 @@ class TestConfirm:
         # Setup Stripe mocks
         confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
         confirmation_token.payment_method_preview = {"id": "pm_test"}
-        stripe_service_mock.get_confirmation_token.return_value = confirmation_token
 
         payment_intent = MagicMock(spec=stripe_lib.PaymentIntent)
         payment_intent.id = "pi_test"

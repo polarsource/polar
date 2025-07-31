@@ -19,7 +19,6 @@ from polar.models import Account, Organization, User
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transaction import transaction as transaction_service
-from polar.worker import enqueue_job
 
 from .schemas import AccountCreate, AccountLink, AccountUpdate
 
@@ -117,7 +116,6 @@ class AccountService:
             session.add(account)
 
         return account
-
 
     async def _build_stripe_account_name(
         self, session: AsyncSession, account: Account
@@ -236,7 +234,6 @@ class AccountService:
         account.status = Account.Status.DENIED
         session.add(account)
         return account
-
 
 
 account = AccountService()

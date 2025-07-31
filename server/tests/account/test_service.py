@@ -94,6 +94,3 @@ class TestCheckReviewThreshold:
 
         updated_account = await account_service.check_review_threshold(session, account)
         assert updated_account.status == Account.Status.UNDER_REVIEW
-
-
-

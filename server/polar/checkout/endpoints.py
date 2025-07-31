@@ -7,7 +7,7 @@ from sse_starlette.sse import EventSourceResponse
 from polar.customer.schemas.customer import CustomerID
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import PaymentNotReady, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import (
     MultipleQueryFilter,
@@ -62,9 +62,11 @@ CheckoutPaymentError = {
     "model": PaymentError.schema(),
 }
 CheckoutForbiddenError = {
-    "description": "The checkout is expired or the customer already has an active subscription.",
+    "description": "The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.",
     "model": Annotated[
-        AlreadyActiveSubscriptionError.schema() | NotOpenCheckout.schema(),
+        AlreadyActiveSubscriptionError.schema()
+        | NotOpenCheckout.schema()
+        | PaymentNotReady.schema(),
         SetSchemaReference("CheckoutForbiddenError"),
     ],
 }

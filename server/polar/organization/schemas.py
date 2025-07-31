@@ -69,14 +69,14 @@ class OrganizationDetails(Schema):
         ..., description="Main customer acquisition channels."
     )
     future_annual_revenue: int = Field(
-        ..., description="Estimated revenue in the next 12 months"
+        ..., ge=0, description="Estimated revenue in the next 12 months"
     )
     switching: bool = Field(True, description="Switching from another platform?")
     switching_from: (
         Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
     ) = Field(None, description="Which platform the organization is migrating from.")
     previous_annual_revenue: int = Field(
-        0, description="Revenue from last year if applicable."
+        0, ge=0, description="Revenue from last year if applicable."
     )
 
 

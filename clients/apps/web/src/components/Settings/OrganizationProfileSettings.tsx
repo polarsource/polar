@@ -450,6 +450,7 @@ export const OrganizationDetailsForm: React.FC<
                     <Input
                       {...field}
                       type="number"
+                      min="0"
                       value={field.value || ''}
                       placeholder="1000"
                     />
@@ -554,6 +555,7 @@ export const OrganizationDetailsForm: React.FC<
                         <Input
                           {...field}
                           type="number"
+                          min="0"
                           value={field.value || ''}
                           placeholder="1000"
                         />

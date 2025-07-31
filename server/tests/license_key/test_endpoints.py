@@ -251,3 +251,50 @@ class TestLicenseKeyEndpoints:
         data = response.json()
         assert data["id"] == activation_id
         assert data["license_key"]["id"] == str(lk.id)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_activate_license_without_activations_returns_descriptive_error(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that activating a license without activations returns a descriptive error."""
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                # No activations property - this license doesn't support activations
+            ),
+        )
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+
+        activate = await client.post(
+            "/v1/customer-portal/license-keys/activate",
+            json={
+                "key": lk.key,
+                "organization_id": str(organization.id),
+                "label": "testing activation",
+                "conditions": {},
+                "meta": {},
+            },
+        )
+        assert activate.status_code == 403
+        data = activate.json()
+        assert "does not support activations" in data["detail"]
+        assert "Use the /validate endpoint instead" in data["detail"]

@@ -116,18 +116,8 @@ class AccountService:
             account.status = Account.Status.UNDER_REVIEW
             session.add(account)
 
-            enqueue_job("account.under_review", account_id=account.id)
-
         return account
 
-    async def confirm_account_reviewed(
-        self, session: AsyncSession, account: Account, next_review_threshold: int
-    ) -> Account:
-        account.status = Account.Status.ACTIVE
-        account.next_review_threshold = next_review_threshold
-        session.add(account)
-        enqueue_job("account.reviewed", account_id=account.id)
-        return account
 
     async def _build_stripe_account_name(
         self, session: AsyncSession, account: Account
@@ -247,14 +237,6 @@ class AccountService:
         session.add(account)
         return account
 
-    async def set_account_under_review(
-        self, session: AsyncSession, account: Account
-    ) -> Account:
-        account.status = Account.Status.UNDER_REVIEW
-
-        session.add(account)
-        enqueue_job("account.under_review", account_id=account.id)
-        return account
 
 
 account = AccountService()

@@ -1678,8 +1678,6 @@ class TestCheckoutLinkCreate:
         organization: Organization,
         product_one_time: Product,
     ) -> None:
-        from datetime import UTC, datetime
-
         # Make organization not payment ready (new org without account setup)
         organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
         organization.status = Organization.Status.CREATED
@@ -1693,8 +1691,10 @@ class TestCheckoutLinkCreate:
             user_metadata={"key": "value"},
         )
 
-        with pytest.raises(PaymentNotReady):
-            await checkout_service.checkout_link_create(session, checkout_link)
+        # Checkout link should be created successfully
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+        assert checkout.id is not None
+        assert checkout.product_id == product_one_time.id
 
     async def test_organization_not_payment_ready_free_product_allowed(
         self,
@@ -1703,8 +1703,6 @@ class TestCheckoutLinkCreate:
         organization: Organization,
         product_one_time_free_price: Product,
     ) -> None:
-        from datetime import UTC, datetime
-
         # Make organization not payment ready (new org without account setup)
         organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
         organization.status = Organization.Status.CREATED

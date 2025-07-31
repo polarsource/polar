@@ -525,8 +525,6 @@ class CheckoutService:
                 ]
             )
 
-        product = await self._eager_load_product(session, product)
-
         if product.organization.blocked_at is not None:
             raise PolarRequestValidationError(
                 [
@@ -1828,17 +1826,6 @@ class CheckoutService:
             product,
             {"organization", "prices", "product_medias", "attached_custom_fields"},
         )
-        # Separately load the account information if organization exists
-        if product.organization:
-            await session.refresh(
-                product.organization,
-                attribute_names=["account"],
-            )
-            if product.organization.account:
-                await session.refresh(
-                    product.organization.account,
-                    attribute_names=["admin"],
-                )
         return product
 
 

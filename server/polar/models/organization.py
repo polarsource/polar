@@ -277,7 +277,6 @@ class Organization(RecordModel):
         if not self.account_id or not self.account:
             return False
 
-        # Check if account is ready (details submitted, payments enabled)
         if not self.account.is_account_ready():
             return False
 

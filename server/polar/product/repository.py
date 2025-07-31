@@ -11,7 +11,6 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models import (
-    Account,
     CheckoutProduct,
     Product,
     ProductPrice,
@@ -61,9 +60,7 @@ class ProductRepository(
 
     def get_eager_options(self) -> Options:
         return (
-            joinedload(Product.organization)
-            .joinedload(Organization.account)
-            .joinedload(Account.admin),
+            joinedload(Product.organization),
             selectinload(Product.product_medias),
             selectinload(Product.attached_custom_fields),
             selectinload(Product.all_prices),

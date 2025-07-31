@@ -1,6 +1,7 @@
 'use client'
 
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
+import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
 import {
   CheckoutForm,
   CheckoutProductSwitcher,
@@ -13,6 +14,7 @@ import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/ch
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
 import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
+import Alert from '@polar-sh/ui/components/atoms/Alert'
 import ShadowBox, {
   ShadowBoxOnMd,
 } from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -47,6 +49,29 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     checkout.organization.slug === 'midday' ? 'midday' : 'polar',
     theme,
   )
+
+  // Check organization payment readiness
+  const { data: paymentStatus } = useOrganizationPaymentStatus(
+    checkout.organization.id,
+  )
+
+  const isPaymentReady = paymentStatus?.payment_ready ?? true // Default to true while loading
+
+  const PaymentNotReadyBanner = () => {
+    if (isPaymentReady) return null
+
+    return (
+      <Alert color="red">
+        <div className="flex flex-col gap-y-2">
+          <div className="font-medium">Payments are currently unavailable</div>
+          <div className="text-sm">
+            {checkout.organization.name} needs to complete their payment setup
+            before you can make a purchase.
+          </div>
+        </div>
+      </Alert>
+    )
+  }
 
   const [fullLoading, setFullLoading] = useState(false)
   const loading = useMemo(
@@ -117,6 +142,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           'flex flex-col gap-y-12 overflow-hidden',
         )}
       >
+        <PaymentNotReadyBanner />
         <CheckoutProductSwitcher
           checkout={checkout}
           update={update}
@@ -139,6 +165,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           loadingLabel={label}
           theme={theme}
           themePreset={themePreset}
+          disabled={!isPaymentReady}
         />
       </ShadowBox>
     )
@@ -181,6 +208,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
         />
       </div>
       <div className="flex flex-col gap-y-8 md:p-12">
+        <PaymentNotReadyBanner />
         <CheckoutForm
           form={form}
           checkout={checkout}
@@ -190,6 +218,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           loadingLabel={label}
           theme={theme}
           themePreset={themePreset}
+          disabled={!isPaymentReady}
         />
       </div>
     </ShadowBoxOnMd>

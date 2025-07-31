@@ -757,6 +757,12 @@ const BaseCheckoutForm = ({
                   {loadingLabel}
                 </p>
               )}
+              {disabled && !loading && (
+                <p className="text-sm text-red-500 dark:text-red-500">
+                  Merchant needs to complete their setup before accepting
+                  payments.
+                </p>
+              )}
               {errors.root && (
                 <p className="text-destructive-foreground text-sm">
                   {errors.root.message}
@@ -793,6 +799,7 @@ interface CheckoutFormProps {
   ) => Promise<CheckoutPublicConfirmed>
   loading: boolean
   loadingLabel: string | undefined
+  disabled?: boolean
   theme?: 'light' | 'dark'
   themePreset: ThemingPresetProps
 }
@@ -804,6 +811,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     confirm,
     loading,
     loadingLabel,
+    disabled,
     themePreset: themePresetProps,
   } = props
   const {
@@ -890,7 +898,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
 }
 
 const DummyCheckoutForm = (props: CheckoutFormProps) => {
-  const { checkout } = props
+  const { checkout, disabled } = props
   return (
     <BaseCheckoutForm
       {...props}
@@ -900,7 +908,7 @@ const DummyCheckoutForm = (props: CheckoutFormProps) => {
         customerSessionToken: '',
       })}
       update={async () => checkout}
-      disabled={true}
+      disabled={disabled ?? true}
     />
   )
 }

@@ -760,7 +760,7 @@ const BaseCheckoutForm = ({
               {disabled && !loading && (
                 <p className="text-sm text-red-500 dark:text-red-500">
                   Merchant needs to complete their setup before accepting
-                  payments.
+                  paid transactions.
                 </p>
               )}
               {errors.root && (

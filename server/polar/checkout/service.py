@@ -278,8 +278,11 @@ class CheckoutService:
         if product.organization.is_blocked():
             raise NotPermitted()
 
-        # Check if organization can accept payments
-        if not product.organization.is_payment_ready():
+        # Check if organization can accept payments (only block paid transactions)
+        if (
+            not product.organization.is_payment_ready()
+            and price.amount_type != ProductPriceAmountType.free
+        ):
             raise PaymentNotReady()
 
         if checkout_create.amount is not None and is_custom_price(price):
@@ -543,11 +546,14 @@ class CheckoutService:
                 ]
             )
 
-        # Check if organization can accept payments
-        if not product.organization.is_payment_ready():
-            raise PaymentNotReady()
-
         price = product.prices[0]
+
+        # Check if organization can accept payments (only block paid transactions)
+        if (
+            not product.organization.is_payment_ready()
+            and price.amount_type != ProductPriceAmountType.free
+        ):
+            raise PaymentNotReady()
 
         amount = 0
         currency = "usd"

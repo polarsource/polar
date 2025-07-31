@@ -56,9 +56,11 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   )
 
   const isPaymentReady = paymentStatus?.payment_ready ?? true // Default to true while loading
+  const isFreeProduct = checkout.isFreeProductPrice
+  const shouldBlockCheckout = !isPaymentReady && !isFreeProduct
 
   const PaymentNotReadyBanner = () => {
-    if (isPaymentReady) return null
+    if (!shouldBlockCheckout) return null
 
     return (
       <Alert color="red">
@@ -165,7 +167,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           loadingLabel={label}
           theme={theme}
           themePreset={themePreset}
-          disabled={!isPaymentReady}
+          disabled={shouldBlockCheckout}
         />
       </ShadowBox>
     )
@@ -218,7 +220,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           loadingLabel={label}
           theme={theme}
           themePreset={themePreset}
-          disabled={!isPaymentReady}
+          disabled={shouldBlockCheckout}
         />
       </div>
     </ShadowBoxOnMd>

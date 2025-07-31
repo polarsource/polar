@@ -634,10 +634,6 @@ class CheckoutService:
         product = products[0]
         price = product.prices[0]
 
-        # Check if organization can accept payments
-        if not product.organization.is_payment_ready():
-            raise PaymentNotReady()
-
         amount = 0
         currency = "usd"
         if is_fixed_price(price):

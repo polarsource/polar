@@ -123,6 +123,60 @@ class TestUpdateOrganization:
         json = response.json()
         assert json["name"] == "Updated"
 
+    @pytest.mark.auth
+    async def test_negative_revenue_validation(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Test negative future_annual_revenue
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "details": {
+                    "about": "Test company",
+                    "product_description": "SaaS product",
+                    "intended_use": "API integration",
+                    "customer_acquisition": ["website"],
+                    "future_annual_revenue": -1000,
+                    "switching": False,
+                    "previous_annual_revenue": 25000,
+                }
+            },
+        )
+
+        assert response.status_code == 422
+        error_detail = response.json()["detail"]
+        assert any("future_annual_revenue" in str(error) for error in error_detail)
+
+    @pytest.mark.auth
+    async def test_negative_previous_revenue_validation(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Test negative previous_annual_revenue
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "details": {
+                    "about": "Test company",
+                    "product_description": "SaaS product",
+                    "intended_use": "API integration",
+                    "customer_acquisition": ["website"],
+                    "future_annual_revenue": 50000,
+                    "switching": False,
+                    "previous_annual_revenue": -5000,
+                }
+            },
+        )
+
+        assert response.status_code == 422
+        error_detail = response.json()["detail"]
+        assert any("previous_annual_revenue" in str(error) for error in error_detail)
+
 
 @pytest.mark.asyncio
 class TestInviteOrganization:

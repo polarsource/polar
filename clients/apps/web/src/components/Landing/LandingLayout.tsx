@@ -90,6 +90,9 @@ const LandingPageDesktopNavigation = () => {
             </NavLink>
           </li>
           <li>
+            <NavLink href="/pricing">Pricing</NavLink>
+          </li>
+          <li>
             <NavLink href="https://docs.polar.sh">Docs</NavLink>
           </li>
           <li>

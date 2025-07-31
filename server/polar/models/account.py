@@ -164,13 +164,18 @@ class Account(RecordModel):
         )
 
     def is_account_ready(self) -> bool:
-        """Check if account is ready to accept payments"""
+        """Check if account is ready to accept payments
+        
+        We only check is_details_submitted because:
+        - is_charges_enabled and is_payouts_enabled can change during the account lifecycle
+        - We want to activate customer payments once organizations have submitted all required data
+        - is_details_submitted indicates that the organization has completed the onboarding process
+          and provided all necessary information, which is sufficient for accepting payments
+        - The actual charge/payout enablement status will be managed by Stripe based on their
+          verification processes, but we don't want to block payments while waiting for those
+        """
         # Details must be submitted
         if not self.is_details_submitted:
-            return False
-
-        # Charges and payouts must be enabled
-        if not self.is_charges_enabled or not self.is_payouts_enabled:
             return False
 
         return True

@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import Select, select, update
 from sqlalchemy.orm import joinedload, selectinload
 
-from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
+from polar.auth.models import AuthSubject, User, is_organization, is_user
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -13,7 +13,13 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.utils import utc_now
-from polar.models import Checkout, CheckoutProduct, Product, UserOrganization
+from polar.models import (
+    Checkout,
+    CheckoutProduct,
+    Organization,
+    Product,
+    UserOrganization,
+)
 from polar.models.checkout import CheckoutStatus
 
 from .sorting import CheckoutSortProperty
@@ -75,7 +81,7 @@ class CheckoutRepository(
         return (
             joinedload(Checkout.customer),
             joinedload(Checkout.product).options(
-                joinedload(Product.organization),
+                joinedload(Product.organization).joinedload(Organization.account),
                 selectinload(Product.product_medias),
                 selectinload(Product.attached_custom_fields),
             ),

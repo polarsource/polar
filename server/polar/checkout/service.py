@@ -543,6 +543,10 @@ class CheckoutService:
                 ]
             )
 
+        # Check if organization can accept payments
+        if not product.organization.is_payment_ready():
+            raise PaymentNotReady()
+
         price = product.prices[0]
 
         amount = 0

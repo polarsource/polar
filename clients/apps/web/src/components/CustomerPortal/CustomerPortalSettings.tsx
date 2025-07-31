@@ -76,7 +76,7 @@ export const CustomerPortalSettings = ({
               customer={customer}
               paymentMethod={pm}
               api={api}
-              deletable={paymentMethods.items.length > 1}
+              deletable={true}
             />
           ))}
         </WellContent>

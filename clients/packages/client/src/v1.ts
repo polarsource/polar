@@ -6244,7 +6244,7 @@ export interface components {
             /** Code */
             code: string | null;
         };
-        CheckoutForbiddenError: components["schemas"]["AlreadyActiveSubscriptionError"] | components["schemas"]["NotOpenCheckout"];
+        CheckoutForbiddenError: components["schemas"]["AlreadyActiveSubscriptionError"] | components["schemas"]["NotOpenCheckout"] | components["schemas"]["PaymentNotReady"];
         /**
          * CheckoutLink
          * @description Checkout link data.
@@ -14253,6 +14253,16 @@ export interface components {
             /** Type */
             type: string;
         };
+        /** PaymentNotReady */
+        PaymentNotReady: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "PaymentNotReady";
+            /** Detail */
+            detail: string;
+        };
         /**
          * PaymentProcessor
          * @enum {string}
@@ -20064,7 +20074,7 @@ export interface operations {
                     "application/json": components["schemas"]["Checkout"];
                 };
             };
-            /** @description The checkout is expired or the customer already has an active subscription. */
+            /** @description The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -20168,7 +20178,7 @@ export interface operations {
                     "application/json": components["schemas"]["CheckoutPublic"];
                 };
             };
-            /** @description The checkout is expired or the customer already has an active subscription. */
+            /** @description The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -20273,7 +20283,7 @@ export interface operations {
                     "application/json": components["schemas"]["PaymentError"];
                 };
             };
-            /** @description The checkout is expired or the customer already has an active subscription. */
+            /** @description The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -22740,7 +22750,7 @@ export interface operations {
                     "application/json": components["schemas"]["LicenseKeyActivationRead"];
                 };
             };
-            /** @description License key activation not required or permitted (limit reached). */
+            /** @description License key activation not supported or limit reached. Use /validate endpoint for licenses without activations. */
             403: {
                 headers: {
                     [name: string]: unknown;

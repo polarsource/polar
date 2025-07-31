@@ -19,7 +19,6 @@ from polar.models import Account, Organization, User
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transaction import transaction as transaction_service
-from polar.worker import enqueue_job
 
 from .schemas import AccountCreate, AccountLink, AccountUpdate
 
@@ -116,17 +115,6 @@ class AccountService:
             account.status = Account.Status.UNDER_REVIEW
             session.add(account)
 
-            enqueue_job("account.under_review", account_id=account.id)
-
-        return account
-
-    async def confirm_account_reviewed(
-        self, session: AsyncSession, account: Account, next_review_threshold: int
-    ) -> Account:
-        account.status = Account.Status.ACTIVE
-        account.next_review_threshold = next_review_threshold
-        session.add(account)
-        enqueue_job("account.reviewed", account_id=account.id)
         return account
 
     async def _build_stripe_account_name(
@@ -245,15 +233,6 @@ class AccountService:
     async def deny_account(self, session: AsyncSession, account: Account) -> Account:
         account.status = Account.Status.DENIED
         session.add(account)
-        return account
-
-    async def set_account_under_review(
-        self, session: AsyncSession, account: Account
-    ) -> Account:
-        account.status = Account.Status.UNDER_REVIEW
-
-        session.add(account)
-        enqueue_job("account.under_review", account_id=account.id)
         return account
 
 

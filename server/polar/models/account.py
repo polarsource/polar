@@ -165,7 +165,7 @@ class Account(RecordModel):
 
     def is_account_ready(self) -> bool:
         """Check if account is ready to accept payments
-        
+
         We only check is_details_submitted because:
         - is_charges_enabled and is_payouts_enabled can change during the account lifecycle
         - We want to activate customer payments once organizations have submitted all required data

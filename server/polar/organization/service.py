@@ -508,18 +508,18 @@ class OrganizationService:
 
     def _is_account_setup_complete(self, organization: Organization) -> bool:
         """Check if the organization's account setup is complete."""
-        if not organization.account:
+        if not organization.account_id:
             return False
 
+        account = organization.account
+        if not account:
+            return False
+
+        admin = account.admin
         return (
             organization.details_submitted_at is not None
-            and organization.account.is_details_submitted
-            and organization.account.is_charges_enabled
-            and organization.account.is_payouts_enabled
-            and (
-                organization.account.admin.identity_verification_status
-                in ["verified", "pending"]
-            )
+            and account.is_details_submitted
+            and (admin.identity_verification_status in ["verified", "pending"])
         )
 
 

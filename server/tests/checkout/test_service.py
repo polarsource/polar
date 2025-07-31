@@ -30,7 +30,7 @@ from polar.customer_session.service import customer_session as customer_session_
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
-from polar.exceptions import PolarRequestValidationError
+from polar.exceptions import PaymentNotReady, PolarRequestValidationError
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
@@ -324,6 +324,68 @@ class TestCreate:
                 ),
                 auth_subject,
             )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_organization_not_payment_ready(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        from datetime import UTC, datetime
+
+        # Make organization not payment ready (new org without account setup)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+        organization.status = Organization.Status.CREATED
+        organization.account_id = None
+        await save_fixture(organization)
+
+        with pytest.raises(PaymentNotReady):
+            await checkout_service.create(
+                session,
+                CheckoutPriceCreate(
+                    product_price_id=product_one_time.prices[0].id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_grandfathered_organization_payment_ready(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        from datetime import UTC, datetime
+
+        # Make organization grandfathered (created before cutoff)
+        organization.created_at = datetime(2025, 7, 29, tzinfo=UTC)
+        organization.status = Organization.Status.CREATED  # Even with CREATED status
+        organization.account_id = None  # Even without account
+        await save_fixture(organization)
+
+        # Should not raise PaymentNotReady because it's grandfathered
+        checkout = await checkout_service.create(
+            session,
+            CheckoutPriceCreate(
+                product_price_id=product_one_time.prices[0].id,
+            ),
+            auth_subject,
+        )
+
+        assert checkout.product == product_one_time
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1407,6 +1469,54 @@ class TestClientCreate:
         assert checkout.amount == price.preset_amount
         assert checkout.currency == price.price_currency
 
+    async def test_organization_not_payment_ready(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        from datetime import UTC, datetime
+
+        # Make organization not payment ready (new org without account setup)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+        organization.status = Organization.Status.CREATED
+        organization.account_id = None
+        await save_fixture(organization)
+
+        with pytest.raises(PaymentNotReady):
+            await checkout_service.client_create(
+                session,
+                CheckoutCreatePublic(product_id=product_one_time.id),
+                auth_subject,
+            )
+
+    async def test_grandfathered_organization_payment_ready(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        from datetime import UTC, datetime
+
+        # Make organization grandfathered (created before cutoff)
+        organization.created_at = datetime(2025, 7, 29, tzinfo=UTC)
+        organization.status = Organization.Status.CREATED  # Even with CREATED status
+        organization.account_id = None  # Even without account
+        await save_fixture(organization)
+
+        # Should not raise PaymentNotReady because it's grandfathered
+        checkout = await checkout_service.client_create(
+            session,
+            CheckoutCreatePublic(product_id=product_one_time.id),
+            auth_subject,
+        )
+
+        assert checkout.product == product_one_time
+
 
 @pytest.mark.asyncio
 class TestCheckoutLinkCreate:
@@ -1510,6 +1620,57 @@ class TestCheckoutLinkCreate:
             "reference_id": "test_reference_id",
             "utm_campaign": "test_campaign",
         }
+
+    async def test_organization_not_payment_ready(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        from datetime import UTC, datetime
+
+        # Make organization not payment ready (new org without account setup)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+        organization.status = Organization.Status.CREATED
+        organization.account_id = None
+        await save_fixture(organization)
+
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            products=[product_one_time],
+            success_url="https://example.com/success",
+            user_metadata={"key": "value"},
+        )
+
+        with pytest.raises(PaymentNotReady):
+            await checkout_service.checkout_link_create(session, checkout_link)
+
+    async def test_grandfathered_organization_payment_ready(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        from datetime import UTC, datetime
+
+        # Make organization grandfathered (created before cutoff)
+        organization.created_at = datetime(2025, 7, 29, tzinfo=UTC)
+        organization.status = Organization.Status.CREATED  # Even with CREATED status
+        organization.account_id = None  # Even without account
+        await save_fixture(organization)
+
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            products=[product_one_time],
+            success_url="https://example.com/success",
+            user_metadata={"key": "value"},
+        )
+
+        # Should not raise PaymentNotReady because it's grandfathered
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+        assert checkout.product == product_one_time
 
 
 @pytest.mark.asyncio

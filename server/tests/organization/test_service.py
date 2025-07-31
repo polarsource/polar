@@ -1,18 +1,24 @@
+from datetime import UTC, datetime
+
 import pytest
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
+from polar.enums import AccountType
 from polar.exceptions import PolarRequestValidationError
-from polar.models import Organization, User
+from polar.models import Organization, Product, User
+from polar.models.account import Account
 from polar.models.organization import OrganizationNotificationSettings
+from polar.models.user import IdentityVerificationStatus
 from polar.organization.schemas import OrganizationCreate, OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
@@ -319,3 +325,229 @@ class TestSetOrganizationUnderReview:
         enqueue_job_mock.assert_called_once_with(
             "organization.under_review", organization_id=organization.id
         )
+
+
+@pytest.mark.asyncio
+class TestGetPaymentStatus:
+    async def test_all_steps_incomplete(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        # Make this a new organization (not grandfathered)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+        await save_fixture(organization)
+
+        # Organization with no products, no API keys, and no account setup
+        payment_status = await organization_service.get_payment_status(
+            session, organization
+        )
+
+        assert payment_status.payment_ready is False
+        assert len(payment_status.steps) == 3
+
+        # Check each step
+        create_product_step = next(
+            s for s in payment_status.steps if s.id == "create_product"
+        )
+        assert create_product_step.completed is False
+
+        integrate_api_step = next(
+            s for s in payment_status.steps if s.id == "integrate_api"
+        )
+        assert integrate_api_step.completed is False
+
+        setup_account_step = next(
+            s for s in payment_status.steps if s.id == "setup_account"
+        )
+        assert setup_account_step.completed is False
+
+    async def test_with_product_created(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        # Make this a new organization (not grandfathered)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+        await save_fixture(organization)
+
+        # Organization with a product but no API keys or account setup
+        payment_status = await organization_service.get_payment_status(
+            session, organization
+        )
+
+        assert payment_status.payment_ready is False
+
+        create_product_step = next(
+            s for s in payment_status.steps if s.id == "create_product"
+        )
+        assert create_product_step.completed is True
+
+        integrate_api_step = next(
+            s for s in payment_status.steps if s.id == "integrate_api"
+        )
+        assert integrate_api_step.completed is False
+
+    async def test_with_api_key_created(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Make this a new organization (not grandfathered)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+        await save_fixture(organization)
+
+        # Mock the API key count
+        mocker.patch(
+            "polar.organization_access_token.repository.OrganizationAccessTokenRepository.count_by_organization_id",
+            return_value=1,  # Has 1 API key
+        )
+
+        # Organization with an API key but no products or account setup
+        payment_status = await organization_service.get_payment_status(
+            session, organization
+        )
+
+        assert payment_status.payment_ready is False
+
+        create_product_step = next(
+            s for s in payment_status.steps if s.id == "create_product"
+        )
+        assert create_product_step.completed is False
+
+        integrate_api_step = next(
+            s for s in payment_status.steps if s.id == "integrate_api"
+        )
+        assert integrate_api_step.completed is True
+
+    async def test_with_account_setup_complete(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        # Make this a new organization (not grandfathered)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+
+        user.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user)
+
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        await save_fixture(account)
+
+        organization.account = account
+        organization.account_id = account.id
+        organization.details_submitted_at = datetime.now(UTC)
+        organization.details = {"about": "Test"}  # type: ignore
+        await save_fixture(organization)
+
+        # Ensure relationships are loaded
+        await session.refresh(organization, attribute_names=["account"])
+        await session.refresh(organization.account, attribute_names=["admin"])
+
+        payment_status = await organization_service.get_payment_status(
+            session, organization
+        )
+
+        # Still not payment ready without products and API key
+        assert payment_status.payment_ready is False
+
+        setup_account_step = next(
+            s for s in payment_status.steps if s.id == "setup_account"
+        )
+        assert setup_account_step.completed is True
+
+    async def test_all_steps_complete_grandfathered(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        mocker: MockerFixture,
+        user: User,
+    ) -> None:
+        # Grandfathered organization (created before cutoff)
+        organization.created_at = datetime(2025, 7, 29, tzinfo=UTC)
+        await save_fixture(organization)
+
+        # Mock the API key count
+        mocker.patch(
+            "polar.organization_access_token.repository.OrganizationAccessTokenRepository.count_by_organization_id",
+            return_value=1,  # Has 1 API key
+        )
+
+        payment_status = await organization_service.get_payment_status(
+            session, organization
+        )
+
+        # Should be payment ready because it's grandfathered
+        assert payment_status.payment_ready is True
+
+    async def test_all_steps_complete_new_org(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        mocker: MockerFixture,
+        user: User,
+    ) -> None:
+        # Set up as new organization
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+        organization.status = Organization.Status.ACTIVE
+        organization.details_submitted_at = datetime.now(UTC)
+        organization.details = {"about": "Test"}  # type: ignore
+
+        # Set up user verification
+        user.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user)
+
+        # Set up account
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        await save_fixture(account)
+
+        organization.account = account
+        organization.account_id = account.id
+        await save_fixture(organization)
+
+        # Ensure relationships are loaded
+        await session.refresh(organization, attribute_names=["account"])
+        await session.refresh(organization.account, attribute_names=["admin"])
+
+        # Mock the API key count
+        mocker.patch(
+            "polar.organization_access_token.repository.OrganizationAccessTokenRepository.count_by_organization_id",
+            return_value=1,  # Has 1 API key
+        )
+
+        payment_status = await organization_service.get_payment_status(
+            session, organization
+        )
+
+        # Should be payment ready with all steps complete
+        assert payment_status.payment_ready is True
+        assert all(step.completed for step in payment_status.steps)

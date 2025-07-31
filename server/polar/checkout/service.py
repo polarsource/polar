@@ -278,13 +278,6 @@ class CheckoutService:
         if product.organization.is_blocked():
             raise NotPermitted()
 
-        # Check if organization can accept payments (only block paid transactions)
-        if (
-            not product.organization.is_payment_ready()
-            and price.amount_type != ProductPriceAmountType.free
-        ):
-            raise PaymentNotReady()
-
         if checkout_create.amount is not None and is_custom_price(price):
             if (
                 price.minimum_amount is not None
@@ -548,13 +541,6 @@ class CheckoutService:
 
         price = product.prices[0]
 
-        # Check if organization can accept payments (only block paid transactions)
-        if (
-            not product.organization.is_payment_ready()
-            and price.amount_type != ProductPriceAmountType.free
-        ):
-            raise PaymentNotReady()
-
         amount = 0
         currency = "usd"
         if is_fixed_price(price):
@@ -797,6 +783,13 @@ class CheckoutService:
                     "input": checkout.product_price_id,
                 }
             )
+
+        # Check if organization can accept payments (only block paid transactions)
+        if (
+            not checkout.product.organization.is_payment_ready()
+            and checkout.product_price.amount_type != ProductPriceAmountType.free
+        ):
+            raise PaymentNotReady()
 
         required_fields = self._get_required_confirm_fields(checkout)
         for required_field in required_fields:

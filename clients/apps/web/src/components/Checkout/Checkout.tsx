@@ -56,8 +56,8 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   )
 
   const isPaymentReady = paymentStatus?.payment_ready ?? true // Default to true while loading
-  const isFreeProduct = checkout.isFreeProductPrice
-  const shouldBlockCheckout = !isPaymentReady && !isFreeProduct
+  const isPaymentRequired = checkout.isPaymentRequired
+  const shouldBlockCheckout = !isPaymentReady && isPaymentRequired
 
   const PaymentNotReadyBanner = () => {
     if (!shouldBlockCheckout) return null

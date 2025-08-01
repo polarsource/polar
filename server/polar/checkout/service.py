@@ -785,7 +785,7 @@ class CheckoutService:
         # Check if organization can accept payments (only block paid transactions)
         if (
             not checkout.product.organization.is_payment_ready()
-            and checkout.product_price.amount_type != ProductPriceAmountType.free
+            and checkout.is_payment_required
         ):
             raise PaymentNotReady()
 

@@ -282,7 +282,7 @@ class TestGetPaymentStatus:
         user_organization: UserOrganization,
     ) -> None:
         # Make this a new organization (not grandfathered)
-        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+        organization.created_at = datetime(2025, 8, 2)
         await save_fixture(organization)
 
         response = await client.get(
@@ -314,7 +314,7 @@ class TestGetPaymentStatus:
         product: Product,
     ) -> None:
         # Make this a new organization (not grandfathered)
-        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+        organization.created_at = datetime(2025, 8, 2)
         await save_fixture(organization)
 
         response = await client.get(
@@ -339,7 +339,7 @@ class TestGetPaymentStatus:
         mocker: MockerFixture,
     ) -> None:
         # Make this a new organization (not grandfathered)
-        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+        organization.created_at = datetime(2025, 8, 2)
         await save_fixture(organization)
 
         # Mock the API key count
@@ -369,7 +369,7 @@ class TestGetPaymentStatus:
         user_organization: UserOrganization,
     ) -> None:
         # Make organization grandfathered
-        organization.created_at = datetime(2025, 7, 29, tzinfo=UTC)
+        organization.created_at = datetime(2025, 7, 29)
         await save_fixture(organization)
 
         response = await client.get(
@@ -393,7 +393,7 @@ class TestGetPaymentStatus:
         user: User,
     ) -> None:
         # Set up as new organization
-        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+        organization.created_at = datetime(2025, 8, 2)
         organization.status = Organization.Status.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
         organization.details = {"about": "Test"}  # type: ignore

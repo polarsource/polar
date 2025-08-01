@@ -3151,7 +3151,7 @@ class TestConfirm:
         checkout_one_time_fixed: Checkout,
     ) -> None:
         # Make organization not payment ready (new org without account setup)
-        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+        organization.created_at = datetime(2025, 8, 2)
         organization.status = Organization.Status.CREATED
         organization.account_id = None
         await save_fixture(organization)
@@ -3184,7 +3184,7 @@ class TestConfirm:
         mocker: MockerFixture,
     ) -> None:
         # Make organization not payment ready (new org without account setup)
-        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+        organization.created_at = datetime(2025, 8, 2)
         organization.status = Organization.Status.CREATED
         organization.account_id = None
         await save_fixture(organization)
@@ -3224,7 +3224,7 @@ class TestConfirm:
         checkout_recurring_fixed: Checkout,
     ) -> None:
         # Make organization not payment ready
-        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+        organization.created_at = datetime(2025, 8, 2)
         organization.status = Organization.Status.CREATED
         organization.account_id = None
         await save_fixture(organization)
@@ -3264,7 +3264,7 @@ class TestConfirm:
         stripe_service_mock: MagicMock,
     ) -> None:
         # Make organization grandfathered (created before cutoff)
-        organization.created_at = datetime(2025, 7, 29, tzinfo=UTC)
+        organization.created_at = datetime(2025, 7, 22)
         organization.status = Organization.Status.CREATED
         organization.account_id = None
         await save_fixture(organization)
@@ -3322,7 +3322,7 @@ class TestConfirm:
         stripe_service_mock: MagicMock,
     ) -> None:
         # Make organization new (not grandfathered)
-        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
+        organization.created_at = datetime(2025, 8, 2)
         organization.status = Organization.Status.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
         organization.details = {"about": "Test"}  # type: ignore

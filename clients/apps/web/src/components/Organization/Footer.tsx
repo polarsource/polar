@@ -48,6 +48,7 @@ const Footer = () => {
             <h3 className="text-base dark:text-white">Company</h3>
             <div className="flex flex-col gap-y-2">
               <FooterLink href="https://polar.sh/vision">Vision</FooterLink>
+              <FooterLink href="/careers">Careers</FooterLink>
               <FooterLink href="https://polar.sh/assets/brand/polar_brand.zip">
                 Brand Assets
               </FooterLink>

@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
+from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
@@ -40,7 +41,7 @@ class PaymentStepID(StrEnum):
     """Enum for payment onboarding step identifiers."""
 
     CREATE_PRODUCT = "create_product"
-    INTEGRATE_API = "integrate_api"
+    INTEGRATE_CHECKOUT = "integrate_checkout"
     SETUP_ACCOUNT = "setup_account"
 
 
@@ -477,15 +478,23 @@ class OrganizationService:
             )
         )
 
-        # Step 2: Integrate with Polar (create API key)
+        # Step 2: Integrate Checkout (API key OR checkout link)
         token_repository = OrganizationAccessTokenRepository.from_session(session)
         api_key_count = await token_repository.count_by_organization_id(organization.id)
+
+        checkout_link_repository = CheckoutLinkRepository.from_session(session)
+        checkout_link_count = await checkout_link_repository.count_by_organization_id(
+            organization.id
+        )
+
+        # Step is completed if user has either an API key OR a checkout link
+        integration_completed = api_key_count > 0 or checkout_link_count > 0
         steps.append(
             PaymentStep(
-                id=PaymentStepID.INTEGRATE_API,
-                title="Integrate with Polar",
-                description="Create an API key to integrate Polar with your application",
-                completed=api_key_count > 0,
+                id=PaymentStepID.INTEGRATE_CHECKOUT,
+                title="Integrate Checkout",
+                description="Set up your integration to start accepting payments",
+                completed=integration_completed,
             )
         )
 

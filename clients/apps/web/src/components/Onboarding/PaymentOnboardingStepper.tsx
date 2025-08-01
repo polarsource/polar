@@ -10,7 +10,8 @@ import {
   Clock, 
   Package,
   Code2,
-  Building2 
+  Building2,
+  Link as LinkIcon
 } from 'lucide-react'
 import Link from 'next/link'
 import React from 'react'
@@ -23,7 +24,7 @@ interface PaymentOnboardingStepperProps {
 
 const stepIcons = {
   create_product: <Package />,
-  integrate_api: <Code2 />,
+  integrate_checkout: <Code2 />,
   setup_account: <Building2 />,
 } as const
 
@@ -32,15 +33,36 @@ const stepActions = {
     href: '/dashboard/[organization]/products/new',
     label: 'Create Product',
   },
-  integrate_api: {
+  integrate_checkout: {
     href: '/dashboard/[organization]/settings#developers',
-    label: 'Create API Key',
+    label: 'Get Started',
   },
   setup_account: {
     href: '/dashboard/[organization]/finance/account',
     label: 'Complete Setup',
   },
 } as const
+
+const integrationOptions = [
+  {
+    id: 'api-key',
+    title: 'API Integration',
+    description: 'Build custom checkout flows with full control',
+    href: '/dashboard/[organization]/settings#developers',
+    icon: <Code2 className="h-5 w-5" />,
+    badge: 'Recommended',
+    features: ['Full customization', 'Your own UI', 'Advanced features'],
+  },
+  {
+    id: 'checkout-link',
+    title: 'Checkout Links',
+    description: 'Quick setup with pre-built checkout pages',
+    href: '/dashboard/[organization]/products/checkout-links',
+    icon: <LinkIcon className="h-5 w-5" />,
+    badge: 'Quick Start',
+    features: ['No coding required', 'Instant setup', 'Share anywhere'],
+  },
+] as const
 
 export const PaymentOnboardingStepper = ({
   organization,
@@ -82,7 +104,7 @@ export const PaymentOnboardingStepper = ({
         <div className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">
-            Payment Setup
+            Checkout Setup
           </h2>
           {paymentStatus.payment_ready ? (
             <div className="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 dark:border-green-800 dark:bg-green-900/20">
@@ -102,7 +124,7 @@ export const PaymentOnboardingStepper = ({
         </div>
 
         <p className="dark:text-polar-400 text-sm md:text-base text-gray-600">
-          Complete these steps to start accepting payments on your organization.
+          Complete these steps to set up checkout and start accepting payments.
         </p>
 
         {/* Progress Bar */}
@@ -129,22 +151,37 @@ export const PaymentOnboardingStepper = ({
           const action = stepActions[step.id as keyof typeof stepActions]
           const icon = stepIcons[step.id as keyof typeof stepIcons] || <Package className="h-5 w-5" />
 
+          const hasExpandedContent = step.id === 'integrate_checkout' && !step.completed
+          
           return (
-            <div key={step.id} className={twMerge("relative", !isLast && "mb-3")}>
-              {/* Connector Line */}
-              {!isLast && (
-                <div className="dark:bg-polar-700 absolute left-[35px] md:left-[39px] top-[70px] md:top-[80px] w-0.5 bg-gray-200 z-0" style={{ height: 'calc(100% + 12px)' }} />
+            <div key={step.id} className="relative">
+              {/* Connector Line - stop at step boundary for expanded content */}
+              {!isLast && !hasExpandedContent && (
+                <div 
+                  className="absolute left-[35px] md:left-[39px] top-[70px] md:top-[80px] w-0.5 dark:bg-polar-700 bg-gray-200"
+                  style={{ height: 'calc(100% + 12px)' }}
+                />
+              )}
+              
+              {/* Short connector for expanded content - from icon to bottom of step */}
+              {!isLast && hasExpandedContent && (
+                <div 
+                  className="absolute left-[35px] md:left-[39px] top-[70px] md:top-[80px] w-0.5 dark:bg-polar-700 bg-gray-200"
+                  style={{ height: '50px' }}
+                />
               )}
 
+              {/* Step Container */}
               <div
                 className={twMerge(
-                  'relative z-10 flex items-start gap-3 md:gap-4 rounded-3xl border p-3 md:p-4 transition-all duration-200',
+                  'relative flex items-start gap-3 md:gap-4 rounded-3xl border p-3 md:p-4 transition-all duration-200',
                   step.completed
                     ? 'border-green-200 bg-green-50 dark:border-green-800/50 dark:bg-green-900/10'
                     : 'dark:bg-polar-800/50 dark:border-polar-700 dark:hover:border-polar-600 border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm',
+                  hasExpandedContent ? 'mb-8' : !isLast ? 'mb-3' : ''
                 )}
               >
-                {/* Step Icon/Status */}
+                {/* Step Icon */}
                 <div className="flex-shrink-0">
                   {step.completed ? (
                     <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-full border-2 border-green-300 bg-green-100 dark:border-green-700 dark:bg-green-900/30">
@@ -166,18 +203,50 @@ export const PaymentOnboardingStepper = ({
                       <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
                         {step.title}
                       </h3>
-                      <p className="dark:text-polar-400 mt-1 text-sm md:text-base text-gray-600 line-clamp-3 sm:line-clamp-none">
+                      <p className="dark:text-polar-400 mt-1 text-sm md:text-base text-gray-600">
                         {step.description}
                       </p>
+                      
+                      {/* Expanded Integration Options */}
+                      {hasExpandedContent && (
+                        <div className="mt-6 space-y-4">
+                          <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Choose your integration method:
+                          </div>
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            {integrationOptions.map((option) => (
+                              <Link
+                                key={option.id}
+                                href={option.href.replace('[organization]', organization.slug)}
+                                className="flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-gray-300 hover:bg-gray-50 dark:border-polar-700 dark:bg-polar-800 dark:hover:border-polar-600 dark:hover:bg-polar-750"
+                              >
+                                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-gray-100 dark:bg-polar-700">
+                                  {React.cloneElement(option.icon, { className: "h-4 w-4" })}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                                      {option.title}
+                                    </h4>
+                                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600 dark:bg-polar-700 dark:text-polar-300">
+                                      {option.badge}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-600 dark:text-polar-400">
+                                    {option.description}
+                                  </p>
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Action Button */}
-                    {!step.completed && action && (
+                    {!step.completed && action && !hasExpandedContent && (
                       <Link
-                        href={action.href.replace(
-                          '[organization]',
-                          organization.slug,
-                        )}
+                        href={action.href.replace('[organization]', organization.slug)}
                         className="flex-shrink-0 self-start"
                       >
                         <Button
@@ -194,6 +263,17 @@ export const PaymentOnboardingStepper = ({
                   </div>
                 </div>
               </div>
+
+              {/* Continuation Line for Expanded Content - from end of expanded content to next step */}
+              {hasExpandedContent && !isLast && (
+                <div 
+                  className="absolute left-[35px] md:left-[39px] w-0.5 dark:bg-polar-700 bg-gray-200"
+                  style={{ 
+                    bottom: '-32px',
+                    height: '32px'
+                  }}
+                />
+              )}
             </div>
           )
         })}

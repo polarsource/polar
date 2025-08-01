@@ -62,13 +62,16 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const PaymentNotReadyBanner = () => {
     if (!shouldBlockCheckout) return null
 
+    const isDenied = paymentStatus?.organization_status === 'denied'
+
     return (
       <Alert color="red">
         <div className="flex flex-col gap-y-2">
           <div className="font-medium">Payments are currently unavailable</div>
           <div className="text-sm">
-            {checkout.organization.name} needs to complete their payment setup
-            before you can make a purchase.
+            {isDenied
+              ? `${checkout.organization.name} doesn't allow payments.`
+              : `${checkout.organization.name} needs to complete their payment setup before you can make a purchase. You can still test with free products or 100% discount orders.`}
           </div>
         </div>
       </Alert>

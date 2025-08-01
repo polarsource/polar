@@ -50,9 +50,11 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
     theme,
   )
 
-  // Check organization payment readiness
+  // Check organization payment readiness (account verification only for checkout)
   const { data: paymentStatus } = useOrganizationPaymentStatus(
     checkout.organization.id,
+    true, // enabled
+    true, // accountVerificationOnly - avoid unnecessary product/token checks in checkout
   )
 
   const isPaymentReady = paymentStatus?.payment_ready ?? true // Default to true while loading

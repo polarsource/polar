@@ -463,43 +463,47 @@ class OrganizationService:
         self,
         session: AsyncSession,
         organization: Organization,
+        account_verification_only: bool = False,
     ) -> PaymentStatusResponse:
         """Get payment status and onboarding steps for an organization."""
         steps = []
 
-        # Step 1: Create a product
-        product_repository = ProductRepository.from_session(session)
-        product_count = await product_repository.count_by_organization_id(
-            organization.id, is_archived=False
-        )
-        steps.append(
-            PaymentStep(
-                id=PaymentStepID.CREATE_PRODUCT,
-                title="Create a product",
-                description="Create your first product to start accepting payments",
-                completed=product_count > 0,
+        if not account_verification_only:
+            # Step 1: Create a product
+            product_repository = ProductRepository.from_session(session)
+            product_count = await product_repository.count_by_organization_id(
+                organization.id, is_archived=False
             )
-        )
-
-        # Step 2: Integrate Checkout (API key OR checkout link)
-        token_repository = OrganizationAccessTokenRepository.from_session(session)
-        api_key_count = await token_repository.count_by_organization_id(organization.id)
-
-        checkout_link_repository = CheckoutLinkRepository.from_session(session)
-        checkout_link_count = await checkout_link_repository.count_by_organization_id(
-            organization.id
-        )
-
-        # Step is completed if user has either an API key OR a checkout link
-        integration_completed = api_key_count > 0 or checkout_link_count > 0
-        steps.append(
-            PaymentStep(
-                id=PaymentStepID.INTEGRATE_CHECKOUT,
-                title="Integrate Checkout",
-                description="Set up your integration to start accepting payments",
-                completed=integration_completed,
+            steps.append(
+                PaymentStep(
+                    id=PaymentStepID.CREATE_PRODUCT,
+                    title="Create a product",
+                    description="Create your first product to start accepting payments",
+                    completed=product_count > 0,
+                )
             )
-        )
+
+            # Step 2: Integrate Checkout (API key OR checkout link)
+            token_repository = OrganizationAccessTokenRepository.from_session(session)
+            api_key_count = await token_repository.count_by_organization_id(
+                organization.id
+            )
+
+            checkout_link_repository = CheckoutLinkRepository.from_session(session)
+            checkout_link_count = (
+                await checkout_link_repository.count_by_organization_id(organization.id)
+            )
+
+            # Step is completed if user has either an API key OR a checkout link
+            integration_completed = api_key_count > 0 or checkout_link_count > 0
+            steps.append(
+                PaymentStep(
+                    id=PaymentStepID.INTEGRATE_CHECKOUT,
+                    title="Integrate Checkout",
+                    description="Set up your integration to start accepting payments",
+                    completed=integration_completed,
+                )
+            )
 
         # Step 3: Finish account setup
         account_setup_complete = self._is_account_setup_complete(organization)

@@ -18133,7 +18133,10 @@ export interface operations {
     };
     "organizations:get_payment_status": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only perform account verification checks, skip product and integration checks */
+                account_verification_only?: boolean;
+            };
             header?: never;
             path: {
                 id: string;

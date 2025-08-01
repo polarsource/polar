@@ -212,6 +212,10 @@ async def get_payment_status(
     id: OrganizationID,
     auth_subject: auth.OrganizationsRead,
     session: AsyncSession = Depends(get_db_session),
+    account_verification_only: bool = Query(
+        False,
+        description="Only perform account verification checks, skip product and integration checks",
+    ),
 ) -> OrganizationPaymentStatus:
     """Get payment status and onboarding steps for an organization."""
     organization = await organization_service.get(
@@ -225,7 +229,7 @@ async def get_payment_status(
         raise ResourceNotFound()
 
     payment_status = await organization_service.get_payment_status(
-        session, organization
+        session, organization, account_verification_only=account_verification_only
     )
 
     return OrganizationPaymentStatus(

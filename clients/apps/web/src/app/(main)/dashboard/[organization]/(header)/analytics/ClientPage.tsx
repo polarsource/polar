@@ -121,6 +121,14 @@ export default function ClientPage({
     'succeeded_checkouts',
     'checkouts_conversion',
   ]
+  const netRevenueEvents: (keyof schemas['Metrics'])[] = [
+    'net_revenue',
+    'net_average_order_value',
+    'net_cumulative_revenue',
+    'new_subscriptions_net_revenue',
+    'renewed_subscriptions_net_revenue',
+    'one_time_products_net_revenue',
+  ]
 
   return (
     <DashboardBody
@@ -174,6 +182,12 @@ export default function ClientPage({
             <MetricGroup
               title="Checkouts"
               metricKeys={checkoutEvents}
+              data={data}
+              interval={interval}
+            />
+            <MetricGroup
+              title="Net Revenue"
+              metricKeys={netRevenueEvents}
               data={data}
               interval={interval}
             />

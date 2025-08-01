@@ -1230,9 +1230,15 @@ class OrderService:
                 order=order,
             )
         )
-        await platform_fee_transaction_service.create_fees_reversal_balances(
-            session, balance_transactions=balance_transactions
+        platform_fee_transactions = (
+            await platform_fee_transaction_service.create_fees_reversal_balances(
+                session, balance_transactions=balance_transactions
+            )
         )
+        order.platform_fee_amount = sum(
+            incoming.amount for _, incoming in platform_fee_transactions
+        )
+        session.add(order)
 
     async def send_webhook(
         self,

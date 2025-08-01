@@ -24,7 +24,9 @@ class UserNotMemberOfOrganization(UserOrganizationError):
     def __init__(self, user_id: UUID, organization_id: UUID) -> None:
         self.user_id = user_id
         self.organization_id = organization_id
-        message = f"User with id {user_id} is not a member of organization {organization_id}."
+        message = (
+            f"User with id {user_id} is not a member of organization {organization_id}."
+        )
         super().__init__(message, 404)
 
 
@@ -121,31 +123,31 @@ class UserOrganizationService:
     ) -> None:
         """
         Safely remove a member from an organization.
-        
+
         Raises:
             OrganizationNotFound: If the organization doesn't exist
             UserNotMemberOfOrganization: If the user is not a member of the organization
             CannotRemoveOrganizationAdmin: If the user is the organization admin
         """
         from polar.organization.repository import OrganizationRepository
-        
+
         org_repo = OrganizationRepository.from_session(session)
         organization = await org_repo.get_by_id(organization_id)
-        
+
         if not organization:
             raise OrganizationNotFound(organization_id)
-        
+
         # Check if user is actually a member
         user_org = await self.get_by_user_and_org(session, user_id, organization_id)
         if not user_org:
             raise UserNotMemberOfOrganization(user_id, organization_id)
-            
+
         # Check if the user is the organization admin
         if organization.account_id:
             admin_user = await org_repo.get_admin_user(session, organization)
             if admin_user and admin_user.id == user_id:
                 raise CannotRemoveOrganizationAdmin(user_id, organization_id)
-        
+
         # Remove the member
         await self.remove_member(session, user_id, organization_id)
 

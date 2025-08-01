@@ -27,7 +27,7 @@ class TestRemoveMemberSafe:
         await user_organization_service.remove_member_safe(
             session, user.id, organization.id
         )
-        
+
         # Verify the member was soft deleted
         user_org = await user_organization_service.get_by_user_and_org(
             session, user.id, organization.id
@@ -41,12 +41,12 @@ class TestRemoveMemberSafe:
     ) -> None:
         # Test with non-existent organization
         non_existent_org_id = uuid4()
-        
+
         with pytest.raises(OrganizationNotFound) as exc_info:
             await user_organization_service.remove_member_safe(
                 session, user.id, non_existent_org_id
             )
-        
+
         assert exc_info.value.organization_id == non_existent_org_id
 
     async def test_remove_member_user_not_member(
@@ -60,7 +60,7 @@ class TestRemoveMemberSafe:
             await user_organization_service.remove_member_safe(
                 session, user.id, organization.id
             )
-        
+
         assert exc_info.value.user_id == user.id
         assert exc_info.value.organization_id == organization.id
 
@@ -74,20 +74,20 @@ class TestRemoveMemberSafe:
         # Create user organization relationship for admin
         from polar.kit.utils import utc_now
         from polar.models import UserOrganization
-        
+
         admin_user_org = UserOrganization(
             user_id=admin_user.id,
             organization_id=organization_with_account.id,
             created_at=utc_now(),
         )
         await save_fixture(admin_user_org)
-        
+
         # Test trying to remove organization admin
         with pytest.raises(CannotRemoveOrganizationAdmin) as exc_info:
             await user_organization_service.remove_member_safe(
                 session, admin_user.id, organization_with_account.id
             )
-        
+
         assert exc_info.value.user_id == admin_user.id
         assert exc_info.value.organization_id == organization_with_account.id
 
@@ -101,21 +101,23 @@ class TestRemoveMemberSafe:
         # Create user organization relationship for non-admin user
         from polar.kit.utils import utc_now
         from polar.models import UserOrganization
-        
+
         user_org_relation = UserOrganization(
             user_id=user.id,
-            organization_id=organization_with_account.id, 
+            organization_id=organization_with_account.id,
             created_at=utc_now(),
         )
         await save_fixture(user_org_relation)
-        
+
         # Test removing a non-admin member from organization with account
         await user_organization_service.remove_member_safe(
             session, user.id, organization_with_account.id
         )
-        
+
         # Verify the member was soft deleted
-        user_org: UserOrganization | None = await user_organization_service.get_by_user_and_org(
+        user_org: (
+            UserOrganization | None
+        ) = await user_organization_service.get_by_user_and_org(
             session, user.id, organization_with_account.id
         )
         assert user_org is None
@@ -131,7 +133,7 @@ class TestRemoveMemberSafe:
         await user_organization_service.remove_member_safe(
             session, user.id, organization.id
         )
-        
+
         # Verify the member was soft deleted
         user_org = await user_organization_service.get_by_user_and_org(
             session, user.id, organization.id
@@ -139,7 +141,7 @@ class TestRemoveMemberSafe:
         assert user_org is None
 
 
-@pytest.mark.asyncio 
+@pytest.mark.asyncio
 class TestRemoveMember:
     async def test_remove_member_soft_delete(
         self,
@@ -149,18 +151,17 @@ class TestRemoveMember:
         user_organization: UserOrganization,
     ) -> None:
         # Test that remove_member performs soft delete
-        await user_organization_service.remove_member(
-            session, user.id, organization.id
-        )
-        
+        await user_organization_service.remove_member(session, user.id, organization.id)
+
         # Verify the member was soft deleted (not returned by get_by_user_and_org)
         user_org = await user_organization_service.get_by_user_and_org(
             session, user.id, organization.id
         )
         assert user_org is None
-        
+
         # But the record still exists in DB with deleted_at set
         from polar.postgres import sql
+
         result = await session.execute(
             sql.select(UserOrganization).where(
                 UserOrganization.user_id == user.id,
@@ -185,11 +186,9 @@ class TestListByOrg:
         members = await user_organization_service.list_by_org(session, organization.id)
         assert len(members) == 1
         assert members[0].user_id == user.id
-        
+
         # After soft delete, should not return the member
-        await user_organization_service.remove_member(
-            session, user.id, organization.id
-        )
-        
+        await user_organization_service.remove_member(session, user.id, organization.id)
+
         members = await user_organization_service.list_by_org(session, organization.id)
         assert len(members) == 0

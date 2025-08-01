@@ -353,10 +353,10 @@ class TestGetPaymentStatus:
         )
         assert create_product_step.completed is False
 
-        integrate_api_step = next(
-            s for s in payment_status.steps if s.id == "integrate_api"
+        integrate_checkout_step = next(
+            s for s in payment_status.steps if s.id == "integrate_checkout"
         )
-        assert integrate_api_step.completed is False
+        assert integrate_checkout_step.completed is False
 
         setup_account_step = next(
             s for s in payment_status.steps if s.id == "setup_account"
@@ -386,10 +386,10 @@ class TestGetPaymentStatus:
         )
         assert create_product_step.completed is True
 
-        integrate_api_step = next(
-            s for s in payment_status.steps if s.id == "integrate_api"
+        integrate_checkout_step = next(
+            s for s in payment_status.steps if s.id == "integrate_checkout"
         )
-        assert integrate_api_step.completed is False
+        assert integrate_checkout_step.completed is False
 
     async def test_with_api_key_created(
         self,
@@ -420,10 +420,10 @@ class TestGetPaymentStatus:
         )
         assert create_product_step.completed is False
 
-        integrate_api_step = next(
-            s for s in payment_status.steps if s.id == "integrate_api"
+        integrate_checkout_step = next(
+            s for s in payment_status.steps if s.id == "integrate_checkout"
         )
-        assert integrate_api_step.completed is True
+        assert integrate_checkout_step.completed is True
 
     async def test_with_account_setup_complete(
         self,

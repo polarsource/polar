@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, TypedDict
 from uuid import UUID
@@ -248,36 +248,3 @@ class Organization(RecordModel):
     def statement_descriptor_prefixed(self) -> str:
         # Cannot use *. Setting separator to # instead.
         return f"{settings.STRIPE_STATEMENT_DESCRIPTOR}# {self.statement_descriptor}"
-
-    def is_payment_ready(self) -> bool:
-        """Check if organization can accept payments"""
-
-        if self.is_blocked() or self.status == Organization.Status.DENIED:
-            return False
-
-        # If the organization was created before, we don't want to block payments.
-        # Organizations created before Jul 30, 2025 are grandfathered in
-        # Use timezone-aware comparison
-        cutoff_date = datetime(2025, 7, 30, tzinfo=UTC)
-        if self.created_at <= cutoff_date:
-            return True
-
-        # Organization must be ACTIVE or UNDER_REVIEW
-        if self.status not in [
-            Organization.Status.ACTIVE,
-            Organization.Status.UNDER_REVIEW,
-        ]:
-            return False
-
-        # Details must be submitted (check for empty dict as well)
-        if not self.details_submitted_at or not self.details:
-            return False
-
-        # Must have an active payout account
-        if not self.account_id or not self.account:
-            return False
-
-        if not self.account.is_account_ready():
-            return False
-
-        return True

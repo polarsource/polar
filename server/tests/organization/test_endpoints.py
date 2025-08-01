@@ -301,7 +301,7 @@ class TestGetPaymentStatus:
         # Check specific steps exist
         step_ids = [step["id"] for step in json["steps"]]
         assert "create_product" in step_ids
-        assert "integrate_api" in step_ids
+        assert "integrate_checkout" in step_ids
         assert "setup_account" in step_ids
 
     @pytest.mark.auth
@@ -357,7 +357,7 @@ class TestGetPaymentStatus:
         assert json["payment_ready"] is False
 
         # API integration step should be complete
-        api_step = next(s for s in json["steps"] if s["id"] == "integrate_api")
+        api_step = next(s for s in json["steps"] if s["id"] == "integrate_checkout")
         assert api_step["completed"] is True
 
     @pytest.mark.auth

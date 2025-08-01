@@ -22840,7 +22840,7 @@ export interface operations {
                     "application/json": components["schemas"]["LicenseKeyActivationRead"];
                 };
             };
-            /** @description License key activation not required or permitted (limit reached). */
+            /** @description License key activation not supported or limit reached. Use /validate endpoint for licenses without activations. */
             403: {
                 headers: {
                     [name: string]: unknown;

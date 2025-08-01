@@ -3327,6 +3327,10 @@ class TestConfirm:
         organization.details_submitted_at = datetime.now(UTC)
         organization.details = {"about": "Test"}  # type: ignore
 
+        # Setup user verification first
+        user.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user)
+
         # Set up account with details submitted
         account.account_type = AccountType.stripe
         account.admin_id = user.id
@@ -3335,10 +3339,6 @@ class TestConfirm:
 
         organization.account = account
         await save_fixture(organization)
-
-        # Setup user verification
-        user.identity_verification_status = IdentityVerificationStatus.verified
-        await save_fixture(user)
 
         # Setup Stripe mocks
         confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)

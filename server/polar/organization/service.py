@@ -9,7 +9,9 @@ import structlog
 from pydantic import BaseModel, Field
 from sqlalchemy import update as sqlalchemy_update
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 
+from polar.account.repository import AccountRepository
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
 from polar.checkout_link.repository import CheckoutLinkRepository
@@ -21,6 +23,7 @@ from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
 from polar.models import Account, Organization, User, UserOrganization
 from polar.models.transaction import TransactionType
+from polar.models.user import IdentityVerificationStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization_access_token.repository import OrganizationAccessTokenRepository
 from polar.postgres import AsyncSession, sql
@@ -510,7 +513,9 @@ class OrganizationService:
         )
 
         return PaymentStatusResponse(
-            payment_ready=organization.is_payment_ready(),
+            payment_ready=await self.is_organization_ready_for_payment(
+                session, organization
+            ),
             steps=steps,
             organization_status=organization.status,
         )
@@ -530,6 +535,62 @@ class OrganizationService:
             and account.is_details_submitted
             and (admin.identity_verification_status in ["verified", "pending"])
         )
+
+    async def is_organization_ready_for_payment(
+        self, session: AsyncSession, organization: Organization
+    ) -> bool:
+        """
+        Check if an organization is ready to accept payments.
+        This method loads the account and admin data as needed, avoiding the need
+        for eager loading in other services like checkout.
+        """
+        # First check basic conditions that don't require account data
+        if (
+            organization.is_blocked()
+            or organization.status == Organization.Status.DENIED
+        ):
+            return False
+
+        # Check grandfathering - if grandfathered, they're ready
+        cutoff_date = datetime(2025, 7, 30, tzinfo=UTC)
+        if organization.created_at <= cutoff_date:
+            return True
+
+        # For new organizations, check basic conditions first
+        if organization.status not in [
+            Organization.Status.ACTIVE,
+            Organization.Status.UNDER_REVIEW,
+        ]:
+            return False
+
+        # Details must be submitted (check for empty dict as well)
+        if not organization.details_submitted_at or not organization.details:
+            return False
+
+        # Must have an active payout account
+        if organization.account_id is None:
+            return False
+
+        account_repository = AccountRepository.from_session(session)
+        account = await account_repository.get_by_id(
+            organization.account_id, options=(joinedload(Account.admin),)
+        )
+        if not account:
+            return False
+
+        # Check account readiness
+        if not account.is_account_ready():
+            return False
+
+        # Check admin identity verification status
+        admin = account.admin
+        if not admin or admin.identity_verification_status not in [
+            IdentityVerificationStatus.verified,
+            IdentityVerificationStatus.pending,
+        ]:
+            return False
+
+        return True
 
 
 organization = OrganizationService()

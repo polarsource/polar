@@ -68,6 +68,7 @@ from polar.models.product_price import ProductPriceAmountType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_currency_price,
@@ -784,8 +785,10 @@ class CheckoutService:
 
         # Check if organization can accept payments (only block paid transactions)
         if (
-            not checkout.product.organization.is_payment_ready()
-            and checkout.is_payment_required
+            checkout.is_payment_required
+            and not await organization_service.is_organization_ready_for_payment(
+                session, checkout.product.organization
+            )
         ):
             raise PaymentNotReady()
 

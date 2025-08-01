@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, TypedDict
 from uuid import UUID
@@ -256,9 +256,9 @@ class Organization(RecordModel):
             return False
 
         # If the organization was created before, we don't want to block payments.
-        # Organizations created before Aug 1, 2025 are grandfathered in
-        # seems that we are using local time
-        cutoff_date = datetime(2025, 8, 1, 11, 0)
+        # Organizations created before Jul 30, 2025 are grandfathered in
+        # Use timezone-aware comparison
+        cutoff_date = datetime(2025, 7, 30, tzinfo=UTC)
         if self.created_at <= cutoff_date:
             return True
 

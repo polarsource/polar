@@ -31,7 +31,7 @@ class TestIsPaymentReady:
         self, save_fixture: SaveFixture, organization: Organization
     ) -> None:
         # Organizations created before Jul 30, 2025 are grandfathered in
-        organization.created_at = datetime(2025, 7, 29)
+        organization.created_at = datetime(2025, 7, 29, tzinfo=UTC)
         await save_fixture(organization)
 
         assert organization.is_payment_ready() is True
@@ -40,7 +40,7 @@ class TestIsPaymentReady:
         self, save_fixture: SaveFixture, organization: Organization
     ) -> None:
         # New organizations with CREATED status cannot accept payments
-        organization.created_at = datetime(2025, 8, 2)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
         organization.status = Organization.Status.CREATED
         await save_fixture(organization)
 
@@ -50,7 +50,7 @@ class TestIsPaymentReady:
         self, save_fixture: SaveFixture, organization: Organization
     ) -> None:
         # New organizations without details submitted cannot accept payments
-        organization.created_at = datetime(2025, 8, 2)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
         organization.status = Organization.Status.ACTIVE
         organization.details_submitted_at = None
         organization.details = {}  # type: ignore
@@ -62,7 +62,7 @@ class TestIsPaymentReady:
         self, save_fixture: SaveFixture, organization: Organization
     ) -> None:
         # New organizations without account cannot accept payments
-        organization.created_at = datetime(2025, 8, 2)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
         organization.status = Organization.Status.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
         organization.details = {"about": "Test"}  # type: ignore
@@ -75,7 +75,7 @@ class TestIsPaymentReady:
         self, save_fixture: SaveFixture, organization: Organization, user: User
     ) -> None:
         # New organizations with account but details not submitted cannot accept payments
-        organization.created_at = datetime(2025, 8, 2)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
         organization.status = Organization.Status.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
         organization.details = {"about": "Test"}  # type: ignore
@@ -101,7 +101,7 @@ class TestIsPaymentReady:
         self, save_fixture: SaveFixture, organization: Organization, user: User
     ) -> None:
         # New organizations with all requirements met can accept payments
-        organization.created_at = datetime(2025, 8, 2)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
         organization.status = Organization.Status.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
         organization.details = {"about": "Test"}  # type: ignore
@@ -127,7 +127,7 @@ class TestIsPaymentReady:
         self, save_fixture: SaveFixture, organization: Organization, user: User
     ) -> None:
         # Organizations under review can accept payments if other requirements are met
-        organization.created_at = datetime(2025, 8, 2)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
         organization.status = Organization.Status.UNDER_REVIEW
         organization.details_submitted_at = datetime.now(UTC)
         organization.details = {"about": "Test"}  # type: ignore

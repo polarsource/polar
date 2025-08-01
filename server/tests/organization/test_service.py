@@ -336,7 +336,7 @@ class TestGetPaymentStatus:
         organization: Organization,
     ) -> None:
         # Make this a new organization (not grandfathered)
-        organization.created_at = datetime(2025, 8, 2)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
         await save_fixture(organization)
 
         # Organization with no products, no API keys, and no account setup
@@ -371,7 +371,7 @@ class TestGetPaymentStatus:
         product: Product,
     ) -> None:
         # Make this a new organization (not grandfathered)
-        organization.created_at = datetime(2025, 8, 2)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
         await save_fixture(organization)
 
         # Organization with a product but no API keys or account setup
@@ -399,7 +399,7 @@ class TestGetPaymentStatus:
         mocker: MockerFixture,
     ) -> None:
         # Make this a new organization (not grandfathered)
-        organization.created_at = datetime(2025, 8, 2)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
         await save_fixture(organization)
 
         # Mock the API key count
@@ -433,7 +433,7 @@ class TestGetPaymentStatus:
         user: User,
     ) -> None:
         # Make this a new organization (not grandfathered)
-        organization.created_at = datetime(2025, 8, 2)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
 
         user.identity_verification_status = IdentityVerificationStatus.verified
         await save_fixture(user)
@@ -482,7 +482,7 @@ class TestGetPaymentStatus:
         user: User,
     ) -> None:
         # Grandfathered organization (created before cutoff)
-        organization.created_at = datetime(2025, 7, 22)
+        organization.created_at = datetime(2025, 7, 29, tzinfo=UTC)
         await save_fixture(organization)
 
         # Mock the API key count
@@ -508,7 +508,7 @@ class TestGetPaymentStatus:
         user: User,
     ) -> None:
         # Set up as new organization
-        organization.created_at = datetime(2025, 8, 2)
+        organization.created_at = datetime(2025, 8, 1, tzinfo=UTC)
         organization.status = Organization.Status.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
         organization.details = {"about": "Test"}  # type: ignore

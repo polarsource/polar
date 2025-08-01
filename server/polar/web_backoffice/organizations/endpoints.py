@@ -20,6 +20,16 @@ from polar.organization.service import organization as organization_service
 from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
 from polar.user.repository import UserRepository
+from polar.user_organization.service import (
+    CannotRemoveOrganizationAdmin,
+    UserNotMemberOfOrganization,
+)
+from polar.user_organization.service import (
+    OrganizationNotFound as UserOrgOrganizationNotFound,
+)
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
 from ..components import accordion, button, datatable, description_list, input, modal
 from ..layout import layout
@@ -297,6 +307,113 @@ async def delete(
                         text("Delete")
 
 
+@router.get(
+    "/{id}/confirm_remove_member/{user_id}", name="organizations:confirm_remove_member"
+)
+async def confirm_remove_member(
+    request: Request,
+    id: UUID4,
+    user_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    """Show confirmation modal for removing a member."""
+
+    # Get user info for the modal
+    user_repo = UserRepository.from_session(session)
+    user = await user_repo.get_by_id(user_id)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    with modal(f"Remove {user.email}", open=True):
+        with tag.div(classes="flex items-start gap-4 mb-6"):
+            # Message content
+            with tag.div(classes="flex-1"):
+                with tag.p(classes="text-sm text-gray-600 mb-4"):
+                    text("Are you sure you want to remove ")
+                    with tag.strong():
+                        text(user.email)
+                    text(" from this organization?")
+
+                with tag.p(classes="text-xs text-gray-500"):
+                    text(
+                        "This action cannot be undone. The user will lose access to all organization resources."
+                    )
+
+        # Action buttons
+        with tag.div(classes="modal-action"):
+            with tag.form(method="dialog"):
+                with button(ghost=True):
+                    text("Cancel")
+
+            with tag.form(method="dialog"):
+                with button(
+                    variant="error",
+                    hx_delete=str(
+                        request.url_for(
+                            "organizations:remove_member",
+                            id=id,
+                            user_id=user_id,
+                        )
+                    ),
+                    hx_target="#modal",
+                ):
+                    text("Remove User")
+
+
+@router.api_route(
+    "/{id}/remove_member/{user_id}",
+    name="organizations:remove_member",
+    methods=["DELETE"],
+)
+async def remove_member(
+    request: Request,
+    id: UUID4,
+    user_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    """Remove member endpoint with DELETE method."""
+
+    try:
+        # Get user info for better error messages
+        user_repo = UserRepository.from_session(session)
+        user = await user_repo.get_by_id(user_id)
+        user_email = user.email if user else str(user_id)
+
+        # Attempt to remove the member safely
+        await user_organization_service.remove_member_safe(session, user_id, id)
+
+        # Add success toast and redirect
+        await add_toast(
+            request,
+            f"{user_email} has been removed from the organization",
+            "success",
+        )
+
+        return HXRedirectResponse(
+            request, request.url_for("organizations:get", id=id), 303
+        )
+
+    except UserOrgOrganizationNotFound:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    except UserNotMemberOfOrganization:
+        raise HTTPException(
+            status_code=400, detail="User is not a member of this organization"
+        )
+
+    except CannotRemoveOrganizationAdmin:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Cannot remove {user_email} - they are the organization admin",
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail="An error occurred while removing the user"
+        )
+
+
 @router.api_route("/{id}", name="organizations:get", methods=["GET", "POST"])
 async def get(
     request: Request,
@@ -377,20 +494,129 @@ async def get(
                     ),
                 ).render(request, organization):
                     pass
+                # Simple users table
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Users")
-                        with tag.ul():
-                            for user in users:
-                                with tag.li():
-                                    with tag.a(
-                                        href=str(
-                                            request.url_for("users:get", id=user.id)
-                                        ),
-                                        classes="link",
-                                    ):
-                                        text(user.email)
+                        with tag.div(classes="flex justify-between items-center mb-4"):
+                            with tag.h2(classes="card-title"):
+                                text(f"Team Members ({len(users)})")
+
+                        # Check if current organization has admin
+                        admin_user = None
+                        if organization.account_id:
+                            admin_user = await repository.get_admin_user(
+                                session, organization
+                            )
+
+                        if users:
+                            # Users table
+                            with tag.div(classes="overflow-x-auto"):
+                                with tag.table(classes="table table-zebra w-full"):
+                                    # Table header
+                                    with tag.thead():
+                                        with tag.tr():
+                                            with tag.th():
+                                                text("User")
+                                            with tag.th():
+                                                text("Role")
+                                            with tag.th():
+                                                text("Joined")
+                                            with tag.th():
+                                                text("Actions")
+
+                                    # Table body
+                                    with tag.tbody():
+                                        for user in users:
+                                            is_admin = (
+                                                admin_user and user.id == admin_user.id
+                                            )
+                                            with tag.tr():
+                                                # User info
+                                                with tag.td():
+                                                    with tag.div(
+                                                        classes="flex items-center gap-3"
+                                                    ):
+                                                        # User details
+                                                        with tag.div():
+                                                            with tag.a(
+                                                                href=str(
+                                                                    request.url_for(
+                                                                        "users:get",
+                                                                        id=user.id,
+                                                                    )
+                                                                ),
+                                                                classes="font-medium hover:text-primary",
+                                                            ):
+                                                                text(user.email)
+                                                            if (
+                                                                hasattr(
+                                                                    user,
+                                                                    "email_verified",
+                                                                )
+                                                                and user.email_verified
+                                                            ):
+                                                                with tag.div(
+                                                                    classes="text-xs text-success"
+                                                                ):
+                                                                    text("✓ Verified")
+
+                                                # Role
+                                                with tag.td():
+                                                    if is_admin:
+                                                        with tag.span(
+                                                            classes="badge badge-primary"
+                                                        ):
+                                                            text("Admin")
+                                                    else:
+                                                        with tag.span(
+                                                            classes="badge badge-ghost"
+                                                        ):
+                                                            text("Member")
+
+                                                # Joined date
+                                                with tag.td():
+                                                    with tag.span(
+                                                        classes="text-sm text-gray-600"
+                                                    ):
+                                                        if (
+                                                            hasattr(user, "created_at")
+                                                            and user.created_at
+                                                        ):
+                                                            text(
+                                                                user.created_at.strftime(
+                                                                    "%b %d, %Y"
+                                                                )
+                                                            )
+                                                        else:
+                                                            text("—")
+
+                                                # Actions
+                                                with tag.td():
+                                                    if not is_admin:
+                                                        with tag.button(
+                                                            classes="btn btn-error btn-sm",
+                                                            hx_get=str(
+                                                                request.url_for(
+                                                                    "organizations:confirm_remove_member",
+                                                                    id=organization.id,
+                                                                    user_id=user.id,
+                                                                )
+                                                            ),
+                                                            hx_target="#modal",
+                                                        ):
+                                                            text("Remove")
+                                                    else:
+                                                        with tag.span(
+                                                            classes="text-xs text-gray-400"
+                                                        ):
+                                                            text("Cannot remove")
+                        else:
+                            # Empty state
+                            with tag.div(classes="text-center py-8"):
+                                with tag.div(classes="text-gray-400 mb-2"):
+                                    text("👥")
+                                with tag.p(classes="text-gray-600"):
+                                    text("No team members yet")
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):

@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 
-from polar.models import Organization, User, UserOrganization
+from polar.models import Account, Organization, User, UserOrganization
 from polar.user_organization.service import (
     CannotRemoveOrganizationAdmin,
     OrganizationNotFound,
@@ -67,17 +67,19 @@ class TestRemoveMemberSafe:
     async def test_remove_member_cannot_remove_admin(
         self,
         session: Any,
-        organization_with_account: Organization,
-        admin_user: User,
+        organization_account: Account,
+        organization: Organization,
+        user: User,
         save_fixture: Any,
     ) -> None:
         # Create user organization relationship for admin
         from polar.kit.utils import utc_now
         from polar.models import UserOrganization
 
+        # The user fixture becomes the admin through organization_account fixture
         admin_user_org = UserOrganization(
-            user_id=admin_user.id,
-            organization_id=organization_with_account.id,
+            user_id=user.id,
+            organization_id=organization.id,
             created_at=utc_now(),
         )
         await save_fixture(admin_user_org)
@@ -85,17 +87,18 @@ class TestRemoveMemberSafe:
         # Test trying to remove organization admin
         with pytest.raises(CannotRemoveOrganizationAdmin) as exc_info:
             await user_organization_service.remove_member_safe(
-                session, admin_user.id, organization_with_account.id
+                session, user.id, organization.id
             )
 
-        assert exc_info.value.user_id == admin_user.id
-        assert exc_info.value.organization_id == organization_with_account.id
+        assert exc_info.value.user_id == user.id
+        assert exc_info.value.organization_id == organization.id
 
     async def test_remove_member_non_admin_with_account(
         self,
         session: Any,
-        organization_with_account: Organization,
-        user: User,
+        organization_account: Account,
+        organization: Organization,
+        user_second: User,
         save_fixture: Any,
     ) -> None:
         # Create user organization relationship for non-admin user
@@ -103,22 +106,22 @@ class TestRemoveMemberSafe:
         from polar.models import UserOrganization
 
         user_org_relation = UserOrganization(
-            user_id=user.id,
-            organization_id=organization_with_account.id,
+            user_id=user_second.id,
+            organization_id=organization.id,
             created_at=utc_now(),
         )
         await save_fixture(user_org_relation)
 
         # Test removing a non-admin member from organization with account
         await user_organization_service.remove_member_safe(
-            session, user.id, organization_with_account.id
+            session, user_second.id, organization.id
         )
 
         # Verify the member was soft deleted
         user_org: (
             UserOrganization | None
         ) = await user_organization_service.get_by_user_and_org(
-            session, user.id, organization_with_account.id
+            session, user_second.id, organization.id
         )
         assert user_org is None
 

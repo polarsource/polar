@@ -556,7 +556,7 @@ class OrganizationService:
             return False
 
         # Check grandfathering - if grandfathered, they're ready
-        cutoff_date = datetime(2025, 7, 30, tzinfo=UTC)
+        cutoff_date = datetime(2025, 8, 4, 9, 0, tzinfo=UTC)
         if organization.created_at <= cutoff_date:
             return True
 

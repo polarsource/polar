@@ -137,3 +137,24 @@ Since Polar is the Merchant of Record and uses Stripe Connect Express for payout
 * 🇺🇾 Uruguay
 * 🇺🇿 Uzbekistan
 * 🇻🇳 Vietnam
+
+## Frequently Asked Questions
+
+<AccordionGroup>
+  <Accordion title="Can I use Polar in countries (e.g. India) where Stripe is invite-only?">
+    <Tip>Stripe Connect Express is a different product than the regular Stripe payments.</Tip>
+    Yes. With Polar, you are able to receive payments in any currency from anywhere around the world and have them paid (i.e. perform a payout) in your local bank account in the local currency (for e.g. INR in case of a bank account in India) via our [Stripe Connect Express](https://docs.stripe.com/connect/express-accounts) integration.
+  </Accordion>
+  <Accordion title="Can I use Polar as an individual to make sales globally?">
+    Yes, given that Stripe Connect Express supports individual as a business type in your region.
+
+    To know which business type is supported in your country, follow steps as below:
+    - Open required [verification information](https://docs.stripe.com/connect/required-verification-information#US+RS+express+recipient+individual+transfers) by Stripe to set up a business or personal account in your country.
+    - Ensure `Platform Country` is set to `United States (US)`.
+    - Ensure `Dashboard Type` is set to `express`.
+    - Ensure `Service Agreement` is set to `recipient`.
+    - Ensure `Capability` is set to `transfers`.
+    - Select the correct `Account Country` relevant to you.
+    - Click on the toggle for `Business Type` which will allow you know if individual, business, company or LLC/LLP is supported by Stripe Connect Express in that region.
+  </Accordion>
+</AccordionGroup>

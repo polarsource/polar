@@ -25,7 +25,10 @@
         "groups": [
           {
             "group": "Bootup",
-            "pages": ["introduction", "migrate"]
+            "pages": [
+              "introduction",
+              "migrate"
+            ]
           },
           {
             "group": "Features",
@@ -135,7 +138,10 @@
               },
               {
                 "group": "Framework Guides",
-                "pages": ["guides/nextjs", "guides/laravel"]
+                "pages": [
+                  "guides/nextjs",
+                  "guides/laravel"
+                ]
               },
               {
                 "group": "Webhooks",
@@ -173,7 +179,9 @@
         "groups": [
           {
             "group": "General",
-            "pages": ["api-reference/rate-limits"]
+            "pages": [
+              "api-reference/rate-limits"
+            ]
           },
           {
             "group": "Core API",
@@ -351,7 +359,9 @@
               "api-reference/customer-portal/get-organization",
               {
                 "group": "Sessions",
-                "pages": ["api-reference/customer-portal/sessions/create"]
+                "pages": [
+                  "api-reference/customer-portal/sessions/create"
+                ]
               },
               {
                 "group": "Subscriptions",
@@ -470,7 +480,9 @@
                   },
                   {
                     "group": "Organization",
-                    "pages": ["api-reference/webhooks/organization.updated"]
+                    "pages": [
+                      "api-reference/webhooks/organization.updated"
+                    ]
                   }
                 ]
               }
@@ -509,7 +521,10 @@
         "groups": [
           {
             "group": "Changelog",
-            "pages": ["changelog/recent", "changelog/api"]
+            "pages": [
+              "changelog/recent",
+              "changelog/api"
+            ]
           }
         ]
       },
@@ -519,7 +534,9 @@
         "groups": [
           {
             "group": "Contact Us",
-            "pages": ["support"]
+            "pages": [
+              "support"
+            ]
           }
         ]
       }
@@ -556,7 +573,12 @@
     }
   },
   "contextual": {
-    "options": ["copy", "view", "chatgpt", "claude"]
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude"
+    ]
   },
   "footer": {
     "socials": {

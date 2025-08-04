@@ -1,6 +1,7 @@
 'use client'
 
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
+import { usePostHog } from '@/hooks/posthog'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
 import {
   CheckoutForm,
@@ -21,7 +22,7 @@ import ShadowBox, {
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { CheckoutCard } from './CheckoutCard'
 import CheckoutProductInfo from './CheckoutProductInfo'
@@ -44,6 +45,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const embed = _embed === true
   const { resolvedTheme } = useTheme()
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
+  const posthog = usePostHog()
 
   const themePreset = useThemePreset(
     checkout.organization.slug === 'midday' ? 'midday' : 'polar',
@@ -60,6 +62,39 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const isPaymentReady = paymentStatus?.payment_ready ?? true // Default to true while loading
   const isPaymentRequired = checkout.isPaymentRequired
   const shouldBlockCheckout = !isPaymentReady && isPaymentRequired
+
+  // Track checkout page open
+  useEffect(() => {
+    posthog.capture('storefront:subscriptions:checkout:open', {
+      organization_slug: checkout.organization.slug,
+      product_id: checkout.product.id,
+      amount: checkout.amount,
+      embed,
+    })
+  }, [
+    checkout.organization.slug,
+    checkout.product.id,
+    checkout.amount,
+    embed,
+    posthog,
+  ])
+
+  // Track payment not ready state
+  useEffect(() => {
+    if (shouldBlockCheckout && paymentStatus) {
+      posthog.capture('storefront:subscriptions:payment_not_ready:view', {
+        organization_slug: checkout.organization.slug,
+        organization_status: paymentStatus?.organization_status,
+        product_id: checkout.product.id,
+      })
+    }
+  }, [
+    shouldBlockCheckout,
+    checkout.organization.slug,
+    paymentStatus?.organization_status,
+    checkout.product.id,
+    posthog,
+  ])
 
   const PaymentNotReadyBanner = () => {
     if (!shouldBlockCheckout) return null

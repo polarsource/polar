@@ -3170,16 +3170,13 @@ class TestConfirm:
                 ),
             )
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
+    @pytest.mark.auth(anonymous=True)
     async def test_payment_not_ready_sandbox_allows_payments(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         locker: Locker,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_fixed: Checkout,
         mocker: MockerFixture,

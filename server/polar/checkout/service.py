@@ -500,7 +500,9 @@ class CheckoutService:
         ip_address: str | None = None,
     ) -> Checkout:
         product_repository = ProductRepository.from_session(session)
-        product = await product_repository.get_by_id(checkout_create.product_id)
+        product = await product_repository.get_by_id(
+            checkout_create.product_id, options=product_repository.get_eager_options()
+        )
 
         if product is None:
             raise PolarRequestValidationError(

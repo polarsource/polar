@@ -5,5 +5,8 @@
          * See
          * https://stackoverflow.com/questions/47405315/visual-studio-code-and-subfolder-specific-settings/50305853#50305853
          */
+        "clients": true,
+        "server": true,
+        "docs": true
     }
 }

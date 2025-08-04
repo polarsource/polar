@@ -1,6 +1,8 @@
 'use client'
 
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
+import { usePostHog } from '@/hooks/posthog'
+import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
 import {
   CheckoutForm,
   CheckoutProductSwitcher,
@@ -13,13 +15,14 @@ import type { CheckoutPublicConfirmed } from '@polar-sh/sdk/models/components/ch
 import type { CheckoutUpdatePublic } from '@polar-sh/sdk/models/components/checkoutupdatepublic'
 import { ProductPriceCustom } from '@polar-sh/sdk/models/components/productpricecustom.js'
 import { ExpiredCheckoutError } from '@polar-sh/sdk/models/errors/expiredcheckouterror'
+import Alert from '@polar-sh/ui/components/atoms/Alert'
 import ShadowBox, {
   ShadowBoxOnMd,
 } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import { useTheme } from 'next-themes'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { CheckoutCard } from './CheckoutCard'
 import CheckoutProductInfo from './CheckoutProductInfo'
@@ -42,11 +45,75 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
   const embed = _embed === true
   const { resolvedTheme } = useTheme()
   const theme = _theme || (resolvedTheme as 'light' | 'dark')
+  const posthog = usePostHog()
 
   const themePreset = useThemePreset(
     checkout.organization.slug === 'midday' ? 'midday' : 'polar',
     theme,
   )
+
+  // Check organization payment readiness (account verification only for checkout)
+  const { data: paymentStatus } = useOrganizationPaymentStatus(
+    checkout.organization.id,
+    true, // enabled
+    true, // accountVerificationOnly - avoid unnecessary product/token checks in checkout
+  )
+
+  const isPaymentReady = paymentStatus?.payment_ready ?? true // Default to true while loading
+  const isPaymentRequired = checkout.isPaymentRequired
+  const shouldBlockCheckout = !isPaymentReady && isPaymentRequired
+
+  // Track checkout page open
+  useEffect(() => {
+    posthog.capture('storefront:subscriptions:checkout:open', {
+      organization_slug: checkout.organization.slug,
+      product_id: checkout.product.id,
+      amount: checkout.amount,
+      embed,
+    })
+  }, [
+    checkout.organization.slug,
+    checkout.product.id,
+    checkout.amount,
+    embed,
+    posthog,
+  ])
+
+  // Track payment not ready state
+  useEffect(() => {
+    if (shouldBlockCheckout && paymentStatus) {
+      posthog.capture('storefront:subscriptions:payment_not_ready:view', {
+        organization_slug: checkout.organization.slug,
+        organization_status: paymentStatus?.organization_status,
+        product_id: checkout.product.id,
+      })
+    }
+  }, [
+    shouldBlockCheckout,
+    checkout.organization.slug,
+    paymentStatus?.organization_status,
+    checkout.product.id,
+    posthog,
+  ])
+
+  const PaymentNotReadyBanner = () => {
+    if (!shouldBlockCheckout) return null
+
+    const isDenied = paymentStatus?.organization_status === 'denied'
+
+    return (
+      <Alert color="red">
+        <div className="flex flex-col gap-y-2">
+          <div className="font-medium">Payments are currently unavailable</div>
+          <div className="text-sm">
+            {isDenied
+              ? `${checkout.organization.name} doesn't allow payments.`
+              : `${checkout.organization.name} needs to complete their payment setup before you can make a purchase. You can still test with free products or 100% discount orders.`}
+          </div>
+        </div>
+      </Alert>
+    )
+  }
 
   const [fullLoading, setFullLoading] = useState(false)
   const loading = useMemo(
@@ -117,6 +184,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           'flex flex-col gap-y-12 overflow-hidden',
         )}
       >
+        <PaymentNotReadyBanner />
         <CheckoutProductSwitcher
           checkout={checkout}
           update={update}
@@ -139,6 +207,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           loadingLabel={label}
           theme={theme}
           themePreset={themePreset}
+          disabled={shouldBlockCheckout}
         />
       </ShadowBox>
     )
@@ -181,6 +250,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
         />
       </div>
       <div className="flex flex-col gap-y-8 md:p-12">
+        <PaymentNotReadyBanner />
         <CheckoutForm
           form={form}
           checkout={checkout}
@@ -190,6 +260,7 @@ const Checkout = ({ embed: _embed, theme: _theme }: CheckoutProps) => {
           loadingLabel={label}
           theme={theme}
           themePreset={themePreset}
+          disabled={shouldBlockCheckout}
         />
       </div>
     </ShadowBoxOnMd>

@@ -1,6 +1,7 @@
 import datetime
 
 from fastapi import Depends, Query, Response, status
+from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
@@ -24,6 +25,8 @@ from .schemas import Organization as OrganizationSchema
 from .schemas import (
     OrganizationCreate,
     OrganizationID,
+    OrganizationPaymentStatus,
+    OrganizationPaymentStep,
     OrganizationSetAccount,
     OrganizationUpdate,
 )
@@ -195,6 +198,47 @@ async def set_account(
 
     return await organization_service.set_account(
         session, auth_subject, organization, set_account.account_id
+    )
+
+
+@router.get(
+    "/{id}/payment-status",
+    response_model=OrganizationPaymentStatus,
+    tags=[APITag.private],
+    summary="Get Organization Payment Status",
+    responses={404: OrganizationNotFound},
+)
+async def get_payment_status(
+    id: OrganizationID,
+    auth_subject: auth.OrganizationsRead,
+    session: AsyncSession = Depends(get_db_session),
+    account_verification_only: bool = Query(
+        False,
+        description="Only perform account verification checks, skip product and integration checks",
+    ),
+) -> OrganizationPaymentStatus:
+    """Get payment status and onboarding steps for an organization."""
+    organization = await organization_service.get(
+        session,
+        auth_subject,
+        id,
+        options=(joinedload(Organization.account).joinedload(Account.admin),),
+    )
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    payment_status = await organization_service.get_payment_status(
+        session, organization, account_verification_only=account_verification_only
+    )
+
+    return OrganizationPaymentStatus(
+        payment_ready=payment_status.payment_ready,
+        steps=[
+            OrganizationPaymentStep(**step.model_dump())
+            for step in payment_status.steps
+        ],
+        organization_status=payment_status.organization_status,
     )
 
 

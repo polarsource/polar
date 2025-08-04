@@ -5,7 +5,7 @@ from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
-from polar.config import settings
+from polar.config import Environment, settings
 from polar.enums import AccountType
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Organization, Product, User
@@ -551,3 +551,26 @@ class TestGetPaymentStatus:
         # Should be payment ready with all steps complete
         assert payment_status.payment_ready is True
         assert all(step.completed for step in payment_status.steps)
+
+    async def test_sandbox_environment_allows_payments(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Make organization not payment ready (new org without account setup)
+        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
+        organization.status = Organization.Status.CREATED
+        organization.account_id = None
+        await save_fixture(organization)
+
+        # Mock environment to be sandbox
+        mocker.patch("polar.organization.service.settings.ENV", Environment.sandbox)
+
+        payment_status = await organization_service.get_payment_status(
+            session, organization
+        )
+
+        # Should be payment ready in sandbox even if account setup is incomplete
+        assert payment_status.payment_ready is True

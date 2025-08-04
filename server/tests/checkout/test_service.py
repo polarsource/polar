@@ -28,6 +28,7 @@ from polar.checkout.service import (
     NotOpenCheckout,
 )
 from polar.checkout.service import checkout as checkout_service
+from polar.config import Environment
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
@@ -3168,6 +3169,66 @@ class TestConfirm:
                     customer_name="Test Customer",
                 ),
             )
+
+    @pytest.mark.auth(anonymous=True)
+    async def test_payment_not_ready_sandbox_allows_payments(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        checkout_one_time_fixed: Checkout,
+        mocker: MockerFixture,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        # Make organization not payment ready (new org without account setup)
+        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
+        organization.status = Organization.Status.CREATED
+        organization.account_id = None
+        await save_fixture(organization)
+
+        # Mock environment to be sandbox
+        mocker.patch("polar.checkout.service.settings.ENV", Environment.sandbox)
+
+        # Setup Stripe mocks
+        confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
+        confirmation_token.payment_method_preview = {"id": "pm_test"}
+
+        payment_intent = MagicMock(spec=stripe_lib.PaymentIntent)
+        payment_intent.id = "pi_test"
+        payment_intent.client_secret = "pi_test_secret"
+        payment_intent.status = "requires_payment_method"
+        stripe_service_mock.create_payment_intent.return_value = payment_intent
+
+        stripe_customer = MagicMock(spec=stripe_lib.Customer)
+        stripe_customer.id = "cus_test"
+        stripe_service_mock.create_customer.return_value = stripe_customer
+
+        # Should be allowed since account setup is complete (is_details_submitted=True)
+        confirmed_checkout = await checkout_service.confirm(
+            session,
+            locker,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {
+                        "line1": "123 Main St",
+                        "postal_code": "12345",
+                        "city": "New York",
+                        "state": "US-NY",
+                        "country": "US",
+                    },
+                }
+            ),
+        )
+
+        assert confirmed_checkout.status == CheckoutStatus.confirmed
+        stripe_service_mock.create_payment_intent.assert_called_once()
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

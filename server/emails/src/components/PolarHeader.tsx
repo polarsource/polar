@@ -20,7 +20,7 @@ const Header = ({ featuredOrganization }: HeaderProps) => (
       <Column align="right">
         <Row align="right">
           <Column>
-            <Link href="https://x.com/polar_sh">
+            <Link href="https://x.com/polarsource">
               <Img
                 alt="X"
                 className="mx-[4px]"

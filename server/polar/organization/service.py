@@ -15,6 +15,7 @@ from polar.account.repository import AccountRepository
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
 from polar.checkout_link.repository import CheckoutLinkRepository
+from polar.config import Environment, settings
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
@@ -548,6 +549,10 @@ class OrganizationService:
         This method loads the account and admin data as needed, avoiding the need
         for eager loading in other services like checkout.
         """
+        # In sandbox environment, always allow payments regardless of account setup
+        if settings.ENV == Environment.sandbox:
+            return True
+
         # First check basic conditions that don't require account data
         if (
             organization.is_blocked()

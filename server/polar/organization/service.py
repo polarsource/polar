@@ -125,6 +125,24 @@ class OrganizationService:
         )
         return await repository.get_one_or_none(statement)
 
+    async def get_anonymous(
+        self,
+        session: AsyncSession,
+        id: uuid.UUID,
+        *,
+        options: Options = (),
+    ) -> Organization | None:
+        """Use it with precaution! Get organization by ID for anonymous users."""
+        repository = OrganizationRepository.from_session(session)
+        statement = (
+            repository.get_base_statement()
+            .where(Organization.blocked_at.is_(None))
+            .where(Organization.id == id)
+            .options(*options)
+        )
+
+        return await repository.get_one_or_none(statement)
+
     async def create(
         self,
         session: AsyncSession,

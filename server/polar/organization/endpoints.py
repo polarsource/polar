@@ -223,7 +223,13 @@ async def get_payment_status(
     # Handle authentication based on account_verification_only flag
     if is_anonymous(auth_subject) and not account_verification_only:
         raise Unauthorized()
-    elif not is_anonymous(auth_subject):
+    elif is_anonymous(auth_subject):
+        organization = await organization_service.get_anonymous(
+            session,
+            id,
+            options=(joinedload(Organization.account).joinedload(Account.admin),),
+        )
+    else:
         # For authenticated users, check proper scopes (need at least one of these)
         required_scopes = {
             Scope.web_default,
@@ -232,12 +238,12 @@ async def get_payment_status(
         }
         if not (auth_subject.scopes & required_scopes):
             raise ResourceNotFound()
-
-    organization = await organization_service.get_anonymous(
-        session,
-        id,
-        options=(joinedload(Organization.account).joinedload(Account.admin),),
-    )
+        organization = await organization_service.get(
+            session,
+            auth_subject,  # type: ignore it cannot be Anonymous as it's checked in the previous block
+            id,
+            options=(joinedload(Organization.account).joinedload(Account.admin),),
+        )
 
     if organization is None:
         raise ResourceNotFound()

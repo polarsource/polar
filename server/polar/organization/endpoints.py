@@ -1,14 +1,17 @@
 import datetime
+from typing import cast
 
 from fastapi import Depends, Query, Response, status
 from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
+from polar.auth.models import is_anonymous
+from polar.auth.scope import Scope
 from polar.config import settings
 from polar.email.react import render_email_template
 from polar.email.sender import enqueue_email
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
 from polar.openapi import APITag
@@ -210,7 +213,7 @@ async def set_account(
 )
 async def get_payment_status(
     id: OrganizationID,
-    auth_subject: auth.OrganizationsRead,
+    auth_subject: auth.OrganizationsReadOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
     account_verification_only: bool = Query(
         False,
@@ -218,12 +221,30 @@ async def get_payment_status(
     ),
 ) -> OrganizationPaymentStatus:
     """Get payment status and onboarding steps for an organization."""
-    organization = await organization_service.get(
-        session,
-        auth_subject,
-        id,
-        options=(joinedload(Organization.account).joinedload(Account.admin),),
-    )
+    # Handle authentication based on account_verification_only flag
+    if is_anonymous(auth_subject) and not account_verification_only:
+        raise Unauthorized()
+    elif is_anonymous(auth_subject):
+        organization = await organization_service.get_anonymous(
+            session,
+            id,
+            options=(joinedload(Organization.account).joinedload(Account.admin),),
+        )
+    else:
+        # For authenticated users, check proper scopes (need at least one of these)
+        required_scopes = {
+            Scope.web_default,
+            Scope.organizations_read,
+            Scope.organizations_write,
+        }
+        if not (auth_subject.scopes & required_scopes):
+            raise ResourceNotFound()
+        organization = await organization_service.get(
+            session,
+            cast(auth.OrganizationsRead, auth_subject),
+            id,
+            options=(joinedload(Organization.account).joinedload(Account.admin),),
+        )
 
     if organization is None:
         raise ResourceNotFound()

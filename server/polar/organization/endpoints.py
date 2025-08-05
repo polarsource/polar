@@ -1,4 +1,5 @@
 import datetime
+from typing import cast
 
 from fastapi import Depends, Query, Response, status
 from sqlalchemy.orm import joinedload
@@ -240,7 +241,7 @@ async def get_payment_status(
             raise ResourceNotFound()
         organization = await organization_service.get(
             session,
-            auth_subject,  # type: ignore it cannot be Anonymous as it's checked in the previous block
+            cast(auth.OrganizationsRead, auth_subject),
             id,
             options=(joinedload(Organization.account).joinedload(Account.admin),),
         )

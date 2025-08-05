@@ -142,8 +142,12 @@ Since Polar is the Merchant of Record and uses Stripe Connect Express for payout
 
 <AccordionGroup>
   <Accordion title="Can I use Polar in countries (e.g. India) where Stripe is invite-only?">
-    <Tip>Stripe Connect Express is a different product than the regular Stripe payments.</Tip>
-    Yes. With Polar, you are able to receive payments in any currency from anywhere around the world and have them paid (i.e. perform a payout) in your local bank account in the local currency (for e.g. INR in case of a bank account in India) via our [Stripe Connect Express](https://docs.stripe.com/connect/express-accounts) integration.
+    <Note>Stripe Connect Express is a different product than the regular Stripe payments.</Note>
+    Yes, any individual or company operating in our [supported countries](/merchant-of-record/supported-countries) can receive payouts from Polar even if Stripe standalone is invite-only there.
+    
+    This is possible as Polar is the Merchant of Record, all payments from customers are made to Polar (US). [Stripe Connect Express](https://docs.stripe.com/connect/express-accounts) is then used to issue payouts, and is supported in more countries via cross-border transfer than Stripe Payments standalone.
+    
+    You might still see a warning in Stripe Connect Express that payments are invite-only, but don't worry. No direct sales are made directly to the Stripe Connect Express account. They're all made to Polar (US) as a platform and the merchant of record. We only use the transfer and payout feature of Stripe Connect Express which is available in all of our [supported countries](/merchant-of-record/supported-countries).
   </Accordion>
   <Accordion title="Can I use Polar as an individual to make sales globally?">
     Yes, given that Stripe Connect Express supports individual as a business type in your region.

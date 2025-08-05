@@ -224,6 +224,12 @@ class LicenseKeyService:
         license_key: LicenseKey,
         activate: LicenseKeyActivate,
     ) -> LicenseKeyActivation:
+        if not license_key.is_active():
+            raise NotPermitted(
+                "License key is no longer active. "
+                "This license key can not be activated."
+            )
+
         if not license_key.limit_activations:
             raise NotPermitted(
                 "This license key does not support activations. "

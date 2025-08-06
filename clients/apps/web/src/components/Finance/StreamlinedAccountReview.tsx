@@ -30,19 +30,36 @@ interface StreamlinedAccountReviewProps {
   onStartIdentityVerification: () => void
 }
 
-const ProgressIndicator = ({ steps, identityVerificationStatus }: { steps: StepConfig[], identityVerificationStatus?: string }) => {
+const ProgressIndicator = ({
+  steps,
+  identityVerificationStatus,
+}: {
+  steps: StepConfig[]
+  identityVerificationStatus?: string
+}) => {
   // Calculate progress based on completed steps
   const calculateProgress = () => {
-    const completedSteps = steps.filter(s => s.status === 'completed').length
-    const identityStep = steps.find(s => s.id === 'identity')
-    const identityIndex = steps.findIndex(s => s.id === 'identity')
-    
+    const completedSteps = steps.filter((s) => s.status === 'completed').length
+    const identityStep = steps.find((s) => s.id === 'identity')
+    const identityIndex = steps.findIndex((s) => s.id === 'identity')
+    const detailsStepCompleted = steps.find(
+      (s) => s.id === 'review' && s.status === 'completed',
+    )
+
+    if (!detailsStepCompleted) {
+      return 0
+    }
+
     // If identity is pending, progress should go TO the identity step
-    if (identityStep?.status === 'current' && identityVerificationStatus === 'pending') {
+    if (
+      detailsStepCompleted &&
+      identityStep?.status === 'current' &&
+      identityVerificationStatus === 'pending'
+    ) {
       // Progress goes to the identity step (index 2), so (2 / 2) * 100 = 100%
       return Math.max(0, (identityIndex / (steps.length - 1)) * 100)
     }
-    
+
     // Normal progress based on completed steps
     return Math.max(0, (completedSteps / (steps.length - 1)) * 100)
   }
@@ -66,8 +83,14 @@ const ProgressIndicator = ({ steps, identityVerificationStatus }: { steps: StepC
           const isCompleted = step.status === 'completed'
           const isCurrent = step.status === 'current'
           const isBlocked = step.status === 'blocked'
-          const isPending = step.id === 'identity' && identityVerificationStatus === 'pending' && isCurrent
-          const isFailed = step.id === 'identity' && identityVerificationStatus === 'failed' && isCurrent
+          const isPending =
+            step.id === 'identity' &&
+            identityVerificationStatus === 'pending' &&
+            isCurrent
+          const isFailed =
+            step.id === 'identity' &&
+            identityVerificationStatus === 'failed' &&
+            isCurrent
 
           return (
             <div key={step.id} className="relative flex flex-col items-center">
@@ -89,12 +112,28 @@ const ProgressIndicator = ({ steps, identityVerificationStatus }: { steps: StepC
                 {isCompleted ? (
                   <Check className="h-5 w-5" />
                 ) : isPending ? (
-                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                  <svg
+                    className="h-5 w-5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 ) : isFailed ? (
-                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                  <svg
+                    className="h-5 w-5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 ) : (
                   <div className="text-sm font-medium">{step.icon}</div>
@@ -178,11 +217,12 @@ export default function StreamlinedAccountReview({
     {
       id: 'identity' as Step,
       title: 'Identity',
-      description: identityVerificationStatus === 'pending' 
-        ? 'Processing...' 
-        : identityVerificationStatus === 'failed'
-          ? 'Failed'
-          : 'Verification',
+      description:
+        identityVerificationStatus === 'pending'
+          ? 'Processing...'
+          : identityVerificationStatus === 'failed'
+            ? 'Failed'
+            : 'Verification',
       icon: <CheckCircle className="h-5 w-5" />,
       status: isIdentityCompleted
         ? 'completed'
@@ -208,7 +248,10 @@ export default function StreamlinedAccountReview({
 
       {/* Progress indicator */}
       <div className="px-8">
-        <ProgressIndicator steps={steps} identityVerificationStatus={identityVerificationStatus} />
+        <ProgressIndicator
+          steps={steps}
+          identityVerificationStatus={identityVerificationStatus}
+        />
       </div>
 
       {/* Current step content */}
@@ -221,7 +264,7 @@ export default function StreamlinedAccountReview({
                 <h1 className="text-2xl font-semibold">Organization Details</h1>
               </div>
               <p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-                Tell us about your organization so we can review if it's an
+                Tell us about your organization so we can review if it&apos;s an
                 acceptable use case for Polar.
               </p>
             </div>
@@ -265,8 +308,16 @@ export default function StreamlinedAccountReview({
                     <>
                       <div className="mb-4 flex justify-center">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
-                          <svg className="h-4 w-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                          <svg
+                            className="h-4 w-4 text-blue-600 dark:text-blue-400"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                              clipRule="evenodd"
+                            />
                           </svg>
                         </div>
                       </div>
@@ -274,10 +325,11 @@ export default function StreamlinedAccountReview({
                         Identity Verification Pending
                       </h4>
                       <p className="mx-auto mb-6 max-w-md text-sm text-gray-600 dark:text-gray-400">
-                        Your identity verification is being processed. This usually takes a few minutes but can take up to 24 hours.
+                        Your identity verification is being processed. This
+                        usually takes a few minutes but can take up to 24 hours.
                       </p>
                       <div className="text-xs text-gray-500">
-                        We'll notify you once verification is complete.
+                        We&apos;ll notify you once verification is complete.
                       </div>
                     </>
                   ) : identityVerificationStatus === 'verified' ? (
@@ -298,8 +350,16 @@ export default function StreamlinedAccountReview({
                     <>
                       <div className="mb-4 flex justify-center">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-                          <svg className="h-4 w-4 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                          <svg
+                            className="h-4 w-4 text-red-600 dark:text-red-400"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                              clipRule="evenodd"
+                            />
                           </svg>
                         </div>
                       </div>
@@ -307,7 +367,9 @@ export default function StreamlinedAccountReview({
                         Identity Verification Failed
                       </h4>
                       <p className="mx-auto mb-6 max-w-md text-sm text-gray-600 dark:text-gray-400">
-                        We were unable to verify your identity. This could be due to document quality or information mismatch. Please try again.
+                        We were unable to verify your identity. This could be
+                        due to document quality or information mismatch. Please
+                        try again.
                       </p>
                       <Button
                         onClick={onStartIdentityVerification}
@@ -327,7 +389,9 @@ export default function StreamlinedAccountReview({
                       </div>
                       <h4 className="mb-2 font-medium">Verify Your Identity</h4>
                       <p className="mx-auto mb-6 max-w-md text-sm text-gray-600 dark:text-gray-400">
-                        To comply with financial regulations and secure your account, we need to verify your identity using a government-issued ID.
+                        To comply with financial regulations and secure your
+                        account, we need to verify your identity using a
+                        government-issued ID.
                       </p>
                       <Button
                         onClick={onStartIdentityVerification}

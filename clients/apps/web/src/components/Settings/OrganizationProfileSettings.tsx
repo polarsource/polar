@@ -352,7 +352,7 @@ export const OrganizationDetailsForm: React.FC<
                 Describe your business in 1-2 sentences *
               </label>
               <p className="mb-2 text-xs text-gray-600">
-                Tell us: what industry you're in, what problem you solve, and
+                Tell us: what industry you&apos;re in, what problem you solve, and
                 who your customers are
               </p>
               <FormField
@@ -422,7 +422,7 @@ export const OrganizationDetailsForm: React.FC<
                 How will you integrate Polar into your business? *
               </label>
               <p className="mb-2 text-xs text-gray-600">
-                Tell us: where customers will see Polar, what features you'll
+                Tell us: where customers will see Polar, what features you&apos;ll
                 use, and how it fits your workflow
               </p>
               <FormField

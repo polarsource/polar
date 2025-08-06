@@ -85,6 +85,16 @@ class InvalidAccount(OrganizationError):
         super().__init__(message)
 
 
+class AccountAlreadySetByOwner(OrganizationError):
+    def __init__(self, organization_name: str) -> None:
+        self.organization_name = organization_name
+        message = (
+            f"The account for organization '{organization_name}' has already been set up by the owner. "
+            "Only the original member who set up the account can make changes to prevent unintended consequences."
+        )
+        super().__init__(message, 403)
+
+
 class OrganizationService:
     async def list(
         self,
@@ -334,6 +344,19 @@ class OrganizationService:
             raise InvalidAccount(account_id)
 
         first_account_set = organization.account_id is None
+
+        # If an account is already set, only the organization admin (account owner) can change it
+        if not first_account_set:
+            repository = OrganizationRepository.from_session(session)
+            admin_user = await repository.get_admin_user(session, organization)
+            
+            # Check if current user is the admin
+            current_user_id = None
+            if hasattr(auth_subject.subject, 'id'):
+                current_user_id = auth_subject.subject.id
+            
+            if not admin_user or current_user_id != admin_user.id:
+                raise AccountAlreadySetByOwner(organization.name)
 
         repository = OrganizationRepository.from_session(session)
         organization = await repository.update(

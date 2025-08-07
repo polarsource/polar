@@ -17,6 +17,15 @@ import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import Input from '@polar-sh/ui/components/atoms/Input'
+import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@polar-sh/ui/components/atoms/Select'
+import Textarea from '@polar-sh/ui/components/atoms/Textarea'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Form,
@@ -24,14 +33,6 @@ import {
   FormField,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/ui/components/ui/select'
-import { Textarea } from '@polar-sh/ui/components/ui/textarea'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { useForm, useFormContext } from 'react-hook-form'
@@ -158,7 +159,7 @@ const OrganizationSocialLinks = () => {
             variant="ghost"
             size="icon"
             onClick={() => handleRemoveSocial(index)}
-            className="h-8 w-8 text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600"
           >
             <CloseOutlined fontSize="small" />
           </Button>
@@ -166,12 +167,12 @@ const OrganizationSocialLinks = () => {
       ))}
       <Button
         type="button"
-        variant="ghost"
+        size="sm"
+        variant="secondary"
         onClick={handleAddSocial}
-        className="h-8 text-sm text-gray-600 hover:text-gray-800"
       >
         <AddOutlined fontSize="small" className="mr-1" />
-        Add social link
+        Add Social
       </Button>
     </div>
   )
@@ -265,7 +266,7 @@ export const OrganizationDetailsForm: React.FC<
           <div className="space-y-4 sm:col-span-10">
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Organization name *
+                Organization Name *
               </label>
               <FormField
                 control={control}
@@ -286,7 +287,7 @@ export const OrganizationDetailsForm: React.FC<
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Support email *
+                Support Email *
               </label>
               <FormField
                 control={control}
@@ -330,7 +331,7 @@ export const OrganizationDetailsForm: React.FC<
         {/* Social Links - Progressive Disclosure */}
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <label className="block text-sm font-medium">Social media</label>
+            <label className="block text-sm font-medium">Social Media</label>
           </div>
           <OrganizationSocialLinks />
         </div>
@@ -340,7 +341,7 @@ export const OrganizationDetailsForm: React.FC<
       {inKYCMode && (
         <div className="border-t pt-8">
           <div className="mb-6">
-            <h3 className="mb-2 text-lg font-medium">Business details</h3>
+            <h3 className="mb-2 text-lg font-medium">Business Details</h3>
             <p className="text-sm text-gray-600">
               Help us understand your business for compliance and payment setup.
             </p>
@@ -349,11 +350,11 @@ export const OrganizationDetailsForm: React.FC<
           <div className="space-y-6">
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Describe your business in 1-2 sentences *
+                Describe your business *
               </label>
               <p className="mb-2 text-xs text-gray-600">
-                Tell us: what industry you&apos;re in, what problem you solve, and
-                who your customers are
+                Tell us: what industry you&apos;re in, what problem you solve,
+                and who your customers are
               </p>
               <FormField
                 control={control}
@@ -422,8 +423,8 @@ export const OrganizationDetailsForm: React.FC<
                 How will you integrate Polar into your business? *
               </label>
               <p className="mb-2 text-xs text-gray-600">
-                Tell us: where customers will see Polar, what features you&apos;ll
-                use, and how it fits your workflow
+                Tell us: where customers will see Polar, what features
+                you&apos;ll use, and how it fits your workflow
               </p>
               <FormField
                 control={control}
@@ -508,19 +509,11 @@ export const OrganizationDetailsForm: React.FC<
                   name="details.future_annual_revenue"
                   render={({ field }) => (
                     <div>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                          $
-                        </span>
-                        <Input
-                          {...field}
-                          type="number"
-                          min="0"
-                          value={field.value || ''}
-                          placeholder="50000"
-                          className="pl-7"
-                        />
-                      </div>
+                      <MoneyInput
+                        {...field}
+                        placeholder={50000}
+                        className="w-full"
+                      />
                       <FormMessage />
                     </div>
                   )}
@@ -666,20 +659,20 @@ const OrganizationProfileSettings: React.FC<
               </SettingsGroupItem>
             </>
           )}
-
-          <SettingsGroupItem title="" description="" vertical>
+          <div className="flex flex-col gap-y-4 p-4">
             <OrganizationDetailsForm
               organization={organization}
               inKYCMode={inKYCMode}
             />
-          </SettingsGroupItem>
+          </div>
 
           <SettingsGroupActions>
             <ConfirmationButton
               onConfirm={handleFormSubmit}
               warningMessage="This information cannot be changed once submitted. Are you sure?"
-              buttonText={inKYCMode ? 'Submit for Review' : 'Save Changes'}
-              confirmText="Yes, Submit"
+              buttonText={inKYCMode ? 'Submit for Review' : 'Save'}
+              size={inKYCMode ? 'default' : 'sm'}
+              confirmText="Submit"
               disabled={!formState.isDirty}
               loading={updateOrganization.isPending}
               requireConfirmation={inKYCMode}

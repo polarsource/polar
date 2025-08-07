@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/ui/components/atoms/Select'
-import Textarea from '@polar-sh/ui/components/atoms/Textarea'
+import TextArea from '@polar-sh/ui/components/atoms/TextArea'
 import { Checkbox } from '@polar-sh/ui/components/ui/checkbox'
 import {
   Form,
@@ -187,7 +187,7 @@ const CompactTextArea = ({
   placeholder: string
   rows?: number
 }) => (
-  <Textarea
+  <TextArea
     {...field}
     rows={rows}
     placeholder={placeholder}

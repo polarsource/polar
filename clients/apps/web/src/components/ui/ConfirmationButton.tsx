@@ -105,7 +105,7 @@ export default function ConfirmationButton({
   }
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+    <div className="flex flex-col gap-3 sm:gap-4">
       {/* Warning Message */}
       <div className={`flex items-center gap-2 text-sm ${styles.message} font-medium sm:flex-1`}>
         <div className={styles.icon}>
@@ -120,16 +120,6 @@ export default function ConfirmationButton({
       <div className="flex gap-2 sm:flex-shrink-0">
         <Button
           type="button"
-          variant="outline"
-          onClick={handleCancel}
-          disabled={loading}
-          size={size}
-          className="flex-1 sm:flex-initial"
-        >
-          Cancel
-        </Button>
-        <Button
-          type="button"
           onClick={handleConfirm}
           loading={loading}
           size={size}
@@ -138,6 +128,16 @@ export default function ConfirmationButton({
           className="flex-1 sm:flex-initial"
         >
           {confirmText}
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={handleCancel}
+          disabled={loading}
+          size={size}
+          className="flex-1 sm:flex-initial"
+        >
+          Cancel
         </Button>
       </div>
     </div>

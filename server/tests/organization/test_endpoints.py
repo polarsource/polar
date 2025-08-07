@@ -318,6 +318,34 @@ class TestGetPaymentStatus:
         )
         assert response.status_code == 401
 
+    async def test_anonymous_with_account_verification_only(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        # Make this a new organization (not grandfathered)
+        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
+        await save_fixture(organization)
+
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/payment-status?account_verification_only=true"
+        )
+        assert response.status_code == 200
+
+        json = response.json()
+        # When account_verification_only=true, we should get minimal response
+        # focusing only on account setup (no product/integration steps)
+        assert "payment_ready" in json
+        assert "steps" in json
+        assert "organization_status" in json
+
+        # With account_verification_only=true, only account setup step should be present
+        step_ids = [step["id"] for step in json["steps"]]
+        assert "setup_account" in step_ids
+        assert len(step_ids) == 1
+        assert json["payment_ready"] is False
+
     @pytest.mark.auth
     async def test_not_member(
         self, client: AsyncClient, organization: Organization

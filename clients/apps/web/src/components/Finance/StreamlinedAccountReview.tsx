@@ -76,8 +76,9 @@ const ProgressIndicator = ({ steps }: { steps: StepConfig[] }) => {
       {/* Progress bar background */}
       <div className="absolute left-6 right-6 top-6 h-0.5 bg-gray-200 dark:bg-gray-700" />
 
+      {/* Progress bar fill */}
       <div
-        className="absolute top-6 h-0.5 bg-gray-400 transition-all duration-500 ease-out"
+        className="absolute left-6 top-6 h-0.5 bg-blue-500 transition-all duration-500 ease-out"
         style={{
           width: `${calculateProgress()}%`,
           maxWidth: 'calc(100% - 48px)', // Don't extend beyond the step circles
@@ -97,7 +98,7 @@ const ProgressIndicator = ({ steps }: { steps: StepConfig[] }) => {
               <div
                 className={`flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all duration-300 ${
                   isCompleted
-                    ? 'border-gray-500 bg-gray-500 text-white'
+                    ? 'border-green-500 bg-green-500 text-white'
                     : isPending
                       ? 'border-blue-500 bg-blue-500 text-white'
                       : isFailed
@@ -144,7 +145,7 @@ const ProgressIndicator = ({ steps }: { steps: StepConfig[] }) => {
                 <p
                   className={`text-xs font-medium ${
                     isCompleted
-                      ? 'text-gray-600 dark:text-gray-400'
+                      ? 'text-green-600 dark:text-green-400'
                       : isPending
                         ? 'text-blue-600 dark:text-blue-400'
                         : isFailed
@@ -224,6 +225,7 @@ export default function StreamlinedAccountReview({
     return 'pending'
   }
 
+
   const steps: StepConfig[] = [
     {
       id: 'review' as Step,
@@ -289,10 +291,7 @@ export default function StreamlinedAccountReview({
 
       {/* Progress indicator */}
       <div className="px-8">
-        <ProgressIndicator
-          steps={steps}
-          identityVerificationStatus={identityVerificationStatus}
-        />
+        <ProgressIndicator steps={steps} />
       </div>
 
       {/* Current step content */}

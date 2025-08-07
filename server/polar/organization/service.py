@@ -90,6 +90,16 @@ class InvalidAccount(OrganizationError):
         super().__init__(message)
 
 
+class AccountAlreadySetByOwner(OrganizationError):
+    def __init__(self, organization_name: str) -> None:
+        self.organization_name = organization_name
+        message = (
+            f"The account for organization '{organization_name}' has already been set up by the owner. "
+            "Only the original member who set up the account can make changes to prevent unintended consequences."
+        )
+        super().__init__(message, 403)
+
+
 class OrganizationService:
     async def list(
         self,
@@ -128,6 +138,24 @@ class OrganizationService:
             .where(Organization.id == id)
             .options(*options)
         )
+        return await repository.get_one_or_none(statement)
+
+    async def get_anonymous(
+        self,
+        session: AsyncSession,
+        id: uuid.UUID,
+        *,
+        options: Options = (),
+    ) -> Organization | None:
+        """Use it with precaution! Get organization by ID for anonymous users."""
+        repository = OrganizationRepository.from_session(session)
+        statement = (
+            repository.get_base_statement()
+            .where(Organization.blocked_at.is_(None))
+            .where(Organization.id == id)
+            .options(*options)
+        )
+
         return await repository.get_one_or_none(statement)
 
     async def create(
@@ -322,6 +350,19 @@ class OrganizationService:
 
         first_account_set = organization.account_id is None
 
+        # If an account is already set, only the organization admin (account owner) can change it
+        if not first_account_set:
+            repository = OrganizationRepository.from_session(session)
+            admin_user = await repository.get_admin_user(session, organization)
+
+            # Check if current user is the admin
+            current_user_id = None
+            if hasattr(auth_subject.subject, "id"):
+                current_user_id = auth_subject.subject.id
+
+            if not admin_user or current_user_id != admin_user.id:
+                raise AccountAlreadySetByOwner(organization.name)
+
         repository = OrganizationRepository.from_session(session)
         organization = await repository.update(
             organization, update_dict={"account": account}
@@ -418,16 +459,15 @@ class OrganizationService:
         organizations = await repository.get_all_by_account(account.id)
 
         for organization in organizations:
-            # Don't override organizations that are under review or denied
-            if organization.status in (
-                Organization.Status.UNDER_REVIEW,
-                Organization.Status.DENIED,
-            ):
+            # Don't override organizations that are denied
+            if organization.status == Organization.Status.DENIED:
                 continue
 
             # If account is fully set up, set organization to ACTIVE
             if all(
                 (
+                    not organization.is_under_review(),
+                    not organization.is_active(),
                     account.currency is not None,
                     account.is_details_submitted,
                     account.is_charges_enabled,
@@ -435,8 +475,15 @@ class OrganizationService:
                 )
             ):
                 organization.status = Organization.Status.ACTIVE
-            else:
-                # If Stripe capabilities are missing, set to ONBOARDING_STARTED
+
+            # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
+            if any(
+                (
+                    not account.is_details_submitted,
+                    not account.is_charges_enabled,
+                    not account.is_payouts_enabled,
+                )
+            ):
                 organization.status = Organization.Status.ONBOARDING_STARTED
 
             await self._sync_account_status(session, organization)

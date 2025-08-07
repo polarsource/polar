@@ -333,7 +333,7 @@ To set up the Polar `webhooks` plugin with the BetterAuth client, follow the ste
 
 <Steps>
   <Step title="Configure Webhook Endpoints in Polar">
-    Configure a Webhook endpoint in your Polar Organization Settings page by following [this guide](/integrate/webhooks/endpoints). Webhook endpoint is configured at /polar/webhooks.
+    Configure a Webhook endpoint in your Polar Organization Settings page by following [this guide](/integrate/webhooks/endpoints). Webhook endpoint is configured at `/api/auth/polar/webhooks`.
   </Step>
   <Step title="Add the Webhook Secret">
     Add the obtained webhook secret to your application environment as an environment variable (to be used as `process.env.POLAR_WEBHOOK_SECRET`):

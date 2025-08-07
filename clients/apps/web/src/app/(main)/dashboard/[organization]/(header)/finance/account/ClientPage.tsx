@@ -3,6 +3,7 @@
 import AccountCreateModal from '@/components/Accounts/AccountCreateModal'
 import AccountsList from '@/components/Accounts/AccountsList'
 import StreamlinedAccountReview from '@/components/Finance/StreamlinedAccountReview'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
@@ -145,52 +146,54 @@ export default function ClientPage({
   }, [startIdentityVerification])
 
   return (
-    <div className="flex flex-col gap-y-6">
-      <StreamlinedAccountReview
-        organization={organization}
-        currentStep={step}
-        requireDetails={requireDetails}
-        organizationAccount={organizationAccount}
-        identityVerified={identityVerified}
-        identityVerificationStatus={identityVerificationStatus}
-        onDetailsSubmitted={handleDetailsSubmitted}
-        onValidationCompleted={handleValidationCompleted}
-        onStartAccountSetup={handleStartAccountSetup}
-        onStartIdentityVerification={handleStartIdentityVerification}
-      />
+    <DashboardBody>
+      <div className="flex flex-col gap-y-6">
+        <StreamlinedAccountReview
+          organization={organization}
+          currentStep={step}
+          requireDetails={requireDetails}
+          organizationAccount={organizationAccount}
+          identityVerified={identityVerified}
+          identityVerificationStatus={identityVerificationStatus}
+          onDetailsSubmitted={handleDetailsSubmitted}
+          onValidationCompleted={handleValidationCompleted}
+          onStartAccountSetup={handleStartAccountSetup}
+          onStartIdentityVerification={handleStartIdentityVerification}
+        />
 
-      {accounts?.items && accounts.items.length > 0 ? (
-        <ShadowBoxOnMd>
-          <div className="flex flex-row items-center justify-between">
-            <div className="flex flex-col gap-y-2">
-              <h2 className="text-lg font-medium">All payout accounts</h2>
-              <p className="dark:text-polar-500 text-sm text-gray-500">
-                Payout accounts you manage
-              </p>
+        {accounts?.items && accounts.items.length > 0 ? (
+          <ShadowBoxOnMd>
+            <div className="flex flex-row items-center justify-between">
+              <div className="flex flex-col gap-y-2">
+                <h2 className="text-lg font-medium">All payout accounts</h2>
+                <p className="dark:text-polar-500 text-sm text-gray-500">
+                  Payout accounts you manage
+                </p>
+              </div>
             </div>
-          </div>
-          <Separator className="my-8" />
-          {accounts?.items && (
-            <AccountsList
-              accounts={accounts?.items}
-              pauseActions={requireDetails}
+            <Separator className="my-8" />
+            {accounts?.items && (
+              <AccountsList
+                accounts={accounts?.items}
+                pauseActions={requireDetails}
+                returnPath={`/dashboard/${organization.slug}/finance/account`}
+              />
+            )}
+          </ShadowBoxOnMd>
+        ) : null}
+
+        <Modal
+          isShown={isShownSetupModal}
+          className="min-w-[400px]"
+          hide={hideSetupModal}
+          modalContent={
+            <AccountCreateModal
+              forOrganizationId={organization.id}
               returnPath={`/dashboard/${organization.slug}/finance/account`}
             />
-          )}
-        </ShadowBoxOnMd>
-      ) : null}
-
-      <Modal
-        isShown={isShownSetupModal}
-        className="min-w-[400px]"
-        hide={hideSetupModal}
-        modalContent={
-          <AccountCreateModal
-            forOrganizationId={organization.id}
-            returnPath={`/dashboard/${organization.slug}/finance/account`}
-          />
-        }
-      />
-    </div>
+          }
+        />
+      </div>
+    </DashboardBody>
   )
 }

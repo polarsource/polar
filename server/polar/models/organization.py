@@ -26,7 +26,7 @@ from polar.kit.extensions.sqlalchemy import StringEnum
 from .account import Account
 
 if TYPE_CHECKING:
-    from .organization_ai_validation import OrganizationAIValidation
+    from .organization_review import OrganizationReview
     from .product import Product
 
 
@@ -231,12 +231,13 @@ class Organization(RecordModel):
         )
 
     @declared_attr
-    def ai_validation(cls) -> Mapped[list["OrganizationAIValidation"]]:
+    def review(cls) -> Mapped["OrganizationReview | None"]:
         return relationship(
-            "OrganizationAIValidation",
+            "OrganizationReview",
             lazy="raise",
             back_populates="organization",
             cascade="delete, delete-orphan",
+            uselist=False,  # This makes it a one-to-one relationship
         )
 
     def is_blocked(self) -> bool:

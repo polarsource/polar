@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, String, Text, Uuid
+from sqlalchemy import TIMESTAMP, ForeignKey, String, Text, UniqueConstraint, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from polar.models.organization import Organization
 
 
-class OrganizationAIValidation(RecordModel):
+class OrganizationReview(RecordModel):
     """Model to store AI validation responses for organizations."""
 
     class Verdict(StrEnum):
@@ -21,13 +21,14 @@ class OrganizationAIValidation(RecordModel):
         FAIL = "FAIL"
         UNCERTAIN = "UNCERTAIN"
 
-    __tablename__ = "organization_ai_validations"
+    __tablename__ = "organization_reviews"
+    __table_args__ = (UniqueConstraint("organization_id"),)
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=False,
-        index=True,
+        unique=True,
     )
 
     verdict: Mapped[Verdict] = mapped_column(String, nullable=False)
@@ -50,9 +51,7 @@ class OrganizationAIValidation(RecordModel):
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
-        return relationship(
-            "Organization", lazy="raise", back_populates="ai_validation"
-        )
+        return relationship("Organization", lazy="raise", back_populates="review")
 
     def __repr__(self) -> str:
-        return f"OrganizationAIValidation(id={self.id}, organization_id={self.organization_id}, verdict={self.verdict})"
+        return f"OrganizationReview(id={self.id}, organization_id={self.organization_id}, verdict={self.verdict})"

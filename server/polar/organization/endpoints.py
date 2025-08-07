@@ -358,7 +358,7 @@ async def validate_with_ai(
     result = await organization_service.validate_with_ai(session, organization)
 
     return OrganizationValidationResult(
-        verdict=result.verdict.value,  # Convert enum to string value
+        verdict=result.verdict,  # type: ignore[arg-type]
         reason=result.reason,
         timed_out=result.timed_out,
     )

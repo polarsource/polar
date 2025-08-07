@@ -7,7 +7,7 @@ from pydantic_ai import models
 from pydantic_ai.models.test import TestModel
 
 from polar.models.organization import Organization
-from polar.models.organization_ai_validation import OrganizationAIValidation
+from polar.models.organization_review import OrganizationReview
 from polar.organization.ai_validation import (
     OrganizationAIValidationResult,
     OrganizationAIValidator,
@@ -257,17 +257,17 @@ class TestIntegrationValidation:
 
     def test_verdict_enum_values(self) -> None:
         """Test verdict enum has expected values."""
-        from polar.models.organization_ai_validation import OrganizationAIValidation
+        from polar.models.organization_review import OrganizationReview
 
-        assert OrganizationAIValidation.Verdict.PASS == "PASS"
-        assert OrganizationAIValidation.Verdict.FAIL == "FAIL"
-        assert OrganizationAIValidation.Verdict.UNCERTAIN == "UNCERTAIN"
+        assert OrganizationReview.Verdict.PASS == "PASS"
+        assert OrganizationReview.Verdict.FAIL == "FAIL"
+        assert OrganizationReview.Verdict.UNCERTAIN == "UNCERTAIN"
 
     def test_ai_validation_model_creation(self) -> None:
         """Test AI validation model can be created correctly."""
         from uuid import uuid4
 
-        validation = OrganizationAIValidation(
+        validation = OrganizationReview(
             organization_id=uuid4(),
             verdict="PASS",
             risk_score=25.5,

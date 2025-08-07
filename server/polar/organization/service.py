@@ -23,7 +23,7 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
 from polar.models import Account, Organization, User, UserOrganization
-from polar.models.organization_ai_validation import OrganizationAIValidation
+from polar.models.organization_review import OrganizationReview
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.webhook_endpoint import WebhookEventType
@@ -608,26 +608,27 @@ class OrganizationService:
 
     async def validate_with_ai(
         self, session: AsyncSession, organization: Organization
-    ) -> OrganizationAIValidation:
+    ) -> OrganizationReview:
         """Validate organization details using AI and store the result."""
 
+        # Check if validation already exists (one-to-one relationship)
         previous_validation = (
             await session.execute(
-                sql.select(OrganizationAIValidation)
-                .where(OrganizationAIValidation.organization_id == organization.id)
-                .order_by(OrganizationAIValidation.validated_at.desc())
+                sql.select(OrganizationReview).where(
+                    OrganizationReview.organization_id == organization.id
+                )
             )
         ).scalar_one_or_none()
 
         if previous_validation is not None:
-            # If a previous validation exists, return its result
+            # If a validation exists, return its result
             return previous_validation
 
         result = await organization_validator.validate_organization_details(
             organization
         )
 
-        ai_validation = OrganizationAIValidation(
+        ai_validation = OrganizationReview(
             organization_id=organization.id,
             verdict=result.verdict.verdict,
             risk_score=result.verdict.risk_score,

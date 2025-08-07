@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthMethod, AuthSubject
 from polar.config import Environment, settings
 from polar.enums import AccountType
 from polar.exceptions import PolarRequestValidationError
@@ -574,3 +574,148 @@ class TestGetPaymentStatus:
 
         # Should be payment ready in sandbox even if account setup is incomplete
         assert payment_status.payment_ready is True
+
+
+@pytest.mark.asyncio
+class TestSetAccount:
+    @pytest.mark.auth
+    async def test_first_account_setup_by_any_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        """Test that any member can set up the first account."""
+        # Ensure organization has no account initially
+        organization.account_id = None
+        await save_fixture(organization)
+
+        # Create an account
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        await save_fixture(account)
+
+        # First account setup should succeed
+        updated_organization = await organization_service.set_account(
+            session, auth_subject, organization, account.id
+        )
+
+        assert updated_organization.account_id == account.id
+
+    @pytest.mark.auth
+    async def test_account_change_by_owner_succeeds(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        """Test that the account owner can change the account."""
+        # Set up initial account with user as admin
+        initial_account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,  # user is the admin/owner
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="INITIAL_ACCOUNT_ID",
+        )
+        await save_fixture(initial_account)
+
+        organization.account_id = initial_account.id
+        await save_fixture(organization)
+
+        # Create a new account (also owned by the same user)
+        new_account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="NEW_ACCOUNT_ID",
+        )
+        await save_fixture(new_account)
+
+        # Owner should be able to change the account
+        updated_organization = await organization_service.set_account(
+            session, auth_subject, organization, new_account.id
+        )
+
+        assert updated_organization.account_id == new_account.id
+
+    @pytest.mark.auth
+    async def test_account_change_by_non_owner_fails(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """Test that a non-owner cannot change an existing account."""
+        # Create the original owner (different from user)
+        original_owner = User(
+            email="original@example.com",
+            avatar_url="https://avatars.githubusercontent.com/u/original?v=4",
+        )
+        await save_fixture(original_owner)
+
+        # Set up initial account with original_owner as admin
+        initial_account = Account(
+            account_type=AccountType.stripe,
+            admin_id=original_owner.id,  # original_owner is the admin/owner
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="INITIAL_ACCOUNT_ID",
+        )
+        await save_fixture(initial_account)
+
+        organization.account_id = initial_account.id
+        await save_fixture(organization)
+
+        # Create a new account (owned by user, not original owner)
+        new_account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="NEW_ACCOUNT_ID",
+        )
+        await save_fixture(new_account)
+
+        # Create auth subject for the user (not the owner)
+
+        user_auth_subject = AuthSubject(
+            subject=user, scopes=set(), method=AuthMethod.COOKIE
+        )
+
+        # Non-owner should not be able to change the account
+        from polar.organization.service import AccountAlreadySetByOwner
+
+        with pytest.raises(AccountAlreadySetByOwner) as exc_info:
+            await organization_service.set_account(
+                session, user_auth_subject, organization, new_account.id
+            )
+
+        assert "already been set up by the owner" in str(exc_info.value)
+        assert "prevent unintended consequences" in str(exc_info.value)

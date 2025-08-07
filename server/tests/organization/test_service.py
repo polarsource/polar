@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthMethod, AuthSubject
 from polar.config import Environment, settings
 from polar.enums import AccountType
 from polar.exceptions import PolarRequestValidationError
@@ -704,11 +704,14 @@ class TestSetAccount:
         await save_fixture(new_account)
 
         # Create auth subject for the user (not the owner)
-        from polar.auth.models import AuthSubject, AuthMethod
-        user_auth_subject = AuthSubject(subject=user, scopes=set(), method=AuthMethod.COOKIE)
+
+        user_auth_subject = AuthSubject(
+            subject=user, scopes=set(), method=AuthMethod.COOKIE
+        )
 
         # Non-owner should not be able to change the account
         from polar.organization.service import AccountAlreadySetByOwner
+
         with pytest.raises(AccountAlreadySetByOwner) as exc_info:
             await organization_service.set_account(
                 session, user_auth_subject, organization, new_account.id

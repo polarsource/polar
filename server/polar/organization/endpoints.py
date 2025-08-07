@@ -29,6 +29,7 @@ from .schemas import (
     OrganizationPaymentStep,
     OrganizationSetAccount,
     OrganizationUpdate,
+    OrganizationValidationResult,
 )
 from .service import organization as organization_service
 
@@ -330,3 +331,34 @@ async def invite_member(
 
     response.status_code = status.HTTP_201_CREATED
     return OrganizationMember.model_validate(user_org)
+
+
+@router.post(
+    "/{id}/ai-validation",
+    response_model=OrganizationValidationResult,
+    summary="Validate Organization Details with AI",
+    responses={
+        200: {"description": "Organization validated with AI."},
+        404: OrganizationNotFound,
+    },
+    tags=[APITag.documented],
+)
+async def validate_with_ai(
+    id: OrganizationID,
+    auth_subject: auth.OrganizationsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationValidationResult:
+    """Validate organization details using AI compliance check."""
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    # Run AI validation and store results
+    result = await organization_service.validate_with_ai(session, organization)
+
+    return OrganizationValidationResult(
+        verdict=result.verdict.value,  # Convert enum to string value
+        reason=result.reason,
+        timed_out=result.timed_out,
+    )

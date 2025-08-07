@@ -23,9 +23,11 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
 from polar.models import Account, Organization, User, UserOrganization
+from polar.models.organization_ai_validation import OrganizationAIValidation
 from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.organization.ai_validation import validator as organization_validator
 from polar.organization_access_token.repository import OrganizationAccessTokenRepository
 from polar.postgres import AsyncSession, sql
 from polar.posthog import posthog
@@ -35,7 +37,10 @@ from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .repository import OrganizationRepository
-from .schemas import OrganizationCreate, OrganizationUpdate
+from .schemas import (
+    OrganizationCreate,
+    OrganizationUpdate,
+)
 from .sorting import OrganizationSortProperty
 
 log = structlog.get_logger(__name__)
@@ -600,6 +605,48 @@ class OrganizationService:
             return False
 
         return True
+
+    async def validate_with_ai(
+        self, session: AsyncSession, organization: Organization
+    ) -> OrganizationAIValidation:
+        """Validate organization details using AI and store the result."""
+
+        previous_validation = (
+            await session.execute(
+                sql.select(OrganizationAIValidation)
+                .where(OrganizationAIValidation.organization_id == organization.id)
+                .order_by(OrganizationAIValidation.validated_at.desc())
+            )
+        ).scalar_one_or_none()
+
+        if previous_validation is not None:
+            # If a previous validation exists, return its result
+            return previous_validation
+
+        result = await organization_validator.validate_organization_details(
+            organization
+        )
+
+        ai_validation = OrganizationAIValidation(
+            organization_id=organization.id,
+            verdict=result.verdict.verdict,
+            risk_score=result.verdict.risk_score,
+            violated_sections=result.verdict.violated_sections,
+            reason=result.verdict.reason,
+            timed_out=result.timed_out,
+            organization_details_snapshot={
+                "name": organization.name,
+                "website": organization.website,
+                "details": organization.details,
+                "socials": organization.socials,
+            },
+            model_used=organization_validator.model.model_name,
+        )
+
+        session.add(ai_validation)
+        await session.commit()
+
+        return ai_validation
 
 
 organization = OrganizationService()

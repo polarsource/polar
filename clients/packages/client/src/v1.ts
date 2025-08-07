@@ -628,6 +628,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/organizations/{id}/ai-validation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate Organization Details with AI
+         * @description Validate organization details using AI compliance check.
+         *
+         *     **Scopes**: `organizations:write`
+         */
+        post: operations["organizations:validate_with_ai"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/subscriptions/": {
         parameters: {
             query?: never;
@@ -14212,6 +14234,26 @@ export interface components {
             subscription_settings?: components["schemas"]["OrganizationSubscriptionSettings"] | null;
             notification_settings?: components["schemas"]["OrganizationNotificationSettings"] | null;
         };
+        /** OrganizationValidationResult */
+        OrganizationValidationResult: {
+            /**
+             * Reason
+             * @description A 1 or 3 line explanation of the verdict and the reasoning behind it. The reason will be shown to our customer.
+             */
+            reason: string;
+            /**
+             * Verdict
+             * @description PASS | FAIL | UNCERTAIN - indicates compliance status.
+             * @enum {string}
+             */
+            verdict: "PASS" | "FAIL" | "UNCERTAIN";
+            /**
+             * Timed Out
+             * @description Whether the validation timed out
+             * @default false
+             */
+            timed_out: boolean;
+        };
         /** Pagination */
         Pagination: {
             /** Total Count */
@@ -18237,6 +18279,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrganizationMember"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "organizations:validate_with_ai": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Organization validated with AI. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationValidationResult"];
+                };
+            };
+            /** @description Organization not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
                 };
             };
             /** @description Validation Error */
@@ -25482,6 +25564,7 @@ export const organizationAvatarFileReadServiceValues: ReadonlyArray<components["
 export const organizationDetailsSwitching_fromValues: ReadonlyArray<components["schemas"]["OrganizationDetails"]["switching_from"]> = ["paddle", "lemon_squeezy", "gumroad", "stripe", "other"];
 export const organizationSocialPlatformsValues: ReadonlyArray<components["schemas"]["OrganizationSocialPlatforms"]> = ["x", "github", "facebook", "instagram", "youtube", "tiktok", "linkedin", "other"];
 export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationSortProperty"]> = ["created_at", "-created_at", "slug", "-slug", "name", "-name"];
+export const organizationValidationResultVerdictValues: ReadonlyArray<components["schemas"]["OrganizationValidationResult"]["verdict"]> = ["PASS", "FAIL", "UNCERTAIN"];
 export const paymentProcessorValues: ReadonlyArray<components["schemas"]["PaymentProcessor"]> = ["stripe"];
 export const paymentSortPropertyValues: ReadonlyArray<components["schemas"]["PaymentSortProperty"]> = ["created_at", "-created_at", "status", "-status", "amount", "-amount", "method", "-method"];
 export const paymentStatusValues: ReadonlyArray<components["schemas"]["PaymentStatus"]> = ["pending", "succeeded", "failed"];

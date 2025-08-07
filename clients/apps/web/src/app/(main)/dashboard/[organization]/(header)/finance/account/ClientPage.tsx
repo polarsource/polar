@@ -39,16 +39,20 @@ export default function ClientPage({
 
   const { data: organizationAccount } = useOrganizationAccount(organization.id)
 
+  const [validationCompleted, setValidationCompleted] = useState(false)
+
   const [step, setStep] = useState<
-    'review' | 'account' | 'identity' | 'complete'
+    'review' | 'validation' | 'account' | 'identity' | 'complete'
   >(
     !organization.details_submitted_at
       ? 'review'
-      : !organizationAccount
-        ? 'account'
-        : !identityVerified
-          ? 'identity'
-          : 'complete',
+      : !validationCompleted
+        ? 'validation'
+        : !organizationAccount
+          ? 'account'
+          : !identityVerified
+            ? 'identity'
+            : 'complete',
   )
 
   const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
@@ -105,7 +109,9 @@ export default function ClientPage({
   // Auto-advance to next step when details are submitted
   React.useEffect(() => {
     if (organization.details_submitted_at) {
-      if (!organizationAccount) {
+      if (!validationCompleted) {
+        setStep('validation')
+      } else if (!organizationAccount) {
         setStep('account')
       } else if (!identityVerified) {
         setStep('identity')
@@ -113,11 +119,21 @@ export default function ClientPage({
         setStep('complete')
       }
     }
-  }, [organization.details_submitted_at, organizationAccount, identityVerified])
+  }, [
+    organization.details_submitted_at,
+    validationCompleted,
+    organizationAccount,
+    identityVerified,
+  ])
 
   const handleDetailsSubmitted = useCallback(() => {
     setRequireDetails(false)
-    // Stay on review step to show validation UI
+    setStep('validation')
+  }, [])
+
+  const handleValidationCompleted = useCallback(() => {
+    setValidationCompleted(true)
+    setStep('account')
   }, [])
 
   const handleStartAccountSetup = useCallback(() => {
@@ -138,6 +154,7 @@ export default function ClientPage({
         identityVerified={identityVerified}
         identityVerificationStatus={identityVerificationStatus}
         onDetailsSubmitted={handleDetailsSubmitted}
+        onValidationCompleted={handleValidationCompleted}
         onStartAccountSetup={handleStartAccountSetup}
         onStartIdentityVerification={handleStartIdentityVerification}
       />

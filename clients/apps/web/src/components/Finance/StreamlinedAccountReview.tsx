@@ -1,21 +1,37 @@
 'use client'
 
+import AIValidationResult from '@/components/Organization/AIValidationResult'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Card } from '@polar-sh/ui/components/ui/card'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
-import { ArrowRight, Check, CheckCircle, Shield, UserCheck } from 'lucide-react'
-import React from 'react'
+import {
+  ArrowRight,
+  Check,
+  CheckCircle,
+  Shield,
+  ShieldCheck,
+  UserCheck,
+} from 'lucide-react'
+import React, { useState } from 'react'
 
-type Step = 'review' | 'account' | 'identity' | 'complete'
+type Step = 'review' | 'validation' | 'account' | 'identity' | 'complete'
+
+type StepStatus =
+  | 'pending'
+  | 'current'
+  | 'completed'
+  | 'blocked'
+  | 'in_progress'
+  | 'failed'
 
 interface StepConfig {
   id: Step
   title: string
   description: string
   icon: React.ReactNode
-  status: 'pending' | 'current' | 'completed' | 'blocked'
+  status: StepStatus
 }
 
 interface StreamlinedAccountReviewProps {
@@ -26,42 +42,33 @@ interface StreamlinedAccountReviewProps {
   identityVerified?: boolean
   identityVerificationStatus?: string
   onDetailsSubmitted: () => void
+  onValidationCompleted: () => void
   onStartAccountSetup: () => void
   onStartIdentityVerification: () => void
 }
 
-const ProgressIndicator = ({
-  steps,
-  identityVerificationStatus,
-}: {
-  steps: StepConfig[]
-  identityVerificationStatus?: string
-}) => {
+const ProgressIndicator = ({ steps }: { steps: StepConfig[] }) => {
   // Calculate progress based on completed steps
   const calculateProgress = () => {
-    const completedSteps = steps.filter((s) => s.status === 'completed').length
-    const identityStep = steps.find((s) => s.id === 'identity')
-    const identityIndex = steps.findIndex((s) => s.id === 'identity')
-    const detailsStepCompleted = steps.find(
-      (s) => s.id === 'review' && s.status === 'completed',
-    )
-
-    if (!detailsStepCompleted) {
+    if (steps.length <= 1) {
       return 0
     }
 
-    // If identity is pending, progress should go TO the identity step
-    if (
-      detailsStepCompleted &&
-      identityStep?.status === 'current' &&
-      identityVerificationStatus === 'pending'
-    ) {
-      // Progress goes to the identity step (index 2), so (2 / 2) * 100 = 100%
-      return Math.max(0, (identityIndex / (steps.length - 1)) * 100)
+    const currentStepIndex = steps.findIndex(
+      (step) =>
+        step.status === 'current' ||
+        step.status === 'in_progress' ||
+        step.status === 'failed',
+    )
+
+    // If no step is current, it means all are completed or pending
+    if (currentStepIndex === -1) {
+      const allCompleted = steps.every((step) => step.status === 'completed')
+      return allCompleted ? 100 : 0
     }
 
-    // Normal progress based on completed steps
-    return Math.max(0, (completedSteps / (steps.length - 1)) * 100)
+    // Calculate percentage based on the segments between steps
+    return (currentStepIndex / (steps.length - 1)) * 100
   }
 
   return (
@@ -69,9 +76,8 @@ const ProgressIndicator = ({
       {/* Progress bar background */}
       <div className="absolute left-6 right-6 top-6 h-0.5 bg-gray-200 dark:bg-gray-700" />
 
-      {/* Progress bar fill */}
       <div
-        className="absolute left-6 top-6 h-0.5 bg-blue-500 transition-all duration-500 ease-out"
+        className="absolute top-6 h-0.5 bg-gray-400 transition-all duration-500 ease-out"
         style={{
           width: `${calculateProgress()}%`,
           maxWidth: 'calc(100% - 48px)', // Don't extend beyond the step circles
@@ -83,21 +89,15 @@ const ProgressIndicator = ({
           const isCompleted = step.status === 'completed'
           const isCurrent = step.status === 'current'
           const isBlocked = step.status === 'blocked'
-          const isPending =
-            step.id === 'identity' &&
-            identityVerificationStatus === 'pending' &&
-            isCurrent
-          const isFailed =
-            step.id === 'identity' &&
-            identityVerificationStatus === 'failed' &&
-            isCurrent
+          const isPending = step.status === 'in_progress'
+          const isFailed = step.status === 'failed'
 
           return (
             <div key={step.id} className="relative flex flex-col items-center">
               <div
                 className={`flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all duration-300 ${
                   isCompleted
-                    ? 'border-green-500 bg-green-500 text-white'
+                    ? 'border-gray-500 bg-gray-500 text-white'
                     : isPending
                       ? 'border-blue-500 bg-blue-500 text-white'
                       : isFailed
@@ -144,7 +144,7 @@ const ProgressIndicator = ({
                 <p
                   className={`text-xs font-medium ${
                     isCompleted
-                      ? 'text-green-600 dark:text-green-400'
+                      ? 'text-gray-600 dark:text-gray-400'
                       : isPending
                         ? 'text-blue-600 dark:text-blue-400'
                         : isFailed
@@ -181,13 +181,48 @@ export default function StreamlinedAccountReview({
   identityVerified,
   identityVerificationStatus,
   onDetailsSubmitted,
+  onValidationCompleted,
   onStartAccountSetup,
   onStartIdentityVerification,
 }: StreamlinedAccountReviewProps) {
+  const [validationCompleted, setValidationCompleted] = useState(false)
+
+  const handleDetailsSubmitted = () => {
+    onDetailsSubmitted()
+  }
+
+  const handleValidationCompleted = () => {
+    setValidationCompleted(true)
+    onValidationCompleted()
+  }
+
   // Determine completion status for each step
   const isReviewCompleted = !!organization.details_submitted_at
+  const isValidationCompleted = validationCompleted
   const isAccountCompleted = !!organizationAccount
   const isIdentityCompleted = !!identityVerified
+
+  const getStepStatus = (
+    stepId: Step,
+    isCompleted: boolean,
+    currentStep: Step,
+    prerequisiteCompleted?: boolean,
+  ): StepStatus => {
+    if (isCompleted) return 'completed'
+    if (prerequisiteCompleted !== undefined && !prerequisiteCompleted)
+      return 'blocked'
+    if (currentStep === stepId) {
+      if (stepId === 'identity') {
+        if (identityVerificationStatus === 'pending') {
+          return 'in_progress'
+        } else if (identityVerificationStatus === 'failed') {
+          return 'failed'
+        }
+      }
+      return 'current'
+    }
+    return 'pending'
+  }
 
   const steps: StepConfig[] = [
     {
@@ -195,24 +230,31 @@ export default function StreamlinedAccountReview({
       title: 'Review',
       description: 'Details & compliance',
       icon: <Shield className="h-5 w-5" />,
-      status: isReviewCompleted
-        ? 'completed'
-        : currentStep === 'review'
-          ? 'current'
-          : 'pending',
+      status: getStepStatus('review', isReviewCompleted, currentStep),
+    },
+    {
+      id: 'validation' as Step,
+      title: 'Validation',
+      description: 'Compliance check',
+      icon: <ShieldCheck className="h-5 w-5" />,
+      status: getStepStatus(
+        'validation',
+        isValidationCompleted,
+        currentStep,
+        isReviewCompleted,
+      ),
     },
     {
       id: 'account' as Step,
       title: 'Account',
       description: 'Payout setup',
       icon: <UserCheck className="h-5 w-5" />,
-      status: isAccountCompleted
-        ? 'completed'
-        : !isReviewCompleted
-          ? 'blocked'
-          : currentStep === 'account'
-            ? 'current'
-            : 'pending',
+      status: getStepStatus(
+        'account',
+        isAccountCompleted,
+        currentStep,
+        isValidationCompleted,
+      ),
     },
     {
       id: 'identity' as Step,
@@ -224,13 +266,12 @@ export default function StreamlinedAccountReview({
             ? 'Failed'
             : 'Verification',
       icon: <CheckCircle className="h-5 w-5" />,
-      status: isIdentityCompleted
-        ? 'completed'
-        : !isAccountCompleted
-          ? 'blocked'
-          : currentStep === 'identity'
-            ? 'current'
-            : 'pending',
+      status: getStepStatus(
+        'identity',
+        isIdentityCompleted,
+        currentStep,
+        isAccountCompleted,
+      ),
     },
   ]
 
@@ -273,7 +314,29 @@ export default function StreamlinedAccountReview({
             <OrganizationProfileSettings
               organization={organization}
               kyc={true}
-              onSubmitted={onDetailsSubmitted}
+              onSubmitted={handleDetailsSubmitted}
+            />
+          </div>
+        )}
+
+        {currentStep === 'validation' && (
+          <div className="mx-auto max-w-4xl space-y-8">
+            {/* Header */}
+            <div className="space-y-3 text-center">
+              <div className="flex items-center justify-center space-x-3">
+                <h1 className="text-2xl font-semibold">Compliance Check</h1>
+              </div>
+              <p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-gray-400">
+                Our AI is reviewing your organization details against our
+                acceptable use policy.
+              </p>
+            </div>
+
+            {/* AI Validation Results */}
+            <AIValidationResult
+              organization={organization}
+              autoValidate={true}
+              onValidationCompleted={handleValidationCompleted}
             />
           </div>
         )}

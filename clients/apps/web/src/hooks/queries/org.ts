@@ -220,3 +220,14 @@ export const useOrganizationPaymentStatus = (
     retry: defaultRetry,
     enabled: enabled && !!id,
   })
+
+export const useOrganizationAIValidation = (id: string) =>
+  useMutation({
+    mutationFn: () => {
+      return api.POST('/v1/organizations/{id}/ai-validation', {
+        params: { path: { id } },
+      })
+    },
+    retry: defaultRetry,
+  })
+

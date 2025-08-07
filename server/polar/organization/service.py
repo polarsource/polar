@@ -454,16 +454,15 @@ class OrganizationService:
         organizations = await repository.get_all_by_account(account.id)
 
         for organization in organizations:
-            # Don't override organizations that are under review or denied
-            if organization.status in (
-                Organization.Status.UNDER_REVIEW,
-                Organization.Status.DENIED,
-            ):
+            # Don't override organizations that are denied
+            if organization.status == Organization.Status.DENIED:
                 continue
 
             # If account is fully set up, set organization to ACTIVE
             if all(
                 (
+                    not organization.is_under_review(),
+                    not organization.is_active(),
                     account.currency is not None,
                     account.is_details_submitted,
                     account.is_charges_enabled,
@@ -471,8 +470,15 @@ class OrganizationService:
                 )
             ):
                 organization.status = Organization.Status.ACTIVE
-            else:
-                # If Stripe capabilities are missing, set to ONBOARDING_STARTED
+
+            # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
+            if any(
+                (
+                    not account.is_details_submitted,
+                    not account.is_charges_enabled,
+                    not account.is_payouts_enabled,
+                )
+            ):
                 organization.status = Organization.Status.ONBOARDING_STARTED
 
             await self._sync_account_status(session, organization)

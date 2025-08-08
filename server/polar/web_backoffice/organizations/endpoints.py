@@ -19,11 +19,17 @@ from polar.models import (
     Account,
     Benefit,
     Checkout,
+    CheckoutLink,
+    Customer,
+    Order,
     Organization,
+    OrganizationAccessToken,
+    PersonalAccessToken,
     Product,
     ProductBenefit,
     Transaction,
     User,
+    UserOrganization,
     WebhookEndpoint,
 )
 from polar.organization import sorting
@@ -33,9 +39,6 @@ from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
 from polar.transaction.repository import PaymentTransactionRepository
 from polar.user.repository import UserRepository
-from polar.web_backoffice.components.account_review._acceptable_use import (
-    AcceptableUseVerdict,
-)
 from polar.web_backoffice.components.account_review._payment_verdict import (
     PaymentVerdict,
 )
@@ -111,8 +114,8 @@ class AccountTypeDescriptionListAttrItem(
 async def get_payment_statistics(
     session: AsyncSession, organization_id: UUID4
 ) -> dict[str, Any]:
-    """Get payment statistics for the last 30 days."""
-    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    """Get payment statistics for the last 3 months."""
+    three_months_ago = datetime.utcnow() - timedelta(days=90)
 
     payment_repo = PaymentTransactionRepository.from_session(session)
 
@@ -123,34 +126,39 @@ async def get_payment_statistics(
     org_account_row = org_account_result.first()
 
     if not org_account_row or not org_account_row[0]:
-        # TODO: replace this with 0
         return {
-            "payment_count": 10,
-            "p50_risk": 5,
-            "p90_risk": 95,
-            "risk_level": "yellow",
+            "payment_count": 0,
+            "p50_risk": 0,
+            "p90_risk": 0,
+            "risk_level": "green",
+            "refunds_count": 0,
+            "total_balance": 0,
+            "refunds_amount": 0,
+            "total_payment_amount": 0,
         }
 
     account_id = org_account_row[0]
 
-    # Get payment transactions for the organization in the last 30 days
+    # Get payment transactions for the organization in the last 3 months
     statement = payment_repo.get_base_statement().where(
         Transaction.account_id == account_id,
-        Transaction.created_at >= thirty_days_ago,
-        Transaction.risk_score.isnot(None),  # Only transactions with risk scores
+        Transaction.created_at >= three_months_ago,
     )
 
     # Get all risk scores
     risk_scores_result = await session.execute(
-        statement.with_only_columns(Transaction.risk_score)
+        statement.where(Transaction.risk_score.isnot(None)).with_only_columns(Transaction.risk_score)
     )
     risk_scores = [row[0] for row in risk_scores_result if row[0] is not None]
 
-    # Get count of payments
-    count_result = await session.execute(
-        statement.with_only_columns(func.count(Transaction.id))
+    # Get count of payments and total amount
+    payment_stats_result = await session.execute(
+        statement.with_only_columns(
+            func.count(Transaction.id),
+            func.coalesce(func.sum(Transaction.amount), 0)
+        )
     )
-    payment_count = count_result.scalar() or 0
+    payment_count, total_payment_amount = payment_stats_result.first() or (0, 0)
 
     # Calculate percentiles
     p50_risk = 0
@@ -180,18 +188,59 @@ async def get_payment_statistics(
     else:
         risk_level = "red"
 
+    # Get refund statistics by joining through Order -> Customer -> Organization
+    from polar.models import Refund
+    refunds_result = await session.execute(
+        select(
+            func.count(Refund.id),
+            func.coalesce(func.sum(Refund.amount), 0)
+        )
+        .join(Order, Refund.order_id == Order.id)
+        .join(Customer, Order.customer_id == Customer.id)
+        .where(
+            Customer.organization_id == organization_id,
+            Refund.created_at >= three_months_ago,
+        )
+    )
+    refunds_count, refunds_amount = refunds_result.first() or (0, 0)
+
+    # Get current account balance (simplified - would need proper balance calculation)
+    # For now, using the sum of transactions minus refunds as a rough estimate
+    balance_result = await session.execute(
+        select(
+            func.coalesce(func.sum(Transaction.amount), 0)
+        ).where(
+            Transaction.account_id == account_id,
+        )
+    )
+    total_balance = (balance_result.scalar() or 0) - refunds_amount
+
     return {
         "payment_count": payment_count,
         "p50_risk": p50_risk,
         "p90_risk": p90_risk,
         "risk_level": risk_level,
+        "refunds_count": refunds_count,
+        "total_balance": total_balance,
+        "refunds_amount": refunds_amount,
+        "total_payment_amount": total_payment_amount,
     }
 
 
 async def get_setup_verdict(
     organization: Organization, session: AsyncSession
 ) -> SetupVerdict:
-    """Get setup verdict for an organization."""
+    """Get enhanced setup verdict for an organization."""
+    
+    # Check checkout links
+    checkout_links_result = await session.execute(
+        select(func.count(CheckoutLink.id)).where(
+            CheckoutLink.organization_id == organization.id,
+            CheckoutLink.deleted_at.is_(None),
+        )
+    )
+    checkout_links_count = checkout_links_result.scalar() or 0
+
     # Check domain validation - do checkout success URLs match organization domain?
     domain_match_result = await session.execute(
         select(func.count(Checkout.id))
@@ -222,15 +271,6 @@ async def get_setup_verdict(
     else:
         domain_matches = False
 
-    # Check benefits configuration
-    benefits_result = await session.execute(
-        select(func.count(Benefit.id))
-        .join(ProductBenefit, Benefit.id == ProductBenefit.benefit_id)
-        .join(Product, ProductBenefit.product_id == Product.id)
-        .where(Product.organization_id == organization.id)
-    )
-    benefits_count = benefits_result.scalar() or 0
-
     # Check webhook endpoints
     webhook_result = await session.execute(
         select(func.count(WebhookEndpoint.id)).where(
@@ -239,42 +279,98 @@ async def get_setup_verdict(
     )
     webhook_count = webhook_result.scalar() or 0
 
-    # Calculate setup score (0-3 scale)
+    # Check API keys (both organization and personal access tokens)
+    org_tokens_result = await session.execute(
+        select(func.count(OrganizationAccessToken.id)).where(
+            OrganizationAccessToken.organization_id == organization.id,
+            OrganizationAccessToken.deleted_at.is_(None),
+        )
+    )
+    org_tokens_count = org_tokens_result.scalar() or 0
+
+    # Get personal access tokens for users in this organization
+    personal_tokens_result = await session.execute(
+        select(func.count(PersonalAccessToken.id.distinct()))
+        .join(UserOrganization, PersonalAccessToken.user_id == UserOrganization.user_id)
+        .where(
+            UserOrganization.organization_id == organization.id,
+            PersonalAccessToken.deleted_at.is_(None),
+        )
+    )
+    personal_tokens_count = personal_tokens_result.scalar() or 0
+    api_keys_count = org_tokens_count + personal_tokens_count
+
+    # Check products configured
+    products_result = await session.execute(
+        select(func.count(Product.id)).where(
+            Product.organization_id == organization.id,
+            Product.deleted_at.is_(None),
+        )
+    )
+    products_count = products_result.scalar() or 0
+
+    # Check benefits configuration
+    benefits_result = await session.execute(
+        select(func.count(Benefit.id))
+        .join(ProductBenefit, Benefit.id == ProductBenefit.benefit_id)
+        .join(Product, ProductBenefit.product_id == Product.id)
+        .where(
+            Product.organization_id == organization.id,
+            Product.deleted_at.is_(None),
+        )
+    )
+    benefits_count = benefits_result.scalar() or 0
+
+    # Check user verification status (get the first user as owner)
+    user_verified_result = await session.execute(
+        select(User.identity_verification_status)
+        .join(UserOrganization, User.id == UserOrganization.user_id)
+        .where(UserOrganization.organization_id == organization.id)
+        .limit(1)
+    )
+    user_verified_row = user_verified_result.first()
+    from polar.models.user import IdentityVerificationStatus
+    user_verified = (
+        user_verified_row[0] == IdentityVerificationStatus.verified
+        if user_verified_row
+        else False
+    )
+
+    # Check account charges and payouts enabled
+    account = organization.account
+    account_charges_enabled = account.is_charges_enabled if account else False
+    account_payouts_enabled = account.is_payouts_enabled if account else False
+
+    # Calculate enhanced setup score (0-6 scale)
     setup_score = sum(
         [
-            1 if domain_matches else 0,
-            1 if benefits_count > 0 else 0,
+            1 if checkout_links_count > 0 else 0,
             1 if webhook_count > 0 else 0,
+            1 if api_keys_count > 0 else 0,
+            1 if products_count > 0 else 0,
+            1 if benefits_count > 0 else 0,
+            1 if domain_matches else 0,
         ]
     )
 
     return SetupVerdict(
         {
+            "checkout_links_count": checkout_links_count,
+            "webhooks_count": webhook_count,
+            "api_keys_count": api_keys_count,
+            "products_count": products_count,
+            "benefits_count": benefits_count,
             "domain_validation": domain_matches,
+            "user_verified": user_verified,
+            "account_charges_enabled": account_charges_enabled,
+            "account_payouts_enabled": account_payouts_enabled,
+            "setup_score": setup_score,
             "benefits_configured": benefits_count > 0,
             "webhooks_configured": webhook_count > 0,
-            "setup_score": setup_score,
-            "benefits_count": benefits_count,
-            "webhook_count": webhook_count,
+            "products_configured": products_count > 0,
+            "api_keys_created": api_keys_count > 0,
         }
     )
-
-
-async def get_acceptable_use_verdict(
-    session: AsyncSession, organization_id: UUID4
-) -> dict[str, Any]:
-    """Get acceptable use policy compliance verdict."""
-    # TODO: Implement actual compliance check logic
-    # For now, return mock data
-    return {
-        "verdict": "UNCERTAIN",
-        "risk_score": 45.5,
-        "violated_sections": ["Content Policy", "Payment Processing"],
-        "reason": "Organization requires manual review due to unclear business model description and potential high-risk payment patterns.",
-    }
-
-
-router = APIRouter()
 
 
 @router.get("/", name="organizations:list")
@@ -495,6 +591,11 @@ async def get(
     user_repository = UserRepository.from_session(session)
     users = await user_repository.get_all_by_organization(organization.id)
 
+    # Get setup and payment verdicts for account review sections
+    setup_verdict = await get_setup_verdict(organization, session)
+    payment_stats = await get_payment_statistics(session, organization.id)
+    payment_verdict = PaymentVerdict(payment_stats)
+
     account = organization.account
     validation_error: ValidationError | None = None
     if account and request.method == "POST":
@@ -535,15 +636,6 @@ async def get(
                         hx_target="#modal",
                     ):
                         text("Edit")
-                    with tag.a(
-                        href=str(
-                            request.url_for(
-                                "organizations:account_review", id=organization.id
-                            )
-                        ),
-                        classes="btn btn-primary",
-                    ):
-                        text("Account Review")
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 with description_list.DescriptionList[Organization](
                     description_list.DescriptionListAttrItem(
@@ -685,132 +777,17 @@ async def get(
                                         f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'USD', locale='en_US')})"
                                     )
 
-
-@router.get("/{id}/account-review", name="organizations:account_review")
-async def account_review(
-    request: Request,
-    id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-) -> Any:
-    repository = OrganizationRepository.from_session(session)
-    organization = await repository.get_by_id(
-        id, options=(joinedload(Organization.account),), include_blocked=True
-    )
-
-    if organization is None:
-        raise HTTPException(status_code=404)
-
-    user_repository = UserRepository.from_session(session)
-    users = await user_repository.get_all_by_organization(organization.id)
-
-    # Get the first user as the owner (could be enhanced to get actual owner)
-    owner = users[0] if users else None
-
-    # Get payment statistics
-    payment_stats = await get_payment_statistics(session, organization.id)
-    payment_verdict = PaymentVerdict(payment_stats)
-
-    # Get acceptable use verdict
-    acceptable_use_data = await get_acceptable_use_verdict(session, organization.id)
-    acceptable_use_verdict = AcceptableUseVerdict(acceptable_use_data)
-
-    # Get setup verdict
-    setup_verdict = await get_setup_verdict(organization, session)
-
-    account = organization.account
-
-    with layout(
-        request,
-        [
-            ("Account Review", str(request.url)),
-            (
-                organization.name,
-                str(request.url_for("organizations:get", id=organization.id)),
-            ),
-            ("Organizations", str(request.url_for("organizations:list"))),
-        ],
-        "organizations:account_review",
-    ):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text(f"Account Review - {organization.name}")
-
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Organization Details")
-                        with description_list.DescriptionList[Organization](
-                            description_list.DescriptionListAttrItem("name", "Name"),
-                            description_list.DescriptionListAttrItem(
-                                "slug", "Slug", clipboard=True
-                            ),
-                            description_list.DescriptionListAttrItem(
-                                "id", "ID", clipboard=True
-                            ),
-                            description_list.DescriptionListDateTimeItem(
-                                "created_at", "Created At"
-                            ),
-                        ).render(request, organization):
+            # Account Review Section
+            with tag.div(classes="mt-8"):
+                with tag.h2(classes="text-2xl font-bold mb-4"):
+                    text("Account Review")
+                
+                with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+                    with tag.div(classes="card card-border w-full shadow-sm"):
+                        with setup_verdict.render():
+                            pass
+                    
+                    with tag.div(classes="card card-border w-full shadow-sm"):
+                        with payment_verdict.render():
                             pass
 
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Owner")
-                        if owner:
-                            with description_list.DescriptionList[User](
-                                description_list.DescriptionListAttrItem(
-                                    "email", "Email", clipboard=True
-                                ),
-                                description_list.DescriptionListAttrItem(
-                                    "id", "ID", clipboard=True
-                                ),
-                                description_list.DescriptionListDateTimeItem(
-                                    "created_at", "Created At"
-                                ),
-                            ).render(request, owner):
-                                pass
-                        else:
-                            with tag.p():
-                                text("No owner found")
-
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Account Status")
-                            with account_badge(account):
-                                pass
-                        if account:
-                            with description_list.DescriptionList[Account](
-                                description_list.DescriptionListAttrItem(
-                                    "status", "Review Status"
-                                ),
-                                description_list.DescriptionListCurrencyItem(
-                                    "next_review_threshold", "Current Threshold"
-                                ),
-                                description_list.DescriptionListAttrItem(
-                                    "country", "Country"
-                                ),
-                                description_list.DescriptionListAttrItem(
-                                    "currency", "Currency"
-                                ),
-                            ).render(request, account):
-                                pass
-                        else:
-                            with tag.p():
-                                text("No account found")
-
-            with tag.div(classes="grid grid-cols-1 lg:grid-cols-3 gap-4"):
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with acceptable_use_verdict.render():
-                        pass
-
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with setup_verdict.render():
-                        pass
-
-                with tag.div(classes="card card-border w-full shadow-sm"):
-                    with payment_verdict.render():
-                        pass

@@ -36,7 +36,7 @@ from polar.transaction.service.transaction import transaction as transaction_ser
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
-from .repository import OrganizationRepository
+from .repository import OrganizationRepository, OrganizationReviewRepository
 from .schemas import (
     OrganizationCreate,
     OrganizationUpdate,
@@ -658,17 +658,10 @@ class OrganizationService:
     ) -> OrganizationReview:
         """Validate organization details using AI and store the result."""
 
-        # Check if validation already exists (one-to-one relationship)
-        previous_validation = (
-            await session.execute(
-                sql.select(OrganizationReview).where(
-                    OrganizationReview.organization_id == organization.id
-                )
-            )
-        ).scalar_one_or_none()
+        repository = OrganizationReviewRepository.from_session(session)
+        previous_validation = await repository.get_by_organization(organization.id)
 
         if previous_validation is not None:
-            # If a validation exists, return its result
             return previous_validation
 
         result = await organization_validator.validate_organization_details(

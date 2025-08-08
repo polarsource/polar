@@ -572,8 +572,6 @@ export interface paths {
         /**
          * Get Organization Payment Status
          * @description Get payment status and onboarding steps for an organization.
-         *
-         *     **Scopes**: `organizations:read` `organizations:write`
          */
         get: operations["organizations:get_payment_status"];
         put?: never;

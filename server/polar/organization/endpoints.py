@@ -362,7 +362,7 @@ async def invite_member(
         200: {"description": "Organization validated with AI."},
         404: OrganizationNotFound,
     },
-    tags=[APITag.documented],
+    tags=[APITag.private],
 )
 async def validate_with_ai(
     id: OrganizationID,

@@ -186,7 +186,9 @@ export default function StreamlinedAccountReview({
   onStartAccountSetup,
   onStartIdentityVerification,
 }: StreamlinedAccountReviewProps) {
-  const [validationCompleted, setValidationCompleted] = useState(false)
+  const [validationCompleted, setValidationCompleted] = useState(
+    organization.details_submitted_at !== null,
+  )
 
   const handleDetailsSubmitted = () => {
     onDetailsSubmitted()
@@ -224,7 +226,6 @@ export default function StreamlinedAccountReview({
     }
     return 'pending'
   }
-
 
   const steps: StepConfig[] = [
     {
@@ -280,7 +281,7 @@ export default function StreamlinedAccountReview({
   const currentStepConfig = steps.find((s) => s.id === currentStep)
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="mx-auto w-full max-w-4xl space-y-8">
       {/* Header */}
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-semibold">Set up your payout account</h1>
@@ -297,7 +298,7 @@ export default function StreamlinedAccountReview({
       {/* Current step content */}
       <div className="space-y-6">
         {currentStep === 'review' && requireDetails && (
-          <div className="mx-auto max-w-4xl space-y-8">
+          <div className="space-y-8">
             {/* Header */}
             <div className="space-y-3 text-center">
               <div className="flex items-center justify-center space-x-3">
@@ -319,7 +320,7 @@ export default function StreamlinedAccountReview({
         )}
 
         {currentStep === 'validation' && (
-          <div className="mx-auto max-w-4xl space-y-8">
+          <div className="space-y-8">
             {/* Header */}
             <div className="space-y-3 text-center">
               <div className="flex items-center justify-center space-x-3">

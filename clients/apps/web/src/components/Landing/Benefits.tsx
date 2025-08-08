@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -152,15 +153,21 @@ export const Benefits = () => {
         />
       </div>
       <motion.div
-        className="flex aspect-square flex-1 grow flex-col bg-cover bg-center p-8 md:aspect-auto md:p-16"
-        style={{
-          backgroundImage: `url(${items[activeItem].image})`,
-        }}
+        className="relative flex flex-1 grow flex-col p-8 md:p-16"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 1 }}
-      />
+      >
+        <Image
+          className="absolute inset-0 h-full w-full object-cover"
+          src={items[activeItem].image}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 75vw, 640px"
+          loading="lazy"
+          alt={items[activeItem].title}
+        />
+      </motion.div>
     </div>
   )
 }

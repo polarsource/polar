@@ -1,4 +1,5 @@
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
+import Image from 'next/image'
 import Link from 'next/link'
 
 export const testimonials = [
@@ -288,7 +289,15 @@ export const Testamonial = ({
     >
       <div className="flex flex-col gap-y-4 pt-1.5">
         <div className="flex flex-row items-center gap-x-3">
-          <Avatar className="h-12 w-12" avatar_url={avatar} name={name} />
+          <Avatar
+            name={name}
+            avatar_url={avatar}
+            className="h-12 w-12"
+            width={48}
+            height={48}
+            loading="lazy"
+            CustomImageComponent={Image}
+          />
           <div className="flex flex-col text-sm">
             <div className="flex flex-row items-center gap-x-2">
               <span>{name}</span>

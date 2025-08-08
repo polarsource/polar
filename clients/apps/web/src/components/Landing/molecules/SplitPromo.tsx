@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
+import Image from 'next/image'
 import React from 'react'
 
 interface SplitPromoProps {
@@ -83,15 +84,21 @@ export const SplitPromo: React.FC<SplitPromoProps> = ({
         </motion.div>
       </div>
       <motion.div
-        className="flex aspect-square flex-1 bg-cover bg-center p-8 md:p-16"
-        style={{
-          backgroundImage: `url(${image})`,
-        }}
+        className="relative flex aspect-square flex-1 p-8 md:p-16"
         variants={containerVariants}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true }}
-      />
+      >
+        <Image
+          className="absolute inset-0 h-full w-full object-cover"
+          src={image}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 100vw, 1280px"
+          loading="lazy"
+          alt={title}
+        />
+      </motion.div>
     </motion.div>
   )
 }

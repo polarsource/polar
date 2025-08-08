@@ -2,6 +2,7 @@
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
 export const Hero = ({ className }: { className?: string }) => {
   const containerVariants = {
@@ -30,14 +31,13 @@ export const Hero = ({ className }: { className?: string }) => {
       whileInView="visible"
       viewport={{ once: true }}
     >
-      <div
-        className="absolute inset-0 -z-10"
-        style={{
-          backgroundImage: 'url(/assets/landing/hero.jpg)',
-          backgroundSize: 'cover',
-          backgroundPosition: '50% 70%',
-          backgroundRepeat: 'no-repeat',
-        }}
+      <Image
+        src="/assets/landing/hero.jpg"
+        className="absolute inset-0 -z-10 h-full w-full object-cover object-[50%_70%]"
+        priority
+        fill
+        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 100vw, 1280px"
+        alt=""
       />
       <motion.h1
         className="text-balance text-5xl !leading-tight tracking-tight text-white md:px-0 md:text-7xl dark:text-white"

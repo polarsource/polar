@@ -9,6 +9,7 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useMemo } from 'react'
 import {
@@ -201,15 +202,16 @@ export const Adapters = () => {
                   </div>
                 </div>
 
-                <div
-                  className="dark:bg-polar-800 flex flex-col justify-center bg-gray-100 p-8 text-sm md:w-1/2 md:p-16"
-                  style={{
-                    backgroundImage: 'url(/assets/landing/abstract.jpg)',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                  }}
-                >
-                  <div className="dark:bg-polar-900 rounded-lg bg-white p-4">
+                <div className="dark:bg-polar-800 relative flex flex-col justify-center bg-gray-100 p-8 text-sm md:w-1/2 md:p-16">
+                  <Image
+                    className="absolute inset-0 h-full w-full object-cover"
+                    src="/assets/landing/abstract.jpg"
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 75vw, 640px"
+                    loading="lazy"
+                    alt=""
+                  />
+                  <div className="dark:bg-polar-900 z-[1] rounded-lg bg-white p-4">
                     <SyntaxHighlighterClient
                       lang="typescript"
                       code={adapter.code}

@@ -13,6 +13,7 @@ from polar.kit.repository import (
 )
 from polar.kit.repository.base import Options
 from polar.models import Account, Organization, User, UserOrganization
+from polar.models.organization_review import OrganizationReview
 from polar.postgres import AsyncSession
 
 from .sorting import OrganizationSortProperty
@@ -122,3 +123,16 @@ class OrganizationRepository(
         )
         result = await session.execute(statement)
         return result.unique().scalar_one_or_none()
+
+
+class OrganizationReviewRepository(RepositoryBase[OrganizationReview]):
+    model = OrganizationReview
+
+    async def get_by_organization(
+        self, organization_id: UUID
+    ) -> OrganizationReview | None:
+        statement = self.get_base_statement().where(
+            OrganizationReview.organization_id == organization_id,
+            OrganizationReview.deleted_at.is_(None),
+        )
+        return await self.get_one_or_none(statement)

@@ -80,8 +80,7 @@ const ProgressIndicator = ({ steps }: { steps: StepConfig[] }) => {
       <div
         className="absolute left-6 top-6 h-0.5 bg-blue-500 transition-all duration-500 ease-out"
         style={{
-          width: `${calculateProgress()}%`,
-          maxWidth: 'calc(100% - 48px)', // Don't extend beyond the step circles
+          width: `calc(${calculateProgress()}% - 24px)`,
         }}
       />
 

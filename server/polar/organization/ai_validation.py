@@ -1,5 +1,4 @@
 import asyncio
-import os
 from typing import Literal
 
 import httpx
@@ -7,6 +6,7 @@ import structlog
 from pydantic import Field
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.providers.openai import OpenAIProvider
 
 from polar.config import settings
 from polar.kit.schemas import Schema
@@ -197,23 +197,12 @@ async def _fetch_policy_content() -> str:
     return _cached_policy_content
 
 
-def _get_fallback_policy() -> str:
-    """Get the fallback policy content."""
-    return FALLBACK_POLICY
-
-
 class OrganizationAIValidator:
     """AI-powered organization details validator using pydantic-ai."""
 
     def __init__(self) -> None:
-        # Use configurable model name
-        model_name = getattr(settings, "AI_VALIDATION_MODEL", "o4-mini-2025-04-16")
-
-        # Set a test API key if none is provided (for testing environments)
-        if not os.getenv("OPENAI_API_KEY"):
-            os.environ["OPENAI_API_KEY"] = "test-key"
-
-        self.model = OpenAIModel(model_name)
+        provider = OpenAIProvider(api_key=settings.OPENAI_API_KEY)
+        self.model = OpenAIModel(settings.OPENAI_MODEL, provider=provider)
 
         self.agent = Agent(
             self.model,

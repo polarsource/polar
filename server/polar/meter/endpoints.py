@@ -44,6 +44,7 @@ async def list(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
     query: str | None = Query(None, description="Filter by name."),
+    is_archived: bool | None = Query(None, description="Filter on archived meters."),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[MeterSchema]:
     """List meters."""
@@ -53,6 +54,7 @@ async def list(
         organization_id=organization_id,
         metadata=metadata,
         query=query,
+        is_archived=is_archived,
         pagination=pagination,
         sorting=sorting,
     )

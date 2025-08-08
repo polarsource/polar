@@ -98,9 +98,9 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
       case 'PASS':
         return {
           type: 'pass',
-          title: 'Details Successfully Validated',
+          title: 'AI Validation Successful',
           message:
-            'Your organization details have been validated against our acceptable use policy.',
+            'Your organization details have been automatically validated against our acceptable use policy.',
           icon: <CheckCircle className="h-8 w-8 text-gray-600" />,
         }
       case 'FAIL':
@@ -145,7 +145,7 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
               </h4>
               <p className={`mt-1 text-sm text-gray-600 dark:text-gray-400`}>
                 {status.type === 'pass'
-                  ? 'Your organization details passed our automated compliance check, but a manual review may still occur as part of our standard process. You can continue with your account setup.'
+                  ? 'Your organization details passed our automated compliance check, but a manual review will still occur as part of our standard process before the first payout. You can continue with your account setup.'
                   : status.type === 'review_required'
                     ? "Our team will manually review your organization details. You can continue with your account setup process while we review your submission. We'll notify you once the review is complete."
                     : 'Please wait while we validate your organization details.'}

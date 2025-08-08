@@ -1,13 +1,17 @@
 import datetime
+from typing import cast
 
 from fastapi import Depends, Query, Response, status
+from sqlalchemy.orm import joinedload
 
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
+from polar.auth.models import is_anonymous
+from polar.auth.scope import Scope
 from polar.config import settings
 from polar.email.react import render_email_template
 from polar.email.sender import enqueue_email
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
 from polar.openapi import APITag
@@ -24,6 +28,8 @@ from .schemas import Organization as OrganizationSchema
 from .schemas import (
     OrganizationCreate,
     OrganizationID,
+    OrganizationPaymentStatus,
+    OrganizationPaymentStep,
     OrganizationSetAccount,
     OrganizationUpdate,
 )
@@ -195,6 +201,65 @@ async def set_account(
 
     return await organization_service.set_account(
         session, auth_subject, organization, set_account.account_id
+    )
+
+
+@router.get(
+    "/{id}/payment-status",
+    response_model=OrganizationPaymentStatus,
+    tags=[APITag.private],
+    summary="Get Organization Payment Status",
+    responses={404: OrganizationNotFound},
+)
+async def get_payment_status(
+    id: OrganizationID,
+    auth_subject: auth.OrganizationsReadOrAnonymous,
+    session: AsyncSession = Depends(get_db_session),
+    account_verification_only: bool = Query(
+        False,
+        description="Only perform account verification checks, skip product and integration checks",
+    ),
+) -> OrganizationPaymentStatus:
+    """Get payment status and onboarding steps for an organization."""
+    # Handle authentication based on account_verification_only flag
+    if is_anonymous(auth_subject) and not account_verification_only:
+        raise Unauthorized()
+    elif is_anonymous(auth_subject):
+        organization = await organization_service.get_anonymous(
+            session,
+            id,
+            options=(joinedload(Organization.account).joinedload(Account.admin),),
+        )
+    else:
+        # For authenticated users, check proper scopes (need at least one of these)
+        required_scopes = {
+            Scope.web_default,
+            Scope.organizations_read,
+            Scope.organizations_write,
+        }
+        if not (auth_subject.scopes & required_scopes):
+            raise ResourceNotFound()
+        organization = await organization_service.get(
+            session,
+            cast(auth.OrganizationsRead, auth_subject),
+            id,
+            options=(joinedload(Organization.account).joinedload(Account.admin),),
+        )
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    payment_status = await organization_service.get_payment_status(
+        session, organization, account_verification_only=account_verification_only
+    )
+
+    return OrganizationPaymentStatus(
+        payment_ready=payment_status.payment_ready,
+        steps=[
+            OrganizationPaymentStep(**step.model_dump())
+            for step in payment_status.steps
+        ],
+        organization_status=payment_status.organization_status,
     )
 
 

@@ -64,28 +64,21 @@ async def list(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.h1(classes="text-4xl"):
                 text("External Events")
-            with tag.div(classes="w-full flex flex-row gap-2"):
-                with tag.form(method="GET"):
-                    with input.search("query", query):
-                        pass
-                with tag.form(
-                    method="GET",
-                    _="""
-                    on change from <select/> in me
-                        call me.submit()
-                    end
-                    """,
+            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
+                with input.search("query", query):
+                    pass
+                with input.select(
+                    [
+                        ("All Statuses", ""),
+                        ("Handled", "true"),
+                        ("Unhandled", "false"),
+                    ],
+                    "" if handled is None else str(handled).lower(),
+                    name="handled",
                 ):
-                    with input.select(
-                        [
-                            ("Handled", "true"),
-                            ("Unhandled", "false"),
-                        ],
-                        "" if handled is None else str(handled).lower(),
-                        name="handled",
-                        placeholder="Status",
-                    ):
-                        pass
+                    pass
+                with button(type="submit"):
+                    text("Filter")
 
             with datatable.Datatable[ExternalEvent, ExternalEventSortProperty](
                 datatable.DatatableActionsColumn(

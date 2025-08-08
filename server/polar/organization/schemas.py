@@ -29,6 +29,9 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.models.organization import (
+    Organization as OrganizationModel,
+)
+from polar.models.organization import (
     OrganizationNotificationSettings,
     OrganizationSubscriptionSettings,
 )
@@ -69,14 +72,14 @@ class OrganizationDetails(Schema):
         ..., description="Main customer acquisition channels."
     )
     future_annual_revenue: int = Field(
-        ..., description="Estimated revenue in the next 12 months"
+        ..., ge=0, description="Estimated revenue in the next 12 months"
     )
     switching: bool = Field(True, description="Switching from another platform?")
     switching_from: (
         Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
     ) = Field(None, description="Which platform the organization is migrating from.")
     previous_annual_revenue: int = Field(
-        0, description="Revenue from last year if applicable."
+        0, ge=0, description="Revenue from last year if applicable."
     )
 
 
@@ -288,6 +291,23 @@ class OrganizationStripePortalSession(Schema):
 class CreditBalance(Schema):
     amount: CurrencyAmount = Field(
         description="The customers credit balance. A negative value means that Polar owes this customer money (credit), a positive number means that the customer owes Polar money (debit)."
+    )
+
+
+class OrganizationPaymentStep(Schema):
+    id: str = Field(description="Step identifier")
+    title: str = Field(description="Step title")
+    description: str = Field(description="Step description")
+    completed: bool = Field(description="Whether the step is completed")
+
+
+class OrganizationPaymentStatus(Schema):
+    payment_ready: bool = Field(
+        description="Whether the organization is ready to accept payments"
+    )
+    steps: list[OrganizationPaymentStep] = Field(description="List of onboarding steps")
+    organization_status: OrganizationModel.Status = Field(
+        description="Current organization status"
     )
 
 

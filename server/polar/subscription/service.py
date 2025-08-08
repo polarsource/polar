@@ -18,7 +18,7 @@ from polar.config import settings
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
-from polar.email.react import render_email_template
+from polar.email.react import JSONProperty, render_email_template
 from polar.email.sender import enqueue_email
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.service import event as event_service
@@ -1144,6 +1144,13 @@ class SubscriptionService:
         if became_activated:
             await self._on_subscription_activated(session, subscription)
 
+        became_past_due = (
+            subscription.status == SubscriptionStatus.past_due
+            and previous_status != SubscriptionStatus.past_due
+        )
+        if became_past_due:
+            await self._on_subscription_past_due(session, subscription)
+
         is_canceled = subscription.ends_at and subscription.canceled_at
         updated_ends_at = subscription.ends_at != previous_ends_at
 
@@ -1152,9 +1159,12 @@ class SubscriptionService:
             previous_status
         )
 
-        if cancellation_changed:
+        if cancellation_changed and not became_past_due:
             await self._on_subscription_canceled(
-                session, subscription, revoked=became_revoked
+                session,
+                subscription,
+                revoked=became_revoked,
+                previous_status=previous_status,
             )
 
         became_uncanceled = previous_ends_at and not is_canceled
@@ -1191,6 +1201,16 @@ class SubscriptionService:
         await self.send_confirmation_email(session, subscription)
         await self._send_new_subscription_notification(session, subscription)
 
+    async def _on_subscription_past_due(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        await self._send_webhook(
+            session, subscription, WebhookEventType.subscription_updated
+        )
+        await self.send_past_due_email(session, subscription)
+
     async def _on_subscription_uncanceled(
         self,
         session: AsyncSession,
@@ -1206,6 +1226,7 @@ class SubscriptionService:
         session: AsyncSession,
         subscription: Subscription,
         revoked: bool = False,
+        previous_status: SubscriptionStatus | None = None,
     ) -> None:
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_canceled
@@ -1213,7 +1234,9 @@ class SubscriptionService:
 
         # Revokation both cancels & revokes simultaneously.
         # Send webhook for both, but avoid duplicate email to customers.
-        if revoked:
+        # Don't send cancellation email if subscription was previously past due
+        # (customer already received past due email)
+        if revoked and previous_status != SubscriptionStatus.past_due:
             await self.send_cancellation_email(session, subscription)
 
     async def _on_subscription_revoked(
@@ -1346,6 +1369,40 @@ class SubscriptionService:
             template_name="subscription_revoked",
         )
 
+    async def send_past_due_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        """Send past due email to customer with optional payment link."""
+        payment_url = None
+
+        # Try to get payment link from Stripe if available
+        if subscription.stripe_subscription_id:
+            try:
+                stripe_subscription = await stripe_lib.Subscription.retrieve_async(
+                    subscription.stripe_subscription_id
+                )
+                if stripe_subscription.latest_invoice:
+                    invoice_id = get_expandable_id(stripe_subscription.latest_invoice)
+                    invoice = await stripe_service.get_invoice(invoice_id)
+                    if invoice.hosted_invoice_url:
+                        payment_url = invoice.hosted_invoice_url
+            except Exception:
+                # If we can't get the payment link, continue without it
+                pass
+
+        # Only include payment_url if it's not None
+        extra_context: dict[str, JSONProperty] = {}
+        if payment_url is not None:
+            extra_context["payment_url"] = payment_url
+
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {product.name} subscription payment is past due",
+            template_name="subscription_past_due",
+            extra_context=extra_context if extra_context else None,
+        )
+
     async def _send_customer_email(
         self,
         session: AsyncSession,
@@ -1353,6 +1410,7 @@ class SubscriptionService:
         *,
         subject_template: str,
         template_name: str,
+        extra_context: dict[str, JSONProperty] | None = None,
     ) -> None:
         product = subscription.product
         organization_repository = OrganizationRepository.from_session(session)
@@ -1371,31 +1429,34 @@ class SubscriptionService:
             session, customer
         )
 
-        body = render_email_template(
-            template_name,
-            {
-                "organization": {
-                    "name": featured_organization.name,
-                    "slug": featured_organization.slug,
-                },
-                "product": {
-                    "name": product.name or "",
-                    "benefits": [
-                        {"description": benefit.description or ""}
-                        for benefit in product.benefits
-                    ],
-                },
-                "subscription": {
-                    "ends_at": subscription.ends_at.isoformat()
-                    if subscription.ends_at
-                    else "",
-                },
-                "url": settings.generate_frontend_url(
-                    f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
-                ),
-                "current_year": datetime.now().year,
+        context = {
+            "organization": {
+                "name": featured_organization.name,
+                "slug": featured_organization.slug,
             },
-        )
+            "product": {
+                "name": product.name or "",
+                "benefits": [
+                    {"description": benefit.description or ""}
+                    for benefit in product.benefits
+                ],
+            },
+            "subscription": {
+                "ends_at": subscription.ends_at.isoformat()
+                if subscription.ends_at
+                else "",
+            },
+            "url": settings.generate_frontend_url(
+                f"/{featured_organization.slug}/portal?customer_session_token={token}&id={subscription.id}"
+            ),
+            "current_year": datetime.now().year,
+        }
+
+        # Add extra context if provided
+        if extra_context:
+            context.update(extra_context)
+
+        body = render_email_template(template_name, context)  # type: ignore
 
         subject = subject_template.format(product=product)
 

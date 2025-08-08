@@ -562,6 +562,28 @@ export interface paths {
         patch: operations["organizations:set_account"];
         trace?: never;
     };
+    "/v1/organizations/{id}/payment-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Organization Payment Status
+         * @description Get payment status and onboarding steps for an organization.
+         *
+         *     **Scopes**: `organizations:read` `organizations:write`
+         */
+        get: operations["organizations:get_payment_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/organizations/{id}/members": {
         parameters: {
             query?: never;
@@ -6244,7 +6266,7 @@ export interface components {
             /** Code */
             code: string | null;
         };
-        CheckoutForbiddenError: components["schemas"]["AlreadyActiveSubscriptionError"] | components["schemas"]["NotOpenCheckout"];
+        CheckoutForbiddenError: components["schemas"]["AlreadyActiveSubscriptionError"] | components["schemas"]["NotOpenCheckout"] | components["schemas"]["PaymentNotReady"];
         /**
          * CheckoutLink
          * @description Checkout link data.
@@ -12823,6 +12845,8 @@ export interface components {
             active_subscriptions: number;
             /** Monthly Recurring Revenue */
             monthly_recurring_revenue: number;
+            /** Committed Monthly Recurring Revenue */
+            committed_monthly_recurring_revenue: number;
             /** Checkouts */
             checkouts: number;
             /** Succeeded Checkouts */
@@ -12849,6 +12873,7 @@ export interface components {
             renewed_subscriptions_revenue: components["schemas"]["Metric"];
             active_subscriptions: components["schemas"]["Metric"];
             monthly_recurring_revenue: components["schemas"]["Metric"];
+            committed_monthly_recurring_revenue: components["schemas"]["Metric"];
             checkouts: components["schemas"]["Metric"];
             succeeded_checkouts: components["schemas"]["Metric"];
             checkouts_conversion: components["schemas"]["Metric"];
@@ -12935,6 +12960,8 @@ export interface components {
             active_subscriptions: number;
             /** Monthly Recurring Revenue */
             monthly_recurring_revenue: number;
+            /** Committed Monthly Recurring Revenue */
+            committed_monthly_recurring_revenue: number;
             /** Checkouts */
             checkouts: number;
             /** Succeeded Checkouts */
@@ -13557,7 +13584,7 @@ export interface components {
          * OrderSortProperty
          * @enum {string}
          */
-        OrderSortProperty: "created_at" | "-created_at" | "amount" | "-amount" | "net_amount" | "-net_amount" | "customer" | "-customer" | "product" | "-product" | "discount" | "-discount" | "subscription" | "-subscription";
+        OrderSortProperty: "created_at" | "-created_at" | "status" | "-status" | "invoice_number" | "-invoice_number" | "amount" | "-amount" | "net_amount" | "-net_amount" | "customer" | "-customer" | "product" | "-product" | "discount" | "-discount" | "subscription" | "-subscription";
         /**
          * OrderStatus
          * @enum {string}
@@ -14009,6 +14036,44 @@ export interface components {
             /** New Subscription */
             new_subscription: boolean;
         };
+        /** OrganizationPaymentStatus */
+        OrganizationPaymentStatus: {
+            /**
+             * Payment Ready
+             * @description Whether the organization is ready to accept payments
+             */
+            payment_ready: boolean;
+            /**
+             * Steps
+             * @description List of onboarding steps
+             */
+            steps: components["schemas"]["OrganizationPaymentStep"][];
+            /** @description Current organization status */
+            organization_status: components["schemas"]["Status"];
+        };
+        /** OrganizationPaymentStep */
+        OrganizationPaymentStep: {
+            /**
+             * Id
+             * @description Step identifier
+             */
+            id: string;
+            /**
+             * Title
+             * @description Step title
+             */
+            title: string;
+            /**
+             * Description
+             * @description Step description
+             */
+            description: string;
+            /**
+             * Completed
+             * @description Whether the step is completed
+             */
+            completed: boolean;
+        };
         /** OrganizationProfileSettings */
         OrganizationProfileSettings: {
             /**
@@ -14247,6 +14312,16 @@ export interface components {
             customer_id: string;
             /** Type */
             type: string;
+        };
+        /** PaymentNotReady */
+        PaymentNotReady: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "PaymentNotReady";
+            /** Detail */
+            detail: string;
         };
         /**
          * PaymentProcessor
@@ -18066,6 +18141,49 @@ export interface operations {
             };
         };
     };
+    "organizations:get_payment_status": {
+        parameters: {
+            query?: {
+                /** @description Only perform account verification checks, skip product and integration checks */
+                account_verification_only?: boolean;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationPaymentStatus"];
+                };
+            };
+            /** @description Organization not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "organizations:members": {
         parameters: {
             query?: never;
@@ -20059,7 +20177,7 @@ export interface operations {
                     "application/json": components["schemas"]["Checkout"];
                 };
             };
-            /** @description The checkout is expired or the customer already has an active subscription. */
+            /** @description The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -20163,7 +20281,7 @@ export interface operations {
                     "application/json": components["schemas"]["CheckoutPublic"];
                 };
             };
-            /** @description The checkout is expired or the customer already has an active subscription. */
+            /** @description The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -20268,7 +20386,7 @@ export interface operations {
                     "application/json": components["schemas"]["PaymentError"];
                 };
             };
-            /** @description The checkout is expired or the customer already has an active subscription. */
+            /** @description The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -22735,7 +22853,7 @@ export interface operations {
                     "application/json": components["schemas"]["LicenseKeyActivationRead"];
                 };
             };
-            /** @description License key activation not required or permitted (limit reached). */
+            /** @description License key activation not supported or limit reached. Use /validate endpoint for licenses without activations. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -25356,7 +25474,7 @@ export const oAuth2ClientConfigurationUpdateToken_endpoint_auth_methodValues: Re
 export const oAuth2ClientConfigurationUpdateGrant_typesValues: ReadonlyArray<components["schemas"]["OAuth2ClientConfigurationUpdate"]["grant_types"]> = ["authorization_code", "refresh_token"];
 export const oAuthPlatformValues: ReadonlyArray<components["schemas"]["OAuthPlatform"]> = ["github", "github_repository_benefit", "google"];
 export const orderBillingReasonValues: ReadonlyArray<components["schemas"]["OrderBillingReason"]> = ["purchase", "subscription_create", "subscription_cycle", "subscription_update"];
-export const orderSortPropertyValues: ReadonlyArray<components["schemas"]["OrderSortProperty"]> = ["created_at", "-created_at", "amount", "-amount", "net_amount", "-net_amount", "customer", "-customer", "product", "-product", "discount", "-discount", "subscription", "-subscription"];
+export const orderSortPropertyValues: ReadonlyArray<components["schemas"]["OrderSortProperty"]> = ["created_at", "-created_at", "status", "-status", "invoice_number", "-invoice_number", "amount", "-amount", "net_amount", "-net_amount", "customer", "-customer", "product", "-product", "discount", "-discount", "subscription", "-subscription"];
 export const orderStatusValues: ReadonlyArray<components["schemas"]["OrderStatus"]> = ["pending", "paid", "refunded", "partially_refunded"];
 export const organizationAccessTokenSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationAccessTokenSortProperty"]> = ["created_at", "-created_at", "comment", "-comment", "last_used_at", "-last_used_at", "organization_id", "-organization_id"];
 export const organizationAvatarFileCreateServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileCreate"]["service"]> = ["organization_avatar"];

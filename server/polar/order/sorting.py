@@ -8,6 +8,8 @@ from polar.kit.sorting import Sorting, SortingGetter
 
 class OrderSortProperty(StrEnum):
     created_at = "created_at"
+    status = "status"
+    invoice_number = "invoice_number"
     amount = "amount"
     net_amount = "net_amount"
     customer = "customer"

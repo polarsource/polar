@@ -1,12 +1,13 @@
 import contextlib
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from datetime import datetime
 from inspect import isgenerator
 from operator import attrgetter
 from typing import Any, Generic, TypeVar
 
 from fastapi import Request
-from tagflow import tag, text
+from fastapi.datastructures import URL
+from tagflow import attr, classes, tag, text
 
 from .. import formatters
 from ._clipboard_button import clipboard_button
@@ -49,6 +50,9 @@ class DescriptionListItem(Generic[M]):
             yield from value
         else:
             yield
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(label={self.label!r})"
 
 
 class DescriptionListAttrItem(Generic[M], DescriptionListItem[M]):
@@ -125,6 +129,9 @@ class DescriptionListAttrItem(Generic[M], DescriptionListItem[M]):
             return None
         return str(value)
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(attr={self.attr!r}, label={self.label!r}, clipboard={self.clipboard})"
+
 
 class DescriptionListDateTimeItem(DescriptionListAttrItem[M]):
     """A description list item that displays datetime attributes with proper formatting.
@@ -156,14 +163,33 @@ class DescriptionListDateTimeItem(DescriptionListAttrItem[M]):
 
 
 class DescriptionListLinkItem(DescriptionListAttrItem[M]):
-    """A description list item that displays attribute values as external links.
-
-    Extends DescriptionListAttrItem to render the attribute value as a clickable
-    external link that opens in a new tab. Useful for URLs.
+    """A description list item that generates a link.
 
     Args:
         M: Type parameter for the model type.
     """
+
+    href_getter: Callable[[Request, M], str | URL | None]
+
+    def __init__(
+        self,
+        attr: str,
+        label: str | None = None,
+        *,
+        external: bool = False,
+        href_getter: Callable[[Request, M], str | URL | None] | None = None,
+    ) -> None:
+        super().__init__(attr, label, clipboard=False)
+        self.external = external
+
+        if href_getter is None:
+
+            def _default_href_getter(_: Request, item: M) -> str | URL | None:
+                return self.get_raw_value(item)
+
+            self.href_getter = _default_href_getter
+        else:
+            self.href_getter = href_getter
 
     def render(self, request: Request, item: M) -> Generator[None] | None:
         """Render the attribute value as an external link.
@@ -172,19 +198,25 @@ class DescriptionListLinkItem(DescriptionListAttrItem[M]):
             request: The FastAPI request object.
             item: The data object to extract the link from.
         """
-        value = self.get_value(item)
+        value = self.get_raw_value(item)
+        href = self.href_getter(request, item)
         with tag.div(classes="flex items-center gap-1"):
             if value is not None:
-                with tag.a(
-                    href=value,
-                    classes="link",
-                    target="_blank",
-                    rel="noopener noreferrer",
-                ):
-                    text(value)
+                with tag.a(href=href, classes="link"):
+                    if self.external:
+                        classes("flex flex-row gap-1")
+                        attr("target", "_blank")
+                        attr("rel", "noopener noreferrer")
+                    text(str(value))
+                    if self.external:
+                        with tag.div(classes="icon-external-link"):
+                            pass
             else:
                 text("—")
         return None
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(attr={self.attr!r}, label={self.label!r}, external={self.external!r})"
 
 
 class DescriptionListCurrencyItem(DescriptionListAttrItem[M]):
@@ -263,6 +295,9 @@ class DescriptionList(Generic[M]):
                             with item._do_render(request, data):
                                 pass
         yield
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(items={self.items!r})"
 
 
 __all__ = [

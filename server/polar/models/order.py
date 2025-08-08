@@ -239,7 +239,8 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def refundable_tax_amount(self) -> int:
         return self.tax_amount - self.refunded_tax_amount
 
-    def get_remaining_balance(self) -> int:
+    @property
+    def remaining_balance(self) -> int:
         return self.refundable_amount + self.refundable_tax_amount
 
     def update_refunds(self, refunded_amount: int, refunded_tax_amount: int) -> None:

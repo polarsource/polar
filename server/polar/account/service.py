@@ -19,7 +19,6 @@ from polar.models import Account, Organization, User
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.transaction import transaction as transaction_service
-from polar.worker import enqueue_job
 
 from .schemas import AccountCreate, AccountLink, AccountUpdate
 
@@ -116,17 +115,6 @@ class AccountService:
             account.status = Account.Status.UNDER_REVIEW
             session.add(account)
 
-            enqueue_job("account.under_review", account_id=account.id)
-
-        return account
-
-    async def confirm_account_reviewed(
-        self, session: AsyncSession, account: Account, next_review_threshold: int
-    ) -> Account:
-        account.status = Account.Status.ACTIVE
-        account.next_review_threshold = next_review_threshold
-        session.add(account)
-        enqueue_job("account.reviewed", account_id=account.id)
         return account
 
     async def _build_stripe_account_name(
@@ -199,29 +187,13 @@ class AccountService:
             account.country = stripe_account.country
         account.data = stripe_account.to_dict()
 
-        if all(
-            (
-                not account.is_active(),
-                not account.is_under_review(),
-                account.currency is not None,
-                account.is_details_submitted,
-                account.is_charges_enabled,
-                account.is_payouts_enabled,
-            )
-        ):
-            account.status = Account.Status.ACTIVE
-
-        # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
-        if any(
-            (
-                not account.is_details_submitted,
-                not account.is_charges_enabled,
-                not account.is_payouts_enabled,
-            )
-        ):
-            account.status = Account.Status.ONBOARDING_STARTED
-
         session.add(account)
+
+        # Update organization status based on Stripe account capabilities
+        # Import here to avoid circular imports
+        from polar.organization.service import organization as organization_service
+
+        await organization_service.update_status_from_stripe_account(session, account)
 
         return account
 
@@ -261,14 +233,6 @@ class AccountService:
     async def deny_account(self, session: AsyncSession, account: Account) -> Account:
         account.status = Account.Status.DENIED
         session.add(account)
-        return account
-
-    async def set_account_under_review(
-        self, session: AsyncSession, account: Account
-    ) -> Account:
-        account.status = Account.Status.UNDER_REVIEW
-        session.add(account)
-        enqueue_job("account.under_review", account_id=account.id)
         return account
 
 

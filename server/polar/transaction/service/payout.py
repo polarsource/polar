@@ -13,6 +13,8 @@ from polar.kit.utils import generate_uuid
 from polar.logging import Logger
 from polar.models import Account, Payout, Transaction
 from polar.models.transaction import Processor, TransactionType
+from polar.organization.repository import OrganizationRepository
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 
 from ..repository import BalanceTransactionRepository, PayoutTransactionRepository
@@ -223,8 +225,13 @@ class PayoutTransactionService(BaseTransactionService):
         if error:
             # Put the account under review to make sure the user doesn't try to create another payout
             # since we'll need a manual operation to fix the issue
-            account.status = Account.Status.UNDER_REVIEW
-            session.add(account)
+            organization_repository = OrganizationRepository.from_session(session)
+            for organization in await organization_repository.get_all_by_account(
+                account.id
+            ):
+                await organization_service.set_organization_under_review(
+                    session, organization
+                )
             # Commit, because we don't want to lose the transfers we created
             await session.commit()
             raise TransferError()

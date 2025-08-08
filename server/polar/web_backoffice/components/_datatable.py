@@ -58,6 +58,9 @@ class DatatableColumn(Generic[M]):
         else:
             yield
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(label={self.label!r})"
+
 
 class DatatableSortingColumn(Generic[M, PE], DatatableColumn[M]):
     """A datatable column that supports sorting functionality.
@@ -239,6 +242,9 @@ class DatatableAttrColumn(Generic[M, PE], DatatableSortingColumn[M, PE]):
             return None
         return str(value)
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(attr={self.attr!r}, label={self.label!r})"
+
 
 class DatatableDateTimeColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
     """A datatable column that displays datetime attributes with proper formatting.
@@ -268,6 +274,48 @@ class DatatableDateTimeColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
         if value is None:
             return None
         return formatters.datetime(value)
+
+
+class DatatableCurrencyColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
+    """A datatable column that displays currency values with proper formatting.
+
+    Extends DatatableAttrColumn to format integer currency values (in cents)
+    using the backoffice currency formatter. The currency type can be customized
+    by overriding the get_currency method.
+
+    Args:
+        M: Type parameter for the model type.
+        PE: Type parameter for the sorting field enum.
+    """
+
+    def get_value(self, item: M) -> str | None:
+        """Get the formatted currency string for display.
+
+        Args:
+            item: The model item to extract the currency value from.
+
+        Returns:
+            A formatted currency string, or None if the raw value is None.
+        """
+        value: int | None = self.get_raw_value(item)
+        if value is None:
+            return None
+        return formatters.currency(value, self.get_currency(item))
+
+    def get_currency(self, item: M) -> str:
+        """Get the currency code for formatting.
+
+        By default, tries to extract the attribute 'currency' from the item,
+        falling back to "usd" if not present. This can be overridden in subclasses
+        to provide custom currency handling.
+
+        Args:
+            item: The data object (unused in base implementation).
+
+        Returns:
+            The currency code.
+        """
+        return getattr(item, "currency", "usd")
 
 
 class DatatableBooleanColumn(Generic[M, PE], DatatableAttrColumn[M, PE]):
@@ -552,6 +600,7 @@ class Datatable(Generic[M, PE]):
             request: The FastAPI request object for URL generation.
             items: The sequence of model items to display in the table.
             sorting: Current sorting configuration for sortable columns.
+            If None, no sorting controls are rendered.
         """
         with tag.div(
             classes="overflow-x-auto rounded-box bg-base-100 border-1 border-gray-600"
@@ -562,7 +611,8 @@ class Datatable(Generic[M, PE]):
                         for column in self.columns:
                             with tag.th():
                                 if (
-                                    not isinstance(column, DatatableSortingColumn)
+                                    sorting is None
+                                    or not isinstance(column, DatatableSortingColumn)
                                     or column.sorting is None
                                 ):
                                     text(column.label)
@@ -632,6 +682,9 @@ class Datatable(Generic[M, PE]):
                 url = url.include_query_params(sorting=column.sorting.value)
 
         return url
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(columns={self.columns!r}, empty_message={self.empty_message!r})"
 
 
 @contextlib.contextmanager

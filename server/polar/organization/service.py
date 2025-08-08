@@ -1,29 +1,74 @@
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
 import structlog
+from pydantic import BaseModel, Field
+from sqlalchemy import update as sqlalchemy_update
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 
+from polar.account.repository import AccountRepository
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
+from polar.checkout_link.repository import CheckoutLinkRepository
+from polar.config import Environment, settings
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.pagination import PaginationParams
+from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
-from polar.models import Organization, User, UserOrganization
+from polar.models import Account, Organization, User, UserOrganization
+from polar.models.transaction import TransactionType
+from polar.models.user import IdentityVerificationStatus
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.organization_access_token.repository import OrganizationAccessTokenRepository
 from polar.postgres import AsyncSession, sql
 from polar.posthog import posthog
+from polar.product.repository import ProductRepository
+from polar.transaction.service.transaction import transaction as transaction_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .repository import OrganizationRepository
 from .schemas import OrganizationCreate, OrganizationUpdate
 from .sorting import OrganizationSortProperty
+
+log = structlog.get_logger(__name__)
+
+
+class PaymentStepID(StrEnum):
+    """Enum for payment onboarding step identifiers."""
+
+    CREATE_PRODUCT = "create_product"
+    INTEGRATE_CHECKOUT = "integrate_checkout"
+    SETUP_ACCOUNT = "setup_account"
+
+
+class PaymentStep(BaseModel):
+    """Service-level model for payment onboarding steps."""
+
+    id: str = Field(description="Step identifier")
+    title: str = Field(description="Step title")
+    description: str = Field(description="Step description")
+    completed: bool = Field(description="Whether the step is completed")
+
+
+class PaymentStatusResponse(BaseModel):
+    """Service-level response for payment status."""
+
+    payment_ready: bool = Field(
+        description="Whether the organization is ready to accept payments"
+    )
+    steps: list[PaymentStep] = Field(description="List of onboarding steps")
+    organization_status: Organization.Status = Field(
+        description="Current organization status"
+    )
+
 
 log = structlog.get_logger()
 
@@ -38,6 +83,16 @@ class InvalidAccount(OrganizationError):
             f"The account {account_id} does not exist or you don't have access to it."
         )
         super().__init__(message)
+
+
+class AccountAlreadySetByOwner(OrganizationError):
+    def __init__(self, organization_name: str) -> None:
+        self.organization_name = organization_name
+        message = (
+            f"The account for organization '{organization_name}' has already been set up by the owner. "
+            "Only the original member who set up the account can make changes to prevent unintended consequences."
+        )
+        super().__init__(message, 403)
 
 
 class OrganizationService:
@@ -69,11 +124,33 @@ class OrganizationService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
+        *,
+        options: Options = (),
     ) -> Organization | None:
         repository = OrganizationRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
-            Organization.id == id
+        statement = (
+            repository.get_readable_statement(auth_subject)
+            .where(Organization.id == id)
+            .options(*options)
         )
+        return await repository.get_one_or_none(statement)
+
+    async def get_anonymous(
+        self,
+        session: AsyncSession,
+        id: uuid.UUID,
+        *,
+        options: Options = (),
+    ) -> Organization | None:
+        """Use it with precaution! Get organization by ID for anonymous users."""
+        repository = OrganizationRepository.from_session(session)
+        statement = (
+            repository.get_base_statement()
+            .where(Organization.blocked_at.is_(None))
+            .where(Organization.id == id)
+            .options(*options)
+        )
+
         return await repository.get_one_or_none(statement)
 
     async def create(
@@ -268,6 +345,19 @@ class OrganizationService:
 
         first_account_set = organization.account_id is None
 
+        # If an account is already set, only the organization admin (account owner) can change it
+        if not first_account_set:
+            repository = OrganizationRepository.from_session(session)
+            admin_user = await repository.get_admin_user(session, organization)
+
+            # Check if current user is the admin
+            current_user_id = None
+            if hasattr(auth_subject.subject, "id"):
+                current_user_id = auth_subject.subject.id
+
+            if not admin_user or current_user_id != admin_user.id:
+                raise AccountAlreadySetByOwner(organization.name)
+
         repository = OrganizationRepository.from_session(session)
         organization = await repository.update(
             organization, update_dict={"account": account}
@@ -304,6 +394,259 @@ class OrganizationService:
         await webhook_service.send(
             session, organization, WebhookEventType.organization_updated, organization
         )
+
+    async def check_review_threshold(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        if organization.is_under_review():
+            return organization
+
+        transfers_sum = await transaction_service.get_transactions_sum(
+            session, organization.account_id, type=TransactionType.balance
+        )
+        if (
+            organization.next_review_threshold >= 0
+            and transfers_sum >= organization.next_review_threshold
+        ):
+            organization.status = Organization.Status.UNDER_REVIEW
+            await self._sync_account_status(session, organization)
+            session.add(organization)
+
+            enqueue_job("organization.under_review", organization_id=organization.id)
+
+        return organization
+
+    async def confirm_organization_reviewed(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        next_review_threshold: int,
+    ) -> Organization:
+        organization.status = Organization.Status.ACTIVE
+        organization.next_review_threshold = next_review_threshold
+        await self._sync_account_status(session, organization)
+        session.add(organization)
+        enqueue_job("organization.reviewed", organization_id=organization.id)
+        return organization
+
+    async def deny_organization(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        organization.status = Organization.Status.DENIED
+        await self._sync_account_status(session, organization)
+        session.add(organization)
+        return organization
+
+    async def set_organization_under_review(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        organization.status = Organization.Status.UNDER_REVIEW
+        await self._sync_account_status(session, organization)
+        session.add(organization)
+        enqueue_job("organization.under_review", organization_id=organization.id)
+        return organization
+
+    async def update_status_from_stripe_account(
+        self, session: AsyncSession, account: Account
+    ) -> None:
+        """Update organization status based on Stripe account capabilities."""
+        repository = OrganizationRepository.from_session(session)
+        organizations = await repository.get_all_by_account(account.id)
+
+        for organization in organizations:
+            # Don't override organizations that are denied
+            if organization.status == Organization.Status.DENIED:
+                continue
+
+            # If account is fully set up, set organization to ACTIVE
+            if all(
+                (
+                    not organization.is_under_review(),
+                    not organization.is_active(),
+                    account.currency is not None,
+                    account.is_details_submitted,
+                    account.is_charges_enabled,
+                    account.is_payouts_enabled,
+                )
+            ):
+                organization.status = Organization.Status.ACTIVE
+
+            # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
+            if any(
+                (
+                    not account.is_details_submitted,
+                    not account.is_charges_enabled,
+                    not account.is_payouts_enabled,
+                )
+            ):
+                organization.status = Organization.Status.ONBOARDING_STARTED
+
+            await self._sync_account_status(session, organization)
+            session.add(organization)
+
+    async def _sync_account_status(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        """Sync organization status to the related account."""
+        if not organization.account_id:
+            return
+
+        # Map organization status to account status
+        status_mapping = {
+            Organization.Status.ONBOARDING_STARTED: Account.Status.ONBOARDING_STARTED,
+            Organization.Status.ACTIVE: Account.Status.ACTIVE,
+            Organization.Status.UNDER_REVIEW: Account.Status.UNDER_REVIEW,
+            Organization.Status.DENIED: Account.Status.DENIED,
+        }
+
+        if organization.status in status_mapping:
+            account_status = status_mapping[organization.status]
+            await session.execute(
+                sqlalchemy_update(Account)
+                .where(Account.id == organization.account_id)
+                .values(status=account_status)
+            )
+
+    async def get_payment_status(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        account_verification_only: bool = False,
+    ) -> PaymentStatusResponse:
+        """Get payment status and onboarding steps for an organization."""
+        steps = []
+
+        if not account_verification_only:
+            # Step 1: Create a product
+            product_repository = ProductRepository.from_session(session)
+            product_count = await product_repository.count_by_organization_id(
+                organization.id, is_archived=False
+            )
+            steps.append(
+                PaymentStep(
+                    id=PaymentStepID.CREATE_PRODUCT,
+                    title="Create a product",
+                    description="Create your first product to start accepting payments",
+                    completed=product_count > 0,
+                )
+            )
+
+            # Step 2: Integrate Checkout (API key OR checkout link)
+            token_repository = OrganizationAccessTokenRepository.from_session(session)
+            api_key_count = await token_repository.count_by_organization_id(
+                organization.id
+            )
+
+            checkout_link_repository = CheckoutLinkRepository.from_session(session)
+            checkout_link_count = (
+                await checkout_link_repository.count_by_organization_id(organization.id)
+            )
+
+            # Step is completed if user has either an API key OR a checkout link
+            integration_completed = api_key_count > 0 or checkout_link_count > 0
+            steps.append(
+                PaymentStep(
+                    id=PaymentStepID.INTEGRATE_CHECKOUT,
+                    title="Integrate Checkout",
+                    description="Set up your integration to start accepting payments",
+                    completed=integration_completed,
+                )
+            )
+
+        # Step 3: Finish account setup
+        account_setup_complete = self._is_account_setup_complete(organization)
+        steps.append(
+            PaymentStep(
+                id=PaymentStepID.SETUP_ACCOUNT,
+                title="Finish account setup",
+                description="Complete your account details and verify your identity",
+                completed=account_setup_complete,
+            )
+        )
+
+        return PaymentStatusResponse(
+            payment_ready=await self.is_organization_ready_for_payment(
+                session, organization
+            ),
+            steps=steps,
+            organization_status=organization.status,
+        )
+
+    def _is_account_setup_complete(self, organization: Organization) -> bool:
+        """Check if the organization's account setup is complete."""
+        if not organization.account_id:
+            return False
+
+        account = organization.account
+        if not account:
+            return False
+
+        admin = account.admin
+        return (
+            organization.details_submitted_at is not None
+            and account.is_details_submitted
+            and (admin.identity_verification_status in ["verified", "pending"])
+        )
+
+    async def is_organization_ready_for_payment(
+        self, session: AsyncSession, organization: Organization
+    ) -> bool:
+        """
+        Check if an organization is ready to accept payments.
+        This method loads the account and admin data as needed, avoiding the need
+        for eager loading in other services like checkout.
+        """
+        # In sandbox environment, always allow payments regardless of account setup
+        if settings.ENV == Environment.sandbox:
+            return True
+
+        # First check basic conditions that don't require account data
+        if (
+            organization.is_blocked()
+            or organization.status == Organization.Status.DENIED
+        ):
+            return False
+
+        # Check grandfathering - if grandfathered, they're ready
+        cutoff_date = datetime(2025, 8, 4, 9, 0, tzinfo=UTC)
+        if organization.created_at <= cutoff_date:
+            return True
+
+        # For new organizations, check basic conditions first
+        if organization.status not in [
+            Organization.Status.ACTIVE,
+            Organization.Status.UNDER_REVIEW,
+        ]:
+            return False
+
+        # Details must be submitted (check for empty dict as well)
+        if not organization.details_submitted_at or not organization.details:
+            return False
+
+        # Must have an active payout account
+        if organization.account_id is None:
+            return False
+
+        account_repository = AccountRepository.from_session(session)
+        account = await account_repository.get_by_id(
+            organization.account_id, options=(joinedload(Account.admin),)
+        )
+        if not account:
+            return False
+
+        # Check account readiness
+        if not account.is_account_ready():
+            return False
+
+        # Check admin identity verification status
+        admin = account.admin
+        if not admin or admin.identity_verification_status not in [
+            IdentityVerificationStatus.verified,
+            IdentityVerificationStatus.pending,
+        ]:
+            return False
+
+        return True
 
 
 organization = OrganizationService()

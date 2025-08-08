@@ -20,7 +20,7 @@ from polar.user import sorting
 from polar.user.repository import UserRepository
 from polar.user.sorting import UserSortProperty
 
-from ..components import datatable, description_list, input
+from ..components import button, datatable, description_list, input
 from ..layout import layout
 
 router = APIRouter()
@@ -112,28 +112,25 @@ async def list(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.h1(classes="text-4xl"):
                 text("Users")
-            with tag.div(classes="w-full flex flex-row gap-2"):
-                with tag.form(method="GET"):
-                    with input.search("query", query):
-                        pass
-                with tag.form(
-                    method="GET",
-                    _="""
-                    on change from <select/> in me
-                        call me.submit()
-                    end
-                    """,
-                ):
-                    with input.select(
-                        [
+            with tag.form(method="GET", classes="w-full flex flex-row gap-2"):
+                with input.search("query", query):
+                    pass
+                with input.select(
+                    [
+                        ("All Identity Statuses", ""),
+                        *[
                             (status.get_display_name(), status.value)
                             for status in IdentityVerificationStatus
                         ],
-                        identity_verification_status,
-                        name="identity_verification_status",
-                        placeholder="Identity Verification Status",
-                    ):
-                        pass
+                    ],
+                    identity_verification_status.value
+                    if identity_verification_status
+                    else "",
+                    name="identity_verification_status",
+                ):
+                    pass
+                with button(type="submit"):
+                    text("Filter")
             with datatable.Datatable[User, UserSortProperty](
                 datatable.DatatableAttrColumn(
                     "id", "ID", href_route_name="users:get", clipboard=True

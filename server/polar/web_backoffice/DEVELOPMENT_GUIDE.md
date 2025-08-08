@@ -603,6 +603,114 @@ Use semantic color variants:
 
 ## Best Practices
 
+### Components and UI
+
+#### Description List Items
+
+- Prefer using `DescriptionListAttrItem` with dot notation over custom subclasses
+- `attr` parameter supports dot notation (e.g., `"customer.email"`, `"billing_address.line1"`)
+- Only create custom description list items when you need complex rendering logic
+- Use built-in items like `DescriptionListCurrencyItem` and `DescriptionListDateTimeItem` when available
+
+```python
+# Preferred - simple and clear
+description_list.DescriptionListAttrItem("customer.email", "Customer")
+description_list.DescriptionListAttrItem("billing_address.city", "City")
+
+# Avoid - unnecessary custom subclass
+class CustomerDescriptionListItem(description_list.DescriptionListAttrItem[Order]):
+    def render(self, request: Request, item: Order) -> Generator[None] | None:
+        text(item.customer.email)
+```
+
+#### Status Badges
+
+- Use DaisyUI badge classes instead of pure Tailwind CSS
+- Use contextual colors: `badge-success`, `badge-warning`, `badge-error`, `badge-info`, `badge-neutral`
+
+```python
+@contextlib.contextmanager
+def order_status_badge(status: OrderStatus) -> Generator[None]:
+    with tag.div(classes="badge"):
+        if status == OrderStatus.paid:
+            classes("badge-success")
+        elif status == OrderStatus.pending:
+            classes("badge-warning")
+        # ... etc
+        text(status.value.replace("_", " ").title())
+    yield
+
+# Avoid pure Tailwind classes
+# with tag.span(classes="bg-green-100 text-green-800 px-2 py-1 rounded"):
+```
+
+#### Cards for Content Organization
+
+- Use DaisyUI card components to organize content sections in detail pages
+- Follow the pattern from `subscriptions/endpoints.py` and `orders/endpoints.py` for consistency
+- Use `card`, `card-border`, `card-body`, and `card-title` classes
+
+**Basic Card Structure:**
+
+```python
+# Preferred - DaisyUI card structure
+with tag.div(classes="card card-border w-full shadow-sm"):
+    with tag.div(classes="card-body"):
+        with tag.h2(classes="card-title"):
+            text("Section Title")
+        # Content here (description lists, etc.)
+
+# Avoid - custom styling with multiple classes
+# with tag.div(classes="bg-white shadow rounded-lg p-6"):
+#     with tag.h2(classes="text-lg font-medium mb-4"):
+```
+
+**Layout Patterns:**
+
+For detail pages, use a grid layout for the main content:
+
+```python
+# Two-column layout for main sections
+with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+    # Main details card
+    with tag.div(classes="card card-border w-full shadow-sm"):
+        # ...
+
+    # Related information cards
+    with tag.div(classes="card card-border w-full shadow-sm"):
+        # ...
+
+# Full-width sections below main grid
+with tag.div(classes="flex flex-col gap-4 mt-6"):
+    # Additional cards (billing, tax info, etc.)
+    if condition:
+        with tag.div(classes="card card-border w-full shadow-sm"):
+            # ...
+```
+
+**Card Content Organization:**
+
+- Use separate cards for logically distinct information (Customer, Product, Financial, etc.)
+- Keep related information together within a single card
+- Use conditional cards for optional sections (billing info, tax details)
+- Maintain consistent card structure across all detail pages
+
+### Model Properties
+
+#### Use Existing Properties and Methods
+
+- Check the model for existing computed properties before calculating values manually
+- Many models have hybrid properties and methods for common calculations
+
+```python
+# Preferred - use existing properties
+currency(order.total_amount, order.currency)
+currency(order.get_remaining_balance(), order.currency)
+
+# Avoid - manual calculation
+total = order.subtotal_amount - order.discount_amount + order.tax_amount
+```
+
 ### Security
 
 - All endpoints automatically require admin authentication

@@ -67,6 +67,23 @@ const MetricChartBox = forwardRef<HTMLDivElement, MetricChartBoxProps>(
       hide: hideModal,
     } = useModal()
 
+    const startDate = useMemo(() => {
+      if (!data || !data.periods.length) return null
+      return data.periods[0].timestamp
+    }, [data])
+    const endDate = useMemo(() => {
+      if (!data || !data.periods.length) return null
+      return data.periods[data.periods.length - 1].timestamp
+    }, [data])
+    const previousStartDate = useMemo(() => {
+      if (!previousData || !previousData.periods.length) return null
+      return previousData.periods[0].timestamp
+    }, [previousData])
+    const previousEndDate = useMemo(() => {
+      if (!previousData || !previousData.periods.length) return null
+      return previousData.periods[previousData.periods.length - 1].timestamp
+    }, [previousData])
+
     const selectedMetric = useMemo(() => data?.metrics[metric], [data, metric])
     const [hoveredPeriodIndex, setHoveredPeriodIndex] = React.useState<
       number | null
@@ -164,7 +181,19 @@ const MetricChartBox = forwardRef<HTMLDivElement, MetricChartBoxProps>(
                     />
                   ) : (
                     <span className="dark:text-polar-500 text-gray-500">
-                      Current Period
+                      {startDate && endDate && (
+                        <>
+                          <FormattedDateTime
+                            datetime={startDate}
+                            dateStyle="medium"
+                          />{' '}
+                          —{' '}
+                          <FormattedDateTime
+                            datetime={endDate}
+                            dateStyle="medium"
+                          />
+                        </>
+                      )}
                     </span>
                   )}
                 </div>
@@ -178,7 +207,19 @@ const MetricChartBox = forwardRef<HTMLDivElement, MetricChartBoxProps>(
                       />
                     ) : (
                       <span className="dark:text-polar-500 text-gray-500">
-                        Previous Period
+                        {previousStartDate && previousEndDate && (
+                          <>
+                            <FormattedDateTime
+                              datetime={previousStartDate}
+                              dateStyle="medium"
+                            />{' '}
+                            —{' '}
+                            <FormattedDateTime
+                              datetime={previousEndDate}
+                              dateStyle="medium"
+                            />
+                          </>
+                        )}
                       </span>
                     )}
                   </div>

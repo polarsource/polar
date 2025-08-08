@@ -2,14 +2,7 @@ import { getServerSideAPI } from '@/utils/client/serverside'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { schemas, unwrap } from '@polar-sh/client'
-import {
-  addDays,
-  endOfMonth,
-  max,
-  min,
-  startOfMonth,
-  subMonths,
-} from 'date-fns'
+import { addDays, max, min, subMonths } from 'date-fns'
 import { RedirectType, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -31,10 +24,10 @@ export default async function Page({
     params.organization,
   )
 
-  const defaultInterval = 'month'
+  const defaultInterval = 'day'
   const today = new Date()
-  const defaultStartDate = subMonths(startOfMonth(today), 3)
-  const defaultEndDate = endOfMonth(today)
+  const defaultStartDate = subMonths(today, 1)
+  const defaultEndDate = today
 
   const interval = searchParams.interval || defaultInterval
 

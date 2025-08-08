@@ -1,18 +1,24 @@
+from datetime import UTC, datetime
+
 import pytest
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
-from polar.auth.models import AuthSubject
-from polar.config import settings
+from polar.auth.models import AuthMethod, AuthSubject
+from polar.config import Environment, settings
+from polar.enums import AccountType
 from polar.exceptions import PolarRequestValidationError
-from polar.models import Organization, User
+from polar.models import Organization, Product, User
+from polar.models.account import Account
 from polar.models.organization import OrganizationNotificationSettings
+from polar.models.user import IdentityVerificationStatus
 from polar.organization.schemas import OrganizationCreate, OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
@@ -155,3 +161,561 @@ async def test_get_next_invoice_number(
 
     assert next_invoice_number == f"{organization.customer_invoice_prefix}-0001"
     assert organization.customer_invoice_next_number == 2
+
+
+@pytest.mark.asyncio
+class TestCheckReviewThreshold:
+    async def test_already_under_review(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given organization already under review
+        organization.status = Organization.Status.UNDER_REVIEW
+        organization.next_review_threshold = 1000
+
+        # When
+        result = await organization_service.check_review_threshold(
+            session, organization
+        )
+
+        # Then
+        assert result.status == Organization.Status.UNDER_REVIEW
+
+    async def test_zero_threshold(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given organization with review threshold set to 0
+        organization.status = Organization.Status.ACTIVE
+        organization.next_review_threshold = 0
+
+        transaction_sum_mock = mocker.patch(
+            "polar.organization.service.transaction_service.get_transactions_sum",
+            return_value=5000,
+        )
+
+        # When
+        result = await organization_service.check_review_threshold(
+            session, organization
+        )
+
+        # Then
+        assert result.status == Organization.Status.UNDER_REVIEW
+        transaction_sum_mock.assert_called_once()
+
+    async def test_below_review_threshold(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given organization below review threshold
+        organization.status = Organization.Status.ACTIVE
+        organization.next_review_threshold = 10000
+
+        transaction_sum_mock = mocker.patch(
+            "polar.organization.service.transaction_service.get_transactions_sum",
+            return_value=5000,
+        )
+
+        # When
+        result = await organization_service.check_review_threshold(
+            session, organization
+        )
+
+        # Then
+        assert result.status == Organization.Status.ACTIVE
+        transaction_sum_mock.assert_called_once()
+
+    async def test_above_review_threshold(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given organization above review threshold
+        organization.status = Organization.Status.ACTIVE
+        organization.next_review_threshold = 1000
+
+        transaction_sum_mock = mocker.patch(
+            "polar.organization.service.transaction_service.get_transactions_sum",
+            return_value=5000,
+        )
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        # When
+        result = await organization_service.check_review_threshold(
+            session, organization
+        )
+
+        # Then
+        assert result.status == Organization.Status.UNDER_REVIEW
+        transaction_sum_mock.assert_called_once()
+        enqueue_job_mock.assert_called_once_with(
+            "organization.under_review", organization_id=organization.id
+        )
+
+
+@pytest.mark.asyncio
+class TestConfirmOrganizationReviewed:
+    async def test_confirm_organization_reviewed(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given organization under review
+        organization.status = Organization.Status.UNDER_REVIEW
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        # When
+        result = await organization_service.confirm_organization_reviewed(
+            session, organization, 15000
+        )
+
+        # Then
+        assert result.status == Organization.Status.ACTIVE
+        assert result.next_review_threshold == 15000
+        enqueue_job_mock.assert_called_once_with(
+            "organization.reviewed", organization_id=organization.id
+        )
+
+
+@pytest.mark.asyncio
+class TestDenyOrganization:
+    async def test_deny_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given organization active
+        organization.status = Organization.Status.ACTIVE
+
+        # When
+        result = await organization_service.deny_organization(session, organization)
+
+        # Then
+        assert result.status == Organization.Status.DENIED
+
+
+@pytest.mark.asyncio
+class TestSetOrganizationUnderReview:
+    async def test_set_organization_under_review(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Given organization active
+        organization.status = Organization.Status.ACTIVE
+
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        # When
+        result = await organization_service.set_organization_under_review(
+            session, organization
+        )
+
+        # Then
+        assert result.status == Organization.Status.UNDER_REVIEW
+        enqueue_job_mock.assert_called_once_with(
+            "organization.under_review", organization_id=organization.id
+        )
+
+
+@pytest.mark.asyncio
+class TestGetPaymentStatus:
+    async def test_all_steps_incomplete(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        # Make this a new organization (not grandfathered)
+        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
+        await save_fixture(organization)
+
+        # Organization with no products, no API keys, and no account setup
+        payment_status = await organization_service.get_payment_status(
+            session, organization
+        )
+
+        assert payment_status.payment_ready is False
+        assert len(payment_status.steps) == 3
+
+        # Check each step
+        create_product_step = next(
+            s for s in payment_status.steps if s.id == "create_product"
+        )
+        assert create_product_step.completed is False
+
+        integrate_checkout_step = next(
+            s for s in payment_status.steps if s.id == "integrate_checkout"
+        )
+        assert integrate_checkout_step.completed is False
+
+        setup_account_step = next(
+            s for s in payment_status.steps if s.id == "setup_account"
+        )
+        assert setup_account_step.completed is False
+
+    async def test_with_product_created(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        # Make this a new organization (not grandfathered)
+        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
+        await save_fixture(organization)
+
+        # Organization with a product but no API keys or account setup
+        payment_status = await organization_service.get_payment_status(
+            session, organization
+        )
+
+        assert payment_status.payment_ready is False
+
+        create_product_step = next(
+            s for s in payment_status.steps if s.id == "create_product"
+        )
+        assert create_product_step.completed is True
+
+        integrate_checkout_step = next(
+            s for s in payment_status.steps if s.id == "integrate_checkout"
+        )
+        assert integrate_checkout_step.completed is False
+
+    async def test_with_api_key_created(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Make this a new organization (not grandfathered)
+        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
+        await save_fixture(organization)
+
+        # Mock the API key count
+        mocker.patch(
+            "polar.organization_access_token.repository.OrganizationAccessTokenRepository.count_by_organization_id",
+            return_value=1,  # Has 1 API key
+        )
+
+        # Organization with an API key but no products or account setup
+        payment_status = await organization_service.get_payment_status(
+            session, organization
+        )
+
+        assert payment_status.payment_ready is False
+
+        create_product_step = next(
+            s for s in payment_status.steps if s.id == "create_product"
+        )
+        assert create_product_step.completed is False
+
+        integrate_checkout_step = next(
+            s for s in payment_status.steps if s.id == "integrate_checkout"
+        )
+        assert integrate_checkout_step.completed is True
+
+    async def test_with_account_setup_complete(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        # Make this a new organization (not grandfathered)
+        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
+
+        user.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user)
+
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        await save_fixture(account)
+
+        organization.account = account
+        organization.account_id = account.id
+        organization.details_submitted_at = datetime.now(UTC)
+        organization.details = {"about": "Test"}  # type: ignore
+        await save_fixture(organization)
+
+        # Ensure relationships are loaded
+        await session.refresh(organization, attribute_names=["account"])
+        await session.refresh(organization.account, attribute_names=["admin"])
+
+        payment_status = await organization_service.get_payment_status(
+            session, organization
+        )
+
+        # Still not payment ready without products and API key
+        assert payment_status.payment_ready is False
+
+        setup_account_step = next(
+            s for s in payment_status.steps if s.id == "setup_account"
+        )
+        assert setup_account_step.completed is True
+
+    async def test_all_steps_complete_grandfathered(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        mocker: MockerFixture,
+        user: User,
+    ) -> None:
+        # Grandfathered organization (created before cutoff)
+        organization.created_at = datetime(2025, 8, 4, 8, 0, tzinfo=UTC)
+        await save_fixture(organization)
+
+        # Mock the API key count
+        mocker.patch(
+            "polar.organization_access_token.repository.OrganizationAccessTokenRepository.count_by_organization_id",
+            return_value=1,  # Has 1 API key
+        )
+
+        payment_status = await organization_service.get_payment_status(
+            session, organization
+        )
+
+        # Should be payment ready because it's grandfathered
+        assert payment_status.payment_ready is True
+
+    async def test_all_steps_complete_new_org(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        mocker: MockerFixture,
+        user: User,
+    ) -> None:
+        # Set up as new organization
+        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
+        organization.status = Organization.Status.ACTIVE
+        organization.details_submitted_at = datetime.now(UTC)
+        organization.details = {"about": "Test"}  # type: ignore
+
+        # Set up user verification
+        user.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user)
+
+        # Set up account
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        await save_fixture(account)
+
+        organization.account = account
+        organization.account_id = account.id
+        await save_fixture(organization)
+
+        # Ensure relationships are loaded
+        await session.refresh(organization, attribute_names=["account"])
+        await session.refresh(organization.account, attribute_names=["admin"])
+
+        # Mock the API key count
+        mocker.patch(
+            "polar.organization_access_token.repository.OrganizationAccessTokenRepository.count_by_organization_id",
+            return_value=1,  # Has 1 API key
+        )
+
+        payment_status = await organization_service.get_payment_status(
+            session, organization
+        )
+
+        # Should be payment ready with all steps complete
+        assert payment_status.payment_ready is True
+        assert all(step.completed for step in payment_status.steps)
+
+    async def test_sandbox_environment_allows_payments(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Make organization not payment ready (new org without account setup)
+        organization.created_at = datetime(2025, 8, 4, 12, 0, tzinfo=UTC)
+        organization.status = Organization.Status.CREATED
+        organization.account_id = None
+        await save_fixture(organization)
+
+        # Mock environment to be sandbox
+        mocker.patch("polar.organization.service.settings.ENV", Environment.sandbox)
+
+        payment_status = await organization_service.get_payment_status(
+            session, organization
+        )
+
+        # Should be payment ready in sandbox even if account setup is incomplete
+        assert payment_status.payment_ready is True
+
+
+@pytest.mark.asyncio
+class TestSetAccount:
+    @pytest.mark.auth
+    async def test_first_account_setup_by_any_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        """Test that any member can set up the first account."""
+        # Ensure organization has no account initially
+        organization.account_id = None
+        await save_fixture(organization)
+
+        # Create an account
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="STRIPE_ACCOUNT_ID",
+        )
+        await save_fixture(account)
+
+        # First account setup should succeed
+        updated_organization = await organization_service.set_account(
+            session, auth_subject, organization, account.id
+        )
+
+        assert updated_organization.account_id == account.id
+
+    @pytest.mark.auth
+    async def test_account_change_by_owner_succeeds(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        """Test that the account owner can change the account."""
+        # Set up initial account with user as admin
+        initial_account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,  # user is the admin/owner
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="INITIAL_ACCOUNT_ID",
+        )
+        await save_fixture(initial_account)
+
+        organization.account_id = initial_account.id
+        await save_fixture(organization)
+
+        # Create a new account (also owned by the same user)
+        new_account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="NEW_ACCOUNT_ID",
+        )
+        await save_fixture(new_account)
+
+        # Owner should be able to change the account
+        updated_organization = await organization_service.set_account(
+            session, auth_subject, organization, new_account.id
+        )
+
+        assert updated_organization.account_id == new_account.id
+
+    @pytest.mark.auth
+    async def test_account_change_by_non_owner_fails(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """Test that a non-owner cannot change an existing account."""
+        # Create the original owner (different from user)
+        original_owner = User(
+            email="original@example.com",
+            avatar_url="https://avatars.githubusercontent.com/u/original?v=4",
+        )
+        await save_fixture(original_owner)
+
+        # Set up initial account with original_owner as admin
+        initial_account = Account(
+            account_type=AccountType.stripe,
+            admin_id=original_owner.id,  # original_owner is the admin/owner
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="INITIAL_ACCOUNT_ID",
+        )
+        await save_fixture(initial_account)
+
+        organization.account_id = initial_account.id
+        await save_fixture(organization)
+
+        # Create a new account (owned by user, not original owner)
+        new_account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            stripe_id="NEW_ACCOUNT_ID",
+        )
+        await save_fixture(new_account)
+
+        # Create auth subject for the user (not the owner)
+
+        user_auth_subject = AuthSubject(
+            subject=user, scopes=set(), method=AuthMethod.COOKIE
+        )
+
+        # Non-owner should not be able to change the account
+        from polar.organization.service import AccountAlreadySetByOwner
+
+        with pytest.raises(AccountAlreadySetByOwner) as exc_info:
+            await organization_service.set_account(
+                session, user_auth_subject, organization, new_account.id
+            )
+
+        assert "already been set up by the owner" in str(exc_info.value)
+        assert "prevent unintended consequences" in str(exc_info.value)

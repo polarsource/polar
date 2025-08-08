@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Select, select, update
+from sqlalchemy import Select, case, select, update
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import selectinload
 
@@ -12,22 +12,30 @@ from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
+    RepositorySortingMixin,
+    SortingClause,
 )
 from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
+    Discount,
     Order,
     OrderItem,
+    Product,
     ProductPrice,
     Subscription,
     UserOrganization,
 )
+from polar.models.order import OrderStatus
+
+from .sorting import OrderSortProperty
 
 if TYPE_CHECKING:
     from sqlalchemy.orm.strategy_options import _AbstractLoad
 
 
 class OrderRepository(
+    RepositorySortingMixin[Order, OrderSortProperty],
     RepositorySoftDeletionIDMixin[Order, UUID],
     RepositorySoftDeletionMixin[Order],
     RepositoryBase[Order],
@@ -133,3 +141,27 @@ class OrderRepository(
             .joinedload(OrderItem.product_price)
             .joinedload(ProductPrice.product),
         )
+
+    def get_sorting_clause(self, property: OrderSortProperty) -> SortingClause:
+        match property:
+            case OrderSortProperty.created_at:
+                return Order.created_at
+            case OrderSortProperty.status:
+                return case(
+                    (Order.status == OrderStatus.pending, 1),
+                    (Order.status == OrderStatus.paid, 2),
+                    (Order.status == OrderStatus.refunded, 3),
+                    (Order.status == OrderStatus.partially_refunded, 4),
+                )
+            case OrderSortProperty.invoice_number:
+                return Order.invoice_number
+            case OrderSortProperty.amount | OrderSortProperty.net_amount:
+                return Order.net_amount
+            case OrderSortProperty.customer:
+                return Customer.email
+            case OrderSortProperty.product:
+                return Product.name
+            case OrderSortProperty.discount:
+                return Discount.name
+            case OrderSortProperty.subscription:
+                return Order.subscription_id

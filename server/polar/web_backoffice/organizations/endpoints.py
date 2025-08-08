@@ -39,6 +39,7 @@ from .forms import (
     AccountStatusFormAdapter,
     ApproveAccountForm,
     UnderReviewAccountForm,
+    UpdateOrganizationDetailsForm,
     UpdateOrganizationForm,
 )
 
@@ -246,6 +247,180 @@ async def update(
                     variant="primary",
                 ):
                     text("Update")
+
+
+@router.api_route(
+    "/{id}/update_details", name="organizations:update_details", methods=["GET", "POST"]
+)
+async def update_details(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(id)
+    if not organization:
+        raise HTTPException(status_code=404)
+
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            # Get form values with proper type checking
+            about_value = data.get("about")
+            product_description_value = data.get("product_description")
+            intended_use_value = data.get("intended_use")
+
+            # Convert to string and strip if not None
+            about = str(about_value).strip() if about_value is not None else ""
+            product_description = (
+                str(product_description_value).strip()
+                if product_description_value is not None
+                else ""
+            )
+            intended_use = (
+                str(intended_use_value).strip()
+                if intended_use_value is not None
+                else ""
+            )
+
+            # Basic validation - use the form class to get proper validation
+            form_data = {
+                "about": about,
+                "product_description": product_description,
+                "intended_use": intended_use,
+            }
+            form = UpdateOrganizationDetailsForm.model_validate(form_data)
+
+            # Preserve existing details and only update the three editable fields
+            existing_details = organization.details.copy()
+            existing_details.update(
+                {
+                    "about": form.about,
+                    "product_description": form.product_description,
+                    "intended_use": form.intended_use,
+                }
+            )
+
+            organization = await org_repo.update(
+                organization, update_dict={"details": existing_details}
+            )
+            return HXRedirectResponse(
+                request, str(request.url_for("organizations:get", id=id)), 303
+            )
+
+        except ValidationError as e:
+            validation_error = e
+
+    with modal("Update Organization Details", open=True):
+        with tag.div(classes="max-h-[85vh] overflow-y-auto px-2"):
+            with tag.form(
+                method="POST",
+                action=str(request.url_for("organizations:update_details", id=id)),
+                classes="space-y-6",
+            ):
+                # Business Information Section
+                with tag.div(
+                    classes="bg-base-50 rounded-lg p-6 border border-base-200"
+                ):
+                    with tag.div(classes="mb-6"):
+                        with tag.h3(
+                            classes="text-lg font-semibold text-base-content mb-2"
+                        ):
+                            text("Edit Business Information")
+                        with tag.p(classes="text-sm text-base-content-secondary"):
+                            text(
+                                "Update the key information about your business and products"
+                            )
+
+                    with tag.div(classes="space-y-6"):
+                        # About field
+                        with tag.div(classes="form-control w-full"):
+                            with tag.label(classes="label"):
+                                with tag.span(classes="label-text font-semibold"):
+                                    text("About")
+                                    with tag.span(classes="text-error ml-1"):
+                                        text("*")
+                            with tag.textarea(
+                                id="about",
+                                name="about",
+                                rows=4,
+                                required=True,
+                                classes="textarea textarea-bordered w-full resize-none",
+                                placeholder="Brief information about you and your business",
+                            ):
+                                text(organization.details.get("about", ""))
+
+                        # Product Description field
+                        with tag.div(classes="form-control w-full"):
+                            with tag.label(classes="label"):
+                                with tag.span(classes="label-text font-semibold"):
+                                    text("Product Description")
+                                    with tag.span(classes="text-error ml-1"):
+                                        text("*")
+                            with tag.textarea(
+                                id="product_description",
+                                name="product_description",
+                                rows=4,
+                                required=True,
+                                classes="textarea textarea-bordered w-full resize-none",
+                                placeholder="Description of digital products being sold",
+                            ):
+                                text(
+                                    organization.details.get("product_description", "")
+                                )
+
+                        # Intended Use field
+                        with tag.div(classes="form-control w-full"):
+                            with tag.label(classes="label"):
+                                with tag.span(classes="label-text font-semibold"):
+                                    text("Intended Use")
+                                    with tag.span(classes="text-error ml-1"):
+                                        text("*")
+                            with tag.textarea(
+                                id="intended_use",
+                                name="intended_use",
+                                rows=3,
+                                required=True,
+                                classes="textarea textarea-bordered w-full resize-none",
+                                placeholder="How the organization will integrate and use Polar",
+                            ):
+                                text(organization.details.get("intended_use", ""))
+
+                # Display validation errors
+                if validation_error:
+                    with tag.div(classes="alert alert-error mt-6"):
+                        with tag.svg(
+                            classes="stroke-current shrink-0 h-6 w-6",
+                            fill="none",
+                            viewBox="0 0 24 24",
+                        ):
+                            with tag.path(
+                                stroke_linecap="round",
+                                stroke_linejoin="round",
+                                stroke_width="2",
+                                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z",
+                            ):
+                                pass
+                        with tag.div():
+                            with tag.span(classes="font-medium"):
+                                text("Please fix the following errors:")
+                            with tag.ul(classes="list-disc list-inside mt-2"):
+                                for error in validation_error.errors():
+                                    with tag.li():
+                                        text(f"{error['loc'][0]}: {error['msg']}")
+
+                # Action buttons
+                with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                    with tag.form(method="dialog"):
+                        with button(ghost=True):
+                            text("Cancel")
+                    with button(
+                        type="submit",
+                        variant="primary",
+                    ):
+                        text("Update Details")
 
 
 @router.api_route("/{id}/delete", name="organizations:delete", methods=["GET", "POST"])
@@ -687,8 +862,20 @@ async def get(
 
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Details")
+                        with tag.div(classes="flex justify-between items-center"):
+                            with tag.h2(classes="card-title"):
+                                text("Details")
+                            with button(
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:update_details",
+                                        id=organization.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                                variant="secondary",
+                            ):
+                                text("Edit Details")
 
                         a = "organization-details-accordion"
                         with accordion.item(a, "About"):

@@ -38,3 +38,35 @@ AccountStatusFormAdapter: TypeAdapter[AccountStatusForm] = TypeAdapter(
 class UpdateOrganizationForm(forms.BaseForm):
     name: str
     slug: str
+
+
+class UpdateOrganizationDetailsForm(forms.BaseForm):
+    """Simplified form for editing only the three key organization detail fields."""
+
+    about: Annotated[
+        str,
+        forms.TextAreaField(rows=4),
+        Field(
+            min_length=1,
+            title="About", 
+            description="Brief information about you and your business"
+        ),
+    ]
+    product_description: Annotated[
+        str,
+        forms.TextAreaField(rows=4),
+        Field(
+            min_length=1,
+            title="Product Description",
+            description="Description of digital products being sold",
+        ),
+    ]
+    intended_use: Annotated[
+        str,
+        forms.TextAreaField(rows=3),
+        Field(
+            min_length=1,
+            title="Intended Use",
+            description="How the organization will integrate and use Polar",
+        ),
+    ]

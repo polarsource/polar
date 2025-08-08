@@ -141,6 +141,74 @@ class InputField(FormField):
         yield
 
 
+class TextAreaField(FormField):
+    """A textarea input field for multi-line text.
+
+    Creates a styled textarea with DaisyUI classes, validation error display,
+    and proper labeling. Supports custom attributes like rows, cols, etc.
+    """
+
+    def __init__(self, rows: int = 3, **kwargs: Any) -> None:
+        """Args:
+        rows: Number of visible text lines. Defaults to 3.
+        **kwargs: Additional HTML attributes for the textarea element
+            (e.g., cols, maxlength, placeholder, etc.).
+        """
+        self.rows = rows
+        self.kwargs = kwargs
+
+    @contextlib.contextmanager
+    def render(
+        self,
+        id: str,
+        label: str,
+        *,
+        required: bool = False,
+        value: Any | None = None,
+        errors: list[ErrorDetails] = [],
+    ) -> Generator[None]:
+        """Render the textarea field with label and error handling.
+
+        Creates a styled textarea field with proper error states and validation
+        message display. The label is positioned above the textarea for better
+        alignment and visual hierarchy.
+
+        Args:
+            id: The HTML id and name attribute for the textarea.
+            label: The display label for the textarea field.
+            required: Whether the field is required for form submission.
+            value: The current value of the textarea field.
+            errors: List of validation errors to display below the textarea.
+
+        Yields:
+            None: Context manager yields control for the textarea field.
+        """
+        with tag.div(classes="form-control w-full"):
+            with tag.label(classes="label", **{"for": id}):
+                with tag.span(classes="label-text font-semibold"):
+                    text(label)
+                    if required:
+                        with tag.span(classes="text-error ml-1"):
+                            text("*")
+            with tag.textarea(
+                id=id,
+                name=id,
+                required=required,
+                rows=self.rows,
+                classes="textarea textarea-bordered w-full resize-none",
+                **self.kwargs,
+            ):
+                if errors:
+                    classes("textarea-error")
+                if value is not None:
+                    text(str(value))
+            for error in errors:
+                with tag.div(classes="label"):
+                    with tag.span(classes="label-text-alt text-error"):
+                        text(error["msg"])
+        yield
+
+
 class CheckboxField(FormField):
     """A checkbox input field for boolean values.
 

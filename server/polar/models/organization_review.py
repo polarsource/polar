@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, String, Text, UniqueConstraint, Uuid
+from sqlalchemy import TIMESTAMP, ForeignKey, String, Text, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -22,13 +22,13 @@ class OrganizationReview(RecordModel):
         UNCERTAIN = "UNCERTAIN"
 
     __tablename__ = "organization_reviews"
-    __table_args__ = (UniqueConstraint("organization_id"),)
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=False,
         unique=True,
+        index=True,
     )
 
     verdict: Mapped[Verdict] = mapped_column(String, nullable=False)

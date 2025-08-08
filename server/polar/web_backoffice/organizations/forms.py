@@ -48,8 +48,8 @@ class UpdateOrganizationDetailsForm(forms.BaseForm):
         forms.TextAreaField(rows=4),
         Field(
             min_length=1,
-            title="About", 
-            description="Brief information about you and your business"
+            title="About",
+            description="Brief information about you and your business",
         ),
     ]
     product_description: Annotated[

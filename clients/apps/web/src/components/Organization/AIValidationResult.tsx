@@ -86,8 +86,7 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
         title: 'Validating Organization Details...',
         message:
           'Our AI is reviewing your organization details against our acceptable use policy. This may take up to 25 seconds.',
-        icon: <Loader2 className="h-8 w-8 animate-spin text-gray-600" />,
-        colorClass: 'text-gray-600 dark:text-gray-400',
+        icon: <Loader2 className="h-8 w-8 animate-spin" />,
       }
     }
 
@@ -103,7 +102,6 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
           message:
             'Your organization details have been validated against our acceptable use policy.',
           icon: <CheckCircle className="h-8 w-8 text-gray-600" />,
-          colorClass: 'text-gray-600 dark:text-gray-400',
         }
       case 'FAIL':
       case 'UNCERTAIN':
@@ -112,7 +110,6 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
           title: 'Manual Review Required',
           message: result.reason,
           icon: <AlertTriangle className="h-8 w-8 text-gray-600" />,
-          colorClass: 'text-gray-600 dark:text-gray-400',
         }
       default:
         return null

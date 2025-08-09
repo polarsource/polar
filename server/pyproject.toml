@@ -30,7 +30,7 @@ dependencies = [
   "python-dateutil>=2.9.0.post0",
   "pydantic-extra-types>=2.9.0",
   "sqlalchemy-utils>=0.41.1",
-  "authlib<1.6.0",
+  "authlib<1.7.0",
   "standardwebhooks>=1.0.0",
   "typer>=0.12.5",
   "logfire[fastapi,httpx,sqlalchemy,redis]>=2.6.0",

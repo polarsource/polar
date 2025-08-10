@@ -1,5 +1,6 @@
 import { useUpdateDiscount } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
+import { filterDiscountUpdatePayload } from '@/utils/discount'
 import { isValidationError, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -38,8 +39,12 @@ const UpdateDiscountModalContent = ({
 
   const onSubmit = useCallback(
     async (discountUpdate: schemas['DiscountUpdate']) => {
-      const { data: discount, error } =
-        await updateDiscount.mutateAsync(discountUpdate)
+      // Filter the payload to exclude fields inappropriate for the discount type
+      const filteredUpdate = { ...discountUpdate, type: discount.type }
+      const finalUpdate = filterDiscountUpdatePayload(filteredUpdate)
+      
+      const { data: updatedDiscount, error } =
+        await updateDiscount.mutateAsync(finalUpdate)
       if (error) {
         if (isValidationError(error.detail)) {
           setValidationErrors(error.detail, setError, 1, [
@@ -53,11 +58,11 @@ const UpdateDiscountModalContent = ({
       }
       toast({
         title: 'Discount Updated',
-        description: `Discount ${discount.code} was updated successfully`,
+        description: `Discount ${updatedDiscount.code} was updated successfully`,
       })
-      onDiscountUpdated(discount)
+      onDiscountUpdated(updatedDiscount)
     },
-    [updateDiscount, onDiscountUpdated, setError],
+    [updateDiscount, onDiscountUpdated, setError, discount.type],
   )
 
   return (

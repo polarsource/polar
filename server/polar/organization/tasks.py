@@ -94,7 +94,8 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
                 notif=PartialNotification(
                     type=NotificationType.maintainer_account_under_review,
                     payload=MaintainerAccountUnderReviewNotificationPayload(
-                        account_type="organization"
+                        account_type="organization",
+                        organization_name=organization.slug,
                     ),
                 ),
             )
@@ -124,7 +125,8 @@ async def organization_reviewed(organization_id: uuid.UUID) -> None:
                 notif=PartialNotification(
                     type=NotificationType.maintainer_account_reviewed,
                     payload=MaintainerAccountReviewedNotificationPayload(
-                        account_type="organization"
+                        account_type="organization",
+                        organization_name=organization.slug,
                     ),
                 ),
             )

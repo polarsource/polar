@@ -114,10 +114,12 @@ async def test_all_notification_types() -> None:
         elif notification_type == NotificationType.maintainer_account_under_review:
             n = MaintainerAccountUnderReviewNotificationPayload(
                 account_type="Stripe Connect Express",
+                organization_name="test-org",
             )
         elif notification_type == NotificationType.maintainer_account_reviewed:
             n = MaintainerAccountReviewedNotificationPayload(
                 account_type="Stripe Connect Express",
+                organization_name="test-org",
             )
         elif notification_type == NotificationType.maintainer_new_product_sale:
             n = MaintainerNewProductSaleNotificationPayload(

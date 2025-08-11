@@ -211,12 +211,7 @@ class PayoutService:
         if await locker.is_locked(lock_name):
             raise PendingPayoutCreation(account)
 
-        async with locker.lock(
-            lock_name,
-            # Creating a payout may take lot of time because of individual Stripe transfers
-            timeout=datetime.timedelta(hours=1).total_seconds(),
-            blocking_timeout=1,
-        ):
+        async with locker.lock(lock_name, timeout=60, blocking_timeout=1):
             if account.is_under_review():
                 raise UnderReviewAccount(account)
             if not account.is_payout_ready():

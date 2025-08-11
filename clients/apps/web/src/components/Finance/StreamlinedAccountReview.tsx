@@ -1,21 +1,36 @@
 'use client'
 
+import AIValidationResult from '@/components/Organization/AIValidationResult'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Card } from '@polar-sh/ui/components/ui/card'
-import { Separator } from '@polar-sh/ui/components/ui/separator'
-import { ArrowRight, Check, CheckCircle, Shield, UserCheck } from 'lucide-react'
-import React from 'react'
+import {
+  ArrowRight,
+  Check,
+  CheckCircle,
+  Shield,
+  ShieldCheck,
+  UserCheck,
+} from 'lucide-react'
+import React, { useState } from 'react'
 
-type Step = 'review' | 'account' | 'identity' | 'complete'
+type Step = 'review' | 'validation' | 'account' | 'identity' | 'complete'
+
+type StepStatus =
+  | 'pending'
+  | 'current'
+  | 'completed'
+  | 'blocked'
+  | 'in_progress'
+  | 'failed'
 
 interface StepConfig {
   id: Step
   title: string
   description: string
   icon: React.ReactNode
-  status: 'pending' | 'current' | 'completed' | 'blocked'
+  status: StepStatus
 }
 
 interface StreamlinedAccountReviewProps {
@@ -26,42 +41,33 @@ interface StreamlinedAccountReviewProps {
   identityVerified?: boolean
   identityVerificationStatus?: string
   onDetailsSubmitted: () => void
+  onValidationCompleted: () => void
   onStartAccountSetup: () => void
   onStartIdentityVerification: () => void
 }
 
-const ProgressIndicator = ({
-  steps,
-  identityVerificationStatus,
-}: {
-  steps: StepConfig[]
-  identityVerificationStatus?: string
-}) => {
+const ProgressIndicator = ({ steps }: { steps: StepConfig[] }) => {
   // Calculate progress based on completed steps
   const calculateProgress = () => {
-    const completedSteps = steps.filter((s) => s.status === 'completed').length
-    const identityStep = steps.find((s) => s.id === 'identity')
-    const identityIndex = steps.findIndex((s) => s.id === 'identity')
-    const detailsStepCompleted = steps.find(
-      (s) => s.id === 'review' && s.status === 'completed',
-    )
-
-    if (!detailsStepCompleted) {
+    if (steps.length <= 1) {
       return 0
     }
 
-    // If identity is pending, progress should go TO the identity step
-    if (
-      detailsStepCompleted &&
-      identityStep?.status === 'current' &&
-      identityVerificationStatus === 'pending'
-    ) {
-      // Progress goes to the identity step (index 2), so (2 / 2) * 100 = 100%
-      return Math.max(0, (identityIndex / (steps.length - 1)) * 100)
+    const currentStepIndex = steps.findIndex(
+      (step) =>
+        step.status === 'current' ||
+        step.status === 'in_progress' ||
+        step.status === 'failed',
+    )
+
+    // If no step is current, it means all are completed or pending
+    if (currentStepIndex === -1) {
+      const allCompleted = steps.every((step) => step.status === 'completed')
+      return allCompleted ? 100 : 0
     }
 
-    // Normal progress based on completed steps
-    return Math.max(0, (completedSteps / (steps.length - 1)) * 100)
+    // Calculate percentage based on the segments between steps
+    return (currentStepIndex / (steps.length - 1)) * 100
   }
 
   return (
@@ -71,10 +77,9 @@ const ProgressIndicator = ({
 
       {/* Progress bar fill */}
       <div
-        className="absolute left-6 top-6 h-0.5 bg-blue-500 transition-all duration-500 ease-out"
+        className="absolute left-6 top-6 h-0.5 bg-gray-500 transition-all duration-500 ease-out dark:bg-gray-400"
         style={{
-          width: `${calculateProgress()}%`,
-          maxWidth: 'calc(100% - 48px)', // Don't extend beyond the step circles
+          width: `calc(${calculateProgress()}% - 24px)`,
         }}
       />
 
@@ -83,27 +88,21 @@ const ProgressIndicator = ({
           const isCompleted = step.status === 'completed'
           const isCurrent = step.status === 'current'
           const isBlocked = step.status === 'blocked'
-          const isPending =
-            step.id === 'identity' &&
-            identityVerificationStatus === 'pending' &&
-            isCurrent
-          const isFailed =
-            step.id === 'identity' &&
-            identityVerificationStatus === 'failed' &&
-            isCurrent
+          const isPending = step.status === 'in_progress'
+          const isFailed = step.status === 'failed'
 
           return (
             <div key={step.id} className="relative flex flex-col items-center">
               <div
                 className={`flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all duration-300 ${
                   isCompleted
-                    ? 'border-green-500 bg-green-500 text-white'
+                    ? 'border-gray-500 bg-gray-500 text-white dark:border-gray-400 dark:bg-gray-400 dark:text-gray-950'
                     : isPending
-                      ? 'border-blue-500 bg-blue-500 text-white'
+                      ? 'border-blue-500 bg-blue-400 text-white'
                       : isFailed
                         ? 'border-red-500 bg-red-500 text-white'
                         : isCurrent
-                          ? 'border-blue-500 bg-blue-500 text-white'
+                          ? 'border-blue-500 bg-blue-400 text-white'
                           : isBlocked
                             ? 'border-gray-300 bg-gray-100 text-gray-400 dark:border-gray-600 dark:bg-gray-800'
                             : 'border-gray-300 bg-white text-gray-400 dark:border-gray-600 dark:bg-gray-900'
@@ -144,13 +143,13 @@ const ProgressIndicator = ({
                 <p
                   className={`text-xs font-medium ${
                     isCompleted
-                      ? 'text-green-600 dark:text-green-400'
+                      ? 'text-gray-600 dark:text-gray-300'
                       : isPending
-                        ? 'text-blue-600 dark:text-blue-400'
+                        ? 'text-gray-600 dark:text-gray-300'
                         : isFailed
                           ? 'text-red-600 dark:text-red-400'
                           : isCurrent
-                            ? 'text-blue-600 dark:text-blue-400'
+                            ? 'text-gray-600 dark:text-gray-300'
                             : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
@@ -181,13 +180,50 @@ export default function StreamlinedAccountReview({
   identityVerified,
   identityVerificationStatus,
   onDetailsSubmitted,
+  onValidationCompleted,
   onStartAccountSetup,
   onStartIdentityVerification,
 }: StreamlinedAccountReviewProps) {
+  const [validationCompleted, setValidationCompleted] = useState(
+    organization.details_submitted_at !== null,
+  )
+
+  const handleDetailsSubmitted = () => {
+    onDetailsSubmitted()
+  }
+
+  const handleValidationCompleted = () => {
+    setValidationCompleted(true)
+    onValidationCompleted()
+  }
+
   // Determine completion status for each step
   const isReviewCompleted = !!organization.details_submitted_at
+  const isValidationCompleted = validationCompleted
   const isAccountCompleted = !!organizationAccount
   const isIdentityCompleted = !!identityVerified
+
+  const getStepStatus = (
+    stepId: Step,
+    isCompleted: boolean,
+    currentStep: Step,
+    prerequisiteCompleted?: boolean,
+  ): StepStatus => {
+    if (isCompleted) return 'completed'
+    if (prerequisiteCompleted !== undefined && !prerequisiteCompleted)
+      return 'blocked'
+    if (currentStep === stepId) {
+      if (stepId === 'identity') {
+        if (identityVerificationStatus === 'pending') {
+          return 'in_progress'
+        } else if (identityVerificationStatus === 'failed') {
+          return 'failed'
+        }
+      }
+      return 'current'
+    }
+    return 'pending'
+  }
 
   const steps: StepConfig[] = [
     {
@@ -195,24 +231,31 @@ export default function StreamlinedAccountReview({
       title: 'Review',
       description: 'Details & compliance',
       icon: <Shield className="h-5 w-5" />,
-      status: isReviewCompleted
-        ? 'completed'
-        : currentStep === 'review'
-          ? 'current'
-          : 'pending',
+      status: getStepStatus('review', isReviewCompleted, currentStep),
+    },
+    {
+      id: 'validation' as Step,
+      title: 'Validation',
+      description: 'Compliance check',
+      icon: <ShieldCheck className="h-5 w-5" />,
+      status: getStepStatus(
+        'validation',
+        isValidationCompleted,
+        currentStep,
+        isReviewCompleted,
+      ),
     },
     {
       id: 'account' as Step,
       title: 'Account',
       description: 'Payout setup',
       icon: <UserCheck className="h-5 w-5" />,
-      status: isAccountCompleted
-        ? 'completed'
-        : !isReviewCompleted
-          ? 'blocked'
-          : currentStep === 'account'
-            ? 'current'
-            : 'pending',
+      status: getStepStatus(
+        'account',
+        isAccountCompleted,
+        currentStep,
+        isValidationCompleted,
+      ),
     },
     {
       id: 'identity' as Step,
@@ -224,20 +267,19 @@ export default function StreamlinedAccountReview({
             ? 'Failed'
             : 'Verification',
       icon: <CheckCircle className="h-5 w-5" />,
-      status: isIdentityCompleted
-        ? 'completed'
-        : !isAccountCompleted
-          ? 'blocked'
-          : currentStep === 'identity'
-            ? 'current'
-            : 'pending',
+      status: getStepStatus(
+        'identity',
+        isIdentityCompleted,
+        currentStep,
+        isAccountCompleted,
+      ),
     },
   ]
 
   const currentStepConfig = steps.find((s) => s.id === currentStep)
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="mx-auto w-full max-w-4xl space-y-8">
       {/* Header */}
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-semibold">Set up your payout account</h1>
@@ -248,16 +290,13 @@ export default function StreamlinedAccountReview({
 
       {/* Progress indicator */}
       <div className="px-8">
-        <ProgressIndicator
-          steps={steps}
-          identityVerificationStatus={identityVerificationStatus}
-        />
+        <ProgressIndicator steps={steps} />
       </div>
 
       {/* Current step content */}
       <div className="space-y-6">
         {currentStep === 'review' && requireDetails && (
-          <div className="mx-auto max-w-4xl space-y-8">
+          <div className="space-y-8">
             {/* Header */}
             <div className="space-y-3 text-center">
               <div className="flex items-center justify-center space-x-3">
@@ -273,7 +312,29 @@ export default function StreamlinedAccountReview({
             <OrganizationProfileSettings
               organization={organization}
               kyc={true}
-              onSubmitted={onDetailsSubmitted}
+              onSubmitted={handleDetailsSubmitted}
+            />
+          </div>
+        )}
+
+        {currentStep === 'validation' && (
+          <div className="space-y-8">
+            {/* Header */}
+            <div className="space-y-3 text-center">
+              <div className="flex items-center justify-center space-x-3">
+                <h1 className="text-2xl font-semibold">Compliance Check</h1>
+              </div>
+              <p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-gray-400">
+                Our AI is reviewing your organization details against our
+                acceptable use policy.
+              </p>
+            </div>
+
+            {/* AI Validation Results */}
+            <AIValidationResult
+              organization={organization}
+              autoValidate={true}
+              onValidationCompleted={handleValidationCompleted}
             />
           </div>
         )}
@@ -281,7 +342,6 @@ export default function StreamlinedAccountReview({
         {currentStep === 'account' && (
           <StepCard>
             <div className="space-y-4">
-              <Separator className="my-6" />
               <div className="space-y-4 text-center">
                 <div className="rounded-lg bg-gray-50 p-8 dark:bg-gray-800">
                   <h4 className="mb-2 font-medium">Create Payout Account</h4>
@@ -306,22 +366,7 @@ export default function StreamlinedAccountReview({
                 <div className="rounded-lg bg-gray-50 p-8 dark:bg-gray-800">
                   {identityVerificationStatus === 'pending' ? (
                     <>
-                      <div className="mb-4 flex justify-center">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
-                          <svg
-                            className="h-4 w-4 text-blue-600 dark:text-blue-400"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                      <h4 className="mb-2 font-medium text-blue-600 dark:text-blue-400">
+                      <h4 className="mb-2 font-medium">
                         Identity Verification Pending
                       </h4>
                       <p className="mx-auto mb-6 max-w-md text-sm text-gray-600 dark:text-gray-400">
@@ -334,35 +379,13 @@ export default function StreamlinedAccountReview({
                     </>
                   ) : identityVerificationStatus === 'verified' ? (
                     <>
-                      <div className="mb-4 flex justify-center">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-                          <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-                        </div>
-                      </div>
-                      <h4 className="mb-2 font-medium text-green-600 dark:text-green-400">
-                        Identity Verified
-                      </h4>
+                      <h4 className="mb-2 font-medium">Identity Verified</h4>
                       <p className="mx-auto text-sm text-gray-600 dark:text-gray-400">
                         Your identity has been successfully verified.
                       </p>
                     </>
                   ) : identityVerificationStatus === 'failed' ? (
                     <>
-                      <div className="mb-4 flex justify-center">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-                          <svg
-                            className="h-4 w-4 text-red-600 dark:text-red-400"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </div>
-                      </div>
                       <h4 className="mb-2 font-medium text-red-600 dark:text-red-400">
                         Identity Verification Failed
                       </h4>
@@ -374,7 +397,7 @@ export default function StreamlinedAccountReview({
                       <Button
                         onClick={onStartIdentityVerification}
                         className="w-auto"
-                        variant="destructive"
+                        variant="default"
                       >
                         Try Again
                         <ArrowRight className="ml-2 h-4 w-4" />
@@ -383,8 +406,8 @@ export default function StreamlinedAccountReview({
                   ) : (
                     <>
                       <div className="mb-4 flex justify-center">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
-                          <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-900/30">
+                          <CheckCircle className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                         </div>
                       </div>
                       <h4 className="mb-2 font-medium">Verify Your Identity</h4>

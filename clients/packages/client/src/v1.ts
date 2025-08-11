@@ -572,8 +572,6 @@ export interface paths {
         /**
          * Get Organization Payment Status
          * @description Get payment status and onboarding steps for an organization.
-         *
-         *     **Scopes**: `organizations:read` `organizations:write`
          */
         get: operations["organizations:get_payment_status"];
         put?: never;
@@ -622,6 +620,28 @@ export interface paths {
          *     **Scopes**: `organizations:write`
          */
         post: operations["organizations:invite_member"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organizations/{id}/ai-validation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate Organization Details with AI
+         * @description Validate organization details using AI compliance check.
+         *
+         *     **Scopes**: `organizations:write`
+         */
+        post: operations["organizations:validate_with_ai"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12825,22 +12845,34 @@ export interface components {
             orders: number;
             /** Revenue */
             revenue: number;
+            /** Net Revenue */
+            net_revenue: number;
             /** Cumulative Revenue */
             cumulative_revenue: number;
+            /** Net Cumulative Revenue */
+            net_cumulative_revenue: number;
             /** Average Order Value */
             average_order_value: number;
+            /** Net Average Order Value */
+            net_average_order_value: number;
             /** One Time Products */
             one_time_products: number;
             /** One Time Products Revenue */
             one_time_products_revenue: number;
+            /** One Time Products Net Revenue */
+            one_time_products_net_revenue: number;
             /** New Subscriptions */
             new_subscriptions: number;
             /** New Subscriptions Revenue */
             new_subscriptions_revenue: number;
+            /** New Subscriptions Net Revenue */
+            new_subscriptions_net_revenue: number;
             /** Renewed Subscriptions */
             renewed_subscriptions: number;
             /** Renewed Subscriptions Revenue */
             renewed_subscriptions_revenue: number;
+            /** Renewed Subscriptions Net Revenue */
+            renewed_subscriptions_net_revenue: number;
             /** Active Subscriptions */
             active_subscriptions: number;
             /** Monthly Recurring Revenue */
@@ -12863,14 +12895,20 @@ export interface components {
         Metrics: {
             orders: components["schemas"]["Metric"];
             revenue: components["schemas"]["Metric"];
+            net_revenue: components["schemas"]["Metric"];
             cumulative_revenue: components["schemas"]["Metric"];
+            net_cumulative_revenue: components["schemas"]["Metric"];
             average_order_value: components["schemas"]["Metric"];
+            net_average_order_value: components["schemas"]["Metric"];
             one_time_products: components["schemas"]["Metric"];
             one_time_products_revenue: components["schemas"]["Metric"];
+            one_time_products_net_revenue: components["schemas"]["Metric"];
             new_subscriptions: components["schemas"]["Metric"];
             new_subscriptions_revenue: components["schemas"]["Metric"];
+            new_subscriptions_net_revenue: components["schemas"]["Metric"];
             renewed_subscriptions: components["schemas"]["Metric"];
             renewed_subscriptions_revenue: components["schemas"]["Metric"];
+            renewed_subscriptions_net_revenue: components["schemas"]["Metric"];
             active_subscriptions: components["schemas"]["Metric"];
             monthly_recurring_revenue: components["schemas"]["Metric"];
             committed_monthly_recurring_revenue: components["schemas"]["Metric"];
@@ -12940,22 +12978,34 @@ export interface components {
             orders: number;
             /** Revenue */
             revenue: number;
+            /** Net Revenue */
+            net_revenue: number;
             /** Cumulative Revenue */
             cumulative_revenue: number;
+            /** Net Cumulative Revenue */
+            net_cumulative_revenue: number;
             /** Average Order Value */
             average_order_value: number;
+            /** Net Average Order Value */
+            net_average_order_value: number;
             /** One Time Products */
             one_time_products: number;
             /** One Time Products Revenue */
             one_time_products_revenue: number;
+            /** One Time Products Net Revenue */
+            one_time_products_net_revenue: number;
             /** New Subscriptions */
             new_subscriptions: number;
             /** New Subscriptions Revenue */
             new_subscriptions_revenue: number;
+            /** New Subscriptions Net Revenue */
+            new_subscriptions_net_revenue: number;
             /** Renewed Subscriptions */
             renewed_subscriptions: number;
             /** Renewed Subscriptions Revenue */
             renewed_subscriptions_revenue: number;
+            /** Renewed Subscriptions Net Revenue */
+            renewed_subscriptions_net_revenue: number;
             /** Active Subscriptions */
             active_subscriptions: number;
             /** Monthly Recurring Revenue */
@@ -14211,6 +14261,26 @@ export interface components {
             feature_settings?: components["schemas"]["OrganizationFeatureSettings"] | null;
             subscription_settings?: components["schemas"]["OrganizationSubscriptionSettings"] | null;
             notification_settings?: components["schemas"]["OrganizationNotificationSettings"] | null;
+        };
+        /** OrganizationValidationResult */
+        OrganizationValidationResult: {
+            /**
+             * Reason
+             * @description A 1 or 3 line explanation of the verdict and the reasoning behind it. The reason will be shown to our customer.
+             */
+            reason: string;
+            /**
+             * Verdict
+             * @description PASS | FAIL | UNCERTAIN - indicates compliance status.
+             * @enum {string}
+             */
+            verdict: "PASS" | "FAIL" | "UNCERTAIN";
+            /**
+             * Timed Out
+             * @description Whether the validation timed out
+             * @default false
+             */
+            timed_out: boolean;
         };
         /** Pagination */
         Pagination: {
@@ -18237,6 +18307,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrganizationMember"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "organizations:validate_with_ai": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Organization validated with AI. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationValidationResult"];
+                };
+            };
+            /** @description Organization not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
                 };
             };
             /** @description Validation Error */
@@ -25482,6 +25592,7 @@ export const organizationAvatarFileReadServiceValues: ReadonlyArray<components["
 export const organizationDetailsSwitching_fromValues: ReadonlyArray<components["schemas"]["OrganizationDetails"]["switching_from"]> = ["paddle", "lemon_squeezy", "gumroad", "stripe", "other"];
 export const organizationSocialPlatformsValues: ReadonlyArray<components["schemas"]["OrganizationSocialPlatforms"]> = ["x", "github", "facebook", "instagram", "youtube", "tiktok", "linkedin", "other"];
 export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationSortProperty"]> = ["created_at", "-created_at", "slug", "-slug", "name", "-name"];
+export const organizationValidationResultVerdictValues: ReadonlyArray<components["schemas"]["OrganizationValidationResult"]["verdict"]> = ["PASS", "FAIL", "UNCERTAIN"];
 export const paymentProcessorValues: ReadonlyArray<components["schemas"]["PaymentProcessor"]> = ["stripe"];
 export const paymentSortPropertyValues: ReadonlyArray<components["schemas"]["PaymentSortProperty"]> = ["created_at", "-created_at", "status", "-status", "amount", "-amount", "method", "-method"];
 export const paymentStatusValues: ReadonlyArray<components["schemas"]["PaymentStatus"]> = ["pending", "succeeded", "failed"];

@@ -26,6 +26,7 @@ from polar.kit.extensions.sqlalchemy import StringEnum
 from .account import Account
 
 if TYPE_CHECKING:
+    from .organization_review import OrganizationReview
     from .product import Product
 
 
@@ -227,6 +228,16 @@ class Organization(RecordModel):
                 ")"
             ),
             viewonly=True,
+        )
+
+    @declared_attr
+    def review(cls) -> Mapped["OrganizationReview | None"]:
+        return relationship(
+            "OrganizationReview",
+            lazy="raise",
+            back_populates="organization",
+            cascade="delete, delete-orphan",
+            uselist=False,  # This makes it a one-to-one relationship
         )
 
     def is_blocked(self) -> bool:

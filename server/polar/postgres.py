@@ -25,7 +25,7 @@ def create_async_engine(process_name: ProcessName) -> AsyncEngine:
     return _create_async_engine(
         dsn=str(settings.get_postgres_dsn("asyncpg")),
         application_name=f"{settings.ENV.value}.{process_name}",
-        debug=settings.DEBUG,
+        debug=settings.SQLALCHEMY_DEBUG,
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
         command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
@@ -36,7 +36,7 @@ def create_sync_engine(process_name: ProcessName) -> Engine:
     return _create_sync_engine(
         dsn=str(settings.get_postgres_dsn("psycopg2")),
         application_name=f"{settings.ENV.value}.{process_name}",
-        debug=settings.DEBUG,
+        debug=settings.SQLALCHEMY_DEBUG,
         pool_size=settings.DATABASE_SYNC_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
         command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,

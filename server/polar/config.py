@@ -47,7 +47,8 @@ file_extension = ".exe" if os.name == "nt" else ""
 
 class Settings(BaseSettings):
     ENV: Environment = Environment.development
-    DEBUG: bool = False
+    SQLALCHEMY_DEBUG: bool = False
+    POSTHOG_DEBUG: bool = False
     LOG_LEVEL: str = "DEBUG"
     TESTING: bool = False
 
@@ -158,6 +159,10 @@ class Settings(BaseSettings):
     # Google
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
+
+    # OpenAI
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "o4-mini-2025-04-16"
 
     # Stripe
     STRIPE_SECRET_KEY: str = ""

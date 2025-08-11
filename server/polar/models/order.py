@@ -92,6 +92,8 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     refunded_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     refunded_tax_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
+    platform_fee_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
     billing_name: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )
@@ -222,6 +224,15 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @classmethod
     def _total_amount_expression(cls) -> ColumnElement[int]:
         return cls.net_amount + cls.tax_amount
+
+    @hybrid_property
+    def payout_amount(self) -> int:
+        return self.net_amount - self.platform_fee_amount - self.refunded_amount
+
+    @payout_amount.inplace.expression
+    @classmethod
+    def _payout_amount_expression(cls) -> ColumnElement[int]:
+        return cls.net_amount - cls.platform_fee_amount - cls.refunded_amount
 
     @property
     def taxed(self) -> int:

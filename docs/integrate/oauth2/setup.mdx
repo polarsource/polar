@@ -11,7 +11,10 @@ Here are the required fields:
 
 * *Application Name*: the name of the application that'll be shown to the final users.
 * *Client Type*: the type of client you are creating. [Read more](#public-clients)
-* *Redirect URIs*: for security reasons, you need to declare your application URL where the users will be redirected after granting access to their data. **HTTPS URL are required unless the hostname is** `localhost`.
+* *Redirect URIs*: for security reasons, you need to declare your application URL where the users will be redirected after granting access to their data.
+  <Note>
+  When configuring your OAuth client, you must use an `https://` URL for security reasons. We block `http://` URLs, except when the hostname is `localhost`. This exception allows you to use `http://localhost` for convenient testing in development mode.
+  </Note>
 * *Scopes*: the list of scopes your app will be able to ask for. To improve privacy and security, select only the scopes you really need for your application.
 * *Homepage URL*: the URL of your application. It'll be shown to the final users on the authorization page.
 

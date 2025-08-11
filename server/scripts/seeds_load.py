@@ -1,7 +1,6 @@
 import asyncio
 import random
 from typing import Any, Literal, NotRequired, TypedDict
-from uuid import UUID
 
 import dramatiq
 import typer
@@ -15,10 +14,12 @@ from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesC
 
 # Import tasks to register all dramatiq actors
 from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysCreate
+from polar.checkout_link.schemas import CheckoutLinkCreateProducts
+from polar.checkout_link.service import checkout_link as checkout_link_service
 from polar.config import settings
 from polar.customer.schemas.customer import CustomerCreate
 from polar.customer.service import customer as customer_service
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.kit.db.postgres import create_async_engine
 from polar.models.benefit import BenefitType
 from polar.models.file import File, FileServiceTypes
@@ -433,6 +434,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             org_benefits[key] = benefit
 
         # Create products for organization
+        org_products = []
         for product_data in org_data.get("products", []):
             # Create price for product
             price_create = ProductPriceFixedCreate(
@@ -454,6 +456,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 create_schema=product_create,
                 auth_subject=auth_subject,
             )
+            org_products.append(product)
 
             selected_benefits = product_data.get("benefits", [])
             for benefit_key in selected_benefits:
@@ -463,6 +466,20 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     benefits=[org_benefits[key].id for key in selected_benefits],
                     auth_subject=auth_subject,
                 )
+
+        # Create CheckoutLink with all products
+        if org_products:
+            checkout_link_create = CheckoutLinkCreateProducts(
+                payment_processor=PaymentProcessor.stripe,
+                products=[product.id for product in org_products],
+                label=f"{org_data['name']} store",
+                allow_discount_codes=True,
+            )
+            await checkout_link_service.create(
+                session=session,
+                checkout_link_create=checkout_link_create,
+                auth_subject=auth_subject,
+            )
 
         # Create customers for organization
         num_customers = random.randint(0, 5)

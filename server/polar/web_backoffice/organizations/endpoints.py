@@ -22,6 +22,7 @@ from polar.models import (
     Order,
     Organization,
     OrganizationAccessToken,
+    OrganizationReview,
     Payment,
     PersonalAccessToken,
     Product,
@@ -48,6 +49,7 @@ from polar.user_organization.service import (
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.web_backoffice.components.account_review._ai_review import AIReviewVerdict
 from polar.web_backoffice.components.account_review._payment_verdict import (
     PaymentVerdict,
 )
@@ -910,7 +912,12 @@ async def get(
 ) -> Any:
     repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(
-        id, options=(joinedload(Organization.account),), include_blocked=True
+        id, 
+        options=(
+            joinedload(Organization.account),
+            joinedload(Organization.review),
+        ), 
+        include_blocked=True
     )
 
     if organization is None:
@@ -958,6 +965,9 @@ async def get(
         account,
         validation_error,
     )
+    
+    # Create AI review verdict
+    ai_review_verdict = AIReviewVerdict(organization.review)
 
     with layout(
         request,
@@ -1208,7 +1218,11 @@ async def get(
                     with organization_badge(organization):
                         pass
 
-                with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
+                with tag.div(classes="grid grid-cols-1 lg:grid-cols-3 gap-4"):
+                    with tag.div(classes="card card-border w-full shadow-sm"):
+                        with ai_review_verdict.render():
+                            pass
+
                     with tag.div(classes="card card-border w-full shadow-sm"):
                         with setup_verdict.render():
                             pass

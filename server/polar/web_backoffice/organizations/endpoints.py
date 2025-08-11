@@ -1,7 +1,6 @@
 import contextlib
 import uuid
 from collections.abc import Generator
-from datetime import datetime, timedelta
 from typing import Annotated, Any
 
 from babel.numbers import format_currency
@@ -23,6 +22,7 @@ from polar.models import (
     Order,
     Organization,
     OrganizationAccessToken,
+    Payment,
     PersonalAccessToken,
     Product,
     ProductBenefit,
@@ -138,8 +138,7 @@ class AccountTypeDescriptionListAttrItem(
 async def get_payment_statistics(
     session: AsyncSession, organization_id: UUID4
 ) -> dict[str, Any]:
-    """Get payment statistics for the last 3 months."""
-    three_months_ago = datetime.utcnow() - timedelta(days=90)
+    """Get all-time payment statistics for an organization."""
 
     payment_repo = PaymentTransactionRepository.from_session(session)
 
@@ -163,27 +162,48 @@ async def get_payment_statistics(
 
     account_id = org_account_row[0]
 
-    # Get payment transactions for the organization in the last 3 months
-    statement = payment_repo.get_base_statement().where(
-        Transaction.account_id == account_id,
-        Transaction.created_at >= three_months_ago,
+    # Debug: Let's also get a count of ALL transactions for this account to verify
+    all_transactions_result = await session.execute(
+        select(func.count(Transaction.id)).where(Transaction.account_id == account_id)
+    )
+    all_transactions_count = all_transactions_result.scalar() or 0
+
+    # Debug: Let's see what transaction types exist for this account
+    transaction_types_result = await session.execute(
+        select(Transaction.type, func.count(Transaction.id))
+        .where(Transaction.account_id == account_id)
+        .group_by(Transaction.type)
+    )
+    transaction_types = {row[0]: row[1] for row in transaction_types_result}
+
+    # Get succeeded customer payments from the Payment model
+    from polar.models.payment import PaymentStatus
+    from polar.payment.repository import PaymentRepository
+    
+    payment_repo = PaymentRepository.from_session(session)
+    succeeded_payments_statement = payment_repo.get_base_statement().where(
+        Payment.organization_id == organization_id,
+        Payment.status == PaymentStatus.succeeded
     )
 
-    # Get all risk scores
+    # Get all risk scores from succeeded payments
     risk_scores_result = await session.execute(
-        statement.where(Transaction.risk_score.isnot(None)).with_only_columns(
-            Transaction.risk_score
+        succeeded_payments_statement.where(Payment.risk_score.isnot(None)).with_only_columns(
+            Payment.risk_score
         )
     )
     risk_scores = [row[0] for row in risk_scores_result if row[0] is not None]
 
-    # Get count of payments and total amount
+    # Get count of succeeded payments and total amount
     payment_stats_result = await session.execute(
-        statement.with_only_columns(
-            func.count(Transaction.id), func.coalesce(func.sum(Transaction.amount), 0)
+        succeeded_payments_statement.with_only_columns(
+            func.count(Payment.id), func.coalesce(func.sum(Payment.amount), 0)
         )
     )
-    payment_count, total_payment_amount = payment_stats_result.first() or (0, 0)
+    transaction_count, total_transaction_amount = payment_stats_result.first() or (
+        0,
+        0,
+    )
 
     # Calculate percentiles
     p50_risk = 0
@@ -222,13 +242,11 @@ async def get_payment_statistics(
         .join(Customer, Order.customer_id == Customer.id)
         .where(
             Customer.organization_id == organization_id,
-            Refund.created_at >= three_months_ago,
         )
     )
     refunds_count, refunds_amount = refunds_result.first() or (0, 0)
 
-    # Get current account balance (simplified - would need proper balance calculation)
-    # For now, using the sum of transactions minus refunds as a rough estimate
+    # Get total account balance from all transaction types (not just payments)
     balance_result = await session.execute(
         select(func.coalesce(func.sum(Transaction.amount), 0)).where(
             Transaction.account_id == account_id,
@@ -236,15 +254,29 @@ async def get_payment_statistics(
     )
     total_balance = (balance_result.scalar() or 0) - refunds_amount
 
+    # Debug info - let's see what's happening
+    import logging
+
+    logger = logging.getLogger(__name__)
+    logger.info(f"Payment Stats - Org: {organization_id}, Account: {account_id}")
+    logger.info(f"Transaction types in account: {transaction_types}")
+    logger.info(
+        f"All transactions: {all_transactions_count}, Payment transactions: {transaction_count}"
+    )
+    logger.info(
+        f"Payment amount: {total_transaction_amount}, Refunds: {refunds_count}/{refunds_amount}"
+    )
+    logger.info(f"Total balance: {total_balance}")
+
     return {
-        "payment_count": payment_count,
+        "payment_count": transaction_count,
         "p50_risk": p50_risk,
         "p90_risk": p90_risk,
         "risk_level": risk_level,
         "refunds_count": refunds_count,
         "total_balance": total_balance,
         "refunds_amount": refunds_amount,
-        "total_payment_amount": total_payment_amount,
+        "total_payment_amount": total_transaction_amount,
     }
 
 

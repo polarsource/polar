@@ -76,7 +76,7 @@ class PaymentVerdict:
     def assessment_text(self) -> str:
         """Get detailed payment assessment text."""
         if self.payment_count == 0:
-            return "No payment data available for the last 3 months."
+            return "No payment data available."
 
         risk_desc = (
             "low"
@@ -114,7 +114,7 @@ class PaymentVerdict:
         """Render the payment verdict component."""
         with tag.div(classes="card-body"):
             with tag.h2(classes="card-title"):
-                text("Payments (Last 3 Months)")
+                text("Payments")
 
             # Payment metrics
             with tag.div(classes="space-y-2 mt-4"):
@@ -174,8 +174,17 @@ class PaymentVerdict:
                     with tag.div(
                         classes="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50"
                     ):
-                        with tag.span(classes="text-sm font-medium text-gray-700"):
-                            text("Total Balance")
+                        with tag.div(classes="flex items-center gap-1"):
+                            with tag.span(
+                                classes="text-sm font-medium text-gray-700",
+                                title="Net balance from all account transactions (excludes processor fees and refunds)"
+                            ):
+                                text("Total Balance")
+                            with tag.span(
+                                classes="text-gray-400 cursor-help text-xs",
+                                title="Net balance from all account transactions (excludes processor fees and refunds)"
+                            ):
+                                text("ⓘ")
                         with tag.span(classes=f"text-sm font-bold {balance_color}"):
                             text(self._format_currency(self.total_balance))
 

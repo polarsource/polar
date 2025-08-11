@@ -26,7 +26,7 @@
     "pyright": {
       "settings": {
         "python": {
-          "pythonPath": ".venv/bin/python"
+          "pythonPath": "server/.venv/bin/python"
         }
       }
     }

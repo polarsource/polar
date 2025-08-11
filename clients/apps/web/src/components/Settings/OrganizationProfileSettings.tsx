@@ -385,7 +385,7 @@ export const OrganizationDetailsForm: React.FC<
 
             <div>
               <label className="mb-2 block text-sm font-medium">
-                What do you sell? Include type and features that are granted
+                What do you sell? Include type and features that are granted *
               </label>
               <p className="mb-2 text-xs text-gray-600">
                 Tell us: product type (SaaS, course, service, etc.) and main
@@ -502,7 +502,7 @@ export const OrganizationDetailsForm: React.FC<
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
                 <label className="mb-2 block text-sm font-medium">
-                  Expected annual revenue
+                  Expected annual revenue *
                 </label>
                 <FormField
                   control={control}

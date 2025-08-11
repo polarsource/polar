@@ -9,8 +9,9 @@ from tagflow import tag, text
 class SetupVerdict:
     """Component for evaluating organization integration setup status."""
 
-    def __init__(self, data: dict[str, Any]) -> None:
+    def __init__(self, data: dict[str, Any], organization: Any = None) -> None:
         self.data = data
+        self.organization = organization
 
     @property
     def verdict_text(self) -> str:
@@ -39,7 +40,7 @@ class SetupVerdict:
         """Get assessment explanation text."""
         score = self.data.get("setup_score", 0)
         missing_items = []
-        
+
         if not self.data.get("domain_validation", False):
             missing_items.append("domain validation")
         if not self.data.get("benefits_configured", False):
@@ -79,12 +80,16 @@ class SetupVerdict:
             return "red"  # Incomplete setup
 
     @contextlib.contextmanager
-    def _render_detail_item(self, title: str, status: bool, count: int = 0, clickable: bool = False) -> Generator[None]:
+    def _render_detail_item(
+        self, title: str, status: bool, count: int = 0, clickable: bool = False
+    ) -> Generator[None]:
         """Render a detail item with status indicator."""
-        classes = "flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50"
+        classes = (
+            "flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50"
+        )
         if clickable:
             classes += " cursor-pointer"
-            
+
         with tag.div(classes=classes):
             with tag.div(classes="flex items-center gap-2"):
                 if status:
@@ -104,66 +109,46 @@ class SetupVerdict:
     def render(self) -> Generator[None]:
         """Render the setup verdict component."""
         with tag.div(classes="card-body"):
-            with tag.h2(classes="card-title flex items-center gap-2"):
+            with tag.h2(classes="card-title"):
                 text("Setup")
-                # Risk indicator circle
-                with tag.div(classes=f"w-3 h-3 rounded-full bg-{self.risk_level}-500"):
-                    pass
-                # Verdict text
-                with tag.span(
-                    classes=f"px-2 py-1 text-xs font-medium rounded {self.verdict_classes(self.verdict_text)}"
-                ):
-                    text(self.verdict_text)
 
             # Setup details
             with tag.div(classes="space-y-2 mt-4"):
                 # Checkout links
                 checkout_count = self.data.get("checkout_links_count", 0)
                 with self._render_detail_item(
-                    "Checkout Links", 
-                    checkout_count > 0, 
-                    checkout_count, 
-                    clickable=True
+                    "Checkout Links", checkout_count > 0, checkout_count, clickable=True
                 ):
                     pass
 
                 # Webhooks
                 webhooks_count = self.data.get("webhooks_count", 0)
                 with self._render_detail_item(
-                    "Webhook Endpoints", 
-                    webhooks_count > 0, 
+                    "Webhook Endpoints",
+                    webhooks_count > 0,
                     webhooks_count,
-                    clickable=True
+                    clickable=True,
                 ):
                     pass
 
                 # API Keys
                 api_keys_count = self.data.get("api_keys_count", 0)
                 with self._render_detail_item(
-                    "API Keys", 
-                    api_keys_count > 0, 
-                    api_keys_count,
-                    clickable=True
+                    "API Keys", api_keys_count > 0, api_keys_count, clickable=True
                 ):
                     pass
 
                 # Products
                 products_count = self.data.get("products_count", 0)
                 with self._render_detail_item(
-                    "Products", 
-                    products_count > 0, 
-                    products_count,
-                    clickable=True
+                    "Products", products_count > 0, products_count, clickable=True
                 ):
                     pass
 
                 # Benefits
                 benefits_count = self.data.get("benefits_count", 0)
                 with self._render_detail_item(
-                    "Benefits", 
-                    benefits_count > 0, 
-                    benefits_count,
-                    clickable=True
+                    "Benefits", benefits_count > 0, benefits_count, clickable=True
                 ):
                     pass
 
@@ -173,33 +158,25 @@ class SetupVerdict:
                     # Domain validation
                     domain_match = self.data.get("domain_validation", False)
                     with self._render_detail_item(
-                        "Success URL Domain Match", 
-                        domain_match
+                        "Success URL Domain Match", domain_match
                     ):
                         pass
 
                     # User verification
                     user_verified = self.data.get("user_verified", False)
                     with self._render_detail_item(
-                        "User Verified in Stripe", 
-                        user_verified
+                        "User Verified in Stripe", user_verified
                     ):
                         pass
 
                     # Account setup
-                    account_enabled = self.data.get("account_charges_enabled", False) and self.data.get("account_payouts_enabled", False)
+                    account_enabled = self.data.get(
+                        "account_charges_enabled", False
+                    ) and self.data.get("account_payouts_enabled", False)
                     with self._render_detail_item(
-                        "Account Charges & Payouts Enabled", 
-                        account_enabled
+                        "Account Charges & Payouts Enabled", account_enabled
                     ):
                         pass
-
-            # Assessment explanation
-            with tag.div(classes="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded"):
-                with tag.div(classes="text-sm font-medium mb-1"):
-                    text("Assessment Details:")
-                with tag.p(classes="text-sm text-gray-700 dark:text-gray-300"):
-                    text(self.assessment_text)
 
         yield
 

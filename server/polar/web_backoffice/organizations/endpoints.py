@@ -62,8 +62,6 @@ from ..responses import HXRedirectResponse
 from ..toast import add_toast
 from .forms import (
     AccountStatusFormAdapter,
-    ApproveAccountForm,
-    UnderReviewAccountForm,
     UpdateOrganizationDetailsForm,
     UpdateOrganizationForm,
 )
@@ -173,15 +171,16 @@ async def get_payment_statistics(
 
     # Get all risk scores
     risk_scores_result = await session.execute(
-        statement.where(Transaction.risk_score.isnot(None)).with_only_columns(Transaction.risk_score)
+        statement.where(Transaction.risk_score.isnot(None)).with_only_columns(
+            Transaction.risk_score
+        )
     )
     risk_scores = [row[0] for row in risk_scores_result if row[0] is not None]
 
     # Get count of payments and total amount
     payment_stats_result = await session.execute(
         statement.with_only_columns(
-            func.count(Transaction.id),
-            func.coalesce(func.sum(Transaction.amount), 0)
+            func.count(Transaction.id), func.coalesce(func.sum(Transaction.amount), 0)
         )
     )
     payment_count, total_payment_amount = payment_stats_result.first() or (0, 0)
@@ -216,11 +215,9 @@ async def get_payment_statistics(
 
     # Get refund statistics by joining through Order -> Customer -> Organization
     from polar.models import Refund
+
     refunds_result = await session.execute(
-        select(
-            func.count(Refund.id),
-            func.coalesce(func.sum(Refund.amount), 0)
-        )
+        select(func.count(Refund.id), func.coalesce(func.sum(Refund.amount), 0))
         .join(Order, Refund.order_id == Order.id)
         .join(Customer, Order.customer_id == Customer.id)
         .where(
@@ -233,9 +230,7 @@ async def get_payment_statistics(
     # Get current account balance (simplified - would need proper balance calculation)
     # For now, using the sum of transactions minus refunds as a rough estimate
     balance_result = await session.execute(
-        select(
-            func.coalesce(func.sum(Transaction.amount), 0)
-        ).where(
+        select(func.coalesce(func.sum(Transaction.amount), 0)).where(
             Transaction.account_id == account_id,
         )
     )
@@ -253,11 +248,11 @@ async def get_payment_statistics(
     }
 
 
-async def get_setup_verdict(
+async def get_setup_verdict_data(
     organization: Organization, session: AsyncSession
-) -> SetupVerdict:
+) -> dict[str, Any]:
     """Get enhanced setup verdict for an organization."""
-    
+
     # Check checkout links
     checkout_links_result = await session.execute(
         select(func.count(CheckoutLink.id)).where(
@@ -356,6 +351,7 @@ async def get_setup_verdict(
     )
     user_verified_row = user_verified_result.first()
     from polar.models.user import IdentityVerificationStatus
+
     user_verified = (
         user_verified_row[0] == IdentityVerificationStatus.verified
         if user_verified_row
@@ -379,24 +375,22 @@ async def get_setup_verdict(
         ]
     )
 
-    return SetupVerdict(
-        {
-            "checkout_links_count": checkout_links_count,
-            "webhooks_count": webhook_count,
-            "api_keys_count": api_keys_count,
-            "products_count": products_count,
-            "benefits_count": benefits_count,
-            "domain_validation": domain_matches,
-            "user_verified": user_verified,
-            "account_charges_enabled": account_charges_enabled,
-            "account_payouts_enabled": account_payouts_enabled,
-            "setup_score": setup_score,
-            "benefits_configured": benefits_count > 0,
-            "webhooks_configured": webhook_count > 0,
-            "products_configured": products_count > 0,
-            "api_keys_created": api_keys_count > 0,
-        }
-    )
+    return {
+        "checkout_links_count": checkout_links_count,
+        "webhooks_count": webhook_count,
+        "api_keys_count": api_keys_count,
+        "products_count": products_count,
+        "benefits_count": benefits_count,
+        "domain_validation": domain_matches,
+        "user_verified": user_verified,
+        "account_charges_enabled": account_charges_enabled,
+        "account_payouts_enabled": account_payouts_enabled,
+        "setup_score": setup_score,
+        "benefits_configured": benefits_count > 0,
+        "webhooks_configured": webhook_count > 0,
+        "products_configured": products_count > 0,
+        "api_keys_created": api_keys_count > 0,
+    }
 
 
 @router.get("/", name="organizations:list")
@@ -893,13 +887,16 @@ async def get(
     user_repository = UserRepository.from_session(session)
     users = await user_repository.get_all_by_organization(organization.id)
 
-    # Get setup and payment verdicts for account review sections
-    setup_verdict = await get_setup_verdict(organization, session)
-    payment_stats = await get_payment_statistics(session, organization.id)
-    payment_verdict = PaymentVerdict(payment_stats)
-
     account = organization.account
+
+    # Get setup, payment, and organization verdicts for account review sections
+    setup_verdict_data = await get_setup_verdict_data(organization, session)
+    payment_stats = await get_payment_statistics(session, organization.id)
+    setup_verdict = SetupVerdict(setup_verdict_data, organization)
+
     validation_error: ValidationError | None = None
+    # Always show actions in the payment section (context-sensitive based on status)
+    show_actions = True
     if account and request.method == "POST":
         # This part handles the "Approve" action
         # It's a POST to the current page URL, not the status update URL
@@ -919,6 +916,16 @@ async def get(
             return HXRedirectResponse(request, request.url, 303)
         except ValidationError as e:
             validation_error = e
+
+    # Create payment verdict after validation_error is potentially set
+    payment_verdict = PaymentVerdict(
+        payment_stats,
+        organization,
+        show_actions,
+        request,
+        account,
+        validation_error,
+    )
 
     with layout(
         request,
@@ -1089,15 +1096,7 @@ async def get(
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
                         with tag.h2(classes="card-title"):
-                            text("Review Status")
-                            with organization_badge(organization):
-                                pass
-                        with description_list.DescriptionList[Organization](
-                            description_list.DescriptionListCurrencyItem(
-                                "next_review_threshold", "Next Review Threshold"
-                            ),
-                        ).render(request, organization):
-                            pass
+                            text("Account Status")
                         if account:
                             with description_list.DescriptionList[Account](
                                 description_list.DescriptionListAttrItem(
@@ -1114,44 +1113,6 @@ async def get(
                                 ),
                             ).render(request, account):
                                 pass
-                        with tag.div(classes="card-actions"):
-                            if organization.status == Organization.Status.UNDER_REVIEW:
-                                with ApproveAccountForm.render(
-                                    account,
-                                    method="POST",
-                                    action=str(request.url),
-                                    classes="flex flex-col gap-4",
-                                    validation_error=validation_error,
-                                ):
-                                    with button(
-                                        name="action",
-                                        type="submit",
-                                        variant="primary",
-                                        value="approve",
-                                    ):
-                                        text("Approve")
-                                    with button(
-                                        name="action",
-                                        type="submit",
-                                        variant="error",
-                                        value="deny",
-                                    ):
-                                        text("Deny")
-                            else:
-                                with UnderReviewAccountForm.render(
-                                    account,
-                                    method="POST",
-                                    action=str(request.url),
-                                    classes="flex flex-col gap-4",
-                                    validation_error=validation_error,
-                                ):
-                                    with button(
-                                        name="action",
-                                        type="submit",
-                                        variant="primary",
-                                        value="under_review",
-                                    ):
-                                        text("Set to Under Review")
 
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
@@ -1207,17 +1168,19 @@ async def get(
                                         f"{organization.details['switching_from']} ({format_currency(organization.details['previous_annual_revenue'], 'USD', locale='en_US')})"
                                     )
 
-            # Account Review Section
+            # Organization Review Section
             with tag.div(classes="mt-8"):
-                with tag.h2(classes="text-2xl font-bold mb-4"):
-                    text("Account Review")
-                
+                with tag.div(classes="flex items-center gap-4 mb-4"):
+                    with tag.h2(classes="text-2xl font-bold"):
+                        text("Organization Review")
+                    with organization_badge(organization):
+                        pass
+
                 with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                     with tag.div(classes="card card-border w-full shadow-sm"):
                         with setup_verdict.render():
                             pass
-                    
+
                     with tag.div(classes="card card-border w-full shadow-sm"):
                         with payment_verdict.render():
                             pass
-

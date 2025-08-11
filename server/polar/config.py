@@ -48,6 +48,8 @@ file_extension = ".exe" if os.name == "nt" else ""
 class Settings(BaseSettings):
     ENV: Environment = Environment.development
     DEBUG: bool = False
+    SQLALCHEMY_DEBUG: bool = False
+    POSTHOG_DEBUG: bool = False
     LOG_LEVEL: str = "DEBUG"
     TESTING: bool = False
 

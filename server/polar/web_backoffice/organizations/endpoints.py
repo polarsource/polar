@@ -6,7 +6,7 @@ from typing import Annotated, Any
 from babel.numbers import format_currency
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
-from sqlalchemy import func, or_, select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import classes, tag, text
 
@@ -15,29 +15,16 @@ from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import (
     Account,
-    Benefit,
-    Checkout,
-    CheckoutLink,
-    Customer,
-    Order,
     Organization,
-    OrganizationAccessToken,
-    OrganizationReview,
-    Payment,
-    PersonalAccessToken,
-    Product,
-    ProductBenefit,
-    Transaction,
     User,
     UserOrganization,
-    WebhookEndpoint,
 )
+from polar.models.user import IdentityVerificationStatus
 from polar.organization import sorting
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
-from polar.transaction.repository import PaymentTransactionRepository
 from polar.user.repository import UserRepository
 from polar.user_organization.service import (
     CannotRemoveOrganizationAdmin,
@@ -55,7 +42,10 @@ from polar.web_backoffice.components.account_review._payment_verdict import (
 )
 from polar.web_backoffice.components.account_review._setup_verdict import (
     SetupVerdict,
-    check_domain_match,
+)
+from polar.web_backoffice.organizations.analytics import (
+    OrganizationSetupAnalyticsService,
+    PaymentAnalyticsService,
 )
 
 from ..components import accordion, button, datatable, description_list, input, modal
@@ -142,15 +132,11 @@ async def get_payment_statistics(
 ) -> dict[str, Any]:
     """Get all-time payment statistics for an organization."""
 
-    payment_repo = PaymentTransactionRepository.from_session(session)
+    analytics_service = PaymentAnalyticsService(session)
 
-    # First get the account_id for the organization
-    org_account_result = await session.execute(
-        select(Organization.account_id).where(Organization.id == organization_id)
-    )
-    org_account_row = org_account_result.first()
-
-    if not org_account_row or not org_account_row[0]:
+    # Get account ID for the organization
+    account_id = await analytics_service.get_organization_account_id(organization_id)
+    if not account_id:
         return {
             "payment_count": 0,
             "p50_risk": 0,
@@ -162,123 +148,36 @@ async def get_payment_statistics(
             "total_payment_amount": 0,
         }
 
-    account_id = org_account_row[0]
+    # Get payment statistics
+    (
+        payment_count,
+        total_payment_amount,
+        risk_scores,
+    ) = await analytics_service.get_succeeded_payments_stats(organization_id)
 
-    # Debug: Let's also get a count of ALL transactions for this account to verify
-    all_transactions_result = await session.execute(
-        select(func.count(Transaction.id)).where(Transaction.account_id == account_id)
-    )
-    all_transactions_count = all_transactions_result.scalar() or 0
+    # Calculate risk percentiles and level
+    p50_risk, p90_risk = analytics_service.calculate_risk_percentiles(risk_scores)
+    risk_level = analytics_service.determine_risk_level(p90_risk)
 
-    # Debug: Let's see what transaction types exist for this account
-    transaction_types_result = await session.execute(
-        select(Transaction.type, func.count(Transaction.id))
-        .where(Transaction.account_id == account_id)
-        .group_by(Transaction.type)
-    )
-    transaction_types = {row[0]: row[1] for row in transaction_types_result}
-
-    # Get succeeded customer payments from the Payment model
-    from polar.models.payment import PaymentStatus
-    from polar.payment.repository import PaymentRepository
-    
-    payment_repo = PaymentRepository.from_session(session)
-    succeeded_payments_statement = payment_repo.get_base_statement().where(
-        Payment.organization_id == organization_id,
-        Payment.status == PaymentStatus.succeeded
+    # Get refund statistics
+    refunds_count, refunds_amount = await analytics_service.get_refund_stats(
+        organization_id
     )
 
-    # Get all risk scores from succeeded payments
-    risk_scores_result = await session.execute(
-        succeeded_payments_statement.where(Payment.risk_score.isnot(None)).with_only_columns(
-            Payment.risk_score
-        )
+    # Get total balance
+    total_balance = await analytics_service.get_total_balance(
+        account_id, refunds_amount
     )
-    risk_scores = [row[0] for row in risk_scores_result if row[0] is not None]
-
-    # Get count of succeeded payments and total amount
-    payment_stats_result = await session.execute(
-        succeeded_payments_statement.with_only_columns(
-            func.count(Payment.id), func.coalesce(func.sum(Payment.amount), 0)
-        )
-    )
-    transaction_count, total_transaction_amount = payment_stats_result.first() or (
-        0,
-        0,
-    )
-
-    # Calculate percentiles
-    p50_risk = 0
-    p90_risk = 0
-
-    if risk_scores:
-        risk_scores.sort()
-        n = len(risk_scores)
-
-        # Calculate P50 (median)
-        if n % 2 == 0:
-            p50_risk = (risk_scores[n // 2 - 1] + risk_scores[n // 2]) / 2
-        else:
-            p50_risk = risk_scores[n // 2]
-
-        # Calculate P90
-        p90_index = int(0.9 * n)
-        if p90_index >= n:
-            p90_index = n - 1
-        p90_risk = risk_scores[p90_index]
-
-    # Determine risk level based on P90
-    if p90_risk < 65:
-        risk_level = "green"
-    elif p90_risk < 75:
-        risk_level = "yellow"
-    else:
-        risk_level = "red"
-
-    # Get refund statistics by joining through Order -> Customer -> Organization
-    from polar.models import Refund
-
-    refunds_result = await session.execute(
-        select(func.count(Refund.id), func.coalesce(func.sum(Refund.amount), 0))
-        .join(Order, Refund.order_id == Order.id)
-        .join(Customer, Order.customer_id == Customer.id)
-        .where(
-            Customer.organization_id == organization_id,
-        )
-    )
-    refunds_count, refunds_amount = refunds_result.first() or (0, 0)
-
-    # Get total account balance from all transaction types (not just payments)
-    balance_result = await session.execute(
-        select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-            Transaction.account_id == account_id,
-        )
-    )
-    total_balance = (balance_result.scalar() or 0) - refunds_amount
-
-    # Debug info - let's see what's happening
-    import logging
-
-    logger = logging.getLogger(__name__)
-    logger.info(f"Payment Stats - Org: {organization_id}, Account: {account_id}")
-    logger.info(f"Transaction types in account: {transaction_types}")
-    logger.info(
-        f"All transactions: {all_transactions_count}, Payment transactions: {transaction_count}"
-    )
-    logger.info(
-        f"Payment amount: {total_transaction_amount}, Refunds: {refunds_count}/{refunds_amount}"
-    )
-    logger.info(f"Total balance: {total_balance}")
 
     return {
-        "payment_count": transaction_count,
+        "payment_count": payment_count,
         "p50_risk": p50_risk,
         "p90_risk": p90_risk,
         "risk_level": risk_level,
         "refunds_count": refunds_count,
         "total_balance": total_balance,
         "refunds_amount": refunds_amount,
-        "total_payment_amount": total_transaction_amount,
+        "total_payment_amount": total_payment_amount,
     }
 
 
@@ -287,94 +186,18 @@ async def get_setup_verdict_data(
 ) -> dict[str, Any]:
     """Get enhanced setup verdict for an organization."""
 
-    # Check checkout links
-    checkout_links_result = await session.execute(
-        select(func.count(CheckoutLink.id)).where(
-            CheckoutLink.organization_id == organization.id,
-            CheckoutLink.deleted_at.is_(None),
-        )
-    )
-    checkout_links_count = checkout_links_result.scalar() or 0
+    analytics_service = OrganizationSetupAnalyticsService(session)
 
-    # Check domain validation - do checkout success URLs match organization domain?
-    domain_match_result = await session.execute(
-        select(func.count(Checkout.id))
-        .join(Product, Checkout.product_id == Product.id)
-        .where(
-            Product.organization_id == organization.id,
-            Checkout._success_url.is_not(None),
-        )
+    # Get all setup metrics using helper methods
+    checkout_links_count = await analytics_service.get_checkout_links_count(
+        organization.id
     )
-    success_urls_count = domain_match_result.scalar() or 0
-
-    # For those with success URLs, check domain matches
-    if success_urls_count > 0:
-        domain_match_query = await session.execute(
-            select(Checkout._success_url)
-            .join(Product, Checkout.product_id == Product.id)
-            .where(
-                Product.organization_id == organization.id,
-                Checkout._success_url.is_not(None),
-            )
-        )
-        success_urls = [row[0] for row in domain_match_query.fetchall() if row[0]]
-        # Get organization domain - check if organization has a domain attribute
-        org_domain = (
-            getattr(organization, "domain", None) or f"{organization.slug}.polar.sh"
-        )
-        domain_matches = check_domain_match(org_domain, success_urls)
-    else:
-        domain_matches = False
-
-    # Check webhook endpoints
-    webhook_result = await session.execute(
-        select(func.count(WebhookEndpoint.id)).where(
-            WebhookEndpoint.organization_id == organization.id
-        )
+    webhooks_count = await analytics_service.get_webhooks_count(organization.id)
+    org_tokens_count = await analytics_service.get_organization_tokens_count(
+        organization.id
     )
-    webhook_count = webhook_result.scalar() or 0
-
-    # Check API keys (both organization and personal access tokens)
-    org_tokens_result = await session.execute(
-        select(func.count(OrganizationAccessToken.id)).where(
-            OrganizationAccessToken.organization_id == organization.id,
-            OrganizationAccessToken.deleted_at.is_(None),
-        )
-    )
-    org_tokens_count = org_tokens_result.scalar() or 0
-
-    # Get personal access tokens for users in this organization
-    personal_tokens_result = await session.execute(
-        select(func.count(PersonalAccessToken.id.distinct()))
-        .join(UserOrganization, PersonalAccessToken.user_id == UserOrganization.user_id)
-        .where(
-            UserOrganization.organization_id == organization.id,
-            PersonalAccessToken.deleted_at.is_(None),
-        )
-    )
-    personal_tokens_count = personal_tokens_result.scalar() or 0
-    api_keys_count = org_tokens_count + personal_tokens_count
-
-    # Check products configured
-    products_result = await session.execute(
-        select(func.count(Product.id)).where(
-            Product.organization_id == organization.id,
-            Product.deleted_at.is_(None),
-        )
-    )
-    products_count = products_result.scalar() or 0
-
-    # Check benefits configuration
-    benefits_result = await session.execute(
-        select(func.count(Benefit.id))
-        .join(ProductBenefit, Benefit.id == ProductBenefit.benefit_id)
-        .join(Product, ProductBenefit.product_id == Product.id)
-        .where(
-            Product.organization_id == organization.id,
-            Product.deleted_at.is_(None),
-        )
-    )
-    benefits_count = benefits_result.scalar() or 0
+    products_count = await analytics_service.get_products_count(organization.id)
+    benefits_count = await analytics_service.get_benefits_count(organization.id)
 
     # Check user verification status (get the first user as owner)
     user_verified_result = await session.execute(
@@ -384,8 +207,6 @@ async def get_setup_verdict_data(
         .limit(1)
     )
     user_verified_row = user_verified_result.first()
-    from polar.models.user import IdentityVerificationStatus
-
     user_verified = (
         user_verified_row[0] == IdentityVerificationStatus.verified
         if user_verified_row
@@ -393,37 +214,37 @@ async def get_setup_verdict_data(
     )
 
     # Check account charges and payouts enabled
-    account = organization.account
-    account_charges_enabled = account.is_charges_enabled if account else False
-    account_payouts_enabled = account.is_payouts_enabled if account else False
+    (
+        account_charges_enabled,
+        account_payouts_enabled,
+    ) = await analytics_service.check_account_enabled(organization)
 
-    # Calculate enhanced setup score (0-6 scale)
-    setup_score = sum(
-        [
-            1 if checkout_links_count > 0 else 0,
-            1 if webhook_count > 0 else 0,
-            1 if api_keys_count > 0 else 0,
-            1 if products_count > 0 else 0,
-            1 if benefits_count > 0 else 0,
-            1 if domain_matches else 0,
-        ]
+    # Calculate setup score using helper
+    setup_score = analytics_service.calculate_setup_score(
+        checkout_links_count=checkout_links_count,
+        webhooks_count=webhooks_count,
+        org_tokens_count=org_tokens_count,
+        products_count=products_count,
+        benefits_count=benefits_count,
+        user_verified=user_verified,
+        account_charges_enabled=account_charges_enabled,
+        account_payouts_enabled=account_payouts_enabled,
     )
 
     return {
         "checkout_links_count": checkout_links_count,
-        "webhooks_count": webhook_count,
-        "api_keys_count": api_keys_count,
+        "webhooks_count": webhooks_count,
+        "api_keys_count": org_tokens_count,  # Only organization tokens now
         "products_count": products_count,
         "benefits_count": benefits_count,
-        "domain_validation": domain_matches,
         "user_verified": user_verified,
         "account_charges_enabled": account_charges_enabled,
         "account_payouts_enabled": account_payouts_enabled,
         "setup_score": setup_score,
         "benefits_configured": benefits_count > 0,
-        "webhooks_configured": webhook_count > 0,
+        "webhooks_configured": webhooks_count > 0,
         "products_configured": products_count > 0,
-        "api_keys_created": api_keys_count > 0,
+        "api_keys_created": org_tokens_count > 0,
     }
 
 
@@ -912,12 +733,12 @@ async def get(
 ) -> Any:
     repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(
-        id, 
+        id,
         options=(
             joinedload(Organization.account),
             joinedload(Organization.review),
-        ), 
-        include_blocked=True
+        ),
+        include_blocked=True,
     )
 
     if organization is None:
@@ -965,7 +786,7 @@ async def get(
         account,
         validation_error,
     )
-    
+
     # Create AI review verdict
     ai_review_verdict = AIReviewVerdict(organization.review)
 

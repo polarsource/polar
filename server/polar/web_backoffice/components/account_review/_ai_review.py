@@ -17,16 +17,24 @@ class AIReviewVerdict:
         if not self.review:
             return "NOT REVIEWED"
         # Handle both enum and string values
-        return self.review.verdict.value if hasattr(self.review.verdict, 'value') else str(self.review.verdict)
+        return (
+            self.review.verdict.value
+            if hasattr(self.review.verdict, "value")
+            else str(self.review.verdict)
+        )
 
     @property
     def verdict_classes(self) -> str:
         """Get CSS classes for the verdict badge."""
         if not self.review:
             return "bg-gray-100 text-gray-800"
-        
+
         # Handle both enum and string values
-        verdict = self.review.verdict.value if hasattr(self.review.verdict, 'value') else str(self.review.verdict)
+        verdict = (
+            self.review.verdict.value
+            if hasattr(self.review.verdict, "value")
+            else str(self.review.verdict)
+        )
         if verdict == "PASS":
             return "bg-green-100 text-green-800"
         elif verdict == "FAIL":
@@ -39,7 +47,7 @@ class AIReviewVerdict:
         """Get color class for risk score based on value."""
         if not self.review:
             return "text-gray-600"
-        
+
         score = self.review.risk_score
         if score < 0.3:
             return "text-green-600"
@@ -62,7 +70,9 @@ class AIReviewVerdict:
         with tag.div(classes=row_classes):
             with tag.span(classes="text-sm font-medium text-gray-700"):
                 text(label)
-            with tag.span(classes=f"text-sm font-semibold {color_class or 'text-gray-900'}"):
+            with tag.span(
+                classes=f"text-sm font-semibold {color_class or 'text-gray-900'}"
+            ):
                 text(value)
         yield
 
@@ -109,7 +119,9 @@ class AIReviewVerdict:
                                 text("Violations")
                         with tag.div(classes="space-y-1"):
                             for section in self.review.violated_sections:
-                                with tag.div(classes="bg-red-100 text-red-800 text-sm px-2 py-1 rounded"):
+                                with tag.div(
+                                    classes="bg-red-100 text-red-800 text-sm px-2 py-1 rounded"
+                                ):
                                     text(section)
 
                 # Assessment reason - compact but readable
@@ -118,22 +130,32 @@ class AIReviewVerdict:
                         with tag.div(classes="mb-2"):
                             with tag.span(classes="text-sm font-medium text-gray-700"):
                                 text("Assessment")
-                        with tag.div(classes="text-sm text-gray-600 bg-gray-50 p-2 rounded max-h-32 overflow-y-auto"):
+                        with tag.div(
+                            classes="text-sm text-gray-600 bg-gray-50 p-2 rounded max-h-32 overflow-y-auto"
+                        ):
                             # Split reason into paragraphs but keep compact
-                            paragraphs = self.review.reason.split('\n\n')
+                            paragraphs = self.review.reason.split("\n\n")
                             for i, paragraph in enumerate(paragraphs):
                                 if paragraph.strip():
-                                    with tag.p(classes="mb-1" if i < len(paragraphs) - 1 else ""):
+                                    with tag.p(
+                                        classes="mb-1"
+                                        if i < len(paragraphs) - 1
+                                        else ""
+                                    ):
                                         text(paragraph.strip())
 
                 # Timeout indicator - compact
                 if self.review.timed_out:
                     with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
-                        with tag.div(classes="bg-yellow-50 border border-yellow-200 rounded p-2"):
+                        with tag.div(
+                            classes="bg-yellow-50 border border-yellow-200 rounded p-2"
+                        ):
                             with tag.div(classes="flex items-center gap-1"):
                                 with tag.span(classes="text-yellow-600 text-sm"):
                                     text("⚠️")
-                                with tag.span(classes="text-yellow-800 text-sm font-medium"):
+                                with tag.span(
+                                    classes="text-yellow-800 text-sm font-medium"
+                                ):
                                     text("Timed Out")
 
         yield

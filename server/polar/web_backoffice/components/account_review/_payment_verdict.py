@@ -177,12 +177,12 @@ class PaymentVerdict:
                         with tag.div(classes="flex items-center gap-1"):
                             with tag.span(
                                 classes="text-sm font-medium text-gray-700",
-                                title="Net balance from all account transactions (excludes processor fees and refunds)"
+                                title="Net balance from all account transactions (excludes processor fees and refunds)",
                             ):
                                 text("Total Balance")
                             with tag.span(
                                 classes="text-gray-400 cursor-help text-xs",
-                                title="Net balance from all account transactions (excludes processor fees and refunds)"
+                                title="Net balance from all account transactions (excludes processor fees and refunds)",
                             ):
                                 text("ⓘ")
                         with tag.span(classes=f"text-sm font-bold {balance_color}"):

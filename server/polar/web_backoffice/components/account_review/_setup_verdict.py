@@ -1,7 +1,6 @@
 import contextlib
 from collections.abc import Generator
 from typing import Any
-from urllib.parse import urlparse
 
 from tagflow import tag, text
 
@@ -41,8 +40,6 @@ class SetupVerdict:
         score = self.data.get("setup_score", 0)
         missing_items = []
 
-        if not self.data.get("domain_validation", False):
-            missing_items.append("domain validation")
         if not self.data.get("benefits_configured", False):
             missing_items.append("benefits configuration")
         if not self.data.get("webhooks_configured", False):
@@ -155,13 +152,6 @@ class SetupVerdict:
             # Verification section
             with tag.div(classes="mt-4 pt-4 border-t border-gray-200"):
                 with tag.div(classes="space-y-2"):
-                    # Domain validation
-                    domain_match = self.data.get("domain_validation", False)
-                    with self._render_detail_item(
-                        "Success URL Domain Match", domain_match
-                    ):
-                        pass
-
                     # User verification
                     user_verified = self.data.get("user_verified", False)
                     with self._render_detail_item(
@@ -179,38 +169,3 @@ class SetupVerdict:
                         pass
 
         yield
-
-
-def extract_domain(url: str) -> str:
-    """Extract domain from URL."""
-    if not url:
-        return ""
-
-    # Add protocol if missing
-    if not url.startswith(("http://", "https://")):
-        url = "https://" + url
-
-    try:
-        parsed = urlparse(url)
-        return parsed.netloc.lower()
-    except Exception:
-        return ""
-
-
-def check_domain_match(org_domain: str, success_urls: list[str]) -> bool:
-    """Check if success URLs match organization domain."""
-    if not org_domain or not success_urls:
-        return False
-
-    org_domain = extract_domain(org_domain)
-    if not org_domain:
-        return False
-
-    for url in success_urls:
-        url_domain = extract_domain(url)
-        if url_domain and (
-            url_domain == org_domain or url_domain.endswith("." + org_domain)
-        ):
-            return True
-
-    return False

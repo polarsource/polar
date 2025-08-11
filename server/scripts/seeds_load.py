@@ -19,11 +19,15 @@ from polar.checkout_link.service import checkout_link as checkout_link_service
 from polar.config import settings
 from polar.customer.schemas.customer import CustomerCreate
 from polar.customer.service import customer as customer_service
-from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
+from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
 from polar.kit.db.postgres import create_async_engine
+from polar.kit.utils import utc_now
+from polar.models.account import Account
 from polar.models.benefit import BenefitType
 from polar.models.file import File, FileServiceTypes
+from polar.models.organization import Organization, OrganizationDetails
 from polar.models.product_price import ProductPriceAmountType
+from polar.models.user import IdentityVerificationStatus
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
 from polar.product.schemas import ProductCreate, ProductPriceFixedCreate
@@ -42,6 +46,9 @@ class OrganizationDict(TypedDict):
     email: str
     website: str
     bio: str
+    status: NotRequired[Organization.Status]
+    subscriptions_billing_engine: NotRequired[bool]
+    details: NotRequired[OrganizationDetails]
     products: NotRequired[list["ProductDict"]]
     benefits: NotRequired[dict[str, "BenefitDict"]]
     is_admin: NotRequired[bool]
@@ -193,6 +200,18 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "email": "support@meltedsql.com",
             "website": "https://meltedsql.com",
             "bio": "Your go-to solution for SQL database management and optimization.",
+            "status": Organization.Status.ACTIVE,
+            "subscriptions_billing_engine": True,
+            "details": {
+                "about": "We make beautiful SQL management products for macOS.",
+                "intended_use": "Well have a checkout on our website granting a download link and license key.",
+                "switching": False,
+                "switching_from": None,
+                "product_description": "The desktop apps that we create allows connecting to SQL databases, and performing queries on those databases.",
+                "customer_acquisition": ["website"],
+                "future_annual_revenue": 2000000,
+                "previous_annual_revenue": 0,
+            },
             "benefits": {
                 "melted-sql-premium-support": {
                     "type": BenefitType.custom,
@@ -376,7 +395,12 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         )
         user_repository = UserRepository.from_session(session)
         await user_repository.update(
-            user, update_dict={"is_admin": org_data.get("is_admin", False)}
+            user,
+            update_dict={
+                "is_admin": org_data.get("is_admin", False),
+                "identity_verification_status": IdentityVerificationStatus.verified,
+                "identity_verification_id": f"vs_{org_data['slug']}_test",
+            },
         )
 
         auth_subject = AuthSubject(subject=user, scopes=set(), session=None)
@@ -395,7 +419,35 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         organization.email = org_data["email"]
         organization.website = org_data["website"]
         organization.bio = org_data["bio"]
+        organization.details = org_data.get("details", {})  # type: ignore
+        organization.details_submitted_at = utc_now()
+        organization.status = org_data.get("status", Organization.Status.CREATED)
+        organization.subscriptions_billing_engine = org_data.get(
+            "subscriptions_billing_engine", False
+        )
         session.add(organization)
+
+        # Create an Account for MeltedSQL organization
+        if org_data["slug"] == "melted-sql":
+            account = Account(
+                account_type=AccountType.stripe,
+                admin_id=user.id,
+                stripe_id="acct_meltedsql_test",  # Test Stripe account ID
+                country="US",
+                currency="USD",
+                is_details_submitted=True,
+                is_charges_enabled=True,
+                is_payouts_enabled=True,
+                status=Account.Status.ACTIVE,
+                email=org_data["email"],
+                processor_fees_applicable=True,
+            )
+            session.add(account)
+            await session.flush()
+
+            # Link the account to the organization
+            organization.account_id = account.id
+            session.add(organization)
 
         # Create benefits for organization
         org_benefits = {}

@@ -203,35 +203,22 @@ export const OrganizationStep = ({
                   )}
                 />
 
-                <div className="dark:text-polar-400 mt-2 text-gray-600">
+                <div className="flex flex-col gap-y-4">
                   {/* Simple Product Restrictions */}
-                  <div className="dark:bg-polar-800 dark:border-polar-700 mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                    <div className="mb-3 flex items-center gap-2">
-                      <div className="dark:bg-polar-600 flex h-6 w-6 items-center justify-center rounded-full bg-gray-300">
-                        <span className="text-xs font-medium">!</span>
-                      </div>
-                      <h3 className="text-sm font-semibold">
-                        Product Restrictions
-                      </h3>
-                    </div>
-
-                    <div className="space-y-3 text-sm">
-                      <div>
-                        <p className="mb-1 font-medium text-green-600 dark:text-green-400">
-                          ✓ What we support:
-                        </p>
-                        <p className="dark:text-polar-300 text-gray-600">
+                  <div className="dark:bg-polar-800 flex flex-col gap-y-3 rounded-lg bg-gray-50 p-4">
+                    <div className="flex flex-col gap-y-4 text-sm">
+                      <div className="flex flex-col gap-y-2">
+                        <p className="font-medium">Supported Usecases</p>
+                        <p className="dark:text-polar-500 text-sm text-gray-500">
                           SaaS subscriptions, digital downloads, software
                           licenses, online courses, and other purely digital
                           products.
                         </p>
                       </div>
 
-                      <div>
-                        <p className="mb-1 font-medium text-red-600 dark:text-red-400">
-                          ✗ What we don&apos;t support:
-                        </p>
-                        <ul className="dark:text-polar-300 space-y-1 text-gray-600">
+                      <div className="flex flex-col gap-y-2">
+                        <p className="font-medium">Prohibited Usecases</p>
+                        <ul className="dark:text-polar-500 space-y-1 text-sm text-gray-500">
                           <li>
                             • Physical goods or products requiring shipping
                           </li>
@@ -253,8 +240,8 @@ export const OrganizationStep = ({
                         </ul>
                       </div>
 
-                      <div className="dark:border-polar-700 border-t border-gray-200 pt-2">
-                        <p className="dark:text-polar-300 text-sm font-medium text-gray-700">
+                      <div className="dark:border-polar-700 border-t border-gray-200 pt-4">
+                        <p className="dark:text-polar-500 text-xs font-medium text-gray-500">
                           Transactions that violate our policy will be canceled
                           and refunded.
                         </p>

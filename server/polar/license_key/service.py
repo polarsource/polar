@@ -224,8 +224,17 @@ class LicenseKeyService:
         license_key: LicenseKey,
         activate: LicenseKeyActivate,
     ) -> LicenseKeyActivation:
+        if not license_key.is_active():
+            raise NotPermitted(
+                "License key is no longer active. "
+                "This license key can not be activated."
+            )
+
         if not license_key.limit_activations:
-            raise NotPermitted("License key does not require activation")
+            raise NotPermitted(
+                "This license key does not support activations. "
+                "Use the /validate endpoint instead to check license validity."
+            )
 
         current_activation_count = await self.get_activation_count(
             session,

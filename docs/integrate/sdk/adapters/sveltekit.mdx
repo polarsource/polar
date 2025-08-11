@@ -54,7 +54,7 @@ export const GET = CustomerPortal({
 A simple utility which resolves incoming webhook payloads by signing the webhook secret properly.
 
 ```typescript
-// api/webhook/polar/route.ts
+// api/webhook/polar/+server.ts
 import { Webhooks } from "@polar-sh/sveltekit";
 
 export const POST = Webhooks({

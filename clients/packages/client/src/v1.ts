@@ -562,6 +562,28 @@ export interface paths {
         patch: operations["organizations:set_account"];
         trace?: never;
     };
+    "/v1/organizations/{id}/payment-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Organization Payment Status
+         * @description Get payment status and onboarding steps for an organization.
+         *
+         *     **Scopes**: `organizations:read` `organizations:write`
+         */
+        get: operations["organizations:get_payment_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/organizations/{id}/members": {
         parameters: {
             query?: never;
@@ -6244,7 +6266,7 @@ export interface components {
             /** Code */
             code: string | null;
         };
-        CheckoutForbiddenError: components["schemas"]["AlreadyActiveSubscriptionError"] | components["schemas"]["NotOpenCheckout"];
+        CheckoutForbiddenError: components["schemas"]["AlreadyActiveSubscriptionError"] | components["schemas"]["NotOpenCheckout"] | components["schemas"]["PaymentNotReady"];
         /**
          * CheckoutLink
          * @description Checkout link data.
@@ -14014,6 +14036,44 @@ export interface components {
             /** New Subscription */
             new_subscription: boolean;
         };
+        /** OrganizationPaymentStatus */
+        OrganizationPaymentStatus: {
+            /**
+             * Payment Ready
+             * @description Whether the organization is ready to accept payments
+             */
+            payment_ready: boolean;
+            /**
+             * Steps
+             * @description List of onboarding steps
+             */
+            steps: components["schemas"]["OrganizationPaymentStep"][];
+            /** @description Current organization status */
+            organization_status: components["schemas"]["Status"];
+        };
+        /** OrganizationPaymentStep */
+        OrganizationPaymentStep: {
+            /**
+             * Id
+             * @description Step identifier
+             */
+            id: string;
+            /**
+             * Title
+             * @description Step title
+             */
+            title: string;
+            /**
+             * Description
+             * @description Step description
+             */
+            description: string;
+            /**
+             * Completed
+             * @description Whether the step is completed
+             */
+            completed: boolean;
+        };
         /** OrganizationProfileSettings */
         OrganizationProfileSettings: {
             /**
@@ -14252,6 +14312,16 @@ export interface components {
             customer_id: string;
             /** Type */
             type: string;
+        };
+        /** PaymentNotReady */
+        PaymentNotReady: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "PaymentNotReady";
+            /** Detail */
+            detail: string;
         };
         /**
          * PaymentProcessor
@@ -18071,6 +18141,49 @@ export interface operations {
             };
         };
     };
+    "organizations:get_payment_status": {
+        parameters: {
+            query?: {
+                /** @description Only perform account verification checks, skip product and integration checks */
+                account_verification_only?: boolean;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationPaymentStatus"];
+                };
+            };
+            /** @description Organization not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     "organizations:members": {
         parameters: {
             query?: never;
@@ -20064,7 +20177,7 @@ export interface operations {
                     "application/json": components["schemas"]["Checkout"];
                 };
             };
-            /** @description The checkout is expired or the customer already has an active subscription. */
+            /** @description The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -20168,7 +20281,7 @@ export interface operations {
                     "application/json": components["schemas"]["CheckoutPublic"];
                 };
             };
-            /** @description The checkout is expired or the customer already has an active subscription. */
+            /** @description The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -20273,7 +20386,7 @@ export interface operations {
                     "application/json": components["schemas"]["PaymentError"];
                 };
             };
-            /** @description The checkout is expired or the customer already has an active subscription. */
+            /** @description The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -22740,7 +22853,7 @@ export interface operations {
                     "application/json": components["schemas"]["LicenseKeyActivationRead"];
                 };
             };
-            /** @description License key activation not required or permitted (limit reached). */
+            /** @description License key activation not supported or limit reached. Use /validate endpoint for licenses without activations. */
             403: {
                 headers: {
                     [name: string]: unknown;

@@ -3,13 +3,14 @@ import uuid
 import structlog
 
 from polar.account.repository import AccountRepository
-from polar.account.service import account as account_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import generate_uuid
 from polar.logging import Logger
 from polar.models import Account, IssueReward, Order, Pledge, Transaction
 from polar.models.transaction import PlatformFeeType, TransactionType
+from polar.organization.repository import OrganizationRepository
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 
 from .base import BaseTransactionService, BaseTransactionServiceError
@@ -83,7 +84,13 @@ class BalanceTransactionService(BaseTransactionService):
         await session.flush()
 
         if destination_account is not None:
-            await account_service.check_review_threshold(session, destination_account)
+            # Check organization review threshold instead of account
+            organization_repository = OrganizationRepository.from_session(session)
+            organizations = await organization_repository.get_all_by_account(
+                destination_account.id
+            )
+            for organization in organizations:
+                await organization_service.check_review_threshold(session, organization)
 
         return (outgoing_transaction, incoming_transaction)
 

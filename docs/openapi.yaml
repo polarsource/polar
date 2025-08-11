@@ -11750,6 +11750,7 @@
         "summary": "Validate License Key",
         "description": "Validate a license key.",
         "operationId": "customer_portal:license_keys:validate",
+        "security": [],
         "requestBody": {
           "content": {
             "application/json": {
@@ -11832,6 +11833,7 @@
         "summary": "Activate License Key",
         "description": "Activate a license key instance.",
         "operationId": "customer_portal:license_keys:activate",
+        "security": [],
         "requestBody": {
           "content": {
             "application/json": {

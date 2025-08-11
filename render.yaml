@@ -68,6 +68,7 @@ services:
       - fromGroup: backend-production
       - fromGroup: stripe-production
       - fromGroup: logfire-server
+      - fromGroup: openai-production
 
   # Worker
   - type: web # Use a web service to allow health checks
@@ -125,6 +126,7 @@ services:
       - fromGroup: stripe-production
       - fromGroup: logfire-worker
       - fromGroup: aws-s3-production
+      - fromGroup: openai-production
 
   - type: redis
     name: redis
@@ -198,6 +200,7 @@ services:
       - fromGroup: github-sandbox
       - fromGroup: backend-sandbox
       - fromGroup: stripe-sandbox
+      - fromGroup: openai-sandbox
 
   # Worker
   - type: web # Use a web service to allow health checks
@@ -252,6 +255,7 @@ services:
       - fromGroup: backend-sandbox
       - fromGroup: stripe-sandbox
       - fromGroup: aws-s3-sandbox
+      - fromGroup: openai-sandbox
 
 databases:
   - name: db
@@ -270,6 +274,11 @@ envVarGroups:
       - key: POLAR_GOOGLE_CLIENT_ID
         sync: false
       - key: POLAR_GOOGLE_CLIENT_SECRET
+        sync: false
+
+  - name: openai-production
+    envVars:
+      - key: POLAR_OPENAI_API_KEY
         sync: false
 
   - name: backend-production
@@ -379,6 +388,11 @@ envVarGroups:
       - key: POLAR_GOOGLE_CLIENT_ID
         sync: false
       - key: POLAR_GOOGLE_CLIENT_SECRET
+        sync: false
+
+  - name: openai-sandbox
+    envVars:
+      - key: POLAR_OPENAI_API_KEY
         sync: false
 
   - name: backend-sandbox

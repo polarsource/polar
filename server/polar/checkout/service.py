@@ -28,6 +28,7 @@ from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.exceptions import (
     NotPermitted,
+    PaymentNotReady,
     PolarError,
     PolarRequestValidationError,
     ResourceNotFound,
@@ -44,6 +45,7 @@ from polar.kit.tax import TaxID, to_stripe_tax_id, validate_tax_id
 from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import (
+    Account,
     Checkout,
     CheckoutLink,
     Customer,
@@ -66,6 +68,7 @@ from polar.models.product_price import ProductPriceAmountType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_currency_price,
@@ -497,7 +500,9 @@ class CheckoutService:
         ip_address: str | None = None,
     ) -> Checkout:
         product_repository = ProductRepository.from_session(session)
-        product = await product_repository.get_by_id(checkout_create.product_id)
+        product = await product_repository.get_by_id(
+            checkout_create.product_id, options=product_repository.get_eager_options()
+        )
 
         if product is None:
             raise PolarRequestValidationError(
@@ -522,8 +527,6 @@ class CheckoutService:
                     }
                 ]
             )
-
-        product = await self._eager_load_product(session, product)
 
         if product.organization.blocked_at is not None:
             raise PolarRequestValidationError(
@@ -782,6 +785,15 @@ class CheckoutService:
                 }
             )
 
+        # Check if organization can accept payments (only block paid transactions)
+        if (
+            checkout.is_payment_required
+            and not await organization_service.is_organization_ready_for_payment(
+                session, checkout.product.organization
+            )
+        ):
+            raise PaymentNotReady()
+
         required_fields = self._get_required_confirm_fields(checkout)
         for required_field in required_fields:
             if (
@@ -1038,7 +1050,9 @@ class CheckoutService:
             auth_subject,
             options=(
                 contains_eager(ProductPrice.product).options(
-                    joinedload(Product.organization),
+                    joinedload(Product.organization)
+                    .joinedload(Organization.account)
+                    .joinedload(Account.admin),
                     selectinload(Product.prices),
                 ),
             ),

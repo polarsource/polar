@@ -8,6 +8,7 @@ import { AlreadyActiveSubscriptionError } from '@polar-sh/sdk/models/errors/alre
 import { HTTPValidationError } from '@polar-sh/sdk/models/errors/httpvalidationerror'
 import { NotOpenCheckout } from '@polar-sh/sdk/models/errors/notopencheckout.js'
 import { PaymentError } from '@polar-sh/sdk/models/errors/paymenterror.js'
+import { PaymentNotReady } from '@polar-sh/sdk/models/errors/paymentnotready.js'
 import type {
   ConfirmationToken,
   Stripe,
@@ -98,7 +99,8 @@ export const CheckoutFormProvider = ({
         } else if (
           error instanceof AlreadyActiveSubscriptionError ||
           error instanceof NotOpenCheckout ||
-          error instanceof PaymentError
+          error instanceof PaymentError ||
+          error instanceof PaymentNotReady
         ) {
           setError('root', { message: error.detail })
         }
@@ -121,7 +123,8 @@ export const CheckoutFormProvider = ({
       } else if (
         error instanceof AlreadyActiveSubscriptionError ||
         error instanceof NotOpenCheckout ||
-        error instanceof PaymentError
+        error instanceof PaymentError ||
+        error instanceof PaymentNotReady
       ) {
         setError('root', { message: error.detail })
       }

@@ -1,4 +1,3 @@
-from polar.account import tasks as account
 from polar.auth import tasks as auth
 from polar.benefit import tasks as benefit
 from polar.checkout import tasks as checkout
@@ -26,7 +25,6 @@ from polar.user import tasks as user
 from polar.webhook import tasks as webhook
 
 __all__ = [
-    "account",
     "auth",
     "benefit",
     "checkout",

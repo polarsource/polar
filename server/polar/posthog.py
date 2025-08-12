@@ -87,8 +87,8 @@ class Service:
             return
 
         self.client.capture(
-            distinct_id,
-            event=event,
+            event,
+            distinct_id=distinct_id,
             groups=groups,
             properties={
                 **self._get_common_properties(),
@@ -172,8 +172,8 @@ class Service:
         if not self.client:
             return
 
-        self.client.identify(
-            user.posthog_distinct_id,
+        self.client.set(
+            distinct_id=user.posthog_distinct_id,
             properties={
                 **self._get_common_properties(),
                 **self._get_user_properties(user),

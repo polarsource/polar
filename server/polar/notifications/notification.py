@@ -42,7 +42,6 @@ class NotificationBase(Schema):
 
 class MaintainerAccountUnderReviewNotificationPayload(NotificationPayloadBase):
     account_type: str
-    organization_name: str
 
     def subject(self) -> str:
         return "Your Polar account is being reviewed"
@@ -59,7 +58,6 @@ class MaintainerAccountUnderReviewNotification(NotificationBase):
 
 class MaintainerAccountReviewedNotificationPayload(NotificationPayloadBase):
     account_type: str
-    organization_name: str
 
     def subject(self) -> str:
         return "Your Polar account review is now complete"

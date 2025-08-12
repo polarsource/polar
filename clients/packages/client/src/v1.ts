@@ -12448,8 +12448,6 @@ export interface components {
         MaintainerAccountReviewedNotificationPayload: {
             /** Account Type */
             account_type: string;
-            /** Organization Name */
-            organization_name: string;
         };
         /** MaintainerAccountUnderReviewNotification */
         MaintainerAccountUnderReviewNotification: {
@@ -12474,8 +12472,6 @@ export interface components {
         MaintainerAccountUnderReviewNotificationPayload: {
             /** Account Type */
             account_type: string;
-            /** Organization Name */
-            organization_name: string;
         };
         /** MaintainerCreateAccountNotification */
         MaintainerCreateAccountNotification: {

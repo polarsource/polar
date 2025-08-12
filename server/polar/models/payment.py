@@ -45,6 +45,9 @@ class Payment(RecordModel):
     method_metadata: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )
+    processor_metadata: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict
+    )
     customer_email: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True
     )
@@ -109,3 +112,16 @@ class Payment(RecordModel):
     @classmethod
     def _is_failed_expression(cls) -> ColumnElement[bool]:
         return cls.status == PaymentStatus.failed
+
+    @property
+    def client_secret(self) -> str | None:
+        """Get the client_secret from processor_metadata for manual payment retries."""
+        return self.processor_metadata.get("client_secret")
+
+    @client_secret.setter
+    def client_secret(self, value: str | None) -> None:
+        """Set the client_secret in processor_metadata for manual payment retries."""
+        if value is None:
+            self.processor_metadata.pop("client_secret", None)
+        else:
+            self.processor_metadata["client_secret"] = value

@@ -75,9 +75,6 @@ def _worker_health_matcher(name: str, attributes: "Attributes | None") -> bool:
 
 
 def configure_logfire(service_name: Literal["server", "worker"]) -> None:
-    if settings.is_testing():
-        return
-
     logfire.configure(
         send_to_logfire="if-token-present",
         token=settings.LOGFIRE_TOKEN,
@@ -91,9 +88,6 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
 
 
 def instrument_httpx(client: httpx.AsyncClient | httpx.Client | None = None) -> None:
-    if settings.is_testing():
-        return
-
     if client:
         HTTPXClientInstrumentor().instrument_client(client)
     else:
@@ -101,16 +95,10 @@ def instrument_httpx(client: httpx.AsyncClient | httpx.Client | None = None) -> 
 
 
 def instrument_fastapi(app: FastAPI) -> None:
-    if settings.is_testing():
-        return
-
     logfire.instrument_fastapi(app)
 
 
 def instrument_sqlalchemy(engine: Engine) -> None:
-    if settings.is_testing():
-        return
-
     SQLAlchemyInstrumentor().instrument(engine=engine)
 
 

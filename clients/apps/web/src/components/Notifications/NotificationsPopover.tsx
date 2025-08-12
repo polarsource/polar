@@ -166,16 +166,13 @@ const MaintainerAccountUnderReview = ({
 }: {
   n: schemas['MaintainerAccountUnderReviewNotification']
 }) => {
-  const { payload } = n
   return (
     <Item n={n} iconClasses="bg-yellow-200 text-yellow-500">
       {{
         text: (
           <>
             Your{' '}
-            <InternalLink
-              href={`/dashboard/${payload.organization_name}/finance/account`}
-            >
+            <InternalLink href="/finance/account">
               <>payout account</>
             </InternalLink>{' '}
             is under review. Transfers are paused until we complete the review
@@ -193,16 +190,13 @@ const MaintainerAccountReviewed = ({
 }: {
   n: schemas['MaintainerAccountReviewedNotification']
 }) => {
-  const { payload } = n
   return (
     <Item n={n} iconClasses="bg-green-200 text-green-500">
       {{
         text: (
           <>
             Your{' '}
-            <InternalLink
-              href={`/dashboard/${payload.organization_name}/finance/account`}
-            >
+            <InternalLink href="/finance/account">
               <>payout account</>
             </InternalLink>{' '}
             has been reviewed successfully. Transfers are resumed.

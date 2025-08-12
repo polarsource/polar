@@ -4,6 +4,8 @@ from collections.abc import Generator, Sequence
 from fastapi import Request
 from tagflow import tag, text
 
+from ..static_urls import static_url
+
 
 @contextlib.contextmanager
 def title(title_parts: Sequence[str]) -> Generator[None]:
@@ -25,12 +27,12 @@ def base(request: Request, title_parts: Sequence[str]) -> Generator[None]:
             ):
                 pass
             with tag.link(
-                href=str(request.url_for("static", path="styles.css")),
+                href=static_url(request, "styles.css"),
                 rel="stylesheet",
                 type="text/css",
             ):
                 pass
-            with tag.script(src=str(request.url_for("static", path="scripts.js"))):
+            with tag.script(src=static_url(request, "scripts.js")):
                 pass
             with title(title_parts):
                 pass

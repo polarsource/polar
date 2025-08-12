@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
-from starlette.staticfiles import StaticFiles
 from tagflow import tag, text
 
 from .accounts.endpoints import router as accounts_router
@@ -16,6 +15,7 @@ from .responses import TagResponse
 from .subscriptions.endpoints import router as subscriptions_router
 from .tasks.endpoints import router as tasks_router
 from .users.endpoints import router as users_router
+from .versioned_static import VersionedStaticFiles
 
 app = FastAPI(
     default_response_class=TagResponse,
@@ -29,7 +29,9 @@ app.add_middleware(TagflowMiddleware)
 
 
 app.mount(
-    "/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static"
+    "/static",
+    VersionedStaticFiles(directory=Path(__file__).parent / "static"),
+    name="static",
 )
 app.include_router(users_router, prefix="/users")
 app.include_router(organizations_router, prefix="/organizations")

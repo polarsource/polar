@@ -4,7 +4,7 @@ from typing import Annotated, Any, TypeAlias, TypeVar
 
 from fastapi import Depends, Request
 from pydantic import AliasChoices, BaseModel, Field, StringConstraints
-from sqlalchemy import ColumnExpressionArgument, Select, and_, or_
+from sqlalchemy import ColumnExpressionArgument, Select, and_, or_, true
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -146,6 +146,10 @@ def get_metadata_clause(  # noqa: UP047
         for value in values:
             sub_clauses.append(model.user_metadata[key].as_string() == value)
         clauses.append(or_(*sub_clauses))
+
+    if not clauses:
+        return true()
+
     return and_(*clauses)
 
 

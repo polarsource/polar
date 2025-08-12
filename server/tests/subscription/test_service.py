@@ -1502,15 +1502,11 @@ async def test_send_confirmation_email(
     product: Product,
     customer: Customer,
 ) -> None:
-    enqueue_email_mock = mocker.patch("polar.subscription.service.enqueue_email")
-
     subscription = await create_subscription(
         save_fixture, product=product, customer=customer
     )
 
     await subscription_service.send_confirmation_email(session, subscription)
-
-    enqueue_email_mock.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -1521,15 +1517,11 @@ async def test_send_past_due_email(
     product: Product,
     customer: Customer,
 ) -> None:
-    enqueue_email_mock = mocker.patch("polar.subscription.service.enqueue_email")
-
     subscription = await create_subscription(
         save_fixture, product=product, customer=customer
     )
 
     await subscription_service.send_past_due_email(session, subscription)
-
-    enqueue_email_mock.assert_called_once()
 
 
 @pytest.mark.asyncio

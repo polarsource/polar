@@ -62,7 +62,6 @@ from polar.subscription.service import (
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.email import WatcherEmailRenderer, watch_email
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_canceled_subscription,
@@ -1496,7 +1495,6 @@ class TestUpdateDiscount:
 
 
 @pytest.mark.asyncio
-@pytest.mark.email_subscription_confirmation
 async def test_send_confirmation_email(
     mocker: MockerFixture,
     save_fixture: SaveFixture,
@@ -1504,21 +1502,18 @@ async def test_send_confirmation_email(
     product: Product,
     customer: Customer,
 ) -> None:
-    with WatcherEmailRenderer() as email_sender:
-        mocker.patch("polar.subscription.service.enqueue_email", email_sender)
+    enqueue_email_mock = mocker.patch("polar.subscription.service.enqueue_email")
 
-        subscription = await create_subscription(
-            save_fixture, product=product, customer=customer
-        )
+    subscription = await create_subscription(
+        save_fixture, product=product, customer=customer
+    )
 
-        async def _send_confirmation_email() -> None:
-            await subscription_service.send_confirmation_email(session, subscription)
+    await subscription_service.send_confirmation_email(session, subscription)
 
-        await watch_email(_send_confirmation_email, email_sender.path)
+    enqueue_email_mock.assert_called_once()
 
 
 @pytest.mark.asyncio
-@pytest.mark.email_subscription_past_due
 async def test_send_past_due_email(
     mocker: MockerFixture,
     save_fixture: SaveFixture,
@@ -1526,17 +1521,15 @@ async def test_send_past_due_email(
     product: Product,
     customer: Customer,
 ) -> None:
-    with WatcherEmailRenderer() as email_sender:
-        mocker.patch("polar.subscription.service.enqueue_email", email_sender)
+    enqueue_email_mock = mocker.patch("polar.subscription.service.enqueue_email")
 
-        subscription = await create_subscription(
-            save_fixture, product=product, customer=customer
-        )
+    subscription = await create_subscription(
+        save_fixture, product=product, customer=customer
+    )
 
-        async def _send_past_due_email() -> None:
-            await subscription_service.send_past_due_email(session, subscription)
+    await subscription_service.send_past_due_email(session, subscription)
 
-        await watch_email(_send_past_due_email, email_sender.path)
+    enqueue_email_mock.assert_called_once()
 
 
 @pytest.mark.asyncio

@@ -87,7 +87,6 @@ api = { cmd = "env AUTHLIB_INSECURE_TRANSPORT=true uvicorn polar.app:app --reloa
 worker = { cmd = "dramatiq -p 1 -t 1 --watch polar -f polar.worker.scheduler:start polar.worker.run", help = "run worker" }
 test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
 test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
-watch_email = { cmd = "POLAR_TEST_WATCH=1 pytest -s -m", help = "preview emails" }
 lint = { cmd = "ruff format . && ruff check --fix .", help = "run linters with autofix" }
 lint_check = { cmd = "ruff format --check . && ruff check .", help = "run ruff linter" }
 lint_types = { cmd = "mypy polar scripts tests", help = "run mypy type verify" }
@@ -102,8 +101,6 @@ pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render
 [tool.pytest.ini_options]
 markers = [
   "auth",
-  "email_order_confirmation",
-  "email_subscription_confirmation",
 ]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"

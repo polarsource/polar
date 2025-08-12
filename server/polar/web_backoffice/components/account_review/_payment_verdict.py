@@ -4,55 +4,38 @@ from typing import Any
 
 from tagflow import tag, text
 
+from polar.web_backoffice.components import button
+from polar.web_backoffice.organizations.forms import (
+    ApproveAccountForm,
+    UnderReviewAccountForm,
+)
+from polar.web_backoffice.organizations.schemas import PaymentStatistics
+
 
 class PaymentVerdict:
     """Payment risk assessment component for 3-month period."""
 
     def __init__(
         self,
-        payment_stats: dict[str, Any],
+        payment_stats: PaymentStatistics,
         organization: Any = None,
         show_actions: bool = False,
         request: Any = None,
         account: Any = None,
         validation_error: Any = None,
     ):
-        self.payment_count = payment_stats.get("payment_count", 0)
-        self.p50_risk = payment_stats.get("p50_risk", 0)
-        self.p90_risk = payment_stats.get("p90_risk", 0)
-        self.risk_level = payment_stats.get("risk_level", "yellow")
-        self.refunds_count = payment_stats.get("refunds_count", 0)
-        self.total_balance = payment_stats.get("total_balance", 0)
-        self.refunds_amount = payment_stats.get("refunds_amount", 0)
-        self.total_payment_amount = payment_stats.get("total_payment_amount", 0)
+        self.payment_count = payment_stats.payment_count
+        self.p50_risk = payment_stats.p50_risk
+        self.p90_risk = payment_stats.p90_risk
+        self.refunds_count = payment_stats.refunds_count
+        self.total_balance = payment_stats.total_balance
+        self.refunds_amount = payment_stats.refunds_amount
+        self.total_payment_amount = payment_stats.total_payment_amount
         self.organization = organization
         self.show_actions = show_actions
         self.request = request
         self.account = account
         self.validation_error = validation_error
-
-    @property
-    def verdict_text(self) -> str:
-        """Get the verdict text based on risk level and metrics."""
-        if self.payment_count == 0:
-            return "NO DATA"
-        elif self.risk_level == "green" and self.refunds_ratio < 0.05:
-            return "LOW RISK"
-        elif self.risk_level == "yellow" or self.refunds_ratio < 0.15:
-            return "MEDIUM RISK"
-        else:
-            return "HIGH RISK"
-
-    @property
-    def verdict_classes(self) -> str:
-        """Get CSS classes for the verdict badge."""
-        verdict = self.verdict_text
-        if verdict in ["LOW RISK"]:
-            return "bg-green-100 text-green-800"
-        elif verdict in ["MEDIUM RISK", "NO DATA"]:
-            return "bg-yellow-100 text-yellow-800"
-        else:
-            return "bg-red-100 text-red-800"
 
     @property
     def refunds_ratio(self) -> float:
@@ -71,25 +54,6 @@ class PaymentVerdict:
     def _format_currency(self, amount: int) -> str:
         """Format amount as currency."""
         return f"${amount / 100:,.2f}"
-
-    @property
-    def assessment_text(self) -> str:
-        """Get detailed payment assessment text."""
-        if self.payment_count == 0:
-            return "No payment data available."
-
-        risk_desc = (
-            "low"
-            if self.risk_level == "green"
-            else ("moderate" if self.risk_level == "yellow" else "high")
-        )
-        refund_desc = (
-            "low"
-            if self.refunds_ratio < 0.05
-            else ("moderate" if self.refunds_ratio < 0.15 else "high")
-        )
-
-        return f"{risk_desc.title()} payment risk profile with {refund_desc} refund rate ({self.refunds_ratio:.1%}). Total processed: {self._format_currency(self.total_payment_amount)}, Balance: {self._format_currency(self.total_balance)}."
 
     @contextlib.contextmanager
     def _render_metric_row(
@@ -200,20 +164,12 @@ class PaymentVerdict:
 
                         # Review Actions (context-sensitive based on organization status)
                         if self.show_actions and self.request:
-                            # Import the necessary modules here to avoid circular imports
-                            from polar.web_backoffice.components import button
-                            from polar.web_backoffice.organizations.forms import (
-                                ApproveAccountForm,
-                                UnderReviewAccountForm,
-                            )
-
                             with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
                                 if (
                                     hasattr(self.organization.status, "UNDER_REVIEW")
                                     and self.organization.status
                                     == self.organization.status.UNDER_REVIEW
                                 ):
-                                    # Show approve/deny actions when under review
                                     with tag.div(classes="text-center mb-3"):
                                         with tag.h4(
                                             classes="text-sm font-medium text-gray-900 mb-1"

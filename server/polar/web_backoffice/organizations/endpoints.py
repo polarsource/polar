@@ -47,6 +47,10 @@ from polar.web_backoffice.organizations.analytics import (
     OrganizationSetupAnalyticsService,
     PaymentAnalyticsService,
 )
+from polar.web_backoffice.organizations.schemas import (
+    PaymentStatistics,
+    SetupVerdictData,
+)
 
 from ..components import accordion, button, datatable, description_list, input, modal
 from ..layout import layout
@@ -129,7 +133,7 @@ class AccountTypeDescriptionListAttrItem(
 
 async def get_payment_statistics(
     session: AsyncSession, organization_id: UUID4
-) -> dict[str, Any]:
+) -> PaymentStatistics:
     """Get all-time payment statistics for an organization."""
 
     analytics_service = PaymentAnalyticsService(session)
@@ -137,16 +141,15 @@ async def get_payment_statistics(
     # Get account ID for the organization
     account_id = await analytics_service.get_organization_account_id(organization_id)
     if not account_id:
-        return {
-            "payment_count": 0,
-            "p50_risk": 0,
-            "p90_risk": 0,
-            "risk_level": "green",
-            "refunds_count": 0,
-            "total_balance": 0,
-            "refunds_amount": 0,
-            "total_payment_amount": 0,
-        }
+        return PaymentStatistics(
+            payment_count=0,
+            p50_risk=0,
+            p90_risk=0,
+            refunds_count=0,
+            total_balance=0,
+            refunds_amount=0,
+            total_payment_amount=0,
+        )
 
     # Get payment statistics
     (
@@ -157,7 +160,6 @@ async def get_payment_statistics(
 
     # Calculate risk percentiles and level
     p50_risk, p90_risk = analytics_service.calculate_risk_percentiles(risk_scores)
-    risk_level = analytics_service.determine_risk_level(p90_risk)
 
     # Get refund statistics
     refunds_count, refunds_amount = await analytics_service.get_refund_stats(
@@ -169,21 +171,20 @@ async def get_payment_statistics(
         account_id, refunds_amount
     )
 
-    return {
-        "payment_count": payment_count,
-        "p50_risk": p50_risk,
-        "p90_risk": p90_risk,
-        "risk_level": risk_level,
-        "refunds_count": refunds_count,
-        "total_balance": total_balance,
-        "refunds_amount": refunds_amount,
-        "total_payment_amount": total_payment_amount,
-    }
+    return PaymentStatistics(
+        payment_count=payment_count,
+        p50_risk=p50_risk,
+        p90_risk=p90_risk,
+        refunds_count=refunds_count,
+        total_balance=total_balance,
+        refunds_amount=refunds_amount,
+        total_payment_amount=total_payment_amount,
+    )
 
 
 async def get_setup_verdict_data(
     organization: Organization, session: AsyncSession
-) -> dict[str, Any]:
+) -> SetupVerdictData:
     """Get enhanced setup verdict for an organization."""
 
     analytics_service = OrganizationSetupAnalyticsService(session)
@@ -231,21 +232,21 @@ async def get_setup_verdict_data(
         account_payouts_enabled=account_payouts_enabled,
     )
 
-    return {
-        "checkout_links_count": checkout_links_count,
-        "webhooks_count": webhooks_count,
-        "api_keys_count": org_tokens_count,  # Only organization tokens now
-        "products_count": products_count,
-        "benefits_count": benefits_count,
-        "user_verified": user_verified,
-        "account_charges_enabled": account_charges_enabled,
-        "account_payouts_enabled": account_payouts_enabled,
-        "setup_score": setup_score,
-        "benefits_configured": benefits_count > 0,
-        "webhooks_configured": webhooks_count > 0,
-        "products_configured": products_count > 0,
-        "api_keys_created": org_tokens_count > 0,
-    }
+    return SetupVerdictData(
+        checkout_links_count=checkout_links_count,
+        webhooks_count=webhooks_count,
+        api_keys_count=org_tokens_count,  # Only organization tokens now
+        products_count=products_count,
+        benefits_count=benefits_count,
+        user_verified=user_verified,
+        account_charges_enabled=account_charges_enabled,
+        account_payouts_enabled=account_payouts_enabled,
+        setup_score=setup_score,
+        benefits_configured=benefits_count > 0,
+        webhooks_configured=webhooks_count > 0,
+        products_configured=products_count > 0,
+        api_keys_created=org_tokens_count > 0,
+    )
 
 
 @router.get("/", name="organizations:list")
@@ -886,17 +887,6 @@ async def get(
                                                                 classes="font-medium hover:text-primary",
                                                             ):
                                                                 text(user.email)
-                                                            if (
-                                                                hasattr(
-                                                                    user,
-                                                                    "email_verified",
-                                                                )
-                                                                and user.email_verified
-                                                            ):
-                                                                with tag.div(
-                                                                    classes="text-xs text-success"
-                                                                ):
-                                                                    text("✓ Verified")
 
                                                 # Role
                                                 with tag.td():

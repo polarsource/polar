@@ -19,6 +19,6 @@ actions:
         type: http
         scheme: bearer
         description: "You can generate an **Organization Access Token** from your organization's settings."
-  - target: "$.paths.*.*[?(!@.security[?(@.customer_session)])].security"
-    description: Remove security from individual paths, unless it's a customer session
+  - target: "$.paths.*.*[?(!@.security[?(@.customer_session || !@.*)])].security"
+    description: Remove security from individual paths, unless it's a customer session or empty security object
     remove: true

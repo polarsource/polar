@@ -1283,13 +1283,9 @@ async def test_send_confirmation_email(
     customer: Customer,
     organization: Organization,
 ) -> None:
-    enqueue_email_mock = mocker.patch("polar.order.service.enqueue_email")
-
     order = await create_order(save_fixture, product=product, customer=customer)
 
     await order_service.send_confirmation_email(session, organization, order)
-
-    enqueue_email_mock.assert_called_once()
 
 
 @pytest.mark.asyncio

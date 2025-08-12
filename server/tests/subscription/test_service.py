@@ -635,7 +635,6 @@ class TestRevoke:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        locker: Locker,
         product: Product,
         customer: Customer,
     ) -> None:
@@ -648,7 +647,7 @@ class TestRevoke:
         )
 
         with pytest.raises(AlreadyCanceledSubscription):
-            await subscription_service.revoke(session, locker, subscription)
+            await subscription_service.revoke(session, subscription)
 
     async def test_valid(
         self,
@@ -656,7 +655,6 @@ class TestRevoke:
         session: AsyncSession,
         save_fixture: SaveFixture,
         enqueue_benefits_grants_mock: MagicMock,
-        locker: Locker,
         product: Product,
         customer: Customer,
     ) -> None:
@@ -667,9 +665,7 @@ class TestRevoke:
             stripe_subscription_id=None,
         )
 
-        updated_subscription = await subscription_service.revoke(
-            session, locker, subscription
-        )
+        updated_subscription = await subscription_service.revoke(session, subscription)
 
         assert updated_subscription.status == SubscriptionStatus.canceled
         assert updated_subscription.canceled_at == frozen_time

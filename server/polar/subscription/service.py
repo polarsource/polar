@@ -933,22 +933,18 @@ class SubscriptionService:
     async def revoke(
         self,
         session: AsyncSession,
-        locker: Locker,
         subscription: Subscription,
         *,
         customer_reason: CustomerCancellationReason | None = None,
         customer_comment: str | None = None,
     ) -> Subscription:
-        async with locker.lock(
-            f"subscription:{subscription.id}", timeout=5, blocking_timeout=5
-        ):
-            return await self._perform_cancellation(
-                session,
-                subscription,
-                customer_reason=customer_reason,
-                customer_comment=customer_comment,
-                immediately=True,
-            )
+        return await self._perform_cancellation(
+            session,
+            subscription,
+            customer_reason=customer_reason,
+            customer_comment=customer_comment,
+            immediately=True,
+        )
 
     async def cancel(
         self,

@@ -1361,7 +1361,7 @@ class OrderService:
             )
 
             if order.subscription is not None:
-                await subscription_service.cancel(session, order.subscription)
+                await subscription_service.revoke(session, order.subscription)
 
             return order
 

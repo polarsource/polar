@@ -1851,7 +1851,7 @@ dev = [
     { name = "freezegun", specifier = ">=1.5.1" },
     { name = "minio", specifier = ">=7.2.9" },
     { name = "mypy", specifier = ">=1.11" },
-    { name = "polar-sdk", specifier = "==0.16.13" },
+    { name = "polar-sdk", specifier = "==0.22.6" },
     { name = "pytest", specifier = "<9" },
     { name = "pytest-asyncio", specifier = ">=0.24" },
     { name = "pytest-cov", specifier = ">=5.0.0" },
@@ -1871,20 +1871,18 @@ dev = [
 
 [[package]]
 name = "polar-sdk"
-version = "0.16.13"
+version = "0.22.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "eval-type-backport" },
+    { name = "httpcore" },
     { name = "httpx" },
     { name = "jsonpath-python" },
     { name = "pydantic" },
-    { name = "python-dateutil" },
     { name = "standardwebhooks" },
-    { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c3/7a/6067ab9f338a630986feb172d4208e230583b357d02b9b58b8f1182eeb65/polar_sdk-0.16.13.tar.gz", hash = "sha256:692cb110516ba9f2719e590ca39569193e69fe63a64bb02a63c84160e76b111b", size = 192914, upload_time = "2025-04-11T12:04:06.518Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b9/db/99e57b971c46dddff0d96fcad6a90ab1472d02434d933935bed6c70f1b5a/polar_sdk-0.22.6.tar.gz", hash = "sha256:26c87c25e728bc16ddc0d048de527e8f219461958f2633eb159aea4ac8e5b42b", size = 218022, upload_time = "2025-08-12T11:37:52.644Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6e/52/9b3b9368854eca34a7218031ee862b9213285fb2cbc07ceb11307a8cf8f9/polar_sdk-0.16.13-py3-none-any.whl", hash = "sha256:c29d5eb29ba5aab08540dced34bcd63e9bf720f1ff21e6cd062007ad4206eba4", size = 558965, upload_time = "2025-04-11T12:04:04.943Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/25/3e8def424621050ffc504d944926e84809d957af398f024fee4a9276fb3a/polar_sdk-0.22.6-py3-none-any.whl", hash = "sha256:f2d62be78e77eab17a8cee381b5bc9a0b5157fe50ea67b93b444543371bdb271", size = 592379, upload_time = "2025-08-12T11:37:51.382Z" },
 ]
 
 [[package]]

@@ -27,7 +27,7 @@ class AIReviewVerdict:
     def verdict_classes(self) -> str:
         """Get CSS classes for the verdict badge."""
         if not self.review:
-            return "bg-gray-100 text-gray-800"
+            return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
 
         # Handle both enum and string values
         verdict = (
@@ -36,11 +36,11 @@ class AIReviewVerdict:
             else str(self.review.verdict)
         )
         if verdict == "PASS":
-            return "bg-green-100 text-green-800"
+            return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
         elif verdict == "FAIL":
-            return "bg-red-100 text-red-800"
+            return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
         else:  # UNCERTAIN
-            return "bg-yellow-100 text-yellow-800"
+            return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
 
     @property
     def risk_score_color(self) -> str:
@@ -63,15 +63,15 @@ class AIReviewVerdict:
         """Render a metric row."""
         row_classes = "flex items-center justify-between py-2 px-3 rounded-lg"
         if highlight:
-            row_classes += " bg-blue-50"
+            row_classes += " bg-blue-50 dark:bg-blue-900/20"
         else:
-            row_classes += " hover:bg-gray-50"
+            row_classes += " hover:bg-gray-50 dark:hover:bg-gray-800"
 
         with tag.div(classes=row_classes):
-            with tag.span(classes="text-sm font-medium text-gray-700"):
+            with tag.span(classes="text-sm font-medium text-gray-700 dark:text-gray-300"):
                 text(label)
             with tag.span(
-                classes=f"text-sm font-semibold {color_class or 'text-gray-900'}"
+                classes=f"text-sm font-semibold {color_class or 'text-gray-900 dark:text-gray-100'}"
             ):
                 text(value)
         yield
@@ -91,7 +91,7 @@ class AIReviewVerdict:
                 with tag.div(classes="text-center py-6"):
                     with tag.div(classes="text-gray-400 mb-2 text-2xl"):
                         text("🤖")
-                    with tag.p(classes="text-gray-600 text-sm"):
+                    with tag.p(classes="text-gray-600 dark:text-gray-400 text-sm"):
                         text("AI review pending")
             else:
                 # Review metrics - compact version
@@ -115,12 +115,12 @@ class AIReviewVerdict:
                 if self.review.violated_sections:
                     with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
                         with tag.div(classes="mb-2"):
-                            with tag.span(classes="text-sm font-medium text-gray-700"):
+                            with tag.span(classes="text-sm font-medium text-gray-700 dark:text-gray-300"):
                                 text("Violations")
                         with tag.div(classes="space-y-1"):
                             for section in self.review.violated_sections:
                                 with tag.div(
-                                    classes="bg-red-100 text-red-800 text-sm px-2 py-1 rounded"
+                                    classes="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-sm px-2 py-1 rounded"
                                 ):
                                     text(section)
 
@@ -128,10 +128,10 @@ class AIReviewVerdict:
                 if self.review.reason:
                     with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
                         with tag.div(classes="mb-2"):
-                            with tag.span(classes="text-sm font-medium text-gray-700"):
+                            with tag.span(classes="text-sm font-medium text-gray-700 dark:text-gray-300"):
                                 text("Assessment")
                         with tag.div(
-                            classes="text-sm text-gray-600 bg-gray-50 p-2 rounded max-h-32 overflow-y-auto"
+                            classes="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded max-h-32 overflow-y-auto"
                         ):
                             # Split reason into paragraphs but keep compact
                             paragraphs = self.review.reason.split("\n\n")
@@ -148,13 +148,13 @@ class AIReviewVerdict:
                 if self.review.timed_out:
                     with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
                         with tag.div(
-                            classes="bg-yellow-50 border border-yellow-200 rounded p-2"
+                            classes="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded p-2"
                         ):
                             with tag.div(classes="flex items-center gap-1"):
                                 with tag.span(classes="text-yellow-600 text-sm"):
                                     text("⚠️")
                                 with tag.span(
-                                    classes="text-yellow-800 text-sm font-medium"
+                                    classes="text-yellow-800 dark:text-yellow-300 text-sm font-medium"
                                 ):
                                     text("Timed Out")
 

@@ -62,14 +62,14 @@ class PaymentVerdict:
         """Render a metric row."""
         row_classes = "flex items-center justify-between py-2 px-3 rounded-lg"
         if highlight:
-            row_classes += " bg-blue-50"
+            row_classes += " bg-blue-50 dark:bg-blue-900/20"
         else:
-            row_classes += " hover:bg-gray-50"
+            row_classes += " hover:bg-gray-50 dark:hover:bg-gray-800"
 
         with tag.div(classes=row_classes):
-            with tag.span(classes="text-sm font-medium text-gray-700"):
+            with tag.span(classes="text-sm font-medium text-gray-700 dark:text-gray-300"):
                 text(label)
-            with tag.span(classes="text-sm font-semibold text-gray-900"):
+            with tag.span(classes="text-sm font-semibold text-gray-900 dark:text-gray-100"):
                 text(value)
         yield
 
@@ -136,16 +136,16 @@ class PaymentVerdict:
                         "text-green-600" if self.total_balance >= 0 else "text-red-600"
                     )
                     with tag.div(
-                        classes="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50"
+                        classes="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-800"
                     ):
                         with tag.div(classes="flex items-center gap-1"):
                             with tag.span(
-                                classes="text-sm font-medium text-gray-700",
+                                classes="text-sm font-medium text-gray-700 dark:text-gray-300",
                                 title="Net balance from all account transactions (excludes processor fees and refunds)",
                             ):
                                 text("Total Balance")
                             with tag.span(
-                                classes="text-gray-400 cursor-help text-xs",
+                                classes="text-gray-400 dark:text-gray-500 cursor-help text-xs",
                                 title="Net balance from all account transactions (excludes processor fees and refunds)",
                             ):
                                 text("ⓘ")
@@ -172,10 +172,10 @@ class PaymentVerdict:
                                 ):
                                     with tag.div(classes="text-center mb-3"):
                                         with tag.h4(
-                                            classes="text-sm font-medium text-gray-900 mb-1"
+                                            classes="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1"
                                         ):
                                             text("Review Decision")
-                                        with tag.p(classes="text-xs text-gray-600"):
+                                        with tag.p(classes="text-xs text-gray-600 dark:text-gray-400"):
                                             text(
                                                 "Based on the financial analysis above"
                                             )
@@ -207,10 +207,10 @@ class PaymentVerdict:
                                     # Show "Set to Under Review" action when not under review
                                     with tag.div(classes="text-center mt-3 mb-3"):
                                         with tag.h4(
-                                            classes="text-sm font-medium text-gray-900 mb-1"
+                                            classes="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1"
                                         ):
                                             text("Ready for Review?")
-                                        with tag.p(classes="text-xs text-gray-600"):
+                                        with tag.p(classes="text-xs text-gray-600 dark:text-gray-400"):
                                             text(
                                                 "Based on financial threshold analysis"
                                             )

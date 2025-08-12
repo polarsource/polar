@@ -16,7 +16,7 @@ dependencies = [
   "sse-starlette>=2.0.0",
   "stripe>=10.12.0,<12",
   "pyjwt>=2.6.0",
-  "pydantic>=2.10,<2.11",
+  "pydantic>=2.11",
   "jinja2>=3.1.2",
   "sentry-sdk[fastapi,sqlalchemy]>=2.16.0",
   "posthog>=3.6.0",
@@ -99,9 +99,7 @@ seeds_load = { cmd = "python -m scripts.seeds_load", help = "load sample/test da
 pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render" }
 
 [tool.pytest.ini_options]
-markers = [
-  "auth",
-]
+markers = ["auth"]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
 
@@ -145,5 +143,5 @@ skip_cache_mtime_checks = true
 [tool.pydantic-mypy]
 init_forbid_extra = true
 init_typed = true
-warn_required_dynamic_aliases = true
+warn_required_dynamic_aliases = false
 warn_untyped_fields = true

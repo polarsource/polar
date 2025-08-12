@@ -10,6 +10,7 @@ from pydantic import (
     HttpUrl,
     IPvAnyAddress,
     Tag,
+    computed_field,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -428,10 +429,6 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
 
     payment_processor_metadata: dict[str, str]
 
-    subtotal_amount: SkipJsonSchema[int | None] = Field(
-        deprecated="Use `net_amount`.", validation_alias="net_amount"
-    )
-
     customer_billing_address_fields: SkipJsonSchema[
         CheckoutCustomerBillingAddressFields
     ] = Field(
@@ -443,6 +440,10 @@ class CheckoutBase(CustomFieldDataOutputMixin, IDSchema, TimestampedSchema):
             "should be disabled, optional or required in the checkout form."
         )
     )
+
+    @computed_field(deprecated="Use `net_amount`.")
+    def subtotal_amount(self) -> SkipJsonSchema[int | None]:
+        return self.net_amount
 
 
 class CheckoutProduct(ProductBase):

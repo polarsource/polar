@@ -2,7 +2,7 @@ from typing import Annotated
 
 from babel.numbers import format_currency
 from fastapi import Path
-from pydantic import UUID4, AliasChoices, AliasPath, Field
+from pydantic import UUID4, AliasChoices, AliasPath, Field, computed_field
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
@@ -36,14 +36,7 @@ class OrderBase(TimestampedSchema, IDSchema):
     net_amount: int = Field(
         description="Amount in cents, after discounts but before taxes."
     )
-    amount: int = Field(
-        description="Amount in cents, after discounts but before taxes.",
-        deprecated=(
-            "Use `net_amount`. "
-            "It has the same value and meaning, but the name is more descriptive."
-        ),
-        validation_alias="net_amount",
-    )
+
     tax_amount: int = Field(description="Sales tax amount in cents.")
     total_amount: int = Field(description="Amount in cents, after discounts and taxes.")
     refunded_amount: int = Field(description="Amount refunded in cents.")
@@ -73,23 +66,25 @@ class OrderBase(TimestampedSchema, IDSchema):
     subscription_id: UUID4 | None
     checkout_id: UUID4 | None
 
+    @computed_field(
+        description="Amount in cents, after discounts but before taxes.",
+        deprecated=(
+            "Use `net_amount`. "
+            "It has the same value and meaning, but the name is more descriptive."
+        ),
+    )
+    def amount(self) -> SkipJsonSchema[int]:
+        return self.net_amount
+
     def get_amount_display(self) -> str:
-        return f"{
-            format_currency(
-                self.amount / 100,
-                self.currency.upper(),
-                locale='en_US',
-            )
-        }"
+        return format_currency(
+            self.net_amount / 100, self.currency.upper(), locale="en_US"
+        )
 
     def get_refunded_amount_display(self) -> str:
-        return f"{
-            format_currency(
-                self.refunded_amount / 100,
-                self.currency.upper(),
-                locale='en_US',
-            )
-        }"
+        return format_currency(
+            self.refunded_amount / 100, self.currency.upper(), locale="en_US"
+        )
 
 
 class OrderCustomer(CustomerBase): ...

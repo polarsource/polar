@@ -22,6 +22,7 @@ from polar.worker import (
 )
 
 from .repository import OrderRepository
+from .service import NoPendingBillingEntries
 from .service import order as order_service
 
 log: Logger = structlog.get_logger()
@@ -70,9 +71,14 @@ async def create_subscription_cycle_order(subscription_id: uuid.UUID) -> None:
         if subscription is None:
             raise SubscriptionDoesNotExist(subscription_id)
 
-        await order_service.create_subscription_order(
-            session, subscription, OrderBillingReason.subscription_cycle
-        )
+        try:
+            await order_service.create_subscription_order(
+                session, subscription, OrderBillingReason.subscription_cycle
+            )
+        except NoPendingBillingEntries:
+            # Skip creating an order if there are no pending billing entries.
+            # Usually happens if the subscription is now canceled, and no usage-based billing is pending
+            pass
 
 
 @actor(actor_name="order.trigger_payment", priority=TaskPriority.LOW)

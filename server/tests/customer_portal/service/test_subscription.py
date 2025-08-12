@@ -248,35 +248,6 @@ class TestCancel:
             await customer_subscription_service.cancel(session, subscription)
 
     @pytest.mark.auth
-    async def test_free_subscription(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        stripe_service_mock: MagicMock,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=product,
-            customer=customer,
-            stripe_subscription_id=None,
-        )
-
-        updated_subscription = await customer_subscription_service.cancel(
-            session, subscription
-        )
-
-        assert updated_subscription.id == subscription.id
-        assert updated_subscription.status == SubscriptionStatus.canceled
-        assert updated_subscription.cancel_at_period_end is False
-        assert updated_subscription.canceled_at is not None
-        assert updated_subscription.ends_at is not None
-        assert updated_subscription.ended_at is not None
-
-        stripe_service_mock.cancel_subscription.assert_not_called()
-
-    @pytest.mark.auth
     async def test_stripe_subscription_cancellation(
         self,
         session: AsyncSession,

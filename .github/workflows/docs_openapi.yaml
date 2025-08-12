@@ -28,6 +28,21 @@ jobs:
       - name: Run update script
         run: ./update-schema.sh https://spec.speakeasy.com/polar/polar/polar-oas-with-code-samples
 
+      - name: Update JSON in openai.yml
+        run: |
+          python3 -m pip install pyyaml
+          python3 -c """
+          import yaml
+          with open('openai.yml', 'r') as f:
+              data = yaml.safe_load(f)
+          if 'paths' in data and '/v1/customer-portal/license-keys/validate' in data['paths']:
+              data['paths']['/v1/customer-portal/license-keys/validate']['security'] = []
+          if 'paths' in data and '/v1/customer-portal/license-keys/activate' in data['paths']:
+              data['paths']['/v1/customer-portal/license-keys/activate']['security'] = []
+          with open('openai.yml', 'w') as f:
+              yaml.dump(data, f)
+          """
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:

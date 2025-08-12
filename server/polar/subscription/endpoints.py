@@ -229,8 +229,7 @@ async def revoke(
     log.info(
         "subscription.revoke", id=id, admin_id=auth_subject.subject.id, immediate=True
     )
-    return await subscription_service.revoke(
-        session,
-        locker=locker,
-        subscription=subscription,
-    )
+    async with locker.lock(
+        f"subscription:{subscription.id}", timeout=5, blocking_timeout=5
+    ):
+        return await subscription_service.revoke(session, subscription)

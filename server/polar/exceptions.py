@@ -139,6 +139,7 @@ class ValidationError(TypedDict):
     type: LiteralString
     input: Any
     ctx: NotRequired[dict[str, Any]]
+    url: NotRequired[str]
 
 
 class PolarRequestValidationError(PolarError):

@@ -5,7 +5,7 @@ from typing import Self
 import pycountry
 from babel.dates import format_date as _format_date
 from babel.numbers import format_currency as _format_currency
-from babel.numbers import format_number as _format_number
+from babel.numbers import format_decimal as _format_decimal
 from babel.numbers import format_percent as _format_percent
 from fontTools.misc.configTools import ClassVar
 from fpdf import FPDF
@@ -25,7 +25,7 @@ def format_currency(amount: int, currency: str) -> str:
 
 
 def format_number(n: int) -> str:
-    return _format_number(n, locale="en_US")
+    return _format_decimal(n, locale="en_US")
 
 
 def format_percent(basis_points: int) -> str:

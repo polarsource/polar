@@ -36,7 +36,6 @@ class Logging(Generic[RendererType]):
             cls.timestamper,
             structlog.processors.UnicodeDecoder(),
             structlog.processors.StackInfoRenderer(),
-            structlog.processors.format_exc_info,
             *([LogfireProcessor()] if logfire else []),
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ]
@@ -69,7 +68,6 @@ class Logging(Generic[RendererType]):
                             structlog.processors.UnicodeDecoder(),
                             structlog.processors.StackInfoRenderer(),
                             *([LogfireProcessor()] if logfire else []),
-                            structlog.processors.format_exc_info,
                         ],
                     },
                 },

@@ -1,9 +1,11 @@
 import uuid
 from collections import namedtuple
+from collections.abc import Generator
 from datetime import datetime
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, call
 
+import freezegun
 import pytest
 import pytest_asyncio
 import stripe as stripe_lib
@@ -24,6 +26,7 @@ from polar.exceptions import (
 )
 from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
+from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.meter.filter import Filter, FilterConjunction
@@ -155,6 +158,13 @@ def enqueue_benefits_grants_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.fixture
 def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.subscription.service.enqueue_job")
+
+
+@pytest.fixture
+def frozen_time() -> Generator[datetime, None]:
+    frozen_time = utc_now()
+    with freezegun.freeze_time(frozen_time):
+        yield frozen_time
 
 
 @pytest.mark.asyncio
@@ -567,6 +577,107 @@ class TestCycle:
             session, third_month_subscription
         )
         assert fourth_month_subscription.discount is None
+
+    async def test_cancel_at_period_end(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, cancel_at_period_end=True
+        )
+
+        previous_current_period_start = subscription.current_period_start
+        previous_current_period_end = subscription.current_period_end
+
+        updated_subscription = await subscription_service.cycle(session, subscription)
+
+        assert updated_subscription.status == SubscriptionStatus.canceled
+        assert updated_subscription.ended_at == updated_subscription.ends_at
+        assert (
+            updated_subscription.current_period_start == previous_current_period_start
+        )
+        assert updated_subscription.current_period_end == previous_current_period_end
+
+        event_repository = EventRepository.from_session(session)
+        events = await event_repository.get_all_by_name(
+            SystemEvent.subscription_revoked
+        )
+        assert len(events) == 1
+        event = events[0]
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 0
+
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="revoke",
+            customer_id=customer.id,
+            product_id=product.id,
+            subscription_id=subscription.id,
+        )
+        enqueue_job_mock.assert_any_call("order.subscription_cycle", subscription.id)
+
+
+@pytest.mark.asyncio
+class TestRevoke:
+    async def test_already_canceled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        locker: Locker,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+            stripe_subscription_id=None,
+        )
+
+        with pytest.raises(AlreadyCanceledSubscription):
+            await subscription_service.revoke(session, locker, subscription)
+
+    async def test_valid(
+        self,
+        frozen_time: datetime,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        locker: Locker,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+
+        updated_subscription = await subscription_service.revoke(
+            session, locker, subscription
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.canceled
+        assert updated_subscription.canceled_at == frozen_time
+        assert updated_subscription.ends_at == frozen_time
+        assert updated_subscription.ended_at == frozen_time
+
+        enqueue_benefits_grants_mock.assert_called_once_with(
+            session, updated_subscription
+        )
 
 
 @pytest.mark.asyncio

@@ -541,14 +541,58 @@ class SubscriptionService:
         if not subscription.active:
             raise InactiveSubscription(subscription)
 
-        if subscription.cancel_at_period_end:
-            raise NotImplementedError("Revoke method")
+        revoke = subscription.cancel_at_period_end
+
+        # Subscription is due to cancel, revoke it
+        if revoke:
+            subscription.ended_at = subscription.ends_at
+            subscription.status = SubscriptionStatus.canceled
+
+            event = await event_service.create_event(
+                session,
+                build_system_event(
+                    SystemEvent.subscription_revoked,
+                    customer=subscription.customer,
+                    organization=subscription.organization,
+                    metadata={"subscription_id": str(subscription.id)},
+                ),
+            )
+            await self.enqueue_benefits_grants(session, subscription)
+        # Normal cycle
         else:
             current_period_end = subscription.current_period_end
             subscription.current_period_start = current_period_end
             subscription.current_period_end = (
                 subscription.recurring_interval.get_next_period(current_period_end)
             )
+
+            event = event = await event_service.create_event(
+                session,
+                build_system_event(
+                    SystemEvent.subscription_cycled,
+                    customer=subscription.customer,
+                    organization=subscription.organization,
+                    metadata={"subscription_id": str(subscription.id)},
+                ),
+            )
+            # Add a billing entry for a new period
+            billing_entry_repository = BillingEntryRepository.from_session(session)
+            for subscription_product_price in subscription.subscription_product_prices:
+                product_price = subscription_product_price.product_price
+                if is_static_price(product_price):
+                    await billing_entry_repository.create(
+                        BillingEntry(
+                            start_timestamp=subscription.current_period_start,
+                            end_timestamp=subscription.current_period_end,
+                            direction=BillingEntryDirection.debit,
+                            amount=subscription_product_price.amount,
+                            currency=subscription.currency,
+                            customer=subscription.customer,
+                            product_price=product_price,
+                            subscription=subscription,
+                            event=event,
+                        ),
+                    )
 
         # Check if discount is still applicable
         if subscription.discount is not None:
@@ -560,36 +604,6 @@ class SubscriptionService:
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)
-
-        # Add event and billing entry for the new period
-        event = await event_service.create_event(
-            session,
-            build_system_event(
-                SystemEvent.subscription_cycled,
-                customer=subscription.customer,
-                organization=subscription.organization,
-                metadata={
-                    "subscription_id": str(subscription.id),
-                },
-            ),
-        )
-        billing_entry_repository = BillingEntryRepository.from_session(session)
-        for subscription_product_price in subscription.subscription_product_prices:
-            product_price = subscription_product_price.product_price
-            if is_static_price(product_price):
-                await billing_entry_repository.create(
-                    BillingEntry(
-                        start_timestamp=subscription.current_period_start,
-                        end_timestamp=subscription.current_period_end,
-                        direction=BillingEntryDirection.debit,
-                        amount=subscription_product_price.amount,
-                        currency=subscription.currency,
-                        customer=subscription.customer,
-                        product_price=product_price,
-                        subscription=subscription,
-                        event=event,
-                    ),
-                )
 
         enqueue_job("order.subscription_cycle", subscription.id)
 
@@ -1030,8 +1044,8 @@ class SubscriptionService:
         previous_status = subscription.status
         previous_ends_at = subscription.ends_at
 
-        # Store our own vs. Stripe for better accuracy.
-        subscription.canceled_at = utc_now()
+        now = utc_now()
+        subscription.canceled_at = now
 
         if customer_reason:
             subscription.customer_cancellation_reason = customer_reason
@@ -1039,6 +1053,7 @@ class SubscriptionService:
         if customer_comment:
             subscription.customer_cancellation_comment = customer_comment
 
+        # Managed by Stripe
         if subscription.stripe_subscription_id is not None:
             reason = customer_reason.value if customer_reason else None
             if immediately:
@@ -1056,14 +1071,16 @@ class SubscriptionService:
 
             subscription.status = SubscriptionStatus(stripe_subscription.status)
             self.update_cancellation_from_stripe(subscription, stripe_subscription)
+        # Managed by our billing
         else:
-            subscription.ends_at = utc_now()
-            subscription.ended_at = utc_now()
-            subscription.status = SubscriptionStatus.canceled
-
-            # free subscriptions end immediately (vs at end of billing period)
-            # queue removal of grants
-            await self.enqueue_benefits_grants(session, subscription)
+            if immediately:
+                subscription.ends_at = now
+                subscription.ended_at = now
+                subscription.status = SubscriptionStatus.canceled
+                await self.enqueue_benefits_grants(session, subscription)
+            else:
+                subscription.cancel_at_period_end = True
+                subscription.ends_at = subscription.current_period_end
 
         log.info(
             "subscription.canceled",

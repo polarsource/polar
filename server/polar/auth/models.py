@@ -25,7 +25,7 @@ class AuthMethod(Enum):
 S = TypeVar("S", bound=Subject, covariant=True)
 
 
-class AuthSubject(Generic[S]):
+class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it allows us to force covariant typing
     subject: S
     scopes: set[Scope]
     method: AuthMethod
@@ -39,15 +39,19 @@ class AuthSubject(Generic[S]):
         return Scope.web_default in self.scopes
 
 
-def is_anonymous(auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[Anonymous]]:
+def is_anonymous[S: Subject](
+    auth_subject: AuthSubject[S],
+) -> TypeGuard[AuthSubject[Anonymous]]:
     return isinstance(auth_subject.subject, Anonymous)
 
 
-def is_user(auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[User]]:
+def is_user[S: Subject](auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[User]]:
     return isinstance(auth_subject.subject, User)
 
 
-def is_direct_user(auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[User]]:
+def is_direct_user[S: Subject](
+    auth_subject: AuthSubject[S],
+) -> TypeGuard[AuthSubject[User]]:
     """
     Whether we can trust this subject to be a user acting directly.
 
@@ -61,13 +65,15 @@ def is_direct_user(auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[User]]
     }
 
 
-def is_organization(
+def is_organization[S: Subject](
     auth_subject: AuthSubject[S],
 ) -> TypeGuard[AuthSubject[Organization]]:
     return isinstance(auth_subject.subject, Organization)
 
 
-def is_customer(auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[Customer]]:
+def is_customer[S: Subject](
+    auth_subject: AuthSubject[S],
+) -> TypeGuard[AuthSubject[Customer]]:
     return isinstance(auth_subject.subject, Customer)
 
 

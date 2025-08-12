@@ -2,7 +2,7 @@ import contextlib
 import functools
 from collections.abc import Awaitable, Callable
 from enum import IntEnum
-from typing import Any, ParamSpec, TypeVar
+from typing import Any, ParamSpec
 
 import dramatiq
 import logfire
@@ -151,10 +151,9 @@ class TaskPriority(IntEnum):
 
 
 P = ParamSpec("P")
-R = TypeVar("R")
 
 
-def actor(
+def actor[**P, R](
     actor_class: Callable[..., dramatiq.Actor[Any, Any]] = dramatiq.Actor,
     actor_name: str | None = None,
     queue_name: str = "default",

@@ -221,7 +221,7 @@ async def get(
                 ),
                 datatable.DatatableActionsColumn(
                     "",
-                    datatable.DatatableActionHTMX(
+                    datatable.DatatableActionHTMX[Organization](
                         "Delete Organization",
                         lambda r, i: str(r.url_for("organizations:delete", id=i.id)),
                         target="#modal",
@@ -262,13 +262,13 @@ async def get(
                 ),
                 datatable.DatatableActionsColumn(
                     "",
-                    datatable.DatatableActionHTMX(
+                    datatable.DatatableActionHTMX[Account](
                         "Delete Stripe Connect account",
                         lambda r, i: str(r.url_for("accounts:delete-stripe", id=i.id)),
                         target="#modal",
                         hidden=lambda _, i: not i.stripe_id,
                     ),
-                    datatable.DatatableActionHTMX(
+                    datatable.DatatableActionHTMX[Account](
                         "Delete account",
                         lambda r, i: str(r.url_for("accounts:delete", id=i.id)),
                         target="#modal",

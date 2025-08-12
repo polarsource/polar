@@ -1,7 +1,7 @@
 import builtins
 import uuid
 from collections.abc import Sequence
-from typing import Any, List, Literal, TypeVar  # noqa: UP035
+from typing import Any, List, Literal  # noqa: UP035
 
 import stripe
 from sqlalchemy import UnaryExpression, asc, case, desc, func, select
@@ -57,9 +57,6 @@ from .sorting import ProductSortProperty
 
 
 class ProductError(PolarError): ...
-
-
-T = TypeVar("T", bound=tuple[Any])
 
 
 class ProductService:

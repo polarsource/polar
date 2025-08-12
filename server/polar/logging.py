@@ -1,18 +1,16 @@
 import logging.config
 import uuid
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 import structlog
 from logfire.integrations.structlog import LogfireProcessor
 
 from polar.config import settings
 
-RendererType = TypeVar("RendererType")
-
 Logger = structlog.stdlib.BoundLogger
 
 
-class Logging(Generic[RendererType]):
+class Logging[RendererType]:
     """Hubben logging configurator of `structlog` and `logging`.
 
     Customized implementation inspired by the following documentation:

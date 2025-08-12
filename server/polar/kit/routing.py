@@ -1,7 +1,7 @@
 import functools
 import inspect
 from collections.abc import Callable
-from typing import Any, ParamSpec, TypeVar
+from typing import Any
 
 from fastapi import APIRouter as _APIRouter
 from fastapi.routing import APIRoute
@@ -179,13 +179,9 @@ class SpeakeasyMCPAPIRoute(APIRoute):
         self.openapi_extra = openapi_extra
 
 
-_P = ParamSpec("_P")
-_T = TypeVar("_T")
-
-
-def _inherit_signature_from(
-    _to: Callable[_P, _T],
-) -> Callable[[Callable[..., _T]], Callable[_P, _T]]:
+def _inherit_signature_from[**P, T](
+    _to: Callable[P, T],
+) -> Callable[[Callable[..., T]], Callable[P, T]]:
     return lambda x: x  # pyright: ignore
 
 

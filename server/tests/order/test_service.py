@@ -63,7 +63,6 @@ from polar.transaction.service.payment import (
 from polar.transaction.service.platform_fee import PlatformFeeTransactionService
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.email import WatcherEmailRenderer, watch_email
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_billing_entry,
@@ -1276,7 +1275,6 @@ class TestCreateOrderBalance:
 
 
 @pytest.mark.asyncio
-@pytest.mark.email_order_confirmation
 async def test_send_confirmation_email(
     mocker: MockerFixture,
     save_fixture: SaveFixture,
@@ -1285,15 +1283,13 @@ async def test_send_confirmation_email(
     customer: Customer,
     organization: Organization,
 ) -> None:
-    with WatcherEmailRenderer() as email_sender:
-        mocker.patch("polar.order.service.enqueue_email", email_sender)
+    enqueue_email_mock = mocker.patch("polar.order.service.enqueue_email")
 
-        order = await create_order(save_fixture, product=product, customer=customer)
+    order = await create_order(save_fixture, product=product, customer=customer)
 
-        async def _send_confirmation_email() -> None:
-            await order_service.send_confirmation_email(session, organization, order)
+    await order_service.send_confirmation_email(session, organization, order)
 
-        await watch_email(_send_confirmation_email, email_sender.path)
+    enqueue_email_mock.assert_called_once()
 
 
 @pytest.mark.asyncio

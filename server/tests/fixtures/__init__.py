@@ -3,7 +3,6 @@ import logging
 from tests.fixtures.auth import *  # noqa: F401, F403
 from tests.fixtures.base import *  # noqa: F401, F403
 from tests.fixtures.database import *  # noqa: F401, F403
-from tests.fixtures.email import *  # noqa: F401, F403
 from tests.fixtures.file import *  # noqa: F401, F403
 from tests.fixtures.locker import *  # noqa: F401, F403
 from tests.fixtures.random_objects import *  # noqa: F401, F403

@@ -227,24 +227,3 @@ To log in for the first time, follow these steps:
 > [!TIP]
 > Search for `/login/magic-link/authenticate` in the terminal to easily find the magic link within the HTML output.
 5. Click the URL provided in the terminal to complete the login process.
-
-## Work with emails
-
-We have a mechanism to render emails into a file and preview it in the browser. If changes are made to the codebase, they are automatically refreshed.
-
-This can be triggered with the following commands:
-
-### Order confirmation email
-
-```bash
-uv run task watch_email email_order_confirmation
-```
-
-### Subscription confirmation email
-
-```bash
-uv run task watch_email email_subscription_confirmation
-```
-
-> [!NOTE]
-> Other emails are not yet supported, but can be added if needed.

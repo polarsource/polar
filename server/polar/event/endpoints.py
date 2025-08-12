@@ -88,7 +88,7 @@ async def list(
     parsed_filter: Filter | None = None
     if filter is not None:
         try:
-            parsed_filter = Filter.parse_raw(filter)
+            parsed_filter = Filter.model_validate_json(filter)
         except ValidationError as e:
             raise RequestValidationError(e.errors()) from e
 

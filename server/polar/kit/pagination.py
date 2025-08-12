@@ -150,6 +150,6 @@ class ListResource(BaseModel, Generic[T]):
         """
         Override the schema to set the `ref` field to the overridden class name.
         """
-        result = super().__get_pydantic_core_schema__(source, handler)
+        result = handler(source)
         result["ref"] = cls.__name__  # type: ignore
         return result

@@ -1533,6 +1533,23 @@ async def test_send_past_due_email(
 
 
 @pytest.mark.asyncio
+async def test_send_change_email(
+    mocker: MockerFixture,
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    product: Product,
+    customer: Customer,
+) -> None:
+    subscription = await create_subscription(
+        save_fixture, product=product, customer=customer
+    )
+
+    await subscription_service.send_subscription_updated_email(
+        session, subscription, product, product
+    )
+
+
+@pytest.mark.asyncio
 class TestMarkPastDue:
     """Test subscription service dunning functionality"""
 

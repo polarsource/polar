@@ -3,7 +3,7 @@ from collections.abc import Callable, Generator
 from datetime import datetime
 from inspect import isgenerator
 from operator import attrgetter
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 from fastapi import Request
 from fastapi.datastructures import URL
@@ -12,10 +12,8 @@ from tagflow import attr, classes, tag, text
 from .. import formatters
 from ._clipboard_button import clipboard_button
 
-M = TypeVar("M")
 
-
-class DescriptionListItem(Generic[M]):
+class DescriptionListItem[M]:
     """Base class for description list items.
 
     Provides the foundation for all description list item types. Subclasses must
@@ -55,7 +53,7 @@ class DescriptionListItem(Generic[M]):
         return f"{self.__class__.__name__}(label={self.label!r})"
 
 
-class DescriptionListAttrItem(Generic[M], DescriptionListItem[M]):
+class DescriptionListAttrItem[M](DescriptionListItem[M]):
     """A description list item that displays an attribute value from the model.
 
     This item extracts and displays a specific attribute from the data object.
@@ -133,7 +131,7 @@ class DescriptionListAttrItem(Generic[M], DescriptionListItem[M]):
         return f"{self.__class__.__name__}(attr={self.attr!r}, label={self.label!r}, clipboard={self.clipboard})"
 
 
-class DescriptionListDateTimeItem(DescriptionListAttrItem[M]):
+class DescriptionListDateTimeItem[M](DescriptionListAttrItem[M]):
     """A description list item that displays datetime attributes with proper formatting.
 
     Extends DescriptionListAttrItem to format datetime values using the backoffice
@@ -162,7 +160,7 @@ class DescriptionListDateTimeItem(DescriptionListAttrItem[M]):
         return formatters.datetime(value)
 
 
-class DescriptionListLinkItem(DescriptionListAttrItem[M]):
+class DescriptionListLinkItem[M](DescriptionListAttrItem[M]):
     """A description list item that generates a link.
 
     Args:
@@ -219,7 +217,7 @@ class DescriptionListLinkItem(DescriptionListAttrItem[M]):
         return f"{self.__class__.__name__}(attr={self.attr!r}, label={self.label!r}, external={self.external!r})"
 
 
-class DescriptionListCurrencyItem(DescriptionListAttrItem[M]):
+class DescriptionListCurrencyItem[M](DescriptionListAttrItem[M]):
     """A description list item that displays currency values with proper formatting.
 
     Extends DescriptionListAttrItem to format integer currency values (in cents)
@@ -260,7 +258,7 @@ class DescriptionListCurrencyItem(DescriptionListAttrItem[M]):
         return getattr(item, "currency", "usd")
 
 
-class DescriptionList(Generic[M]):
+class DescriptionList[M]:
     """A complete description list component for displaying structured data.
 
     Renders a formatted description list (HTML <dl>) with labels and values.

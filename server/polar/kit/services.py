@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Generic, TypeVar
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy.orm import InstrumentedAttribute
@@ -13,15 +13,8 @@ from .db.models import RecordModel
 from .db.postgres import AsyncSession, sql
 from .schemas import Schema
 
-ModelType = TypeVar("ModelType", bound=RecordModel)
-CreateSchemaType = TypeVar("CreateSchemaType", bound=Schema)
-UpdateSchemaType = TypeVar("UpdateSchemaType", bound=Schema)
-SchemaType = TypeVar("SchemaType", bound=Schema)
 
-
-class ResourceServiceReader(
-    Generic[ModelType],
-):
+class ResourceServiceReader[ModelType: RecordModel]:
     def __init__(self, model: type[ModelType]) -> None:
         self.model = model
 
@@ -58,9 +51,12 @@ class ResourceServiceReader(
         await session.flush()
 
 
-class ResourceService(
+class ResourceService[
+    ModelType: RecordModel,
+    CreateSchemaType: Schema,
+    UpdateSchemaType: Schema,
+](
     ResourceServiceReader[ModelType],
-    Generic[ModelType, CreateSchemaType, UpdateSchemaType],
 ):
     # Ideally, actions would only contain class methods since there is
     # no state to retain. Unable to achieve this with mapping the model

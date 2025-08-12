@@ -1,6 +1,6 @@
 import math
 from collections.abc import Sequence
-from typing import Annotated, Any, Generic, NamedTuple, Self, TypeVar, overload
+from typing import Annotated, Any, NamedTuple, Self, overload
 
 from fastapi import Depends, Query
 from pydantic import BaseModel, GetCoreSchemaHandler
@@ -15,10 +15,6 @@ from polar.kit.db.models.base import Model
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.schemas import ClassName, Schema
 
-T = TypeVar("T", bound=Any)
-RM = TypeVar("RM", bound=RecordModel)
-M = TypeVar("M", bound=Model)
-
 
 class PaginationParams(NamedTuple):
     page: int
@@ -26,7 +22,7 @@ class PaginationParams(NamedTuple):
 
 
 @overload
-async def paginate(
+async def paginate[RM: RecordModel](
     session: AsyncSession,
     statement: Select[tuple[RM]],
     *,
@@ -36,7 +32,7 @@ async def paginate(
 
 
 @overload
-async def paginate(
+async def paginate[M: Model](
     session: AsyncSession,
     statement: Select[tuple[M]],
     *,
@@ -46,7 +42,7 @@ async def paginate(
 
 
 @overload
-async def paginate(
+async def paginate[T: Any](
     session: AsyncSession,
     statement: Select[T],
     *,
@@ -108,7 +104,7 @@ class Pagination(Schema):
     max_page: int
 
 
-class ListResource(BaseModel, Generic[T]):
+class ListResource[T: Any](BaseModel):
     items: list[T]
     pagination: Pagination
 

@@ -232,7 +232,7 @@ async def get(
                     with tag.div(classes="card-body"):
                         with tag.h2(classes="card-title"):
                             text("Order Details")
-                        with description_list.DescriptionList(
+                        with description_list.DescriptionList[Order](
                             description_list.DescriptionListAttrItem(
                                 "id", "ID", clipboard=True
                             ),
@@ -246,14 +246,14 @@ async def get(
                             description_list.DescriptionListAttrItem(
                                 "billing_reason", "Billing Reason"
                             ),
-                            description_list.DescriptionListLinkItem(
+                            description_list.DescriptionListLinkItem[Order](
                                 "subscription_id",
                                 "Subscription",
                                 href_getter=lambda r, i: str(
                                     r.url_for("subscriptions:get", id=i.subscription_id)
                                 ),
                             ),
-                            description_list.DescriptionListLinkItem(
+                            description_list.DescriptionListLinkItem[Order](
                                 "stripe_invoice_id",
                                 "Stripe Invoice",
                                 href_getter=lambda _,
@@ -317,7 +317,7 @@ async def get(
                             description_list.DescriptionListAttrItem(
                                 "product.name", "Name"
                             ),
-                            description_list.DescriptionListLinkItem(
+                            description_list.DescriptionListLinkItem[Order](
                                 "product.organization.name",
                                 "Organization",
                                 href_getter=lambda r, i: str(

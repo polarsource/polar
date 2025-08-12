@@ -1,6 +1,7 @@
 from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime
-from typing import Any, Generic, Protocol, Self, TypeAlias, TypeVar
+from enum import StrEnum
+from typing import Any, Protocol, Self, TypeAlias
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, over, select
 from sqlalchemy.orm import Mapped
@@ -8,39 +9,27 @@ from sqlalchemy.sql.base import ExecutableOption
 from sqlalchemy.sql.expression import ColumnExpressionArgument
 
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.sorting import PE, Sorting
+from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
-
-M = TypeVar("M")
 
 
 class ModelDeletedAtProtocol(Protocol):
     deleted_at: Mapped[datetime | None]
 
 
-MODEL_DELETED_AT = TypeVar("MODEL_DELETED_AT", bound=ModelDeletedAtProtocol)
-
-ID_TYPE = TypeVar("ID_TYPE")
-
-
-class ModelIDProtocol(Protocol[ID_TYPE]):
+class ModelIDProtocol[ID_TYPE](Protocol):
     id: Mapped[ID_TYPE]
 
 
-MODEL_ID = TypeVar("MODEL_ID", bound=ModelIDProtocol)  # type: ignore[type-arg]
-
-
-class ModelDeletedAtIDProtocol(Protocol[ID_TYPE]):
+class ModelDeletedAtIDProtocol[ID_TYPE](Protocol):
     id: Mapped[ID_TYPE]
     deleted_at: Mapped[datetime | None]
 
 
-MODEL_DELETED_AT_ID = TypeVar("MODEL_DELETED_AT_ID", bound=ModelDeletedAtIDProtocol)  # type: ignore[type-arg]
-
 Options: TypeAlias = Sequence[ExecutableOption]
 
 
-class RepositoryProtocol(Protocol[M]):
+class RepositoryProtocol[M](Protocol):
     model: type[M]
 
     async def get_one_or_none(self, statement: Select[tuple[M]]) -> M | None: ...
@@ -64,7 +53,7 @@ class RepositoryProtocol(Protocol[M]):
     ) -> M: ...
 
 
-class RepositoryBase(Generic[M]):
+class RepositoryBase[M]:
     model: type[M]
 
     def __init__(self, session: AsyncSession) -> None:
@@ -142,9 +131,8 @@ class RepositoryBase(Generic[M]):
         return cls(session)
 
 
-class RepositorySoftDeletionProtocol(
-    RepositoryProtocol[MODEL_DELETED_AT],
-    Protocol[MODEL_DELETED_AT],
+class RepositorySoftDeletionProtocol[MODEL_DELETED_AT: ModelDeletedAtProtocol](
+    RepositoryProtocol[MODEL_DELETED_AT], Protocol
 ):
     def get_base_statement(
         self, *, include_deleted: bool = False
@@ -155,7 +143,7 @@ class RepositorySoftDeletionProtocol(
     ) -> MODEL_DELETED_AT: ...
 
 
-class RepositorySoftDeletionMixin(Generic[MODEL_DELETED_AT]):
+class RepositorySoftDeletionMixin[MODEL_DELETED_AT: ModelDeletedAtProtocol]:
     def get_base_statement(
         self: RepositoryProtocol[MODEL_DELETED_AT],
         *,
@@ -177,7 +165,7 @@ class RepositorySoftDeletionMixin(Generic[MODEL_DELETED_AT]):
         )
 
 
-class RepositoryIDMixin(Generic[MODEL_ID, ID_TYPE]):
+class RepositoryIDMixin[MODEL_ID: ModelIDProtocol, ID_TYPE]:  # type: ignore[type-arg]
     async def get_by_id(
         self: RepositoryProtocol[MODEL_ID],
         id: ID_TYPE,
@@ -190,7 +178,10 @@ class RepositoryIDMixin(Generic[MODEL_ID, ID_TYPE]):
         return await self.get_one_or_none(statement)
 
 
-class RepositorySoftDeletionIDMixin(Generic[MODEL_DELETED_AT_ID, ID_TYPE]):
+class RepositorySoftDeletionIDMixin[
+    MODEL_DELETED_AT_ID: ModelDeletedAtIDProtocol,  # type: ignore[type-arg]
+    ID_TYPE,
+]:
     async def get_by_id(
         self: RepositorySoftDeletionProtocol[MODEL_DELETED_AT_ID],
         id: ID_TYPE,
@@ -209,7 +200,7 @@ class RepositorySoftDeletionIDMixin(Generic[MODEL_DELETED_AT_ID, ID_TYPE]):
 SortingClause: TypeAlias = ColumnExpressionArgument[Any] | UnaryExpression[Any]
 
 
-class RepositorySortingMixin(Generic[M, PE]):
+class RepositorySortingMixin[M, PE: StrEnum]:
     sorting_enum: type[PE]
 
     def apply_sorting(

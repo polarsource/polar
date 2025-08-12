@@ -1,6 +1,6 @@
 import inspect
 import re
-from typing import Annotated, Any, TypeAlias, TypeVar
+from typing import Annotated, Any, TypeAlias
 
 from fastapi import Depends, Request
 from pydantic import AliasChoices, BaseModel, Field, StringConstraints
@@ -134,10 +134,8 @@ def _get_metadata_query(request: Request) -> dict[str, list[str]] | None:
 
 MetadataQuery = Annotated[dict[str, list[str]], Depends(_get_metadata_query)]
 
-M = TypeVar("M", bound=MetadataMixin)
 
-
-def get_metadata_clause(  # noqa: UP047
+def get_metadata_clause[M: MetadataMixin](
     model: type[M], query: MetadataQuery
 ) -> ColumnExpressionArgument[bool]:
     clauses: list[ColumnExpressionArgument[bool]] = []
@@ -153,7 +151,7 @@ def get_metadata_clause(  # noqa: UP047
     return and_(*clauses)
 
 
-def apply_metadata_clause(
+def apply_metadata_clause[M: MetadataMixin](
     model: type[M], statement: Select[tuple[M]], query: MetadataQuery
 ) -> Select[tuple[M]]:
     clause = get_metadata_clause(model, query)

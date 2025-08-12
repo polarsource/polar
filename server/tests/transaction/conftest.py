@@ -1,6 +1,5 @@
 from collections.abc import AsyncIterator, Sequence
 from datetime import datetime
-from typing import TypeVar
 
 import pytest_asyncio
 
@@ -198,9 +197,6 @@ async def all_transactions(
     ]
 
 
-T = TypeVar("T")
-
-
-async def create_async_iterator(iterable: Sequence[T]) -> AsyncIterator[T]:
+async def create_async_iterator[T](iterable: Sequence[T]) -> AsyncIterator[T]:
     for item in iterable:
         yield item

@@ -1,18 +1,16 @@
 from enum import StrEnum
 from inspect import Parameter, Signature
-from typing import Any, Generic, TypeAlias, TypeVar
+from typing import Any
 
 from fastapi import Query
 from makefun import with_signature
 
 from polar.exceptions import PolarRequestValidationError
 
-PE = TypeVar("PE", bound=StrEnum)
-
-Sorting: TypeAlias = tuple[PE, bool]
+type Sorting[PE] = tuple[PE, bool]
 
 
-class _SortingGetter(Generic[PE]):
+class _SortingGetter[PE: StrEnum]:
     def __init__(
         self, sort_property_enum: type[PE], default_sorting: list[str]
     ) -> None:
@@ -45,7 +43,7 @@ class _SortingGetter(Generic[PE]):
         return parsed_sorting
 
 
-def SortingGetter(
+def SortingGetter[PE: StrEnum](
     sort_property_enum: type[PE], default_sorting: list[str]
 ) -> _SortingGetter[PE]:
     """

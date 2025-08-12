@@ -313,7 +313,7 @@ async def get(
                             description_list.DescriptionListAttrItem(
                                 "product.name", "Product"
                             ),
-                            description_list.DescriptionListLinkItem(
+                            description_list.DescriptionListLinkItem[Subscription](
                                 "product.organization.name",
                                 "Organization",
                                 href_getter=lambda r, i: str(

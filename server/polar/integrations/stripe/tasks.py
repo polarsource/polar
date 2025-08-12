@@ -1,7 +1,7 @@
 import functools
 import uuid
 from collections.abc import Awaitable, Callable
-from typing import ParamSpec, TypeVar, cast
+from typing import ParamSpec, cast
 
 import stripe as stripe_lib
 import structlog
@@ -45,10 +45,9 @@ log: Logger = structlog.get_logger()
 
 
 Params = ParamSpec("Params")
-ReturnValue = TypeVar("ReturnValue")
 
 
-def stripe_api_connection_error_retry(
+def stripe_api_connection_error_retry[**Params, ReturnValue](
     func: Callable[Params, Awaitable[ReturnValue]],
 ) -> Callable[Params, Awaitable[ReturnValue]]:
     @functools.wraps(func)

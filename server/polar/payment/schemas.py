@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from fastapi import Path
 from pydantic import UUID4, Field, TypeAdapter
@@ -49,6 +49,10 @@ class PaymentBase(IDSchema, TimestampedSchema):
     order_id: UUID4 | None = Field(
         description="The ID of the order associated with this payment.",
         examples=[CHECKOUT_ID_EXAMPLE],
+    )
+    processor_metadata: dict[str, Any] = Field(
+        description="Additional metadata from the payment processor for internal use.",
+        default_factory=dict,
     )
 
 

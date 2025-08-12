@@ -681,6 +681,52 @@ class TestRevoke:
 
 
 @pytest.mark.asyncio
+class TestUncancel:
+    async def test_not_canceled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+
+        with pytest.raises(BadRequest):
+            await subscription_service.uncancel(session, subscription)
+
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        subscription_hooks: Hooks,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=True,
+            stripe_subscription_id=None,
+        )
+
+        updated_subscription = await subscription_service.uncancel(
+            session, subscription
+        )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.cancel_at_period_end is False
+        assert updated_subscription.ends_at is None
+        assert updated_subscription.canceled_at is None
+
+
+@pytest.mark.asyncio
 class TestUpdateFromStripe:
     async def test_not_existing_subscription(
         self, session: AsyncSession, product: Product

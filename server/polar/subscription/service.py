@@ -895,9 +895,7 @@ class SubscriptionService:
             return await _update_discount(session, subscription, discount)
 
     async def uncancel(
-        self,
-        session: AsyncSession,
-        subscription: Subscription,
+        self, session: AsyncSession, subscription: Subscription
     ) -> Subscription:
         if subscription.ended_at:
             raise ResourceUnavailable()
@@ -905,18 +903,21 @@ class SubscriptionService:
         if not (subscription.active and subscription.cancel_at_period_end):
             raise BadRequest()
 
-        # Internal and already revoked
-        if not subscription.stripe_subscription_id:
-            raise ResourceUnavailable()
-
         previous_ends_at = subscription.ends_at
         previous_status = subscription.status
-        stripe_subscription = await stripe_service.uncancel_subscription(
-            subscription.stripe_subscription_id,
-        )
-        self.update_cancellation_from_stripe(subscription, stripe_subscription)
+
+        # Managed by Stripe
+        if subscription.stripe_subscription_id is not None:
+            stripe_subscription = await stripe_service.uncancel_subscription(
+                subscription.stripe_subscription_id,
+            )
+            self.update_cancellation_from_stripe(subscription, stripe_subscription)
+        # Managed by our billing
+        else:
+            subscription.cancel_at_period_end = False
+            subscription.ends_at = None
+
         subscription.canceled_at = None
-        subscription.ends_at = None
         subscription.customer_cancellation_reason = None
         subscription.customer_cancellation_comment = None
         session.add(subscription)

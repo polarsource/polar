@@ -190,25 +190,28 @@ class PaymentVerdict:
                                         self.account,
                                         method="POST",
                                         action=str(self.request.url),
-                                        classes="flex gap-2 justify-center",
+                                        classes="space-y-4",
                                         validation_error=self.validation_error,
                                     ):
-                                        with button(
-                                            name="action",
-                                            type="submit",
-                                            variant="primary",
-                                            value="approve",
-                                            size="sm",
+                                        with tag.div(
+                                            classes="flex gap-2 justify-center mt-4"
                                         ):
-                                            text("Approve")
-                                        with button(
-                                            name="action",
-                                            type="submit",
-                                            variant="error",
-                                            value="deny",
-                                            size="sm",
-                                        ):
-                                            text("Deny")
+                                            with button(
+                                                name="action",
+                                                type="submit",
+                                                variant="primary",
+                                                value="approve",
+                                                size="sm",
+                                            ):
+                                                text("Approve")
+                                            with button(
+                                                name="action",
+                                                type="submit",
+                                                variant="error",
+                                                value="deny",
+                                                size="sm",
+                                            ):
+                                                text("Deny")
                                 else:
                                     # Show "Set to Under Review" action when not under review
                                     with tag.div(classes="text-center mt-3 mb-3"):
@@ -227,16 +230,19 @@ class PaymentVerdict:
                                         self.account,
                                         method="POST",
                                         action=str(self.request.url),
-                                        classes="flex justify-center",
+                                        classes="space-y-4",
                                         validation_error=self.validation_error,
                                     ):
-                                        with button(
-                                            name="action",
-                                            type="submit",
-                                            variant="primary",
-                                            value="under_review",
-                                            size="sm",
+                                        with tag.div(
+                                            classes="flex justify-center mt-4"
                                         ):
-                                            text("Set to Under Review")
+                                            with button(
+                                                name="action",
+                                                type="submit",
+                                                variant="primary",
+                                                value="under_review",
+                                                size="sm",
+                                            ):
+                                                text("Set to Under Review")
 
         yield

@@ -1029,7 +1029,9 @@ async def get(
                     with organization_badge(organization):
                         pass
 
-                with tag.div(classes="grid grid-cols-1 lg:grid-cols-3 gap-4"):
+                with tag.div(
+                    classes="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4"
+                ):
                     with tag.div(classes="card card-border w-full shadow-sm"):
                         with ai_review_verdict.render():
                             pass

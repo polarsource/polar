@@ -4,7 +4,7 @@ import string
 import typing
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any, Literal, TypeAlias, Unpack
 
@@ -914,13 +914,18 @@ async def create_subscription(
     user_metadata: dict[str, Any] | None = None,
 ) -> Subscription:
     prices = prices or product.prices
-    now = datetime.now(UTC)
-    if not current_period_end:
-        current_period_end = now + timedelta(days=30)
 
     recurring_interval = product.recurring_interval
     if product.is_legacy_recurring_price:
         recurring_interval = product.prices[0].recurring_interval
+    if not recurring_interval:
+        recurring_interval = SubscriptionRecurringInterval.month
+
+    now = datetime.now(UTC)
+    if not current_period_start:
+        current_period_start = now
+    if not current_period_end:
+        current_period_end = recurring_interval.get_next_period(current_period_start)
 
     canceled_at = None
     if ends_at is None:
@@ -937,9 +942,7 @@ async def create_subscription(
         stripe_subscription_id=stripe_subscription_id,
         recurring_interval=recurring_interval,
         status=status,
-        current_period_start=(
-            now if current_period_start is None else current_period_start
-        ),
+        current_period_start=current_period_start,
         current_period_end=current_period_end,
         cancel_at_period_end=cancel_at_period_end,
         canceled_at=canceled_at,

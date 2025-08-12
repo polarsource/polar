@@ -36,7 +36,9 @@ class AIReviewVerdict:
             else str(self.review.verdict)
         )
         if verdict == "PASS":
-            return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+            return (
+                "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+            )
         elif verdict == "FAIL":
             return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
         else:  # UNCERTAIN
@@ -68,7 +70,9 @@ class AIReviewVerdict:
             row_classes += " hover:bg-gray-50 dark:hover:bg-gray-800"
 
         with tag.div(classes=row_classes):
-            with tag.span(classes="text-sm font-medium text-gray-700 dark:text-gray-300"):
+            with tag.span(
+                classes="text-sm font-medium text-gray-700 dark:text-gray-300"
+            ):
                 text(label)
             with tag.span(
                 classes=f"text-sm font-semibold {color_class or 'text-gray-900 dark:text-gray-100'}"
@@ -115,7 +119,9 @@ class AIReviewVerdict:
                 if self.review.violated_sections:
                     with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
                         with tag.div(classes="mb-2"):
-                            with tag.span(classes="text-sm font-medium text-gray-700 dark:text-gray-300"):
+                            with tag.span(
+                                classes="text-sm font-medium text-gray-700 dark:text-gray-300"
+                            ):
                                 text("Violations")
                         with tag.div(classes="space-y-1"):
                             for section in self.review.violated_sections:
@@ -128,7 +134,9 @@ class AIReviewVerdict:
                 if self.review.reason:
                     with tag.div(classes="mt-3 pt-3 border-t border-gray-200"):
                         with tag.div(classes="mb-2"):
-                            with tag.span(classes="text-sm font-medium text-gray-700 dark:text-gray-300"):
+                            with tag.span(
+                                classes="text-sm font-medium text-gray-700 dark:text-gray-300"
+                            ):
                                 text("Assessment")
                         with tag.div(
                             classes="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded max-h-32 overflow-y-auto"

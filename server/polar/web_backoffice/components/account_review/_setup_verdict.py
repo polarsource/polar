@@ -19,9 +19,7 @@ class SetupVerdict:
         self, title: str, status: bool, count: int = 0, clickable: bool = False
     ) -> Generator[None]:
         """Render a detail item with status indicator."""
-        classes = (
-            "flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
-        )
+        classes = "flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
         if clickable:
             classes += " cursor-pointer"
 
@@ -33,10 +31,14 @@ class SetupVerdict:
                 else:
                     with tag.div(classes="w-2 h-2 rounded-full bg-red-500"):
                         pass
-                with tag.span(classes="text-sm font-medium text-gray-900 dark:text-gray-100"):
+                with tag.span(
+                    classes="text-sm font-medium text-gray-900 dark:text-gray-100"
+                ):
                     text(title)
             if count > 0:
-                with tag.span(classes="text-sm text-gray-600 dark:text-gray-400 font-medium"):
+                with tag.span(
+                    classes="text-sm text-gray-600 dark:text-gray-400 font-medium"
+                ):
                     text(str(count))
         yield
 

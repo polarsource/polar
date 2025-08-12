@@ -67,9 +67,13 @@ class PaymentVerdict:
             row_classes += " hover:bg-gray-50 dark:hover:bg-gray-800"
 
         with tag.div(classes=row_classes):
-            with tag.span(classes="text-sm font-medium text-gray-700 dark:text-gray-300"):
+            with tag.span(
+                classes="text-sm font-medium text-gray-700 dark:text-gray-300"
+            ):
                 text(label)
-            with tag.span(classes="text-sm font-semibold text-gray-900 dark:text-gray-100"):
+            with tag.span(
+                classes="text-sm font-semibold text-gray-900 dark:text-gray-100"
+            ):
                 text(value)
         yield
 
@@ -175,7 +179,9 @@ class PaymentVerdict:
                                             classes="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1"
                                         ):
                                             text("Review Decision")
-                                        with tag.p(classes="text-xs text-gray-600 dark:text-gray-400"):
+                                        with tag.p(
+                                            classes="text-xs text-gray-600 dark:text-gray-400"
+                                        ):
                                             text(
                                                 "Based on the financial analysis above"
                                             )
@@ -210,7 +216,9 @@ class PaymentVerdict:
                                             classes="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1"
                                         ):
                                             text("Ready for Review?")
-                                        with tag.p(classes="text-xs text-gray-600 dark:text-gray-400"):
+                                        with tag.p(
+                                            classes="text-xs text-gray-600 dark:text-gray-400"
+                                        ):
                                             text(
                                                 "Based on financial threshold analysis"
                                             )

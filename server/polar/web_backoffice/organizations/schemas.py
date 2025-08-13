@@ -11,7 +11,7 @@ class PaymentStatistics:
     p50_risk: float
     p90_risk: float
     refunds_count: int
-    total_balance: int
+    transfer_sum: int
     refunds_amount: int
     total_payment_amount: int
 

@@ -19,12 +19,14 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.organization import sorting
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.organization.sorting import OrganizationSortProperty
 from polar.postgres import AsyncSession, get_db_session
+from polar.transaction.service.transaction import transaction as transaction_service
 from polar.user.repository import UserRepository
 from polar.user_organization.service import (
     CannotRemoveOrganizationAdmin,
@@ -146,7 +148,7 @@ async def get_payment_statistics(
             p50_risk=0,
             p90_risk=0,
             refunds_count=0,
-            total_balance=0,
+            transfer_sum=0,
             refunds_amount=0,
             total_payment_amount=0,
         )
@@ -166,9 +168,9 @@ async def get_payment_statistics(
         organization_id
     )
 
-    # Get total balance
-    total_balance = await analytics_service.get_total_balance(
-        account_id, refunds_amount
+    # Get transfer sum (used for review threshold checking)
+    transfer_sum = await transaction_service.get_transactions_sum(
+        session, account_id, type=TransactionType.balance
     )
 
     return PaymentStatistics(
@@ -176,7 +178,7 @@ async def get_payment_statistics(
         p50_risk=p50_risk,
         p90_risk=p90_risk,
         refunds_count=refunds_count,
-        total_balance=total_balance,
+        transfer_sum=transfer_sum,
         refunds_amount=refunds_amount,
         total_payment_amount=total_payment_amount,
     )

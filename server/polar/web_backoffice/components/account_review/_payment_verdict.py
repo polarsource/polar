@@ -28,7 +28,7 @@ class PaymentVerdict:
         self.p50_risk = payment_stats.p50_risk
         self.p90_risk = payment_stats.p90_risk
         self.refunds_count = payment_stats.refunds_count
-        self.total_balance = payment_stats.total_balance
+        self.transfer_sum = payment_stats.transfer_sum
         self.refunds_amount = payment_stats.refunds_amount
         self.total_payment_amount = payment_stats.total_payment_amount
         self.organization = organization
@@ -137,7 +137,7 @@ class PaymentVerdict:
             with tag.div(classes="mt-4 pt-4 border-t border-gray-200"):
                 with tag.div(classes="space-y-2"):
                     balance_color = (
-                        "text-green-600" if self.total_balance >= 0 else "text-red-600"
+                        "text-green-600" if self.transfer_sum >= 0 else "text-red-600"
                     )
                     with tag.div(
                         classes="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-800"
@@ -145,16 +145,16 @@ class PaymentVerdict:
                         with tag.div(classes="flex items-center gap-1"):
                             with tag.span(
                                 classes="text-sm font-medium text-gray-700 dark:text-gray-300",
-                                title="Net balance from all account transactions (excludes processor fees and refunds)",
+                                title="Sum of balance transactions - used for review threshold checking",
                             ):
-                                text("Total Balance")
+                                text("Transfer Sum")
                             with tag.span(
                                 classes="text-gray-400 dark:text-gray-500 cursor-help text-xs",
-                                title="Net balance from all account transactions (excludes processor fees and refunds)",
+                                title="Sum of balance transactions - used for review threshold checking",
                             ):
                                 text("ⓘ")
                         with tag.span(classes=f"text-sm font-bold {balance_color}"):
-                            text(self._format_currency(self.total_balance))
+                            text(self._format_currency(self.transfer_sum))
 
                     # Next Review Threshold
                     if self.organization:

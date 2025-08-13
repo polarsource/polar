@@ -13,7 +13,6 @@ from polar.models import (
     Payment,
     Product,
     Refund,
-    Transaction,
     WebhookEndpoint,
 )
 from polar.models.payment import PaymentStatus
@@ -75,15 +74,6 @@ class PaymentAnalyticsService:
         if result_row:
             return (result_row[0], result_row[1])
         return (0, 0)
-
-    async def get_total_balance(self, account_id: UUID4, refunds_amount: int) -> int:
-        """Get total account balance minus refunds."""
-        balance_result = await self.session.execute(
-            select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-                Transaction.account_id == account_id
-            )
-        )
-        return (balance_result.scalar() or 0) - refunds_amount
 
     @staticmethod
     def calculate_risk_percentiles(risk_scores: list[float]) -> tuple[float, float]:

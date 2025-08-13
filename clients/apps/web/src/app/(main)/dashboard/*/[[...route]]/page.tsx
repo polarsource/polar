@@ -7,7 +7,7 @@ import { redirect } from 'next/navigation'
 export default async function Page({
   params,
 }: {
-  params: Promise<{ route: string[] }>
+  params: Promise<{ route?: string[] }>
 }) {
   const { route } = await params
 
@@ -24,5 +24,5 @@ export default async function Page({
 
   const targetOrg = org?.slug ?? userOrganizations[0].slug
 
-  redirect(`/dashboard/${targetOrg}/${route.join('/')}`)
+  redirect(`/dashboard/${targetOrg}/${route?.join('/') ?? ''}`)
 }

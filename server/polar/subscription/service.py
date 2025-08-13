@@ -845,7 +845,7 @@ class SubscriptionService:
         event = await event_service.create_event(
             session,
             build_system_event(
-                SystemEvent.subscription_plan_changed,
+                SystemEvent.subscription_product_updated,
                 customer=subscription.customer,
                 organization=subscription.organization,
                 metadata={

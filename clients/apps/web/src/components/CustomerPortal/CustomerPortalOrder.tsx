@@ -2,17 +2,18 @@
 
 import { BenefitGrant } from '@/components/Benefit/BenefitGrant'
 import { useCustomerBenefitGrants } from '@/hooks/queries'
-import { useRetryPayment } from '@/hooks/useRetryPayment'
+import { canRetryOrderPayment } from '@/utils/order'
 import { Client, schemas } from '@polar-sh/client'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { List, ListItem } from '@polar-sh/ui/components/atoms/List'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
 import { DetailRow } from '../Shared/DetailRow'
-import { RetryPaymentButton } from './RetryPaymentButton'
+import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
 
 const statusColors = {
   paid: 'bg-emerald-100 text-emerald-500 dark:bg-emerald-950 dark:text-emerald-500',
@@ -35,14 +36,13 @@ const CustomerPortalOrder = ({
   customerSessionToken: string
   themingPreset: ThemingPresetProps
 }) => {
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+
   const { data: benefitGrants } = useCustomerBenefitGrants(api, {
     order_id: order.id,
     limit: 100,
     sorting: ['type'],
   })
-
-  const { retryPayment, isRetrying, isLoading } =
-    useRetryPayment(customerSessionToken)
 
   const isPartiallyOrFullyRefunded = useMemo(() => {
     return order.status === 'partially_refunded' || order.status === 'refunded'
@@ -57,13 +57,18 @@ const CustomerPortalOrder = ({
             status={order.status.split('_').join(' ')}
             className={twMerge(statusColors[order.status], 'capitalize')}
           />
-          <RetryPaymentButton
-            order={order}
-            onRetry={retryPayment}
-            isRetrying={isRetrying(order.id)}
-            isLoading={isLoading(order.id)}
-            themingPreset={themingPreset}
-          />
+
+          {/* Retry button */}
+          {canRetryOrderPayment(order) && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsPaymentModalOpen(true)}
+              className={twMerge(themingPreset?.polar.buttonSecondary)}
+            >
+              Update Payment Method
+            </Button>
+          )}
         </div>
 
         <div className="flex flex-col gap-8">
@@ -178,6 +183,14 @@ const CustomerPortalOrder = ({
           )}
         </div>
       </div>
+
+      {/* Payment Retry Modal */}
+      <OrderPaymentRetryModal
+        order={order}
+        api={api}
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+      />
     </div>
   )
 }

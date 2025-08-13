@@ -2658,6 +2658,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/customer-portal/orders/{id}/payment-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Order Payment Status
+         * @description Get the current payment status for an order.
+         *
+         *     **Scopes**: `customer_portal:read` `customer_portal:write`
+         */
+        get: operations["customer_portal:orders:get_payment_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/customer-portal/orders/{id}/confirm-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Retry Payment
+         * @description Confirm a retry payment using a Stripe confirmation token.
+         *
+         *     **Scopes**: `customer_portal:write`
+         */
+        post: operations["customer_portal:orders:confirm_retry_payment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/customer-portal/organizations/{slug}": {
         parameters: {
             query?: never;
@@ -5875,6 +5919,13 @@ export interface components {
              * @description The ID of the order associated with this payment.
              */
             order_id: string | null;
+            /**
+             * Processor Metadata
+             * @description Additional metadata from the payment processor for internal use.
+             */
+            processor_metadata?: {
+                [key: string]: unknown;
+            };
             /** @description Additional metadata for the card payment method. */
             method_metadata: components["schemas"]["CardPaymentMetadata"];
         };
@@ -8984,12 +9035,6 @@ export interface components {
              */
             net_amount: number;
             /**
-             * Amount
-             * @deprecated
-             * @description Amount in cents, after discounts but before taxes.
-             */
-            amount: number;
-            /**
              * Tax Amount
              * @description Sales tax amount in cents.
              */
@@ -9059,6 +9104,17 @@ export interface components {
             next_payment_attempt_at?: string | null;
         };
         /**
+         * CustomerOrderConfirmPayment
+         * @description Schema to confirm a retry payment using a Stripe confirmation token.
+         */
+        CustomerOrderConfirmPayment: {
+            /**
+             * Confirmation Token Id
+             * @description ID of the Stripe confirmation token.
+             */
+            confirmation_token_id: string;
+        };
+        /**
          * CustomerOrderInvoice
          * @description Order's invoice data.
          */
@@ -9068,6 +9124,55 @@ export interface components {
              * @description The URL to the invoice.
              */
             url: string;
+        };
+        /**
+         * CustomerOrderPaymentConfirmation
+         * @description Response after confirming a retry payment.
+         */
+        CustomerOrderPaymentConfirmation: {
+            /**
+             * Status
+             * @description Payment status after confirmation.
+             */
+            status: string;
+            /**
+             * Requires Action
+             * @description Whether the payment requires additional action (3DS).
+             * @default false
+             */
+            requires_action: boolean;
+            /**
+             * Client Secret
+             * @description Client secret for handling additional actions.
+             */
+            client_secret?: string | null;
+            /**
+             * Error
+             * @description Error message if confirmation failed.
+             */
+            error?: string | null;
+        };
+        /**
+         * CustomerOrderPaymentStatus
+         * @description Payment status for an order.
+         */
+        CustomerOrderPaymentStatus: {
+            /**
+             * Status
+             * @description Current payment status.
+             */
+            status: string;
+            /**
+             * Requires Action
+             * @description Whether the payment requires additional action (3DS).
+             * @default false
+             */
+            requires_action: boolean;
+            /**
+             * Error
+             * @description Error message if payment failed.
+             */
+            error?: string | null;
         };
         /** CustomerOrderProduct */
         CustomerOrderProduct: {
@@ -11579,6 +11684,13 @@ export interface components {
              * @description The ID of the order associated with this payment.
              */
             order_id: string | null;
+            /**
+             * Processor Metadata
+             * @description Additional metadata from the payment processor for internal use.
+             */
+            processor_metadata?: {
+                [key: string]: unknown;
+            };
         };
         /** GitHubInvitesBenefitOrganization */
         GitHubInvitesBenefitOrganization: {
@@ -13358,12 +13470,6 @@ export interface components {
              */
             net_amount: number;
             /**
-             * Amount
-             * @deprecated
-             * @description Amount in cents, after discounts but before taxes.
-             */
-            amount: number;
-            /**
              * Tax Amount
              * @description Sales tax amount in cents.
              */
@@ -14124,48 +14230,6 @@ export interface components {
              */
             completed: boolean;
         };
-        /** OrganizationProfileSettings */
-        OrganizationProfileSettings: {
-            /**
-             * Enabled
-             * @description If this organization has a profile enabled
-             */
-            enabled?: boolean | null;
-            /**
-             * Description
-             * @description A description of the organization
-             */
-            description?: string | null;
-            /**
-             * Featured Projects
-             * @description A list of featured projects
-             */
-            featured_projects?: string[] | null;
-            /**
-             * Featured Organizations
-             * @description A list of featured organizations
-             */
-            featured_organizations?: string[] | null;
-            /**
-             * Links
-             * @description A list of links associated with the organization
-             */
-            links?: string[] | null;
-            /**
-             * @description Subscription promotion settings
-             * @default {
-             *       "promote": true,
-             *       "show_count": true,
-             *       "count_free": true
-             *     }
-             */
-            subscribe: components["schemas"]["OrganizationSubscribePromoteSettings"] | null;
-            /**
-             * Accent Color
-             * @description Accent color for the organization
-             */
-            accent_color?: string | null;
-        };
         /** OrganizationSetAccount */
         OrganizationSetAccount: {
             /**
@@ -14206,27 +14270,6 @@ export interface components {
          * @enum {string}
          */
         OrganizationSortProperty: "created_at" | "-created_at" | "slug" | "-slug" | "name" | "-name";
-        /** OrganizationSubscribePromoteSettings */
-        OrganizationSubscribePromoteSettings: {
-            /**
-             * Promote
-             * @description Promote email subscription (free)
-             * @default true
-             */
-            promote: boolean;
-            /**
-             * Show Count
-             * @description Show subscription count publicly
-             * @default true
-             */
-            show_count: boolean;
-            /**
-             * Count Free
-             * @description Include free subscribers in total count
-             * @default true
-             */
-            count_free: boolean;
-        };
         /** OrganizationSubscriptionSettings */
         OrganizationSubscriptionSettings: {
             /** Allow Multiple Subscriptions */
@@ -23352,6 +23395,101 @@ export interface operations {
                 };
             };
             /** @description Order not eligible for retry. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderNotEligibleForRetry"];
+                };
+            };
+        };
+    };
+    "customer_portal:orders:get_payment_status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The order ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerOrderPaymentStatus"];
+                };
+            };
+            /** @description Order not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "customer_portal:orders:confirm_retry_payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The order ID. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerOrderConfirmPayment"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerOrderPaymentConfirmation"];
+                };
+            };
+            /** @description Order not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Payment already in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentAlreadyInProgress"];
+                };
+            };
+            /** @description Order not eligible for retry or payment confirmation failed. */
             422: {
                 headers: {
                     [name: string]: unknown;

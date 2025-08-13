@@ -919,36 +919,52 @@ class SubscriptionService:
 
             subscription.current_period_end = new_cycle_end
 
-            entry_unused_time = BillingEntry(
-                type=BillingEntryType.proration,
-                direction=BillingEntryDirection.credit,
-                start_timestamp=cycle_start,
-                end_timestamp=now,
-                amount=round(
-                    previous_product.prices[0].price_amount * old_cycle_pct_remaining
-                ),
-                currency=subscription.currency,
-                customer_id=subscription.customer_id,
-                product_price_id=previous_product.prices[0].id,  # FIXME
-                subscription_id=subscription.id,
-                event_id=event.id,
-                order_item_id=None,
-            )
-            entry_remaining_time = BillingEntry(
-                type=BillingEntryType.proration,
-                direction=BillingEntryDirection.debit,
-                start_timestamp=now,
-                end_timestamp=new_cycle_end,
-                amount=round(prices[0].price_amount * new_cycle_pct_remaining),
-                currency=subscription.currency,
-                customer_id=subscription.customer_id,
-                product_price_id=prices[0].id,  # FIXME
-                subscription_id=subscription.id,
-                event_id=event.id,
-                order_item_id=None,
-            )
-            session.add(entry_unused_time)
-            session.add(entry_remaining_time)
+            # Admittedly, this gets a little crazy, but in theory you could go
+            # from a product with 1 static price to one with 2 static prices or
+            # the other way around. We don't generally support multiple static
+            # prices.
+            #
+            # But should we get there, we'll debit you for both of those prices.
+            # Similarly, if going from 2 static prices to 1 static price, we'll
+            # credit you for both prices and debit you for the 1 price.
+            #
+            # Metered prices are ignored for prorations.
+            old_static_prices = [
+                p for p in previous_product.prices if is_static_price(p)
+            ]
+            new_static_prices = [p for p in product.prices if is_static_price(p)]
+
+            for old_price in old_static_prices:
+                entry_unused_time = BillingEntry(
+                    type=BillingEntryType.proration,
+                    direction=BillingEntryDirection.credit,
+                    start_timestamp=cycle_start,
+                    end_timestamp=now,
+                    amount=round(old_price.price_amount * old_cycle_pct_remaining),
+                    currency=subscription.currency,
+                    customer_id=subscription.customer_id,
+                    product_price_id=old_price.id,
+                    subscription_id=subscription.id,
+                    event_id=event.id,
+                    order_item_id=None,
+                )
+                session.add(entry_unused_time)
+
+            for new_price in new_static_prices:
+                entry_remaining_time = BillingEntry(
+                    type=BillingEntryType.proration,
+                    direction=BillingEntryDirection.debit,
+                    start_timestamp=now,
+                    end_timestamp=new_cycle_end,
+                    amount=round(new_price.price_amount * new_cycle_pct_remaining),
+                    currency=subscription.currency,
+                    customer_id=subscription.customer_id,
+                    product_price_id=new_price.id,
+                    subscription_id=subscription.id,
+                    event_id=event.id,
+                    order_item_id=None,
+                )
+                session.add(entry_remaining_time)
 
             session.add(subscription)
             await session.flush()

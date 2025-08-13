@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from decimal import Decimal
 
 import freezegun
 import pytest
@@ -6,11 +7,12 @@ import pytest_asyncio
 from dateutil.relativedelta import relativedelta
 
 from polar.billing_entry.repository import BillingEntryRepository
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.models import (
     Customer,
+    Meter,
     Organization,
     Product,
 )
@@ -31,6 +33,7 @@ from tests.fixtures.random_objects import (
 #
 # - ✅ Tests normal upgrade/downgrade
 # - ✅ Tests switch from monthly to yearly
+# - ✅ Tests subscriptions with meters
 # - Tests switch from yearly to monthly
 # - Tests switch from a subscription where a discount is applied
 #    - Once
@@ -41,7 +44,6 @@ from tests.fixtures.random_objects import (
 #   - through the setting on the organization
 #   - through specific parameter in the API (overrides org setting)
 # ? Tests that benefits are granted ? (maybe this should just be covered in `test_service.py`)
-# ? Tests meters ?
 # ? Tests free and "choose your own price" ?
 # ? Tests a canceled subscription ?
 # ? Tests tax ?
@@ -481,5 +483,98 @@ class TestUpdateProductProrations:
             assert billing_entries[1].product_price_id == new_price.id
             assert billing_entries[1].event_id == event.id
             assert billing_entries[1].amount == entry_1_amount
+            assert billing_entries[1].currency == new_price.price_currency
+            # fmt: on
+
+    async def test_pricing_order_and_meter(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        meter: Meter,
+        customer: Customer,
+    ) -> None:
+        # - Start subscription on June 1st (June has 30 days)
+        # - Update subscription at the end of June 10th (== start of 11th)
+        # = 66.67% of price on both entries
+        cycle_start = datetime(2025, 6, 1, tzinfo=UTC)
+        time_of_update = datetime(2025, 6, 11, tzinfo=UTC)
+
+        old_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(50), None), (10000,)],
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(50), None), (30000,)],
+        )
+
+        with freezegun.freeze_time(cycle_start) as frozen_time:
+            subscription = await create_active_subscription(
+                save_fixture,
+                product=old_product,
+                customer=customer,
+                stripe_subscription_id=None,
+            )
+            assert len(subscription.meters) == 1
+            subscription_meter = subscription.meters[0]
+            assert subscription_meter.meter == meter
+            assert subscription_meter.subscription == subscription
+
+            previous_period_start = subscription.current_period_start
+            previous_period_end = subscription.current_period_end
+
+            frozen_time.move_to(time_of_update)
+
+            updated_subscription = await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+            assert updated_subscription.product == new_product
+            assert len(updated_subscription.meters) == 1
+            updated_subscription_meter = updated_subscription.meters[0]
+            assert updated_subscription_meter.meter == meter
+            assert updated_subscription_meter.subscription == updated_subscription
+
+            old_price = old_product.prices[1]
+            new_price = new_product.prices[1]
+            assert is_fixed_price(old_price)
+            assert is_fixed_price(new_price)
+            billing_entry_repository = BillingEntryRepository.from_session(session)
+            billing_entries = (
+                await billing_entry_repository.get_pending_by_subscription(
+                    subscription.id
+                )
+            )
+            assert len(billing_entries) == 2
+
+            billing_entries = sorted(billing_entries, key=lambda e: e.start_timestamp)
+
+            # fmt: off
+            assert billing_entries[0].start_timestamp == updated_subscription.current_period_start
+            assert billing_entries[0].end_timestamp == time_of_update
+            assert billing_entries[0].direction == BillingEntryDirection.credit
+            assert billing_entries[0].customer_id == customer.id
+            assert billing_entries[0].product_price_id == old_price.id
+            # assert billing_entries[0].event_id == event.id
+            assert billing_entries[0].amount == 6667
+            assert billing_entries[0].currency == old_price.price_currency
+            # fmt: on
+
+            # fmt: off
+            assert billing_entries[1].start_timestamp == time_of_update
+            assert billing_entries[1].end_timestamp == updated_subscription.current_period_end
+            assert billing_entries[1].direction == BillingEntryDirection.debit
+            assert billing_entries[1].customer_id == customer.id
+            assert billing_entries[1].product_price_id == new_price.id
+            # assert billing_entries[1].event_id == event.id
+            assert billing_entries[1].amount == 20000
             assert billing_entries[1].currency == new_price.price_currency
             # fmt: on

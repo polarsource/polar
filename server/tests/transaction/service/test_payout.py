@@ -1,13 +1,8 @@
 from functools import partial
-from types import SimpleNamespace
-from unittest.mock import MagicMock
 
 import pytest
-from pytest_mock import MockerFixture
 
 from polar.enums import AccountType
-from polar.integrations.stripe.service import StripeService
-from polar.locker import Locker
 from polar.models import Account, Organization, Payout, Transaction, User
 from polar.models.transaction import Processor
 from polar.postgres import AsyncSession
@@ -22,14 +17,6 @@ from tests.fixtures import random_objects as ro
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_account
 from tests.fixtures.random_objects import create_payout as _create_payout
-
-
-@pytest.fixture(autouse=True)
-def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
-    mock = MagicMock(spec=StripeService)
-    mocker.patch("polar.transaction.service.payout.stripe_service", new=mock)
-    return mock
-
 
 create_payment_transaction = partial(ro.create_payment_transaction, amount=10000)
 create_refund_transaction = partial(ro.create_refund_transaction, amount=-10000)
@@ -66,10 +53,8 @@ class TestCreate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         organization: Organization,
         user: User,
-        stripe_service_mock: MagicMock,
     ) -> None:
         account = await create_account(save_fixture, organization, user)
 
@@ -83,10 +68,6 @@ class TestCreate:
             save_fixture, account=account, payment_transaction=payment_transaction_2
         )
 
-        stripe_service_mock.transfer.return_value = SimpleNamespace(
-            id="STRIPE_TRANSFER_ID", balance_transaction="STRIPE_BALANCE_TRANSACTION_ID"
-        )
-
         payout, fees = await create_payout(save_fixture, session, account=account)
 
         transaction = await payout_transaction_service.create(session, payout, fees)
@@ -98,7 +79,7 @@ class TestCreate:
         assert transaction.amount < 0
         assert transaction.account_currency == "usd"
         assert transaction.account_amount < 0
-        assert transaction.transfer_id == "STRIPE_TRANSFER_ID"
+        assert transaction.transfer_id is None
 
         assert len(transaction.paid_transactions) == 2 + len(
             transaction.account_incurred_transactions
@@ -112,84 +93,12 @@ class TestCreate:
             == len(transaction.incurred_transactions) / 2
         )
 
-        transfer_mock: MagicMock = stripe_service_mock.transfer
-        transfer_mock.assert_called_once_with(
-            account.stripe_id,
-            payout.amount,
-            metadata={
-                "payout_id": str(payout.id),
-                "payout_transaction_id": str(transaction.id),
-            },
-        )
-
-        stripe_service_mock.create_payout.assert_not_called()
-
-    async def test_stripe_different_currencies(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        locker: Locker,
-        organization: Organization,
-        user: User,
-        stripe_service_mock: MagicMock,
-    ) -> None:
-        account = await create_account(
-            save_fixture, organization, user, country="FR", currency="eur"
-        )
-
-        payment_transaction_1 = await create_payment_transaction(save_fixture)
-        balance_transaction_1 = await create_balance_transaction(
-            save_fixture, account=account, payment_transaction=payment_transaction_1
-        )
-
-        payment_transaction_2 = await create_payment_transaction(save_fixture)
-        balance_transaction_2 = await create_balance_transaction(
-            save_fixture, account=account, payment_transaction=payment_transaction_2
-        )
-
-        stripe_service_mock.transfer.return_value = SimpleNamespace(
-            id="STRIPE_TRANSFER_ID",
-            balance_transaction="STRIPE_BALANCE_TRANSACTION_ID",
-            destination_payment="STRIPE_DESTINATION_CHARGE_ID",
-        )
-        stripe_service_mock.get_charge.return_value = SimpleNamespace(
-            id="STRIPE_DESTINATION_CHARGE_ID",
-            balance_transaction=SimpleNamespace(
-                amount=900, currency="eur", exchange_rate=0.9
-            ),
-        )
-        stripe_service_mock.create_payout.return_value = SimpleNamespace(
-            id="STRIPE_PAYOUT_ID"
-        )
-
-        payout, fees = await create_payout(save_fixture, session, account=account)
-
-        transaction = await payout_transaction_service.create(session, payout, fees)
-
-        assert transaction.account == account
-        assert transaction.processor == Processor.stripe
-        assert transaction.payout == payout
-        assert transaction.currency == "usd"
-        assert transaction.amount < 0
-        assert transaction.account_currency == "eur"
-        assert transaction.account_amount < 0
-
-        assert len(transaction.paid_transactions) == 2 + len(
-            transaction.account_incurred_transactions
-        )
-        assert transaction.paid_transactions[0].id == balance_transaction_1.id
-        assert transaction.paid_transactions[1].id == balance_transaction_2.id
-
-        stripe_service_mock.create_payout.assert_not_called()
-
     async def test_open_collective(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        locker: Locker,
         organization: Organization,
         user: User,
-        stripe_service_mock: MagicMock,
     ) -> None:
         account = await create_account(
             save_fixture, organization, user, account_type=AccountType.open_collective

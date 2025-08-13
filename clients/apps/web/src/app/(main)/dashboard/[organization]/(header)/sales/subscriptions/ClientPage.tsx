@@ -168,7 +168,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
       id: 'customer',
       accessorKey: 'customer',
       enableSorting: true,
-      size: 150,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Customer" />
       ),
@@ -190,7 +189,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     {
       accessorKey: 'status',
       enableSorting: true,
-      size: 50,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),
@@ -201,7 +199,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     {
       accessorKey: 'started_at',
       enableSorting: true,
-      size: 85,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Subscription Date" />
       ),
@@ -212,7 +209,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     {
       accessorKey: 'current_period_end',
       enableSorting: true,
-      size: 85,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Renewal Date" />
       ),

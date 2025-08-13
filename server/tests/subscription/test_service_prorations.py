@@ -162,7 +162,10 @@ class TestUpdateProductProrations:
             assert organization.subscriptions_billing_engine is True
 
             subscription = await create_active_subscription(
-                save_fixture, product=basic_monthly, customer=customer
+                save_fixture,
+                product=basic_monthly,
+                customer=customer,
+                stripe_subscription_id=None,
             )
 
             previous_current_period_start = subscription.current_period_start
@@ -288,7 +291,10 @@ class TestUpdateProductProrations:
             assert organization.subscriptions_billing_engine is True
 
             subscription = await create_active_subscription(
-                save_fixture, product=basic_monthly, customer=customer
+                save_fixture,
+                product=basic_monthly,
+                customer=customer,
+                stripe_subscription_id=None,
             )
 
             previous_period_start = subscription.current_period_start
@@ -409,7 +415,10 @@ class TestUpdateProductProrations:
             assert organization.subscriptions_billing_engine is True
 
             subscription = await create_active_subscription(
-                save_fixture, product=basic_yearly, customer=customer
+                save_fixture,
+                product=basic_yearly,
+                customer=customer,
+                stripe_subscription_id=None,
             )
 
             previous_period_start = subscription.current_period_start

@@ -136,12 +136,14 @@ class StripeService:
         source_transaction: str | None = None,
         transfer_group: str | None = None,
         metadata: dict[str, str] | None = None,
+        idempotency_key: str | None = None,
     ) -> stripe_lib.Transfer:
         create_params: stripe_lib.Transfer.CreateParams = {
             "amount": amount,
             "currency": "usd",
             "destination": destination_stripe_id,
             "metadata": metadata or {},
+            "idempotency_key": idempotency_key,
         }
         if source_transaction is not None:
             create_params["source_transaction"] = source_transaction

@@ -189,7 +189,7 @@ class TestUpdateProductProrations:
 
             event_repository = EventRepository.from_session(session)
             events = await event_repository.get_all_by_name(
-                SystemEvent.subscription_plan_changed
+                SystemEvent.subscription_product_updated
             )
             assert len(events) == 1
             event = events[0]
@@ -316,7 +316,7 @@ class TestUpdateProductProrations:
 
             event_repository = EventRepository.from_session(session)
             events = await event_repository.get_all_by_name(
-                SystemEvent.subscription_plan_changed
+                SystemEvent.subscription_product_updated
             )
             assert len(events) == 1
             event = events[0]
@@ -440,7 +440,7 @@ class TestUpdateProductProrations:
 
             event_repository = EventRepository.from_session(session)
             events = await event_repository.get_all_by_name(
-                SystemEvent.subscription_plan_changed
+                SystemEvent.subscription_product_updated
             )
             assert len(events) == 1
             event = events[0]

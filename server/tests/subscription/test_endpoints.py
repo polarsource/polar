@@ -221,6 +221,7 @@ class TestSubscriptionProductUpdate:
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
         user_organization: UserOrganization,
         product: Product,
         customer: Customer,
@@ -239,7 +240,14 @@ class TestSubscriptionProductUpdate:
             f"/v1/subscriptions/{subscription.id}",
             json=dict(product_id=str(product_second.id)),
         )
-        assert response.status_code == 400
+
+        # We support subscriptions with no `stripe_subscription_id` through
+        # our own billing engine
+        assert response.status_code == 200
+        updated_subscription = response.json()
+        assert updated_subscription["product"]["id"] == str(product_second.id)
+
+        stripe_service_mock.update_subscription_price.assert_not_called()
 
     @pytest.mark.auth
     async def test_valid(

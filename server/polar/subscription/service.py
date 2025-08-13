@@ -57,6 +57,7 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection
+from polar.models.order import OrderBillingReason
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -777,8 +778,24 @@ class SubscriptionService:
                     ]
                 )
 
-        if subscription.stripe_subscription_id is None:
-            raise SubscriptionNotActiveOnStripe(subscription)
+        # Add event for the subscription plan change
+        event = await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_plan_changed,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata={
+                    "subscription_id": str(subscription.id),
+                    "old_product_id": str(previous_product.id),
+                    "new_product_id": str(product.id),
+                },
+            ),
+        )
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(product.organization_id)
+        assert organization is not None
 
         subscription.product = product
         subscription.subscription_product_prices = [
@@ -787,26 +804,90 @@ class SubscriptionService:
         subscription.recurring_interval = product.recurring_interval
 
         if proration_behavior is None:
-            organization_repository = OrganizationRepository.from_session(session)
-            organization = await organization_repository.get_by_id(
-                product.organization_id
-            )
-            assert organization is not None
             proration_behavior = organization.proration_behavior
 
-        await stripe_service.update_subscription_price(
-            subscription.stripe_subscription_id,
-            new_prices=[
-                price.stripe_price_id for price in prices if is_static_price(price)
-            ],
-            proration_behavior=proration_behavior.to_stripe(),
-            metadata={
-                "type": ProductType.product,
-                "product_id": str(product.id),
-            },
-        )
+        if organization.subscriptions_billing_engine is False:
+            # Stripe behavior
+            if subscription.stripe_subscription_id is None:
+                raise SubscriptionNotActiveOnStripe(subscription)
+
+            await stripe_service.update_subscription_price(
+                subscription.stripe_subscription_id,
+                new_prices=[
+                    price.stripe_price_id for price in prices if is_static_price(price)
+                ],
+                proration_behavior=proration_behavior.to_stripe(),
+                metadata={
+                    "type": ProductType.product,
+                    "product_id": str(product.id),
+                },
+            )
+        else:
+            now = datetime.now(UTC)
+            # Cycle start is assumed to be unchanged across plan/product changes (e.g. monthly to yearly)
+            cycle_start = subscription.current_period_start
+
+            # Cycle end can change in the case of e.g. monthly to yearly
+            old_cycle_end = previous_product.recurring_interval.get_next_period(
+                subscription.current_period_start
+            )
+            new_cycle_end = subscription.recurring_interval.get_next_period(
+                subscription.current_period_start
+            )
+
+            old_cycle_remaining_time = (old_cycle_end - now).total_seconds()
+            old_cycle_total_time = (old_cycle_end - cycle_start).total_seconds()
+            old_cycle_pct_remaining = old_cycle_remaining_time / old_cycle_total_time
+
+            new_cycle_remaining_time = (new_cycle_end - now).total_seconds()
+            new_cycle_total_time = (new_cycle_end - cycle_start).total_seconds()
+            new_cycle_pct_remaining = new_cycle_remaining_time / new_cycle_total_time
+
+            subscription.current_period_end = new_cycle_end
+
+            entry_unused_time = BillingEntry(
+                direction=BillingEntryDirection.credit,
+                start_timestamp=cycle_start,
+                end_timestamp=now,
+                amount=round(
+                    previous_product.prices[0].price_amount * old_cycle_pct_remaining
+                ),
+                currency=subscription.currency,
+                customer_id=subscription.customer_id,
+                product_price_id=previous_product.prices[0].id,  # FIXME
+                subscription_id=subscription.id,
+                event_id=event.id,
+                order_item_id=None,
+            )
+            entry_remaining_time = BillingEntry(
+                direction=BillingEntryDirection.debit,
+                start_timestamp=now,
+                end_timestamp=new_cycle_end,
+                amount=round(prices[0].price_amount * new_cycle_pct_remaining),
+                currency=subscription.currency,
+                customer_id=subscription.customer_id,
+                product_price_id=prices[0].id,  # FIXME
+                subscription_id=subscription.id,
+                event_id=event.id,
+                order_item_id=None,
+            )
+            session.add(entry_unused_time)
+            session.add(entry_remaining_time)
+
+            if proration_behavior == SubscriptionProrationBehavior.invoice:
+                # Invoice immediately
+                from polar.order.service import order as order_service
+
+                await session.flush()
+                await order_service.create_subscription_order(
+                    session, subscription, OrderBillingReason.subscription_update
+                )
+            elif proration_behavior == SubscriptionProrationBehavior.prorate:
+                # Add prorations to next invoice
+                pass
 
         session.add(subscription)
+        await session.flush()
 
         # Send product change email notification
         await self.send_subscription_updated_email(

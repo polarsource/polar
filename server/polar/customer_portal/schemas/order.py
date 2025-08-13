@@ -61,3 +61,33 @@ class CustomerOrderInvoice(Schema):
 
 class CustomerOrderUpdate(OrderUpdateBase):
     """Schema to update an order."""
+
+
+class CustomerOrderPaymentStatus(Schema):
+    """Payment status for an order."""
+
+    status: str = Field(..., description="Current payment status.")
+    error: str | None | None = Field(
+        None, description="Error message if payment failed."
+    )
+
+
+class CustomerOrderConfirmPayment(Schema):
+    """Schema to confirm a retry payment using a Stripe confirmation token."""
+
+    confirmation_token_id: str = Field(
+        ..., description="ID of the Stripe confirmation token."
+    )
+
+
+class CustomerOrderPaymentConfirmation(Schema):
+    """Response after confirming a retry payment."""
+
+    status: str = Field(..., description="Payment status after confirmation.")
+    requires_action: bool = Field(
+        False, description="Whether the payment requires additional action (3DS)."
+    )
+    client_secret: str | None = Field(
+        None, description="Client secret for handling additional actions."
+    )
+    error: str | None = Field(None, description="Error message if confirmation failed.")

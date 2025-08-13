@@ -310,3 +310,37 @@ export const useCustomerCustomerMeters = (
       ),
     retry: defaultRetry,
   })
+
+export const useCustomerOrderConfirmPayment = (api: Client) =>
+  useMutation({
+    mutationFn: async (variables: {
+      orderId: string
+      confirmation_token_id: string
+    }) =>
+      api.POST('/v1/customer-portal/orders/{id}/confirm-payment', {
+        params: { path: { id: variables.orderId } },
+        body: {
+          confirmation_token_id: variables.confirmation_token_id,
+        },
+      }),
+    onSuccess: async (result, variables, _ctx) => {
+      if (result.error) {
+        return
+      }
+      // Invalidate order queries to refresh data
+      queryClient.invalidateQueries({
+        queryKey: ['customer_order', { id: variables.orderId }],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_orders'],
+      })
+    },
+  })
+
+export const useCustomerOrderPaymentStatus = (api: Client) =>
+  useMutation({
+    mutationFn: async (variables: { orderId: string }) =>
+      api.GET('/v1/customer-portal/orders/{id}/payment-status', {
+        params: { path: { id: variables.orderId } },
+      }),
+  })

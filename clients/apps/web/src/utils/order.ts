@@ -30,5 +30,9 @@ export const getOrderById = cache(_getOrderById)
 export const canRetryOrderPayment = (
   order: schemas['CustomerOrder'],
 ): boolean => {
-  return order.next_payment_attempt_at !== null
+  return (
+    order.status === 'pending' &&
+    order.next_payment_attempt_at !== null &&
+    order.subscription !== null
+  )
 }

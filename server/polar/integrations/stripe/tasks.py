@@ -117,6 +117,7 @@ async def payment_intent_payment_failed(event_id: uuid.UUID) -> None:
             )
             try:
                 await payment.handle_failure(session, payment_intent)
+
             except UnhandledPaymentIntent:
                 pass
             except payment.OrderDoesNotExist as e:

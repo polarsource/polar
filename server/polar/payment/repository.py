@@ -74,3 +74,13 @@ class PaymentRepository(
         )
         result = await self.session.execute(statement)
         return result.scalar() or 0
+
+    async def get_latest_for_order(self, order_id: UUID) -> Payment | None:
+        """Get the latest payment for a specific order."""
+        statement = (
+            select(Payment)
+            .where(Payment.order_id == order_id)
+            .order_by(Payment.created_at.desc())
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)

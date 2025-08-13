@@ -61,3 +61,44 @@ class CustomerOrderInvoice(Schema):
 
 class CustomerOrderUpdate(OrderUpdateBase):
     """Schema to update an order."""
+
+
+class CustomerOrderPaymentIntent(Schema):
+    """Payment intent data for manual retry."""
+
+    client_secret: str = Field(
+        ..., description="The client secret for the payment intent."
+    )
+    amount: int = Field(..., description="The payment amount in cents.")
+    currency: str = Field(..., description="The currency code.")
+
+
+class CustomerOrderPaymentStatus(Schema):
+    """Payment status for an order."""
+
+    status: str = Field(..., description="Current payment status.")
+    requires_action: bool = Field(
+        False, description="Whether the payment requires additional action (3DS)."
+    )
+    error: str | None = Field(None, description="Error message if payment failed.")
+
+
+class CustomerOrderConfirmPayment(Schema):
+    """Schema to confirm a retry payment using a Stripe confirmation token."""
+
+    confirmation_token_id: str = Field(
+        ..., description="ID of the Stripe confirmation token."
+    )
+
+
+class CustomerOrderPaymentConfirmation(Schema):
+    """Response after confirming a retry payment."""
+
+    status: str = Field(..., description="Payment status after confirmation.")
+    requires_action: bool = Field(
+        False, description="Whether the payment requires additional action (3DS)."
+    )
+    client_secret: str | None = Field(
+        None, description="Client secret for handling additional actions."
+    )
+    error: str | None = Field(None, description="Error message if confirmation failed.")

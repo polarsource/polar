@@ -21,6 +21,7 @@ class Receivers(BaseModel):
     organization_id: UUID | None = None
     checkout_client_secret: str | None = None
     customer_id: UUID | None = None
+    order_id: UUID | None = None
 
     def generate_channel_name(self, scope: str, resource_id: UUID | str) -> str:
         return f"{scope}:{resource_id}"
@@ -40,6 +41,9 @@ class Receivers(BaseModel):
 
         if self.customer_id:
             channels.append(self.generate_channel_name("customer", self.customer_id))
+
+        if self.order_id:
+            channels.append(self.generate_channel_name("order", self.order_id))
 
         return channels
 
@@ -65,12 +69,14 @@ async def publish(
     organization_id: UUID | None = None,
     checkout_client_secret: str | None = None,
     customer_id: UUID | None = None,
+    order_id: UUID | None = None,
 ) -> None:
     receivers = Receivers(
         user_id=user_id,
         organization_id=organization_id,
         checkout_client_secret=checkout_client_secret,
         customer_id=customer_id,
+        order_id=order_id,
     )
     channels = receivers.get_channels()
     event = Event(

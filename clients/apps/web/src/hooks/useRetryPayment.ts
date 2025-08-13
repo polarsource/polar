@@ -1,11 +1,18 @@
 import { toast } from '@/components/Toast/use-toast'
 import { useState } from 'react'
 
+interface PaymentIntentResponse {
+  client_secret: string
+  amount: number
+  currency: string
+}
+
 export const useRetryPayment = (customerSessionToken: string) => {
   const [retryingOrderIds, setRetryingOrderIds] = useState<Set<string>>(
     new Set(),
   )
   const [loadingOrderId, setLoadingOrderId] = useState<Set<string>>(new Set())
+  const [paymentIntents, setPaymentIntents] = useState<Record<string, PaymentIntentResponse>>({})
 
   const retryPayment = async (orderId: string) => {
     setRetryingOrderIds((prev) => new Set(prev).add(orderId))
@@ -69,12 +76,82 @@ export const useRetryPayment = (customerSessionToken: string) => {
     }
   }
 
+  const createPaymentIntent = async (orderId: string): Promise<PaymentIntentResponse | null> => {
+    setLoadingOrderId((prev) => new Set(prev).add(orderId))
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/v1/customer-portal/orders/${orderId}/create-payment-intent`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${customerSessionToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+
+      if (response.ok) {
+        const paymentIntent = await response.json() as PaymentIntentResponse
+        setPaymentIntents((prev) => ({ ...prev, [orderId]: paymentIntent }))
+        return paymentIntent
+      } else if (response.status === 409) {
+        toast({
+          title: 'Payment in progress',
+          description: 'Payment for this order is already in progress.',
+          variant: 'error',
+        })
+      } else if (response.status === 422) {
+        toast({
+          title: 'Cannot retry payment',
+          description: 'This order is not eligible for payment retry.',
+          variant: 'error',
+        })
+      } else {
+        throw new Error('Failed to create payment intent')
+      }
+    } catch (error) {
+      console.error('Error creating payment intent:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to create payment intent. Please try again later.',
+        variant: 'error',
+      })
+    } finally {
+      setLoadingOrderId((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(orderId)
+        return newSet
+      })
+    }
+
+    return null
+  }
+
+  const getPaymentIntent = (orderId: string): PaymentIntentResponse | undefined => {
+    return paymentIntents[orderId]
+  }
+
+  const clearPaymentIntent = (orderId: string) => {
+    setPaymentIntents((prev) => {
+      const newIntents = { ...prev }
+      delete newIntents[orderId]
+      return newIntents
+    })
+  }
+
   const isRetrying = (orderId: string) => retryingOrderIds.has(orderId)
   const isLoading = (orderId: string) => loadingOrderId.has(orderId)
 
   return {
+    // Original simple retry method
     retryPayment,
     isRetrying,
     isLoading,
+    
+    // New full checkout flow methods
+    createPaymentIntent,
+    getPaymentIntent,
+    clearPaymentIntent,
   }
 }

@@ -9,8 +9,10 @@ from dramatiq import Retry
 
 from polar.account.service import account as account_service
 from polar.checkout.service import NotConfirmedCheckout
+from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarTaskError
 from polar.external_event.service import external_event as external_event_service
+from polar.integrations.stripe import payment as stripe_payment
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook, ProductType
 from polar.logging import Logger
 from polar.order.service import (
@@ -103,6 +105,36 @@ async def payment_intent_succeeded(event_id: uuid.UUID) -> None:
                     )
                 return
 
+            # Handle regular payment intents (including manual retries)
+            try:
+                await stripe_payment.handle_success(session, payment_intent)
+
+                # Check if this is a manual retry and publish SSE event
+                if (
+                    payment_intent.metadata
+                    and payment_intent.metadata.get("manual_retry") == "true"
+                ):
+                    order_id = payment_intent.metadata.get("order_id")
+                    if order_id:
+                        await eventstream_publish(
+                            "order.payment.succeeded",
+                            {
+                                "order_id": order_id,
+                                "payment_intent_id": payment_intent.id,
+                            },
+                            order_id=uuid.UUID(order_id),
+                        )
+
+            except UnhandledPaymentIntent:
+                pass
+            except stripe_payment.OrderDoesNotExist as e:
+                # Retry because we may not have been able to handle the order yet
+                if can_retry():
+                    raise Retry() from e
+                # Raise the exception to be notified about it
+                else:
+                    raise
+
 
 @actor(
     actor_name="stripe.webhook.payment_intent.payment_failed",
@@ -116,10 +148,32 @@ async def payment_intent_payment_failed(event_id: uuid.UUID) -> None:
                 stripe_lib.PaymentIntent, event.stripe_data.data.object
             )
             try:
-                await payment.handle_failure(session, payment_intent)
+                await stripe_payment.handle_failure(session, payment_intent)
+
+                # Check if this is a manual retry and publish SSE event
+                if (
+                    payment_intent.metadata
+                    and payment_intent.metadata.get("manual_retry") == "true"
+                ):
+                    order_id = payment_intent.metadata.get("order_id")
+                    if order_id:
+                        error_message = None
+                        if payment_intent.last_payment_error:
+                            error_message = payment_intent.last_payment_error.message
+
+                        await eventstream_publish(
+                            "order.payment.failed",
+                            {
+                                "order_id": order_id,
+                                "payment_intent_id": payment_intent.id,
+                                "error": error_message,
+                            },
+                            order_id=uuid.UUID(order_id),
+                        )
+
             except UnhandledPaymentIntent:
                 pass
-            except payment.OrderDoesNotExist as e:
+            except stripe_payment.OrderDoesNotExist as e:
                 # Retry because we may not have been able to handle the order yet
                 if can_retry():
                     raise Retry() from e

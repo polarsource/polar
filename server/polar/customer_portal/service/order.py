@@ -21,7 +21,11 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.worker import enqueue_job
 
 from ..repository.order import CustomerOrderRepository
-from ..schemas.order import CustomerOrderInvoice, CustomerOrderUpdate
+from ..schemas.order import (
+    CustomerOrderInvoice,
+    CustomerOrderPaymentConfirmation,
+    CustomerOrderUpdate,
+)
 
 
 class CustomerOrderError(PolarError): ...
@@ -180,6 +184,30 @@ class CustomerOrderService:
             "order.trigger_payment",
             order_id=order.id,
             payment_method_id=order.subscription.payment_method_id,
+        )
+
+    async def create_manual_retry_payment_intent(
+        self, session: AsyncSession, order: Order
+    ) -> dict[str, Any]:
+        """Create a payment intent for manual retry with full checkout flow."""
+        from polar.order.service import order as order_service
+
+        payment = await order_service.create_manual_retry_payment_intent(session, order)
+
+        return {
+            "client_secret": payment.client_secret,
+            "amount": payment.amount,
+            "currency": payment.currency,
+        }
+
+    async def confirm_retry_payment(
+        self, session: AsyncSession, order: Order, confirmation_token_id: str
+    ) -> CustomerOrderPaymentConfirmation:
+        """Confirm a retry payment using a Stripe confirmation token."""
+        from polar.order.service import order as order_service
+
+        return await order_service.confirm_retry_payment(
+            session, order, confirmation_token_id
         )
 
 

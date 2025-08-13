@@ -15,7 +15,10 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.customer_meter.service import customer_meter as customer_meter_service
-from polar.customer_portal.schemas.order import CustomerOrderUpdate
+from polar.customer_portal.schemas.order import (
+    CustomerOrderPaymentConfirmation,
+    CustomerOrderUpdate,
+)
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
 from polar.email.react import render_email_template
@@ -61,6 +64,7 @@ from polar.models import (
 )
 from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderBillingReason, OrderStatus
+from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_meter import SubscriptionMeter
@@ -243,6 +247,23 @@ class InvoiceDoesNotExist(OrderError):
         self.order = order
         message = f"No invoice exists for order {order.id}."
         super().__init__(message, 404)
+
+
+class OrderNotEligibleForRetry(OrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = f"Order {order.id} is not eligible for payment retry."
+        super().__init__(message, 422)
+
+
+class MissingOrderStripeCustomerID(OrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = (
+            f"Order {order.id}'s customer {order.customer.id} "
+            "is missing a Stripe customer ID."
+        )
+        super().__init__(message)
 
 
 class NoPendingBillingEntries(OrderError):
@@ -750,6 +771,328 @@ class OrderService:
             # Release the payment lock on failure
             order = await repository.release_payment_lock(order, flush=True)
             raise
+
+    async def create_manual_retry_payment_intent(
+        self, session: AsyncSession, order: Order
+    ) -> Payment:
+        """
+        Create or reuse a payment intent for manual retry with client-side confirmation.
+
+        This method first checks for existing payment intents that can be reused,
+        and only creates a new one if necessary. This prevents lock issues and
+        allows users to retry payments without restrictions.
+        """
+        if order.status != OrderStatus.pending:
+            raise OrderNotPending(order)
+
+        if order.next_payment_attempt_at is None:
+            raise OrderNotEligibleForRetry(order)
+
+        if order.subscription is None:
+            raise OrderNotEligibleForRetry(order)
+
+        payment_repository = PaymentRepository.from_session(session)
+
+        # Check for existing payment intent that can be reused
+        existing_payment = await payment_repository.get_latest_for_order(order.id)
+        if existing_payment and existing_payment.processor_id:
+            try:
+                # Check payment intent status with Stripe
+                payment_intent = await stripe_service.get_payment_intent(
+                    existing_payment.processor_id
+                )
+
+                # Reuse if payment intent is in a reusable state
+                if payment_intent.status in [
+                    "requires_payment_method",
+                    "requires_confirmation",
+                ]:
+                    log.info(
+                        "Reusing existing payment intent",
+                        order_id=order.id,
+                        payment_id=existing_payment.id,
+                        payment_intent_id=existing_payment.processor_id,
+                        status=payment_intent.status,
+                    )
+
+                    # Update payment metadata if needed
+                    if not existing_payment.processor_metadata.get("client_secret"):
+                        existing_payment.processor_metadata["client_secret"] = (
+                            payment_intent.client_secret
+                        )
+                        await payment_repository.update(
+                            existing_payment,
+                            update_dict={
+                                "processor_metadata": existing_payment.processor_metadata
+                            },
+                        )
+
+                    return existing_payment
+                else:
+                    log.info(
+                        "Existing payment intent cannot be reused",
+                        order_id=order.id,
+                        payment_intent_status=payment_intent.status,
+                    )
+            except Exception as exc:
+                log.warning(
+                    "Failed to check existing payment intent status, will create new one",
+                    order_id=order.id,
+                    error=str(exc),
+                )
+
+        # Create new payment intent since none can be reused
+        stripe_customer_id = order.customer.stripe_customer_id
+        if stripe_customer_id is None:
+            raise MissingOrderStripeCustomerID(order)
+
+        # Create payment intent metadata
+        metadata: dict[str, Any] = {
+            "order_id": str(order.id),
+            "manual_retry": "true",
+        }
+        if order.tax_rate is not None:
+            metadata["tax_amount"] = order.tax_amount
+            metadata["tax_country"] = order.tax_rate["country"]
+            metadata["tax_state"] = order.tax_rate["state"]
+
+        # Get organization statement descriptor safely by loading through customer
+        from polar.customer.repository import CustomerRepository
+        from polar.organization.repository import OrganizationRepository
+
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(order.customer_id)
+        assert customer is not None, "Customer must exist"
+
+        org_repository = OrganizationRepository.from_session(session)
+        organization = await org_repository.get_by_id(customer.organization_id)
+        assert organization is not None, "Organization must exist"
+
+        # Create unconfirmed payment intent for manual confirmation
+        payment_intent = await stripe_service.create_payment_intent(
+            amount=order.total_amount,
+            currency=order.currency,
+            customer=stripe_customer_id,
+            confirm=False,  # Important: manual confirmation
+            setup_future_usage="off_session",  # Save payment method for future retries
+            statement_descriptor_suffix=organization.statement_descriptor,
+            metadata=metadata,
+        )
+
+        # Create payment record with pending status
+        payment = await payment_repository.create(
+            Payment(
+                processor=PaymentProcessor.stripe,
+                status=PaymentStatus.pending,
+                amount=order.total_amount,
+                currency=order.currency,
+                method="card",  # Will be updated when confirmed
+                processor_id=payment_intent.id,
+                processor_metadata={
+                    "client_secret": payment_intent.client_secret,
+                    "manual_retry": True,
+                },
+                customer_email=customer.email,
+                organization_id=organization.id,
+                order_id=order.id,
+            )
+        )
+
+        log.info(
+            "Created new manual retry payment intent",
+            order_id=order.id,
+            payment_id=payment.id,
+            payment_intent_id=payment_intent.id,
+        )
+
+        return payment
+
+    async def confirm_retry_payment(
+        self, session: AsyncSession, order: Order, confirmation_token_id: str
+    ) -> CustomerOrderPaymentConfirmation:
+        """
+        Confirm a retry payment using a Stripe confirmation token.
+        This method handles the server-side payment confirmation with billing details
+        retrieved from the customer record.
+        """
+
+        if order.status != OrderStatus.pending:
+            raise OrderNotPending(order)
+
+        if order.subscription is None:
+            raise OrderNotEligibleForRetry(order)
+
+        # Find the latest payment for this order
+        payment_repository = PaymentRepository.from_session(session)
+        payment = await payment_repository.get_latest_for_order(order.id)
+
+        if payment is None or payment.processor_id is None:
+            return CustomerOrderPaymentConfirmation(
+                status="failed",
+                requires_action=False,
+                error="No payment intent found for this order",
+            )
+
+        try:
+            # Get customer billing details for confirmation
+            customer = order.customer
+            billing_address = customer.billing_address
+
+            # Prepare billing details for Stripe
+            billing_details = {
+                "name": customer.billing_name or customer.name,
+                "email": customer.email,
+            }
+
+            if billing_address:
+                billing_details["address"] = {
+                    "line1": billing_address.line1,
+                    "line2": billing_address.line2,
+                    "postal_code": billing_address.postal_code,
+                    "city": billing_address.city,
+                    "state": billing_address.state,
+                    "country": billing_address.country,
+                }
+
+            # Confirm the payment intent with Stripe using the confirmation token
+            import stripe as stripe_lib
+
+            payment_intent = await stripe_lib.PaymentIntent.confirm_async(
+                payment.processor_id,
+                confirmation_token=confirmation_token_id,
+                return_url=settings.generate_frontend_url(
+                    f"/portal/orders/{str(order.id)}"
+                ),
+            )
+
+            # Update payment status based on result
+            if payment_intent.status == "succeeded":
+                # Payment succeeded - update payment and order status
+                await payment_repository.update(
+                    payment,
+                    update_dict={
+                        "status": PaymentStatus.succeeded,
+                        "processor_metadata": {
+                            **payment.processor_metadata,
+                            "payment_intent_status": payment_intent.status,
+                        },
+                    },
+                )
+
+                # Update order status to paid
+                from polar.order.repository import OrderRepository
+
+                order_repository = OrderRepository.from_session(session)
+                await order_repository.update(
+                    order,
+                    update_dict={
+                        "status": OrderStatus.paid,
+                        "next_payment_attempt_at": None,
+                    },
+                )
+
+                log.info(
+                    "Retry payment confirmation succeeded",
+                    order_id=order.id,
+                    payment_id=payment.id,
+                    payment_intent_id=payment.processor_id,
+                )
+
+                return CustomerOrderPaymentConfirmation(
+                    status="succeeded",
+                    requires_action=False,
+                )
+
+            elif payment_intent.status == "requires_action":
+                # 3DS or other authentication required
+                log.info(
+                    "Retry payment requires additional action",
+                    order_id=order.id,
+                    payment_intent_id=payment.processor_id,
+                    status=payment_intent.status,
+                )
+
+                return CustomerOrderPaymentConfirmation(
+                    status="requires_action",
+                    requires_action=True,
+                    client_secret=payment_intent.client_secret,
+                )
+
+            else:
+                # Payment failed or other status
+                error_message = "Payment failed"
+                if payment_intent.last_payment_error:
+                    error_message = payment_intent.last_payment_error.message
+
+                await payment_repository.update(
+                    payment,
+                    update_dict={
+                        "status": PaymentStatus.failed,
+                        "processor_metadata": {
+                            **payment.processor_metadata,
+                            "payment_intent_status": payment_intent.status,
+                            "error": error_message,
+                        },
+                    },
+                )
+
+                log.warning(
+                    "Retry payment confirmation failed",
+                    order_id=order.id,
+                    payment_intent_id=payment.processor_id,
+                    status=payment_intent.status,
+                    error=error_message,
+                )
+
+                return CustomerOrderPaymentConfirmation(
+                    status="failed",
+                    requires_action=False,
+                    error=error_message,
+                )
+
+        except stripe_lib.StripeError as stripe_exc:
+            # Handle specific Stripe errors with user-friendly messages
+            error_message = "Payment confirmation failed. Please try again."
+            if stripe_exc.error and stripe_exc.error.message:
+                error_message = stripe_exc.error.message
+
+            await payment_repository.update(
+                payment,
+                update_dict={
+                    "status": PaymentStatus.failed,
+                    "processor_metadata": {
+                        **payment.processor_metadata,
+                        "stripe_error_code": stripe_exc.code,
+                        "stripe_error_message": str(stripe_exc),
+                    },
+                },
+            )
+
+            log.warning(
+                "Stripe error during retry payment confirmation",
+                order_id=order.id,
+                payment_intent_id=payment.processor_id,
+                stripe_error_code=stripe_exc.code,
+                stripe_error_message=str(stripe_exc),
+            )
+
+            return CustomerOrderPaymentConfirmation(
+                status="failed",
+                requires_action=False,
+                error=error_message,
+            )
+        except Exception as exc:
+            log.error(
+                "Exception during retry payment confirmation",
+                order_id=order.id,
+                error=str(exc),
+            )
+
+            return CustomerOrderPaymentConfirmation(
+                status="failed",
+                requires_action=False,
+                error="Payment confirmation failed. Please try again.",
+            )
 
     async def handle_payment(
         self, session: AsyncSession, order: Order, payment: Payment | None

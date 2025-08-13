@@ -1,0 +1,154 @@
+---
+title: "API Overview"
+sidebarTitle: "Introduction"
+description: "Base URLs, authentication (OAT), and the difference between the Core API and the Customer Portal API"
+---
+
+## TL;DR
+
+<CardGroup cols={2}>
+  <Card title="Production Base URL" icon="globe">
+    `https://api.polar.sh/v1`
+  </Card>
+  <Card title="Sandbox Base URL" icon="flask">
+    `https://sandbox-api.polar.sh/v1`
+  </Card>
+  <Card title="Auth (Organization)" icon="key" href="/integrate/oat">
+    Use an **Organization Access Token (OAT)** in the `Authorization: Bearer`
+    header
+  </Card>
+  <Card
+    title="Auth (Customer Portal)"
+    icon="user-lock"
+    href="/api-reference/customer-portal/sessions/create"
+  >
+    Use a **Customer Access Token** created via `/v1/customer-sessions/`
+  </Card>
+</CardGroup>
+
+## Base URLs
+
+| Environment | Base URL                          | Purpose                         |
+| ----------- | --------------------------------- | ------------------------------- |
+| Production  | `https://api.polar.sh/v1`         | Real customers & live payments  |
+| Sandbox     | `https://sandbox-api.polar.sh/v1` | Safe testing & integration work |
+
+<Info>
+  The sandbox environment is fully isolated—data, users, tokens, and
+  organizations created there do not affect production. Create separate tokens
+  in each environment.
+</Info>
+
+Read more: [Sandbox Environment](/integrate/sandbox)
+
+## Authentication
+
+### Organization Access Tokens (OAT)
+
+Use an **OAT** to act on behalf of your organization (manage products, prices, checkouts, orders, subscriptions, benefits, etc.).
+
+```http
+Authorization: Bearer polar_oat_xxxxxxxxxxxxxxxxx
+```
+
+<Tip>
+  Create OATs in your organization settings. See: [Organization Access
+  Tokens](/integrate/oat)
+</Tip>
+
+<Warning>
+  Never expose an OAT in client-side code, public repos, or logs. If leaked, it
+  will be revoked automatically by our secret scanning integrations.
+</Warning>
+
+### Customer Access Tokens
+
+Do **not** use OATs in the browser. For customer-facing flows, [generate a **Customer Session**](/api-reference/customer-portal/sessions/create) server-side, then use the returned **customer access token** with the **Customer Portal API** to let a signed-in customer view their own orders, subscriptions, and benefits.
+
+## Core API vs Customer Portal API
+
+| Aspect               | Core API                                                                 | Customer Portal API                            |
+| -------------------- | ------------------------------------------------------------------------ | ---------------------------------------------- |
+| Audience             | Your server / backend                                                    | One of your customer                           |
+| Auth Type            | Organization Access Token (OAT)                                          | Customer Access Token                          |
+| Scope                | Full org resources (products, orders, subscriptions, benefits, checkout) | Only the authenticated customer’s data         |
+| Typical Use          | Admin dashboards, internal tools, automation, provisioning               | Building a custom customer portal or gated app |
+| Token Creation       | Via dashboard (manual)                                                   | Via `/v1/customer-sessions/` (server-side)     |
+| Sensitive Operations | Yes (create/update products, issue refunds, etc.)                        | No (read/update only what the customer owns)   |
+
+<Note>
+  The Customer Portal API is a *restricted* surface designed for safe exposure
+  in user-facing contexts (after exchanging a session). It cannot perform
+  privileged org-level mutations like creating products or issuing refunds.
+</Note>
+
+## Quick Examples
+
+<CodeGroup>
+```bash curl (Production - Core API)
+curl https://api.polar.sh/v1/products/ \
+  -H "Authorization: Bearer $POLAR_OAT" \
+  -H "Accept: application/json"
+```
+
+```bash curl (Sandbox - Core API)
+curl https://sandbox-api.polar.sh/v1/products/ \
+  -H "Authorization: Bearer $POLAR_OAT_SANDBOX" \
+  -H "Accept: application/json"
+```
+
+```bash curl (Customer Portal API)
+curl https://api.polar.sh/v1/customer-portal/orders/ \
+  -H "Authorization: Bearer $POLAR_CUSTOMER_TOKEN" \
+  -H "Accept: application/json"
+```
+
+</CodeGroup>
+
+## Using SDKs
+
+All official SDKs accept a `server` parameter for sandbox usage:
+
+<CodeGroup>
+```ts TypeScript
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+accessToken: process.env.POLAR_ACCESS_TOKEN!,
+server: "sandbox", // omit or use 'production' for live
+});
+
+````
+
+```py Python
+from polar import Polar
+
+client = Polar(
+    access_token=os.environ["POLAR_ACCESS_TOKEN"],
+    server="sandbox",
+)
+````
+
+```go Go
+s := polargo.New(
+  polargo.WithServer("sandbox"),
+  polargo.WithSecurity(os.Getenv("POLAR_ACCESS_TOKEN")),
+)
+```
+
+```php PHP
+$sdk = Polar\Polar::builder()
+    ->setServer('sandbox')
+    ->setSecurity(getenv('POLAR_ACCESS_TOKEN'))
+    ->build();
+```
+
+</CodeGroup>
+
+## Rate Limits
+
+Polar API has rate limits to ensure fair usage and maintain performance. The limits are as follows:
+
+- **100 requests per second** per IP address.
+
+If you exceed the rate limit, you will receive a `429 Too Many Requests` response. The response will include a `Retry-After` header indicating how long you should wait before making another request.

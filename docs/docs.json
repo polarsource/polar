@@ -173,7 +173,7 @@
         "groups": [
           {
             "group": "General",
-            "pages": ["api-reference/rate-limits"]
+            "pages": ["api-reference/introduction"]
           },
           {
             "group": "Core API",

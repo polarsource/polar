@@ -18,6 +18,7 @@ class SystemEvent(StrEnum):
     benefit_revoked = "benefit.revoked"
     subscription_cycled = "subscription.cycled"
     subscription_revoked = "subscription.revoked"
+    subscription_plan_changed = "subscription.plan_changd"
 
 
 class MeterCreditedMetadata(TypedDict):
@@ -100,6 +101,19 @@ class SubscriptionRevokedEvent(Event):
         user_metadata: Mapped[SubscriptionRevokedMetadata]  # type: ignore[assignment]
 
 
+class SubscriptionPlanChangedMetadata(TypedDict):
+    subscription_id: str
+    old_product_id: str
+    new_product_id: str
+
+
+class SubscriptionPlanChangedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_plan_changed]]
+        user_metadata: Mapped[SubscriptionPlanChangedMetadata]  # type: ignore[assignment]
+
+
 @overload
 def build_system_event(
     name: Literal[SystemEvent.meter_credited],
@@ -169,6 +183,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionRevokedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_plan_changed],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionPlanChangedMetadata,
 ) -> Event: ...
 
 

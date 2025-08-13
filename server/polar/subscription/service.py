@@ -823,6 +823,7 @@ class SubscriptionService:
                     }
                 ]
             )
+        assert previous_product.recurring_interval is not None
         assert product.recurring_interval is not None
 
         prices = product.prices
@@ -892,6 +893,9 @@ class SubscriptionService:
                     "product_id": str(product.id),
                 },
             )
+
+            session.add(subscription)
+            await session.flush()
         else:
             now = datetime.now(UTC)
             # Cycle start is assumed to be unchanged across plan/product changes (e.g. monthly to yearly)
@@ -946,20 +950,19 @@ class SubscriptionService:
             session.add(entry_unused_time)
             session.add(entry_remaining_time)
 
+            session.add(subscription)
+            await session.flush()
+
             if proration_behavior == SubscriptionProrationBehavior.invoice:
                 # Invoice immediately
-                from polar.order.service import order as order_service
-
-                await session.flush()
-                await order_service.create_subscription_order(
-                    session, subscription, OrderBillingReason.subscription_update
+                enqueue_job(
+                    "order.create_subscription_order",
+                    subscription.id,
+                    OrderBillingReason.subscription_update,
                 )
             elif proration_behavior == SubscriptionProrationBehavior.prorate:
                 # Add prorations to next invoice
                 pass
-
-        session.add(subscription)
-        await session.flush()
 
         # Send product change email notification
         await self.send_subscription_updated_email(

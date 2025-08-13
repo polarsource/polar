@@ -69,6 +69,7 @@ const DownloadInvoice = ({
       params: { path: { id: order.id } },
     })
     if (response.error) {
+      setLoading(false)
       return
     }
     const newWindow = window.open(response.data.url, '_blank')
@@ -104,6 +105,7 @@ const DownloadInvoice = ({
         } else {
           setError('root', { message: error.detail })
         }
+        setLoading(false)
         return
       }
 

@@ -859,11 +859,8 @@ class SubscriptionService:
         if proration_behavior is None:
             proration_behavior = organization.proration_behavior
 
-        if organization.subscriptions_billing_engine is False:
+        if subscription.stripe_subscription_id:
             # Stripe behavior
-            if subscription.stripe_subscription_id is None:
-                raise SubscriptionNotActiveOnStripe(subscription)
-
             await stripe_service.update_subscription_price(
                 subscription.stripe_subscription_id,
                 new_prices=[

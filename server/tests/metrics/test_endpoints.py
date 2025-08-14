@@ -71,6 +71,34 @@ class TestGetMetrics:
         json = response.json()
         assert len(json["periods"]) == 12
 
+    @pytest.mark.parametrize(
+        "timezone",
+        [
+            "Europe/Paris",
+            "America/New_York",
+            "Asia/Rangoon",
+            "Asia/Calcutta",
+        ],
+    )
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
+    )
+    async def test_timezones(self, timezone: str, client: AsyncClient) -> None:
+        response = await client.get(
+            "/v1/metrics/",
+            params={
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "interval": "month",
+                "timezone": timezone,
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert len(json["periods"]) == 12
+
 
 @pytest.mark.asyncio
 class TestGetMetricsLimits:

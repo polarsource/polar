@@ -204,7 +204,7 @@ class EmbedCheckout {
    * Close the embedded checkout.
    */
   public close(): void {
-    document.body.removeChild(this.iframe)
+    if (document.body.contains(this.iframe)) document.body.removeChild(this.iframe)
     document.body.classList.remove('polar-no-scroll')
   }
 

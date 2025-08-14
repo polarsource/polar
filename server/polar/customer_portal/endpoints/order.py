@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends, Query
 
 from polar.exceptions import ResourceNotFound
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -24,7 +25,14 @@ from polar.routing import APIRouter
 from polar.subscription.schemas import SubscriptionID
 
 from .. import auth
-from ..schemas.order import CustomerOrder, CustomerOrderInvoice, CustomerOrderUpdate
+from ..schemas.order import (
+    CustomerOrder,
+    CustomerOrderConfirmPayment,
+    CustomerOrderInvoice,
+    CustomerOrderPaymentConfirmation,
+    CustomerOrderPaymentStatus,
+    CustomerOrderUpdate,
+)
 from ..service.order import CustomerOrderSortProperty, OrderNotEligibleForRetry
 from ..service.order import customer_order as customer_order_service
 
@@ -205,3 +213,93 @@ async def retry_payment(
         raise ResourceNotFound()
 
     await customer_order_service.retry_payment(session, order)
+
+
+@router.get(
+    "/{id}/payment-status",
+    summary="Get Order Payment Status",
+    response_model=CustomerOrderPaymentStatus,
+    responses={404: OrderNotFound},
+)
+async def get_payment_status(
+    id: OrderID,
+    auth_subject: auth.CustomerPortalRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> CustomerOrderPaymentStatus:
+    """Get the current payment status for an order."""
+    order = await customer_order_service.get_by_id(session, auth_subject, id)
+
+    if order is None:
+        raise ResourceNotFound()
+
+    # Find the latest payment for this order
+    from polar.payment.repository import PaymentRepository
+
+    payment_repository = PaymentRepository.from_session(session)
+    payment = await payment_repository.get_latest_for_order(order.id)
+
+    if payment is None:
+        return CustomerOrderPaymentStatus(
+            status="no_payment",
+            requires_action=False,
+        )
+
+    # Get payment intent status from Stripe
+    if payment.processor_id:
+        try:
+            payment_intent = await stripe_service.get_payment_intent(
+                payment.processor_id
+            )
+
+            return CustomerOrderPaymentStatus(
+                status=payment_intent.status,
+                requires_action=payment_intent.status == "requires_action",
+                error=payment_intent.last_payment_error.message
+                if payment_intent.last_payment_error
+                else None,
+            )
+        except Exception:
+            # Fallback to payment status if Stripe call fails
+            pass
+
+    return CustomerOrderPaymentStatus(
+        status=payment.status.value,
+        requires_action=False,
+        error=payment.decline_message,
+    )
+
+
+@router.post(
+    "/{id}/confirm-payment",
+    summary="Confirm Retry Payment",
+    response_model=CustomerOrderPaymentConfirmation,
+    responses={
+        404: OrderNotFound,
+        409: {
+            "description": "Payment already in progress.",
+            "model": PaymentAlreadyInProgress.schema(),
+        },
+        422: {
+            "description": "Order not eligible for retry or payment confirmation failed.",
+            "model": OrderNotEligibleForRetry.schema(),
+        },
+    },
+)
+async def confirm_retry_payment(
+    id: OrderID,
+    confirm_data: CustomerOrderConfirmPayment,
+    auth_subject: auth.CustomerPortalWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> CustomerOrderPaymentConfirmation:
+    """Confirm a retry payment using a Stripe confirmation token."""
+    order = await customer_order_service.get_by_id(session, auth_subject, id)
+
+    if order is None:
+        raise ResourceNotFound()
+
+    return await customer_order_service.confirm_retry_payment(
+        session, order, confirm_data.confirmation_token_id
+    )
+
+
+# SSE endpoint temporarily removed until proper SSE implementation is available

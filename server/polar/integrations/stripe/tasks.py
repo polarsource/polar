@@ -11,6 +11,7 @@ from polar.account.service import account as account_service
 from polar.checkout.service import NotConfirmedCheckout
 from polar.exceptions import PolarTaskError
 from polar.external_event.service import external_event as external_event_service
+from polar.integrations.stripe import payment as stripe_payment
 from polar.integrations.stripe.schemas import PaymentIntentSuccessWebhook, ProductType
 from polar.logging import Logger
 from polar.order.service import (
@@ -116,10 +117,11 @@ async def payment_intent_payment_failed(event_id: uuid.UUID) -> None:
                 stripe_lib.PaymentIntent, event.stripe_data.data.object
             )
             try:
-                await payment.handle_failure(session, payment_intent)
+                await stripe_payment.handle_failure(session, payment_intent)
+
             except UnhandledPaymentIntent:
                 pass
-            except payment.OrderDoesNotExist as e:
+            except stripe_payment.OrderDoesNotExist as e:
                 # Retry because we may not have been able to handle the order yet
                 if can_retry():
                     raise Retry() from e

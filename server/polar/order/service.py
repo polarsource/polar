@@ -15,7 +15,10 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.customer_meter.service import customer_meter as customer_meter_service
-from polar.customer_portal.schemas.order import CustomerOrderUpdate
+from polar.customer_portal.schemas.order import (
+    CustomerOrderPaymentConfirmation,
+    CustomerOrderUpdate,
+)
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.service import discount as discount_service
 from polar.email.react import render_email_template
@@ -243,6 +246,23 @@ class InvoiceDoesNotExist(OrderError):
         self.order = order
         message = f"No invoice exists for order {order.id}."
         super().__init__(message, 404)
+
+
+class OrderNotEligibleForRetry(OrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = f"Order {order.id} is not eligible for payment retry."
+        super().__init__(message, 422)
+
+
+class MissingOrderStripeCustomerID(OrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = (
+            f"Order {order.id}'s customer {order.customer.id} "
+            "is missing a Stripe customer ID."
+        )
+        super().__init__(message)
 
 
 class NoPendingBillingEntries(OrderError):
@@ -750,6 +770,191 @@ class OrderService:
             # Release the payment lock on failure
             order = await repository.release_payment_lock(order, flush=True)
             raise
+
+    async def process_retry_payment_direct(
+        self, session: AsyncSession, order: Order, confirmation_token_id: str
+    ) -> CustomerOrderPaymentConfirmation:
+        """
+        Process retry payment with direct confirmation (confirm=True).
+        Follows checkout flow pattern - creates PaymentIntent and lets webhooks handle everything else.
+        """
+        log.info(
+            "Starting retry payment process",
+            order_id=order.id,
+            confirmation_token_id=confirmation_token_id[:8]
+            + "...",  # Partial for privacy
+            customer_id=order.customer_id,
+            amount=order.total_amount,
+            currency=order.currency,
+        )
+
+        if order.status != OrderStatus.pending:
+            raise OrderNotPending(order)
+
+        if order.next_payment_attempt_at is None:
+            raise OrderNotEligibleForRetry(order)
+
+        if order.subscription is None:
+            raise OrderNotEligibleForRetry(order)
+
+        # Check for existing payment lock to prevent concurrent payments
+        if order.payment_lock_acquired_at is not None:
+            log.warning(
+                "Payment already in progress",
+                order_id=order.id,
+                lock_acquired_at=order.payment_lock_acquired_at,
+            )
+            raise PaymentAlreadyInProgress(order)
+
+        # Get Stripe customer ID
+        stripe_customer_id = order.customer.stripe_customer_id
+        if stripe_customer_id is None:
+            raise MissingOrderStripeCustomerID(order)
+
+        # Get organization for statement descriptor
+        from polar.customer.repository import CustomerRepository
+        from polar.organization.repository import OrganizationRepository
+
+        customer_repository = CustomerRepository.from_session(session)
+        customer = await customer_repository.get_by_id(order.customer_id)
+        assert customer is not None, "Customer must exist"
+
+        org_repository = OrganizationRepository.from_session(session)
+        organization = await org_repository.get_by_id(customer.organization_id)
+        assert organization is not None, "Organization must exist"
+
+        # Create payment intent metadata (similar to checkout flow)
+        metadata: dict[str, Any] = {
+            "order_id": str(order.id),
+        }
+        if order.tax_rate is not None:
+            metadata["tax_amount"] = str(order.tax_amount)
+            metadata["tax_country"] = order.tax_rate["country"]
+            metadata["tax_state"] = order.tax_rate["state"]
+
+        try:
+            # Create PaymentIntent with direct confirmation (like checkout flow)
+            import stripe as stripe_lib
+
+            payment_intent = await stripe_lib.PaymentIntent.create_async(
+                amount=order.total_amount,
+                currency=order.currency,
+                customer=stripe_customer_id,
+                confirm=True,  # Direct confirmation
+                confirmation_token=confirmation_token_id,
+                return_url=settings.generate_frontend_url(
+                    f"/portal/orders/{str(order.id)}"
+                ),
+                statement_descriptor_suffix=organization.statement_descriptor,
+                metadata=metadata,
+            )
+
+            # DON'T create Payment record - let webhooks handle it
+            # DON'T update order status - let webhooks handle it
+
+            # Just return status for frontend handling
+            if payment_intent.status == "succeeded":
+                log.info(
+                    "Retry payment succeeded immediately",
+                    order_id=order.id,
+                    payment_intent_id=payment_intent.id,
+                )
+
+                return CustomerOrderPaymentConfirmation(
+                    status="succeeded",
+                    requires_action=False,
+                )
+
+            elif payment_intent.status == "requires_action":
+                log.info(
+                    "Retry payment requires additional action",
+                    order_id=order.id,
+                    payment_intent_id=payment_intent.id,
+                    status=payment_intent.status,
+                )
+
+                return CustomerOrderPaymentConfirmation(
+                    status="requires_action",
+                    requires_action=True,
+                    client_secret=payment_intent.client_secret,
+                )
+
+            else:
+                # Payment failed or other status
+                error_message = "Payment failed"
+                if payment_intent.last_payment_error:
+                    error_message = payment_intent.last_payment_error.message
+
+                log.warning(
+                    "Retry payment failed",
+                    order_id=order.id,
+                    payment_intent_id=payment_intent.id,
+                    status=payment_intent.status,
+                    error=error_message,
+                )
+
+                return CustomerOrderPaymentConfirmation(
+                    status="failed",
+                    requires_action=False,
+                    error=error_message,
+                )
+
+        except stripe_lib.StripeError as stripe_exc:
+            log.warning(
+                "Stripe error during retry payment",
+                order_id=order.id,
+                stripe_error_code=stripe_exc.code,
+                stripe_error_message=str(stripe_exc),
+            )
+
+            # Translate Stripe errors to user-friendly messages
+            error_message = "Payment failed. Please try again."
+            if stripe_exc.code:
+                if stripe_exc.code in ("card_declined", "generic_decline"):
+                    error_message = (
+                        "Your card was declined. Please try a different payment method."
+                    )
+                elif stripe_exc.code == "insufficient_funds":
+                    error_message = "Insufficient funds. Please check your balance or try a different card."
+                elif stripe_exc.code == "expired_card":
+                    error_message = (
+                        "Your card has expired. Please update your payment method."
+                    )
+                elif stripe_exc.code == "incorrect_cvc":
+                    error_message = "The security code (CVC) is incorrect. Please check and try again."
+                elif stripe_exc.code == "processing_error":
+                    error_message = (
+                        "A processing error occurred. Please try again in a moment."
+                    )
+                elif stripe_exc.code == "rate_limit":
+                    error_message = (
+                        "Too many requests. Please wait a moment and try again."
+                    )
+                elif stripe_exc.error and stripe_exc.error.message:
+                    error_message = stripe_exc.error.message
+
+            return CustomerOrderPaymentConfirmation(
+                status="failed",
+                requires_action=False,
+                error=error_message,
+            )
+
+        except Exception as exc:
+            log.error(
+                "Exception during retry payment",
+                order_id=order.id,
+                error=str(exc),
+                exc_info=True,  # Include full traceback
+            )
+
+            return CustomerOrderPaymentConfirmation(
+                status="failed",
+                requires_action=False,
+                error="Payment failed. Please try again.",
+            )
+
+        # No finally block needed - we don't acquire payment locks for direct confirmation
+        # The webhooks will handle all payment processing and order status updates
 
     async def handle_payment(
         self, session: AsyncSession, order: Order, payment: Payment | None

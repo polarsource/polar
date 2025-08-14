@@ -21,7 +21,11 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.worker import enqueue_job
 
 from ..repository.order import CustomerOrderRepository
-from ..schemas.order import CustomerOrderInvoice, CustomerOrderUpdate
+from ..schemas.order import (
+    CustomerOrderInvoice,
+    CustomerOrderPaymentConfirmation,
+    CustomerOrderUpdate,
+)
 
 
 class CustomerOrderError(PolarError): ...
@@ -180,6 +184,16 @@ class CustomerOrderService:
             "order.trigger_payment",
             order_id=order.id,
             payment_method_id=order.subscription.payment_method_id,
+        )
+
+    async def confirm_retry_payment(
+        self, session: AsyncSession, order: Order, confirmation_token_id: str
+    ) -> CustomerOrderPaymentConfirmation:
+        """Process retry payment with direct confirmation (confirm=True)."""
+        from polar.order.service import order as order_service
+
+        return await order_service.process_retry_payment_direct(
+            session, order, confirmation_token_id
         )
 
 

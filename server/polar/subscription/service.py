@@ -622,7 +622,11 @@ class SubscriptionService:
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)
 
-        enqueue_job("order.subscription_cycle", subscription.id)
+        enqueue_job(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReason.subscription_cycle,
+        )
 
         await self._after_subscription_updated(
             session,

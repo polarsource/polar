@@ -47,6 +47,7 @@ from polar.models import (
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.order import OrderBillingReason
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import (
@@ -522,7 +523,11 @@ class TestCycle:
         assert billing_entry.amount == price.price_amount
         assert billing_entry.currency == price.price_currency
 
-        enqueue_job_mock.assert_any_call("order.subscription_cycle", subscription.id)
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReason.subscription_cycle,
+        )
 
     async def test_free_price(
         self,
@@ -647,7 +652,11 @@ class TestCycle:
             product_id=product.id,
             subscription_id=subscription.id,
         )
-        enqueue_job_mock.assert_any_call("order.subscription_cycle", subscription.id)
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReason.subscription_cycle,
+        )
 
 
 @pytest.mark.asyncio

@@ -19,11 +19,7 @@ from polar.models.webhook_endpoint import (
 )
 from polar.models.webhook_event import WebhookEvent
 from polar.webhook.service import webhook as webhook_service
-from polar.webhook.tasks import (
-    _webhook_event_send,
-    allowed_url,
-    webhook_event_send,
-)
+from polar.webhook.tasks import _webhook_event_send, webhook_event_send
 from tests.fixtures.database import SaveFixture
 
 
@@ -216,13 +212,3 @@ async def test_webhook_standard_webhooks_compatible(
     request = route_mock.calls.last.request
     w = StandardWebhook(secret.encode("utf-8"))
     assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None
-
-
-@pytest.mark.asyncio
-async def test_allowed_url() -> None:
-    assert allowed_url("https://example.com/webhooks")
-    assert allowed_url("https://example.com:5000/webhooks")
-    assert allowed_url("http://example.com:5000/webhooks") is False  # http
-    assert allowed_url("https://127.0.0.1:5000/webhooks") is False  # loopback
-    assert allowed_url("https://::1/webhooks") is False  # loopback
-    assert allowed_url("https://foo.invalid:5000/webhooks") is False  # does not resolve

@@ -64,7 +64,6 @@ from polar.models import (
 )
 from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderBillingReason, OrderStatus
-from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_meter import SubscriptionMeter
@@ -777,8 +776,18 @@ class OrderService:
     ) -> CustomerOrderPaymentConfirmation:
         """
         Process retry payment with direct confirmation (confirm=True).
-        Similar to checkout flow - creates and confirms payment intent in one step.
+        Follows checkout flow pattern - creates PaymentIntent and lets webhooks handle everything else.
         """
+        log.info(
+            "Starting retry payment process",
+            order_id=order.id,
+            confirmation_token_id=confirmation_token_id[:8]
+            + "...",  # Partial for privacy
+            customer_id=order.customer_id,
+            amount=order.total_amount,
+            currency=order.currency,
+        )
+
         if order.status != OrderStatus.pending:
             raise OrderNotPending(order)
 
@@ -788,22 +797,21 @@ class OrderService:
         if order.subscription is None:
             raise OrderNotEligibleForRetry(order)
 
+        # Check for existing payment lock to prevent concurrent payments
+        if order.payment_lock_acquired_at is not None:
+            log.warning(
+                "Payment already in progress",
+                order_id=order.id,
+                lock_acquired_at=order.payment_lock_acquired_at,
+            )
+            raise PaymentAlreadyInProgress(order)
+
         # Get Stripe customer ID
         stripe_customer_id = order.customer.stripe_customer_id
         if stripe_customer_id is None:
             raise MissingOrderStripeCustomerID(order)
 
-        # Create payment intent metadata
-        metadata: dict[str, Any] = {
-            "order_id": str(order.id),
-            "type": "retry_payment",
-        }
-        if order.tax_rate is not None:
-            metadata["tax_amount"] = str(order.tax_amount)
-            metadata["tax_country"] = order.tax_rate["country"]
-            metadata["tax_state"] = order.tax_rate["state"]
-
-        # Get organization statement descriptor
+        # Get organization for statement descriptor
         from polar.customer.repository import CustomerRepository
         from polar.organization.repository import OrganizationRepository
 
@@ -815,15 +823,24 @@ class OrderService:
         organization = await org_repository.get_by_id(customer.organization_id)
         assert organization is not None, "Organization must exist"
 
+        # Create payment intent metadata (similar to checkout flow)
+        metadata: dict[str, Any] = {
+            "order_id": str(order.id),
+        }
+        if order.tax_rate is not None:
+            metadata["tax_amount"] = str(order.tax_amount)
+            metadata["tax_country"] = order.tax_rate["country"]
+            metadata["tax_state"] = order.tax_rate["state"]
+
         try:
-            # Direct confirmation like checkout flow
+            # Create PaymentIntent with direct confirmation (like checkout flow)
             import stripe as stripe_lib
 
             payment_intent = await stripe_lib.PaymentIntent.create_async(
                 amount=order.total_amount,
                 currency=order.currency,
                 customer=stripe_customer_id,
-                confirm=True,  # ← Direct confirmation!
+                confirm=True,  # Direct confirmation
                 confirmation_token=confirmation_token_id,
                 return_url=settings.generate_frontend_url(
                     f"/portal/orders/{str(order.id)}"
@@ -832,35 +849,14 @@ class OrderService:
                 metadata=metadata,
             )
 
-            # Create payment record after successful intent creation
-            payment_repository = PaymentRepository.from_session(session)
-            payment = await payment_repository.create(
-                Payment(
-                    processor=PaymentProcessor.stripe,
-                    status=PaymentStatus.succeeded
-                    if payment_intent.status == "succeeded"
-                    else PaymentStatus.pending,
-                    amount=order.total_amount,
-                    currency=order.currency,
-                    method="card",  # Will be updated by webhooks
-                    processor_id=payment_intent.id,
-                    processor_metadata={
-                        "client_secret": payment_intent.client_secret,
-                        "payment_intent_status": payment_intent.status,
-                    },
-                    customer_email=customer.email,
-                    organization_id=organization.id,
-                    order_id=order.id,
-                )
-            )
-
-            # Handle response based on payment intent status
+            # DON'T create Payment record - let webhooks handle it
+            # DON'T update order status - let webhooks handle it
+            
+            # Just return status for frontend handling
             if payment_intent.status == "succeeded":
-                # Payment immediately succeeded - webhooks will update order
                 log.info(
                     "Retry payment succeeded immediately",
                     order_id=order.id,
-                    payment_id=payment.id,
                     payment_intent_id=payment_intent.id,
                 )
 
@@ -870,11 +866,9 @@ class OrderService:
                 )
 
             elif payment_intent.status == "requires_action":
-                # 3DS or other authentication required
                 log.info(
                     "Retry payment requires additional action",
                     order_id=order.id,
-                    payment_id=payment.id,
                     payment_intent_id=payment_intent.id,
                     status=payment_intent.status,
                 )
@@ -894,7 +888,6 @@ class OrderService:
                 log.warning(
                     "Retry payment failed",
                     order_id=order.id,
-                    payment_id=payment.id,
                     payment_intent_id=payment_intent.id,
                     status=payment_intent.status,
                     error=error_message,
@@ -916,8 +909,29 @@ class OrderService:
 
             # Translate Stripe errors to user-friendly messages
             error_message = "Payment failed. Please try again."
-            if stripe_exc.error and stripe_exc.error.message:
-                error_message = stripe_exc.error.message
+            if stripe_exc.code:
+                if stripe_exc.code in ("card_declined", "generic_decline"):
+                    error_message = (
+                        "Your card was declined. Please try a different payment method."
+                    )
+                elif stripe_exc.code == "insufficient_funds":
+                    error_message = "Insufficient funds. Please check your balance or try a different card."
+                elif stripe_exc.code == "expired_card":
+                    error_message = (
+                        "Your card has expired. Please update your payment method."
+                    )
+                elif stripe_exc.code == "incorrect_cvc":
+                    error_message = "The security code (CVC) is incorrect. Please check and try again."
+                elif stripe_exc.code == "processing_error":
+                    error_message = (
+                        "A processing error occurred. Please try again in a moment."
+                    )
+                elif stripe_exc.code == "rate_limit":
+                    error_message = (
+                        "Too many requests. Please wait a moment and try again."
+                    )
+                elif stripe_exc.error and stripe_exc.error.message:
+                    error_message = stripe_exc.error.message
 
             return CustomerOrderPaymentConfirmation(
                 status="failed",
@@ -930,6 +944,7 @@ class OrderService:
                 "Exception during retry payment",
                 order_id=order.id,
                 error=str(exc),
+                exc_info=True,  # Include full traceback
             )
 
             return CustomerOrderPaymentConfirmation(
@@ -937,6 +952,9 @@ class OrderService:
                 requires_action=False,
                 error="Payment failed. Please try again.",
             )
+
+        # No finally block needed - we don't acquire payment locks for direct confirmation
+        # The webhooks will handle all payment processing and order status updates
 
     async def handle_payment(
         self, session: AsyncSession, order: Order, payment: Payment | None

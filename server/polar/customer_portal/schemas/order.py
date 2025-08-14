@@ -63,16 +63,6 @@ class CustomerOrderUpdate(OrderUpdateBase):
     """Schema to update an order."""
 
 
-class CustomerOrderPaymentIntent(Schema):
-    """Payment intent data for manual retry."""
-
-    client_secret: str = Field(
-        ..., description="The client secret for the payment intent."
-    )
-    amount: int = Field(..., description="The payment amount in cents.")
-    currency: str = Field(..., description="The currency code.")
-
-
 class CustomerOrderPaymentStatus(Schema):
     """Payment status for an order."""
 

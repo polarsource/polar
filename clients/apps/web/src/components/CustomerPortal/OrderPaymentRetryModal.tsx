@@ -3,10 +3,10 @@
 import { toast } from '@/components/Toast/use-toast'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { Modal, ModalHeader } from '../Modal'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import { useMemo, useState } from 'react'
+import { Modal, ModalHeader } from '../Modal'
 import { OrderPaymentRetry } from './OrderPaymentRetry'
 
 // Will initialize Stripe with useMemo like AddPaymentMethodModal
@@ -39,19 +39,16 @@ export const OrderPaymentRetryModal = ({
   }, [])
 
   // Elements options - for setup mode (no client_secret needed)
-  const elementsOptions = useMemo(
-    () => {
-      return {
-        mode: 'payment' as const,
-        amount: order.total_amount,
-        currency: order.currency,
-        appearance: {
-          theme: 'stripe' as const,
-        },
-      }
-    },
-    [order.total_amount, order.currency],
-  )
+  const elementsOptions = useMemo(() => {
+    return {
+      mode: 'payment' as const,
+      amount: order.total_amount,
+      currency: order.currency,
+      appearance: {
+        theme: 'stripe' as const,
+      },
+    }
+  }, [order.total_amount, order.currency])
 
   const handleClose = () => {
     setError('')
@@ -64,7 +61,6 @@ export const OrderPaymentRetryModal = ({
       description: 'Your payment has been processed successfully!',
     })
     onSuccess?.(order)
-    handleClose()
   }
 
   const handlePaymentError = (error: string) => {
@@ -87,7 +83,7 @@ export const OrderPaymentRetryModal = ({
           <ModalHeader hide={handleClose}>
             <h3 className="text-lg font-semibold">Update Payment Method</h3>
           </ModalHeader>
-          <div className="p-6 space-y-4">
+          <div className="space-y-4 p-6">
             {/* Error State */}
             {error && (
               <div className="py-4 text-center">
@@ -104,10 +100,7 @@ export const OrderPaymentRetryModal = ({
 
             {/* Payment Form */}
             {!error && stripePromise && (
-              <Elements 
-                stripe={stripePromise} 
-                options={elementsOptions}
-              >
+              <Elements stripe={stripePromise} options={elementsOptions}>
                 <ElementsConsumer>
                   {({ stripe, elements }) => (
                     <OrderPaymentRetry
@@ -126,7 +119,9 @@ export const OrderPaymentRetryModal = ({
             {/* Stripe Configuration Error */}
             {!stripePromise && (
               <div className="py-8 text-center">
-                <p className="mb-4 text-red-600">Stripe is not properly configured.</p>
+                <p className="mb-4 text-red-600">
+                  Stripe is not properly configured.
+                </p>
               </div>
             )}
           </div>

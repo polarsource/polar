@@ -51,15 +51,9 @@ const CustomerPortalOrder = ({
     sorting: ['type'],
   })
 
-
   const isPartiallyOrFullyRefunded = useMemo(() => {
     return order.status === 'partially_refunded' || order.status === 'refunded'
   }, [order])
-
-  const handlePaymentSuccess = () => {
-    // Optionally refresh the page or update the order in parent component
-    window.location.reload()
-  }
 
   return (
     <div className="flex h-full flex-col gap-12">
@@ -203,7 +197,6 @@ const CustomerPortalOrder = ({
         customerSessionToken={customerSessionToken}
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
-        onSuccess={handlePaymentSuccess}
       />
     </div>
   )

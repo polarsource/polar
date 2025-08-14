@@ -18,7 +18,6 @@ from polar.order.service import (
     NotPaidOrder,
     PaymentAlreadyInProgress,
 )
-from polar.order.service import order as order_service
 from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
@@ -31,7 +30,6 @@ from ..schemas.order import (
     CustomerOrderConfirmPayment,
     CustomerOrderInvoice,
     CustomerOrderPaymentConfirmation,
-    CustomerOrderPaymentIntent,
     CustomerOrderPaymentStatus,
     CustomerOrderUpdate,
 )
@@ -217,46 +215,6 @@ async def retry_payment(
     await customer_order_service.retry_payment(session, order)
 
 
-@router.post(
-    "/{id}/create-payment-intent",
-    summary="Create Payment Intent for Manual Retry",
-    response_model=CustomerOrderPaymentIntent,
-    responses={
-        404: OrderNotFound,
-        409: {
-            "description": "Payment already in progress.",
-            "model": PaymentAlreadyInProgress.schema(),
-        },
-        422: {
-            "description": "Order not eligible for retry.",
-            "model": OrderNotEligibleForRetry.schema(),
-        },
-    },
-)
-async def create_payment_intent(
-    id: OrderID,
-    auth_subject: auth.CustomerPortalWrite,
-    session: AsyncSession = Depends(get_db_session),
-) -> CustomerOrderPaymentIntent:
-    """Create a payment intent for manual retry with full checkout flow."""
-    order = await customer_order_service.get_by_id(
-        session,
-        auth_subject,
-        id,
-    )
-
-    if order is None:
-        raise ResourceNotFound()
-
-    payment = await order_service.create_manual_retry_payment_intent(session, order)
-
-    return CustomerOrderPaymentIntent(
-        client_secret=payment.client_secret,
-        amount=payment.amount,
-        currency=payment.currency,
-    )
-
-
 @router.get(
     "/{id}/payment-status",
     summary="Get Order Payment Status",
@@ -317,6 +275,10 @@ async def get_payment_status(
     response_model=CustomerOrderPaymentConfirmation,
     responses={
         404: OrderNotFound,
+        409: {
+            "description": "Payment already in progress.",
+            "model": PaymentAlreadyInProgress.schema(),
+        },
         422: {
             "description": "Order not eligible for retry or payment confirmation failed.",
             "model": OrderNotEligibleForRetry.schema(),

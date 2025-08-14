@@ -1,9 +1,12 @@
 from datetime import UTC, datetime
 from decimal import Decimal
+from unittest.mock import MagicMock
 
 import freezegun
 import pytest
 from dateutil.relativedelta import relativedelta
+from pytest_mock import MockerFixture
+
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.repository import EventRepository
@@ -14,12 +17,12 @@ from polar.models import (
     Organization,
 )
 from polar.models.billing_entry import BillingEntryDirection
+from polar.models.order import OrderBillingReason
 from polar.postgres import AsyncSession
 from polar.product.guard import (
     is_fixed_price,
 )
 from polar.subscription.service import subscription as subscription_service
-
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -38,9 +41,9 @@ from tests.fixtures.random_objects import (
 #    - For 3 months
 #    - In perpetuity
 # - Tests a customer with multiple subscriptions
-# - Tests both "invoice immediately" and "prorations on next invoice" options
-#   - through the setting on the organization
-#   - through specific parameter in the API (overrides org setting)
+# - ✅ Tests both "invoice immediately" and "prorations on next invoice" options
+#   - ✅ through the setting on the organization
+#   - ✅ through specific parameter in the API (overrides org setting)
 # ? Tests that benefits are granted ? (maybe this should just be covered in `test_service.py`)
 # ? Tests free and "choose your own price" ?
 # ? Tests a canceled subscription ?
@@ -48,6 +51,11 @@ from tests.fixtures.random_objects import (
 #
 # All of these tests are checked both with the organisation having
 # chosen to invoice immediately, or add prorations to the next invoice.
+
+
+@pytest.fixture
+def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.subscription.service.enqueue_job")
 
 
 @pytest.mark.asyncio
@@ -288,6 +296,104 @@ class TestUpdateProductProrations:
             assert billing_entries[1].amount == entry_1_amount
             assert billing_entries[1].currency == new_price.price_currency
             # fmt: on
+
+    @pytest.mark.parametrize(
+        "proration_behavior",
+        [
+            (
+                SubscriptionProrationBehavior.invoice,
+                SubscriptionProrationBehavior.invoice,
+            ),
+            (
+                SubscriptionProrationBehavior.prorate,
+                SubscriptionProrationBehavior.invoice,
+            ),
+            (
+                SubscriptionProrationBehavior.prorate,
+                SubscriptionProrationBehavior.prorate,
+            ),
+            (
+                SubscriptionProrationBehavior.invoice,
+                SubscriptionProrationBehavior.prorate,
+            ),
+            (None, SubscriptionProrationBehavior.invoice),
+            (None, SubscriptionProrationBehavior.prorate),
+        ],
+    )
+    async def test_call_proration_overrides_org_proration(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        enqueue_job_mock: MagicMock,
+        customer: Customer,
+        proration_behavior: tuple[
+            SubscriptionProrationBehavior | None, SubscriptionProrationBehavior
+        ],
+    ) -> None:
+        """Test that the `proration_behavior` passed as an arg to `update_product()`
+        is used -- if it's `None` then we fall back to the organization setting.
+        """
+        cycle_start = datetime(2025, 6, 1, tzinfo=UTC)
+        time_of_update = datetime(2025, 6, 16, tzinfo=UTC)
+        old_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(10000,)],
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(30000,)],
+        )
+
+        call_proration, org_proration = proration_behavior
+        expected_proration = call_proration or org_proration
+
+        organization.subscription_settings["proration_behavior"] = org_proration
+        session.add(organization)
+        await session.flush()
+
+        with freezegun.freeze_time(cycle_start) as frozen_time:
+            # We're not using Stripe
+            assert organization.subscriptions_billing_engine is True
+
+            subscription = await create_active_subscription(
+                save_fixture,
+                product=old_product,
+                customer=customer,
+                stripe_subscription_id=None,
+            )
+
+            frozen_time.move_to(time_of_update)
+
+            # Actually update subscription
+            updated_subscription = await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=call_proration,
+            )
+
+            # `enqueue_job` gets called a couple of times, only one of which
+            # we care about. We do the following to extract only that "one" and
+            # assert that it's just called once or never in the two cases.
+            calls = [
+                args[0]
+                for args, kwargs in enqueue_job_mock.call_args_list
+                if args[0] == "order.create_subscription_order"
+            ]
+            if expected_proration == SubscriptionProrationBehavior.invoice:
+                enqueue_job_mock.assert_any_call(
+                    "order.create_subscription_order",
+                    subscription.id,
+                    OrderBillingReason.subscription_update,
+                )
+                assert len(calls) == 1
+            else:
+                assert len(calls) == 0
 
     async def test_pricing_order_and_meter(
         self,

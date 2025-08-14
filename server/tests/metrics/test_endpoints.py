@@ -78,6 +78,7 @@ class TestGetMetrics:
             "America/New_York",
             "Asia/Rangoon",
             "Asia/Calcutta",
+            "Asia/Kolkata",
         ],
     )
     @pytest.mark.auth(

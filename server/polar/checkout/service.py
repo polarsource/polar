@@ -1,7 +1,7 @@
 import contextlib
 import typing
 import uuid
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 
 import stripe as stripe_lib
 import structlog
@@ -840,80 +840,82 @@ class CheckoutService:
             raise PolarRequestValidationError(errors)
 
         if checkout.payment_processor == PaymentProcessor.stripe:
-            customer = await self._create_or_update_customer(
+            async with self._create_or_update_customer(
                 session, auth_subject, checkout
-            )
-
-            checkout.customer = customer
-            stripe_customer_id = customer.stripe_customer_id
-            assert stripe_customer_id is not None
-            checkout.payment_processor_metadata = {
-                **checkout.payment_processor_metadata,
-                "customer_id": stripe_customer_id,
-            }
-
-            if checkout.is_payment_form_required:
-                assert checkout_confirm.confirmation_token_id is not None
-                assert checkout.customer_billing_address is not None
-                intent_metadata: dict[str, str] = {
-                    "checkout_id": str(checkout.id),
-                    "type": ProductType.product,
-                    "tax_amount": str(checkout.tax_amount),
-                    "tax_country": checkout.customer_billing_address.country,
+            ) as customer:
+                checkout.customer = customer
+                stripe_customer_id = customer.stripe_customer_id
+                assert stripe_customer_id is not None
+                checkout.payment_processor_metadata = {
+                    **checkout.payment_processor_metadata,
+                    "customer_id": stripe_customer_id,
                 }
-                if (
-                    state := checkout.customer_billing_address.get_unprefixed_state()
-                ) is not None:
-                    intent_metadata["tax_state"] = state
 
-                intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent
-                try:
-                    if checkout.is_payment_required:
-                        payment_intent_params: stripe_lib.PaymentIntent.CreateParams = {
-                            "amount": checkout.total_amount,
-                            "currency": checkout.currency,
-                            "automatic_payment_methods": {"enabled": True},
-                            "confirm": True,
-                            "confirmation_token": checkout_confirm.confirmation_token_id,
-                            "customer": stripe_customer_id,
-                            "statement_descriptor_suffix": checkout.organization.statement_descriptor,
-                            "description": f"{checkout.organization.name} — {checkout.product.name}",
-                            "metadata": intent_metadata,
-                            "return_url": settings.generate_frontend_url(
-                                f"/checkout/{checkout.client_secret}/confirmation"
-                            ),
-                        }
-                        if checkout.product.is_recurring:
-                            payment_intent_params["setup_future_usage"] = "off_session"
-                        intent = await stripe_service.create_payment_intent(
-                            **payment_intent_params
-                        )
-                    else:
-                        setup_intent_params: stripe_lib.SetupIntent.CreateParams = {
-                            "automatic_payment_methods": {"enabled": True},
-                            "confirm": True,
-                            "confirmation_token": checkout_confirm.confirmation_token_id,
-                            "customer": stripe_customer_id,
-                            "description": f"{checkout.organization.name} — {checkout.product.name}",
-                            "metadata": intent_metadata,
-                            "return_url": settings.generate_frontend_url(
-                                f"/checkout/{checkout.client_secret}/confirmation"
-                            ),
-                        }
-                        intent = await stripe_service.create_setup_intent(
-                            **setup_intent_params
-                        )
-                except stripe_lib.StripeError as e:
-                    error = e.error
-                    error_type = error.type if error is not None else None
-                    error_message = error.message if error is not None else None
-                    raise PaymentError(checkout, error_type, error_message)
-                else:
-                    checkout.payment_processor_metadata = {
-                        **checkout.payment_processor_metadata,
-                        "intent_client_secret": intent.client_secret,
-                        "intent_status": intent.status,
+                if checkout.is_payment_form_required:
+                    assert checkout_confirm.confirmation_token_id is not None
+                    assert checkout.customer_billing_address is not None
+                    intent_metadata: dict[str, str] = {
+                        "checkout_id": str(checkout.id),
+                        "type": ProductType.product,
+                        "tax_amount": str(checkout.tax_amount),
+                        "tax_country": checkout.customer_billing_address.country,
                     }
+                    if (
+                        state
+                        := checkout.customer_billing_address.get_unprefixed_state()
+                    ) is not None:
+                        intent_metadata["tax_state"] = state
+
+                    intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent
+                    try:
+                        if checkout.is_payment_required:
+                            payment_intent_params: stripe_lib.PaymentIntent.CreateParams = {
+                                "amount": checkout.total_amount,
+                                "currency": checkout.currency,
+                                "automatic_payment_methods": {"enabled": True},
+                                "confirm": True,
+                                "confirmation_token": checkout_confirm.confirmation_token_id,
+                                "customer": stripe_customer_id,
+                                "statement_descriptor_suffix": checkout.organization.statement_descriptor,
+                                "description": f"{checkout.organization.name} — {checkout.product.name}",
+                                "metadata": intent_metadata,
+                                "return_url": settings.generate_frontend_url(
+                                    f"/checkout/{checkout.client_secret}/confirmation"
+                                ),
+                            }
+                            if checkout.product.is_recurring:
+                                payment_intent_params["setup_future_usage"] = (
+                                    "off_session"
+                                )
+                            intent = await stripe_service.create_payment_intent(
+                                **payment_intent_params
+                            )
+                        else:
+                            setup_intent_params: stripe_lib.SetupIntent.CreateParams = {
+                                "automatic_payment_methods": {"enabled": True},
+                                "confirm": True,
+                                "confirmation_token": checkout_confirm.confirmation_token_id,
+                                "customer": stripe_customer_id,
+                                "description": f"{checkout.organization.name} — {checkout.product.name}",
+                                "metadata": intent_metadata,
+                                "return_url": settings.generate_frontend_url(
+                                    f"/checkout/{checkout.client_secret}/confirmation"
+                                ),
+                            }
+                            intent = await stripe_service.create_setup_intent(
+                                **setup_intent_params
+                            )
+                    except stripe_lib.StripeError as e:
+                        error = e.error
+                        error_type = error.type if error is not None else None
+                        error_message = error.message if error is not None else None
+                        raise PaymentError(checkout, error_type, error_message) from e
+                    else:
+                        checkout.payment_processor_metadata = {
+                            **checkout.payment_processor_metadata,
+                            "intent_client_secret": intent.client_secret,
+                            "intent_status": intent.status,
+                        }
 
         if not checkout.is_payment_form_required:
             enqueue_job("checkout.handle_free_success", checkout_id=checkout.id)
@@ -1681,12 +1683,13 @@ class CheckoutService:
             fields.update({("customer_billing_name",), ("customer_billing_address",)})
         return fields
 
+    @contextlib.asynccontextmanager
     async def _create_or_update_customer(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
-    ) -> Customer:
+    ) -> AsyncGenerator[Customer]:
         repository = CustomerRepository.from_session(session)
 
         created = False
@@ -1757,11 +1760,10 @@ class CheckoutService:
         }
 
         if created:
-            customer = await repository.create(customer, flush=True)
+            async with repository.create_context(customer, flush=False) as customer:
+                yield customer
         else:
-            customer = await repository.update(customer, flush=True)
-
-        return customer
+            yield await repository.update(customer, flush=True)
 
     async def _create_ad_hoc_custom_price(
         self, checkout: Checkout, *, idempotency_key: str | None = None

@@ -1,7 +1,9 @@
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.customer.repository import CustomerRepository
-from polar.models import Customer
+from polar.models import Customer, Organization
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
@@ -23,3 +25,34 @@ async def test_get_by_id(
 
     result = await repository.get_by_id(customer.id, include_deleted=True)
     assert result == customer
+
+
+@pytest.mark.asyncio
+async def test_create_context(
+    mocker: MockerFixture,
+    session: AsyncSession,
+    repository: CustomerRepository,
+    organization: Organization,
+) -> None:
+    enqueue_job_mock = mocker.patch("polar.customer.repository.enqueue_job")
+
+    async with repository.create_context(
+        Customer(email="customer@example.com", organization=organization)
+    ) as customer:
+        assert customer.id is not None
+        await session.flush()
+
+    enqueue_job_mock.assert_called_once_with(
+        "customer.webhook", WebhookEventType.customer_created, customer.id
+    )
+
+    enqueue_job_mock.reset_mock()
+
+    with pytest.raises(RuntimeError):
+        async with repository.create_context(
+            Customer(email="customer2@example.com", organization=organization)
+        ) as customer:
+            # Simulate an error during context execution
+            raise RuntimeError("Simulated error")
+
+    enqueue_job_mock.assert_not_called()

@@ -189,24 +189,26 @@ class CustomerOrderService:
     async def create_manual_retry_payment_intent(
         self, session: AsyncSession, order: Order
     ) -> dict[str, Any]:
-        """Create a payment intent for manual retry with full checkout flow."""
-        from polar.order.service import order as order_service
-
-        payment = await order_service.create_manual_retry_payment_intent(session, order)
-
+        """
+        Create a payment intent for manual retry.
+        Note: This method is deprecated in favor of direct confirmation flow.
+        Returns a simplified client_secret for compatibility.
+        """
+        # For the confirm=True flow, we don't pre-create payment intents
+        # Just return a placeholder that indicates we should use direct confirmation
         return {
-            "client_secret": payment.client_secret,
-            "amount": payment.amount,
-            "currency": payment.currency,
+            "client_secret": f"requires_confirmation_{order.id}",
+            "amount": order.total_amount,
+            "currency": order.currency,
         }
 
     async def confirm_retry_payment(
         self, session: AsyncSession, order: Order, confirmation_token_id: str
     ) -> CustomerOrderPaymentConfirmation:
-        """Confirm a retry payment using a Stripe confirmation token."""
+        """Process retry payment with direct confirmation (confirm=True)."""
         from polar.order.service import order as order_service
 
-        return await order_service.confirm_retry_payment(
+        return await order_service.process_retry_payment_direct(
             session, order, confirmation_token_id
         )
 

@@ -34,6 +34,11 @@ export const OrderPaymentRetry = ({
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
+    // Prevent duplicate submissions
+    if (isProcessing || isPolling) {
+      return
+    }
+
     if (!stripe || !elements) {
       return
     }
@@ -237,11 +242,11 @@ export const OrderPaymentRetry = ({
 
           <Button
             type="submit"
-            loading={isProcessing}
-            disabled={!stripe || !elements || isProcessing}
+            loading={isProcessing || isPolling}
+            disabled={!stripe || !elements || isProcessing || isPolling}
             className="w-full"
           >
-            {isProcessing ? 'Processing...' : 'Pay Now'}
+            {isProcessing ? 'Processing...' : isPolling ? 'Confirming...' : 'Pay Now'}
           </Button>
         </form>
       )}

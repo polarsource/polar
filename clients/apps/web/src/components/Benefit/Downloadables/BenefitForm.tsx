@@ -5,7 +5,7 @@ import { FileRead } from '@/components/FileUpload/Upload'
 import { useFiles } from '@/hooks/queries'
 import { FileUploadOutlined as FileUploadIcon } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
-import { ReactElement, useState } from 'react'
+import { ReactElement, useState, useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileList } from './FileList'
@@ -60,6 +60,7 @@ const DownloadablesForm = ({
     register,
     clearErrors,
     formState: { errors },
+    trigger,
   } = useFormContext<schemas['BenefitDownloadablesCreate']>()
 
   register('properties.files', {
@@ -117,6 +118,10 @@ const DownloadablesForm = ({
     onFilesUpdated: setFormFiles,
     initialFiles,
   })
+
+  useEffect(() => {
+    trigger('properties.files')
+  }, [files, trigger])
 
   return (
     <>

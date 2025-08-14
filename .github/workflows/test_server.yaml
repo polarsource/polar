@@ -34,7 +34,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version-file: "server/.python-version"
+          python-version-file: "server/pyproject.toml"
 
       - name: 🔧 uv install
         working-directory: ./server
@@ -125,7 +125,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version-file: "server/.python-version"
+          python-version-file: "server/pyproject.toml"
 
       - name: 🔧 uv install
         working-directory: ./server

@@ -35,12 +35,12 @@ from tests.fixtures.random_objects import (
 # - ✅ Tests normal upgrade/downgrade
 # - ✅ Tests switch from monthly to yearly
 # - ✅ Tests subscriptions with meters
+# - ✅ Tests a customer with multiple subscriptions
 # - Tests switch from yearly to monthly
 # - Tests switch from a subscription where a discount is applied
 #    - Once
 #    - For 3 months
 #    - In perpetuity
-# - Tests a customer with multiple subscriptions
 # - ✅ Tests both "invoice immediately" and "prorations on next invoice" options
 #   - ✅ through the setting on the organization
 #   - ✅ through specific parameter in the API (overrides org setting)
@@ -394,6 +394,141 @@ class TestUpdateProductProrations:
                 assert len(calls) == 1
             else:
                 assert len(calls) == 0
+
+    async def test_customer_with_multiple_subscriptions(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        enqueue_job_mock: MagicMock,
+        customer: Customer,
+    ) -> None:
+        """Test that we can update 1 subscription on a customer that has 3
+        subscriptions.
+        """
+        time_of_update = datetime(2025, 6, 17, tzinfo=UTC)
+        products = [
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[(10000 * (i + 1),)],
+            )
+            for i in range(4)
+        ]
+
+        with freezegun.freeze_time(datetime(2025, 6, 1, tzinfo=UTC)) as frozen_time:
+            # We're not using Stripe
+            assert organization.subscriptions_billing_engine is True
+
+            # Create 3 subscriptions starting June 1st, June 2nd, June 3rd respectively
+            subscriptions = []
+            for i in range(3):
+                start_date = datetime(2025, 6, i + 1, tzinfo=UTC)
+
+                frozen_time.move_to(start_date)
+
+                subscription = await create_active_subscription(
+                    save_fixture,
+                    product=products[i],
+                    customer=customer,
+                    stripe_subscription_id=None,
+                )
+                subscriptions.append(subscription)
+
+            #  Update subscription no. 2 on June 17th
+            frozen_time.move_to(time_of_update)
+            updated_subscription = await subscription_service.update_product(
+                session,
+                subscriptions[1],
+                product_id=products[3].id,
+                proration_behavior=SubscriptionProrationBehavior.invoice,
+            )
+
+            assert updated_subscription.current_period_start == datetime(
+                2025, 6, 2, tzinfo=UTC
+            )
+            assert updated_subscription.current_period_end == datetime(
+                2025, 7, 2, tzinfo=UTC
+            )
+
+            for subscription in subscriptions:
+                await session.refresh(subscription)
+
+            # fmt: off
+            assert subscriptions[0].current_period_start == datetime(2025, 6, 1, tzinfo=UTC)
+            assert subscriptions[0].current_period_end   == datetime(2025, 7, 1, tzinfo=UTC)
+            assert subscriptions[0].product_id           == products[0].id
+            assert subscriptions[1].current_period_start == datetime(2025, 6, 2, tzinfo=UTC)
+            assert subscriptions[1].current_period_end   == datetime(2025, 7, 2, tzinfo=UTC)
+            assert subscriptions[1].product_id           == products[3].id
+            assert subscriptions[2].current_period_start == datetime(2025, 6, 3, tzinfo=UTC)
+            assert subscriptions[2].current_period_end   == datetime(2025, 7, 3, tzinfo=UTC)
+            assert subscriptions[2].product_id           == products[2].id
+            # fmt: on
+
+            event_repository = EventRepository.from_session(session)
+            events = await event_repository.get_all_by_name(
+                SystemEvent.subscription_product_updated
+            )
+            assert len(events) == 1
+            event = events[0]
+            assert event.user_metadata["subscription_id"] == str(
+                updated_subscription.id
+            )
+            assert event.customer_id == customer.id
+            assert event.organization_id == customer.organization_id
+
+            old_price = products[1].prices[0]
+            new_price = products[3].prices[0]
+            assert is_fixed_price(old_price)
+            assert is_fixed_price(new_price)
+            billing_entry_repository = BillingEntryRepository.from_session(session)
+            billing_entries = (
+                await billing_entry_repository.get_pending_by_subscription(
+                    subscriptions[1].id
+                )
+            )
+            assert len(billing_entries) == 2
+
+            billing_entries = sorted(billing_entries, key=lambda e: e.start_timestamp)
+
+            # fmt: off
+            assert billing_entries[0].start_timestamp == updated_subscription.current_period_start
+            assert billing_entries[0].end_timestamp == time_of_update
+            assert billing_entries[0].direction == BillingEntryDirection.credit
+            assert billing_entries[0].customer_id == customer.id
+            assert billing_entries[0].product_price_id == old_price.id
+            assert billing_entries[0].event_id == event.id
+            assert billing_entries[0].amount == 10000
+            assert billing_entries[0].currency == old_price.price_currency
+            # fmt: on
+
+            # fmt: off
+            assert billing_entries[1].start_timestamp == time_of_update
+            assert billing_entries[1].end_timestamp == updated_subscription.current_period_end
+            assert billing_entries[1].direction == BillingEntryDirection.debit
+            assert billing_entries[1].customer_id == customer.id
+            assert billing_entries[1].product_price_id == new_price.id
+            assert billing_entries[1].event_id == event.id
+            assert billing_entries[1].amount == 20000
+            assert billing_entries[1].currency == new_price.price_currency
+            # fmt: on
+
+            # `enqueue_job` gets called a couple of times, only one of which
+            # we care about. We do the following to extract only that "one" and
+            # assert that it's just called once or never in the two cases.
+            calls = [
+                args[0]
+                for args, kwargs in enqueue_job_mock.call_args_list
+                if args[0] == "order.create_subscription_order"
+            ]
+            enqueue_job_mock.assert_any_call(
+                "order.create_subscription_order",
+                subscriptions[1].id,
+                OrderBillingReason.subscription_update,
+            )
+            assert len(calls) == 1
 
     async def test_pricing_order_and_meter(
         self,

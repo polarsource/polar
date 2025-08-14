@@ -61,7 +61,7 @@ export const OrderPaymentRetry = ({
     setIsProcessing(false)
     setIsPolling(false)
     setPaymentComplete(true)
-    
+
     if (success) {
       // Don't reset hasSubmitted - wait for user confirmation
       onSuccess()
@@ -151,7 +151,10 @@ export const OrderPaymentRetry = ({
         orderId: order.id,
         error: err,
       })
-      handlePaymentCompletion(false, 'Failed to create payment token. Please try again.')
+      handlePaymentCompletion(
+        false,
+        'Failed to create payment token. Please try again.',
+      )
       return
     }
 
@@ -206,16 +209,25 @@ export const OrderPaymentRetry = ({
             })
 
             if (error) {
-              handlePaymentCompletion(false, error.message || 'Payment authentication failed')
+              handlePaymentCompletion(
+                false,
+                error.message || 'Payment authentication failed',
+              )
             } else {
               // Authentication completed, now poll for webhook result
               pollForWebhookResult()
             }
           } else {
-            handlePaymentCompletion(false, 'Payment requires additional authentication')
+            handlePaymentCompletion(
+              false,
+              'Payment requires additional authentication',
+            )
           }
         } else {
-          handlePaymentCompletion(false, result.error || 'Payment failed, please try again.')
+          handlePaymentCompletion(
+            false,
+            result.error || 'Payment failed, please try again.',
+          )
         }
       } else {
         const errorData = await response.json().catch(() => ({}))
@@ -228,7 +240,10 @@ export const OrderPaymentRetry = ({
       }
     } catch (err) {
       console.error('Payment request failed:', err)
-      handlePaymentCompletion(false, 'Network error occurred. Please check your connection and try again.')
+      handlePaymentCompletion(
+        false,
+        'Network error occurred. Please check your connection and try again.',
+      )
     }
   }
 
@@ -378,7 +393,7 @@ export const OrderPaymentRetry = ({
           </div>
           <p className="text-lg font-medium">Processing your payment...</p>
           <p className="mt-2 text-sm text-gray-500">
-            This may take a few moments. Please don't close this window.
+            This may take a few moments. Please don&apos;t close this window.
           </p>
         </div>
       ) : (

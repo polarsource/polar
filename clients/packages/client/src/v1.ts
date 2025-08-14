@@ -2658,28 +2658,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/customer-portal/orders/{id}/create-payment-intent": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create Payment Intent for Manual Retry
-         * @description Create a payment intent for manual retry with full checkout flow.
-         *
-         *     **Scopes**: `customer_portal:write`
-         */
-        post: operations["customer_portal:orders:create_payment_intent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/customer-portal/orders/{id}/payment-status": {
         parameters: {
             query?: never;
@@ -9173,27 +9151,6 @@ export interface components {
              * @description Error message if confirmation failed.
              */
             error?: string | null;
-        };
-        /**
-         * CustomerOrderPaymentIntent
-         * @description Payment intent data for manual retry.
-         */
-        CustomerOrderPaymentIntent: {
-            /**
-             * Client Secret
-             * @description The client secret for the payment intent.
-             */
-            client_secret: string;
-            /**
-             * Amount
-             * @description The payment amount in cents.
-             */
-            amount: number;
-            /**
-             * Currency
-             * @description The currency code.
-             */
-            currency: string;
         };
         /**
          * CustomerOrderPaymentStatus
@@ -23448,56 +23405,6 @@ export interface operations {
             };
         };
     };
-    "customer_portal:orders:create_payment_intent": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The order ID. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CustomerOrderPaymentIntent"];
-                };
-            };
-            /** @description Order not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceNotFound"];
-                };
-            };
-            /** @description Payment already in progress. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaymentAlreadyInProgress"];
-                };
-            };
-            /** @description Order not eligible for retry. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrderNotEligibleForRetry"];
-                };
-            };
-        };
-    };
     "customer_portal:orders:get_payment_status": {
         parameters: {
             query?: never;
@@ -23571,6 +23478,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Payment already in progress. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentAlreadyInProgress"];
                 };
             };
             /** @description Order not eligible for retry or payment confirmation failed. */

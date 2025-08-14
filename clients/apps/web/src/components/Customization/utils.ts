@@ -265,6 +265,7 @@ export const ORDER_PREVIEW: schemas['CustomerOrder'] = {
   is_invoice_generated: false,
   status: 'paid',
   paid: true,
+  amount: 10000,
   subtotal_amount: 10000,
   discount_amount: 0,
   net_amount: 10000,

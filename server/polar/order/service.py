@@ -851,7 +851,7 @@ class OrderService:
 
             # DON'T create Payment record - let webhooks handle it
             # DON'T update order status - let webhooks handle it
-            
+
             # Just return status for frontend handling
             if payment_intent.status == "succeeded":
                 log.info(

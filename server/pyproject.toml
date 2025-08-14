@@ -34,7 +34,6 @@ dependencies = [
   "standardwebhooks>=1.0.0",
   "typer>=0.12.5",
   "logfire[fastapi,httpx,sqlalchemy,redis]>=2.6.0",
-  "netaddr>=1.2.1",
   "makefun>=1.15.6",
   "boto3>=1.38.30",
   "itsdangerous>=2.2.0",

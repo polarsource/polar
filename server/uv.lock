@@ -1433,15 +1433,6 @@ wheels = [
 ]
 
 [[package]]
-name = "netaddr"
-version = "1.3.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/54/90/188b2a69654f27b221fba92fda7217778208532c962509e959a9cee5229d/netaddr-1.3.0.tar.gz", hash = "sha256:5c3c3d9895b551b763779ba7db7a03487dc1f8e3b385af819af341ae9ef6e48a", size = 2260504, upload_time = "2024-05-28T21:30:37.743Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/12/cc/f4fe2c7ce68b92cbf5b2d379ca366e1edae38cccaad00f69f529b460c3ef/netaddr-1.3.0-py3-none-any.whl", hash = "sha256:c2c6a8ebe5554ce33b7d5b3a306b71bbb373e000bbbf2350dd5213cc56e3dbbe", size = 2262023, upload_time = "2024-05-28T21:30:34.191Z" },
-]
-
-[[package]]
 name = "openai"
 version = "1.99.9"
 source = { registry = "https://pypi.org/simple" }
@@ -1743,7 +1734,6 @@ dependencies = [
     { name = "jinja2" },
     { name = "logfire", extra = ["fastapi", "httpx", "redis", "sqlalchemy"] },
     { name = "makefun" },
-    { name = "netaddr" },
     { name = "plain-client" },
     { name = "posthog" },
     { name = "psycopg2-binary" },
@@ -1821,7 +1811,6 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.2" },
     { name = "logfire", extras = ["fastapi", "httpx", "sqlalchemy", "redis"], specifier = ">=2.6.0" },
     { name = "makefun", specifier = ">=1.15.6" },
-    { name = "netaddr", specifier = ">=1.2.1" },
     { name = "plain-client", specifier = ">=0.0.1" },
     { name = "posthog", specifier = ">=3.6.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.5" },

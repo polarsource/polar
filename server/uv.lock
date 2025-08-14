@@ -228,14 +228,14 @@ wheels = [
 
 [[package]]
 name = "authlib"
-version = "1.5.2"
+version = "1.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2a/b3/5f5bc73c6558a21f951ffd267f41c6340d15f5fe0ff4b6bf37694f3558b8/authlib-1.5.2.tar.gz", hash = "sha256:fe85ec7e50c5f86f1e2603518bb3b4f632985eb4a355e52256530790e326c512", size = 153000, upload_time = "2025-04-02T10:31:36.488Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8e/a1/d8d1c6f8bc922c0b87ae0d933a8ed57be1bef6970894ed79c2852a153cd3/authlib-1.6.1.tar.gz", hash = "sha256:4dffdbb1460ba6ec8c17981a4c67af7d8af131231b5a36a88a1e8c80c111cdfd", size = 159988, upload_time = "2025-07-20T07:38:42.834Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e3/71/8dcec996ea8cc882cec9cace91ae1b630a226b88b0f04ab2ffa778f565ad/authlib-1.5.2-py2.py3-none-any.whl", hash = "sha256:8804dd4402ac5e4a0435ac49e0b6e19e395357cfa632a3f624dcb4f6df13b4b1", size = 232055, upload_time = "2025-04-02T10:31:34.59Z" },
+    { url = "https://files.pythonhosted.org/packages/f9/58/cc6a08053f822f98f334d38a27687b69c6655fb05cd74a7a5e70a2aeed95/authlib-1.6.1-py2.py3-none-any.whl", hash = "sha256:e9d2031c34c6309373ab845afc24168fe9e93dc52d252631f52642f21f5ed06e", size = 239299, upload_time = "2025-07-20T07:38:39.259Z" },
 ]
 
 [[package]]
@@ -1803,7 +1803,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.9.2" },
     { name = "apscheduler", specifier = ">=3.10.4" },
     { name = "asyncpg", specifier = ">=0.29.0" },
-    { name = "authlib", specifier = "<1.6.0" },
+    { name = "authlib", specifier = ">=1.6.0" },
     { name = "babel", specifier = ">=2.16.0" },
     { name = "boto3", specifier = ">=1.38.30" },
     { name = "cryptography", specifier = ">=43.0.1" },

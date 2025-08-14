@@ -169,10 +169,13 @@ async def authorize(
             auth_subject.subject.id
         )
 
+    payload = grant.request.payload
+    assert payload is not None
+
     return authorize_response_adapter.validate_python(
         {
             "client": grant.client,
-            "scopes": grant.request.scope,
+            "scopes": payload.scope,
             "sub_type": grant.sub_type,
             "sub": grant.sub,
             "organizations": organizations,

@@ -62,9 +62,7 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
         assert client.registration_access_token is not None
         return {
             "registration_client_uri": str(
-                request._request.url_for(
-                    "oauth2:get_client", client_id=client.client_id
-                )
+                request.url_for("oauth2:get_client", client_id=client.client_id)
             ),
             "registration_access_token": client.registration_access_token,
         }
@@ -109,9 +107,7 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
     ) -> dict[str, str]:
         return {
             "registration_client_uri": str(
-                request._request.url_for(
-                    "oauth2:get_client", client_id=client.client_id
-                )
+                request.url_for("oauth2:get_client", client_id=client.client_id)
             ),
             "registration_access_token": client.registration_access_token,
         }
@@ -195,10 +191,10 @@ class _QueryTokenMixin:
 
     def query_token(
         self,
-        token: str,
+        token_string: str,
         token_type_hint: typing.Literal["access_token", "refresh_token"] | None,
     ) -> OAuth2Token | None:
-        token_hash = get_token_hash(token, secret=settings.SECRET)
+        token_hash = get_token_hash(token_string, secret=settings.SECRET)
         statement = select(OAuth2Token)
         if token_type_hint == "access_token":
             statement = statement.where(OAuth2Token.access_token == token_hash)
@@ -221,9 +217,7 @@ class RevocationEndpoint(_QueryTokenMixin, _RevocationEndpoint):
 
     def revoke_token(self, token: OAuth2Token, request: StarletteOAuth2Request) -> None:
         now = int(time.time())
-        hint: typing.Literal["access_token", "refresh_token"] | None = request.form.get(
-            "token_type_hint"
-        )
+        hint = request.form.get("token_type_hint")
         token.access_token_revoked_at = now  # pyright: ignore
         if hint != "access_token":
             token.refresh_token_revoked_at = now  # pyright: ignore
@@ -287,7 +281,7 @@ class AuthorizationServer(_AuthorizationServer):
         # We require scope to be provided
         if scope is None:
             raise InvalidScopeError(state=state)
-        return super().validate_requested_scope(scope, state)
+        return super().validate_requested_scope(scope)
 
     def query_client(self, client_id: str) -> OAuth2Client | None:
         statement = select(OAuth2Client).where(
@@ -403,12 +397,14 @@ class AuthorizationServer(_AuthorizationServer):
         assert grant.sub_type is not None
         assert grant.sub is not None
         assert grant.client is not None
+        payload = request.payload
+        assert payload is not None
         oauth2_grant_service.create_or_update_grant(
             self.session,
             sub_type=grant.sub_type,
             sub_id=grant.sub.id,
             client_id=grant.client.client_id,
-            scope=request.scope,
+            scope=payload.scope,
         )
 
     @property

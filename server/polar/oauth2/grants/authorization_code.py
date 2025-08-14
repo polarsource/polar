@@ -64,8 +64,11 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
     def create_authorization_response(
         self, redirect_uri: str, grant_user: User | None
     ) -> tuple[int, str | dict[str, typing.Any], list[tuple[str, str]]]:
+        payload = self.request.payload
+        assert payload is not None
+
         if not grant_user:
-            raise AccessDeniedError(state=self.request.state, redirect_uri=redirect_uri)
+            raise AccessDeniedError(state=payload.state, redirect_uri=redirect_uri)
 
         self.request.user = grant_user  # pyright: ignore
 
@@ -80,19 +83,22 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
     def save_authorization_code(
         self, code: str, request: StarletteOAuth2Request
     ) -> OAuth2AuthorizationCode:
-        nonce = request.data.get("nonce")
-        code_challenge = request.data.get("code_challenge")
-        code_challenge_method = request.data.get("code_challenge_method")
+        payload = request.payload
+        assert payload is not None
+
+        nonce = payload.data.get("nonce")
+        code_challenge = payload.data.get("code_challenge")
+        code_challenge_method = payload.data.get("code_challenge_method")
 
         assert self.sub_type is not None
         assert self.sub is not None
 
         authorization_code = OAuth2AuthorizationCode(
             code=get_token_hash(code, secret=settings.SECRET),
-            client_id=request.client_id,
+            client_id=payload.client_id,
             sub_type=self.sub_type,
-            scope=request.scope,
-            redirect_uri=request.redirect_uri,
+            scope=payload.scope,
+            redirect_uri=payload.redirect_uri,
             nonce=nonce,
             code_challenge=code_challenge,
             code_challenge_method=code_challenge_method,
@@ -187,14 +193,16 @@ class ValidateSubAndPrompt:
         redirect_uri: str,
         redirect_fragment: bool = False,
     ) -> None:
-        sub_type: str | None = grant.request.data.get("sub_type")
+        payload = grant.request.payload
+        assert payload is not None
 
+        sub_type: str | None = payload.data.get("sub_type")
         try:
             grant.sub_type = SubType(sub_type) if sub_type else SubType.user
         except ValueError as e:
             raise InvalidRequestError("Invalid sub_type") from e
 
-        sub: str | None = grant.request.data.get("sub")
+        sub: str | None = payload.data.get("sub")
         user = grant.request.user
 
         if grant.sub_type == SubType.user:
@@ -221,12 +229,10 @@ class ValidateSubAndPrompt:
         redirect_uri: str,
         redirect_fragment: bool = False,
     ) -> None:
-        prompt = grant.request.data.get("prompt")
+        payload = grant.request.payload
+        assert payload is not None
 
-        # Temporary workaround until fix: https://github.com/lepture/authlib/pull/637
-        if prompt == "login":
-            grant.prompt = "login"  # pyright: ignore
-            return
+        prompt = payload.data.get("prompt")
 
         # Check if the sub has granted the requested scope or a subset of it
         has_granted_scope = False
@@ -238,7 +244,7 @@ class ValidateSubAndPrompt:
                 sub_type=grant.sub_type,
                 sub_id=grant.sub.id,
                 client_id=grant.client.client_id,
-                scope=grant.request.scope,
+                scope=payload.scope,
             )
 
         # If the prompt is "none", the sub must be authenticated and have granted the requested scope
@@ -254,7 +260,7 @@ class ValidateSubAndPrompt:
 
         # Bypass everything if nothing is specified and conditions are met
         if prompt is None and has_granted_scope:
-            grant.prompt = "none"  # pyright: ignore
+            grant.prompt = "none"
 
     def _validate_resolved_sub(
         self,

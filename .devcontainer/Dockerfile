@@ -1,4 +1,4 @@
-ARG PYTHON_VERSION=3.12-bullseye
+ARG PYTHON_VERSION=3-bullseye
 FROM mcr.microsoft.com/vscode/devcontainers/python:${PYTHON_VERSION}
 
 ENV PYTHONUNBUFFERED 1
@@ -11,4 +11,4 @@ ENV FORWARDED_ALLOW_IPS *
 
 # Install additional OS packages.
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends postgresql-client
+  && apt-get -y install --no-install-recommends postgresql-client

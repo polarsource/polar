@@ -134,6 +134,7 @@ Amount = Annotated[
     Field(
         description="Fixed amount to discount from the invoice total.",
         ge=0,
+        le=999999999999,
     ),
 ]
 Currency = Annotated[

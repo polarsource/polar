@@ -5,6 +5,7 @@ import uuid
 from collections.abc import AsyncIterator, Coroutine
 from typing import Any
 
+import httpx
 import pycountry
 import pycountry.db
 from babel.numbers import format_currency
@@ -860,22 +861,19 @@ class PlainService:
 
     @contextlib.asynccontextmanager
     async def _get_plain_client(self) -> AsyncIterator[Plain]:
-        if settings.ENV == "development":
-            # Mock Plain client for local development
-            from unittest.mock import AsyncMock, MagicMock
-
-            mock_result = MagicMock()
-            mock_result.error = None
-
-            mock_plain = AsyncMock()
-            mock_plain.upsert_customer.return_value = mock_result
-            mock_plain.create_thread.return_value = mock_result
-
-            yield mock_plain
-        else:
+        token = settings.PLAIN_TOKEN
+        async with httpx.AsyncClient(
+            headers={"Authorization": f"Bearer {token}"},
+            # Set a MockTransport if API key is None
+            # Basically, we disable Plain requests.
+            transport=(
+                httpx.MockTransport(lambda _: httpx.Response(200))
+                if token is None
+                else None
+            ),
+        ) as client:
             async with Plain(
-                "https://core-api.uk.plain.com/graphql/v1",
-                {"Authorization": f"Bearer {settings.PLAIN_TOKEN}"},
+                "https://core-api.uk.plain.com/graphql/v1", http_client=client
             ) as plain:
                 yield plain
 

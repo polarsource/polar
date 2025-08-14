@@ -1330,16 +1330,16 @@ wheels = [
 
 [[package]]
 name = "plain-client"
-version = "0.0.2"
+version = "0.0.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "graphql-core" },
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/57/32/880247a861ff6bd1ef40f38fa605f86edfb867467e8f492f2ca06e5d752a/plain_client-0.0.2.tar.gz", hash = "sha256:0dc59128e92f128dd1b487e3fe98a4162bcdc563aaa2bf8ab62d224111550986", size = 42479, upload_time = "2025-03-06T09:50:29.855Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/17/6d/a4c992c3d9ee9606112fd3dda17318358e05882b14986817ac8b81f7ac49/plain_client-0.0.3.tar.gz", hash = "sha256:4b6a90aa6ed8ed8d5d4b74cc6b030fce744281f39e98d4a5087421f977238fcc", size = 47543, upload_time = "2025-08-14T08:25:31.217Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ba/f5/ca3d06b7482b42b37faf9ed25404b3966aa43dcf5a410322ad738d27b76a/plain_client-0.0.2-py3-none-any.whl", hash = "sha256:c02073990732cb23fcee5a3fba3c401823b8d4e597e133b5a31669849966945e", size = 64651, upload_time = "2025-03-06T09:50:27.234Z" },
+    { url = "https://files.pythonhosted.org/packages/15/78/15fa2a778c1ce868701d0b8c164a00c9e122db76745f299458840f425746/plain_client-0.0.3-py3-none-any.whl", hash = "sha256:9377119ae75003120c054269f2f36197d906b42a66ecf3a753de4b406c815f2c", size = 67596, upload_time = "2025-08-14T08:25:32.391Z" },
 ]
 
 [[package]]
@@ -1452,7 +1452,7 @@ requires-dist = [
     { name = "itsdangerous", specifier = ">=2.2.0" },
     { name = "logfire", extras = ["fastapi", "httpx", "sqlalchemy", "redis"], specifier = ">=2.6.0" },
     { name = "makefun", specifier = ">=1.15.6" },
-    { name = "plain-client", specifier = ">=0.0.1" },
+    { name = "plain-client", specifier = ">=0.0.3" },
     { name = "posthog", specifier = ">=3.6.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.5" },
     { name = "pycountry", specifier = ">=24.6.1" },

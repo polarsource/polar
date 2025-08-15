@@ -242,7 +242,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     "name": "MeltedSQL Pro",
                     "description": "SQL management tool that will melt your heart",
                     "price": 19900,
-                    "recurring": SubscriptionRecurringInterval.year,
+                    "recurring": SubscriptionRecurringInterval.month,
                     "benefits": [
                         "download-link",
                         "license-key",
@@ -252,7 +252,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     "name": "MeltedSQL Corporate",
                     "description": "SQL management tool that will melt your face",
                     "price": 99900,
-                    "recurring": SubscriptionRecurringInterval.year,
+                    "recurring": SubscriptionRecurringInterval.month,
                     "benefits": [
                         "download-link",
                         "license-key",

@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import MagicMock
+from uuid import UUID
 
 import freezegun
 import pytest
@@ -15,6 +16,7 @@ from polar.models import (
     Customer,
     Meter,
     Organization,
+    Subscription,
 )
 from polar.models.billing_entry import BillingEntryDirection
 from polar.models.order import OrderBillingReason
@@ -36,6 +38,7 @@ from tests.fixtures.random_objects import (
 # - ✅ Tests switch from monthly to yearly
 # - ✅ Tests subscriptions with meters
 # - ✅ Tests a customer with multiple subscriptions
+# - ✅ Tests multiple switches within a cycle
 # - Tests switch from yearly to monthly
 # - Tests switch from a subscription where a discount is applied
 #    - Once
@@ -56,6 +59,63 @@ from tests.fixtures.random_objects import (
 @pytest.fixture
 def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.subscription.service.enqueue_job")
+
+
+async def assert_system_events(
+    session: AsyncSession,
+    subscription: Subscription,
+    customer: Customer,
+    num_events_expected: int,
+):
+    event_repository = EventRepository.from_session(session)
+    events = await event_repository.get_all_by_name(
+        SystemEvent.subscription_product_updated
+    )
+    assert len(events) == num_events_expected
+
+    events = sorted(events, key=lambda e: e.ingested_at)
+
+    for event in events:
+        assert event.user_metadata["subscription_id"] == str(subscription.id)
+        assert event.customer_id == customer.id
+        assert event.organization_id == customer.organization_id
+
+    return events
+
+
+type ExpectedBillingEntry = tuple[UUID, BillingEntryDirection, int, datetime, datetime]
+
+
+async def assert_billing_entries(
+    session: AsyncSession,
+    subscription: Subscription,
+    expected_billing_entries: list[ExpectedBillingEntry],
+):
+    billing_entry_repository = BillingEntryRepository.from_session(session)
+    billing_entries = await billing_entry_repository.get_pending_by_subscription(
+        subscription.id
+    )
+    assert len(billing_entries) == len(expected_billing_entries)
+
+    billing_entries = sorted(
+        billing_entries, key=lambda e: (e.start_timestamp, e.direction)
+    )
+
+    for billing_entry, expected_billing_entry in zip(
+        billing_entries, expected_billing_entries
+    ):
+        event_id, direction, amount, start_timestamp, end_timestamp = (
+            expected_billing_entry
+        )
+
+        assert billing_entry.event_id == event_id
+        assert billing_entry.direction == direction
+        assert billing_entry.amount == amount
+        assert billing_entry.start_timestamp == start_timestamp
+        assert billing_entry.end_timestamp == end_timestamp
+        # assert billing_entry.customer_id == customer.id
+        # assert billing_entry.product_price_id == old_price.id
+        # assert billing_entry.currency == old_price.price_currency
 
 
 @pytest.mark.asyncio
@@ -533,6 +593,144 @@ class TestUpdateProductProrations:
                 OrderBillingReason.subscription_update,
             )
             assert len(calls) == 1
+
+    async def test_multiple_switches_within_cycle(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        """Tests a customer who changes their subscription multiple times
+        within a cycle"""
+        proration_behavior = SubscriptionProrationBehavior.prorate
+
+        cycle_start = datetime(2025, 6, 1, tzinfo=UTC)
+        cycle_end = datetime(2025, 6, 1, tzinfo=UTC) + relativedelta(months=1)
+        time_of_update_1 = datetime(2025, 6, 7, tzinfo=UTC)
+        time_of_update_2 = datetime(2025, 6, 13, tzinfo=UTC)
+        time_of_update_3 = datetime(2025, 6, 19, tzinfo=UTC)
+        time_of_update_4 = datetime(2025, 6, 25, tzinfo=UTC)
+        products = [
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[(10000 * (i + 1),)],
+            )
+            for i in range(4)
+        ]
+
+        with freezegun.freeze_time(cycle_start) as frozen_time:
+            # We're not using Stripe
+            assert organization.subscriptions_billing_engine is True
+
+            subscription = await create_active_subscription(
+                save_fixture,
+                product=products[0],
+                customer=customer,
+                stripe_subscription_id=None,
+            )
+
+            previous_period_start = subscription.current_period_start
+            previous_period_end = subscription.current_period_end
+
+            frozen_time.move_to(time_of_update_1)
+
+            ############
+            # Update 1 #
+            ############
+            updated_subscription = await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=products[1].id,
+                proration_behavior=proration_behavior,
+            )
+
+            # fmt: off
+            assert updated_subscription.ended_at is None
+            assert updated_subscription.current_period_start == previous_period_start
+            assert updated_subscription.current_period_end == previous_period_end
+            # fmt: on
+
+            events = await assert_system_events(session, subscription, customer, 1)
+
+            # fmt: off
+            await assert_billing_entries(
+                session,
+                subscription,
+                [
+                    (events[0].id, BillingEntryDirection.credit, int(0.8*10000), time_of_update_1, cycle_end),
+                    (events[0].id, BillingEntryDirection.debit,  int(0.8*20000), time_of_update_1, cycle_end),
+                ]
+            )
+            # fmt: on
+
+            ############
+            # Update 2 #
+            ############
+            frozen_time.move_to(time_of_update_2)
+            updated_subscription = await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=products[2].id,
+                proration_behavior=proration_behavior,
+            )
+
+            # fmt: off
+            assert updated_subscription.ended_at is None
+            assert updated_subscription.current_period_start == previous_period_start
+            assert updated_subscription.current_period_end == previous_period_end
+            # fmt: on
+
+            events = await assert_system_events(session, subscription, customer, 2)
+
+            # fmt: off
+            await assert_billing_entries(
+                session,
+                subscription,
+                [
+                    (events[0].id, BillingEntryDirection.credit, int(0.8*10000), time_of_update_1, cycle_end),
+                    (events[0].id, BillingEntryDirection.debit,  int(0.8*20000), time_of_update_1, cycle_end),
+                    (events[1].id, BillingEntryDirection.credit, int(0.6*20000), time_of_update_2, cycle_end),
+                    (events[1].id, BillingEntryDirection.debit,  int(0.6*30000), time_of_update_2, cycle_end),
+                ]
+            )
+            # fmt: on
+
+            ############
+            # Update 3 #
+            ############
+            frozen_time.move_to(time_of_update_3)
+            updated_subscription = await subscription_service.update_product(
+                session,
+                subscription,
+                product_id=products[3].id,
+                proration_behavior=proration_behavior,
+            )
+
+            # fmt: off
+            assert updated_subscription.ended_at is None
+            assert updated_subscription.current_period_start == previous_period_start
+            assert updated_subscription.current_period_end == previous_period_end
+            # fmt: on
+
+            events = await assert_system_events(session, subscription, customer, 3)
+
+            # fmt: off
+            await assert_billing_entries(
+                session,
+                subscription,
+                [
+                    (events[0].id, BillingEntryDirection.credit, int(0.8*10000), time_of_update_1, cycle_end),
+                    (events[0].id, BillingEntryDirection.debit,  int(0.8*20000), time_of_update_1, cycle_end),
+                    (events[1].id, BillingEntryDirection.credit, int(0.6*20000), time_of_update_2, cycle_end),
+                    (events[1].id, BillingEntryDirection.debit,  int(0.6*30000), time_of_update_2, cycle_end),
+                    (events[2].id, BillingEntryDirection.credit, int(0.4*30000), time_of_update_3, cycle_end),
+                    (events[2].id, BillingEntryDirection.debit,  int(0.4*40000), time_of_update_3, cycle_end),
+                ]
+            )
+            # fmt: on
 
     async def test_pricing_order_and_meter(
         self,

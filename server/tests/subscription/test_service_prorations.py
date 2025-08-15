@@ -273,11 +273,13 @@ class TestUpdateProductProrations:
             )
             assert len(billing_entries) == 2
 
-            billing_entries = sorted(billing_entries, key=lambda e: e.start_timestamp)
+            billing_entries = sorted(
+                billing_entries, key=lambda e: (e.start_timestamp, e.direction)
+            )
 
             # fmt: off
-            assert billing_entries[0].start_timestamp == updated_subscription.current_period_start
-            assert billing_entries[0].end_timestamp == time_of_update
+            assert billing_entries[0].start_timestamp == time_of_update
+            assert billing_entries[0].end_timestamp == previous_period_end
             assert billing_entries[0].direction == BillingEntryDirection.credit
             assert billing_entries[0].customer_id == customer.id
             assert billing_entries[0].product_price_id == old_price.id
@@ -491,11 +493,13 @@ class TestUpdateProductProrations:
             )
             assert len(billing_entries) == 2
 
-            billing_entries = sorted(billing_entries, key=lambda e: e.start_timestamp)
+            billing_entries = sorted(
+                billing_entries, key=lambda e: (e.start_timestamp, e.direction)
+            )
 
             # fmt: off
-            assert billing_entries[0].start_timestamp == updated_subscription.current_period_start
-            assert billing_entries[0].end_timestamp == time_of_update
+            assert billing_entries[0].start_timestamp == time_of_update
+            assert billing_entries[0].end_timestamp == updated_subscription.current_period_end
             assert billing_entries[0].direction == BillingEntryDirection.credit
             assert billing_entries[0].customer_id == customer.id
             assert billing_entries[0].product_price_id == old_price.id
@@ -599,11 +603,13 @@ class TestUpdateProductProrations:
             )
             assert len(billing_entries) == 2
 
-            billing_entries = sorted(billing_entries, key=lambda e: e.start_timestamp)
+            billing_entries = sorted(
+                billing_entries, key=lambda e: (e.start_timestamp, e.direction)
+            )
 
             # fmt: off
-            assert billing_entries[0].start_timestamp == updated_subscription.current_period_start
-            assert billing_entries[0].end_timestamp == time_of_update
+            assert billing_entries[0].start_timestamp == time_of_update
+            assert billing_entries[0].end_timestamp == previous_period_end
             assert billing_entries[0].direction == BillingEntryDirection.credit
             assert billing_entries[0].customer_id == customer.id
             assert billing_entries[0].product_price_id == old_price.id

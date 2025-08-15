@@ -20,6 +20,11 @@ validate_email = functools.partial(
 
 
 def _validate_email_dns(email: str) -> str:
+    if settings.is_development():
+        username, domain = email.split('@')
+        if domain in ('meltedsql.com', 'example.com'):
+            return email
+
     try:
         validate_email(email)
     except EmailNotValidError as e:

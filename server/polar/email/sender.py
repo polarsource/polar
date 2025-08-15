@@ -94,6 +94,11 @@ class ResendEmailSender(EmailSender):
         reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
     ) -> None:
         to_email_addr_ascii = to_ascii_email(to_email_addr)
+
+        username, domain = to_email_addr_ascii.split('@')
+        if domain != 'polar.sh':
+            return
+
         payload: dict[str, Any] = {
             "from": f"{from_name} <{to_ascii_email(from_email_addr)}>",
             "to": [to_email_addr_ascii],

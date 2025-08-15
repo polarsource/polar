@@ -20,7 +20,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { memo, useCallback, useContext, useMemo, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
-import { twMerge } from 'tailwind-merge'
 import LogoIcon from '../Brand/LogoIcon'
 import { CheckoutCard } from '../Checkout/CheckoutCard'
 import CheckoutProductInfo from '../Checkout/CheckoutProductInfo'
@@ -148,7 +147,7 @@ export const ProductStep = () => {
   return (
     <Form {...form}>
       <div className="flex h-full flex-col md:flex-row">
-        <div className="flex h-full min-h-0 w-full flex-col gap-12 overflow-y-auto p-12 md:max-w-lg">
+        <div className="flex h-full min-h-0 w-full flex-col gap-8 overflow-y-auto p-12 md:max-w-lg">
           <div className="flex flex-col gap-y-12">
             <LogoIcon size={50} />
             <div className="flex flex-col gap-y-4">
@@ -158,17 +157,7 @@ export const ProductStep = () => {
               </p>
             </div>
           </div>
-          <div className="flex flex-row gap-4">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div
-                key={index}
-                className={twMerge(
-                  'dark:bg-polar-700 flex h-2 flex-1 rounded-full bg-gray-300',
-                  index < 2 && 'bg-black dark:bg-white',
-                )}
-              />
-            ))}
-          </div>
+
           <div className="flex flex-col">
             <form
               onSubmit={handleSubmit(onSubmit)}

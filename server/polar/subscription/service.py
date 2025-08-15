@@ -937,8 +937,8 @@ class SubscriptionService:
             for old_price in old_static_prices:
                 entry_unused_time = BillingEntry(
                     direction=BillingEntryDirection.credit,
-                    start_timestamp=cycle_start,
-                    end_timestamp=now,
+                    start_timestamp=now,
+                    end_timestamp=old_cycle_end,
                     amount=round(old_price.price_amount * old_cycle_pct_remaining),
                     currency=subscription.currency,
                     customer_id=subscription.customer_id,

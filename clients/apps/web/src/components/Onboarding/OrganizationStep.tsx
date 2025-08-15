@@ -21,9 +21,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import slugify from 'slugify'
-import { twMerge } from 'tailwind-merge'
 import LogoIcon from '../Brand/LogoIcon'
-import { Testamonial, testimonials } from '../Landing/Testimonials'
 import { getStatusRedirect } from '../Toast/utils'
 
 export interface OrganizationStepProps {
@@ -137,9 +135,9 @@ export const OrganizationStep = ({
   }
 
   return (
-    <div className="flex h-full flex-col md:flex-row">
-      <div className="flex h-full min-h-0 w-full flex-shrink-0 flex-col gap-12 overflow-y-auto p-12 md:max-w-lg">
-        <div className="flex flex-col gap-y-12">
+    <div className="flex h-full flex-col md:items-center md:p-12">
+      <div className="md:dark:bg-polar-950 rounded-4xl dark:border-polar-700 flex min-h-0 w-full flex-shrink-0 flex-col gap-8 overflow-y-auto border-gray-200 p-4 md:max-w-xl md:border md:bg-white md:p-8 md:shadow-sm">
+        <div className="flex flex-col gap-y-8">
           <LogoIcon size={50} />
           <div className="flex flex-col gap-y-4">
             <h1 className="text-3xl">Let&apos;s get you onboarded</h1>
@@ -148,23 +146,12 @@ export const OrganizationStep = ({
             </p>
           </div>
         </div>
-        <div className="flex flex-row gap-4">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div
-              key={index}
-              className={twMerge(
-                'dark:bg-polar-700 flex h-2 flex-1 rounded-full bg-gray-300',
-                index === 0 && 'bg-black dark:bg-white',
-              )}
-            />
-          ))}
-        </div>
 
         <div className="flex flex-col gap-12">
           <Form {...form}>
             <form
               onSubmit={handleSubmit(onSubmit)}
-              className="flex w-full flex-col gap-y-12"
+              className="flex w-full flex-col gap-y-8"
             >
               <div className="flex flex-col gap-y-4">
                 <FormField
@@ -205,7 +192,7 @@ export const OrganizationStep = ({
 
                 <div className="flex flex-col gap-y-4">
                   {/* Simple Product Restrictions */}
-                  <div className="dark:bg-polar-800 flex flex-col gap-y-3 rounded-lg bg-gray-50 p-4">
+                  <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-3 rounded-lg border border-gray-200 bg-white p-4">
                     <div className="flex flex-col gap-y-4 text-sm">
                       <div className="flex flex-col gap-y-2">
                         <p className="font-medium">Supported Usecases</p>
@@ -241,7 +228,7 @@ export const OrganizationStep = ({
                       </div>
 
                       <div className="dark:border-polar-700 border-t border-gray-200 pt-4">
-                        <p className="dark:text-polar-500 text-xs font-medium text-gray-500">
+                        <p className="dark:text-polar-500 text-xs text-gray-500">
                           Transactions that violate our policy will be canceled
                           and refunded.
                         </p>
@@ -268,7 +255,7 @@ export const OrganizationStep = ({
                               }}
                               className="mt-1"
                             />
-                            <div className="text-sm">
+                            <div className="flex flex-col gap-y-2 text-sm">
                               <label
                                 htmlFor="terms"
                                 className="cursor-pointer font-medium leading-relaxed"
@@ -276,7 +263,7 @@ export const OrganizationStep = ({
                                 I understand the restrictions above and agree to
                                 Polar&apos;s terms
                               </label>
-                              <ul className="dark:text-polar-300 ml-1 mt-3 list-inside list-disc space-y-1.5 text-gray-600">
+                              <ul className="dark:text-polar-500 flex flex-col gap-y-1 text-sm text-gray-500">
                                 <li>
                                   <a
                                     href="https://docs.polar.sh/merchant-of-record/account-reviews"
@@ -340,39 +327,6 @@ export const OrganizationStep = ({
               </div>
             </form>
           </Form>
-        </div>
-      </div>
-      <div className="dark:bg-polar-950 relative hidden flex-1 flex-grow flex-col items-center justify-center gap-12 overflow-hidden bg-gray-100 p-12 md:flex">
-        <div className="absolute inset-0 flex flex-col items-center">
-          <TestimonialsWrapper />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const TestimonialsWrapper = () => {
-  const thirdLength = Math.ceil(testimonials.length / 3)
-  const firstRow = testimonials.slice(0, thirdLength)
-  const secondRow = testimonials.slice(thirdLength, thirdLength * 2)
-  const thirdRow = testimonials.slice(thirdLength * 2)
-
-  return (
-    <div className="flex flex-col items-center gap-y-12 px-4 md:gap-y-24">
-      <div className="flex flex-col gap-4 md:relative md:w-full md:overflow-hidden">
-        <div className="flex flex-row gap-4">
-          {[firstRow, secondRow, thirdRow].map((row, rowIndex) => (
-            <div
-              key={`row-${rowIndex}`}
-              className="min-w-1/3 flex w-full max-w-[400px] flex-col gap-4 md:h-max md:animate-[infinite-vertical-scroll_50s_linear_infinite_forwards]"
-            >
-              {[...row, ...row, ...row].map((testimonial, index) => (
-                <div key={`row${rowIndex}-${index}`}>
-                  <Testamonial {...testimonial} />
-                </div>
-              ))}
-            </div>
-          ))}
         </div>
       </div>
     </div>

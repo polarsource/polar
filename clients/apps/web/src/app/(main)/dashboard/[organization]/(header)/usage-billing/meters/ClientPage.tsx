@@ -5,7 +5,8 @@ import { MeterIngestionGuide } from '@/components/Meter/MeterIngestionGuide'
 import { MeterPage } from '@/components/Meter/MeterPage'
 import { useModal } from '@/components/Modal/useModal'
 import Spinner from '@/components/Shared/Spinner'
-import { useMetersInfinite } from '@/hooks/queries/meters'
+import { useToast } from '@/components/Toast/use-toast'
+import { useMetersInfinite, useUpdateMeter } from '@/hooks/queries/meters'
 import { useInViewport } from '@/hooks/utils'
 import {
   AddOutlined,
@@ -19,7 +20,7 @@ import Input from '@polar-sh/ui/components/atoms/Input'
 import { Status } from '@polar-sh/ui/components/atoms/Status'
 import Link from 'next/link'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({
@@ -48,6 +49,9 @@ const ClientPage = ({
     show: showEditMeterModal,
     hide: hideEditMeterModal,
   } = useModal()
+
+  const { toast } = useToast()
+  const updateMeter = useUpdateMeter(selectedMeterId)
 
   const { data, hasNextPage, fetchNextPage, isLoading } = useMetersInfinite(
     organization.id,
@@ -80,6 +84,31 @@ const ClientPage = ({
     }
   }, [meters, selectedMeterId, setSelectedMeterId])
 
+  const handleArchiveMeter = useCallback(
+    async (meter: schemas['Meter']) => {
+      const isArchiving = !meter.archived_at
+      const { data, error } = await updateMeter.mutateAsync({
+        is_archived: isArchiving,
+      })
+
+      if (error) {
+        toast({
+          title: 'Error',
+          description: error.detail[0].msg,
+        })
+        return
+      }
+
+      toast({
+        title: `Meter ${isArchiving ? 'archived' : 'unarchived'}`,
+        description: `${meter.name} has been ${
+          isArchiving ? 'archived' : 'unarchived'
+        } successfully.`,
+      })
+    },
+    [updateMeter, toast],
+  )
+
   return (
     <DashboardBody
       title={
@@ -97,6 +126,12 @@ const ClientPage = ({
                   status={selectedMeter.aggregation.property}
                 />
               )}
+              {selectedMeter.archived_at && (
+                <Status
+                  className="bg-red-50 text-red-500 dark:bg-red-950 dark:text-red-500"
+                  status="Archived"
+                />
+              )}
             </div>
           </div>
         ) : (
@@ -105,12 +140,23 @@ const ClientPage = ({
       }
       header={
         selectedMeter && (
-          <Button
-            wrapperClassNames="flex items-center flex-row gap-x-2"
-            onClick={showEditMeterModal}
-          >
-            <span>Edit Meter</span>
-          </Button>
+          <div className="flex items-center gap-x-2">
+            <Button
+              wrapperClassNames="flex items-center flex-row gap-x-2"
+              onClick={showEditMeterModal}
+            >
+              <span>Edit Meter</span>
+            </Button>
+            <Button
+              variant={selectedMeter.archived_at ? 'secondary' : 'destructive'}
+              wrapperClassNames="flex items-center flex-row gap-x-2"
+              onClick={() => handleArchiveMeter(selectedMeter)}
+            >
+              <span>
+                {selectedMeter.archived_at ? 'Unarchive' : 'Archive'} Meter
+              </span>
+            </Button>
+          </div>
         )
       }
       className="h-full"
@@ -172,7 +218,12 @@ const ClientPage = ({
                 )}
               >
                 <div className="flex min-w-0 flex-col gap-y-1 px-6 py-2">
-                  <div className="w-full truncate text-sm">{meter.name}</div>
+                  <div className="flex items-center gap-x-2">
+                    <div className="w-full truncate text-sm">{meter.name}</div>
+                    {meter.archived_at && (
+                      <span className="text-xs text-red-500">Archived</span>
+                    )}
+                  </div>
                   <div className="w-full truncate text-xs capitalize text-gray-500 dark:text-gray-500">
                     {meter.aggregation.func}
                   </div>

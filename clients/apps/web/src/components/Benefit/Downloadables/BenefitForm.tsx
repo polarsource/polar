@@ -5,7 +5,7 @@ import { FileRead } from '@/components/FileUpload/Upload'
 import { useFiles } from '@/hooks/queries'
 import { FileUploadOutlined as FileUploadIcon } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
-import { ReactElement, useState, useEffect } from 'react'
+import { ReactElement, useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileList } from './FileList'
@@ -21,23 +21,23 @@ const DropzoneView = ({
     <>
       <div
         className={twMerge(
-          'rounded-4xl flex w-full cursor-pointer items-center justify-center border border-transparent pb-8 pt-8',
+          'dark:border-polar-700 flex w-full cursor-pointer items-center justify-center rounded-2xl border border-gray-200 pb-8 pt-8 text-black dark:text-white',
           isDragActive
-            ? 'dark:border-polar-700 dark:bg-polar-950 border-blue-100 bg-blue-50'
-            : 'dark:bg-polar-700 bg-gray-100',
+            ? 'border-blue-100 bg-blue-50 dark:border-blue-900 dark:bg-blue-950'
+            : 'dark:bg-polar-800 bg-gray-100',
         )}
       >
-        <div className="dark:text-polar-500 text-center text-gray-700">
-          <div className="mb-4">
+        <div className="flex flex-col items-center gap-y-4 text-center">
+          <div className={isDragActive ? 'text-blue-500' : ''}>
             <FileUploadIcon fontSize="large" />
           </div>
           <h3 className="font-medium">
             {!isDragActive && 'Feed me some bytes'}
             {isDragActive && "Drop it like it's hot"}
           </h3>
-          <p className="mt-2 text-sm">
+          <p className="text-sm">
             You can drop files here or{' '}
-            <a className="text-blue-400">click like a Netscape user</a>
+            <a className="text-blue-500">click like a Netscape user</a>
           </p>
         </div>
         {children}

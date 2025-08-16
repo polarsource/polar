@@ -123,8 +123,9 @@ export const OrganizationStep = ({
 
     let queryParams = ''
     if (hasExistingOrg) {
-      queryParams = '?existing_org=1'
+      queryParams = '?existing_org=true'
     }
+
     router.push(
       getStatusRedirect(
         `/dashboard/${organization.slug}/onboarding/product${queryParams}`,
@@ -135,14 +136,20 @@ export const OrganizationStep = ({
   }
 
   return (
-    <div className="flex h-full flex-col md:items-center md:p-12">
-      <div className="md:dark:bg-polar-950 rounded-4xl dark:border-polar-700 flex min-h-0 w-full flex-shrink-0 flex-col gap-8 overflow-y-auto border-gray-200 p-4 md:max-w-xl md:border md:bg-white md:p-8 md:shadow-sm">
+    <div className="dark:md:bg-polar-950 flex flex-col md:items-center md:p-16">
+      <div className="dark:md:bg-polar-900 rounded-4xl dark:border-polar-700 flex min-h-0 w-full flex-shrink-0 flex-col gap-8 overflow-y-auto border-gray-200 p-4 md:max-w-xl md:border md:bg-white md:p-8 md:shadow-sm">
         <div className="flex flex-col gap-y-8">
           <LogoIcon size={50} />
           <div className="flex flex-col gap-y-4">
-            <h1 className="text-3xl">Let&apos;s get you onboarded</h1>
+            <h1 className="text-3xl">
+              {hasExistingOrg
+                ? 'Create a new Organization'
+                : "Let's get you onboarded"}
+            </h1>
             <p className="dark:text-polar-400 text-lg text-gray-600">
-              Get up to speed with an Organization, Product & Checkout Session.
+              {hasExistingOrg
+                ? 'Follow the instructions below to create a new Organization'
+                : 'Get up to speed with an Organization, Product & Checkout Session'}
             </p>
           </div>
         </div>
@@ -153,42 +160,44 @@ export const OrganizationStep = ({
               onSubmit={handleSubmit(onSubmit)}
               className="flex w-full flex-col gap-y-8"
             >
-              <div className="flex flex-col gap-y-4">
-                <FormField
-                  control={control}
-                  name="name"
-                  rules={{
-                    required: 'This field is required',
-                  }}
-                  render={({ field }) => (
-                    <FormItem className="w-full">
-                      <FormControl className="w-full">
-                        <Input {...field} placeholder="Organization Name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="flex flex-col gap-y-8">
+                <div className="flex flex-col gap-y-4">
+                  <FormField
+                    control={control}
+                    name="name"
+                    rules={{
+                      required: 'This field is required',
+                    }}
+                    render={({ field }) => (
+                      <FormItem className="w-full">
+                        <FormControl className="w-full">
+                          <Input {...field} placeholder="Organization Name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={control}
-                  name="slug"
-                  rules={{
-                    required: 'Slug is required',
-                  }}
-                  render={({ field }) => (
-                    <>
-                      <Input
-                        type="text"
-                        {...field}
-                        size={slug?.length || 1}
-                        placeholder="Organization Slug"
-                        onFocus={() => setEditedSlug(true)}
-                      />
-                      <FormMessage />
-                    </>
-                  )}
-                />
+                  <FormField
+                    control={control}
+                    name="slug"
+                    rules={{
+                      required: 'Slug is required',
+                    }}
+                    render={({ field }) => (
+                      <>
+                        <Input
+                          type="text"
+                          {...field}
+                          size={slug?.length || 1}
+                          placeholder="Organization Slug"
+                          onFocus={() => setEditedSlug(true)}
+                        />
+                        <FormMessage />
+                      </>
+                    )}
+                  />
+                </div>
 
                 <div className="flex flex-col gap-y-4">
                   {/* Simple Product Restrictions */}

@@ -228,7 +228,7 @@ export const ProductPriceMeteredUnitItem: React.FC<
                 showCreateMeterModal()
               }}
               type="button"
-              className="font-medium underline"
+              className="font-medium text-blue-500"
             >
               Set up your first meter
             </button>{' '}
@@ -640,6 +640,7 @@ export const ProductPricingSection = ({
           {recurringInterval !== null && (
             <Button
               className="self-start"
+              variant="secondary"
               onClick={() =>
                 append({
                   amount_type: 'metered_unit',
@@ -649,7 +650,7 @@ export const ProductPricingSection = ({
                 })
               }
             >
-              Add Price
+              Add Additional Price
             </Button>
           )}
           <ErrorMessage

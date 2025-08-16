@@ -68,7 +68,7 @@ const FileUploadProgress = ({ file }: { file: FileObject }) => {
     <>
       <div className="flex w-full items-center space-x-4">
         <div className="flex-grow">
-          <div className="dark:bg-polar-700 h-2 w-full rounded bg-gray-100">
+          <div className="dark:bg-polar-700 h-2 w-full rounded bg-gray-200">
             <div
               className="h-2 rounded bg-blue-400"
               style={{ width: `${pct}%` }}

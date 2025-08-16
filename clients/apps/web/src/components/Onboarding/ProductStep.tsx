@@ -197,8 +197,8 @@ export const ProductStep = () => {
             </div>
           </div>
         </div>
-        <div className="dark:bg-polar-800 hidden flex-1 flex-grow flex-col items-center gap-12 overflow-y-auto bg-gray-100 p-16 md:flex">
-          <div className="dark:bg-polar-900 rounded-4xl flex w-full max-w-2xl flex-col gap-y-12 bg-gray-50 p-12">
+        <div className="dark:bg-polar-950 hidden flex-1 flex-grow flex-col items-center gap-12 overflow-y-auto bg-gray-100 p-16 md:flex">
+          <div className="dark:bg-polar-900 rounded-4xl flex w-full max-w-2xl flex-col gap-y-12 bg-white p-12">
             <div className="flex flex-col items-center gap-y-6 text-center">
               <LogoIcon size={40} />
               <div className="flex flex-col gap-y-4">
@@ -267,7 +267,7 @@ const CheckoutPreview = memo(
     const themePreset = useThemePreset('polar')
 
     return (
-      <ShadowBox className="dark:bg-polar-900 flex w-full flex-col gap-y-8 bg-white">
+      <ShadowBox className="dark:bg-polar-900 dark:border-polar-700 flex w-full flex-col gap-y-8 border border-gray-200 bg-white">
         <CheckoutProductInfo
           organization={checkoutPreview.organization}
           product={checkoutPreview.product}

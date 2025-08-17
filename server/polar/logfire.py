@@ -1,6 +1,6 @@
 import os
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import httpx
 import logfire
@@ -74,6 +74,13 @@ def _worker_health_matcher(name: str, attributes: "Attributes | None") -> bool:
     )
 
 
+def _scrubbing_callback(match: logfire.ScrubMatch) -> Any | None:
+    # Don't scrub auth subject in log messages
+    if match.path == ("attributes", "subject"):
+        return match.value
+    return None
+
+
 def configure_logfire(service_name: Literal["server", "worker"]) -> None:
     logfire.configure(
         send_to_logfire="if-token-present",
@@ -84,6 +91,7 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
         sampling=logfire.SamplingOptions(
             head=ParentBased(IgnoreSampler((_healthz_matcher, _worker_health_matcher))),
         ),
+        scrubbing=logfire.ScrubbingOptions(callback=_scrubbing_callback),
     )
 
 

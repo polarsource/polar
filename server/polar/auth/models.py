@@ -38,6 +38,9 @@ class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it a
     def has_web_default_scope(self) -> bool:
         return Scope.web_default in self.scopes
 
+    def __repr__(self) -> str:
+        return f"AuthSubject(subject={self.subject!r}, scopes={self.scopes!r}, method={self.method!r})"
+
 
 def is_anonymous[S: Subject](
     auth_subject: AuthSubject[S],

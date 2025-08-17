@@ -2,12 +2,14 @@ from collections.abc import Awaitable, Callable
 from inspect import Parameter, Signature
 from typing import Annotated, Any
 
+import structlog
 from fastapi import Depends, Request, Security
 from makefun import with_signature
 
 from polar.auth.scope import RESERVED_SCOPES, Scope
 from polar.customer_session.dependencies import get_optional_customer_session_token
 from polar.exceptions import NotPermitted, Unauthorized
+from polar.logging import Logger
 from polar.models import (
     Customer,
     CustomerSession,
@@ -36,6 +38,8 @@ from .models import (
     is_anonymous,
 )
 from .service import auth as auth_service
+
+log: Logger = structlog.get_logger(__name__)
 
 
 async def get_user_session(
@@ -191,6 +195,7 @@ class _Authenticator:
                 raise Unauthorized()
 
         set_sentry_user(auth_subject)
+        log.info("Authenticated subject", subject=auth_subject)
 
         # Blocked subjects
         blocked_at = getattr(auth_subject.subject, "blocked_at", None)

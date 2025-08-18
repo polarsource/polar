@@ -98,6 +98,15 @@ wheels = [
 ]
 
 [[package]]
+name = "asgi-ratelimit"
+version = "0.10.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/cb/95c484467e758ba97120dccbcd039adbd30fd78d55d5bc1a0af2a62dfab3/asgi_ratelimit-0.10.0.tar.gz", hash = "sha256:f45197f93db7713c8c0ec7bd6a5d0ffc36ed9beb90f54a389b683abdfcce8d5d", size = 15959, upload-time = "2022-12-07T05:21:55.969Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c4/c9/fef7c3dbbd5066f48458c2f3042d6a7c8ffc66654c4d10c91eaaa618d83b/asgi_ratelimit-0.10.0-py3-none-any.whl", hash = "sha256:7618356839242270e3c826c2b20f5a4c3184851b6a0ec61de0eff76eedcb0839", size = 16651, upload-time = "2022-12-07T05:21:53.976Z" },
+]
+
+[[package]]
 name = "asgiref"
 version = "3.9.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1358,6 +1367,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "alembic" },
     { name = "apscheduler" },
+    { name = "asgi-ratelimit" },
     { name = "asyncpg" },
     { name = "authlib" },
     { name = "babel" },
@@ -1434,6 +1444,7 @@ dev = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.9.2" },
     { name = "apscheduler", specifier = ">=3.10.4" },
+    { name = "asgi-ratelimit", specifier = ">=0.10.0" },
     { name = "asyncpg", specifier = ">=0.29.0" },
     { name = "authlib", specifier = ">=1.6.0" },
     { name = "babel", specifier = ">=2.16.0" },

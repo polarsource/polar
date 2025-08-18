@@ -19,7 +19,7 @@ else:
 REDIS_RETRY_ON_ERRROR: list[type[RedisError]] = [ConnectionError, TimeoutError]
 REDIS_RETRY = Retry(default_backoff(), retries=50)
 
-ProcessName: TypeAlias = Literal["app", "worker", "script"]
+ProcessName: TypeAlias = Literal["app", "rate-limit", "worker", "script"]
 
 
 def create_redis(process_name: ProcessName) -> Redis:

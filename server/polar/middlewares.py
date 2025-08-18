@@ -6,7 +6,6 @@ import structlog
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from polar.config import settings
 from polar.logging import Logger, generate_correlation_id
 from polar.worker import JobQueueManager
 
@@ -35,7 +34,7 @@ class FlushEnqueuedWorkerJobsMiddleware:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] not in ("http", "websocket") or settings.is_testing():
+        if scope["type"] not in ("http", "websocket"):
             await self.app(scope, receive, send)
             return
 

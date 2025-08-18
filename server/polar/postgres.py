@@ -45,7 +45,7 @@ class AsyncSessionMiddleware:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] not in ("http", "websocket") or settings.is_testing():
+        if scope["type"] not in ("http", "websocket"):
             return await self.app(scope, receive, send)
 
         sessionmaker: AsyncSessionMaker = scope["state"]["async_sessionmaker"]

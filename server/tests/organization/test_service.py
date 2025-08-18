@@ -8,7 +8,7 @@ from pydantic_ai.models.test import TestModel
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
-from polar.auth.models import AuthMethod, AuthSubject
+from polar.auth.models import AuthSubject
 from polar.config import Environment, settings
 from polar.enums import AccountType
 from polar.exceptions import PolarRequestValidationError
@@ -23,6 +23,7 @@ from polar.organization.ai_validation import (
     OrganizationAIValidator,
 )
 from polar.organization.schemas import OrganizationCreate, OrganizationFeatureSettings
+from polar.organization.service import AccountAlreadySetByOwner
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
@@ -946,22 +947,18 @@ class TestSetAccount:
     async def test_account_change_by_non_owner_fails(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User],
         save_fixture: SaveFixture,
         organization: Organization,
         user: User,
+        user_second: User,
     ) -> None:
         """Test that a non-owner cannot change an existing account."""
-        # Create the original owner (different from user)
-        original_owner = User(
-            email="original@example.com",
-            avatar_url="https://avatars.githubusercontent.com/u/original?v=4",
-        )
-        await save_fixture(original_owner)
 
         # Set up initial account with original_owner as admin
         initial_account = Account(
             account_type=AccountType.stripe,
-            admin_id=original_owner.id,  # original_owner is the admin/owner
+            admin_id=user_second.id,  # original_owner is the admin/owner
             country="US",
             currency="USD",
             is_details_submitted=True,
@@ -987,18 +984,10 @@ class TestSetAccount:
         )
         await save_fixture(new_account)
 
-        # Create auth subject for the user (not the owner)
-
-        user_auth_subject = AuthSubject(
-            subject=user, scopes=set(), method=AuthMethod.COOKIE
-        )
-
         # Non-owner should not be able to change the account
-        from polar.organization.service import AccountAlreadySetByOwner
-
         with pytest.raises(AccountAlreadySetByOwner) as exc_info:
             await organization_service.set_account(
-                session, user_auth_subject, organization, new_account.id
+                session, auth_subject, organization, new_account.id
             )
 
         assert "already been set up by the owner" in str(exc_info.value)

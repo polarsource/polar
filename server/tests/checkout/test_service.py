@@ -11,7 +11,7 @@ from pydantic import HttpUrl, ValidationError
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
-from polar.auth.models import Anonymous, AuthMethod, AuthSubject
+from polar.auth.models import Anonymous, AuthSubject
 from polar.checkout.schemas import (
     CheckoutConfirm,
     CheckoutConfirmStripe,
@@ -3138,16 +3138,12 @@ class TestConfirm:
                 ),
             )
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
     async def test_payment_not_ready_paid_product(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         locker: Locker,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_fixed: Checkout,
     ) -> None:
@@ -3162,7 +3158,7 @@ class TestConfirm:
             await checkout_service.confirm(
                 session,
                 locker,
-                AuthSubject(Anonymous(), set(), AuthMethod.NONE),
+                auth_subject,
                 checkout_one_time_fixed,
                 CheckoutConfirm(
                     customer_email="test@example.com",
@@ -3170,7 +3166,6 @@ class TestConfirm:
                 ),
             )
 
-    @pytest.mark.auth(anonymous=True)
     async def test_payment_not_ready_sandbox_allows_payments(
         self,
         save_fixture: SaveFixture,
@@ -3230,16 +3225,12 @@ class TestConfirm:
         assert confirmed_checkout.status == CheckoutStatus.confirmed
         stripe_service_mock.create_payment_intent.assert_called_once()
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
     async def test_payment_not_ready_free_product_allowed(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         locker: Locker,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[Anonymous],
         organization: Organization,
         checkout_one_time_free: Checkout,
         mocker: MockerFixture,
@@ -3263,7 +3254,7 @@ class TestConfirm:
         confirmed_checkout = await checkout_service.confirm(
             session,
             locker,
-            AuthSubject(Anonymous(), set(), AuthMethod.NONE),
+            auth_subject,
             checkout_one_time_free,
             CheckoutConfirm(
                 customer_email="test@example.com",
@@ -3274,7 +3265,6 @@ class TestConfirm:
         assert confirmed_checkout.status == CheckoutStatus.confirmed
         assert confirmed_checkout.amount == 0
 
-    @pytest.mark.auth(anonymous=True)
     async def test_payment_not_ready_recurring_product(
         self,
         save_fixture: SaveFixture,
@@ -3313,7 +3303,6 @@ class TestConfirm:
                 ),
             )
 
-    @pytest.mark.auth(anonymous=True)
     async def test_payment_not_ready_grandfathered_organization(
         self,
         save_fixture: SaveFixture,
@@ -3369,7 +3358,6 @@ class TestConfirm:
         assert confirmed_checkout.status == CheckoutStatus.confirmed
         stripe_service_mock.create_payment_intent.assert_called_once()
 
-    @pytest.mark.auth(anonymous=True)
     async def test_payment_not_ready_with_account_setup_complete(
         self,
         save_fixture: SaveFixture,

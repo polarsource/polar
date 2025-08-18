@@ -194,7 +194,7 @@ const AuthenticationSettings = () => {
         <AuthenticationMethod
           icon={<AlternateEmailOutlined />}
           title={currentUser?.email}
-          subtitle="You can sign in with magic links sent to your email"
+          subtitle="You can sign in with OTP codes sent to your email"
           action={updateEmailContent[updateEmailStage]}
         />
       </ShadowListGroup.Item>

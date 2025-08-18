@@ -19,6 +19,11 @@ services:
     region: ohio
     healthCheckPath: /healthz
     autoDeploy: false # deploys are triggered by github actions
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+      targetMemoryPercent: 90
+      targetCPUPercent: 75
     domains:
       - api.polar.sh
     envVars:

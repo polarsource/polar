@@ -23,9 +23,12 @@ async def _authenticate(scope: Scope) -> tuple[str, str]:
 
 
 _RULES: dict[str, Sequence[Rule]] = {
-    "^/v1/login-code": [Rule(second=1, block_time=60, zone="login-code")],
+    "^/v1/login-code": [Rule(minute=3, hour=10, block_time=900, zone="login-code")],
     "^/v1/customer-portal/customer-session": [
-        Rule(second=1, block_time=60, zone="customer-session")
+        Rule(minute=3, hour=10, block_time=900, zone="customer-session")
+    ],
+    "^/v1/customer-portal/license-keys/(validate|activate|deactivate)": [
+        Rule(second=1, block_time=60, zone="customer-license-key")
     ],
     "^/v1": [Rule(second=100, zone="api")],
 }

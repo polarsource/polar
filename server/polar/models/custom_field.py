@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, TypedDict
 from uuid import UUID
 
-from annotated_types import Ge, Len
+from annotated_types import Ge, Len, MinLen
 from pydantic import Field
 from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
@@ -72,7 +72,7 @@ class CustomFieldSelectOption(TypedDict):
 
 
 class CustomFieldSelectProperties(CustomFieldProperties):
-    options: list[CustomFieldSelectOption]
+    options: Annotated[list[CustomFieldSelectOption], MinLen(1)]
 
 
 class CustomField(MetadataMixin, RecordModel):

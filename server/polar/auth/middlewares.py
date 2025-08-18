@@ -4,7 +4,6 @@ from fastapi.security.utils import get_authorization_scheme_param
 from starlette.types import ASGIApp, Receive, Send
 from starlette.types import Scope as ASGIScope
 
-from polar.config import settings
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.kit.utils import utc_now
 from polar.logging import Logger
@@ -28,7 +27,7 @@ from polar.postgres import AsyncSession
 from polar.sentry import set_sentry_user
 from polar.worker._enqueue import enqueue_job
 
-from .models import Anonymous, AuthMethod, AuthSubject, Subject
+from .models import Anonymous, AuthSubject, Subject
 from .scope import Scope
 from .service import auth as auth_service
 
@@ -99,7 +98,7 @@ async def get_auth_subject(
             return AuthSubject(
                 customer_session.customer,
                 {Scope.customer_portal_write},
-                AuthMethod.CUSTOMER_SESSION_TOKEN,
+                customer_session,
             )
 
         organization_access_token = await get_organization_access_token(session, token)
@@ -107,34 +106,28 @@ async def get_auth_subject(
             return AuthSubject(
                 organization_access_token.organization,
                 organization_access_token.scopes,
-                AuthMethod.ORGANIZATION_ACCESS_TOKEN,
+                organization_access_token,
             )
 
         oauth2_token = await get_oauth2_token(session, token)
         if oauth2_token:
-            return AuthSubject(
-                oauth2_token.sub, oauth2_token.scopes, AuthMethod.OAUTH2_ACCESS_TOKEN
-            )
+            return AuthSubject(oauth2_token.sub, oauth2_token.scopes, oauth2_token)
 
         personal_access_token = await get_personal_access_token(session, token)
         if personal_access_token:
             return AuthSubject(
                 personal_access_token.user,
                 personal_access_token.scopes,
-                AuthMethod.PERSONAL_ACCESS_TOKEN,
+                personal_access_token,
             )
 
         raise InvalidTokenError()
 
     user_session = await get_user_session(request, session)
     if user_session is not None:
-        return AuthSubject(
-            user_session.user,
-            {Scope.web_default},
-            AuthMethod.COOKIE,
-        )
+        return AuthSubject(user_session.user, {Scope.web_default}, user_session)
 
-    return AuthSubject(Anonymous(), set(), AuthMethod.NONE)
+    return AuthSubject(Anonymous(), set(), None)
 
 
 class AuthSubjectMiddleware:
@@ -142,7 +135,7 @@ class AuthSubjectMiddleware:
         self.app = app
 
     async def __call__(self, scope: ASGIScope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or settings.is_testing():
+        if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
 

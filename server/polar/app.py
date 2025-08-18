@@ -50,6 +50,8 @@ from polar.sentry import configure_sentry
 from polar.web_backoffice import app as backoffice_app
 from polar.webhook.webhooks import document_webhooks
 
+from . import rate_limit
+
 log: Logger = structlog.get_logger()
 
 
@@ -151,9 +153,11 @@ def create_app() -> FastAPI:
 
     if settings.is_sandbox():
         app.add_middleware(SandboxResponseHeaderMiddleware)
-    app.add_middleware(AuthSubjectMiddleware)
-    app.add_middleware(FlushEnqueuedWorkerJobsMiddleware)
-    app.add_middleware(AsyncSessionMiddleware)
+    if not settings.is_testing():
+        app.add_middleware(rate_limit.get_middleware)
+        app.add_middleware(AuthSubjectMiddleware)
+        app.add_middleware(FlushEnqueuedWorkerJobsMiddleware)
+        app.add_middleware(AsyncSessionMiddleware)
     app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
     app.add_middleware(LogCorrelationIdMiddleware)
 

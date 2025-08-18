@@ -1,7 +1,15 @@
-from enum import Enum, auto
 from typing import Generic, TypeGuard, TypeVar
 
-from polar.models import Customer, Organization, User
+from polar.models import (
+    Customer,
+    CustomerSession,
+    OAuth2Token,
+    Organization,
+    OrganizationAccessToken,
+    PersonalAccessToken,
+    User,
+    UserSession,
+)
 
 from .scope import Scope
 
@@ -11,15 +19,13 @@ class Anonymous: ...
 
 Subject = User | Organization | Customer | Anonymous
 SubjectType = type[User] | type[Organization] | type[Customer] | type[Anonymous]
-
-
-class AuthMethod(Enum):
-    NONE = auto()
-    COOKIE = auto()
-    PERSONAL_ACCESS_TOKEN = auto()
-    ORGANIZATION_ACCESS_TOKEN = auto()
-    OAUTH2_ACCESS_TOKEN = auto()
-    CUSTOMER_SESSION_TOKEN = auto()
+Session = (
+    UserSession
+    | OrganizationAccessToken
+    | OAuth2Token
+    | PersonalAccessToken
+    | CustomerSession
+)
 
 
 S = TypeVar("S", bound=Subject, covariant=True)
@@ -28,18 +34,30 @@ S = TypeVar("S", bound=Subject, covariant=True)
 class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it allows us to force covariant typing
     subject: S
     scopes: set[Scope]
-    method: AuthMethod
+    session: Session | None
 
-    def __init__(self, subject: S, scopes: set[Scope], method: AuthMethod) -> None:
+    def __init__(self, subject: S, scopes: set[Scope], session: Session | None) -> None:
         self.subject = subject
         self.scopes = scopes
-        self.method = method
-
-    def has_web_default_scope(self) -> bool:
-        return Scope.web_default in self.scopes
+        self.session = session
 
     def __repr__(self) -> str:
-        return f"AuthSubject(subject={self.subject!r}, scopes={self.scopes!r}, method={self.method!r})"
+        return f"AuthSubject(subject={self.subject!r}, scopes={self.scopes!r})"
+
+    @property
+    def rate_limit_key(self) -> str:
+        if isinstance(self.session, OAuth2Token):
+            return f"oauth2_client:{self.session.client_id}"
+
+        match self.subject:
+            case User():
+                return f"user:{self.subject.id}"
+            case Organization():
+                return f"organization:{self.subject.id}"
+            case Customer():
+                return f"customer:{self.subject.id}"
+            case Anonymous():
+                return "anonymous"
 
 
 def is_anonymous[S: Subject](
@@ -50,22 +68,6 @@ def is_anonymous[S: Subject](
 
 def is_user[S: Subject](auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[User]]:
     return isinstance(auth_subject.subject, User)
-
-
-def is_direct_user[S: Subject](
-    auth_subject: AuthSubject[S],
-) -> TypeGuard[AuthSubject[User]]:
-    """
-    Whether we can trust this subject to be a user acting directly.
-
-    Useful when creating checkout sessions or subscriptions, where we need to
-    be sure we can tie it to the calling user (i.e., not being a creator with
-    a PAT).
-    """
-    return is_user(auth_subject) and auth_subject.method in {
-        AuthMethod.COOKIE,
-        AuthMethod.OAUTH2_ACCESS_TOKEN,
-    }
 
 
 def is_organization[S: Subject](
@@ -83,7 +85,6 @@ def is_customer[S: Subject](
 __all__ = [
     "Subject",
     "SubjectType",
-    "AuthMethod",
     "AuthSubject",
     "is_anonymous",
     "is_user",

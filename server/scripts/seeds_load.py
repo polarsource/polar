@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 # Import tasks to register all dramatiq actors
 import polar.tasks  # noqa: F401
-from polar.auth.models import AuthMethod, AuthSubject
+from polar.auth.models import AuthSubject
 from polar.benefit.service import benefit as benefit_service
 from polar.benefit.strategies.custom.schemas import BenefitCustomCreate
 from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesCreate
@@ -213,7 +213,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             email=org_data["email"],
         )
 
-        auth_subject = AuthSubject(subject=user, scopes=set(), method=AuthMethod.NONE)
+        auth_subject = AuthSubject(subject=user, scopes=set(), session=None)
 
         # Create organization
         organization = await organization_service.create(

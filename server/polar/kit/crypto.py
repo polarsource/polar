@@ -36,8 +36,7 @@ def generate_token(*, prefix: str = "") -> str:
 
 def generate_token_hash_pair(*, secret: str, prefix: str = "") -> tuple[str, str]:
     """
-    Generate a token suitable for sensitive values
-    like magic link tokens.
+    Generate a token suitable for sensitive values like API tokens.
 
     Returns both the actual value and its HMAC-SHA256 hash.
     Only the latter shall be stored in database.

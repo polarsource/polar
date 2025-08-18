@@ -90,9 +90,6 @@ class Settings(BaseSettings):
     CUSTOMER_SESSION_CODE_TTL: timedelta = timedelta(minutes=30)
     CUSTOMER_SESSION_CODE_LENGTH: int = 6
 
-    # Magic link
-    MAGIC_LINK_TTL_SECONDS: int = 60 * 30  # 30 minutes
-
     # Login code
     LOGIN_CODE_TTL_SECONDS: int = 60 * 30  # 30 minutes
     LOGIN_CODE_LENGTH: int = 6

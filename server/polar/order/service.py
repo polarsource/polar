@@ -1463,6 +1463,12 @@ class OrderService:
     ) -> None:
         await session.refresh(order.product, {"prices"})
 
+        # Refresh order items with their product_price.product relationship loaded
+        # This is needed for webhook serialization which accesses `legacy_product_price.product`
+        for item in order.items:
+            if item.product_price:
+                await session.refresh(item.product_price, {"product"})
+
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(
             order.product.organization_id

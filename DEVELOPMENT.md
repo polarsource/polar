@@ -229,7 +229,5 @@ To log in for the first time, follow these steps:
 1. Navigate to the login page.
 2. Enter your email address in the provided field.
 3. Click the "Login" button.
-4. Check the terminal where the API is running (`uv run task api`) for a magic link.
-    > [!TIP]
-    > Search for `/login/magic-link/authenticate` in the terminal to easily find the magic link within the HTML output.
-5. Click the URL provided in the terminal to complete the login process.
+4. Check the terminal where the API is running (`uv run task api`) to get the OTP code.
+5. Enter the OTP code in the login form.

@@ -1,7 +1,8 @@
 from collections.abc import AsyncGenerator
 from typing import Literal, TypeAlias
 
-from fastapi import Depends, Request
+from fastapi import Request
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from polar.config import settings
 from polar.kit.db.postgres import (
@@ -11,12 +12,8 @@ from polar.kit.db.postgres import (
     Engine,
     sql,
 )
-from polar.kit.db.postgres import (
-    create_async_engine as _create_async_engine,
-)
-from polar.kit.db.postgres import (
-    create_sync_engine as _create_sync_engine,
-)
+from polar.kit.db.postgres import create_async_engine as _create_async_engine
+from polar.kit.db.postgres import create_sync_engine as _create_sync_engine
 
 ProcessName: TypeAlias = Literal["app", "worker", "scheduler", "script"]
 
@@ -43,43 +40,40 @@ def create_sync_engine(process_name: ProcessName) -> Engine:
     )
 
 
-async def get_db_sessionmaker(
-    request: Request,
-) -> AsyncGenerator[AsyncSessionMaker, None]:
-    async_sessionmaker: AsyncSessionMaker = request.state.async_sessionmaker
-    yield async_sessionmaker
+class AsyncSessionMiddleware:
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
 
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] not in ("http", "websocket") or settings.is_testing():
+            return await self.app(scope, receive, send)
 
-async def get_db_session(
-    request: Request,
-    sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
-) -> AsyncGenerator[AsyncSession, None]:
-    """
-    Generates a new session for the request
-    using the sessionmaker in the application state.
-
-    Note that we store it in the request state: this way, we make sure we only have
-    one session per request.
-
-    In normal circumstances, this is handled by FastAPI
-    dependency cache, but we discovered that when using the `Security` dependent
-    (which we do in our `Authenticator` dependency), FastAPI uses a different cache
-    key which include the security scopes. So, we ended up with multiple sessions.
-
-    Ref: https://github.com/tiangolo/fastapi/discussions/8421
-    """
-    if session := getattr(request.state, "session", None):
-        yield session
-    else:
+        sessionmaker: AsyncSessionMaker = scope["state"]["async_sessionmaker"]
         async with sessionmaker() as session:
-            try:
-                request.state.session = session
-                yield session
-            except:
-                await session.rollback()
-                raise
-            else:
-                await session.commit()
+            scope["state"]["async_session"] = session
+            await self.app(scope, receive, send)
+
+
+async def get_db_sessionmaker(request: Request) -> AsyncSessionMaker:
+    return request.state.async_sessionmaker
+
+
+async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession]:
+    try:
+        session = request.state.async_session
+    except AttributeError as e:
+        raise RuntimeError(
+            "Session is not present in the request state. "
+            "Did you forget to add AsyncSessionMiddleware?"
+        ) from e
+
+    try:
+        yield session
+    except:
+        await session.rollback()
+        raise
+    else:
+        await session.commit()
 
 
 __all__ = [

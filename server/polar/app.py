@@ -8,6 +8,7 @@ from fastapi.routing import APIRoute
 
 from polar import worker  # noqa
 from polar.api import router
+from polar.auth.middlewares import AuthSubjectMiddleware
 from polar.checkout import ip_geolocation
 from polar.config import settings
 from polar.exception_handlers import add_exception_handlers
@@ -147,14 +148,16 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
         **OPENAPI_PARAMETERS,
     )
-    configure_cors(app)
 
-    app.add_middleware(AsyncSessionMiddleware)
-    app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
-    app.add_middleware(FlushEnqueuedWorkerJobsMiddleware)
-    app.add_middleware(LogCorrelationIdMiddleware)
     if settings.is_sandbox():
         app.add_middleware(SandboxResponseHeaderMiddleware)
+    app.add_middleware(AuthSubjectMiddleware)
+    app.add_middleware(FlushEnqueuedWorkerJobsMiddleware)
+    app.add_middleware(AsyncSessionMiddleware)
+    app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
+    app.add_middleware(LogCorrelationIdMiddleware)
+
+    configure_cors(app)
 
     add_exception_handlers(app)
     app.add_exception_handler(OAuth2Error, oauth2_error_exception_handler)  # pyright: ignore

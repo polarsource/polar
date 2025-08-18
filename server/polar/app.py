@@ -38,7 +38,11 @@ from polar.middlewares import (
 from polar.oauth2.endpoints.well_known import router as well_known_router
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
 from polar.openapi import OPENAPI_PARAMETERS, APITag, set_openapi_generator
-from polar.postgres import create_async_engine, create_sync_engine
+from polar.postgres import (
+    AsyncSessionMiddleware,
+    create_async_engine,
+    create_sync_engine,
+)
 from polar.posthog import configure_posthog
 from polar.redis import Redis, create_redis
 from polar.sentry import configure_sentry
@@ -145,6 +149,7 @@ def create_app() -> FastAPI:
     )
     configure_cors(app)
 
+    app.add_middleware(AsyncSessionMiddleware)
     app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
     app.add_middleware(FlushEnqueuedWorkerJobsMiddleware)
     app.add_middleware(LogCorrelationIdMiddleware)

@@ -1,14 +1,18 @@
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.exceptions import HTTPException
 
-from polar.auth.dependencies import get_user_session
+from polar.auth.service import auth as auth_service
 from polar.config import Environment, settings
 from polar.models.user_session import UserSession
+from polar.postgres import AsyncSession, get_db_session
 
 
 async def get_admin(
-    user_session: UserSession | None = Depends(get_user_session),
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
 ) -> UserSession:
+    user_session = await auth_service.authenticate(session, request)
+
     if user_session is None:
         raise HTTPException(status_code=401, detail="Unauthorized")
 

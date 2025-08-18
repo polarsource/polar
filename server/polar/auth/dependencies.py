@@ -2,115 +2,50 @@ from collections.abc import Awaitable, Callable
 from inspect import Parameter, Signature
 from typing import Annotated, Any
 
-import structlog
 from fastapi import Depends, Request, Security
+from fastapi.security import HTTPBearer, OpenIdConnect
 from makefun import with_signature
 
 from polar.auth.scope import RESERVED_SCOPES, Scope
-from polar.customer_session.dependencies import get_optional_customer_session_token
 from polar.exceptions import NotPermitted, Unauthorized
-from polar.logging import Logger
-from polar.models import (
-    Customer,
-    CustomerSession,
-    OAuth2Token,
-    OrganizationAccessToken,
-    PersonalAccessToken,
-    UserSession,
-)
-from polar.oauth2.dependencies import get_optional_token
 from polar.oauth2.exceptions import InsufficientScopeError, InvalidTokenError
-from polar.organization_access_token.dependencies import (
-    get_optional_organization_access_token,
-)
-from polar.personal_access_token.dependencies import get_optional_personal_access_token
-from polar.postgres import AsyncSession, get_db_session
-from polar.sentry import set_sentry_user
 
 from .models import (
     Anonymous,
-    AuthMethod,
     AuthSubject,
+    Customer,
     Organization,
     Subject,
     SubjectType,
     User,
     is_anonymous,
 )
-from .service import auth as auth_service
 
-log: Logger = structlog.get_logger(__name__)
-
-
-async def get_user_session(
-    request: Request, session: AsyncSession = Depends(get_db_session)
-) -> UserSession | None:
-    return await auth_service.authenticate(session, request)
-
-
-async def _get_auth_subject(
-    customer_session_credentials: tuple[CustomerSession | None, bool] = (None, False),
-    user_session: UserSession | None = None,
-    oauth2_credentials: tuple[OAuth2Token | None, bool] = (None, False),
-    personal_access_token_credentials: tuple[PersonalAccessToken | None, bool] = (
-        None,
-        False,
+oidc_scheme = OpenIdConnect(
+    scheme_name="oidc",
+    openIdConnectUrl="/.well-known/openid-configuration",
+    auto_error=False,
+)
+oat_scheme = HTTPBearer(
+    scheme_name="oat",
+    auto_error=False,
+    description="You can generate an **Organization Access Token** from your organization's settings.",
+)
+pat_scheme = HTTPBearer(
+    scheme_name="pat",
+    auto_error=False,
+    description="You can generate a **Personal Access Token** from your [settings](https://polar.sh/settings).",
+)
+customer_session_scheme = HTTPBearer(
+    scheme_name="customer_session",
+    auto_error=False,
+    description=(
+        "Customer session tokens are specific tokens "
+        "that are used to authenticate customers on your organization. "
+        "You can create those sessions programmatically using the "
+        "[Create Customer Session endpoint](/api-reference/customer-portal/sessions/create)."
     ),
-    organization_access_token_credentials: tuple[
-        OrganizationAccessToken | None, bool
-    ] = (None, False),
-) -> AuthSubject[Subject]:
-    # Customer session is prioritized over web session
-    customer_session, customer_session_authorization_set = customer_session_credentials
-    if customer_session:
-        return AuthSubject(
-            customer_session.customer,
-            {Scope.customer_portal_write},
-            AuthMethod.CUSTOMER_SESSION_TOKEN,
-        )
-
-    # Web session
-    if user_session is not None:
-        return AuthSubject(user_session.user, {Scope.web_default}, AuthMethod.COOKIE)
-
-    oauth2_token, oauth2_authorization_set = oauth2_credentials
-    personal_access_token, personal_access_token_authorization_set = (
-        personal_access_token_credentials
-    )
-    organization_access_token, organization_access_token_authorization_set = (
-        organization_access_token_credentials
-    )
-
-    if oauth2_token:
-        return AuthSubject(
-            oauth2_token.sub, oauth2_token.scopes, AuthMethod.OAUTH2_ACCESS_TOKEN
-        )
-
-    if personal_access_token:
-        return AuthSubject(
-            personal_access_token.user,
-            personal_access_token.scopes,
-            AuthMethod.PERSONAL_ACCESS_TOKEN,
-        )
-
-    if organization_access_token:
-        return AuthSubject(
-            organization_access_token.organization,
-            organization_access_token.scopes,
-            AuthMethod.ORGANIZATION_ACCESS_TOKEN,
-        )
-
-    if any(
-        (
-            customer_session_authorization_set,
-            oauth2_authorization_set,
-            personal_access_token_authorization_set,
-            organization_access_token_authorization_set,
-        )
-    ):
-        raise InvalidTokenError()
-
-    return AuthSubject(Anonymous(), set(), AuthMethod.NONE)
+)
 
 
 _auth_subject_factory_cache: dict[
@@ -124,26 +59,27 @@ def _get_auth_subject_factory(
     if allowed_subjects in _auth_subject_factory_cache:
         return _auth_subject_factory_cache[allowed_subjects]
 
-    parameters: list[Parameter] = []
+    parameters: list[Parameter] = [
+        Parameter(
+            name="request",
+            kind=Parameter.POSITIONAL_OR_KEYWORD,
+            annotation=Request,
+        )
+    ]
     if User in allowed_subjects or Organization in allowed_subjects:
         parameters += [
             Parameter(
                 name="oauth2_credentials",
                 kind=Parameter.KEYWORD_ONLY,
-                default=Depends(get_optional_token),
+                default=Depends(oidc_scheme),
             )
         ]
     if User in allowed_subjects:
         parameters += [
             Parameter(
-                name="user_session",
-                kind=Parameter.KEYWORD_ONLY,
-                default=Depends(get_user_session),
-            ),
-            Parameter(
                 name="personal_access_token_credentials",
                 kind=Parameter.KEYWORD_ONLY,
-                default=Depends(get_optional_personal_access_token),
+                default=Depends(pat_scheme),
             ),
         ]
     if Organization in allowed_subjects:
@@ -151,7 +87,7 @@ def _get_auth_subject_factory(
             Parameter(
                 name="organization_access_token_credentials",
                 kind=Parameter.KEYWORD_ONLY,
-                default=Depends(get_optional_organization_access_token),
+                default=Depends(oat_scheme),
             )
         ]
     if Customer in allowed_subjects:
@@ -159,15 +95,21 @@ def _get_auth_subject_factory(
             Parameter(
                 name="customer_session_credentials",
                 kind=Parameter.KEYWORD_ONLY,
-                default=Depends(get_optional_customer_session_token),
+                default=Depends(customer_session_scheme),
             )
         )
 
     signature = Signature(parameters)
 
     @with_signature(signature)
-    async def get_auth_subject(**kwargs: Any) -> AuthSubject[Subject]:
-        return await _get_auth_subject(**kwargs)
+    async def get_auth_subject(request: Request, **kwargs: Any) -> AuthSubject[Subject]:
+        try:
+            return request.state.auth_subject
+        except AttributeError as e:
+            raise RuntimeError(
+                "AuthSubject is not present in the request state. "
+                "Did you forget to add AuthSubjectMiddleware?"
+            ) from e
 
     _auth_subject_factory_cache[allowed_subjects] = get_auth_subject
 
@@ -193,9 +135,6 @@ class _Authenticator:
                 return auth_subject
             else:
                 raise Unauthorized()
-
-        set_sentry_user(auth_subject)
-        log.info("Authenticated subject", subject=auth_subject)
 
         # Blocked subjects
         blocked_at = getattr(auth_subject.subject, "blocked_at", None)

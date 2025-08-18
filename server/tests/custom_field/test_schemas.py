@@ -30,6 +30,10 @@ CustomFieldCreateAdapter: TypeAdapter[CustomFieldCreate] = TypeAdapter(
             {"type": "select", "properties": {"options": [{"k": "a", "v": "b"}]}},
             id="invalid select options",
         ),
+        pytest.param(
+            {"type": "select", "properties": {"options": []}},
+            id="empty select options",
+        ),
     ),
 )
 def test_invalid_create(input: dict[str, Any]) -> None:

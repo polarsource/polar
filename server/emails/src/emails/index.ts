@@ -1,7 +1,6 @@
 import { CustomerSessionCode } from './customer_session_code'
 import { EmailUpdate } from './email_update'
 import { LoginCode } from './login_code'
-import { MagicLink } from './magic_link'
 import { NotificationAccountReviewed } from './notification_account_reviewed'
 import { NotificationAccountUnderReview } from './notification_account_under_review'
 import { NotificationCreateAccount } from './notification_create_account'
@@ -21,7 +20,6 @@ import { SubscriptionUncanceled } from './subscription_uncanceled'
 import { SubscriptionUpdated } from './subscription_updated'
 
 const TEMPLATES: Record<string, React.FC<any>> = {
-  magic_link: MagicLink,
   login_code: LoginCode,
   customer_session_code: CustomerSessionCode,
   email_update: EmailUpdate,

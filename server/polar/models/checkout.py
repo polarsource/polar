@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 
 
 def get_expires_at() -> datetime:
-    return utc_now() + timedelta(seconds=settings.MAGIC_LINK_TTL_SECONDS)
+    return utc_now() + timedelta(seconds=settings.CHECKOUT_TTL_SECONDS)
 
 
 class CheckoutStatus(StrEnum):

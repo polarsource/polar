@@ -26,7 +26,6 @@ from polar.integrations.plain.endpoints import router as plain_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.license_key.endpoints import router as license_key_router
 from polar.login_code.endpoints import router as login_code_router
-from polar.magic_link.endpoints import router as magic_link_router
 from polar.meter.endpoints import router as meter_router
 from polar.metrics.endpoints import router as metrics_router
 from polar.notifications.endpoints import router as notifications_router
@@ -58,8 +57,6 @@ router.include_router(github_repository_benefit_router)
 router.include_router(stripe_router)
 # /integrations/discord
 router.include_router(discord_router)
-# /magic-link
-router.include_router(magic_link_router)
 # /login-code
 router.include_router(login_code_router)
 # /notifications

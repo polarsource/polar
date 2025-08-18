@@ -1,5 +1,5 @@
 import math
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID
@@ -27,17 +27,11 @@ from sqlalchemy.orm import (
     relationship,
 )
 
-from polar.config import settings
 from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
-from polar.kit.utils import utc_now
 
 if TYPE_CHECKING:
     from . import DiscountProduct, DiscountRedemption, Organization, Product
-
-
-def get_expires_at() -> datetime:
-    return utc_now() + timedelta(seconds=settings.MAGIC_LINK_TTL_SECONDS)
 
 
 class DiscountType(StrEnum):

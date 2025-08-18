@@ -228,40 +228,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/magic_link/request": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Magic Link.Request */
-        post: operations["magic_link:magic_link.request"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/magic_link/authenticate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Magic Link.Authenticate */
-        post: operations["magic_link:magic_link.authenticate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/login-code/request": {
         parameters: {
             query?: never;
@@ -5875,6 +5841,13 @@ export interface components {
              * @description The ID of the order associated with this payment.
              */
             order_id: string | null;
+            /**
+             * Processor Metadata
+             * @description Additional metadata from the payment processor for internal use.
+             */
+            processor_metadata?: {
+                [key: string]: unknown;
+            };
             /** @description Additional metadata for the card payment method. */
             method_metadata: components["schemas"]["CardPaymentMetadata"];
         };
@@ -8984,12 +8957,6 @@ export interface components {
              */
             net_amount: number;
             /**
-             * Amount
-             * @deprecated
-             * @description Amount in cents, after discounts but before taxes.
-             */
-            amount: number;
-            /**
              * Tax Amount
              * @description Sales tax amount in cents.
              */
@@ -11579,6 +11546,13 @@ export interface components {
              * @description The ID of the order associated with this payment.
              */
             order_id: string | null;
+            /**
+             * Processor Metadata
+             * @description Additional metadata from the payment processor for internal use.
+             */
+            processor_metadata?: {
+                [key: string]: unknown;
+            };
         };
         /** GitHubInvitesBenefitOrganization */
         GitHubInvitesBenefitOrganization: {
@@ -12405,17 +12379,6 @@ export interface components {
         };
         /** LoginCodeRequest */
         LoginCodeRequest: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /** Return To */
-            return_to?: string | null;
-            attribution?: components["schemas"]["UserSignupAttribution"] | null;
-        };
-        /** MagicLinkRequest */
-        MagicLinkRequest: {
             /**
              * Email
              * Format: email
@@ -13358,12 +13321,6 @@ export interface components {
              */
             net_amount: number;
             /**
-             * Amount
-             * @deprecated
-             * @description Amount in cents, after discounts but before taxes.
-             */
-            amount: number;
-            /**
              * Tax Amount
              * @description Sales tax amount in cents.
              */
@@ -14124,48 +14081,6 @@ export interface components {
              */
             completed: boolean;
         };
-        /** OrganizationProfileSettings */
-        OrganizationProfileSettings: {
-            /**
-             * Enabled
-             * @description If this organization has a profile enabled
-             */
-            enabled?: boolean | null;
-            /**
-             * Description
-             * @description A description of the organization
-             */
-            description?: string | null;
-            /**
-             * Featured Projects
-             * @description A list of featured projects
-             */
-            featured_projects?: string[] | null;
-            /**
-             * Featured Organizations
-             * @description A list of featured organizations
-             */
-            featured_organizations?: string[] | null;
-            /**
-             * Links
-             * @description A list of links associated with the organization
-             */
-            links?: string[] | null;
-            /**
-             * @description Subscription promotion settings
-             * @default {
-             *       "promote": true,
-             *       "show_count": true,
-             *       "count_free": true
-             *     }
-             */
-            subscribe: components["schemas"]["OrganizationSubscribePromoteSettings"] | null;
-            /**
-             * Accent Color
-             * @description Accent color for the organization
-             */
-            accent_color?: string | null;
-        };
         /** OrganizationSetAccount */
         OrganizationSetAccount: {
             /**
@@ -14206,27 +14121,6 @@ export interface components {
          * @enum {string}
          */
         OrganizationSortProperty: "created_at" | "-created_at" | "slug" | "-slug" | "name" | "-name";
-        /** OrganizationSubscribePromoteSettings */
-        OrganizationSubscribePromoteSettings: {
-            /**
-             * Promote
-             * @description Promote email subscription (free)
-             * @default true
-             */
-            promote: boolean;
-            /**
-             * Show Count
-             * @description Show subscription count publicly
-             * @default true
-             */
-            show_count: boolean;
-            /**
-             * Count Free
-             * @description Include free subscribers in total count
-             * @default true
-             */
-            count_free: boolean;
-        };
         /** OrganizationSubscriptionSettings */
         OrganizationSubscriptionSettings: {
             /** Allow Multiple Subscriptions */
@@ -17032,11 +16926,6 @@ export interface components {
             type: "subscription.updated";
             data: components["schemas"]["Subscription"];
         };
-        /** Body_magic_link:magic_link.authenticate */
-        authenticate: {
-            /** Token */
-            token: string;
-        };
         /** MetadataQuery */
         MetadataQuery: {
             [key: string]: string | number | boolean | string[] | number[] | boolean[];
@@ -17446,74 +17335,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiscordGuild"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "magic_link:magic_link.request": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MagicLinkRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "magic_link:magic_link.authenticate": {
-        parameters: {
-            query?: {
-                return_to?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/x-www-form-urlencoded": components["schemas"]["authenticate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

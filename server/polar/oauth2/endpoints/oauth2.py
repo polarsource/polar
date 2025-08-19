@@ -141,7 +141,7 @@ async def delete(
     )
 
 
-@router.get("/authorize", tags=[APITag.documented])
+@router.get("/authorize", tags=[APITag.public])
 async def authorize(
     request: Request,
     auth_subject: WebUserOrAnonymous,
@@ -202,7 +202,7 @@ async def consent(
     summary="Request Token",
     name="oauth2:request_token",
     operation_id="oauth2:request_token",
-    tags=[APITag.featured, APITag.documented],
+    tags=[APITag.public],
     openapi_extra={
         "requestBody": {
             "required": True,
@@ -238,7 +238,7 @@ async def token(
     summary="Revoke Token",
     name="oauth2:revoke_token",
     operation_id="oauth2:revoke_token",
-    tags=[APITag.featured, APITag.documented],
+    tags=[APITag.public],
     openapi_extra={
         "requestBody": {
             "required": True,
@@ -267,7 +267,7 @@ async def revoke(
     summary="Introspect Token",
     name="oauth2:introspect_token",
     operation_id="oauth2:introspect_token",
-    tags=[APITag.featured, APITag.documented],
+    tags=[APITag.public],
     openapi_extra={
         "requestBody": {
             "required": True,
@@ -300,7 +300,7 @@ async def introspect(
     operation_id="oauth2:userinfo",
     response_model=UserInfoSchema,
     response_model_exclude_unset=True,
-    tags=[APITag.featured, APITag.documented],
+    tags=[APITag.public],
     openapi_extra={"x-speakeasy-name-override": "userinfo"},
 )
 async def userinfo_get(token: OAuth2Token = Depends(get_token)) -> UserInfo:

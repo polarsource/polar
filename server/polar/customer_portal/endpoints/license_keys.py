@@ -32,9 +32,7 @@ from polar.routing import APIRouter
 
 from .. import auth
 
-router = APIRouter(
-    prefix="/license-keys", tags=["license_keys", APITag.documented, APITag.featured]
-)
+router = APIRouter(prefix="/license-keys", tags=["license_keys", APITag.public])
 
 
 ActivationNotPermitted = {

@@ -28,7 +28,7 @@ from ..schemas.order import CustomerOrder, CustomerOrderInvoice, CustomerOrderUp
 from ..service.order import CustomerOrderSortProperty, OrderNotEligibleForRetry
 from ..service.order import customer_order as customer_order_service
 
-router = APIRouter(prefix="/orders", tags=["orders", APITag.documented])
+router = APIRouter(prefix="/orders", tags=["orders", APITag.public])
 
 OrderNotFound = {"description": "Order not found.", "model": ResourceNotFound.schema()}
 

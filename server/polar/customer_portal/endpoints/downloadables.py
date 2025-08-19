@@ -13,7 +13,7 @@ from .. import auth
 from ..schemas.downloadables import DownloadableRead
 from ..service.downloadables import downloadable as downloadable_service
 
-router = APIRouter(prefix="/downloadables", tags=["downloadables", APITag.documented])
+router = APIRouter(prefix="/downloadables", tags=["downloadables", APITag.public])
 
 
 @router.get(

@@ -22,7 +22,7 @@ from .sorting import ProductSortProperty
 
 router = APIRouter(
     prefix="/products",
-    tags=["products", APITag.documented, APITag.featured, APITag.mcp],
+    tags=["products", APITag.public, APITag.mcp],
 )
 
 ProductNotFound = {

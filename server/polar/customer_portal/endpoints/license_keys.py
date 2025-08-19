@@ -7,13 +7,13 @@ from polar.benefit.schemas import BenefitID
 from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeysProperties,
 )
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.license_key.schemas import (
+    ActivationNotPermitted,
     LicenseKeyActivate,
-    LicenseKeyActivationBase,
     LicenseKeyActivationRead,
     LicenseKeyDeactivate,
     LicenseKeyRead,
@@ -24,7 +24,7 @@ from polar.license_key.schemas import (
     ValidatedLicenseKey,
 )
 from polar.license_key.service import license_key as license_key_service
-from polar.models import LicenseKeyActivation
+from polar.models import LicenseKey, LicenseKeyActivation
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
@@ -33,12 +33,6 @@ from polar.routing import APIRouter
 from .. import auth
 
 router = APIRouter(prefix="/license-keys", tags=["license_keys", APITag.public])
-
-
-ActivationNotPermitted = {
-    "description": "License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.",
-    "model": NotPermitted.schema(),
-}
 
 
 @router.get(
@@ -112,25 +106,16 @@ async def get(
 async def validate(
     validate: LicenseKeyValidate,
     session: AsyncSession = Depends(get_db_session),
-) -> ValidatedLicenseKey:
+) -> LicenseKey:
     """Validate a license key."""
-    lk = await license_key_service.get_or_raise_by_key(
+    license_key = await license_key_service.get_or_raise_by_key(
         session,
         organization_id=validate.organization_id,
         key=validate.key,
     )
-    license_key, activation = await license_key_service.validate(
-        session,
-        license_key=lk,
-        validate=validate,
+    return await license_key_service.validate(
+        session, license_key=license_key, validate=validate
     )
-    activation_schema = None
-    if activation:
-        activation_schema = LicenseKeyActivationBase.model_validate(activation)
-
-    ret = ValidatedLicenseKey.model_validate(license_key)
-    ret.activation = activation_schema
-    return ret
 
 
 @router.post(

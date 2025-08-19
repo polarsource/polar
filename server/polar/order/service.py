@@ -782,7 +782,11 @@ class OrderService:
                 )
 
     async def process_retry_payment(
-        self, session: AsyncSession, order: Order, confirmation_token_id: str
+        self,
+        session: AsyncSession,
+        order: Order,
+        confirmation_token_id: str,
+        payment_processor: PaymentProcessor,
     ) -> CustomerOrderPaymentConfirmation:
         """
         Process retry payment with direct confirmation (confirm=True).
@@ -805,6 +809,9 @@ class OrderService:
                 lock_acquired_at=order.payment_lock_acquired_at,
             )
             raise PaymentAlreadyInProgress(order)
+
+        if payment_processor != PaymentProcessor.stripe:
+            raise PolarError(f"Unsupported payment processor: {payment_processor}")
 
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id(order.customer_id)

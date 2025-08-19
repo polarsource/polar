@@ -13,6 +13,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
+from polar.enums import PaymentProcessor
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
@@ -2058,7 +2059,7 @@ class TestProcessRetryPayment:
         )
 
         result = await order_service.process_retry_payment(
-            session, order, "ctoken_test"
+            session, order, "ctoken_test", PaymentProcessor.stripe
         )
 
         assert result.status == "succeeded"
@@ -2103,7 +2104,7 @@ class TestProcessRetryPayment:
         )
 
         result = await order_service.process_retry_payment(
-            session, order, "ctoken_test"
+            session, order, "ctoken_test", PaymentProcessor.stripe
         )
 
         assert result.status == "requires_action"
@@ -2148,7 +2149,7 @@ class TestProcessRetryPayment:
         )
 
         result = await order_service.process_retry_payment(
-            session, order, "ctoken_test"
+            session, order, "ctoken_test", PaymentProcessor.stripe
         )
 
         assert result.status == "failed"
@@ -2189,7 +2190,7 @@ class TestProcessRetryPayment:
         stripe_service_mock.create_payment_intent = AsyncMock(side_effect=stripe_error)
 
         result = await order_service.process_retry_payment(
-            session, order, "ctoken_test"
+            session, order, "ctoken_test", PaymentProcessor.stripe
         )
 
         assert result.status == "failed"
@@ -2213,7 +2214,9 @@ class TestProcessRetryPayment:
         await save_fixture(order)
 
         with pytest.raises(OrderNotEligibleForRetry):
-            await order_service.process_retry_payment(session, order, "ctoken_test")
+            await order_service.process_retry_payment(
+                session, order, "ctoken_test", PaymentProcessor.stripe
+            )
 
     async def test_process_retry_payment_no_next_attempt(
         self,
@@ -2233,7 +2236,9 @@ class TestProcessRetryPayment:
         await save_fixture(order)
 
         with pytest.raises(OrderNotEligibleForRetry):
-            await order_service.process_retry_payment(session, order, "ctoken_test")
+            await order_service.process_retry_payment(
+                session, order, "ctoken_test", PaymentProcessor.stripe
+            )
 
     async def test_process_retry_payment_no_subscription(
         self,
@@ -2256,7 +2261,9 @@ class TestProcessRetryPayment:
         from polar.order.service import OrderNotEligibleForRetry
 
         with pytest.raises(OrderNotEligibleForRetry):
-            await order_service.process_retry_payment(session, order, "ctoken_test")
+            await order_service.process_retry_payment(
+                session, order, "ctoken_test", PaymentProcessor.stripe
+            )
 
     async def test_process_retry_payment_missing_stripe_customer(
         self,
@@ -2282,7 +2289,9 @@ class TestProcessRetryPayment:
         await save_fixture(order)
 
         with pytest.raises(MissingOrderStripeCustomerID):
-            await order_service.process_retry_payment(session, order, "ctoken_test")
+            await order_service.process_retry_payment(
+                session, order, "ctoken_test", PaymentProcessor.stripe
+            )
 
     async def test_process_retry_payment_already_in_progress(
         self,
@@ -2309,4 +2318,6 @@ class TestProcessRetryPayment:
         await save_fixture(order)
 
         with pytest.raises(PaymentAlreadyInProgress):
-            await order_service.process_retry_payment(session, order, "ctoken_test")
+            await order_service.process_retry_payment(
+                session, order, "ctoken_test", PaymentProcessor.stripe
+            )

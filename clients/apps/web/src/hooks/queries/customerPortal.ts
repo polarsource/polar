@@ -316,11 +316,13 @@ export const useCustomerOrderConfirmPayment = (api: Client) =>
     mutationFn: async (variables: {
       orderId: string
       confirmation_token_id: string
+      payment_processor?: schemas['PaymentProcessor']
     }) =>
       api.POST('/v1/customer-portal/orders/{id}/confirm-payment', {
         params: { path: { id: variables.orderId } },
         body: {
           confirmation_token_id: variables.confirmation_token_id,
+          payment_processor: variables.payment_processor || 'stripe',
         },
       }),
     onSuccess: async (result, variables, _ctx) => {

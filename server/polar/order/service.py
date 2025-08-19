@@ -855,7 +855,6 @@ class OrderService:
 
                     return CustomerOrderPaymentConfirmation(
                         status="succeeded",
-                        requires_action=False,
                         client_secret=None,
                         error=None,
                     )
@@ -870,7 +869,6 @@ class OrderService:
 
                     return CustomerOrderPaymentConfirmation(
                         status="requires_action",
-                        requires_action=True,
                         client_secret=payment_intent.client_secret,
                         error=None,
                     )
@@ -893,7 +891,6 @@ class OrderService:
 
                     return CustomerOrderPaymentConfirmation(
                         status="failed",
-                        requires_action=False,
                         client_secret=None,
                         error=error_message,
                     )
@@ -914,7 +911,6 @@ class OrderService:
 
             return CustomerOrderPaymentConfirmation(
                 status="failed",
-                requires_action=False,
                 client_secret=None,
                 error=error_message,
             )
@@ -929,7 +925,6 @@ class OrderService:
 
             return CustomerOrderPaymentConfirmation(
                 status="failed",
-                requires_action=False,
                 client_secret=None,
                 error="Payment failed. Please try again.",
             )

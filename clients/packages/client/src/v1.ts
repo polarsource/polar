@@ -1707,6 +1707,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/license-keys/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate License Key
+         * @description Validate a license key.
+         *
+         *     **Scopes**: `license_keys:write`
+         */
+        post: operations["license_keys:validate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/license-keys/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activate License Key
+         * @description Activate a license key instance.
+         *
+         *     **Scopes**: `license_keys:write`
+         */
+        post: operations["license_keys:activate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/license-keys/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deactivate License Key
+         * @description Deactivate a license key instance.
+         *
+         *     **Scopes**: `license_keys:write`
+         */
+        post: operations["license_keys:deactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/checkout-links/": {
         parameters: {
             query?: never;
@@ -2436,6 +2502,11 @@ export interface paths {
         /**
          * Validate License Key
          * @description Validate a license key.
+         *
+         *     > This endpoint doesn't require authentication and can be safely used on a public
+         *     > client, like a desktop application or a mobile app.
+         *     > If you plan to validate a license key on a server, use the `/v1/license-keys/validate`
+         *     > endpoint instead.
          */
         post: operations["customer_portal:license_keys:validate"];
         delete?: never;
@@ -2456,6 +2527,11 @@ export interface paths {
         /**
          * Activate License Key
          * @description Activate a license key instance.
+         *
+         *     > This endpoint doesn't require authentication and can be safely used on a public
+         *     > client, like a desktop application or a mobile app.
+         *     > If you plan to validate a license key on a server, use the `/v1/license-keys/activate`
+         *     > endpoint instead.
          */
         post: operations["customer_portal:license_keys:activate"];
         delete?: never;
@@ -2476,6 +2552,11 @@ export interface paths {
         /**
          * Deactivate License Key
          * @description Deactivate a license key instance.
+         *
+         *     > This endpoint doesn't require authentication and can be safely used on a public
+         *     > client, like a desktop application or a mobile app.
+         *     > If you plan to validate a license key on a server, use the `/v1/license-keys/deactivate`
+         *     > endpoint instead.
          */
         post: operations["customer_portal:license_keys:deactivate"];
         delete?: never;
@@ -20900,6 +20981,139 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Unauthorized"];
                 };
+            };
+            /** @description License key not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "license_keys:validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LicenseKeyValidate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidatedLicenseKey"];
+                };
+            };
+            /** @description License key not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "license_keys:activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LicenseKeyActivate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicenseKeyActivationRead"];
+                };
+            };
+            /** @description License key activation not supported or limit reached. Use /validate endpoint for licenses without activations. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotPermitted"];
+                };
+            };
+            /** @description License key not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "license_keys:deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LicenseKeyDeactivate"];
+            };
+        };
+        responses: {
+            /** @description License key activation deactivated. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description License key not found. */
             404: {

@@ -43,7 +43,6 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.order.service import (
     MissingCheckoutCustomer,
-    MissingOrderStripeCustomerID,
     NoPendingBillingEntries,
     NotAnOrderInvoice,
     NotASubscriptionInvoice,
@@ -2033,7 +2032,6 @@ class TestProcessRetryPayment:
         organization: Organization,
     ) -> None:
         """Test successful retry payment processing."""
-        customer.stripe_customer_id = "cus_test"
         await save_fixture(customer)
 
         subscription = await create_subscription(
@@ -2078,7 +2076,6 @@ class TestProcessRetryPayment:
         organization: Organization,
     ) -> None:
         """Test retry payment requiring additional action."""
-        customer.stripe_customer_id = "cus_test"
         await save_fixture(customer)
 
         subscription = await create_subscription(
@@ -2121,7 +2118,6 @@ class TestProcessRetryPayment:
         organization: Organization,
     ) -> None:
         """Test failed retry payment."""
-        customer.stripe_customer_id = "cus_test"
         await save_fixture(customer)
 
         subscription = await create_subscription(
@@ -2166,7 +2162,6 @@ class TestProcessRetryPayment:
         organization: Organization,
     ) -> None:
         """Test retry payment with Stripe error."""
-        customer.stripe_customer_id = "cus_test"
         await save_fixture(customer)
 
         subscription = await create_subscription(
@@ -2265,34 +2260,6 @@ class TestProcessRetryPayment:
                 session, order, "ctoken_test", PaymentProcessor.stripe
             )
 
-    async def test_process_retry_payment_missing_stripe_customer(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        """Test retry payment with missing Stripe customer ID."""
-        subscription = await create_subscription(
-            save_fixture, customer=customer, product=product
-        )
-        customer.stripe_customer_id = None
-
-        order = await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=OrderStatus.pending,
-            subscription=subscription,
-            next_payment_attempt_at=utc_now(),
-        )
-        await save_fixture(order)
-
-        with pytest.raises(MissingOrderStripeCustomerID):
-            await order_service.process_retry_payment(
-                session, order, "ctoken_test", PaymentProcessor.stripe
-            )
-
     async def test_process_retry_payment_already_in_progress(
         self,
         session: AsyncSession,
@@ -2301,7 +2268,6 @@ class TestProcessRetryPayment:
         customer: Customer,
     ) -> None:
         """Test retry payment when payment already in progress."""
-        customer.stripe_customer_id = "cus_test"
         subscription = await create_subscription(
             save_fixture, customer=customer, product=product
         )

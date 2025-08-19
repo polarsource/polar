@@ -257,16 +257,6 @@ class OrderNotEligibleForRetry(OrderError):
         super().__init__(message, 422)
 
 
-class MissingOrderStripeCustomerID(OrderError):
-    def __init__(self, order: Order) -> None:
-        self.order = order
-        message = (
-            f"Order {order.id}'s customer {order.customer.id} "
-            "is missing a Stripe customer ID."
-        )
-        super().__init__(message)
-
-
 class NoPendingBillingEntries(OrderError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
@@ -817,10 +807,6 @@ class OrderService:
         customer = await customer_repository.get_by_id(order.customer_id)
         assert customer is not None, "Customer must exist"
 
-        stripe_customer_id = order.customer.stripe_customer_id
-        if stripe_customer_id is None:
-            raise MissingOrderStripeCustomerID(order)
-
         org_repository = OrganizationRepository.from_session(session)
         organization = await org_repository.get_by_id(customer.organization_id)
         assert organization is not None, "Organization must exist"
@@ -843,7 +829,6 @@ class OrderService:
                     automatic_payment_methods={"enabled": True},
                     confirm=True,
                     confirmation_token=confirmation_token_id,
-                    customer=stripe_customer_id,
                     statement_descriptor_suffix=organization.statement_descriptor,
                     description=f"{organization.name} — {order.product.name}",
                     metadata=metadata,

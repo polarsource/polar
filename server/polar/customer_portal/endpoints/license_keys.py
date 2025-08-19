@@ -107,7 +107,14 @@ async def validate(
     validate: LicenseKeyValidate,
     session: AsyncSession = Depends(get_db_session),
 ) -> LicenseKey:
-    """Validate a license key."""
+    """
+     Validate a license key.
+
+    > This endpoint doesn't require authentication and can be safely used on a public
+    > client, like a desktop application or a mobile app.
+    > If you plan to validate a license key on a server, use the `/v1/license-keys/validate`
+    > endpoint instead.
+    """
     license_key = await license_key_service.get_or_raise_by_key(
         session,
         organization_id=validate.organization_id,
@@ -131,7 +138,14 @@ async def activate(
     activate: LicenseKeyActivate,
     session: AsyncSession = Depends(get_db_session),
 ) -> LicenseKeyActivation:
-    """Activate a license key instance."""
+    """
+    Activate a license key instance.
+
+    > This endpoint doesn't require authentication and can be safely used on a public
+    > client, like a desktop application or a mobile app.
+    > If you plan to validate a license key on a server, use the `/v1/license-keys/activate`
+    > endpoint instead.
+    """
     lk = await license_key_service.get_or_raise_by_key(
         session,
         organization_id=activate.organization_id,
@@ -155,7 +169,14 @@ async def deactivate(
     deactivate: LicenseKeyDeactivate,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    """Deactivate a license key instance."""
+    """
+    Deactivate a license key instance.
+
+    > This endpoint doesn't require authentication and can be safely used on a public
+    > client, like a desktop application or a mobile app.
+    > If you plan to validate a license key on a server, use the `/v1/license-keys/deactivate`
+    > endpoint instead.
+    """
     lk = await license_key_service.get_or_raise_by_key(
         session,
         organization_id=deactivate.organization_id,

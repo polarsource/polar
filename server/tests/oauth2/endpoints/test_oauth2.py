@@ -893,3 +893,61 @@ class TestOAuth2Token:
         assert access_token.startswith("polar_at_o_")
         refresh_token = json["refresh_token"]
         assert refresh_token.startswith("polar_rt_o_")
+
+    async def test_refresh_token_unauthenticated_private_client(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="ACCESS_TOKEN",
+            refresh_token="REFRESH_TOKEN",
+            scopes=["openid", "profile", "email"],
+            user=user,
+        )
+
+        data = {
+            "grant_type": "refresh_token",
+            "refresh_token": "REFRESH_TOKEN",
+            "client_id": oauth2_client.client_id,
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 401
+
+    async def test_refresh_token_public_client(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        public_oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_token(
+            save_fixture,
+            client=public_oauth2_client,
+            access_token="ACCESS_TOKEN",
+            refresh_token="REFRESH_TOKEN",
+            scopes=["openid", "profile", "email"],
+            user=user,
+        )
+
+        data = {
+            "grant_type": "refresh_token",
+            "refresh_token": "REFRESH_TOKEN",
+            "client_id": public_oauth2_client.client_id,
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        json = response.json()
+
+        access_token = json["access_token"]
+        assert access_token.startswith("polar_at_u_")
+        refresh_token = json["refresh_token"]
+        assert refresh_token.startswith("polar_rt_u_")

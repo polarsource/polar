@@ -11,7 +11,7 @@ from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeyExpirationProperties,
 )
 from polar.customer.schemas.customer import CustomerBase
-from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
 from polar.kit.metadata import (
     MAXIMUM_KEYS,
     METADATA_DESCRIPTION,
@@ -34,6 +34,12 @@ NotFoundResponse = {
 UnauthorizedResponse = {
     "description": "Not authorized to manage license key.",
     "model": Unauthorized.schema(),
+}
+
+
+ActivationNotPermitted = {
+    "description": "License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.",
+    "model": NotPermitted.schema(),
 }
 
 

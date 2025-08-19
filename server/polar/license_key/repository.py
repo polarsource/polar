@@ -57,6 +57,24 @@ class LicenseKeyRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_readable_by_key(
+        self,
+        key: str,
+        organization_id: UUID,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        options: Options = (),
+    ) -> LicenseKey | None:
+        statement = (
+            self.get_readable_statement(auth_subject)
+            .where(
+                LicenseKey.key == key,
+                LicenseKey.organization_id == organization_id,
+            )
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
     def get_eager_options(self) -> Options:
         return (
             joinedload(LicenseKey.customer),

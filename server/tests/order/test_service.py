@@ -1,25 +1,23 @@
-from datetime import datetime, timedelta
+import uuid
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any, cast
 from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import pytest
+import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
-from pydantic_extra_types.country import CountryAlpha2
-from pytest_mock import MockerFixture
-from sqlalchemy.orm import joinedload
-
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent
-from polar.enums import PaymentProcessor
+from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
-from polar.kit.tax import TaxabilityReason, calculate_tax
+from polar.kit.tax import TaxabilityReason, TaxCalculation, TaxID, calculate_tax
 from polar.kit.utils import utc_now
 from polar.models import (
     Account,
@@ -32,7 +30,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.billing_entry import BillingEntryType
+from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountFixed, DiscountType
 from polar.models.order import OrderBillingReason, OrderStatus
@@ -63,6 +61,10 @@ from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
 )
 from polar.transaction.service.platform_fee import PlatformFeeTransactionService
+from pydantic_extra_types.country import CountryAlpha2
+from pytest_mock import MockerFixture
+from sqlalchemy.orm import joinedload
+
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -75,6 +77,7 @@ from tests.fixtures.random_objects import (
     create_order,
     create_payment,
     create_payment_method,
+    create_product,
     create_subscription,
 )
 from tests.fixtures.stripe import construct_stripe_invoice
@@ -637,7 +640,7 @@ class TestCreateFromCheckoutSubscription:
 
 
 @pytest.mark.asyncio
-class TestCreateSubscriptionOrder:
+class TestCreateSubscriptionOrderWithStripe:
     async def test_no_pending_billing_items(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
@@ -924,6 +927,155 @@ class TestCreateSubscriptionOrder:
             customer.billing_address,
             [],
             False,
+        )
+
+
+@pytest.mark.asyncio
+class TestCreateSubscriptionOrder:
+    @pytest.fixture
+    def calculate_tax_mock(self, mocker: MockerFixture) -> AsyncMock:
+        mock = AsyncMock(spec=calculate_tax)
+        mocker.patch("polar.order.service.calculate_tax", new=mock)
+
+        def mocked_calculate_tax(
+            identifier: uuid.UUID,
+            currency: str,
+            amount: int,
+            stripe_product_id: str,
+            address: Address,
+            tax_ids: list[TaxID],
+        ) -> TaxCalculation:
+            return {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": int(amount * 0.20),
+                "taxability_reason": TaxabilityReason.standard_rated,
+                "tax_rate": None,
+            }
+
+        mock.side_effect = mocked_calculate_tax
+
+        return mock
+
+    @pytest_asyncio.fixture
+    async def subscription(
+        self, save_fixture: SaveFixture, organization: Organization, product: Product
+    ) -> Subscription:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("DK")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            stripe_subscription_id=None,
+        )
+        return subscription
+
+    async def test_cycle_proration(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        subscription: Subscription,
+    ) -> None:
+        old_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(500,)],
+        )
+        old_price = cast(ProductPriceFixed, old_product.prices[0])
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(3000,)],
+        )
+        new_price = cast(ProductPriceFixed, new_product.prices[0])
+
+        billing_entry_credit = await create_billing_entry(
+            save_fixture,
+            direction=BillingEntryDirection.credit,
+            start_timestamp=datetime(2025, 6, 1, tzinfo=UTC),
+            end_timestamp=datetime(2025, 6, 16, tzinfo=UTC),
+            customer=subscription.customer,
+            product_price=old_price,
+            amount=round(old_price.price_amount * 0.5),  # 250
+            currency=old_price.price_currency,
+            subscription=subscription,
+        )
+        billing_entry_debit = await create_billing_entry(
+            save_fixture,
+            direction=BillingEntryDirection.debit,
+            start_timestamp=datetime(2025, 6, 16, tzinfo=UTC),
+            end_timestamp=datetime(2025, 7, 1, tzinfo=UTC),
+            customer=subscription.customer,
+            product_price=new_price,
+            amount=round(new_price.price_amount * 0.5),  # 1500
+            currency=new_price.price_currency,
+            subscription=subscription,
+        )
+        billing_entry_cycle = await create_billing_entry(
+            save_fixture,
+            direction=BillingEntryDirection.debit,
+            start_timestamp=datetime(2025, 7, 1, tzinfo=UTC),
+            end_timestamp=datetime(2025, 8, 1, tzinfo=UTC),
+            customer=subscription.customer,
+            product_price=new_price,
+            amount=new_price.price_amount,  # 3000
+            currency=new_price.price_currency,
+            subscription=subscription,
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        assert len(order.items) == 3
+        order_items = sorted(order.items, key=lambda i: i.amount)
+        assert order_items[0].product_price == old_price
+        assert order_items[0].amount == -250
+        assert order_items[1].product_price == new_price
+        assert order_items[1].amount == 1500
+        assert order_items[2].product_price == new_price
+        assert order_items[2].amount == 3000
+
+        assert order.status == OrderStatus.pending
+        assert order.billing_reason == OrderBillingReason.subscription_cycle
+        assert order.subscription == subscription
+
+        assert order.subtotal_amount == 4250
+        assert order.tax_amount == 850
+        assert order.tax_calculation_processor_id == "TAX_PROCESSOR_ID"
+        assert order.taxability_reason == TaxabilityReason.standard_rated
+        # assert order.tax_rate == calculate_tax_mock.return_value["tax_rate"]
+        assert order.tax_transaction_processor_id is None
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        updated_billing_entry = await billing_entry_repository.get_by_id(
+            billing_entry_credit.id
+        )
+        assert updated_billing_entry is not None
+        assert updated_billing_entry.order_item_id == order_items[0].id
+        updated_billing_entry = await billing_entry_repository.get_by_id(
+            billing_entry_debit.id
+        )
+        assert updated_billing_entry is not None
+        assert updated_billing_entry.order_item_id == order_items[1].id
+        updated_billing_entry = await billing_entry_repository.get_by_id(
+            billing_entry_cycle.id
+        )
+        assert updated_billing_entry is not None
+        assert updated_billing_entry.order_item_id == order_items[2].id
+
+        enqueue_job_mock.assert_any_call(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=subscription.payment_method_id,
         )
 
 

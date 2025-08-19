@@ -301,6 +301,7 @@ class InvoiceGenerator(FPDF):
                 text=self.data.seller_additional_info,
                 markdown=True,
             )
+        left_seller_end_y = self.get_y()
 
         # Customer on right column
         self.set_xy(110, addresses_y_start)
@@ -331,9 +332,11 @@ class InvoiceGenerator(FPDF):
                 text=self.data.customer_additional_info,
                 markdown=True,
             )
+        right_seller_end_y = self.get_y()
+        bottom = max(left_seller_end_y, right_seller_end_y)
 
         # Add spacing before table
-        self.set_y(self.get_y() + self.elements_y_margin)
+        self.set_y(bottom + self.elements_y_margin)
 
         # Invoice items table
         self.set_draw_color(*self.table_borders_color)  # Light grey color for borders

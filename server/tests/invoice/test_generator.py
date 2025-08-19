@@ -83,6 +83,13 @@ Thank you for your business!
             },
             "long_customer_name",
         ),
+        (
+            {
+                "customer_address": Address(country=CountryAlpha2("FR")),
+                "seller_additional_info": "[support@polar.sh](mailto:support@polar.sh)\nExtra line 1\nExtra line 2\nExtra line 3",
+            },
+            "long_seller_info",
+        ),
     ],
 )
 def test_generator(overrides: dict[str, Any], id: str, invoice: Invoice) -> None:

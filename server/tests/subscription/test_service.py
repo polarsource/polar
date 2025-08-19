@@ -1051,7 +1051,7 @@ class TestUpdateFromStripe:
                 )
             ]
         )
-        assert_hooks_called_once(subscription_hooks, {"updated", "canceled", "revoked"})
+        assert_hooks_called_once(subscription_hooks, {"updated", "revoked"})
 
 
 async def create_event_billing_entry(
@@ -1777,95 +1777,3 @@ class TestMarkPastDue:
         # Then
         assert result_subscription.status == SubscriptionStatus.past_due
         send_past_due_email_mock.assert_called_once_with(session, subscription)
-
-    @freeze_time("2024-01-01 12:00:00")
-    async def test_cancel_past_due_subscription_no_cancellation_email(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription: Subscription,
-        enqueue_job_mock: MagicMock,
-        stripe_service_mock: MagicMock,
-    ) -> None:
-        # Given
-        subscription.status = SubscriptionStatus.past_due
-        await save_fixture(subscription)
-
-        # Mock the Stripe calls in send_past_due_email
-        stripe_subscription_mock = mocker.patch(
-            "polar.subscription.service.stripe_lib.Subscription.retrieve_async"
-        )
-        stripe_subscription_mock.return_value = mocker.MagicMock(latest_invoice=None)
-
-        invoice_mock = mocker.patch(
-            "polar.subscription.service.stripe_service.get_invoice"
-        )
-        invoice_mock.return_value = mocker.MagicMock(hosted_invoice_url=None)
-
-        mocker.patch("polar.subscription.service.enqueue_email")
-
-        # Mock Stripe service to return a proper subscription
-        canceled_subscription = cloned_stripe_canceled_subscription(
-            subscription, revoke=True
-        )
-        stripe_service_mock.cancel_subscription.return_value = canceled_subscription
-
-        send_cancellation_email_mock = mocker.patch.object(
-            subscription_service, "send_cancellation_email"
-        )
-
-        # When
-        result_subscription = await subscription_service.cancel(session, subscription)
-
-        # Then
-        assert result_subscription.status == SubscriptionStatus.canceled
-        # Should not send cancellation email since it was previously past due
-        send_cancellation_email_mock.assert_not_called()
-
-    @freeze_time("2024-01-01 12:00:00")
-    async def test_cancel_active_subscription_sends_cancellation_email(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription: Subscription,
-        enqueue_job_mock: MagicMock,
-        stripe_service_mock: MagicMock,
-    ) -> None:
-        # Given
-        subscription.status = SubscriptionStatus.active
-        await save_fixture(subscription)
-
-        # Mock the Stripe calls in send_past_due_email
-        stripe_subscription_mock = mocker.patch(
-            "polar.subscription.service.stripe_lib.Subscription.retrieve_async"
-        )
-        stripe_subscription_mock.return_value = mocker.MagicMock(latest_invoice=None)
-
-        invoice_mock = mocker.patch(
-            "polar.subscription.service.stripe_service.get_invoice"
-        )
-        invoice_mock.return_value = mocker.MagicMock(hosted_invoice_url=None)
-
-        mocker.patch("polar.subscription.service.enqueue_email")
-
-        # Mock Stripe service to return a proper subscription
-        canceled_subscription = cloned_stripe_canceled_subscription(
-            subscription, revoke=True
-        )
-        stripe_service_mock.cancel_subscription.return_value = canceled_subscription
-
-        send_cancellation_email_mock = mocker.patch.object(
-            subscription_service, "send_cancellation_email"
-        )
-
-        # When
-        result_subscription = await subscription_service.cancel(session, subscription)
-
-        # Then
-        assert result_subscription.status == SubscriptionStatus.canceled
-        # Should send cancellation email since it was previously active
-        send_cancellation_email_mock.assert_called_once_with(
-            session, result_subscription
-        )

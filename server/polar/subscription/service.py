@@ -293,7 +293,7 @@ class SubscriptionService:
 
         subscription = checkout.subscription
         created = False
-        previous_ends_at = subscription.ends_at if subscription else None
+        previous_is_canceled = subscription.canceled if subscription else False
         previous_status = subscription.status if subscription else None
 
         current_period_start = utc_now()
@@ -334,7 +334,7 @@ class SubscriptionService:
                 session,
                 subscription,
                 previous_status=previous_status,
-                previous_ends_at=previous_ends_at,
+                previous_is_canceled=previous_is_canceled,
             )
 
         # Link potential discount redemption to the subscription
@@ -431,7 +431,7 @@ class SubscriptionService:
 
         subscription = checkout.subscription
         new_subscription = False
-        previous_ends_at = subscription.ends_at if subscription else None
+        previous_is_canceled = subscription.canceled if subscription else False
         previous_status = subscription.status if subscription else None
 
         # Disable automatic tax for free pricing, since we don't collect customer address in that case
@@ -516,7 +516,7 @@ class SubscriptionService:
                 session,
                 subscription,
                 previous_status=previous_status,
-                previous_ends_at=previous_ends_at,
+                previous_is_canceled=previous_is_canceled,
             )
 
         # Link potential discount redemption to the subscription
@@ -611,7 +611,7 @@ class SubscriptionService:
             session,
             subscription,
             previous_status=subscription.status,
-            previous_ends_at=subscription.ends_at,
+            previous_is_canceled=subscription.canceled,
         )
 
         return subscription
@@ -700,7 +700,7 @@ class SubscriptionService:
     ) -> Subscription:
         previous_product = subscription.product
         previous_status = subscription.status
-        previous_ends_at = subscription.ends_at
+        previous_is_canceled = subscription.canceled
 
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id_and_organization(
@@ -814,7 +814,7 @@ class SubscriptionService:
             session,
             subscription,
             previous_status=previous_status,
-            previous_ends_at=previous_ends_at,
+            previous_is_canceled=previous_is_canceled,
         )
 
         return subscription
@@ -903,8 +903,8 @@ class SubscriptionService:
         if not (subscription.active and subscription.cancel_at_period_end):
             raise BadRequest()
 
-        previous_ends_at = subscription.ends_at
         previous_status = subscription.status
+        previous_is_canceled = subscription.canceled
 
         # Managed by Stripe
         if subscription.stripe_subscription_id is not None:
@@ -926,7 +926,7 @@ class SubscriptionService:
             session,
             subscription,
             previous_status=previous_status,
-            previous_ends_at=previous_ends_at,
+            previous_is_canceled=previous_is_canceled,
         )
         return subscription
 
@@ -987,7 +987,7 @@ class SubscriptionService:
             raise SubscriptionDoesNotExist(stripe_subscription.id)
 
         previous_status = subscription.status
-        previous_ends_at = subscription.ends_at
+        previous_is_canceled = subscription.canceled
 
         subscription.status = SubscriptionStatus(stripe_subscription.status)
         subscription.current_period_start = _from_timestamp(
@@ -1022,7 +1022,7 @@ class SubscriptionService:
             session,
             subscription,
             previous_status=previous_status,
-            previous_ends_at=previous_ends_at,
+            previous_is_canceled=previous_is_canceled,
         )
         return subscription
 
@@ -1039,7 +1039,7 @@ class SubscriptionService:
             raise AlreadyCanceledSubscription(subscription)
 
         previous_status = subscription.status
-        previous_ends_at = subscription.ends_at
+        previous_is_canceled = subscription.canceled
 
         now = utc_now()
         subscription.canceled_at = now
@@ -1097,7 +1097,7 @@ class SubscriptionService:
             session,
             subscription,
             previous_status=previous_status,
-            previous_ends_at=previous_ends_at,
+            previous_is_canceled=previous_is_canceled,
         )
         return subscription
 
@@ -1154,7 +1154,7 @@ class SubscriptionService:
             session,
             subscription,
             previous_status=subscription.status,
-            previous_ends_at=subscription.ends_at,
+            previous_is_canceled=subscription.canceled,
         )
 
         return subscription
@@ -1165,46 +1165,41 @@ class SubscriptionService:
         subscription: Subscription,
         *,
         previous_status: SubscriptionStatus,
-        previous_ends_at: datetime | None,
+        previous_is_canceled: bool,
     ) -> None:
-        # Webhooks
         await self._on_subscription_updated(session, subscription)
 
         became_activated = subscription.active and not SubscriptionStatus.is_active(
             previous_status
         )
-        if became_activated:
-            await self._on_subscription_activated(session, subscription)
-
         became_past_due = (
             subscription.status == SubscriptionStatus.past_due
             and previous_status != SubscriptionStatus.past_due
         )
-        if became_past_due:
-            await self._on_subscription_past_due(session, subscription)
-
-        is_canceled = subscription.ends_at and subscription.canceled_at
-        updated_ends_at = subscription.ends_at != previous_ends_at
-
-        cancellation_changed = is_canceled and updated_ends_at
+        became_canceled = subscription.canceled and not previous_is_canceled
+        became_uncanceled = not subscription.canceled and previous_is_canceled
         became_revoked = subscription.revoked and not SubscriptionStatus.is_revoked(
             previous_status
         )
 
-        if cancellation_changed and not became_past_due:
-            await self._on_subscription_canceled(
-                session,
-                subscription,
-                revoked=became_revoked,
-                previous_status=previous_status,
-            )
+        if became_activated:
+            await self._on_subscription_activated(session, subscription)
 
-        became_uncanceled = previous_ends_at and not is_canceled
         if became_uncanceled:
             await self._on_subscription_uncanceled(session, subscription)
 
+        if became_past_due:
+            await self._on_subscription_past_due(session, subscription)
+
+        if became_canceled:
+            await self._on_subscription_canceled(
+                session, subscription, revoked=became_revoked
+            )
+
         if became_revoked:
-            await self._on_subscription_revoked(session, subscription)
+            await self._on_subscription_revoked(
+                session, subscription, past_due=became_past_due
+            )
 
         enqueue_job(
             "customer.webhook",
@@ -1234,13 +1229,8 @@ class SubscriptionService:
         await self._send_new_subscription_notification(session, subscription)
 
     async def _on_subscription_past_due(
-        self,
-        session: AsyncSession,
-        subscription: Subscription,
+        self, session: AsyncSession, subscription: Subscription
     ) -> None:
-        await self._send_webhook(
-            session, subscription, WebhookEventType.subscription_updated
-        )
         await self.send_past_due_email(session, subscription)
 
     async def _on_subscription_uncanceled(
@@ -1257,29 +1247,31 @@ class SubscriptionService:
         self,
         session: AsyncSession,
         subscription: Subscription,
-        revoked: bool = False,
-        previous_status: SubscriptionStatus | None = None,
+        revoked: bool,
     ) -> None:
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_canceled
         )
 
-        # Revokation both cancels & revokes simultaneously.
-        # Send webhook for both, but avoid duplicate email to customers.
-        # Don't send cancellation email if subscription was previously past due
-        # (customer already received past due email)
-        if revoked and previous_status != SubscriptionStatus.past_due:
+        # Only send cancellation email if the subscription is not revoked,
+        # as revocation has its own email.
+        if not revoked:
             await self.send_cancellation_email(session, subscription)
 
     async def _on_subscription_revoked(
         self,
         session: AsyncSession,
         subscription: Subscription,
+        past_due: bool,
     ) -> None:
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_revoked
         )
-        await self.send_revoked_email(session, subscription)
+
+        # Only send revoked email if the subscription is not past due,
+        # as past due has its own email.
+        if not past_due:
+            await self.send_revoked_email(session, subscription)
 
     async def _send_new_subscription_notification(
         self, session: AsyncSession, subscription: Subscription
@@ -1548,7 +1540,7 @@ class SubscriptionService:
         When this happens the customer will be notified and lose access to the benefits"""
 
         previous_status = subscription.status
-        previous_ends_at = subscription.ends_at
+        previous_is_canceled = subscription.canceled
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(
@@ -1560,7 +1552,7 @@ class SubscriptionService:
             session,
             subscription,
             previous_status=previous_status,
-            previous_ends_at=previous_ends_at,
+            previous_is_canceled=previous_is_canceled,
         )
         # Cancel all grants for this subscription
         await self.enqueue_benefits_grants(session, subscription)
@@ -1573,7 +1565,7 @@ class SubscriptionService:
         """Mark a subscription as active. Used when payment succeeds after being past due."""
 
         previous_status = subscription.status
-        previous_ends_at = subscription.ends_at
+        previous_is_canceled = subscription.canceled
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(
@@ -1584,7 +1576,7 @@ class SubscriptionService:
             session,
             subscription,
             previous_status=previous_status,
-            previous_ends_at=previous_ends_at,
+            previous_is_canceled=previous_is_canceled,
         )
         await self.enqueue_benefits_grants(session, subscription)
 

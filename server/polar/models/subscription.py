@@ -256,6 +256,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         )
 
     @hybrid_property
+    def canceled(self) -> bool:
+        return self.canceled_at is not None
+
+    @canceled.inplace.expression
+    @classmethod
+    def _canceled_expression(cls) -> ColumnElement[bool]:
+        return cls.canceled_at.is_not(None)
+
+    @hybrid_property
     def billable(self) -> bool:
         return SubscriptionStatus.is_billable(self.status)
 

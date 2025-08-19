@@ -20,7 +20,7 @@ from .schemas import OrderID, OrderInvoice, OrderNotFound, OrderUpdate
 from .service import InvoiceAlreadyExists, MissingInvoiceBillingDetails, NotPaidOrder
 from .service import order as order_service
 
-router = APIRouter(prefix="/orders", tags=["orders", APITag.documented, APITag.mcp])
+router = APIRouter(prefix="/orders", tags=["orders", APITag.public, APITag.mcp])
 
 
 @router.get(

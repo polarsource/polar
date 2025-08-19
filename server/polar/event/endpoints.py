@@ -27,9 +27,7 @@ from .schemas import (
 )
 from .service import event as event_service
 
-router = APIRouter(
-    prefix="/events", tags=["events", APITag.documented, APITag.featured]
-)
+router = APIRouter(prefix="/events", tags=["events", APITag.public])
 
 
 EventNotFound = {"description": "Event not found.", "model": ResourceNotFound.schema()}

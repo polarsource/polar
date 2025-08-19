@@ -42,7 +42,7 @@ from .service import (
 )
 from .service import checkout as checkout_service
 
-inner_router = APIRouter(tags=["checkouts", APITag.documented, APITag.featured])
+inner_router = APIRouter(tags=["checkouts", APITag.public])
 
 
 CheckoutID = Annotated[UUID4, Path(description="The checkout session ID.")]

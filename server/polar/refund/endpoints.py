@@ -21,7 +21,7 @@ from .sorting import RefundListSorting
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="/refunds", tags=["refunds", APITag.documented])
+router = APIRouter(prefix="/refunds", tags=["refunds", APITag.public])
 
 
 @router.get("/", summary="List Refunds", response_model=ListResource[RefundSchema])

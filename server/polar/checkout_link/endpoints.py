@@ -23,7 +23,7 @@ from .schemas import CheckoutLink as CheckoutLinkSchema
 from .schemas import CheckoutLinkCreate, CheckoutLinkUpdate
 from .service import checkout_link as checkout_link_service
 
-router = APIRouter(prefix="/checkout-links", tags=["checkout-links", APITag.documented])
+router = APIRouter(prefix="/checkout-links", tags=["checkout-links", APITag.public])
 
 
 CheckoutLinkID = Annotated[UUID4, Path(description="The checkout link ID.")]

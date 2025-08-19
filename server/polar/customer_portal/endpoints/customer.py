@@ -22,7 +22,7 @@ from ..schemas.customer import (
 )
 from ..service.customer import customer as customer_service
 
-router = APIRouter(prefix="/customers", tags=["customers", APITag.documented])
+router = APIRouter(prefix="/customers", tags=["customers", APITag.public])
 
 
 @router.get("/stream", include_in_schema=False)

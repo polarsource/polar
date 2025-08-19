@@ -25,7 +25,7 @@ from .service import customer as customer_service
 
 router = APIRouter(
     prefix="/customers",
-    tags=["customers", APITag.documented, APITag.featured, APITag.mcp],
+    tags=["customers", APITag.public, APITag.mcp],
 )
 
 

@@ -48,7 +48,7 @@ OrganizationNotFound = {
     "/",
     summary="List Organizations",
     response_model=ListResource[OrganizationSchema],
-    tags=[APITag.documented, APITag.featured],
+    tags=[APITag.public],
 )
 async def list(
     auth_subject: auth.OrganizationsRead,
@@ -78,7 +78,7 @@ async def list(
     summary="Get Organization",
     response_model=OrganizationSchema,
     responses={404: OrganizationNotFound},
-    tags=[APITag.documented, APITag.featured],
+    tags=[APITag.public],
 )
 async def get(
     id: OrganizationID,
@@ -100,7 +100,7 @@ async def get(
     status_code=201,
     summary="Create Organization",
     responses={201: {"description": "Organization created."}},
-    tags=[APITag.documented, APITag.featured],
+    tags=[APITag.public],
 )
 async def create(
     organization_create: OrganizationCreate,
@@ -123,7 +123,7 @@ async def create(
         },
         404: OrganizationNotFound,
     },
-    tags=[APITag.documented, APITag.featured],
+    tags=[APITag.public],
 )
 async def update(
     id: OrganizationID,

@@ -30,7 +30,7 @@ from ..service.benefit_grant import (
 
 router = APIRouter(
     prefix="/benefit-grants",
-    tags=["benefit-grants", APITag.documented],
+    tags=["benefit-grants", APITag.public],
 )
 
 BenefitGrantID = Annotated[UUID4, Path(description="The benefit grant ID.")]

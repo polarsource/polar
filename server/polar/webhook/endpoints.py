@@ -18,7 +18,7 @@ from .schemas import WebhookEndpoint as WebhookEndpointSchema
 from .schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from .service import webhook as webhook_service
 
-router = APIRouter(prefix="/webhooks", tags=["webhooks", APITag.documented])
+router = APIRouter(prefix="/webhooks", tags=["webhooks", APITag.public])
 
 WebhookEndpointID = Annotated[UUID4, Path(description="The webhook endpoint ID.")]
 WebhookEndpointNotFound = {

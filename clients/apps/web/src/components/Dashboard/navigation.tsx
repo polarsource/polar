@@ -17,7 +17,7 @@ import {
   TuneOutlined,
 } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
-import { ShoppingCart } from 'lucide-react'
+import { Brain, ShoppingCart } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useMemo } from 'react'
 
@@ -199,6 +199,30 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
       return currentRoute.startsWith(`/dashboard/${org?.slug}/benefits`)
     },
     if: true,
+  },
+  {
+    id: 'gateway',
+    title: 'Gateway',
+    icon: <Brain size={15} />,
+    link: `/dashboard/${org?.slug}/gateway`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/dashboard/${org?.slug}/gateway`)
+    },
+    if: true,
+    subs: [
+      {
+        title: 'Overview',
+        link: `/dashboard/${org?.slug}/gateway/overview`,
+      },
+      {
+        title: 'Usage',
+        link: `/dashboard/${org?.slug}/gateway/usage`,
+      },
+      {
+        title: 'Providers',
+        link: `/dashboard/${org?.slug}/gateway/providers`,
+      },
+    ],
   },
   {
     id: 'customers',

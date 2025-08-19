@@ -78,14 +78,14 @@ class OrderRepository(
         )
         return await self.get_all(statement)
 
-    async def acquire_payment_lock(self, order_id: UUID) -> bool:
+    async def acquire_payment_lock_by_id(self, order_id: UUID) -> bool:
         """
-        Attempt to acquire a payment lock for an order atomically.
+        Internal method to acquire a payment lock by order ID.
+        This is the original acquire_payment_lock logic.
 
         Returns:
             True if lock was acquired, False if already locked
         """
-
         result = await self.session.execute(
             update(Order)
             .where(Order.id == order_id, Order.payment_lock_acquired_at.is_(None))

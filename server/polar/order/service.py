@@ -1,5 +1,6 @@
 import uuid
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any, Literal
 
@@ -294,6 +295,30 @@ def _is_empty_customer_address(customer_address: dict[str, Any] | None) -> bool:
 
 
 class OrderService:
+    @asynccontextmanager
+    async def acquire_payment_lock(
+        self, session: AsyncSession, order: Order, *, release_on_success: bool = True
+    ) -> AsyncIterator[None]:
+        """
+        Context manager to acquire and release a payment lock for an order.
+        """
+
+        repository = OrderRepository.from_session(session)
+
+        # Try to acquire the lock
+        lock_acquired = await repository.acquire_payment_lock_by_id(order.id)
+        if not lock_acquired:
+            raise PaymentAlreadyInProgress(order)
+
+        try:
+            yield
+        except Exception:
+            await repository.release_payment_lock(order, flush=True)
+            raise
+        else:
+            if release_on_success:
+                await repository.release_payment_lock(order, flush=True)
+
     async def list(
         self,
         session: AsyncSession,
@@ -734,14 +759,7 @@ class OrderService:
             log.warn("Payment already in progress", order_id=order.id)
             raise PaymentAlreadyInProgress(order)
 
-        try:
-            # Acquire a payment lock to prevent concurrent payments
-            repository = OrderRepository.from_session(session)
-            lock_acquired = await repository.acquire_payment_lock(order.id)
-            if not lock_acquired:
-                log.warn("Payment already in progress", order_id=order.id)
-                raise PaymentAlreadyInProgress(order)
-
+        async with self.acquire_payment_lock(session, order, release_on_success=False):
             if payment_method.processor == PaymentProcessor.stripe:
                 metadata: dict[str, Any] = {"order_id": str(order.id)}
                 if order.tax_rate is not None:
@@ -762,16 +780,6 @@ class OrderService:
                     description=f"{order.organization.name} — {order.product.name}",
                     metadata=metadata,
                 )
-        except Exception as exc:
-            log.exception(
-                "Failed to trigger payment for order",
-                order_id=order.id,
-                payment_method_id=payment_method.id,
-                error=str(exc),
-            )
-            # Release the payment lock on failure
-            order = await repository.release_payment_lock(order, flush=True)
-            raise
 
     async def process_retry_payment(
         self, session: AsyncSession, order: Order, confirmation_token_id: str
@@ -820,78 +828,75 @@ class OrderService:
             metadata["tax_state"] = order.tax_rate["state"]
 
         try:
-            order_repository = OrderRepository.from_session(session)
-            lock_acquired = await order_repository.acquire_payment_lock(order.id)
-            if not lock_acquired:
-                log.warn("Payment already in progress", order_id=order.id)
-                raise PaymentAlreadyInProgress(order)
-
-            payment_intent = await stripe_service.create_payment_intent(
-                amount=order.total_amount,
-                currency=order.currency,
-                automatic_payment_methods={"enabled": True},
-                confirm=True,
-                confirmation_token=confirmation_token_id,
-                customer=stripe_customer_id,
-                statement_descriptor_suffix=organization.statement_descriptor,
-                description=f"{organization.name} — {order.product.name}",
-                metadata=metadata,
-                return_url=settings.generate_frontend_url(
-                    f"/portal/orders/{str(order.id)}"
-                ),
-            )
-
-            if payment_intent.status == "succeeded":
-                log.info(
-                    "Retry payment succeeded immediately",
-                    order_id=order.id,
-                    payment_intent_id=payment_intent.id,
+            async with self.acquire_payment_lock(
+                session, order, release_on_success=False
+            ):
+                payment_intent = await stripe_service.create_payment_intent(
+                    amount=order.total_amount,
+                    currency=order.currency,
+                    automatic_payment_methods={"enabled": True},
+                    confirm=True,
+                    confirmation_token=confirmation_token_id,
+                    customer=stripe_customer_id,
+                    statement_descriptor_suffix=organization.statement_descriptor,
+                    description=f"{organization.name} — {order.product.name}",
+                    metadata=metadata,
+                    return_url=settings.generate_frontend_url(
+                        f"/portal/orders/{str(order.id)}"
+                    ),
                 )
 
-                return CustomerOrderPaymentConfirmation(
-                    status="succeeded",
-                    requires_action=False,
-                    client_secret=None,
-                    error=None,
-                )
+                if payment_intent.status == "succeeded":
+                    log.info(
+                        "Retry payment succeeded immediately",
+                        order_id=order.id,
+                        payment_intent_id=payment_intent.id,
+                    )
 
-            elif payment_intent.status == "requires_action":
-                log.info(
-                    "Retry payment requires additional action",
-                    order_id=order.id,
-                    payment_intent_id=payment_intent.id,
-                    status=payment_intent.status,
-                )
+                    return CustomerOrderPaymentConfirmation(
+                        status="succeeded",
+                        requires_action=False,
+                        client_secret=None,
+                        error=None,
+                    )
 
-                return CustomerOrderPaymentConfirmation(
-                    status="requires_action",
-                    requires_action=True,
-                    client_secret=payment_intent.client_secret,
-                    error=None,
-                )
+                elif payment_intent.status == "requires_action":
+                    log.info(
+                        "Retry payment requires additional action",
+                        order_id=order.id,
+                        payment_intent_id=payment_intent.id,
+                        status=payment_intent.status,
+                    )
 
-            else:
-                error_message = "Payment failed"
-                if (
-                    payment_intent.last_payment_error
-                    and payment_intent.last_payment_error.message
-                ):
-                    error_message = payment_intent.last_payment_error.message
+                    return CustomerOrderPaymentConfirmation(
+                        status="requires_action",
+                        requires_action=True,
+                        client_secret=payment_intent.client_secret,
+                        error=None,
+                    )
 
-                log.warning(
-                    "Retry payment failed",
-                    order_id=order.id,
-                    payment_intent_id=payment_intent.id,
-                    status=payment_intent.status,
-                    error=error_message,
-                )
+                else:
+                    error_message = "Payment failed"
+                    if (
+                        payment_intent.last_payment_error
+                        and payment_intent.last_payment_error.message
+                    ):
+                        error_message = payment_intent.last_payment_error.message
 
-                return CustomerOrderPaymentConfirmation(
-                    status="failed",
-                    requires_action=False,
-                    client_secret=None,
-                    error=error_message,
-                )
+                    log.warning(
+                        "Retry payment failed",
+                        order_id=order.id,
+                        payment_intent_id=payment_intent.id,
+                        status=payment_intent.status,
+                        error=error_message,
+                    )
+
+                    return CustomerOrderPaymentConfirmation(
+                        status="failed",
+                        requires_action=False,
+                        client_secret=None,
+                        error=error_message,
+                    )
 
         except stripe_lib.StripeError as stripe_exc:
             log.warning(
@@ -928,8 +933,6 @@ class OrderService:
                 client_secret=None,
                 error="Payment failed. Please try again.",
             )
-        finally:
-            await order_repository.release_payment_lock(order, flush=True)
 
     async def handle_payment(
         self, session: AsyncSession, order: Order, payment: Payment | None

@@ -84,9 +84,6 @@ class CustomerOrderPaymentConfirmation(Schema):
     """Response after confirming a retry payment."""
 
     status: str = Field(..., description="Payment status after confirmation.")
-    requires_action: bool = Field(
-        False, description="Whether the payment requires additional action (3DS)."
-    )
     client_secret: str | None = Field(
         None, description="Client secret for handling additional actions."
     )

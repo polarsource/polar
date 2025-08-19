@@ -243,7 +243,7 @@ export const OrderPaymentRetry = ({
           })
 
         if (!statusError && status) {
-          if (status.status === 'paid') {
+          if (status.status === 'succeeded') {
             cleanupPolling()
             handlePaymentCompletion(true)
             return

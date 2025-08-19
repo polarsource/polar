@@ -2683,28 +2683,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/customer-portal/orders/{id}/retry-payment": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Retry Payment
-         * @description Manually retry payment for a failed order.
-         *
-         *     **Scopes**: `customer_portal:write`
-         */
-        post: operations["customer_portal:orders:retry_payment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/customer-portal/orders/{id}/payment-status": {
         parameters: {
             query?: never;
@@ -9160,6 +9138,11 @@ export interface components {
              * @description ID of the Stripe confirmation token.
              */
             confirmation_token_id: string;
+            /**
+             * @description Payment processor used.
+             * @default stripe
+             */
+            payment_processor: components["schemas"]["PaymentProcessor"];
         };
         /**
          * CustomerOrderInvoice
@@ -9183,12 +9166,6 @@ export interface components {
              */
             status: string;
             /**
-             * Requires Action
-             * @description Whether the payment requires additional action (3DS).
-             * @default false
-             */
-            requires_action: boolean;
-            /**
              * Client Secret
              * @description Client secret for handling additional actions.
              */
@@ -9209,12 +9186,6 @@ export interface components {
              * @description Current payment status.
              */
             status: string;
-            /**
-             * Requires Action
-             * @description Whether the payment requires additional action (3DS).
-             * @default false
-             */
-            requires_action: boolean;
             /**
              * Error
              * @description Error message if payment failed.
@@ -23447,56 +23418,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MissingInvoiceBillingDetails"] | components["schemas"]["NotPaidOrder"];
-                };
-            };
-        };
-    };
-    "customer_portal:orders:retry_payment": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The order ID. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Order not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceNotFound"];
-                };
-            };
-            /** @description Payment already in progress. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaymentAlreadyInProgress"];
-                };
-            };
-            /** @description Order not eligible for retry. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrderNotEligibleForRetry"];
                 };
             };
         };

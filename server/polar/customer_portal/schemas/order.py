@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import UUID4, AliasChoices, AliasPath, Field
 from pydantic.json_schema import SkipJsonSchema
 
+from polar.enums import PaymentProcessor
 from polar.kit.schemas import Schema
 from polar.order.schemas import OrderBase, OrderItemSchema, OrderUpdateBase
 from polar.organization.schemas import Organization
@@ -77,6 +78,9 @@ class CustomerOrderConfirmPayment(Schema):
 
     confirmation_token_id: str = Field(
         ..., description="ID of the Stripe confirmation token."
+    )
+    payment_processor: PaymentProcessor = Field(
+        PaymentProcessor.stripe, description="Payment processor used."
     )
 
 

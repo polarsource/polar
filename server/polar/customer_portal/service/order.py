@@ -7,6 +7,7 @@ from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject
+from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.db.postgres import AsyncSession
@@ -151,10 +152,14 @@ class CustomerOrderService:
         return CustomerOrderInvoice(url=url)
 
     async def confirm_retry_payment(
-        self, session: AsyncSession, order: Order, confirmation_token_id: str
+        self,
+        session: AsyncSession,
+        order: Order,
+        confirmation_token_id: str,
+        payment_processor: PaymentProcessor,
     ) -> CustomerOrderPaymentConfirmation:
         return await order_service.process_retry_payment(
-            session, order, confirmation_token_id
+            session, order, confirmation_token_id, payment_processor
         )
 
 

@@ -246,5 +246,8 @@ async def confirm_retry_payment(
         raise ResourceNotFound()
 
     return await customer_order_service.confirm_retry_payment(
-        session, order, confirm_data.confirmation_token_id
+        session,
+        order,
+        confirm_data.confirmation_token_id,
+        confirm_data.payment_processor,
     )

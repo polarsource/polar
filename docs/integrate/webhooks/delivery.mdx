@@ -5,8 +5,14 @@ description: "How to parse, validate and handle webhooks and monitor their
 deliveries on Polar"
 ---
 
-<img className="block dark:hidden" src="/assets/integrate/webhooks/delivery.light.png" />
-<img className="hidden dark:block" src="/assets/integrate/webhooks/delivery.dark.png" />
+<img
+  className="block dark:hidden"
+  src="/assets/integrate/webhooks/delivery.light.png"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/integrate/webhooks/delivery.dark.png"
+/>
 
 Once a webhook endpoint is setup you will have access to the delivery overview
 page. Here you can:
@@ -36,15 +42,15 @@ import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks'
 const app = express()
 
 app.post(
-  '/webhook',
-  express.raw({ type: 'application/json' }),
-  (req: Request, res: Response) => {
-    try {
-      const event = validateEvent(
-        req.body,
-        req.headers,
-        process.env['POLAR_WEBHOOK_SECRET'] ?? '',
-      )
+'/webhook',
+express.raw({ type: 'application/json' }),
+(req: Request, res: Response) => {
+try {
+const event = validateEvent(
+req.body,
+req.headers,
+process.env['POLAR_WEBHOOK_SECRET'] ?? '',
+)
 
       // Process the event
 
@@ -55,9 +61,11 @@ app.post(
       }
       throw error
     }
-  },
+
+},
 )
-```
+
+````
 
 ```python Python (Flask)
 import os
@@ -80,13 +88,12 @@ def webhook():
         return "", 202
     except WebhookVerificationError as e:
         return "", 403
-```
+````
 
 </CodeGroup>
 
 Both examples above expect an environment variable named `POLAR_WEBHOOK_SECRET`
 to be set to the secret you configured during the endpoint setup.
-
 
 ### Custom validation
 
@@ -99,11 +106,31 @@ in case you want to roll your own.
 <Info>
   **Note: Secret needs to be base64 encoded**
 
-  One common gotcha with the specification is that the webhook secret is expected to be
-  base64 encoded. You don't have to do this with our SDK as it takes care of the
-  implementation details with better developer ergonomics.
+One common gotcha with the specification is that the webhook secret is expected to be
+base64 encoded. You don't have to do this with our SDK as it takes care of the
+implementation details with better developer ergonomics.
+
 </Info>
 
+## IP Allowlist
+
+If you are using a firewall or a reverse proxy that requires IP allowlisting, here are the IPs you need to allow:
+
+<CodeGroup>
+
+```txt Production
+3.134.238.10
+3.129.111.220
+52.15.118.168
+```
+
+```txt Sandbox
+3.134.238.10
+3.129.111.220
+52.15.118.168
+```
+
+</CodeGroup>
 
 ## Failure Handling
 
@@ -142,11 +169,10 @@ E.g
 So you can easily confirm if the handler is called and how far it gets before
 any issues arise.
 
-
 `HTTP 404`
 
 - Try `curl -vvv -X POST <copy-paste-endpoint-url>` in your terminal to confirm the
-route exists and see any issues along the way
+  route exists and see any issues along the way
 - Try adding trailing `/` to the URL on Polar. Often `/foo` is resolved to
   `/foo/` by frameworks.
 

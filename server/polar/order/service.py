@@ -790,7 +790,7 @@ class OrderService:
         """
 
         if order.status != OrderStatus.pending:
-            raise OrderNotPending(order)
+            raise OrderNotEligibleForRetry(order)
 
         if order.next_payment_attempt_at is None:
             raise OrderNotEligibleForRetry(order)
@@ -806,19 +806,18 @@ class OrderService:
             )
             raise PaymentAlreadyInProgress(order)
 
-        stripe_customer_id = order.customer.stripe_customer_id
-        if stripe_customer_id is None:
-            raise MissingOrderStripeCustomerID(order)
-
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id(order.customer_id)
         assert customer is not None, "Customer must exist"
+
+        stripe_customer_id = order.customer.stripe_customer_id
+        if stripe_customer_id is None:
+            raise MissingOrderStripeCustomerID(order)
 
         org_repository = OrganizationRepository.from_session(session)
         organization = await org_repository.get_by_id(customer.organization_id)
         assert organization is not None, "Organization must exist"
 
-        # Create payment intent metadata (similar to checkout flow)
         metadata: dict[str, Any] = {
             "order_id": str(order.id),
         }

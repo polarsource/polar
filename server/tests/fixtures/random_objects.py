@@ -801,6 +801,8 @@ async def create_order(
     invoice_number: str | None = None,
     checkout: Checkout | None = None,
     discount: Discount | None = None,
+    next_payment_attempt_at: datetime | None = None,
+    payment_lock_acquired_at: datetime | None = None,
 ) -> Order:
     order = Order(
         created_at=created_at or utc_now(),
@@ -831,6 +833,8 @@ async def create_order(
         discount=discount,
         custom_field_data=custom_field_data or {},
         user_metadata=user_metadata or {},
+        next_payment_attempt_at=next_payment_attempt_at,
+        payment_lock_acquired_at=payment_lock_acquired_at,
     )
     await save_fixture(order)
     return order

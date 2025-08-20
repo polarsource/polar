@@ -3894,7 +3894,6 @@ export interface components {
              */
             id: string;
             account_type: components["schemas"]["AccountType"];
-            status: components["schemas"]["Status"];
             /** Stripe Id */
             stripe_id: string | null;
             /** Open Collective Slug */
@@ -13927,6 +13926,8 @@ export interface components {
              * @description Links to social profiles.
              */
             socials: components["schemas"]["OrganizationSocialLink"][];
+            /** @description Current organization status */
+            status: components["schemas"]["Status"];
             /**
              * Details Submitted At
              * @description When the business details were submitted.

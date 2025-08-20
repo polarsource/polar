@@ -177,6 +177,7 @@ export default function ClientPage({
             {accounts?.items && (
               <AccountsList
                 accounts={accounts?.items}
+                organization={organization}
                 pauseActions={requireDetails}
                 returnPath={`/dashboard/${organization.slug}/finance/account`}
               />

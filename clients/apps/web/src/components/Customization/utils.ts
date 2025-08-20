@@ -144,6 +144,7 @@ const ORGANIZATION: schemas['Organization'] = {
   avatar_url: '/assets/acme.jpg',
   website: null,
   socials: [],
+  status: 'active',
   details_submitted_at: null,
   email: null,
   feature_settings: null,

@@ -1,6 +1,6 @@
 import {
-  ACCOUNT_STATUS_DISPLAY_NAMES,
   ACCOUNT_TYPE_DISPLAY_NAMES,
+  ORGANIZATION_STATUS_DISPLAY_NAMES,
 } from '@/utils/account'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
@@ -10,12 +10,14 @@ import AccountAssociations from './AccountAssociations'
 
 interface AccountsListProps {
   accounts: schemas['Account'][]
+  organization?: schemas['Organization']
   returnPath: string
   pauseActions?: boolean
 }
 
 const AccountsList = ({
   accounts,
+  organization,
   returnPath,
   pauseActions,
 }: AccountsListProps) => {
@@ -54,6 +56,7 @@ const AccountsList = ({
           <AccountListItem
             key={account.id}
             account={account}
+            organization={organization}
             pauseActions={pauseActions}
             returnPath={returnPath}
           />
@@ -67,12 +70,14 @@ export default AccountsList
 
 interface AccountListItemProps {
   account: schemas['Account']
+  organization?: schemas['Organization']
   returnPath: string
   pauseActions?: boolean
 }
 
 const AccountListItem = ({
   account,
+  organization,
   returnPath,
   pauseActions,
 }: AccountListItemProps) => {
@@ -81,8 +86,8 @@ const AccountListItem = ({
     'dark:group-hover:bg-polar-700 px-4 py-2 transition-colors group-hover:bg-blue-50 group-hover:text-gray-950 text-gray-700 dark:text-polar-200 group-hover:dark:text-white',
   )
 
-  const isActive = account?.status === 'active'
-  const isUnderReview = account?.status === 'under_review'
+  const isActive = organization?.status === 'active'
+  const isUnderReview = organization?.status === 'under_review'
 
   const goToOnboarding = async () => {
     const link = await unwrap(
@@ -119,7 +124,9 @@ const AccountListItem = ({
         {ACCOUNT_TYPE_DISPLAY_NAMES[account.account_type]}
       </td>
       <td className={childClass}>
-        {ACCOUNT_STATUS_DISPLAY_NAMES[account.status]}
+        {organization
+          ? ORGANIZATION_STATUS_DISPLAY_NAMES[organization.status]
+          : 'No Status'}
       </td>
       <td className={childClass}>
         <AccountAssociations account={account} />

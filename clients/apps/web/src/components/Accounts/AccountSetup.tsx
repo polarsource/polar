@@ -31,8 +31,8 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
     organizationAccount !== undefined &&
     personalAccount !== undefined &&
     organizationAccount.id !== personalAccount.id
-  const isActive = currentAccount?.status === 'active'
-  const isUnderReview = currentAccount?.status === 'under_review'
+  const isActive = organization?.status === 'active'
+  const isUnderReview = organization?.status === 'under_review'
 
   const goToOnboarding = async (account: schemas['Account']) => {
     const link = await unwrap(

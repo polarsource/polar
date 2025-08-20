@@ -29,13 +29,14 @@ _RULES: dict[str, Sequence[Rule]] = {
     "^/v1/customer-portal/customer-session": [
         Rule(minute=3, hour=10, block_time=900, zone="customer-session")
     ],
-    "^/v1/customer-portal/license-keys/(validate|activate|deactivate)": [
-        Rule(second=1, block_time=60, zone="customer-license-key")
-    ],
+    # "^/v1/customer-portal/license-keys/(validate|activate|deactivate)": [
+    #     Rule(second=1, block_time=60, zone="customer-license-key")
+    # ],
     "^/v1": [
-        Rule(group=RateLimitGroup.default, minute=500, zone="api"),
-        Rule(group=RateLimitGroup.web, second=100, zone="api"),
-        Rule(group=RateLimitGroup.elevated, second=100, zone="api"),
+        # Rule(group=RateLimitGroup.default, minute=500, zone="api"),
+        # Rule(group=RateLimitGroup.web, second=100, zone="api"),
+        # Rule(group=RateLimitGroup.elevated, second=100, zone="api"),
+        Rule(second=100, zone="api"),
     ],
 }
 

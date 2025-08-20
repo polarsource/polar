@@ -1,5 +1,6 @@
 'use client'
 
+import UnitGraph from '@/components/Gateway/UnitGraph'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import {
   Well,
@@ -98,6 +99,22 @@ export default function OverviewPage() {
           </Well>
         ))}
       </div>
+      <UnitGraph
+        height={400}
+        revenueData={[
+          ...Array.from({ length: 31 }, (_, i) => ({
+            timestamp: new Date(`2025-01-${String(i + 1).padStart(2, '0')}`),
+            value: Math.floor(300 * Math.exp(i / 10)), // Starts at 100, grows by 20% each day
+          })),
+        ]}
+        costData={[
+          ...Array.from({ length: 31 }, (_, i) => ({
+            timestamp: new Date(`2025-01-${String(i + 1).padStart(2, '0')}`),
+            value: Math.floor(200 * (Math.sin(i) + 1)),
+          })),
+        ]}
+        interval="day"
+      />
       <Tabs defaultValue="customers">
         <TabsList className="mb-6 p-0">
           <TabsTrigger value="customers">Customers</TabsTrigger>
@@ -113,7 +130,7 @@ export default function OverviewPage() {
                   return (
                     <Link
                       className="flex items-center gap-x-2"
-                      href={`/dashboard/${organization.id}/customers/${row.original.id}`}
+                      href={`/dashboard/${organization.slug}/customers?query=${row.original.email}`}
                     >
                       <Avatar
                         name={row.original.email}

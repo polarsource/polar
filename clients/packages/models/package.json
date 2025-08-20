@@ -1,0 +1,46 @@
+{
+  "name": "@polar-sh/models",
+  "description": "Polar LLM Models",
+  "author": "Polar",
+  "license": "Apache-2.0",
+  "type": "module",
+  "version": "0.1.12",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/polarsource/polar.git",
+    "directory": "clients/packages/checkout"
+  },
+  "scripts": {
+    "build": "rm -rf dist/ && tsup"
+  },
+  "exports": {
+    "./embed": {
+      "types": "./dist/embed.d.ts",
+      "default": "./dist/embed.js"
+    },
+    "./components": {
+      "types": "./dist/components/index.d.ts",
+      "default": "./dist/components/index.js"
+    },
+    "./hooks": {
+      "types": "./dist/hooks/index.d.ts",
+      "default": "./dist/hooks/index.js"
+    },
+    "./providers": {
+      "types": "./dist/providers/index.d.ts",
+      "default": "./dist/providers/index.js"
+    }
+  },
+  "devDependencies": {
+    "terser": "^5.43.1",
+    "tsconfig": "workspace:*",
+    "tsup": "^8.5.0",
+    "typescript": "latest"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "gpt-tokenizer": "^3.0.1"
+  }
+}

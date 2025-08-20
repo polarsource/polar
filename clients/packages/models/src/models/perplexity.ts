@@ -1,0 +1,73 @@
+import type { ModelDefinition } from "../models";
+
+export const perplexityModels = [
+	{
+		id: "sonar-reasoning-pro",
+		name: "Sonar Reasoning Pro",
+		family: "perplexity",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "perplexity",
+				modelName: "sonar-reasoning-pro",
+				inputPrice: 0.000003,
+				outputPrice: 0.00001,
+				requestPrice: 0,
+				imageInputPrice: 0,
+				contextSize: 128000,
+				maxOutput: undefined,
+				streaming: true,
+				vision: false,
+				tools: false,
+			},
+		],
+		jsonOutput: false,
+	},
+	{
+		id: "sonar-pro",
+		name: "Sonar Pro",
+		family: "perplexity",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "perplexity",
+				modelName: "sonar-pro",
+				inputPrice: 0.000003,
+				outputPrice: 0.000015,
+				requestPrice: 0,
+				imageInputPrice: 0,
+				contextSize: 200000,
+				maxOutput: undefined,
+				streaming: true,
+				vision: false,
+				tools: false,
+			},
+		],
+		jsonOutput: false,
+	},
+	{
+		id: "sonar",
+		name: "Sonar",
+		family: "perplexity",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "perplexity",
+				modelName: "sonar",
+				inputPrice: 0.000001,
+				outputPrice: 0.000001,
+				requestPrice: 5.0 / 1000,
+				imageInputPrice: 0,
+				contextSize: 130000,
+				maxOutput: undefined,
+				streaming: true,
+				vision: false,
+				tools: false,
+			},
+		],
+		jsonOutput: false,
+	},
+] as const satisfies ModelDefinition[];

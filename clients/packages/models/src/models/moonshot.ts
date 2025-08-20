@@ -1,0 +1,52 @@
+import type { ModelDefinition } from "../models";
+
+export const moonshotModels = [
+	{
+		id: "kimi-k2",
+		name: "Kimi K2",
+		family: "moonshot",
+		deprecatedAt: undefined,
+		deactivatedAt: undefined,
+		providers: [
+			{
+				providerId: "novita",
+				modelName: "moonshotai/kimi-k2-instruct",
+				inputPrice: 0.57 / 1e6,
+				outputPrice: 2.3 / 1e6,
+				requestPrice: 0,
+				contextSize: 131072,
+				maxOutput: 131072,
+				streaming: true,
+				vision: false,
+				tools: true,
+			},
+			{
+				providerId: "moonshot",
+				modelName: "kimi-k2-0711-preview",
+				inputPrice: 0.6 / 1e6,
+				outputPrice: 2.5 / 1e6,
+				cachedInputPrice: 0.15 / 1e6,
+				requestPrice: 0,
+				contextSize: 128000,
+				maxOutput: 128000,
+				streaming: true,
+				vision: false,
+				tools: true,
+			},
+			{
+				providerId: "cloudrift",
+				modelName: "moonshotai/Kimi-K2-Instruct",
+				inputPrice: 0.3 / 1e6,
+				outputPrice: 1.75 / 1e6,
+				requestPrice: 0,
+				contextSize: 131072,
+				maxOutput: 131072,
+				streaming: true,
+				vision: false,
+				tools: true,
+				test: "skip",
+			},
+		],
+		jsonOutput: true,
+	},
+] as const satisfies ModelDefinition[];

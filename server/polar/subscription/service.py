@@ -625,7 +625,7 @@ class SubscriptionService:
         # ⚠️ In some cases, the subscription is immediately active
         # Make sure then to perform all the operations required!
         if subscription.active:
-            await self._on_subscription_activated(session, subscription)
+            await self._on_subscription_activated(session, subscription, False)
 
         enqueue_job(
             "customer.webhook",
@@ -1172,6 +1172,9 @@ class SubscriptionService:
         became_activated = subscription.active and not SubscriptionStatus.is_active(
             previous_status
         )
+        became_reactivated = (
+            became_activated and previous_status == SubscriptionStatus.past_due
+        )
         became_past_due = (
             subscription.status == SubscriptionStatus.past_due
             and previous_status != SubscriptionStatus.past_due
@@ -1183,7 +1186,9 @@ class SubscriptionService:
         )
 
         if became_activated:
-            await self._on_subscription_activated(session, subscription)
+            await self._on_subscription_activated(
+                session, subscription, became_reactivated
+            )
 
         if became_uncanceled:
             await self._on_subscription_uncanceled(session, subscription)
@@ -1220,13 +1225,18 @@ class SubscriptionService:
         self,
         session: AsyncSession,
         subscription: Subscription,
+        reactivated: bool,
     ) -> None:
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_active
         )
 
         await self.send_confirmation_email(session, subscription)
-        await self._send_new_subscription_notification(session, subscription)
+
+        # Only send merchant notification if the subscription is a new one,
+        # not a past due that has been reactivated.
+        if not reactivated:
+            await self._send_new_subscription_notification(session, subscription)
 
     async def _on_subscription_past_due(
         self, session: AsyncSession, subscription: Subscription

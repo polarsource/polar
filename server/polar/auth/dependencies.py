@@ -8,7 +8,7 @@ from makefun import with_signature
 
 from polar.auth.scope import RESERVED_SCOPES, Scope
 from polar.exceptions import NotPermitted, Unauthorized
-from polar.oauth2.exceptions import InsufficientScopeError, InvalidTokenError
+from polar.oauth2.exceptions import InsufficientScopeError
 
 from .models import (
     Anonymous,
@@ -129,6 +129,11 @@ class _Authenticator:
     async def __call__(
         self, auth_subject: AuthSubject[Subject]
     ) -> AuthSubject[Subject]:
+        # Not allowed subject, fallback to Anonymous
+        subject_type = type(auth_subject.subject)
+        if subject_type not in self.allowed_subjects:
+            auth_subject = AuthSubject(Anonymous(), set(), None)
+
         # Anonymous
         if is_anonymous(auth_subject):
             if Anonymous in self.allowed_subjects:
@@ -140,14 +145,6 @@ class _Authenticator:
         blocked_at = getattr(auth_subject.subject, "blocked_at", None)
         if blocked_at is not None:
             raise NotPermitted()
-
-        # Not allowed subject
-        subject_type = type(auth_subject.subject)
-        if subject_type not in self.allowed_subjects:
-            raise InvalidTokenError(
-                "The subject of this access token is not valid for this endpoint.",
-                allowed_subjects=" ".join(s.__name__ for s in self.allowed_subjects),
-            )
 
         # No required scopes
         if not self.required_scopes:

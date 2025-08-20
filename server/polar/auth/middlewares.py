@@ -1,3 +1,4 @@
+import logfire
 import structlog
 from fastapi import Request
 from fastapi.security.utils import get_authorization_scheme_param
@@ -150,7 +151,7 @@ class AuthSubjectMiddleware:
 
         scope["state"]["auth_subject"] = auth_subject
 
-        log.info("Authenticated subject", subject=auth_subject)
-        set_sentry_user(auth_subject)
-
-        await self.app(scope, receive, send)
+        with logfire.set_baggage(**auth_subject.log_context):
+            log.info("Authenticated subject", **auth_subject.log_context)
+            set_sentry_user(auth_subject)
+            await self.app(scope, receive, send)

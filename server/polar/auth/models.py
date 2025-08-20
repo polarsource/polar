@@ -1,3 +1,4 @@
+from functools import cached_property
 from typing import Generic, TypeGuard, TypeVar
 
 from polar.enums import RateLimitGroup
@@ -42,14 +43,11 @@ class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it a
         self.scopes = scopes
         self.session = session
 
-    def __repr__(self) -> str:
-        return f"AuthSubject(subject={self.subject!r}, scopes={self.scopes!r})"
-
-    @property
+    @cached_property
     def rate_limit_key(self) -> tuple[str, RateLimitGroup]:
         return self.rate_limit_user, self.rate_limit_group
 
-    @property
+    @cached_property
     def rate_limit_user(self) -> str:
         if isinstance(self.session, OAuth2Token):
             return f"oauth2_client:{self.session.client_id}"
@@ -64,7 +62,7 @@ class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it a
             case Anonymous():
                 return "anonymous"
 
-    @property
+    @cached_property
     def rate_limit_group(self) -> RateLimitGroup:
         if isinstance(self.session, UserSession):
             return RateLimitGroup.web
@@ -76,6 +74,21 @@ class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it a
             return self.session.client.rate_limit_group
 
         return RateLimitGroup.default
+
+    @cached_property
+    def log_context(self) -> dict[str, str]:
+        baggage: dict[str, str] = {
+            "subject_type": self.subject.__class__.__name__,
+            "rate_limit_group": self.rate_limit_group.value,
+            "rate_limit_user": self.rate_limit_user,
+        }
+        if isinstance(self.subject, User | Organization | Customer):
+            baggage["subject_id"] = str(self.subject.id)
+
+        if self.session:
+            baggage["session_type"] = self.session.__class__.__name__
+
+        return baggage
 
 
 def is_anonymous[S: Subject](

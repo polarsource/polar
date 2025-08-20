@@ -33,7 +33,7 @@ _RULES: dict[str, Sequence[Rule]] = {
         Rule(second=1, block_time=60, zone="customer-license-key")
     ],
     "^/v1": [
-        Rule(group=RateLimitGroup.default, minute=300, zone="api"),
+        Rule(group=RateLimitGroup.default, minute=500, zone="api"),
         Rule(group=RateLimitGroup.web, second=100, zone="api"),
         Rule(group=RateLimitGroup.elevated, second=100, zone="api"),
     ],

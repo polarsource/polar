@@ -4,6 +4,7 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -25,8 +26,10 @@ export const CustomerPortalOrders = ({
 }: CustomerPortalOrdersProps) => {
   const api = createClientSideAPI(customerSessionToken)
 
+  const theme = useTheme()
   const themingPreset = useThemePreset(
     organization.slug === 'midday' ? 'midday' : 'polar',
+    theme.resolvedTheme as 'light' | 'dark',
   )
 
   const [selectedOrder, setSelectedOrder] = useState<

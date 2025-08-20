@@ -190,6 +190,7 @@ const CustomerPortalOrder = ({
         api={api}
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
+        themingPreset={themingPreset}
       />
     </div>
   )

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import UUID4, AliasChoices, AliasPath, Field
+from pydantic import UUID4, AliasChoices, AliasPath, Field, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.enums import PaymentProcessor
@@ -74,14 +74,33 @@ class CustomerOrderPaymentStatus(Schema):
 
 
 class CustomerOrderConfirmPayment(Schema):
-    """Schema to confirm a retry payment using a Stripe confirmation token."""
+    """Schema to confirm a retry payment using either a saved payment method or a new confirmation token."""
 
-    confirmation_token_id: str = Field(
-        ..., description="ID of the Stripe confirmation token."
+    confirmation_token_id: str | None = Field(
+        None, description="ID of the Stripe confirmation token for new payment methods."
+    )
+    payment_method_id: UUID4 | None = Field(
+        None, description="ID of an existing saved payment method."
     )
     payment_processor: PaymentProcessor = Field(
         PaymentProcessor.stripe, description="Payment processor used."
     )
+
+    @model_validator(mode="after")
+    def validate_payment_method(self) -> "CustomerOrderConfirmPayment":
+        """Ensure exactly one of confirmation_token_id or payment_method_id is provided."""
+        if self.confirmation_token_id is None and self.payment_method_id is None:
+            raise ValueError(
+                "Either confirmation_token_id or payment_method_id must be provided"
+            )
+        if (
+            self.confirmation_token_id is not None
+            and self.payment_method_id is not None
+        ):
+            raise ValueError(
+                "Only one of confirmation_token_id or payment_method_id can be provided"
+            )
+        return self
 
 
 class CustomerOrderPaymentConfirmation(Schema):

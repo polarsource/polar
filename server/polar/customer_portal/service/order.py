@@ -155,11 +155,12 @@ class CustomerOrderService:
         self,
         session: AsyncSession,
         order: Order,
-        confirmation_token_id: str,
+        confirmation_token_id: str | None,
         payment_processor: PaymentProcessor,
+        payment_method_id: uuid.UUID | None = None,
     ) -> CustomerOrderPaymentConfirmation:
         return await order_service.process_retry_payment(
-            session, order, confirmation_token_id, payment_processor
+            session, order, confirmation_token_id, payment_processor, payment_method_id
         )
 
 

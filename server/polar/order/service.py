@@ -80,6 +80,7 @@ from polar.notifications.service import notifications as notifications_service
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.payment.repository import PaymentRepository
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.guard import is_custom_price
 from polar.product.repository import ProductPriceRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -278,6 +279,18 @@ class PaymentAlreadyInProgress(OrderError):
         self.order = order
         message = f"Payment for order {order.id} is already in progress"
         super().__init__(message, 409)
+
+
+class InvalidPaymentProcessor(OrderError):
+    def __init__(self, payment_processor: PaymentProcessor) -> None:
+        self.payment_processor = payment_processor
+        message = f"Invalid payment processor: {payment_processor}"
+        super().__init__(message, 422)
+
+
+class PaymentRetryValidationError(OrderError):
+    def __init__(self, message: str) -> None:
+        super().__init__(message, 422)
 
 
 def _is_empty_customer_address(customer_address: dict[str, Any] | None) -> bool:
@@ -775,8 +788,9 @@ class OrderService:
         self,
         session: AsyncSession,
         order: Order,
-        confirmation_token_id: str,
+        confirmation_token_id: str | None,
         payment_processor: PaymentProcessor,
+        payment_method_id: uuid.UUID | None = None,
     ) -> CustomerOrderPaymentConfirmation:
         """
         Process retry payment with direct confirmation (confirm=True).
@@ -784,12 +798,15 @@ class OrderService:
         """
 
         if order.status != OrderStatus.pending:
+            log.warning("Order is not pending", order_id=order.id, status=order.status)
             raise OrderNotEligibleForRetry(order)
 
         if order.next_payment_attempt_at is None:
+            log.warning("Order is not eligible for retry", order_id=order.id)
             raise OrderNotEligibleForRetry(order)
 
         if order.subscription is None:
+            log.warning("Order is not a subscription", order_id=order.id)
             raise OrderNotEligibleForRetry(order)
 
         if order.payment_lock_acquired_at is not None:
@@ -801,7 +818,19 @@ class OrderService:
             raise PaymentAlreadyInProgress(order)
 
         if payment_processor != PaymentProcessor.stripe:
-            raise PolarError(f"Unsupported payment processor: {payment_processor}")
+            log.warning(
+                "Invalid payment processor", payment_processor=payment_processor
+            )
+            raise OrderNotEligibleForRetry(payment_processor)
+
+        if confirmation_token_id is None and payment_method_id is None:
+            raise PaymentRetryValidationError(
+                "Either confirmation_token_id or payment_method_id must be provided"
+            )
+        if confirmation_token_id is not None and payment_method_id is not None:
+            raise PaymentRetryValidationError(
+                "Only one of confirmation_token_id or payment_method_id can be provided"
+            )
 
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id(order.customer_id)
@@ -810,6 +839,24 @@ class OrderService:
         org_repository = OrganizationRepository.from_session(session)
         organization = await org_repository.get_by_id(customer.organization_id)
         assert organization is not None, "Organization must exist"
+
+        if customer.stripe_customer_id is None:
+            log.warning("Customer is not a Stripe customer", customer_id=customer.id)
+            raise OrderNotEligibleForRetry(order)
+
+        saved_payment_method: PaymentMethod | None = None
+        if payment_method_id is not None:
+            payment_method_repository = PaymentMethodRepository.from_session(session)
+            saved_payment_method = await payment_method_repository.get_by_id(
+                payment_method_id
+            )
+            if (
+                saved_payment_method is None
+                or saved_payment_method.customer_id != customer.id
+            ):
+                raise PaymentRetryValidationError(
+                    "Payment method does not belong to customer"
+                )
 
         metadata: dict[str, Any] = {
             "order_id": str(order.id),
@@ -821,21 +868,40 @@ class OrderService:
 
         try:
             async with self.acquire_payment_lock(
-                session, order, release_on_success=False
+                session, order, release_on_success=True
             ):
-                payment_intent = await stripe_service.create_payment_intent(
-                    amount=order.total_amount,
-                    currency=order.currency,
-                    automatic_payment_methods={"enabled": True},
-                    confirm=True,
-                    confirmation_token=confirmation_token_id,
-                    statement_descriptor_suffix=organization.statement_descriptor,
-                    description=f"{organization.name} — {order.product.name}",
-                    metadata=metadata,
-                    return_url=settings.generate_frontend_url(
-                        f"/portal/orders/{str(order.id)}"
-                    ),
-                )
+                if saved_payment_method is not None:
+                    # Using saved payment method
+                    payment_intent = await stripe_service.create_payment_intent(
+                        amount=order.total_amount,
+                        currency=order.currency,
+                        payment_method=saved_payment_method.processor_id,
+                        customer=customer.stripe_customer_id,
+                        confirm=True,
+                        statement_descriptor_suffix=organization.statement_descriptor,
+                        description=f"{organization.name} — {order.product.name}",
+                        metadata=metadata,
+                        return_url=settings.generate_frontend_url(
+                            f"/portal/orders/{str(order.id)}"
+                        ),
+                    )
+                else:
+                    # Using confirmation token (new payment method)
+                    assert confirmation_token_id is not None
+                    payment_intent = await stripe_service.create_payment_intent(
+                        amount=order.total_amount,
+                        currency=order.currency,
+                        automatic_payment_methods={"enabled": True},
+                        confirm=True,
+                        confirmation_token=confirmation_token_id,
+                        customer=customer.stripe_customer_id,
+                        statement_descriptor_suffix=organization.statement_descriptor,
+                        description=f"{organization.name} — {order.product.name}",
+                        metadata=metadata,
+                        return_url=settings.generate_frontend_url(
+                            f"/portal/orders/{str(order.id)}"
+                        ),
+                    )
 
                 if payment_intent.status == "succeeded":
                     log.info(

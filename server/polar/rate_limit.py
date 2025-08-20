@@ -7,19 +7,21 @@ from ratelimit.backends.redis import RedisBackend
 from ratelimit.types import ASGIApp, Scope
 
 from polar.auth.models import AuthSubject, Subject, is_anonymous
+from polar.enums import RateLimitGroup
 from polar.redis import create_redis
 
 
-async def _authenticate(scope: Scope) -> tuple[str, str]:
+async def _authenticate(scope: Scope) -> tuple[str, RateLimitGroup]:
     auth_subject: AuthSubject[Subject] = scope["state"]["auth_subject"]
 
     if is_anonymous(auth_subject):
         try:
-            return await client_ip(scope)
+            ip, _ = await client_ip(scope)
+            return ip, RateLimitGroup.default
         except EmptyInformation:
-            return auth_subject.rate_limit_key, "default"
+            return auth_subject.rate_limit_key
 
-    return auth_subject.rate_limit_key, "default"
+    return auth_subject.rate_limit_key
 
 
 _RULES: dict[str, Sequence[Rule]] = {
@@ -27,10 +29,14 @@ _RULES: dict[str, Sequence[Rule]] = {
     "^/v1/customer-portal/customer-session": [
         Rule(minute=3, hour=10, block_time=900, zone="customer-session")
     ],
-    # "^/v1/customer-portal/license-keys/(validate|activate|deactivate)": [
-    #     Rule(second=1, block_time=60, zone="customer-license-key")
-    # ],
-    "^/v1": [Rule(second=100, zone="api")],
+    "^/v1/customer-portal/license-keys/(validate|activate|deactivate)": [
+        Rule(second=1, block_time=60, zone="customer-license-key")
+    ],
+    "^/v1": [
+        Rule(group=RateLimitGroup.default, minute=300, zone="api"),
+        Rule(group=RateLimitGroup.web, second=100, zone="api"),
+        Rule(group=RateLimitGroup.elevated, second=100, zone="api"),
+    ],
 }
 
 

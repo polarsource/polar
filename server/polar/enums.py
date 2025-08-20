@@ -61,3 +61,9 @@ class TokenType(StrEnum):
     organization_access_token = "polar_organization_access_token"
     customer_session_token = "polar_customer_session_token"
     user_session_token = "polar_user_session_token"
+
+
+class RateLimitGroup(StrEnum):
+    web = "web"
+    default = "default"
+    elevated = "elevated"

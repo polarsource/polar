@@ -5,13 +5,13 @@ from authlib.integrations.sqla_oauth2 import OAuth2ClientMixin
 from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
-from polar.kit.db.models import RecordModel
+from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 
 if TYPE_CHECKING:
     from polar.models import User
 
 
-class OAuth2Client(RecordModel, OAuth2ClientMixin):
+class OAuth2Client(RateLimitGroupMixin, RecordModel, OAuth2ClientMixin):
     __tablename__ = "oauth2_clients"
     __table_args__ = (UniqueConstraint("client_id"),)
 

@@ -13,16 +13,19 @@ import {
   StripeElements,
   StripeError,
 } from '@stripe/stripe-js'
+import { WalletCards } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 interface OrderPaymentRetryProps {
   order: schemas['CustomerOrder']
-  stripe: Stripe | null
-  elements: StripeElements | null
+  stripe?: Stripe | null
+  elements?: StripeElements | null
   api: Client
+  paymentMethodId?: string
   onSuccess: () => void
   onError: (error: string) => void
   onClose: () => void
+  onBack?: () => void
 }
 
 export const OrderPaymentRetry = ({
@@ -30,9 +33,11 @@ export const OrderPaymentRetry = ({
   stripe,
   elements,
   api,
+  paymentMethodId,
   onSuccess,
   onError,
   onClose,
+  onBack,
 }: OrderPaymentRetryProps) => {
   const confirmOrderPayment = useCustomerOrderConfirmPayment(api)
   const checkPaymentStatus = useCustomerOrderPaymentStatus(api)
@@ -131,6 +136,14 @@ export const OrderPaymentRetry = ({
     }
   }, [])
 
+  // Auto-trigger payment for saved payment methods
+  useEffect(() => {
+    if (paymentMethodId && !hasSubmitted && !isProcessing && !isPolling) {
+      setHasSubmitted(true)
+      handleSavedPaymentMethod()
+    }
+  }, [paymentMethodId, hasSubmitted, isProcessing, isPolling])
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
@@ -226,6 +239,38 @@ export const OrderPaymentRetry = ({
     }
   }
 
+  const handleSavedPaymentMethod = async () => {
+    if (isProcessing || isPolling || !paymentMethodId) {
+      return
+    }
+
+    setIsProcessing(true)
+
+    try {
+      const { data: result, error: confirmPaymentError } =
+        await confirmOrderPayment.mutateAsync({
+          orderId: order.id,
+          payment_method_id: paymentMethodId,
+        })
+
+      if (confirmPaymentError) {
+        const errorMessage =
+          confirmPaymentError.detail || 'Payment failed. Please try again.'
+        handlePaymentCompletion(false, errorMessage)
+        return
+      }
+
+      if (result) {
+        await handlePaymentStatus(result)
+      }
+    } catch (err) {
+      handlePaymentCompletion(
+        false,
+        'Network error occurred. Please check your connection and try again.',
+      )
+    }
+  }
+
   const pollForWebhookResult = () => {
     setIsPolling(true)
     let attemptCount = 0
@@ -289,7 +334,7 @@ export const OrderPaymentRetry = ({
   return (
     <div className="space-y-4">
       {/* Order Summary */}
-      <div className="rounded-lg bg-gray-50 p-4">
+      <div className="dark:bg-polar-800 rounded-lg bg-gray-50 p-4">
         <h3 className="mb-2 font-medium">Order Summary</h3>
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
@@ -328,7 +373,7 @@ export const OrderPaymentRetry = ({
             <p className="text-lg font-medium">
               {showRetryButton ? 'Payment Failed' : 'Payment Successful!'}
             </p>
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
               {showRetryButton
                 ? 'You can try again or contact support if the issue persists.'
                 : 'Thank you for your payment. You can now close this window.'}
@@ -362,44 +407,74 @@ export const OrderPaymentRetry = ({
             This may take a few moments. Please don&apos;t close this window.
           </p>
         </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium">
-              Payment Method
-            </label>
-            <div className="rounded-lg border p-3">
-              <PaymentElement
-                options={{
-                  layout: 'tabs',
-                  fields: {
-                    billingDetails: {
-                      name: 'never',
-                      email: 'never',
-                      phone: 'never',
-                      address: 'never',
-                    },
-                  },
-                }}
-              />
+      ) : paymentMethodId ? (
+        // Using saved payment method
+        <div className="py-8 text-center">
+          <div className="mb-4">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+              <WalletCards className="h-8 w-8 text-blue-600" />
             </div>
+            <p className="text-lg font-medium">Processing payment...</p>
+            <p className="mt-2 text-sm text-gray-500">
+              Using your saved payment method
+            </p>
           </div>
+          {onBack && (
+            <Button onClick={onBack} variant="outline">
+              Back
+            </Button>
+          )}
+        </div>
+      ) : (
+        // New payment method form
+        <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Payment Method
+              </label>
+              <div className="rounded-lg border p-3">
+                <PaymentElement
+                  options={{
+                    layout: 'tabs',
+                    fields: {
+                      billingDetails: {
+                        name: 'never',
+                        email: 'never',
+                        phone: 'never',
+                        address: 'never',
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </div>
 
-          <Button
-            type="submit"
-            loading={isProcessing || isPolling}
-            disabled={
-              !stripe || !elements || isProcessing || isPolling || hasSubmitted
-            }
-            className="w-full"
-          >
-            {isProcessing
-              ? 'Processing...'
-              : isPolling
-                ? 'Confirming...'
-                : 'Pay Now'}
-          </Button>
-        </form>
+            <Button
+              type="submit"
+              loading={isProcessing || isPolling}
+              disabled={
+                !stripe ||
+                !elements ||
+                isProcessing ||
+                isPolling ||
+                hasSubmitted
+              }
+              className="w-full"
+            >
+              {isProcessing
+                ? 'Processing...'
+                : isPolling
+                  ? 'Confirming...'
+                  : 'Pay Now'}
+            </Button>
+          </form>
+          {onBack && (
+            <Button onClick={onBack} variant="outline" className="w-full">
+              Back
+            </Button>
+          )}
+        </div>
       )}
     </div>
   )

@@ -250,4 +250,5 @@ async def confirm_retry_payment(
         order,
         confirm_data.confirmation_token_id,
         confirm_data.payment_processor,
+        confirm_data.payment_method_id,
     )

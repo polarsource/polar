@@ -1,13 +1,16 @@
 'use client'
 
 import { toast } from '@/components/Toast/use-toast'
+import { useCustomerPaymentMethods } from '@/hooks/queries'
 import { type Client, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
-import { loadStripe } from '@stripe/stripe-js'
+import { loadStripe, StripeElementsOptions } from '@stripe/stripe-js'
 import { useMemo, useState } from 'react'
 import { Modal, ModalHeader } from '../Modal'
 import { OrderPaymentRetry } from './OrderPaymentRetry'
+import { SavedCardsSelector } from './SavedCardsSelector'
 
 interface OrderPaymentRetryModalProps {
   order: schemas['CustomerOrder']
@@ -15,6 +18,7 @@ interface OrderPaymentRetryModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess?: (order: schemas['CustomerOrder']) => void
+  themingPreset: ThemingPresetProps
 }
 
 export const OrderPaymentRetryModal = ({
@@ -23,8 +27,18 @@ export const OrderPaymentRetryModal = ({
   isOpen,
   onClose,
   onSuccess,
+  themingPreset,
 }: OrderPaymentRetryModalProps) => {
   const [error, setError] = useState<string>('')
+  const [useNewCard, setUseNewCard] = useState<boolean>(false)
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<
+    string | null
+  >(null)
+
+  const { data: paymentMethodsData } = useCustomerPaymentMethods(api)
+  const cardPaymentMethods = (paymentMethodsData?.items || []).filter(
+    (pm): pm is schemas['PaymentMethodCard'] => pm.type === 'card',
+  )
 
   const stripePromise = useMemo(() => {
     const key = process.env.NEXT_PUBLIC_STRIPE_KEY
@@ -35,19 +49,21 @@ export const OrderPaymentRetryModal = ({
     return loadStripe(key)
   }, [])
 
-  const elementsOptions = useMemo(() => {
+  const elementsOptions: StripeElementsOptions = useMemo(() => {
     return {
-      mode: 'payment' as const,
+      mode: 'payment',
       amount: order.total_amount,
       currency: order.currency,
-      appearance: {
-        theme: 'stripe' as const,
-      },
+      setupFutureUsage: 'off_session',
+      paymentMethodCreation: 'manual',
+      appearance: themingPreset.stripe,
     }
   }, [order.total_amount, order.currency])
 
   const handleClose = () => {
     setError('')
+    setUseNewCard(false)
+    setSelectedPaymentMethodId(null)
     onClose()
   }
 
@@ -61,6 +77,9 @@ export const OrderPaymentRetryModal = ({
 
   const handlePaymentError = (error: string) => {
     setError(error)
+    // Reset selection on error so user can try again
+    setUseNewCard(false)
+    setSelectedPaymentMethodId(null)
     toast({
       title: 'Payment Failed',
       description: error,
@@ -94,23 +113,48 @@ export const OrderPaymentRetryModal = ({
               </div>
             )}
 
-            {/* Payment Form */}
-            {!error && stripePromise && (
-              <Elements stripe={stripePromise} options={elementsOptions}>
-                <ElementsConsumer>
-                  {({ stripe, elements }) => (
-                    <OrderPaymentRetry
-                      order={order}
-                      stripe={stripe}
-                      elements={elements}
-                      api={api}
-                      onSuccess={handlePaymentSuccess}
-                      onError={handlePaymentError}
-                      onClose={handleClose}
-                    />
-                  )}
-                </ElementsConsumer>
-              </Elements>
+            {/* Payment Method Selection or Payment Form */}
+            {!error && (
+              <>
+                {!useNewCard && !selectedPaymentMethodId && (
+                  <SavedCardsSelector
+                    paymentMethods={cardPaymentMethods}
+                    onSelectPaymentMethod={setSelectedPaymentMethodId}
+                    onAddNewCard={() => setUseNewCard(true)}
+                  />
+                )}
+
+                {selectedPaymentMethodId && (
+                  <OrderPaymentRetry
+                    order={order}
+                    api={api}
+                    paymentMethodId={selectedPaymentMethodId}
+                    onSuccess={handlePaymentSuccess}
+                    onError={handlePaymentError}
+                    onClose={handleClose}
+                    onBack={() => setSelectedPaymentMethodId(null)}
+                  />
+                )}
+
+                {useNewCard && stripePromise && (
+                  <Elements stripe={stripePromise} options={elementsOptions}>
+                    <ElementsConsumer>
+                      {({ stripe, elements }) => (
+                        <OrderPaymentRetry
+                          order={order}
+                          stripe={stripe}
+                          elements={elements}
+                          api={api}
+                          onSuccess={handlePaymentSuccess}
+                          onError={handlePaymentError}
+                          onClose={handleClose}
+                          onBack={() => setUseNewCard(false)}
+                        />
+                      )}
+                    </ElementsConsumer>
+                  </Elements>
+                )}
+              </>
             )}
           </div>
         </>

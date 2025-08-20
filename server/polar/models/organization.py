@@ -20,7 +20,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.enums import SubscriptionProrationBehavior
-from polar.kit.db.models import RecordModel
+from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 
 from .account import Account
@@ -70,7 +70,7 @@ _default_subscription_settings: OrganizationSubscriptionSettings = {
 }
 
 
-class Organization(RecordModel):
+class Organization(RateLimitGroupMixin, RecordModel):
     class Status(StrEnum):
         CREATED = "created"
         ONBOARDING_STARTED = "onboarding_started"

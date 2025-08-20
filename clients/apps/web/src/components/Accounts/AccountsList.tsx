@@ -5,64 +5,95 @@ import {
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { Modal } from '../Modal'
+import { useModal } from '../Modal/useModal'
 import AccountAssociations from './AccountAssociations'
+import AccountCreateModal from './AccountCreateModal'
 
 interface AccountsListProps {
   accounts: schemas['Account'][]
   organization?: schemas['Organization']
-  returnPath: string
   pauseActions?: boolean
 }
 
 const AccountsList = ({
   accounts,
   organization,
-  returnPath,
   pauseActions,
 }: AccountsListProps) => {
+  const {
+    isShown: isShownSetupModal,
+    show: showSetupModal,
+    hide: hideSetupModal,
+  } = useModal()
+
+  const [organizationData, setOrganizationData] = useState({ id: '', slug: '' })
+
+  const handleShowModal = (
+    organizationId: string,
+    organizationSlug: string,
+  ) => {
+    setOrganizationData({ id: organizationId, slug: organizationSlug })
+    showSetupModal()
+  }
+
   return (
-    <table className="-mx-4 w-full text-left">
-      <thead className="dark:text-polar-500 text-gray-500">
-        <tr className="text-sm">
-          <th
-            scope="col"
-            className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 text-left font-normal"
-          >
-            Type
-          </th>
-          <th
-            scope="col"
-            className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 text-left font-normal"
-          >
-            Status
-          </th>
-          <th
-            scope="col"
-            className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 text-left font-normal"
-          >
-            Used by
-          </th>
-          <th
-            scope="col"
-            className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 font-normal"
-          >
-            Actions
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {accounts.map((account) => (
-          <AccountListItem
-            key={account.id}
-            account={account}
-            organization={organization}
-            pauseActions={pauseActions}
-            returnPath={returnPath}
+    <>
+      <table className="-mx-4 w-full text-left">
+        <thead className="dark:text-polar-500 text-gray-500">
+          <tr className="text-sm">
+            <th
+              scope="col"
+              className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 text-left font-normal"
+            >
+              Type
+            </th>
+            <th
+              scope="col"
+              className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 text-left font-normal"
+            >
+              Status
+            </th>
+            <th
+              scope="col"
+              className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 text-left font-normal"
+            >
+              Used by
+            </th>
+            <th
+              scope="col"
+              className="relative isolate whitespace-nowrap px-4 py-3.5 pr-2 font-normal"
+            >
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {accounts.map((account) => (
+            <AccountListItem
+              key={account.id}
+              account={account}
+              organization={organization}
+              pauseActions={pauseActions}
+              openModal={handleShowModal}
+            />
+          ))}
+        </tbody>
+      </table>
+      <Modal
+        isShown={isShownSetupModal}
+        className="min-w-[400px]"
+        hide={hideSetupModal}
+        modalContent={
+          <AccountCreateModal
+            forOrganizationId={organizationData.id}
+            returnPath={`/dashboard/${organizationData.slug}/finance/account`}
           />
-        ))}
-      </tbody>
-    </table>
+        }
+      />
+    </>
   )
 }
 
@@ -71,15 +102,15 @@ export default AccountsList
 interface AccountListItemProps {
   account: schemas['Account']
   organization?: schemas['Organization']
-  returnPath: string
   pauseActions?: boolean
+  openModal: (organizationId: string, organizationSlug: string) => void
 }
 
 const AccountListItem = ({
   account,
   organization,
-  returnPath,
   pauseActions,
+  openModal,
 }: AccountListItemProps) => {
   pauseActions = pauseActions === true
   const childClass = twMerge(
@@ -88,22 +119,6 @@ const AccountListItem = ({
 
   const isActive = organization?.status === 'active'
   const isUnderReview = organization?.status === 'under_review'
-
-  const goToOnboarding = async () => {
-    const link = await unwrap(
-      api.POST('/v1/accounts/{id}/onboarding_link', {
-        params: {
-          path: {
-            id: account.id,
-          },
-          query: {
-            return_path: returnPath,
-          },
-        },
-      }),
-    )
-    window.location.href = link.url
-  }
 
   const goToDashboard = async () => {
     const link = await unwrap(
@@ -132,8 +147,12 @@ const AccountListItem = ({
         <AccountAssociations account={account} />
       </td>
       <td className={twMerge(childClass, 'rounded-r-xl uppercase')}>
-        {!isActive && !isUnderReview && (
-          <Button size="sm" onClick={goToOnboarding} disabled={pauseActions}>
+        {!isActive && !isUnderReview && organization && (
+          <Button
+            size="sm"
+            onClick={() => openModal(organization.id, organization.slug)}
+            disabled={pauseActions}
+          >
             Continue setup
           </Button>
         )}

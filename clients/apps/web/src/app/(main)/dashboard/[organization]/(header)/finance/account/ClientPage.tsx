@@ -179,7 +179,6 @@ export default function ClientPage({
                 accounts={accounts?.items}
                 organization={organization}
                 pauseActions={requireDetails}
-                returnPath={`/dashboard/${organization.slug}/finance/account`}
               />
             )}
           </ShadowBoxOnMd>

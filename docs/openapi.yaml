@@ -23,8 +23,7 @@
       "get": {
         "tags": [
           "organizations",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "List Organizations",
         "description": "List organizations.\n\n**Scopes**: `organizations:read` `organizations:write`",
@@ -175,8 +174,7 @@
       "post": {
         "tags": [
           "organizations",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Create Organization",
         "description": "Create an organization.\n\n**Scopes**: `organizations:write`",
@@ -249,8 +247,7 @@
       "get": {
         "tags": [
           "organizations",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Get Organization",
         "description": "Get an organization by ID.\n\n**Scopes**: `organizations:read` `organizations:write`",
@@ -343,8 +340,7 @@
       "patch": {
         "tags": [
           "organizations",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Update Organization",
         "description": "Update an organization.\n\n**Scopes**: `organizations:write`",
@@ -459,7 +455,7 @@
       "get": {
         "tags": [
           "subscriptions",
-          "documented",
+          "public",
           "mcp"
         ],
         "summary": "List Subscriptions",
@@ -801,7 +797,7 @@
       "get": {
         "tags": [
           "subscriptions",
-          "documented",
+          "public",
           "mcp"
         ],
         "summary": "Export Subscriptions",
@@ -914,7 +910,7 @@
       "get": {
         "tags": [
           "subscriptions",
-          "documented",
+          "public",
           "mcp"
         ],
         "summary": "Get Subscription",
@@ -1005,7 +1001,7 @@
       "patch": {
         "tags": [
           "subscriptions",
-          "documented",
+          "public",
           "mcp"
         ],
         "summary": "Update Subscription",
@@ -1116,7 +1112,7 @@
       "delete": {
         "tags": [
           "subscriptions",
-          "documented",
+          "public",
           "mcp"
         ],
         "summary": "Revoke Subscription",
@@ -1219,7 +1215,7 @@
       "get": {
         "tags": [
           "oauth2",
-          "documented"
+          "public"
         ],
         "summary": "Authorize",
         "operationId": "oauth2:authorize",
@@ -1287,8 +1283,7 @@
       "post": {
         "tags": [
           "oauth2",
-          "featured",
-          "documented"
+          "public"
         ],
         "summary": "Request Token",
         "description": "Request an access token using a valid grant.",
@@ -1358,8 +1353,7 @@
       "post": {
         "tags": [
           "oauth2",
-          "featured",
-          "documented"
+          "public"
         ],
         "summary": "Revoke Token",
         "description": "Revoke an access token or a refresh token.",
@@ -1422,8 +1416,7 @@
       "post": {
         "tags": [
           "oauth2",
-          "featured",
-          "documented"
+          "public"
         ],
         "summary": "Introspect Token",
         "description": "Get information about an access token.",
@@ -1486,8 +1479,7 @@
       "get": {
         "tags": [
           "oauth2",
-          "featured",
-          "documented"
+          "public"
         ],
         "summary": "Get User Info",
         "description": "Get information about the authenticated user.",
@@ -1545,7 +1537,7 @@
       "get": {
         "tags": [
           "benefits",
-          "documented"
+          "public"
         ],
         "summary": "List Benefits",
         "description": "List benefits.\n\n**Scopes**: `benefits:read` `benefits:write`",
@@ -1775,7 +1767,7 @@
       "post": {
         "tags": [
           "benefits",
-          "documented"
+          "public"
         ],
         "summary": "Create Benefit",
         "description": "Create a benefit.\n\n**Scopes**: `benefits:write`",
@@ -1850,7 +1842,7 @@
       "get": {
         "tags": [
           "benefits",
-          "documented"
+          "public"
         ],
         "summary": "Get Benefit",
         "description": "Get a benefit by ID.\n\n**Scopes**: `benefits:read` `benefits:write`",
@@ -1941,7 +1933,7 @@
       "patch": {
         "tags": [
           "benefits",
-          "documented"
+          "public"
         ],
         "summary": "Update Benefit",
         "description": "Update a benefit.\n\n**Scopes**: `benefits:write`",
@@ -2062,7 +2054,7 @@
       "delete": {
         "tags": [
           "benefits",
-          "documented"
+          "public"
         ],
         "summary": "Delete Benefit",
         "description": "Delete a benefit.\n\n> [!WARNING]\n> Every grants associated with the benefit will be revoked.\n> Users will lose access to the benefit.\n\n**Scopes**: `benefits:write`",
@@ -2157,7 +2149,7 @@
       "get": {
         "tags": [
           "benefits",
-          "documented"
+          "public"
         ],
         "summary": "List Benefit Grants",
         "description": "List the individual grants for a benefit.\n\nIt's especially useful to check if a user has been granted a benefit.\n\n**Scopes**: `benefits:read` `benefits:write`",
@@ -2340,7 +2332,7 @@
       "get": {
         "tags": [
           "webhooks",
-          "documented"
+          "public"
         ],
         "summary": "List Webhook Endpoints",
         "description": "List webhook endpoints.\n\n**Scopes**: `webhooks:read` `webhooks:write`",
@@ -2493,7 +2485,7 @@
       "post": {
         "tags": [
           "webhooks",
-          "documented"
+          "public"
         ],
         "summary": "Create Webhook Endpoint",
         "description": "Create a webhook endpoint.\n\n**Scopes**: `webhooks:write`",
@@ -2567,7 +2559,7 @@
       "get": {
         "tags": [
           "webhooks",
-          "documented"
+          "public"
         ],
         "summary": "Get Webhook Endpoint",
         "description": "Get a webhook endpoint by ID.\n\n**Scopes**: `webhooks:read` `webhooks:write`",
@@ -2653,7 +2645,7 @@
       "patch": {
         "tags": [
           "webhooks",
-          "documented"
+          "public"
         ],
         "summary": "Update Webhook Endpoint",
         "description": "Update a webhook endpoint.\n\n**Scopes**: `webhooks:write`",
@@ -2749,7 +2741,7 @@
       "delete": {
         "tags": [
           "webhooks",
-          "documented"
+          "public"
         ],
         "summary": "Delete Webhook Endpoint",
         "description": "Delete a webhook endpoint.\n\n**Scopes**: `webhooks:write`",
@@ -2830,7 +2822,7 @@
       "patch": {
         "tags": [
           "webhooks",
-          "documented"
+          "public"
         ],
         "summary": "Reset Webhook Endpoint Secret",
         "description": "Regenerate a webhook endpoint secret.\n\n**Scopes**: `webhooks:write`",
@@ -2918,7 +2910,7 @@
       "get": {
         "tags": [
           "webhooks",
-          "documented"
+          "public"
         ],
         "summary": "List Webhook Deliveries",
         "description": "List webhook deliveries.\n\nDeliveries are all the attempts to deliver a webhook event to an endpoint.\n\n**Scopes**: `webhooks:read` `webhooks:write`",
@@ -3055,7 +3047,7 @@
       "post": {
         "tags": [
           "webhooks",
-          "documented"
+          "public"
         ],
         "summary": "Redeliver Webhook Event",
         "description": "Schedule the re-delivery of a webhook event.\n\n**Scopes**: `webhooks:write`",
@@ -3141,8 +3133,7 @@
       "get": {
         "tags": [
           "products",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "List Products",
@@ -3464,8 +3455,7 @@
       "post": {
         "tags": [
           "products",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "Create Product",
@@ -3544,8 +3534,7 @@
       "get": {
         "tags": [
           "products",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "Get Product",
@@ -3640,8 +3629,7 @@
       "patch": {
         "tags": [
           "products",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "Update Product",
@@ -3758,8 +3746,7 @@
       "post": {
         "tags": [
           "products",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "Update Product Benefits",
@@ -3876,7 +3863,7 @@
       "get": {
         "tags": [
           "orders",
-          "documented",
+          "public",
           "mcp"
         ],
         "summary": "List Orders",
@@ -4212,7 +4199,7 @@
       "get": {
         "tags": [
           "orders",
-          "documented",
+          "public",
           "mcp"
         ],
         "summary": "Get Order",
@@ -4303,7 +4290,7 @@
       "patch": {
         "tags": [
           "orders",
-          "documented",
+          "public",
           "mcp"
         ],
         "summary": "Update Order",
@@ -4406,7 +4393,7 @@
       "post": {
         "tags": [
           "orders",
-          "documented",
+          "public",
           "mcp"
         ],
         "summary": "Generate Order Invoice",
@@ -4503,7 +4490,7 @@
       "get": {
         "tags": [
           "orders",
-          "documented",
+          "public",
           "mcp"
         ],
         "summary": "Get Order Invoice",
@@ -4596,7 +4583,7 @@
       "get": {
         "tags": [
           "refunds",
-          "documented"
+          "public"
         ],
         "summary": "List Refunds",
         "description": "List products.\n\n**Scopes**: `refunds:read` `refunds:write`",
@@ -4903,7 +4890,7 @@
       "post": {
         "tags": [
           "refunds",
-          "documented"
+          "public"
         ],
         "summary": "Create Refund",
         "description": "Create a refund.\n\n**Scopes**: `refunds:write`",
@@ -5000,8 +4987,7 @@
       "get": {
         "tags": [
           "checkouts",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "List Checkout Sessions",
         "description": "List checkout sessions.\n\n**Scopes**: `checkouts:read` `checkouts:write`",
@@ -5286,8 +5272,7 @@
       "post": {
         "tags": [
           "checkouts",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Create Checkout Session",
         "description": "Create a checkout session.\n\n**Scopes**: `checkouts:write`",
@@ -5361,8 +5346,7 @@
       "get": {
         "tags": [
           "checkouts",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Get Checkout Session",
         "description": "Get a checkout session by ID.\n\n**Scopes**: `checkouts:read` `checkouts:write`",
@@ -5448,8 +5432,7 @@
       "patch": {
         "tags": [
           "checkouts",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Update Checkout Session",
         "description": "Update a checkout session.\n\n**Scopes**: `checkouts:write`",
@@ -5557,8 +5540,7 @@
       "get": {
         "tags": [
           "checkouts",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Get Checkout Session from Client",
         "description": "Get a checkout session by client secret.",
@@ -5652,8 +5634,7 @@
       "patch": {
         "tags": [
           "checkouts",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Update Checkout Session from Client",
         "description": "Update a checkout session by client secret.",
@@ -5769,8 +5750,7 @@
       "post": {
         "tags": [
           "checkouts",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Confirm Checkout Session from Client",
         "description": "Confirm a checkout session by client secret.\n\nOrders and subscriptions will be processed.",
@@ -5897,7 +5877,7 @@
       "get": {
         "tags": [
           "files",
-          "documented"
+          "public"
         ],
         "summary": "List Files",
         "description": "List files.\n\n**Scopes**: `files:read` `files:write`",
@@ -6076,7 +6056,7 @@
       "post": {
         "tags": [
           "files",
-          "documented"
+          "public"
         ],
         "summary": "Create File",
         "description": "Create a file.\n\n**Scopes**: `files:write`",
@@ -6150,7 +6130,7 @@
       "post": {
         "tags": [
           "files",
-          "documented"
+          "public"
         ],
         "summary": "Complete File Upload",
         "description": "Complete a file upload.\n\n**Scopes**: `files:write`",
@@ -6277,7 +6257,7 @@
       "patch": {
         "tags": [
           "files",
-          "documented"
+          "public"
         ],
         "summary": "Update File",
         "description": "Update a file.\n\n**Scopes**: `files:write`",
@@ -6402,7 +6382,7 @@
       "delete": {
         "tags": [
           "files",
-          "documented"
+          "public"
         ],
         "summary": "Delete File",
         "description": "Delete a file.\n\n**Scopes**: `files:write`",
@@ -6491,7 +6471,7 @@
       "get": {
         "tags": [
           "metrics",
-          "documented",
+          "public",
           "mcp"
         ],
         "summary": "Get Metrics",
@@ -6743,7 +6723,7 @@
       "get": {
         "tags": [
           "metrics",
-          "documented",
+          "public",
           "mcp"
         ],
         "summary": "Get Metrics Limits",
@@ -6802,8 +6782,7 @@
       "get": {
         "tags": [
           "license_keys",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "List License Keys",
         "description": "Get license keys connected to the given organization & filters.\n\n**Scopes**: `license_keys:read` `license_keys:write`",
@@ -7016,8 +6995,7 @@
       "get": {
         "tags": [
           "license_keys",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Get License Key",
         "description": "Get a license key.\n\n**Scopes**: `license_keys:read` `license_keys:write`",
@@ -7111,8 +7089,7 @@
       "patch": {
         "tags": [
           "license_keys",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Update License Key",
         "description": "Update a license key.\n\n**Scopes**: `license_keys:write`",
@@ -7218,8 +7195,7 @@
       "get": {
         "tags": [
           "license_keys",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Get Activation",
         "description": "Get a license key activation.\n\n**Scopes**: `license_keys:read` `license_keys:write`",
@@ -7321,11 +7297,266 @@
         ]
       }
     },
+    "/v1/license-keys/validate": {
+      "post": {
+        "tags": [
+          "license_keys",
+          "public"
+        ],
+        "summary": "Validate License Key",
+        "description": "Validate a license key.\n\n**Scopes**: `license_keys:write`",
+        "operationId": "license_keys:validate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LicenseKeyValidate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidatedLicenseKey"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "License key not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "license_keys",
+        "x-speakeasy-name-override": "validate",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.LicenseKeys.Validate(ctx, components.LicenseKeyValidate{\n        Key: \"<key>\",\n        OrganizationID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.ValidatedLicenseKey != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.license_keys.validate(request={\n        \"key\": \"<key>\",\n        \"organization_id\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.validate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\LicenseKeyValidate(\n    key: '<key>',\n    organizationId: '<value>',\n);\n\n$response = $sdk->licenseKeys->validate(\n    request: $request\n);\n\nif ($response->validatedLicenseKey !== null) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
+    "/v1/license-keys/activate": {
+      "post": {
+        "tags": [
+          "license_keys",
+          "public"
+        ],
+        "summary": "Activate License Key",
+        "description": "Activate a license key instance.\n\n**Scopes**: `license_keys:write`",
+        "operationId": "license_keys:activate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LicenseKeyActivate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicenseKeyActivationRead"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotPermitted"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "License key not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "license_keys",
+        "x-speakeasy-name-override": "activate",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.LicenseKeys.Activate(ctx, components.LicenseKeyActivate{\n        Key: \"<key>\",\n        OrganizationID: \"<value>\",\n        Label: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.LicenseKeyActivationRead != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    res = polar.license_keys.activate(request={\n        \"key\": \"<key>\",\n        \"organization_id\": \"<value>\",\n        \"label\": \"<value>\",\n    })\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.activate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    label: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\LicenseKeyActivate(\n    key: '<key>',\n    organizationId: '<value>',\n    label: '<value>',\n);\n\n$response = $sdk->licenseKeys->activate(\n    request: $request\n);\n\nif ($response->licenseKeyActivationRead !== null) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
+    "/v1/license-keys/deactivate": {
+      "post": {
+        "tags": [
+          "license_keys",
+          "public"
+        ],
+        "summary": "Deactivate License Key",
+        "description": "Deactivate a license key instance.\n\n**Scopes**: `license_keys:write`",
+        "operationId": "license_keys:deactivate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LicenseKeyDeactivate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "License key activation deactivated."
+          },
+          "404": {
+            "description": "License key not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "license_keys",
+        "x-speakeasy-name-override": "deactivate",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\t\"os\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New(\n        polargo.WithSecurity(os.Getenv(\"POLAR_ACCESS_TOKEN\")),\n    )\n\n    res, err := s.LicenseKeys.Deactivate(ctx, components.LicenseKeyDeactivate{\n        Key: \"<key>\",\n        OrganizationID: \"<value>\",\n        ActivationID: \"<value>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "from polar_sdk import Polar\n\n\nwith Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n) as polar:\n\n    polar.license_keys.deactivate(request={\n        \"key\": \"<key>\",\n        \"organization_id\": \"<value>\",\n        \"activation_id\": \"<value>\",\n    })\n\n    # Use the SDK ..."
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.licenseKeys.deactivate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    activationId: \"<value>\",\n  });\n\n\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\n\n$sdk = Polar\\Polar::builder()\n    ->setSecurity(\n        '<YOUR_BEARER_TOKEN_HERE>'\n    )\n    ->build();\n\n$request = new Components\\LicenseKeyDeactivate(\n    key: '<key>',\n    organizationId: '<value>',\n    activationId: '<value>',\n);\n\n$response = $sdk->licenseKeys->deactivate(\n    request: $request\n);\n\nif ($response->statusCode === 200) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
     "/v1/checkout-links/": {
       "get": {
         "tags": [
           "checkout-links",
-          "documented"
+          "public"
         ],
         "summary": "List Checkout Links",
         "description": "List checkout links.\n\n**Scopes**: `checkout_links:read` `checkout_links:write`",
@@ -7540,7 +7771,7 @@
       "post": {
         "tags": [
           "checkout-links",
-          "documented"
+          "public"
         ],
         "summary": "Create Checkout Link",
         "description": "Create a checkout link.\n\n**Scopes**: `checkout_links:write`",
@@ -7625,7 +7856,7 @@
       "get": {
         "tags": [
           "checkout-links",
-          "documented"
+          "public"
         ],
         "summary": "Get Checkout Link",
         "description": "Get a checkout link by ID.\n\n**Scopes**: `checkout_links:read` `checkout_links:write`",
@@ -7711,7 +7942,7 @@
       "patch": {
         "tags": [
           "checkout-links",
-          "documented"
+          "public"
         ],
         "summary": "Update Checkout Link",
         "description": "Update a checkout link.\n\n**Scopes**: `checkout_links:write`",
@@ -7807,7 +8038,7 @@
       "delete": {
         "tags": [
           "checkout-links",
-          "documented"
+          "public"
         ],
         "summary": "Delete Checkout Link",
         "description": "Delete a checkout link.\n\n**Scopes**: `checkout_links:write`",
@@ -7888,7 +8119,7 @@
       "get": {
         "tags": [
           "custom-fields",
-          "documented"
+          "public"
         ],
         "summary": "List Custom Fields",
         "description": "List custom fields.\n\n**Scopes**: `custom_fields:read` `custom_fields:write`",
@@ -8108,7 +8339,7 @@
       "post": {
         "tags": [
           "custom-fields",
-          "documented"
+          "public"
         ],
         "summary": "Create Custom Field",
         "description": "Create a custom field.\n\n**Scopes**: `custom_fields:write`",
@@ -8183,7 +8414,7 @@
       "get": {
         "tags": [
           "custom-fields",
-          "documented"
+          "public"
         ],
         "summary": "Get Custom Field",
         "description": "Get a custom field by ID.\n\n**Scopes**: `custom_fields:read` `custom_fields:write`",
@@ -8270,7 +8501,7 @@
       "patch": {
         "tags": [
           "custom-fields",
-          "documented"
+          "public"
         ],
         "summary": "Update Custom Field",
         "description": "Update a custom field.\n\n**Scopes**: `custom_fields:write`",
@@ -8367,7 +8598,7 @@
       "delete": {
         "tags": [
           "custom-fields",
-          "documented"
+          "public"
         ],
         "summary": "Delete Custom Field",
         "description": "Delete a custom field.\n\n**Scopes**: `custom_fields:write`",
@@ -8448,8 +8679,7 @@
       "get": {
         "tags": [
           "discounts",
-          "featured",
-          "documented"
+          "public"
         ],
         "summary": "List Discounts",
         "description": "List discounts.\n\n**Scopes**: `discounts:read` `discounts:write`",
@@ -8644,8 +8874,7 @@
       "post": {
         "tags": [
           "discounts",
-          "featured",
-          "documented"
+          "public"
         ],
         "summary": "Create Discount",
         "description": "Create a discount.\n\n**Scopes**: `discounts:write`",
@@ -8720,8 +8949,7 @@
       "get": {
         "tags": [
           "discounts",
-          "featured",
-          "documented"
+          "public"
         ],
         "summary": "Get Discount",
         "description": "Get a discount by ID.\n\n**Scopes**: `discounts:read` `discounts:write`",
@@ -8808,8 +9036,7 @@
       "patch": {
         "tags": [
           "discounts",
-          "featured",
-          "documented"
+          "public"
         ],
         "summary": "Update Discount",
         "description": "Update a discount.\n\n**Scopes**: `discounts:write`",
@@ -8906,8 +9133,7 @@
       "delete": {
         "tags": [
           "discounts",
-          "featured",
-          "documented"
+          "public"
         ],
         "summary": "Delete Discount",
         "description": "Delete a discount.\n\n**Scopes**: `discounts:write`",
@@ -8988,8 +9214,7 @@
       "get": {
         "tags": [
           "customers",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "List Customers",
@@ -9217,8 +9442,7 @@
       "post": {
         "tags": [
           "customers",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "Create Customer",
@@ -9297,8 +9521,7 @@
       "get": {
         "tags": [
           "customers",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "Get Customer",
@@ -9389,8 +9612,7 @@
       "patch": {
         "tags": [
           "customers",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "Update Customer",
@@ -9491,8 +9713,7 @@
       "delete": {
         "tags": [
           "customers",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "Delete Customer",
@@ -9578,8 +9799,7 @@
       "get": {
         "tags": [
           "customers",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "Get Customer by External ID",
@@ -9669,8 +9889,7 @@
       "patch": {
         "tags": [
           "customers",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "Update Customer by External ID",
@@ -9770,8 +9989,7 @@
       "delete": {
         "tags": [
           "customers",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "Delete Customer by External ID",
@@ -9856,8 +10074,7 @@
       "get": {
         "tags": [
           "customers",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "Get Customer State",
@@ -9950,8 +10167,7 @@
       "get": {
         "tags": [
           "customers",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "Get Customer State by External ID",
@@ -10044,7 +10260,7 @@
         "tags": [
           "customer_portal",
           "benefit-grants",
-          "documented"
+          "public"
         ],
         "summary": "List Benefit Grants",
         "description": "List benefits grants of the authenticated customer.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -10361,7 +10577,7 @@
         "tags": [
           "customer_portal",
           "benefit-grants",
-          "documented"
+          "public"
         ],
         "summary": "Get Benefit Grant",
         "description": "Get a benefit grant by ID for the authenticated customer.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -10453,7 +10669,7 @@
         "tags": [
           "customer_portal",
           "benefit-grants",
-          "documented"
+          "public"
         ],
         "summary": "Update Benefit Grant",
         "description": "Update a benefit grant for the authenticated customer.\n\n**Scopes**: `customer_portal:write`",
@@ -10568,7 +10784,7 @@
         "tags": [
           "customer_portal",
           "customers",
-          "documented"
+          "public"
         ],
         "summary": "Get Customer",
         "description": "Get authenticated customer.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -10625,7 +10841,7 @@
         "tags": [
           "customer_portal",
           "customers",
-          "documented"
+          "public"
         ],
         "summary": "Update Customer",
         "description": "Update authenticated customer.\n\n**Scopes**: `customer_portal:write`",
@@ -10704,7 +10920,7 @@
         "tags": [
           "customer_portal",
           "customers",
-          "documented"
+          "public"
         ],
         "summary": "List Customer Payment Methods",
         "description": "Get saved payment methods of the authenticated customer.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -10818,7 +11034,7 @@
         "tags": [
           "customer_portal",
           "customers",
-          "documented"
+          "public"
         ],
         "summary": "Add Customer Payment Method",
         "description": "Add a payment method to the authenticated customer.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -10898,7 +11114,7 @@
         "tags": [
           "customer_portal",
           "customers",
-          "documented"
+          "public"
         ],
         "summary": "Delete Customer Payment Method",
         "description": "Delete a payment method from the authenticated customer.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -10982,8 +11198,7 @@
         "tags": [
           "customer_portal",
           "customer_meters",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "List Meters",
         "description": "List meters of the authenticated customer.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -11169,8 +11384,7 @@
         "tags": [
           "customer_portal",
           "customer_meters",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Get Customer Meter",
         "description": "Get a meter by ID for the authenticated customer.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -11263,7 +11477,7 @@
         "tags": [
           "customer_portal",
           "downloadables",
-          "documented"
+          "public"
         ],
         "summary": "List Downloadables",
         "description": "**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -11461,8 +11675,7 @@
         "tags": [
           "customer_portal",
           "license_keys",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "List License Keys",
         "description": "**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -11667,8 +11880,7 @@
         "tags": [
           "customer_portal",
           "license_keys",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Get License Key",
         "description": "Get a license key.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -11759,11 +11971,10 @@
         "tags": [
           "customer_portal",
           "license_keys",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Validate License Key",
-        "description": "Validate a license key.",
+        "description": "Validate a license key.\n\n> This endpoint doesn't require authentication and can be safely used on a public\n> client, like a desktop application or a mobile app.\n> If you plan to validate a license key on a server, use the `/v1/license-keys/validate`\n> endpoint instead.",
         "operationId": "customer_portal:license_keys:validate",
         "requestBody": {
           "content": {
@@ -11844,11 +12055,10 @@
         "tags": [
           "customer_portal",
           "license_keys",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Activate License Key",
-        "description": "Activate a license key instance.",
+        "description": "Activate a license key instance.\n\n> This endpoint doesn't require authentication and can be safely used on a public\n> client, like a desktop application or a mobile app.\n> If you plan to validate a license key on a server, use the `/v1/license-keys/activate`\n> endpoint instead.",
         "operationId": "customer_portal:license_keys:activate",
         "requestBody": {
           "content": {
@@ -11939,11 +12149,10 @@
         "tags": [
           "customer_portal",
           "license_keys",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Deactivate License Key",
-        "description": "Deactivate a license key instance.",
+        "description": "Deactivate a license key instance.\n\n> This endpoint doesn't require authentication and can be safely used on a public\n> client, like a desktop application or a mobile app.\n> If you plan to validate a license key on a server, use the `/v1/license-keys/deactivate`\n> endpoint instead.",
         "operationId": "customer_portal:license_keys:deactivate",
         "requestBody": {
           "content": {
@@ -12017,7 +12226,7 @@
         "tags": [
           "customer_portal",
           "orders",
-          "documented"
+          "public"
         ],
         "summary": "List Orders",
         "description": "List orders of the authenticated customer.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -12309,7 +12518,7 @@
         "tags": [
           "customer_portal",
           "orders",
-          "documented"
+          "public"
         ],
         "summary": "Get Order",
         "description": "Get an order by ID for the authenticated customer.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -12400,7 +12609,7 @@
         "tags": [
           "customer_portal",
           "orders",
-          "documented"
+          "public"
         ],
         "summary": "Update Order",
         "description": "Update an order for the authenticated customer.\n\n**Scopes**: `customer_portal:write`",
@@ -12503,7 +12712,7 @@
         "tags": [
           "customer_portal",
           "orders",
-          "documented"
+          "public"
         ],
         "summary": "Generate Order Invoice",
         "description": "Trigger generation of an order's invoice.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -12600,7 +12809,7 @@
         "tags": [
           "customer_portal",
           "orders",
-          "documented"
+          "public"
         ],
         "summary": "Get Order Invoice",
         "description": "Get an order's invoice data.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -12688,16 +12897,16 @@
         ]
       }
     },
-    "/v1/customer-portal/orders/{id}/retry-payment": {
-      "post": {
+    "/v1/customer-portal/orders/{id}/payment-status": {
+      "get": {
         "tags": [
           "customer_portal",
           "orders",
-          "documented"
+          "public"
         ],
-        "summary": "Retry Payment",
-        "description": "Manually retry payment for a failed order.\n\n**Scopes**: `customer_portal:write`",
-        "operationId": "customer_portal:orders:retry_payment",
+        "summary": "Get Order Payment Status",
+        "description": "Get the current payment status for an order.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
+        "operationId": "customer_portal:orders:get_payment_status",
         "security": [
           {
             "customer_session": []
@@ -12718,11 +12927,116 @@
           }
         ],
         "responses": {
-          "202": {
+          "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOrderPaymentStatus"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Order not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-polar-allowed-subjects": [
+          "Customer"
+        ],
+        "x-speakeasy-mcp": {
+          "disabled": true
+        },
+        "x-speakeasy-group": "customer_portal.orders",
+        "x-speakeasy-name-override": "get_payment_status",
+        "x-codeSamples": [
+          {
+            "lang": "go",
+            "label": "Go (SDK)",
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Orders.GetPaymentStatus(ctx, operations.CustomerPortalOrdersGetPaymentStatusSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    }, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerOrderPaymentStatus != nil {\n        // handle response\n    }\n}"
+          },
+          {
+            "lang": "python",
+            "label": "Python (SDK)",
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.orders.get_payment_status(security=polar_sdk.CustomerPortalOrdersGetPaymentStatusSecurity(\n        customer_session=\"<YOUR_BEARER_TOKEN_HERE>\",\n    ), id=\"<value>\")\n\n    # Handle response\n    print(res)"
+          },
+          {
+            "lang": "typescript",
+            "label": "Typescript (SDK)",
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.orders.getPaymentStatus({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    id: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          },
+          {
+            "lang": "php",
+            "label": "PHP (SDK)",
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n\n$requestSecurity = new Operations\\CustomerPortalOrdersGetPaymentStatusSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->orders->getPaymentStatus(\n    security: $requestSecurity,\n    id: '<value>'\n\n);\n\nif ($response->customerOrderPaymentStatus !== null) {\n    // handle response\n}"
+          }
+        ]
+      }
+    },
+    "/v1/customer-portal/orders/{id}/confirm-payment": {
+      "post": {
+        "tags": [
+          "customer_portal",
+          "orders",
+          "public"
+        ],
+        "summary": "Confirm Retry Payment",
+        "description": "Confirm a retry payment using a Stripe confirmation token.\n\n**Scopes**: `customer_portal:write`",
+        "operationId": "customer_portal:orders:confirm_retry_payment",
+        "security": [
+          {
+            "customer_session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The order ID.",
+              "title": "Id"
+            },
+            "description": "The order ID."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerOrderConfirmPayment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOrderPaymentConfirmation"
+                }
               }
             }
           },
@@ -12747,7 +13061,7 @@
             }
           },
           "422": {
-            "description": "Order not eligible for retry.",
+            "description": "Order not eligible for retry or payment confirmation failed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -12764,27 +13078,27 @@
           "disabled": true
         },
         "x-speakeasy-group": "customer_portal.orders",
-        "x-speakeasy-name-override": "retry_payment",
+        "x-speakeasy-name-override": "confirm_retry_payment",
         "x-codeSamples": [
           {
             "lang": "go",
             "label": "Go (SDK)",
-            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Orders.RetryPayment(ctx, operations.CustomerPortalOrdersRetryPaymentSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    }, \"<value>\")\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.Any != nil {\n        // handle response\n    }\n}"
+            "source": "package main\n\nimport(\n\t\"context\"\n\tpolargo \"github.com/polarsource/polar-go\"\n\t\"os\"\n\t\"github.com/polarsource/polar-go/models/operations\"\n\t\"github.com/polarsource/polar-go/models/components\"\n\t\"log\"\n)\n\nfunc main() {\n    ctx := context.Background()\n\n    s := polargo.New()\n\n    res, err := s.CustomerPortal.Orders.ConfirmRetryPayment(ctx, operations.CustomerPortalOrdersConfirmRetryPaymentSecurity{\n        CustomerSession: os.Getenv(\"POLAR_CUSTOMER_SESSION\"),\n    }, \"<value>\", components.CustomerOrderConfirmPayment{\n        ConfirmationTokenID: \"<id>\",\n    })\n    if err != nil {\n        log.Fatal(err)\n    }\n    if res.CustomerOrderPaymentConfirmation != nil {\n        // handle response\n    }\n}"
           },
           {
             "lang": "python",
             "label": "Python (SDK)",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.orders.retry_payment(security=polar_sdk.CustomerPortalOrdersRetryPaymentSecurity(\n        customer_session=\"<YOUR_BEARER_TOKEN_HERE>\",\n    ), id=\"<value>\")\n\n    # Handle response\n    print(res)"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\n\nwith Polar() as polar:\n\n    res = polar.customer_portal.orders.confirm_retry_payment(security=polar_sdk.CustomerPortalOrdersConfirmRetryPaymentSecurity(\n        customer_session=\"<YOUR_BEARER_TOKEN_HERE>\",\n    ), id=\"<value>\", customer_order_confirm_payment={\n        \"confirmation_token_id\": \"<id>\",\n    })\n\n    # Handle response\n    print(res)"
           },
           {
             "lang": "typescript",
             "label": "Typescript (SDK)",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.orders.retryPayment({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    id: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar();\n\nasync function run() {\n  const result = await polar.customerPortal.orders.confirmRetryPayment({\n    customerSession: process.env[\"POLAR_CUSTOMER_SESSION\"] ?? \"\",\n  }, {\n    id: \"<value>\",\n    customerOrderConfirmPayment: {\n      confirmationTokenId: \"<id>\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
           },
           {
             "lang": "php",
             "label": "PHP (SDK)",
-            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n\n$requestSecurity = new Operations\\CustomerPortalOrdersRetryPaymentSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->orders->retryPayment(\n    security: $requestSecurity,\n    id: '<value>'\n\n);\n\nif ($response->any !== null) {\n    // handle response\n}"
+            "source": "declare(strict_types=1);\n\nrequire 'vendor/autoload.php';\n\nuse Polar;\nuse Polar\\Models\\Components;\nuse Polar\\Models\\Operations;\n\n$sdk = Polar\\Polar::builder()->build();\n\n$customerOrderConfirmPayment = new Components\\CustomerOrderConfirmPayment(\n    confirmationTokenId: '<id>',\n);\n$requestSecurity = new Operations\\CustomerPortalOrdersConfirmRetryPaymentSecurity(\n    customerSession: '<YOUR_BEARER_TOKEN_HERE>',\n);\n\n$response = $sdk->customerPortal->orders->confirmRetryPayment(\n    security: $requestSecurity,\n    id: '<value>',\n    customerOrderConfirmPayment: $customerOrderConfirmPayment\n\n);\n\nif ($response->customerOrderPaymentConfirmation !== null) {\n    // handle response\n}"
           }
         ]
       }
@@ -12794,7 +13108,7 @@
         "tags": [
           "customer_portal",
           "organizations",
-          "documented"
+          "public"
         ],
         "summary": "Get Organization",
         "description": "Get a customer portal's organization by slug.",
@@ -12881,8 +13195,7 @@
         "tags": [
           "customer_portal",
           "subscriptions",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "List Subscriptions",
         "description": "List subscriptions of the authenticated customer.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -13140,8 +13453,7 @@
         "tags": [
           "customer_portal",
           "subscriptions",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Get Subscription",
         "description": "Get a subscription for the authenticated customer.\n\n**Scopes**: `customer_portal:read` `customer_portal:write`",
@@ -13232,8 +13544,7 @@
         "tags": [
           "customer_portal",
           "subscriptions",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Update Subscription",
         "description": "Update a subscription of the authenticated customer.\n\n**Scopes**: `customer_portal:write`",
@@ -13344,8 +13655,7 @@
         "tags": [
           "customer_portal",
           "subscriptions",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Cancel Subscription",
         "description": "Cancel a subscription of the authenticated customer.\n\n**Scopes**: `customer_portal:write`",
@@ -13447,8 +13757,7 @@
       "post": {
         "tags": [
           "customer-sessions",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Create Customer Session",
         "description": "Create a customer session.\n\n**Scopes**: `customer_sessions:write`",
@@ -13530,8 +13839,7 @@
       "get": {
         "tags": [
           "events",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "List Events",
         "description": "List events.\n\n**Scopes**: `events:read` `events:write`",
@@ -13896,8 +14204,7 @@
       "get": {
         "tags": [
           "events",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "List Event Names",
         "description": "List event names.\n\n**Scopes**: `events:read` `events:write`",
@@ -14170,8 +14477,7 @@
       "get": {
         "tags": [
           "events",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Get Event",
         "description": "Get an event by ID.\n\n**Scopes**: `events:read` `events:write`",
@@ -14259,8 +14565,7 @@
       "post": {
         "tags": [
           "events",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Ingest Events",
         "description": "Ingest batch of events.\n\n**Scopes**: `events:write`",
@@ -14334,8 +14639,7 @@
       "get": {
         "tags": [
           "meters",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "List Meters",
         "description": "List meters.\n\n**Scopes**: `meters:read` `meters:write`",
@@ -14540,8 +14844,7 @@
       "post": {
         "tags": [
           "meters",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Create Meter",
         "description": "Create a meter.\n\n**Scopes**: `meters:write`",
@@ -14615,8 +14918,7 @@
       "get": {
         "tags": [
           "meters",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Get Meter",
         "description": "Get a meter by ID.\n\n**Scopes**: `meters:read` `meters:write`",
@@ -14702,8 +15004,7 @@
       "patch": {
         "tags": [
           "meters",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Update Meter",
         "description": "Update a meter.\n\n**Scopes**: `meters:write`",
@@ -14801,8 +15102,7 @@
       "get": {
         "tags": [
           "meters",
-          "documented",
-          "featured"
+          "public"
         ],
         "summary": "Get Meter Quantities",
         "description": "Get quantities of a meter over a time period.\n\n**Scopes**: `meters:read` `meters:write`",
@@ -14986,8 +15286,7 @@
       "get": {
         "tags": [
           "customer_meters",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "List Customer Meters",
@@ -15251,8 +15550,7 @@
       "get": {
         "tags": [
           "customer_meters",
-          "documented",
-          "featured",
+          "public",
           "mcp"
         ],
         "summary": "Get Customer Meter",
@@ -15345,7 +15643,7 @@
       "get": {
         "tags": [
           "payments",
-          "documented",
+          "public",
           "mcp"
         ],
         "summary": "List Payments",
@@ -15653,7 +15951,7 @@
       "get": {
         "tags": [
           "payments",
-          "documented",
+          "public",
           "mcp"
         ],
         "summary": "Get Payment",
@@ -20833,6 +21131,7 @@
             ]
           },
           "processor_metadata": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Processor Metadata",
             "description": "Additional metadata from the payment processor for internal use."
@@ -25772,6 +26071,7 @@
               "$ref": "#/components/schemas/CustomFieldSelectOption"
             },
             "type": "array",
+            "minItems": 1,
             "title": "Options"
           }
         },
@@ -27944,12 +28244,6 @@
             "title": "Net Amount",
             "description": "Amount in cents, after discounts but before taxes."
           },
-          "amount": {
-            "type": "integer",
-            "title": "Amount",
-            "description": "Amount in cents, after discounts but before taxes.",
-            "deprecated": true
-          },
           "tax_amount": {
             "type": "integer",
             "title": "Tax Amount",
@@ -28101,7 +28395,6 @@
           "subtotal_amount",
           "discount_amount",
           "net_amount",
-          "amount",
           "tax_amount",
           "total_amount",
           "refunded_amount",
@@ -28123,6 +28416,26 @@
         ],
         "title": "CustomerOrder"
       },
+      "CustomerOrderConfirmPayment": {
+        "properties": {
+          "confirmation_token_id": {
+            "type": "string",
+            "title": "Confirmation Token Id",
+            "description": "ID of the Stripe confirmation token."
+          },
+          "payment_processor": {
+            "$ref": "#/components/schemas/PaymentProcessor",
+            "description": "Payment processor used.",
+            "default": "stripe"
+          }
+        },
+        "type": "object",
+        "required": [
+          "confirmation_token_id"
+        ],
+        "title": "CustomerOrderConfirmPayment",
+        "description": "Schema to confirm a retry payment using a Stripe confirmation token."
+      },
       "CustomerOrderInvoice": {
         "properties": {
           "url": {
@@ -28137,6 +28450,72 @@
         ],
         "title": "CustomerOrderInvoice",
         "description": "Order's invoice data."
+      },
+      "CustomerOrderPaymentConfirmation": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Payment status after confirmation."
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Secret",
+            "description": "Client secret for handling additional actions."
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message if confirmation failed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "CustomerOrderPaymentConfirmation",
+        "description": "Response after confirming a retry payment."
+      },
+      "CustomerOrderPaymentStatus": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Current payment status."
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message if payment failed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "CustomerOrderPaymentStatus",
+        "description": "Payment status for an order."
       },
       "CustomerOrderProduct": {
         "properties": {
@@ -30871,6 +31250,7 @@
           },
           "amount": {
             "type": "integer",
+            "maximum": 999999999999,
             "minimum": 0,
             "title": "Amount",
             "description": "Fixed amount to discount from the invoice total."
@@ -31364,6 +31744,7 @@
           },
           "amount": {
             "type": "integer",
+            "maximum": 999999999999,
             "minimum": 0,
             "title": "Amount",
             "description": "Fixed amount to discount from the invoice total."
@@ -32738,6 +33119,7 @@
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 999999999999,
                 "minimum": 0,
                 "description": "Fixed amount to discount from the invoice total."
               },
@@ -33907,6 +34289,7 @@
             ]
           },
           "processor_metadata": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Processor Metadata",
             "description": "Additional metadata from the payment processor for internal use."
@@ -36323,7 +36706,8 @@
           "filter": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Filter"
+                "$ref": "#/components/schemas/Filter",
+                "description": "The filter to apply on events that'll be used to calculate the meter."
               },
               {
                 "type": "null"
@@ -37382,12 +37766,6 @@
             "title": "Net Amount",
             "description": "Amount in cents, after discounts but before taxes."
           },
-          "amount": {
-            "type": "integer",
-            "title": "Amount",
-            "description": "Amount in cents, after discounts but before taxes.",
-            "deprecated": true
-          },
           "tax_amount": {
             "type": "integer",
             "title": "Tax Amount",
@@ -37599,7 +37977,6 @@
           "subtotal_amount",
           "discount_amount",
           "net_amount",
-          "amount",
           "tax_amount",
           "total_amount",
           "refunded_amount",
@@ -38963,115 +39340,6 @@
         ],
         "title": "OrganizationNotificationSettings"
       },
-      "OrganizationProfileSettings": {
-        "properties": {
-          "enabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Enabled",
-            "description": "If this organization has a profile enabled"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 160
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "A description of the organization"
-          },
-          "featured_projects": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string",
-                  "format": "uuid4"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Featured Projects",
-            "description": "A list of featured projects"
-          },
-          "featured_organizations": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string",
-                  "format": "uuid4"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Featured Organizations",
-            "description": "A list of featured organizations"
-          },
-          "links": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string",
-                  "maxLength": 2083,
-                  "minLength": 1,
-                  "format": "uri"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Links",
-            "description": "A list of links associated with the organization"
-          },
-          "subscribe": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/OrganizationSubscribePromoteSettings"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Subscription promotion settings",
-            "default": {
-              "promote": true,
-              "show_count": true,
-              "count_free": true
-            }
-          },
-          "accent_color": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Accent Color",
-            "description": "Accent color for the organization"
-          }
-        },
-        "type": "object",
-        "title": "OrganizationProfileSettings"
-      },
       "OrganizationSocialLink": {
         "properties": {
           "platform": {
@@ -39119,30 +39387,6 @@
           "-name"
         ],
         "title": "OrganizationSortProperty"
-      },
-      "OrganizationSubscribePromoteSettings": {
-        "properties": {
-          "promote": {
-            "type": "boolean",
-            "title": "Promote",
-            "description": "Promote email subscription (free)",
-            "default": true
-          },
-          "show_count": {
-            "type": "boolean",
-            "title": "Show Count",
-            "description": "Show subscription count publicly",
-            "default": true
-          },
-          "count_free": {
-            "type": "boolean",
-            "title": "Count Free",
-            "description": "Include free subscribers in total count",
-            "default": true
-          }
-        },
-        "type": "object",
-        "title": "OrganizationSubscribePromoteSettings"
       },
       "OrganizationSubscriptionSettings": {
         "properties": {
@@ -44054,24 +44298,16 @@
   },
   "tags": [
     {
+      "name": "public",
+      "description": "Endpoints shown and documented in the Polar API documentation and available in our SDKs."
+    },
+    {
       "name": "private",
       "description": "Endpoints that should appear in the schema only in development to generate our internal JS SDK."
     },
     {
-      "name": "documented",
-      "description": "Endpoints shown and documented in the Polar API documentation."
-    },
-    {
-      "name": "featured",
-      "description": "Endpoints featured in the Polar API documentation for their interest in common use-cases."
-    },
-    {
       "name": "mcp",
       "description": "Endpoints enabled in the MCP server."
-    },
-    {
-      "name": "issue_funding",
-      "description": "Endpoints related to issue funding and rewards in the Polar API."
     }
   ],
   "security": [

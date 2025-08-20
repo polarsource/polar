@@ -21,8 +21,6 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 
-from .oauth2_client import oauth2_client as oauth2_client_service
-
 log: Logger = structlog.get_logger()
 
 
@@ -34,8 +32,10 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
         self, session: AsyncSession, access_token: str
     ) -> OAuth2Token | None:
         access_token_hash = get_token_hash(access_token, secret=settings.SECRET)
-        statement = select(OAuth2Token).where(
-            OAuth2Token.access_token == access_token_hash
+        statement = (
+            select(OAuth2Token)
+            .where(OAuth2Token.access_token == access_token_hash)
+            .options(joinedload(OAuth2Token.client))
         )
         result = await session.execute(statement)
         token = result.unique().scalar_one_or_none()
@@ -53,7 +53,9 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
         url: str | None = None,
     ) -> bool:
         statement = select(OAuth2Token).options(
-            joinedload(OAuth2Token.user), joinedload(OAuth2Token.organization)
+            joinedload(OAuth2Token.user),
+            joinedload(OAuth2Token.organization),
+            joinedload(OAuth2Token.client),
         )
 
         if token_type == TokenType.access_token:
@@ -92,28 +94,23 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
             members = await user_organization_service.list_by_org(session, sub.id)
             recipients = [member.user.email for member in members]
 
-        oauth2_client = await oauth2_client_service.get_by_client_id(
-            session, oauth2_token.client_id
+        oauth2_client = oauth2_token.client
+        body = render_email_template(
+            "oauth2_leaked_token",
+            {
+                "client_name": oauth2_client.client_name,
+                "notifier": notifier,
+                "url": url or "",
+                "current_year": datetime.datetime.now().year,
+            },
         )
-        # The `if` statement handles the case where we might detect a leaked token
-        # of a deleted client
-        if oauth2_client is not None:
-            body = render_email_template(
-                "oauth2_leaked_token",
-                {
-                    "client_name": oauth2_client.client_name,
-                    "notifier": notifier,
-                    "url": url or "",
-                    "current_year": datetime.datetime.now().year,
-                },
-            )
 
-            for recipient in recipients:
-                enqueue_email(
-                    to_email_addr=recipient,
-                    subject="Security Notice - Your Polar Access Token has been leaked",
-                    html_content=body,
-                )
+        for recipient in recipients:
+            enqueue_email(
+                to_email_addr=recipient,
+                subject="Security Notice - Your Polar Access Token has been leaked",
+                html_content=body,
+            )
 
         log.info(
             "Revoke leaked access token and refresh token",

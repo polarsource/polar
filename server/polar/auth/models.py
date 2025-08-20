@@ -1,5 +1,6 @@
 from typing import Generic, TypeGuard, TypeVar
 
+from polar.enums import RateLimitGroup
 from polar.models import (
     Customer,
     CustomerSession,
@@ -45,7 +46,11 @@ class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it a
         return f"AuthSubject(subject={self.subject!r}, scopes={self.scopes!r})"
 
     @property
-    def rate_limit_key(self) -> str:
+    def rate_limit_key(self) -> tuple[str, RateLimitGroup]:
+        return self.rate_limit_user, self.rate_limit_group
+
+    @property
+    def rate_limit_user(self) -> str:
         if isinstance(self.session, OAuth2Token):
             return f"oauth2_client:{self.session.client_id}"
 
@@ -58,6 +63,19 @@ class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it a
                 return f"customer:{self.subject.id}"
             case Anonymous():
                 return "anonymous"
+
+    @property
+    def rate_limit_group(self) -> RateLimitGroup:
+        if isinstance(self.session, UserSession):
+            return RateLimitGroup.web
+
+        if isinstance(self.subject, Organization):
+            return self.subject.rate_limit_group
+
+        if isinstance(self.session, OAuth2Token):
+            return self.session.client.rate_limit_group
+
+        return RateLimitGroup.default
 
 
 def is_anonymous[S: Subject](

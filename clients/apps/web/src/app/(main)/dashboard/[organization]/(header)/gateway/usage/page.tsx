@@ -26,7 +26,8 @@ import {
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useContext, useMemo } from 'react'
-import { models } from '../../../../../../../components/Gateway/models'
+import { models } from '@polar-sh/models'
+import { useEvents } from '@/hooks/queries/events'
 
 const tiles = [
   {
@@ -54,6 +55,12 @@ const tiles = [
 export default function OverviewPage() {
   const { organization } = useContext(OrganizationContext)
   const { data: customers } = useCustomers(organization.id)
+
+  const { data: events } = useEvents(organization.id, {
+    metadata: {
+      strategy: 'LLM'
+    }
+  })
 
   const customersData = useMemo(
     () =>

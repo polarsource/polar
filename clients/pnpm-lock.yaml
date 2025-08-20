@@ -89,6 +89,9 @@ importers:
       '@polar-sh/mdx':
         specifier: workspace:*
         version: link:../../packages/mdx
+      '@polar-sh/models':
+        specifier: workspace:*
+        version: link:../../packages/models
       '@polar-sh/sdk':
         specifier: ^0.34.9
         version: 0.34.9

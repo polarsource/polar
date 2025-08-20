@@ -21,9 +21,9 @@ services:
     autoDeploy: false # deploys are triggered by github actions
     scaling:
       minInstances: 1
-      maxInstances: 3
+      maxInstances: 2
       targetMemoryPercent: 90
-      targetCPUPercent: 75
+      targetCPUPercent: 90
     domains:
       - api.polar.sh
     envVars:

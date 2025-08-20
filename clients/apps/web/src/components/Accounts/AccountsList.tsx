@@ -5,39 +5,26 @@ import {
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
-import { useState } from 'react'
+import Link from 'next/link'
+import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Modal } from '../Modal'
-import { useModal } from '../Modal/useModal'
-import AccountAssociations from './AccountAssociations'
-import AccountCreateModal from './AccountCreateModal'
 
 interface AccountsListProps {
   accounts: schemas['Account'][]
-  organization?: schemas['Organization']
   pauseActions?: boolean
 }
 
-const AccountsList = ({
-  accounts,
-  organization,
-  pauseActions,
-}: AccountsListProps) => {
-  const {
-    isShown: isShownSetupModal,
-    show: showSetupModal,
-    hide: hideSetupModal,
-  } = useModal()
-
-  const [organizationData, setOrganizationData] = useState({ id: '', slug: '' })
-
-  const handleShowModal = (
-    organizationId: string,
-    organizationSlug: string,
-  ) => {
-    setOrganizationData({ id: organizationId, slug: organizationSlug })
-    showSetupModal()
-  }
+const AccountsList = ({ accounts }: AccountsListProps) => {
+  const accountOrgs = useMemo(
+    () =>
+      accounts.flatMap((account) =>
+        account.organizations.map((organization) => ({
+          account,
+          organization,
+        })),
+      ),
+    [accounts],
+  )
 
   return (
     <>
@@ -71,28 +58,15 @@ const AccountsList = ({
           </tr>
         </thead>
         <tbody>
-          {accounts.map((account) => (
+          {accountOrgs.map(({ account, organization }) => (
             <AccountListItem
-              key={account.id}
+              key={organization.id}
               account={account}
               organization={organization}
-              pauseActions={pauseActions}
-              openModal={handleShowModal}
             />
           ))}
         </tbody>
       </table>
-      <Modal
-        isShown={isShownSetupModal}
-        className="min-w-[400px]"
-        hide={hideSetupModal}
-        modalContent={
-          <AccountCreateModal
-            forOrganizationId={organizationData.id}
-            returnPath={`/dashboard/${organizationData.slug}/finance/account`}
-          />
-        }
-      />
     </>
   )
 }
@@ -101,18 +75,10 @@ export default AccountsList
 
 interface AccountListItemProps {
   account: schemas['Account']
-  organization?: schemas['Organization']
-  pauseActions?: boolean
-  openModal: (organizationId: string, organizationSlug: string) => void
+  organization: schemas['Organization']
 }
 
-const AccountListItem = ({
-  account,
-  organization,
-  pauseActions,
-  openModal,
-}: AccountListItemProps) => {
-  pauseActions = pauseActions === true
+const AccountListItem = ({ account, organization }: AccountListItemProps) => {
   const childClass = twMerge(
     'dark:group-hover:bg-polar-700 px-4 py-2 transition-colors group-hover:bg-blue-50 group-hover:text-gray-950 text-gray-700 dark:text-polar-200 group-hover:dark:text-white',
   )
@@ -143,19 +109,14 @@ const AccountListItem = ({
           ? ORGANIZATION_STATUS_DISPLAY_NAMES[organization.status]
           : 'No Status'}
       </td>
-      <td className={childClass}>
-        <AccountAssociations account={account} />
-      </td>
+      <td className={childClass}>{organization.slug}</td>
       <td className={twMerge(childClass, 'rounded-r-xl uppercase')}>
-        {!isActive && !isUnderReview && organization && (
-          <Button
-            size="sm"
-            onClick={() => openModal(organization.id, organization.slug)}
-            disabled={pauseActions}
-          >
-            Continue setup
-          </Button>
+        {!isActive && !isUnderReview && (
+          <Link href={`/dashboard/${organization.slug}/finance/account`}>
+            <Button size="sm">Continue setup</Button>
+          </Link>
         )}
+
         {isActive && (
           <Button size="sm" onClick={goToDashboard}>
             Open dashboard

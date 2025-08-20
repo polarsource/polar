@@ -177,7 +177,6 @@ export default function ClientPage({
             {accounts?.items && (
               <AccountsList
                 accounts={accounts?.items}
-                organization={organization}
                 pauseActions={requireDetails}
               />
             )}

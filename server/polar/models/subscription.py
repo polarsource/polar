@@ -111,6 +111,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         String, nullable=True, index=True, default=None
     )
 
+    tax_exempted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    """
+    Whether the subscription is tax exempted.
+
+    We use this to disable tax on subscriptions created before we were
+    registered in a given country, so we don't surprise customers with
+    tax charges.
+    """
+
     status: Mapped[SubscriptionStatus] = mapped_column(
         StringEnum(SubscriptionStatus), nullable=False
     )

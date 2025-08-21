@@ -67,6 +67,9 @@ class AccountRepository(
 
         if is_user(auth_subject):
             user = auth_subject.subject
+            # Admin users have access to all organizations
+            if user.is_admin:
+                return statement
             statement = statement.where(Account.admin_id == user.id)
         elif is_organization(auth_subject):
             # Only the admin of the account can access it

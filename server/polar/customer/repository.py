@@ -108,6 +108,9 @@ class CustomerRepository(
 
         if is_user(auth_subject):
             user = auth_subject.subject
+            # Admin users have access to all organizations
+            if user.is_admin:
+                return statement
             statement = statement.where(
                 Customer.organization_id.in_(
                     select(UserOrganization.organization_id).where(

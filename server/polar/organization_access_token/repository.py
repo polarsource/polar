@@ -52,6 +52,9 @@ class OrganizationAccessTokenRepository(
     ) -> Select[tuple[OrganizationAccessToken]]:
         statement = self.get_base_statement()
         user = auth_subject.subject
+        # Admin users have access to all organizations
+        if user.is_admin:
+            return statement
         statement = statement.where(
             OrganizationAccessToken.organization_id.in_(
                 select(UserOrganization.organization_id).where(

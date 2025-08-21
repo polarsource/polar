@@ -85,14 +85,17 @@ def _get_readable_orders_statement(
     statement = select(Order.id).join(Product, onclause=Order.product_id == Product.id)
 
     if is_user(auth_subject):
-        statement = statement.where(
-            Product.organization_id.in_(
-                select(UserOrganization.organization_id).where(
-                    UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.deleted_at.is_(None),
+        user = auth_subject.subject
+        # If user is admin, do not automatically restrict to the admin user's org
+        if not user.is_admin:
+            statement = statement.where(
+                Product.organization_id.in_(
+                    select(UserOrganization.organization_id).where(
+                        UserOrganization.user_id == user.id,
+                        UserOrganization.deleted_at.is_(None),
+                    )
                 )
             )
-        )
     elif is_organization(auth_subject):
         statement = statement.where(Product.organization_id == auth_subject.subject.id)
 
@@ -230,14 +233,17 @@ def get_active_subscriptions_cte(
         Product, onclause=Subscription.product_id == Product.id
     )
     if is_user(auth_subject):
-        readable_subscriptions_statement = readable_subscriptions_statement.where(
-            Product.organization_id.in_(
-                select(UserOrganization.organization_id).where(
-                    UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.deleted_at.is_(None),
+        user = auth_subject.subject
+        # If user is admin, do not automatically restrict to the admin user's org
+        if not user.is_admin:
+            readable_subscriptions_statement = readable_subscriptions_statement.where(
+                Product.organization_id.in_(
+                    select(UserOrganization.organization_id).where(
+                        UserOrganization.user_id == auth_subject.subject.id,
+                        UserOrganization.deleted_at.is_(None),
+                    )
                 )
             )
-        )
     elif is_organization(auth_subject):
         readable_subscriptions_statement = readable_subscriptions_statement.where(
             Product.organization_id == auth_subject.subject.id
@@ -331,14 +337,17 @@ def get_checkouts_cte(
     )
 
     if is_user(auth_subject):
-        readable_checkouts_statement = readable_checkouts_statement.where(
-            Product.organization_id.in_(
-                select(UserOrganization.organization_id).where(
-                    UserOrganization.user_id == auth_subject.subject.id,
-                    UserOrganization.deleted_at.is_(None),
+        user = auth_subject.subject
+        # If user is admin, do not automatically restrict to the admin user's org
+        if not user.is_admin:
+            readable_checkouts_statement = readable_checkouts_statement.where(
+                Product.organization_id.in_(
+                    select(UserOrganization.organization_id).where(
+                        UserOrganization.user_id == auth_subject.subject.id,
+                        UserOrganization.deleted_at.is_(None),
+                    )
                 )
             )
-        )
     elif is_organization(auth_subject):
         readable_checkouts_statement = readable_checkouts_statement.where(
             Product.organization_id == auth_subject.subject.id

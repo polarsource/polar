@@ -92,6 +92,9 @@ class PayoutRepository(
 
         if is_user(auth_subject):
             user = auth_subject.subject
+            # Admin users have access to all organizations
+            if user.is_admin:
+                return statement
             statement = statement.join(Payout.account).where(
                 Account.admin_id == user.id
             )

@@ -458,7 +458,10 @@ async def calculate_tax(
     # Compute an idempotency key based on the input parameters to work as a sort of cache
     address_str = address.model_dump_json()
     tax_ids_str = ",".join(f"{tax_id[0]}:{tax_id[1]}" for tax_id in tax_ids)
-    idempotency_key_str = f"{identifier}:{currency}:{amount}:{stripe_product_id}:{address_str}:{tax_ids_str}"
+    taxability_override: Literal["customer_exempt", "none"] = (
+        "customer_exempt" if customer_exempt else "none"
+    )
+    idempotency_key_str = f"{identifier}:{currency}:{amount}:{stripe_product_id}:{address_str}:{tax_ids_str}:{taxability_override}"
     idempotency_key = hashlib.sha256(idempotency_key_str.encode()).hexdigest()
 
     try:
@@ -476,7 +479,7 @@ async def calculate_tax(
                 "address": address.to_dict(),
                 "address_source": "billing",
                 "tax_ids": [to_stripe_tax_id(tax_id) for tax_id in tax_ids],
-                "taxability_override": "customer_exempt" if customer_exempt else "none",
+                "taxability_override": taxability_override,
             },
             idempotency_key=idempotency_key,
         )

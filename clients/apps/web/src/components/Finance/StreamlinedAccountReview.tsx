@@ -37,7 +37,7 @@ interface StreamlinedAccountReviewProps {
   organization: schemas['Organization']
   currentStep: Step
   requireDetails: boolean
-  organizationAccount?: any
+  organizationAccount?: schemas['Account']
   identityVerified?: boolean
   identityVerificationStatus?: string
   onDetailsSubmitted: () => void
@@ -200,7 +200,9 @@ export default function StreamlinedAccountReview({
   // Determine completion status for each step
   const isReviewCompleted = !!organization.details_submitted_at
   const isValidationCompleted = validationCompleted
-  const isAccountCompleted = !!organizationAccount
+  const isAccountCompleted =
+    organizationAccount !== undefined &&
+    organizationAccount.is_details_submitted
   const isIdentityCompleted = !!identityVerified
 
   const getStepStatus = (

@@ -357,6 +357,9 @@ class TaxabilityReason(StrEnum):
     not_supported = "not_supported"
     """Purchases from countries where we don't support tax."""
 
+    customer_exempt = "customer_exempt"
+    """Purchases where the customer is exempt from tax, e.g. if the subscription was created before our tax registration."""
+
     @classmethod
     def from_stripe(
         cls, stripe_reason: str | None, tax_amount: int
@@ -444,12 +447,13 @@ class TaxCalculation(TypedDict):
 
 
 async def calculate_tax(
-    identifier: uuid.UUID,
+    identifier: uuid.UUID | str,
     currency: str,
     amount: int,
     stripe_product_id: str,
     address: Address,
     tax_ids: list[TaxID],
+    customer_exempt: bool,
 ) -> TaxCalculation:
     # Compute an idempotency key based on the input parameters to work as a sort of cache
     address_str = address.model_dump_json()
@@ -472,6 +476,7 @@ async def calculate_tax(
                 "address": address.to_dict(),
                 "address_source": "billing",
                 "tax_ids": [to_stripe_tax_id(tax_id) for tax_id in tax_ids],
+                "taxability_override": "customer_exempt" if customer_exempt else "none",
             },
             idempotency_key=idempotency_key,
         )

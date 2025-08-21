@@ -1580,6 +1580,7 @@ class CheckoutService:
                         if checkout.customer_tax_id is not None
                         else []
                     ),
+                    customer_exempt=False,
                 )
                 checkout.tax_amount = tax_calculation["amount"]
                 checkout.tax_processor_id = tax_calculation["processor_id"]

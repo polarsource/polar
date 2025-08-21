@@ -1,4 +1,4 @@
-import { useAccount, useOrganizationAccount } from '@/hooks/queries'
+import { useOrganizationAccount } from '@/hooks/queries'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from '@/utils/account'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { schemas } from '@polar-sh/client'
@@ -9,10 +9,11 @@ import Icon from '../Icons/Icon'
 
 const GenericAccountBanner: React.FC<{
   account: schemas['Account'] | undefined
+  organization: schemas['Organization'] | undefined
   setupLink: string
-}> = ({ account, setupLink }) => {
-  const isActive = account?.status === 'active'
-  const isUnderReview = account?.status === 'under_review'
+}> = ({ account, organization, setupLink }) => {
+  const isActive = organization?.status === 'active'
+  const isUnderReview = organization?.status === 'under_review'
 
   if (!account) {
     return (
@@ -103,25 +104,10 @@ const GenericAccountBanner: React.FC<{
   return null
 }
 
-const UserAccountBanner: React.FC<{
-  user: schemas['UserRead']
-}> = ({ user }) => {
-  const { data: account, isLoading: personalAccountIsLoading } = useAccount(
-    user?.account_id,
-  )
-  const setupLink = '/finance/account'
-
-  if (personalAccountIsLoading) {
-    return null
-  }
-
-  return <GenericAccountBanner account={account} setupLink={setupLink} />
-}
-
 const OrganizationAccountBanner: React.FC<{
   organization: schemas['Organization']
 }> = ({ organization }) => {
-  const { data: account, isLoading: organizationAccountIsLoading } =
+  const { data: organizationAccount, isLoading: organizationAccountIsLoading } =
     useOrganizationAccount(organization?.id)
   const setupLink = `/dashboard/${organization.slug}/finance/account`
 
@@ -129,24 +115,23 @@ const OrganizationAccountBanner: React.FC<{
     return null
   }
 
-  return <GenericAccountBanner account={account} setupLink={setupLink} />
+  return (
+    <GenericAccountBanner
+      account={organizationAccount}
+      organization={organization}
+      setupLink={setupLink}
+    />
+  )
 }
 
 interface AccountBannerProps {
-  organization?: schemas['Organization']
-  user?: schemas['UserRead']
+  organization: schemas['Organization']
 }
 
-const AccountBanner: React.FC<AccountBannerProps> = ({
-  organization,
-  user,
-}) => {
+const AccountBanner: React.FC<AccountBannerProps> = ({ organization }) => {
   return (
     <>
-      {organization && (
-        <OrganizationAccountBanner organization={organization} />
-      )}
-      {user && <UserAccountBanner user={user} />}
+      <OrganizationAccountBanner organization={organization} />
     </>
   )
 }

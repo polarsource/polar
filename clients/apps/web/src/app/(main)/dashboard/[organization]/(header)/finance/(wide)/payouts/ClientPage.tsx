@@ -257,7 +257,9 @@ export default function ClientPage({
     <PayoutProvider>
       <div className="flex flex-col gap-y-6">
         <AccountBanner organization={organization} />
-        {account && <AccountBalance account={account} />}
+        {account && (
+          <AccountBalance account={account} organization={organization} />
+        )}
         <DataTable
           columns={columns}
           data={payouts?.items ?? []}

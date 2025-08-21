@@ -16,9 +16,7 @@ from polar.integrations.open_collective.service import open_collective
 from polar.integrations.stripe.service import stripe
 from polar.kit.pagination import PaginationParams
 from polar.models import Account, Organization, User
-from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
-from polar.transaction.service.transaction import transaction as transaction_service
 
 from .schemas import AccountCreate, AccountLink, AccountUpdate
 
@@ -97,24 +95,6 @@ class AccountService:
         await loops_service.user_created_account(
             session, admin, accountType=account.account_type
         )
-        return account
-
-    async def check_review_threshold(
-        self, session: AsyncSession, account: Account
-    ) -> Account:
-        if account.is_under_review():
-            return account
-
-        transfers_sum = await transaction_service.get_transactions_sum(
-            session, account.id, type=TransactionType.balance
-        )
-        if (
-            account.next_review_threshold is not None
-            and transfers_sum >= account.next_review_threshold
-        ):
-            account.status = Account.Status.UNDER_REVIEW
-            session.add(account)
-
         return account
 
     async def _build_stripe_account_name(
@@ -229,11 +209,6 @@ class AccountService:
 
         if account.account_type == AccountType.stripe and account.stripe_id:
             await stripe.update_account(account.stripe_id, name)
-
-    async def deny_account(self, session: AsyncSession, account: Account) -> Account:
-        account.status = Account.Status.DENIED
-        session.add(account)
-        return account
 
 
 account = AccountService()

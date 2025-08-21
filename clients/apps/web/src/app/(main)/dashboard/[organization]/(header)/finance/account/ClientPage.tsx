@@ -13,7 +13,8 @@ import {
   useListAccounts,
   useOrganizationAccount,
 } from '@/hooks/queries'
-import { schemas } from '@polar-sh/client'
+import { api } from '@/utils/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { loadStripe } from '@stripe/stripe-js'
@@ -55,7 +56,8 @@ export default function ClientPage({
     }
     if (
       organizationAccount === undefined ||
-      !organizationAccount.is_details_submitted
+      !organizationAccount.is_details_submitted ||
+      !organizationAccount.is_payouts_enabled
     ) {
       return 'account'
     }
@@ -125,7 +127,8 @@ export default function ClientPage({
         setStep('validation')
       } else if (
         organizationAccount === undefined ||
-        !organizationAccount.is_details_submitted
+        !organizationAccount.is_details_submitted ||
+        !organizationAccount.is_payouts_enabled
       ) {
         setStep('account')
       } else if (!identityVerified) {
@@ -151,8 +154,24 @@ export default function ClientPage({
     setStep('account')
   }, [])
 
-  const handleStartAccountSetup = useCallback(() => {
-    showSetupModal()
+  const handleStartAccountSetup = useCallback(async () => {
+    if (!organizationAccount) {
+      showSetupModal()
+    } else {
+      const link = await unwrap(
+        api.POST('/v1/accounts/{id}/onboarding_link', {
+          params: {
+            path: {
+              id: organizationAccount.id,
+            },
+            query: {
+              return_path: `/dashboard/${organization.slug}/finance/account`,
+            },
+          },
+        }),
+      )
+      window.location.href = link.url
+    }
   }, [showSetupModal])
 
   const handleStartIdentityVerification = useCallback(async () => {
@@ -190,7 +209,6 @@ export default function ClientPage({
               <AccountsList
                 accounts={accounts?.items}
                 pauseActions={requireDetails}
-                returnPath={`/dashboard/${organization.slug}/finance/account`}
               />
             )}
           </ShadowBoxOnMd>

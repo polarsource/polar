@@ -3,7 +3,7 @@ from pydantic import UUID4
 from polar.enums import SubscriptionRecurringInterval
 from polar.file.schemas import ProductMediaFileRead
 from polar.kit.schemas import Schema
-from polar.product.schemas import BenefitList, ProductPrice
+from polar.product.schemas import BenefitPublicList, ProductPrice
 
 
 class ProductEmbed(Schema):
@@ -15,5 +15,5 @@ class ProductEmbed(Schema):
     organization_id: UUID4
     price: ProductPrice
     cover: ProductMediaFileRead | None
-    benefits: BenefitList
+    benefits: BenefitPublicList
     etag: str

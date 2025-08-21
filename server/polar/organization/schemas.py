@@ -182,6 +182,7 @@ class Organization(IDSchema, TimestampedSchema):
     socials: list[OrganizationSocialLink] = Field(
         description="Links to social profiles.",
     )
+    status: OrganizationModel.Status = Field(description="Current organization status")
     details_submitted_at: datetime | None = Field(
         description="When the business details were submitted.",
     )

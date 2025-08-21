@@ -68,26 +68,6 @@ router = APIRouter()
 
 
 @contextlib.contextmanager
-def account_badge(account: Account | None) -> Generator[None]:
-    with tag.div(classes="badge"):
-        if account is None:
-            classes("badge-neutral")
-            text("No account")
-        else:
-            if account.status == Account.Status.ACTIVE:
-                classes("badge-success")
-            elif (
-                account.status == Account.Status.UNDER_REVIEW
-                or account.status == Account.Status.DENIED
-            ):
-                classes("badge-warning")
-            else:
-                classes("badge-neutral")
-            text(account.status.get_display_name())
-    yield
-
-
-@contextlib.contextmanager
 def organization_badge(organization: Organization) -> Generator[None]:
     with tag.div(classes="badge"):
         if organization.status == Organization.Status.ACTIVE:
@@ -103,12 +83,11 @@ def organization_badge(organization: Organization) -> Generator[None]:
     yield
 
 
-class AccountColumn(
+class OrganizationStatusColumn(
     datatable.DatatableAttrColumn[Organization, OrganizationSortProperty]
 ):
     def render(self, request: Request, item: Organization) -> Generator[None] | None:
-        account = item.account
-        with account_badge(account):
+        with organization_badge(item):
             pass
         return None
 
@@ -257,8 +236,8 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     query: str | None = Query(None),
-    account_status: Annotated[
-        Account.Status | None, BeforeValidator(empty_str_to_none), Query()
+    organization_status: Annotated[
+        Organization.Status | None, BeforeValidator(empty_str_to_none), Query()
     ] = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
@@ -280,8 +259,8 @@ async def list(
                     Organization.slug.ilike(f"%{query}%"),
                 )
             )
-    if account_status:
-        statement = statement.where(Account.status == account_status)
+    if organization_status:
+        statement = statement.where(Organization.status == organization_status)
 
     statement = repository.apply_sorting(statement, sorting)
     items, count = await repository.paginate(
@@ -303,14 +282,14 @@ async def list(
                     pass
                 with input.select(
                     [
-                        ("All Account Statuses", ""),
+                        ("All Organization Statuses", ""),
                         *[
                             (status.get_display_name(), status.value)
-                            for status in Account.Status
+                            for status in Organization.Status
                         ],
                     ],
-                    account_status.value if account_status else "",
-                    name="account_status",
+                    organization_status.value if organization_status else "",
+                    name="organization_status",
                 ):
                     pass
                 with button(type="submit"):
@@ -324,7 +303,7 @@ async def list(
                     "Created At",
                     sorting=OrganizationSortProperty.created_at,
                 ),
-                AccountColumn("account", "Account"),
+                OrganizationStatusColumn("status", "Status"),
                 datatable.DatatableAttrColumn(
                     "name",
                     "Name",

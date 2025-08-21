@@ -14,7 +14,10 @@ export const ACCOUNT_TYPE_DISPLAY_NAMES: Record<
   stripe: 'Stripe',
   open_collective: 'Open Collective',
 }
-export const ACCOUNT_STATUS_DISPLAY_NAMES: Record<schemas['Status'], string> = {
+export const ORGANIZATION_STATUS_DISPLAY_NAMES: Record<
+  schemas['Status'],
+  string
+> = {
   created: 'Onboarding incomplete',
   onboarding_started: 'Onboarding incomplete',
   under_review: 'Under review',

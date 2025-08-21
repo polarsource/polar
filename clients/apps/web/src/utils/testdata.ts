@@ -19,6 +19,7 @@ export const org: schemas['Organization'] = {
   name: 'Pydantic',
   slug: 'pydantic',
   socials: [],
+  status: 'active',
   website: 'https://pydantic.dev',
   avatar_url: 'https://avatars.githubusercontent.com/u/110818415?s=48&v=4',
   details_submitted_at: null,

@@ -13,7 +13,7 @@ from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
 from polar.kit.utils import utc_now
 from polar.locker import Locker
-from polar.models import Account, Organization, Transaction, User
+from polar.models import Organization, Transaction, User
 from polar.models.payout import PayoutStatus
 from polar.models.transaction import TransactionType
 from polar.payout.schemas import PayoutGenerateInvoice
@@ -23,7 +23,6 @@ from polar.payout.service import (
     MissingInvoiceBillingDetails,
     NotReadyAccount,
     PayoutNotSucceeded,
-    UnderReviewAccount,
 )
 from polar.payout.service import payout as payout_service
 from polar.postgres import AsyncSession
@@ -74,36 +73,6 @@ class TestCreate:
         await create_balance_transaction(save_fixture, account=account, amount=balance)
 
         with pytest.raises(InsufficientBalance):
-            await payout_service.create(session, locker, account=account)
-
-    async def test_under_review_account(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        locker: Locker,
-        organization: Organization,
-        user: User,
-    ) -> None:
-        account = await create_account(
-            save_fixture, organization, user, status=Account.Status.UNDER_REVIEW
-        )
-
-        with pytest.raises(UnderReviewAccount):
-            await payout_service.create(session, locker, account=account)
-
-    async def test_inactive_account(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        locker: Locker,
-        organization: Organization,
-        user: User,
-    ) -> None:
-        account = await create_account(
-            save_fixture, organization, user, status=Account.Status.ONBOARDING_STARTED
-        )
-
-        with pytest.raises(NotReadyAccount):
             await payout_service.create(session, locker, account=account)
 
     async def test_payout_disabled_account(

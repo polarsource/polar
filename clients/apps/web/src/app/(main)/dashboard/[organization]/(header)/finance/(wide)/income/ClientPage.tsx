@@ -75,6 +75,7 @@ export default function ClientPage({
       {account && (
         <AccountBalance
           account={account}
+          organization={organization}
           onWithdrawSuccess={() =>
             router.push(`/dashboard/${organization.slug}/finance/payouts`)
           }

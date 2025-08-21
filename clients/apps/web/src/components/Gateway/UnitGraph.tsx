@@ -44,6 +44,7 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
 
     const timestampFormatter = getTimestampFormatter(interval)
 
+
     return (
       <ChartContainer
         ref={ref}
@@ -57,10 +58,15 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
             label: 'Cost',
             color: '#ef4444',
           },
+          profit: {
+            label: 'Profit',
+            color: '#6366f1',
+          },
           metric: {
             label: 'Revenue vs. Cost',
           },
         }}
+        
       >
         <LineChart
           accessibilityLayer
@@ -68,6 +74,7 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
             ...period,
             revenue: period.value,
             cost: costData[index]?.value ?? 0,
+            profit: period.value - (costData[index]?.value ?? 0),
           }))}
           margin={{
             left: 24,
@@ -84,44 +91,45 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
               onDataIndexHover(undefined)
             }
           }}
+          
         >
           <ChartTooltip
-            cursor={true}
-            content={
-              <ChartTooltipContent
-                className="text-black dark:text-white"
-                indicator="dot"
-                labelKey="metric"
-                formatter={(value, name) => {
-                  const formattedValue = getFormattedMetricValue(
-                    {
-                      slug: 'revenue_vs_cost',
-                      display_name: 'Revenue vs. Cost',
-                      type: 'currency',
-                    },
-                    value as number,
-                  )
-                  return (
-                    <div className="flex flex-row justify-between gap-x-8">
-                      <div className="flex w-1/2 flex-row items-center gap-x-2">
+            includeHidden
+            content={({payload}) => (
+              <div
+                className="text-black dark:text-white w-48 dark:bg-polar-800 bg-white shadow-xl rounded-md flex-col gap-y-2 flex p-2"
+              >
+                <span>Revenue vs. Cost</span>
+                <div className="flex flex-col">
+                {payload?.map((item, index, array) => (
+                  <div key={item.name} className={twMerge(
+                    'flex flex-row justify-between gap-x-2 w-full',
+                    index === array.length - 1 && 'border-t border-gray-200 dark:border-polar-600 pt-2 mt-2',
+                  )}>
+                      <div className="flex flex-row items-center gap-x-2">
                         <span
                           className={twMerge(
                             'h-2 w-2 rounded-full',
-                            name === 'revenue'
-                              ? 'bg-emerald-500 dark:bg-emerald-500'
-                              : 'bg-red-500 dark:bg-red-500',
+                            index === array.length - 1 && 'hidden',
                           )}
+                          style={{
+                            backgroundColor: item?.color,
+                          }}
                         />
                         <span className="capitalize">
-                          {name.toString().split('_').join(' ')}
+                          {item.name?.toString().split('_').join(' ')}
                         </span>
                       </div>
-                      <span className="w-1/2 text-right">{formattedValue}</span>
+                      <span className="">{getFormattedMetricValue({
+                        slug: 'revenue_vs_cost',
+                        display_name: 'Revenue vs. Cost',
+                        type: 'currency',
+                      }, item.value as number)}</span>
                     </div>
-                  )
-                }}
-              />
-            }
+                ))}
+                </div>
+              </div>
+            )}
           />
           {simple ? undefined : (
             <CartesianGrid
@@ -136,7 +144,7 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
             tickLine={false}
             axisLine={false}
             tickMargin={8}
-            interval="preserveStartEnd"
+            interval="equidistantPreserveStart"
             tickFormatter={timestampFormatter}
           />
           <Line
@@ -152,6 +160,10 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
             type="linear"
             dot={false}
             strokeWidth={1.5}
+          />
+          <Line
+            dataKey="profit"
+            hide
           />
         </LineChart>
       </ChartContainer>

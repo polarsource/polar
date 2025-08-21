@@ -2,33 +2,13 @@ export interface ProviderDefinition {
 	id: string;
 	name: string;
 	description: string;
-	// Whether the provider supports streaming
 	streaming?: boolean;
-	// Whether the provider supports request cancellation
 	cancellation?: boolean;
-	// Whether the provider supports JSON output mode
 	jsonOutput?: boolean;
-	// Color used for UI representation (hex code)
-	color?: string;
-	// Website URL
 	website?: string | null;
-	// Announcement text
-	announcement?: string | null;
 }
 
 export const providers = [
-	{
-		id: "llmgateway",
-		name: "LLM Gateway",
-		description:
-			"LLMGateway is a framework for building and deploying large language models.",
-		streaming: true,
-		cancellation: true,
-		jsonOutput: true,
-		color: "#6366f1",
-		website: "https://llmgateway.io",
-		announcement: null,
-	},
 	{
 		id: "openai",
 		name: "OpenAI",
@@ -37,9 +17,7 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		jsonOutput: true,
-		color: "#0ea5e9",
 		website: "https://openai.com",
-		announcement: null,
 	},
 	{
 		id: "anthropic",
@@ -48,9 +26,7 @@ export const providers = [
 			"Anthropic is a research and deployment company focused on building safe and useful AI.",
 		streaming: true,
 		cancellation: true,
-		color: "#8b5cf6",
 		website: "https://anthropic.com",
-		announcement: null,
 	},
 	{
 		id: "google-vertex",
@@ -59,9 +35,7 @@ export const providers = [
 			"Google Vertex AI is a platform for building and deploying large language models.",
 		streaming: true,
 		cancellation: true,
-		color: "#d95656",
 		website: "https://cloud.google.com/vertex-ai",
-		announcement: null,
 	},
 	{
 		id: "google-ai-studio",
@@ -70,9 +44,7 @@ export const providers = [
 			"Google AI Studio is a platform for accessing Google's Gemini models.",
 		streaming: true,
 		cancellation: true,
-		color: "#4285f4",
 		website: "https://ai.google.com",
-		announcement: null,
 	},
 	{
 		id: "inference.net",
@@ -81,9 +53,7 @@ export const providers = [
 			"Inference.net is a platform for running large language models in the cloud.",
 		streaming: true,
 		cancellation: true,
-		color: "#10b981",
 		website: "https://inference.net",
-		announcement: null,
 	},
 	{
 		id: "together.ai",
@@ -93,9 +63,7 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		jsonOutput: true,
-		color: "#ff6b35",
 		website: "https://together.ai",
-		announcement: null,
 	},
 	{
 		id: "cloudrift",
@@ -104,9 +72,7 @@ export const providers = [
 			"CloudRift is a platform for running large language models in the cloud with fast inference.",
 		streaming: true,
 		cancellation: true,
-		color: "#00d4aa",
 		website: "https://www.cloudrift.ai",
-		announcement: "DeepSeek & Kimi K2 are 30-50% cheaper than the competition!",
 	},
 	{
 		id: "mistral",
@@ -115,9 +81,7 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		jsonOutput: true,
-		color: "#FF7000",
 		website: "https://mistral.ai",
-		announcement: null,
 	},
 	{
 		id: "moonshot",
@@ -126,9 +90,7 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		jsonOutput: true,
-		color: "#4B9EFF",
 		website: "https://moonshot.ai",
-		announcement: null,
 	},
 	{
 		id: "novita",
@@ -137,9 +99,7 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		jsonOutput: true,
-		color: "#9333ea",
 		website: "https://novita.ai",
-		announcement: null,
 	},
 	{
 		id: "xai",
@@ -148,9 +108,7 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		jsonOutput: true,
-		color: "#000000",
 		website: "https://x.ai",
-		announcement: null,
 	},
 	{
 		id: "groq",
@@ -159,9 +117,7 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		jsonOutput: true,
-		color: "#F55036",
 		website: "https://groq.com",
-		announcement: null,
 	},
 	{
 		id: "deepseek",
@@ -171,9 +127,7 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		jsonOutput: true,
-		color: "#FF6B00",
 		website: "https://deepseek.com",
-		announcement: null,
 	},
 	{
 		id: "perplexity",
@@ -183,9 +137,7 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		jsonOutput: false,
-		color: "#20B2AA",
 		website: "https://perplexity.ai",
-		announcement: null,
 	},
 	{
 		id: "alibaba",
@@ -195,9 +147,7 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		jsonOutput: true,
-		color: "#FF6A00",
 		website: "https://www.alibabacloud.com",
-		announcement: null,
 	},
 	{
 		id: "nebius",
@@ -207,9 +157,7 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		jsonOutput: true,
-		color: "#3b82f6",
 		website: "https://nebius.com",
-		announcement: null,
 	},
 	{
 		id: "zai",
@@ -218,9 +166,7 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		jsonOutput: true,
-		color: "#22c55e",
 		website: "https://z.ai",
-		announcement: null,
 	},
 	{
 		id: "custom",
@@ -229,9 +175,7 @@ export const providers = [
 		streaming: true,
 		cancellation: true,
 		jsonOutput: true,
-		color: "#6b7280",
 		website: null,
-		announcement: null,
 	},
 ] as const satisfies ProviderDefinition[];
 

@@ -76,7 +76,7 @@ export default function OverviewPage() {
   )
 
   const modelsData = useMemo(() => {
-    return models.slice(0, 10).map((model) => ({
+    return models.map((model) => ({
       ...model,
       inputTokens: Math.floor(Math.random() * 100000),
       completionTokens: Math.floor(Math.random() * 100000),
@@ -117,7 +117,7 @@ export default function OverviewPage() {
         costData={[
           ...Array.from({ length: 31 }, (_, i) => ({
             timestamp: new Date(`2025-01-${String(i + 1).padStart(2, '0')}`),
-            value: Math.floor(200 * (Math.sin(i) + 1)),
+            value: Math.floor(500 * Math.exp(Math.sin(i) + 1) * (i / 20)),
           })),
         ]}
         interval="day"
@@ -215,7 +215,7 @@ export default function OverviewPage() {
               },
               {
                 header: 'Provider',
-                accessorKey: 'providers',
+                accessorFn: (row) => row.providers[0].providerId,
               },
               {
                 header: 'Input Tokens',

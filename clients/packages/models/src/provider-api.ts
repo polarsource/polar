@@ -306,14 +306,6 @@ export function getProviderEndpoint(
 		url = baseUrl;
 	} else {
 		switch (provider) {
-			case "llmgateway":
-				if (model === "custom" || model === "auto") {
-					// For custom model, use a default URL for testing
-					url = "https://api.openai.com";
-				} else {
-					throw new Error(`Provider ${provider} requires a baseUrl`);
-				}
-				break;
 			case "openai":
 				url = "https://api.openai.com";
 				break;
@@ -411,7 +403,6 @@ export function getProviderEndpoint(
 			return `${url}/api/paas/v4/chat/completions`;
 		case "inference.net":
 		case "openai":
-		case "llmgateway":
 		case "cloudrift":
 		case "xai":
 		case "groq":

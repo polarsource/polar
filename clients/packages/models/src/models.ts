@@ -2,7 +2,6 @@ import { alibabaModels } from "./models/alibaba";
 import { anthropicModels } from "./models/anthropic";
 import { deepseekModels } from "./models/deepseek";
 import { googleModels } from "./models/google";
-import { customModels } from "./models/custom";
 import { metaModels } from "./models/meta";
 import { microsoftModels } from "./models/microsoft";
 import { mistralModels } from "./models/mistral";
@@ -112,7 +111,6 @@ export interface ModelDefinition {
 }
 
 export const models = [
-	...customModels,
 	...openaiModels,
 	...anthropicModels,
 	...googleModels,

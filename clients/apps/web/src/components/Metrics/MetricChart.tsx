@@ -111,7 +111,7 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
             tickLine={false}
             axisLine={false}
             tickMargin={8}
-            interval="preserveStartEnd"
+            interval="equidistantPreserveStart"
             ticks={
               simple
                 ? [

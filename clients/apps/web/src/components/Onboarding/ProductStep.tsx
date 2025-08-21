@@ -51,7 +51,6 @@ export const ProductStep = () => {
   )
   const meters = useMeters(organization.id, {
     sorting: ['name'],
-    limit: 30
   })
 
   const form = useForm<ProductCreateForm>({

@@ -15,7 +15,7 @@ const MeterSelect: React.FC<
     allOption?: boolean
   }
 > = ({ organizationId, allOption, className, ...props }) => {
-  const { data } = useMeters(organizationId, { sorting: ['name'], limit: 30 })
+  const { data } = useMeters(organizationId, { sorting: ['name'] })
   const meters = data?.items ?? []
 
   return (

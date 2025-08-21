@@ -44,19 +44,28 @@ export default function ClientPage({
     organization.details_submitted_at !== null,
   )
 
-  const [step, setStep] = useState<
-    'review' | 'validation' | 'account' | 'identity' | 'complete'
-  >(
-    !organization.details_submitted_at
-      ? 'review'
-      : !validationCompleted
-        ? 'validation'
-        : !organizationAccount
-          ? 'account'
-          : !identityVerified
-            ? 'identity'
-            : 'complete',
-  )
+  type Step = 'review' | 'validation' | 'account' | 'identity' | 'complete'
+
+  const getInitialStep = (): Step => {
+    if (!organization.details_submitted_at) {
+      return 'review'
+    }
+    if (!validationCompleted) {
+      return 'validation'
+    }
+    if (
+      organizationAccount === undefined ||
+      !organizationAccount.is_details_submitted
+    ) {
+      return 'account'
+    }
+    if (!identityVerified) {
+      return 'identity'
+    }
+    return 'complete'
+  }
+
+  const [step, setStep] = useState<Step>(getInitialStep())
 
   const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
   const createIdentityVerification = useCreateIdentityVerification()
@@ -114,7 +123,10 @@ export default function ClientPage({
     if (organization.details_submitted_at) {
       if (!validationCompleted) {
         setStep('validation')
-      } else if (!organizationAccount) {
+      } else if (
+        organizationAccount === undefined ||
+        !organizationAccount.is_details_submitted
+      ) {
         setStep('account')
       } else if (!identityVerified) {
         setStep('identity')

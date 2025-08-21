@@ -668,6 +668,7 @@ class OrderService:
                 product.stripe_product_id,
                 billing_address,
                 [tax_id] if tax_id is not None else [],
+                subscription.tax_exempted,
             )
             tax_calculation_processor_id = tax_calculation["processor_id"]
             tax_amount = tax_calculation["amount"]
@@ -1108,7 +1109,6 @@ class OrderService:
         checkout_id = invoice_metadata.get("checkout_id") or subscription_metadata.get(
             "checkout_id"
         )
-        subscription_details = invoice.subscription_details
         if checkout_id is not None:
             chekout_repository = CheckoutRepository.from_session(session)
             checkout = await chekout_repository.get_by_id(uuid.UUID(checkout_id))
@@ -1189,23 +1189,48 @@ class OrderService:
                 discount_amount += stripe_discount_amount.amount
 
         # Retrieve tax data
+        tax_id = customer.tax_id
+        tax_calculation_processor_id: str | None = None
         tax_amount = invoice.tax or 0
         taxability_reason: TaxabilityReason | None = None
-        tax_id = customer.tax_id
         tax_rate: TaxRate | None = None
-        for total_tax_amount in invoice.total_tax_amounts:
-            taxability_reason = TaxabilityReason.from_stripe(
-                total_tax_amount.taxability_reason, tax_amount
+
+        # If the subscription is tax-exempted, we need to retrieve tax rate manually:
+        # we don't apply tax on the invoice, but we need to know the rate for our
+        # accounting and fulfillment purposes.
+        if subscription.tax_exempted:
+            product = subscription.product
+            assert invoice.id is not None
+            assert product.stripe_product_id is not None
+            assert customer.billing_address is not None
+            tax_calculation = await calculate_tax(
+                invoice.id,
+                invoice.currency,
+                invoice.subtotal,
+                product.stripe_product_id,
+                customer.billing_address,
+                [customer.tax_id] if customer.tax_id is not None else [],
+                subscription.tax_exempted,
             )
-            stripe_tax_rate = await stripe_service.get_tax_rate(
-                get_expandable_id(total_tax_amount.tax_rate)
-            )
-            try:
-                tax_rate = from_stripe_tax_rate(stripe_tax_rate)
-            except ValueError:
-                continue
-            else:
-                break
+            tax_calculation_processor_id = tax_calculation["processor_id"]
+            tax_amount = tax_calculation["amount"]
+            taxability_reason = tax_calculation["taxability_reason"]
+            tax_rate = tax_calculation["tax_rate"]
+        # Automatic tax is enabled, so we can directly take the data from Stripe
+        else:
+            for total_tax_amount in invoice.total_tax_amounts:
+                taxability_reason = TaxabilityReason.from_stripe(
+                    total_tax_amount.taxability_reason, tax_amount
+                )
+                stripe_tax_rate = await stripe_service.get_tax_rate(
+                    get_expandable_id(total_tax_amount.tax_rate)
+                )
+                try:
+                    tax_rate = from_stripe_tax_rate(stripe_tax_rate)
+                except ValueError:
+                    continue
+                else:
+                    break
 
         # Ensure it inherits original metadata and custom fields
         user_metadata = (
@@ -1240,6 +1265,7 @@ class OrderService:
                 taxability_reason=taxability_reason,
                 tax_id=tax_id,
                 tax_rate=tax_rate,
+                tax_calculation_processor_id=tax_calculation_processor_id,
                 invoice_number=invoice_number,
                 customer=customer,
                 product=subscription.product,

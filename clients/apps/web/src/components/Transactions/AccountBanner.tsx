@@ -1,4 +1,4 @@
-import { useAccount, useOrganizationAccount } from '@/hooks/queries'
+import { useOrganizationAccount } from '@/hooks/queries'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from '@/utils/account'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { schemas } from '@polar-sh/client'
@@ -107,10 +107,8 @@ const GenericAccountBanner: React.FC<{
 const OrganizationAccountBanner: React.FC<{
   organization: schemas['Organization']
 }> = ({ organization }) => {
-  const { data: account, isLoading: organizationAccountIsLoading } = useAccount(
-    organization?.id,
-  )
-  useOrganizationAccount(organization?.id)
+  const { data: organizationAccount, isLoading: organizationAccountIsLoading } =
+    useOrganizationAccount(organization?.id)
   const setupLink = `/dashboard/${organization.slug}/finance/account`
 
   if (organizationAccountIsLoading) {
@@ -119,7 +117,7 @@ const OrganizationAccountBanner: React.FC<{
 
   return (
     <GenericAccountBanner
-      account={account}
+      account={organizationAccount}
       organization={organization}
       setupLink={setupLink}
     />

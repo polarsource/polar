@@ -177,6 +177,7 @@ export const ProductPriceMeteredUnitItem: React.FC<
 
   const { data: meters, refetch } = useMeters(organization.id, {
     sorting: ['name'],
+    limit: 30
   })
 
   const {

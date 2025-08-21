@@ -9130,14 +9130,19 @@ export interface components {
         };
         /**
          * CustomerOrderConfirmPayment
-         * @description Schema to confirm a retry payment using a Stripe confirmation token.
+         * @description Schema to confirm a retry payment using either a saved payment method or a new confirmation token.
          */
         CustomerOrderConfirmPayment: {
             /**
              * Confirmation Token Id
-             * @description ID of the Stripe confirmation token.
+             * @description ID of the Stripe confirmation token for new payment methods.
              */
-            confirmation_token_id: string;
+            confirmation_token_id?: string | null;
+            /**
+             * Payment Method Id
+             * @description ID of an existing saved payment method.
+             */
+            payment_method_id?: string | null;
             /**
              * @description Payment processor used.
              * @default stripe
@@ -14738,10 +14743,10 @@ export interface components {
             price: components["schemas"]["LegacyRecurringProductPrice"] | components["schemas"]["ProductPrice"];
             cover: components["schemas"]["ProductMediaFileRead"] | null;
             /**
-             * Benefits
+             * BenefitPublic
              * @description List of benefits granted by the product.
              */
-            benefits: components["schemas"]["Benefit"][];
+            benefits: components["schemas"]["BenefitPublic"][];
             /** Etag */
             etag: string;
         };

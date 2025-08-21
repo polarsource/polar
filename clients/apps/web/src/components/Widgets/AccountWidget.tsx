@@ -24,8 +24,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
   const lastPayout = payouts?.items[0]
 
   const canWithdraw =
-    org?.details_submitted_at !== null &&
-    account?.is_payouts_enabled &&
+    org.status === 'active' &&
     summary?.balance?.amount &&
     summary.balance.amount > 0
 

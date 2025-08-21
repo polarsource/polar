@@ -125,7 +125,9 @@ class TestUpdateProductProrations:
     @pytest.mark.parametrize(
         "old_product_param,new_product_param,cycle_start,time_of_update,entry_0_amount,entry_1_amount",
         [
+            ######################################
             #### Basic monthly to Pro monthly ####
+            ######################################
             pytest.param(
                 (SubscriptionRecurringInterval.month, 10000),
                 (SubscriptionRecurringInterval.month, 30000),

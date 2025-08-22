@@ -19,7 +19,8 @@ import {
   TabsTrigger,
 } from '@polar-sh/ui/components/atoms/Tabs'
 import Link from 'next/link'
-import React from 'react'
+import React, { useMemo } from 'react'
+import UnitGraph from '../Gateway/UnitGraph'
 import MetricChartBox from '../Metrics/MetricChartBox'
 import { DetailRow } from '../Shared/DetailRow'
 
@@ -62,6 +63,26 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     customer_id: [customer.id],
   })
 
+  const revenueData = useMemo(
+    () =>
+      Array.from({ length: 31 }, (_, i) => ({
+        timestamp: new Date(`2025-01-${String(i + 1).padStart(2, '0')}`),
+        value: Math.floor(Math.random() * 500 * Math.exp(i / 10)), // Starts at 100, grows by 20% each day
+      })),
+    [customer],
+  )
+
+  const costData = useMemo(
+    () =>
+      Array.from({ length: 31 }, (_, i) => ({
+        timestamp: new Date(`2025-01-${String(i + 1).padStart(2, '0')}`),
+        value: Math.floor(
+          Math.random() * 500 * Math.exp(Math.sin(i) + 1) * (i / 20),
+        ),
+      })),
+    [customer],
+  )
+
   return (
     <Tabs defaultValue="overview" className="flex flex-col">
       <TabsList className="mb-8">
@@ -70,6 +91,19 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <TabsTrigger value="usage">Usage</TabsTrigger>
       </TabsList>
       <TabsContent value="overview" className="flex flex-col gap-y-12">
+        <ShadowBox className="dark:bg-polar-800 flex flex-col bg-gray-100 p-2">
+          <div className="flex flex-row items-center justify-between p-4">
+            <h3 className="text-xl">Revenue vs. Cost</h3>
+          </div>
+          <div className="dark:bg-polar-900 flex flex-col gap-4 rounded-3xl bg-white p-4">
+            <UnitGraph
+              height={400}
+              revenueData={revenueData}
+              costData={costData}
+              interval="day"
+            />
+          </div>
+        </ShadowBox>
         <MetricChartBox
           metric={selectedMetric}
           onMetricChange={setSelectedMetric}

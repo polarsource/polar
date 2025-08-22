@@ -226,13 +226,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               name={selectedCustomer.name || selectedCustomer.email}
               className="h-16 w-16"
             />
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col">
               <p className="text-lg">
                 {(selectedCustomer.name?.length ?? 0) > 0
                   ? selectedCustomer.name
                   : '—'}
               </p>
-              <div className="dark:text-polar-500 flex flex-row items-center gap-2 font-mono text-sm text-gray-500">
+              <div className="dark:text-polar-500 flex flex-row items-center gap-2 text-base font-normal text-gray-500">
                 <span>{selectedCustomer.email}</span>
               </div>
             </div>

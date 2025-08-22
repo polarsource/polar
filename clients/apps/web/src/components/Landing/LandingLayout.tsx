@@ -4,7 +4,6 @@ import { TopbarNavigation } from '@/components/Landing/TopbarNavigation'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
-import { ArrowForward } from '@mui/icons-material'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
@@ -18,16 +17,6 @@ import { useModal } from '../Modal/useModal'
 export default function Layout({ children }: PropsWithChildren) {
   return (
     <div className="dark:bg-polar-950 relative flex flex-col bg-gray-50 md:w-full md:flex-1 md:items-center">
-      <Link
-        className="flex w-full flex-col items-center bg-indigo-50 py-4 text-indigo-400 transition-opacity hover:opacity-50 dark:bg-indigo-950"
-        href="/blog/polar-seed-announcement"
-        prefetch
-      >
-        <div className="flex flex-row items-center gap-x-2 text-sm md:text-base">
-          <span>Announcing our $10M Seed Round, led by Accel</span>
-          <ArrowForward fontSize="inherit" />
-        </div>
-      </Link>
       <div className="flex flex-col gap-y-2 md:w-full">
         <LandingPageTopbar />
         <LandingPageDesktopNavigation />
@@ -79,9 +68,9 @@ const LandingPageDesktopNavigation = () => {
   }
 
   return (
-    <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-12 md:flex">
-      <div className="relative flex w-full flex-row items-center justify-between md:max-w-3xl xl:max-w-7xl">
-        <BrandingMenu logoVariant="logotype" size={100} />
+    <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-12 md:flex md:px-16">
+      <div className="relative flex w-full flex-row items-center justify-between">
+        <BrandingMenu logoVariant="icon" size={50} />
 
         <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-6 font-medium">
           <li>
@@ -100,11 +89,7 @@ const LandingPageDesktopNavigation = () => {
           </li>
         </ul>
 
-        <Button
-          onClick={onLoginClick}
-          className="rounded-full"
-          variant="secondary"
-        >
+        <Button onClick={onLoginClick} variant="ghost">
           Log In
         </Button>
       </div>

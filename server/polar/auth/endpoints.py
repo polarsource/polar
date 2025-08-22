@@ -3,7 +3,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from polar.auth.dependencies import WebUser
+from polar.auth.dependencies import WebUserWrite
 from polar.auth.scope import Scope
 from polar.config import settings
 from polar.models import User
@@ -38,7 +38,7 @@ async def logout(
 async def start_impersonation(
     request: Request,
     response: Response,
-    auth_subject: WebUser,
+    auth_subject: WebUserWrite,
     user_id: str = Form(),
     session: AsyncSession = Depends(get_db_session),
 ) -> ImpersonateResponse:

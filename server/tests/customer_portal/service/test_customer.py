@@ -10,7 +10,7 @@ from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
 from polar.kit.tax import TaxIDFormat
-from polar.models import Customer, Organization
+from polar.models import Organization
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
@@ -88,25 +88,26 @@ class TestUpdate:
                 ),
             )
 
-    async def test_email_already_exists(
+    async def test_billing_name_update(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
-        customer: Customer,
     ) -> None:
-        new_customer = await create_customer(
+        customer = await create_customer(
             save_fixture,
             organization=organization,
         )
-        with pytest.raises(PolarRequestValidationError):
-            await customer_service.update(
-                session,
-                new_customer,
-                CustomerPortalCustomerUpdate(
-                    email=customer.email,
-                ),
-            )
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerPortalCustomerUpdate(
+                billing_name="Polar Software Inc.",
+            ),
+        )
+
+        assert updated_customer.billing_name == "Polar Software Inc."
 
     async def test_valid(
         self,
@@ -121,13 +122,13 @@ class TestUpdate:
             session,
             customer,
             CustomerPortalCustomerUpdate(
-                name="Updated Name",
+                billing_name="Polar Software Inc.",
                 billing_address=Address(country=CountryAlpha2("FR")),
                 tax_id="FR61954506077",
             ),
         )
 
-        assert updated_customer.name == "Updated Name"
+        assert updated_customer.billing_name == "Polar Software Inc."
         assert updated_customer.billing_address is not None
         assert updated_customer.billing_address.country == "FR"
         assert updated_customer.tax_id is not None

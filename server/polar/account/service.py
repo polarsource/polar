@@ -205,10 +205,14 @@ class AccountService:
         return None
 
     async def sync_to_upstream(self, session: AsyncSession, account: Account) -> None:
-        name = await self._build_stripe_account_name(session, account)
+        if account.account_type != AccountType.stripe:
+            return
 
-        if account.account_type == AccountType.stripe and account.stripe_id:
-            await stripe.update_account(account.stripe_id, name)
+        if not account.stripe_id:
+            return
+
+        name = await self._build_stripe_account_name(session, account)
+        await stripe.update_account(account.stripe_id, name)
 
 
 account = AccountService()

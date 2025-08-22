@@ -171,7 +171,7 @@ const MetricChartBox = forwardRef<HTMLDivElement, MetricChartBoxProps>(
               {metricValue}
             </h2>
             {!compact && (
-              <div className="flex flex-row items-center gap-x-6">
+              <div className="flex flex-col gap-x-6 gap-y-2 md:flex-row md:items-center">
                 <div className="flex flex-row items-center gap-x-2 text-sm">
                   <span className="h-3 w-3 rounded-full border-2 border-blue-500" />
                   {hoveredPeriod ? (

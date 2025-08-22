@@ -3894,6 +3894,7 @@ export interface components {
              */
             id: string;
             account_type: components["schemas"]["AccountType"];
+            status: components["schemas"]["Status"];
             /** Stripe Id */
             stripe_id: string | null;
             /** Open Collective Slug */
@@ -9414,6 +9415,8 @@ export interface components {
             email_verified: boolean;
             /** Name */
             name: string | null;
+            /** Billing Name */
+            billing_name: string | null;
             billing_address: components["schemas"]["Address"] | null;
             /** Tax Id */
             tax_id: [
@@ -9429,10 +9432,8 @@ export interface components {
         };
         /** CustomerPortalCustomerUpdate */
         CustomerPortalCustomerUpdate: {
-            /** Email */
-            email?: string | null;
-            /** Name */
-            name?: string | null;
+            /** Billing Name */
+            billing_name?: string | null;
             billing_address?: components["schemas"]["Address"] | null;
             /** Tax Id */
             tax_id?: string | null;

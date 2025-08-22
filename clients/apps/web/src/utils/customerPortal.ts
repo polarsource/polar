@@ -1,5 +1,5 @@
 import { Client, schemas, unwrap } from '@polar-sh/client'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { cache } from 'react'
 
 const _getOrganizationOrNotFound = async (
@@ -20,6 +20,7 @@ const _getOrganizationOrNotFound = async (
     }),
     {
       404: notFound,
+      401: () => redirect(`/${slug}/portal/request`),
     },
   )
 }

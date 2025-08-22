@@ -3,6 +3,7 @@ from collections.abc import Callable, Sequence
 from datetime import datetime
 from typing import Any
 
+import structlog
 from sqlalchemy import UnaryExpression, asc, desc, select, text
 
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -10,6 +11,7 @@ from polar.exceptions import PolarError, PolarRequestValidationError, Validation
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
+from polar.logging import Logger
 from polar.meter.filter import Filter
 from polar.meter.repository import MeterRepository
 from polar.models import Customer, Event, Organization, User, UserOrganization
@@ -20,6 +22,8 @@ from polar.worker import enqueue_events, enqueue_job
 from .repository import EventRepository
 from .schemas import EventCreateCustomer, EventName, EventsIngest, EventsIngestResponse
 from .sorting import EventNamesSortProperty, EventSortProperty
+
+log: Logger = structlog.get_logger()
 
 
 class EventError(PolarError): ...
@@ -245,6 +249,13 @@ class EventService:
         repository = EventRepository.from_session(session)
         event = await repository.create(event, flush=True)
         enqueue_events(event.id)
+        log.debug(
+            "Event created",
+            id=event.id,
+            name=event.name,
+            source=event.source,
+            metadata=event.user_metadata,
+        )
         return event
 
     async def ingested(

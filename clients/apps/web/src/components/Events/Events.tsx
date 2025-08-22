@@ -53,7 +53,7 @@ const EventRow = ({
         </td>
         <td className="px-4 py-2">
           <Link
-            href={`/dashboard/${organization.slug}/customers?customerId=${event.customer?.id}`}
+            href={`/dashboard/${organization.slug}?customerId=${event.customer?.id}`}
             className="flex w-[180px] flex-shrink-0 items-center gap-x-3"
             onClick={(e) => {
               e.stopPropagation()

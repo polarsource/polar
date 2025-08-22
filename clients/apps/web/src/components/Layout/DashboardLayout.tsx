@@ -43,7 +43,7 @@ const DashboardLayout = (
           organizations={organizations ?? []}
           type={props.type}
         />
-        <div className="hidden md:flex">
+        <div className="hidden flex-row gap-x-6 md:flex">
           <DashboardSidebar
             organization={organization}
             organizations={organizations ?? []}

@@ -9,7 +9,9 @@ import {
   WellHeader,
 } from '@/components/Shared/Well'
 import { useCustomers } from '@/hooks/queries'
+import { useEvents } from '@/hooks/queries/events'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { models } from '@polar-sh/models'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
 import { DataTable } from '@polar-sh/ui/components/atoms/DataTable'
 import {
@@ -26,8 +28,6 @@ import {
 import { formatCurrencyAndAmount } from '@polar-sh/ui/lib/money'
 import Link from 'next/link'
 import { useContext, useMemo } from 'react'
-import { models } from '@polar-sh/models'
-import { useEvents } from '@/hooks/queries/events'
 
 const tiles = [
   {
@@ -58,8 +58,8 @@ export default function OverviewPage() {
 
   const { data: events } = useEvents(organization.id, {
     metadata: {
-      strategy: 'LLM'
-    }
+      strategy: 'LLM',
+    },
   })
 
   const customersData = useMemo(
@@ -137,7 +137,7 @@ export default function OverviewPage() {
                   return (
                     <Link
                       className="flex items-center gap-x-2"
-                      href={`/dashboard/${organization.slug}/customers?query=${row.original.email}`}
+                      href={`/dashboard/${organization.slug}?query=${row.original.email}`}
                     >
                       <Avatar
                         name={row.original.email}

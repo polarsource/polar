@@ -94,7 +94,7 @@ export default function ClientPage({
   })
 
   return (
-    <DashboardBody wide>
+    <DashboardBody>
       <div className="flex flex-col gap-y-8">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">

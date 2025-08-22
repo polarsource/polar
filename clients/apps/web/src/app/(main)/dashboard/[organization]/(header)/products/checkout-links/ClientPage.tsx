@@ -92,7 +92,7 @@ export const ClientPage = () => {
         />
       }
       contextViewPlacement="left"
-      title={checkoutLink?.label ?? ''}
+      title={checkoutLink?.label ?? 'Checkout Links'}
       header={
         checkoutLink ? (
           <div className="flex flex-row items-center gap-x-2">
@@ -118,7 +118,6 @@ export const ClientPage = () => {
           </div>
         ) : undefined
       }
-      wrapperClassName="!max-w-screen-sm"
     >
       {checkoutLink ? (
         <>

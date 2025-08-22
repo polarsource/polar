@@ -19,7 +19,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -52,7 +51,7 @@ export const DashboardSidebar = ({
   }
 
   return (
-    <Sidebar variant="inset" collapsible="icon">
+    <Sidebar variant="inset" collapsible="icon" className="ml-1">
       <SidebarHeader
         className={twMerge(
           'flex md:pt-3.5',
@@ -63,19 +62,9 @@ export const DashboardSidebar = ({
         )}
       >
         <BrandingMenu size={32} />
-        <motion.div
-          key={isCollapsed ? 'header-collapsed' : 'header-expanded'}
-          className={`flex ${isCollapsed ? 'flex-row md:flex-col-reverse' : 'flex-row'} items-center gap-2`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1 }}
-        >
-          <NotificationsPopover />
-          <SidebarTrigger />
-        </motion.div>
       </SidebarHeader>
 
-      <SidebarContent className="gap-4 px-2 py-4">
+      <SidebarContent className="gap-4 py-4">
         <motion.div
           key={isCollapsed ? 'nav-collapsed' : 'nav-expanded'}
           className="flex flex-col items-center gap-2"
@@ -83,6 +72,7 @@ export const DashboardSidebar = ({
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
         >
+          <NotificationsPopover />
           {type === 'account' && <AccountNavigation />}
           {type === 'organization' && (
             <OrganizationNavigation organization={organization} />

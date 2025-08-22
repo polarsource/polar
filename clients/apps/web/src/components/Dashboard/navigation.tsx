@@ -8,7 +8,6 @@ import {
   DonutLargeOutlined,
   HiveOutlined,
   LinkOutlined,
-  PeopleAltOutlined,
   ShoppingBagOutlined,
   SpaceDashboardOutlined,
   Storefront,
@@ -223,16 +222,6 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
         link: `/dashboard/${org?.slug}/gateway/providers`,
       },
     ],
-  },
-  {
-    id: 'customers',
-    title: 'Customers',
-    icon: <PeopleAltOutlined fontSize="inherit" />,
-    link: `/dashboard/${org?.slug}/customers`,
-    checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/dashboard/${org?.slug}/customers`)
-    },
-    if: true,
   },
   {
     id: 'org-sales',

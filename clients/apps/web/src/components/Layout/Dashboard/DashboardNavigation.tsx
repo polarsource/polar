@@ -37,34 +37,31 @@ export const OrganizationNavigation = ({
     <SidebarMenu>
       {dashboardRoutes.map((route) => (
         <SidebarMenuItem key={route.link}>
-          <SidebarMenuButton tooltip={route.title} asChild>
-            <Link
-              key={route.link}
-              prefetch={true}
-              className={twMerge(
-                'flex flex-row items-center rounded-lg border border-transparent px-2 transition-colors dark:border-transparent',
-                route.isActive
-                  ? 'dark:bg-polar-900 dark:border-polar-800 border-gray-200 bg-white text-black shadow-sm dark:text-white'
-                  : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
-                isCollapsed && '!dark:text-polar-600',
-              )}
-              href={route.link}
-            >
-              {'icon' in route && route.icon ? (
-                <span
-                  className={twMerge(
-                    'flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]',
-                    route.isActive
-                      ? 'text-blue-500 dark:text-white'
-                      : 'bg-transparent',
-                  )}
-                >
-                  {route.icon}
-                </span>
-              ) : undefined}
-              <span className="ml-2 text-sm font-medium">{route.title}</span>
-            </Link>
-          </SidebarMenuButton>
+          <Link
+            key={route.link}
+            prefetch={true}
+            className={twMerge(
+              'flex aspect-square flex-row items-center justify-center rounded-lg border border-transparent transition-colors dark:border-transparent',
+              route.isActive
+                ? 'dark:bg-polar-800 dark:border-polar-700 border-gray-200 bg-white text-black shadow-sm dark:text-white'
+                : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
+              isCollapsed && '!dark:text-polar-600',
+            )}
+            href={route.link}
+          >
+            {'icon' in route && route.icon ? (
+              <span
+                className={twMerge(
+                  'flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[18px]',
+                  route.isActive
+                    ? 'text-blue-500 dark:text-white'
+                    : 'bg-transparent',
+                )}
+              >
+                {route.icon}
+              </span>
+            ) : undefined}
+          </Link>
           {route.isActive && route.subs && (
             <SidebarMenuSub className="my-2 gap-y-2">
               {route.subs.map((subRoute: SubRouteWithActive) => {

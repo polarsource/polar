@@ -65,7 +65,7 @@ const MeterCustomersTab = ({
             },
           }) => (
             <Link
-              href={`/dashboard/${organization.slug}/customers?customerId=${customer.id}`}
+              href={`/dashboard/${organization.slug}?customerId=${customer.id}`}
               className="flex items-center gap-x-3"
             >
               <Avatar

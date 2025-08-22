@@ -6,6 +6,7 @@ from tagflow import tag, text
 from .accounts.endpoints import router as accounts_router
 from .dependencies import get_admin
 from .external_events.endpoints import router as external_events_router
+from .impersonation.endpoints import router as impersonation_router
 from .layout import layout
 from .middlewares import SecurityHeadersMiddleware, TagflowMiddleware
 from .orders.endpoints import router as orders_router
@@ -41,6 +42,7 @@ app.include_router(tasks_router, prefix="/tasks")
 app.include_router(pledges_router, prefix="/pledges")
 app.include_router(subscriptions_router, prefix="/subscriptions")
 app.include_router(orders_router, prefix="/orders")
+app.include_router(impersonation_router, prefix="/impersonation")
 
 
 @app.get("/", name="index")

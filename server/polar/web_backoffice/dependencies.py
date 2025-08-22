@@ -2,6 +2,7 @@ from fastapi import Depends, Request
 from fastapi.exceptions import HTTPException
 
 from polar.auth.service import auth as auth_service
+from polar.config import settings
 from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_session
 

@@ -355,6 +355,13 @@ class TestCreateOrUpdateFromCheckout:
         )
         enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
 
+        event_repository = EventRepository.from_session(session)
+        for subscription_meter in subscription.meters:
+            meter_reset = await event_repository.get_latest_meter_reset(
+                customer, subscription_meter.meter_id
+            )
+            assert meter_reset is not None
+
     async def test_new_custom_discount_percentage_100(
         self,
         enqueue_benefits_grants_mock: MagicMock,

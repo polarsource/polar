@@ -15,6 +15,7 @@ from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.config import settings
+from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
@@ -346,6 +347,9 @@ class SubscriptionService:
                 checkout.id, subscription.id
             )
 
+        # Reset the subscription meters to start fresh
+        await self.reset_meters(session, subscription)
+
         # Enqueue the benefits grants for the subscription
         await self.enqueue_benefits_grants(session, subscription)
 
@@ -528,6 +532,9 @@ class SubscriptionService:
                 checkout.id, subscription.id
             )
 
+        # Reset the subscription meters to start fresh
+        await self.reset_meters(session, subscription)
+
         # Notify checkout channel that a subscription has been created from it
         await publish_checkout_event(
             checkout.client_secret, CheckoutEvent.subscription_created
@@ -615,6 +622,45 @@ class SubscriptionService:
         )
 
         return subscription
+
+    async def reset_meters(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        """
+        Resets all the subscription meters to start fresh, optionally reporting
+        rollover units if applicable.
+
+        This should be called when creating a new subscription or cycling an
+        existing one.
+        """
+        customer = subscription.customer
+        for subscription_meter in subscription.meters:
+            rollover_units = await customer_meter_service.get_rollover_units(
+                session, customer, subscription_meter.meter
+            )
+            await event_service.create_event(
+                session,
+                build_system_event(
+                    SystemEvent.meter_reset,
+                    customer=customer,
+                    organization=subscription.organization,
+                    metadata={"meter_id": str(subscription_meter.meter_id)},
+                ),
+            )
+            if rollover_units > 0:
+                await event_service.create_event(
+                    session,
+                    build_system_event(
+                        SystemEvent.meter_credited,
+                        customer=customer,
+                        organization=subscription.organization,
+                        metadata={
+                            "meter_id": str(subscription_meter.meter_id),
+                            "units": rollover_units,
+                            "rollover": True,
+                        },
+                    ),
+                )
 
     async def _after_subscription_created(
         self, session: AsyncSession, subscription: Subscription

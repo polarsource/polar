@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Any
 
 from fastapi import (
@@ -61,6 +62,7 @@ async def start_impersonation(
         user=target_user,
         user_agent=request.headers.get("User-Agent", ""),
         scopes=[Scope.web_read],
+        expire_in=timedelta(minutes=60),
     )
 
     # Get the current session token to preserve it

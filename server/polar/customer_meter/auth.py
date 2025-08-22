@@ -10,6 +10,7 @@ from polar.models.organization import Organization
 _CustomerMeterRead = Authenticator(
     required_scopes={
         Scope.web_default,
+        Scope.web_read,
         Scope.customer_meters_read,
     },
     allowed_subjects={User, Organization},

@@ -9,6 +9,7 @@ from polar.auth.scope import Scope
 _CreatorProductsRead = Authenticator(
     required_scopes={
         Scope.web_default,
+        Scope.web_read,
         Scope.products_read,
         Scope.products_write,
     },
@@ -19,7 +20,11 @@ CreatorProductsRead = Annotated[
 ]
 
 _CreatorProductsWrite = Authenticator(
-    required_scopes={Scope.web_default, Scope.products_write},
+    required_scopes={
+        Scope.web_default,
+        Scope.web_write,
+        Scope.products_write,
+    },
     allowed_subjects={User, Organization},
 )
 CreatorProductsWrite = Annotated[

@@ -16,7 +16,6 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
-from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.customer_portal.schemas.order import (
     CustomerOrderPaymentConfirmation,
     CustomerOrderUpdate,
@@ -26,8 +25,6 @@ from polar.discount.service import discount as discount_service
 from polar.email.react import render_email_template
 from polar.email.sender import enqueue_email
 from polar.enums import PaymentProcessor
-from polar.event.service import event as event_service
-from polar.event.system import SystemEvent, build_system_event
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.held_balance.service import held_balance as held_balance_service
@@ -709,33 +706,8 @@ class OrderService:
         )
 
         # Reset the associated meters, if any
-        for subscription_meter in subscription.meters:
-            rollover_units = await customer_meter_service.get_rollover_units(
-                session, customer, subscription_meter.meter
-            )
-            await event_service.create_event(
-                session,
-                build_system_event(
-                    SystemEvent.meter_reset,
-                    customer=customer,
-                    organization=subscription.organization,
-                    metadata={"meter_id": str(subscription_meter.meter_id)},
-                ),
-            )
-            if rollover_units > 0:
-                await event_service.create_event(
-                    session,
-                    build_system_event(
-                        SystemEvent.meter_credited,
-                        customer=customer,
-                        organization=subscription.organization,
-                        metadata={
-                            "meter_id": str(subscription_meter.meter_id),
-                            "units": rollover_units,
-                            "rollover": True,
-                        },
-                    ),
-                )
+        if billing_reason == OrderBillingReason.subscription_cycle:
+            await subscription_service.reset_meters(session, subscription)
 
         # If the order total amount is zero, mark it as paid immediately
         if order.total_amount <= 0:
@@ -1281,33 +1253,8 @@ class OrderService:
         )
 
         # Reset the associated meters, if any
-        for subscription_meter in subscription.meters:
-            rollover_units = await customer_meter_service.get_rollover_units(
-                session, customer, subscription_meter.meter
-            )
-            await event_service.create_event(
-                session,
-                build_system_event(
-                    SystemEvent.meter_reset,
-                    customer=customer,
-                    organization=subscription.organization,
-                    metadata={"meter_id": str(subscription_meter.meter_id)},
-                ),
-            )
-            if rollover_units > 0:
-                await event_service.create_event(
-                    session,
-                    build_system_event(
-                        SystemEvent.meter_credited,
-                        customer=customer,
-                        organization=subscription.organization,
-                        metadata={
-                            "meter_id": str(subscription_meter.meter_id),
-                            "units": rollover_units,
-                            "rollover": True,
-                        },
-                    ),
-                )
+        if billing_reason == OrderBillingReason.subscription_cycle:
+            await subscription_service.reset_meters(session, subscription)
 
         await self._on_order_created(session, order)
 

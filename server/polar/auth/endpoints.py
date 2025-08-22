@@ -1,6 +1,4 @@
-from uuid import UUID
-
-from fastapi import Depends, HTTPException, Request, Response, status
+from fastapi import Depends, Form, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -19,10 +17,6 @@ from .service import auth as auth_service
 router = APIRouter(tags=["auth", APITag.private])
 
 
-class ImpersonateRequest(BaseModel):
-    user_id: UUID
-
-
 class ImpersonateResponse(BaseModel):
     success: bool
     message: str
@@ -36,12 +30,16 @@ async def logout(
     return await auth_service.get_logout_response(session, request, user_session)
 
 
-@router.post("/auth/impersonate/start", response_model=ImpersonateResponse)
+@router.post(
+    "/auth/impersonate/start",
+    response_model=ImpersonateResponse,
+    name="auth:start_impersonation",
+)
 async def start_impersonation(
     request: Request,
     response: Response,
-    impersonate_request: ImpersonateRequest,
     auth_subject: WebUser,
+    user_id: str = Form(),
     session: AsyncSession = Depends(get_db_session),
 ) -> ImpersonateResponse:
     """Start impersonating a user. Only available to admin users."""
@@ -54,9 +52,7 @@ async def start_impersonation(
         )
 
     # Get the target user
-    result = await session.execute(
-        select(User).where(User.id == impersonate_request.user_id)
-    )
+    result = await session.execute(select(User).where(User.id == user_id))
     target_user = result.unique().scalar_one_or_none()
     if not target_user:
         raise HTTPException(

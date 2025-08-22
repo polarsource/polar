@@ -901,6 +901,20 @@ async def get(
 
                                                 # Actions
                                                 with tag.td():
+                                                    with tag.div(classes="flex gap-2"):
+                                                        with tag.button(
+                                                            classes="btn btn-primary btn-sm",
+                                                            name="user_id",
+                                                            value=str(user.id),
+                                                            hx_post=str(
+                                                                request.url_for(
+                                                                    "auth:start_impersonation",
+                                                                )
+                                                            ),
+                                                            hx_confirm="Are you sure you want to impersonate this user?",
+                                                        ):
+                                                            text("Impersonate")
+
                                                     if not is_admin:
                                                         with tag.button(
                                                             classes="btn btn-error btn-sm",

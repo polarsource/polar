@@ -57,6 +57,22 @@ const ClientPage: React.FC<ClientPageProps> = ({
         </div>
       }
       className="gap-y-8"
+      header={
+        <div className="flex flex-row gap-4">
+          <Button type="button" onClick={showUpdateModal}>
+            Update Subscription
+          </Button>
+          {subscription.status !== 'canceled' && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={showCancellationModal}
+            >
+              Cancel
+            </Button>
+          )}
+        </div>
+      }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden"
       contextView={
         <CustomerContextView
@@ -64,7 +80,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
           customer={subscription.customer as schemas['Customer']}
         />
       }
-      wide
     >
       <List size="small">
         <ProductListItem organization={organization} product={product} />
@@ -117,21 +132,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
             </div>
           </div>
         )}
-
-        <div className="flex flex-row gap-4 p-8">
-          <Button type="button" onClick={showUpdateModal}>
-            Update Subscription
-          </Button>
-          {subscription.status !== 'canceled' && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={showCancellationModal}
-            >
-              Cancel Subscription
-            </Button>
-          )}
-        </div>
       </ShadowBox>
 
       <div className="flex flex-col gap-4 md:hidden">

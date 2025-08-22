@@ -109,7 +109,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
         />
       }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:block hidden md:shadow-none"
-      wide
     >
       <List size="small">
         <ProductListItem organization={organization} product={product} />

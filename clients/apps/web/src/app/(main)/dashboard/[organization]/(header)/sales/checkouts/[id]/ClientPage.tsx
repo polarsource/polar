@@ -48,7 +48,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, checkout }) => {
           />
         ) : undefined
       }
-      wide
     >
       <List size="small">
         {checkout.products.map((product) => (

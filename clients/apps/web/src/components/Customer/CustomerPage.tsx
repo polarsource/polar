@@ -21,10 +21,7 @@ import {
 import Link from 'next/link'
 import React from 'react'
 import MetricChartBox from '../Metrics/MetricChartBox'
-import { InlineModal } from '../Modal/InlineModal'
-import { useModal } from '../Modal/useModal'
 import { DetailRow } from '../Shared/DetailRow'
-import { EditCustomerModal } from './EditCustomerModal'
 
 interface CustomerPageProps {
   organization: schemas['Organization']
@@ -64,12 +61,6 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     interval,
     customer_id: [customer.id],
   })
-
-  const {
-    isShown: isEditCustomerModalShown,
-    show: showEditCustomerModal,
-    hide: hideEditCustomerModal,
-  } = useModal()
 
   return (
     <Tabs defaultValue="overview" className="flex flex-col">
@@ -164,7 +155,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
                 header: 'Created At',
                 accessorKey: 'created_at',
                 cell: ({ row: { original } }) => (
-                  <span className="dark:text-polar-500 text-xs text-gray-500">
+                  <span className="dark:text-polar-500 text-sm text-gray-500">
                     <FormattedDateTime datetime={original.created_at} />
                   </span>
                 ),
@@ -258,16 +249,6 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       <TabsContent value="events">
         <CustomerEventsView customer={customer} organization={organization} />
       </TabsContent>
-      <InlineModal
-        isShown={isEditCustomerModalShown}
-        hide={hideEditCustomerModal}
-        modalContent={
-          <EditCustomerModal
-            customer={customer}
-            onClose={hideEditCustomerModal}
-          />
-        }
-      />
     </Tabs>
   )
 }

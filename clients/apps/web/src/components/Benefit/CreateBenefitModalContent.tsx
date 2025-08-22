@@ -1,6 +1,6 @@
 import { useCreateBenefit } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { schemas } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useSearchParams } from 'next/navigation'
@@ -46,7 +46,6 @@ const CreateBenefitModalContent = ({
   const createSubscriptionBenefit = useCreateBenefit(organization.id)
 
   const form = useForm<schemas['BenefitCreate']>({
-    mode: 'onChange',
     defaultValues: {
       organization_id: organization.id,
       type: type ? type : 'custom',
@@ -71,14 +70,12 @@ const CreateBenefitModalContent = ({
         await createSubscriptionBenefit.mutateAsync(subscriptionBenefitCreate)
       if (error) {
         if (error.detail) {
-          setValidationErrors(error.detail, setError, 1, [
-            'custom',
-            'ads',
-            'discord',
-            'github_repository',
-            'downloadables',
-            'license_keys',
-          ])
+          setValidationErrors(
+            error.detail,
+            setError,
+            1,
+            enums.benefitTypeValues as string[],
+          )
         }
         return
       }
@@ -90,7 +87,7 @@ const CreateBenefitModalContent = ({
       })
       hideModal()
     },
-    [hideModal, onSelectBenefit, createSubscriptionBenefit, setError],
+    [toast, hideModal, onSelectBenefit, createSubscriptionBenefit, setError],
   )
 
   useEffect(() => {
@@ -122,10 +119,7 @@ const CreateBenefitModalContent = ({
                 className="self-start"
                 type="button"
                 loading={createSubscriptionBenefit.isPending}
-                disabled={
-                  createSubscriptionBenefit.isPending ||
-                  !form.formState.isValid
-                }
+                disabled={createSubscriptionBenefit.isPending}
                 onClick={handleSubmit(handleCreateNewBenefit)}
               >
                 Create

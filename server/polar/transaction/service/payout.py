@@ -51,6 +51,8 @@ class PayoutTransactionService(BaseTransactionService):
             transaction.processor = Processor.stripe
         elif account.account_type == AccountType.open_collective:
             transaction.processor = Processor.open_collective
+        elif account.account_type == AccountType.manual:
+            transaction.processor = Processor.manual
 
         for balance_transaction in unpaid_balance_transactions:
             transaction.paid_transactions.append(balance_transaction)

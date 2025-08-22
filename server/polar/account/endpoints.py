@@ -84,7 +84,7 @@ async def onboarding_link(
     if account is None:
         raise ResourceNotFound()
 
-    if account.account_type == AccountType.open_collective:
+    if account.account_type != AccountType.stripe:
         raise ResourceNotFound()
 
     link = await account_service.onboarding_link(account, return_path)

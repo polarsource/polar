@@ -13,7 +13,6 @@ from tagflow import classes, tag, text
 from polar.enums import AccountType
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
-from polar.kit.utils import generate_uuid
 from polar.models import (
     Account,
     Organization,
@@ -745,7 +744,6 @@ async def setup_manual_payout(
 
         # Create manual account
         account = Account(
-            id=generate_uuid(),
             account_type=AccountType.manual,
             admin_id=admin_user.id,
             country=country,

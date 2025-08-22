@@ -111,7 +111,7 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
             tickLine={false}
             axisLine={false}
             tickMargin={8}
-            interval="preserveStartEnd"
+            interval="equidistantPreserveStart"
             ticks={
               simple
                 ? [
@@ -131,21 +131,19 @@ const MetricChart = forwardRef<HTMLDivElement, MetricChartProps>(
                   className="text-black dark:text-white"
                   indicator="dot"
                   labelKey="metric"
-                  formatter={(value, name) => {
+                  formatter={(value, name, item) => {
                     const formattedValue = getFormattedMetricValue(
                       metric,
                       value as number,
                     )
                     return (
-                      <div className="flex flex-row justify-between gap-x-8">
+                      <div className="flex w-40 flex-row justify-between gap-x-8">
                         <div className="flex flex-row items-center gap-x-2">
                           <span
-                            className={twMerge(
-                              'h-2 w-2 rounded-full',
-                              name === 'current'
-                                ? 'bg-primary dark:bg-primary'
-                                : 'dark:bg-polar-500 bg-gray-500',
-                            )}
+                            className={twMerge('h-2 w-2 rounded-full')}
+                            style={{
+                              backgroundColor: item?.color,
+                            }}
                           />
                           <span className="capitalize">
                             {name.toString().split('_').join(' ')}

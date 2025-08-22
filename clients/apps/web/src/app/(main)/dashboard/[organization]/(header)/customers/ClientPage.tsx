@@ -332,7 +332,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           </div>
         </div>
       }
-      wide
     >
       {selectedCustomer ? (
         <CustomerPage customer={selectedCustomer} organization={organization} />

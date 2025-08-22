@@ -12723,7 +12723,7 @@ export interface components {
              * Aggregation
              * @description The aggregation to apply on the filtered events to calculate the meter.
              */
-            aggregation: components["schemas"]["CountAggregation"] | components["schemas"]["PropertyAggregation"];
+            aggregation: components["schemas"]["CountAggregation"] | components["schemas"]["PropertyAggregation"] | components["schemas"]["UniqueAggregation"];
             /**
              * Organization Id
              * Format: uuid4
@@ -12761,7 +12761,7 @@ export interface components {
              * Aggregation
              * @description The aggregation to apply on the filtered events to calculate the meter.
              */
-            aggregation: components["schemas"]["CountAggregation"] | components["schemas"]["PropertyAggregation"];
+            aggregation: components["schemas"]["CountAggregation"] | components["schemas"]["PropertyAggregation"] | components["schemas"]["UniqueAggregation"];
             /**
              * Organization Id
              * @description The ID of the organization owning the meter. **Required unless you use an organization token.**
@@ -12937,7 +12937,7 @@ export interface components {
              * Aggregation
              * @description The aggregation to apply on the filtered events to calculate the meter.
              */
-            aggregation?: (components["schemas"]["CountAggregation"] | components["schemas"]["PropertyAggregation"]) | null;
+            aggregation?: (components["schemas"]["CountAggregation"] | components["schemas"]["PropertyAggregation"] | components["schemas"]["UniqueAggregation"]) | null;
         };
         /**
          * Metric
@@ -16270,6 +16270,16 @@ export interface components {
             error: "Unauthorized";
             /** Detail */
             detail: string;
+        };
+        /** UniqueAggregation */
+        UniqueAggregation: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            func: "unique";
+            /** Property */
+            property: string;
         };
         /** UserBase */
         UserBase: {
@@ -25787,6 +25797,7 @@ export const taxIDFormatValues: ReadonlyArray<components["schemas"]["TaxIDFormat
 export const timeIntervalValues: ReadonlyArray<components["schemas"]["TimeInterval"]> = ["year", "month", "week", "day", "hour"];
 export const transactionSortPropertyValues: ReadonlyArray<components["schemas"]["TransactionSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
 export const transactionTypeValues: ReadonlyArray<components["schemas"]["TransactionType"]> = ["payment", "processor_fee", "refund", "refund_reversal", "dispute", "dispute_reversal", "balance", "payout"];
+export const uniqueAggregationFuncValues: ReadonlyArray<components["schemas"]["UniqueAggregation"]["func"]> = ["unique"];
 export const userEventSourceValues: ReadonlyArray<components["schemas"]["UserEvent"]["source"]> = ["user"];
 export const userSignupAttributionIntentValues: ReadonlyArray<components["schemas"]["UserSignupAttribution"]["intent"]> = ["creator", "pledge", "purchase", "subscription", "newsletter_subscription"];
 export const webhookEventTypeValues: ReadonlyArray<components["schemas"]["WebhookEventType"]> = ["checkout.created", "checkout.updated", "customer.created", "customer.updated", "customer.deleted", "customer.state_changed", "order.created", "order.updated", "order.paid", "order.refunded", "subscription.created", "subscription.updated", "subscription.active", "subscription.canceled", "subscription.uncanceled", "subscription.revoked", "refund.created", "refund.updated", "product.created", "product.updated", "benefit.created", "benefit.updated", "benefit_grant.created", "benefit_grant.cycled", "benefit_grant.updated", "benefit_grant.revoked", "organization.updated"];

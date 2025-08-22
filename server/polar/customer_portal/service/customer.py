@@ -26,22 +26,8 @@ class CustomerService:
         customer: Customer,
         customer_update: CustomerPortalCustomerUpdate,
     ) -> Customer:
-        if customer_update.email is not None:
-            repository = CustomerRepository.from_session(session)
-            existing_customer = await repository.get_by_email_and_organization(
-                customer_update.email, customer.organization_id
-            )
-            if existing_customer is not None and existing_customer.id != customer.id:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "email"),
-                            "msg": "Another customer with this email already exists.",
-                            "input": customer_update.email,
-                        }
-                    ]
-                )
+        if customer_update.billing_name is not None:
+            customer.billing_name = customer_update.billing_name
 
         customer.billing_address = (
             customer_update.billing_address or customer.billing_address
@@ -82,14 +68,15 @@ class CustomerService:
         customer = await repository.update(
             customer,
             update_dict=customer_update.model_dump(
-                exclude_unset=True, exclude={"billing_address", "tax_id"}
+                exclude_unset=True,
+                exclude={"billing_name", "billing_address", "tax_id"},
             ),
         )
 
         if customer.stripe_customer_id is not None:
             params: stripe_lib.Customer.ModifyParams = {"email": customer.email}
-            if customer.name is not None:
-                params["name"] = customer.name
+            if customer.billing_name is not None and customer.name is None:
+                params["name"] = customer.billing_name
             if customer.billing_address is not None:
                 params["address"] = customer.billing_address.to_dict()  # type: ignore
             await stripe_service.update_customer(

@@ -31,7 +31,8 @@ const EditBillingDetails = ({
 }) => {
   const form = useForm<schemas['CustomerPortalCustomerUpdate']>({
     defaultValues: {
-      ...customer,
+      billing_name: customer.billing_name || customer.name,
+      billing_address: customer.billing_address,
       tax_id: customer.tax_id ? customer.tax_id[0] : null,
     },
   })
@@ -66,7 +67,8 @@ const EditBillingDetails = ({
       }
 
       reset({
-        ...updatedCustomer,
+        billing_name: updatedCustomer.billing_name || updatedCustomer.name,
+        billing_address: updatedCustomer.billing_address,
         tax_id: updatedCustomer.tax_id ? updatedCustomer.tax_id[0] : null,
       })
 
@@ -78,41 +80,29 @@ const EditBillingDetails = ({
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-6">
+        <FormItem>
+          <FormLabel>Email (read-only)</FormLabel>
+          <FormControl>
+            <Input
+              type="email"
+              value={customer.email}
+              disabled
+              readOnly
+              className={themingPreset.polar.input}
+            />
+          </FormControl>
+        </FormItem>
         <FormField
           control={control}
-          name="email"
-          rules={{
-            required: 'This field is required',
-          }}
+          name="billing_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Billing Name</FormLabel>
               <FormControl>
                 <Input
-                  type="email"
-                  autoComplete="email"
-                  {...field}
-                  value={field.value || ''}
-                  className={themingPreset.polar.input}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name="name"
-          rules={{
-            required: 'This field is required',
-          }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input
-                  type="name"
-                  autoComplete="name"
+                  type="text"
+                  autoComplete="organization"
+                  placeholder="Company or legal name for invoices (optional)"
                   {...field}
                   value={field.value || ''}
                   className={themingPreset.polar.input}

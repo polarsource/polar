@@ -8,5 +8,6 @@ export {
   propertyAggregationFuncValues,
   refundReasonValues,
   timeIntervalValues,
+  uniqueAggregationFuncValues,
   webhookEventTypeValues,
 } from './v1'

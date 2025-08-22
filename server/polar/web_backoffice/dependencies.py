@@ -12,6 +12,11 @@ async def get_admin(
     session: AsyncSession = Depends(get_db_session),
 ) -> UserSession:
     user_session = await auth_service.authenticate(session, request)
+    orig_user_session = await auth_service.authenticate(
+        session, request, cookie=settings.IMPERSONATION_COOKIE_KEY
+    )
+    # Original session (admin-user) takes precedence
+    user_session = orig_user_session or user_session
 
     if user_session is None:
         raise HTTPException(status_code=401, detail="Unauthorized")

@@ -56,9 +56,12 @@ class AuthService:
         return response
 
     async def authenticate(
-        self, session: AsyncSession, request: Request
+        self,
+        session: AsyncSession,
+        request: Request,
+        cookie: str = settings.USER_SESSION_COOKIE_KEY,
     ) -> UserSession | None:
-        token = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
+        token = request.cookies.get(cookie)
         if token is None:
             return None
 

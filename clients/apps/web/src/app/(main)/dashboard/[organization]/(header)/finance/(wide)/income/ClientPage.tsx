@@ -69,7 +69,6 @@ export default function ClientPage({
   const rowCount = balancesHook.data?.pagination.total_count ?? 0
   const pageCount = balancesHook.data?.pagination.max_page ?? 1
 
-
   return (
     <div className="flex flex-col gap-y-6">
       <AccountBanner organization={organization} />

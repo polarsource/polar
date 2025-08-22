@@ -23,6 +23,7 @@ import { useFormContext } from 'react-hook-form'
 const AGGREGATION_FUNCTIONS = [
   ...enums.countAggregationFuncValues,
   ...enums.propertyAggregationFuncValues,
+  ...enums.uniqueAggregationFuncValues,
 ]
 
 const AGGREGATION_FUNCTION_DISPLAY_NAMES: Record<
@@ -34,6 +35,7 @@ const AGGREGATION_FUNCTION_DISPLAY_NAMES: Record<
   avg: 'Average',
   min: 'Minimum',
   max: 'Maximum',
+  unique: 'Unique',
 }
 
 const MeterForm = ({ eventNames }: { eventNames?: schemas['EventName'][] }) => {

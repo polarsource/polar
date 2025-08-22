@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { DashboardBody } from '../Layout/DashboardLayout'
+import { toast } from '../Toast/use-toast'
 import { getStatusRedirect } from '../Toast/utils'
 import ProductBenefitsForm from './ProductBenefitsForm'
 import ProductForm, { ProductFullMediasMixin } from './ProductForm/ProductForm'
@@ -45,6 +46,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
       ...{
         prices: [
           {
+            amount_type: 'fixed',
             price_amount: undefined,
             price_currency: 'usd',
           },
@@ -65,37 +67,51 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
 
   const onSubmit = useCallback(
     async (productCreate: ProductCreateForm) => {
-      const { full_medias, metadata, ...productCreateRest } = productCreate
+      try {
+        const { full_medias, metadata, ...productCreateRest } = productCreate
 
-      const { data: product, error } = await createProduct.mutateAsync({
-        ...productCreateRest,
-        medias: full_medias.map((media) => media.id),
-        metadata: metadata.reduce(
-          (acc, { key, value }) => ({ ...acc, [key]: value }),
-          {},
-        ),
-      })
-      if (error) {
-        if (error.detail) {
-          setValidationErrors(error.detail, setError)
+        const product = await createProduct.mutateAsync({
+          ...productCreateRest,
+          medias: full_medias.map((media) => media.id),
+          metadata: metadata.reduce(
+            (acc, { key, value }) => ({ ...acc, [key]: value }),
+            {},
+          ),
+        })
+
+        await updateBenefits.mutateAsync({
+          id: product.id,
+          body: {
+            benefits: enabledBenefitIds,
+          },
+        })
+
+        router.push(
+          getStatusRedirect(
+            `/dashboard/${organization.slug}/products`,
+            'Product Created',
+            `Product ${product.name} was created successfully`,
+          ),
+        )
+      } catch (error) {
+        // Parse validation errors from the mutation error
+        if (error instanceof Error) {
+          try {
+            const details = JSON.parse(error.message)
+            setValidationErrors(details, setError)
+          } catch {
+            // If error message is not JSON, it's a general error
+            console.error('Unexpected error creating product:', error)
+          }
         }
-        return
+        
+        // Show error toast
+        toast({
+          title: 'Error creating product',
+          description: 'Please check the form for errors and try again.',
+          variant: 'destructive',
+        })
       }
-
-      await updateBenefits.mutateAsync({
-        id: product.id,
-        body: {
-          benefits: enabledBenefitIds,
-        },
-      })
-
-      router.push(
-        getStatusRedirect(
-          `/dashboard/${organization.slug}/products`,
-          'Product Created',
-          `Product ${product.name} was created successfully`,
-        ),
-      )
     },
     [
       organization,

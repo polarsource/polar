@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TypeVar
 
 import structlog
@@ -118,6 +118,7 @@ class AuthService:
         *,
         user_agent: str,
         scopes: list[Scope],
+        expire_in: timedelta = settings.USER_SESSION_TTL,
     ) -> tuple[str, UserSession]:
         token, token_hash = generate_token_hash_pair(
             secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
@@ -127,6 +128,7 @@ class AuthService:
             user_agent=user_agent,
             user=user,
             scopes=scopes,
+            expires_at=utc_now() + expire_in,
         )
         session.add(user_session)
         await session.flush()

@@ -10,6 +10,7 @@ from polar.models.organization import Organization
 _MeterRead = Authenticator(
     required_scopes={
         Scope.web_default,
+        Scope.web_read,
         Scope.meters_read,
         Scope.meters_write,
     },
@@ -18,7 +19,11 @@ _MeterRead = Authenticator(
 MeterRead = Annotated[AuthSubject[User | Organization], Depends(_MeterRead)]
 
 _MeterWrite = Authenticator(
-    required_scopes={Scope.web_default, Scope.meters_write},
+    required_scopes={
+        Scope.web_default,
+        Scope.web_write,
+        Scope.meters_write,
+    },
     allowed_subjects={User, Organization},
 )
 MeterWrite = Annotated[AuthSubject[User | Organization], Depends(_MeterWrite)]

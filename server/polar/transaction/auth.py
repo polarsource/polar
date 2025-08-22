@@ -9,6 +9,7 @@ from polar.auth.scope import Scope
 _TransactionsRead = Authenticator(
     required_scopes={
         Scope.web_default,
+        Scope.web_read,
         Scope.transactions_read,
     },
     allowed_subjects={User},
@@ -16,7 +17,11 @@ _TransactionsRead = Authenticator(
 TransactionsRead = Annotated[AuthSubject[User], Depends(_TransactionsRead)]
 
 _TransactionsWrite = Authenticator(
-    required_scopes={Scope.web_default, Scope.transactions_write},
+    required_scopes={
+        Scope.web_default,
+        Scope.web_write,
+        Scope.transactions_write,
+    },
     allowed_subjects={User},
 )
 TransactionsWrite = Annotated[AuthSubject[User], Depends(_TransactionsWrite)]

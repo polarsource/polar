@@ -54,7 +54,7 @@ export const WhyPolarPage = () => {
     },
     { id: 'developer-experience', title: 'Developer Experience' },
     { id: 'pricing', title: 'Pricing' },
-    { id: 'why-switch', title: 'Why do teams switch to Polar?' },
+    { id: 'why-switch', title: 'Why switch to Polar?' },
     { id: 'who-switches', title: 'Who else is switching?' },
   ]
 
@@ -204,8 +204,9 @@ export const WhyPolarPage = () => {
                   <div className="flex flex-col gap-2">
                     <h3>No Hidden Fees</h3>
                     <p className="dark:text-polar-300 text-gray-500">
-                      We offer no hidden fees. Polar is priced 20% cheaper than
-                      the next cheapest MoR on the market.
+                      While payouts may incur fees charged by the payout
+                      providers (such as Stripe), Polar does not add any extra
+                      fees or markup.
                     </p>
                   </div>
                 </div>
@@ -213,39 +214,30 @@ export const WhyPolarPage = () => {
 
               {/* Why Switch */}
               <GuideSection id="why-switch" title="Why switch to Polar?">
-                <div className="flex flex-col gap-8">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-start gap-4">
-                      <div className="flex flex-col gap-2">
-                        <h3>Complex Integration</h3>
-                        <p className="dark:text-polar-300 text-gray-500">
-                          Most solutions require extensive development time and
-                          complex API integrations that slow down product
-                          development cycles.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="flex flex-col gap-2">
-                        <h3>Limited Flexibility</h3>
-                        <p className="dark:text-polar-300 text-gray-500">
-                          Rigid pricing models and limited customization options
-                          prevent teams from implementing their ideal
-                          monetization strategy.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="flex flex-col gap-2">
-                        <h3>Poor Developer Experience</h3>
-                        <p className="dark:text-polar-300 text-gray-500">
-                          Outdated interfaces and lack of modern developer tools
-                          make it difficult to iterate quickly and maintain
-                          systems effectively.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                <div className="flex flex-col gap-2">
+                  <h3>Integrate with 6 lines of code</h3>
+                  <p className="dark:text-polar-300 text-gray-500">
+                    We've gone the extra mile to build ergonomic adapters that
+                    plugs right into the most popular frameworks. If that isn't
+                    enough, our versatile SDKs allow you to integrate with Polar
+                    in any way you want.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <h3>Secure, robust & reliable payments</h3>
+                  <p className="dark:text-polar-300 text-gray-500">
+                    You can rest assured that your customers will be able to pay
+                    you securely and reliably. We've built a payment system that
+                    works for you, not against you.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <h3>We're deeply invested in your success</h3>
+                  <p className="dark:text-polar-300 text-gray-500">
+                    Polar is built by developers, for developers. We listen to
+                    your feedback, and we're always looking for ways to make it
+                    easier for you to succeed. We care.
+                  </p>
                 </div>
               </GuideSection>
 

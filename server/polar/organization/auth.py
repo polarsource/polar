@@ -11,7 +11,6 @@ OrganizationsRead = Annotated[
     Depends(
         Authenticator(
             required_scopes={
-                Scope.web_default,
                 Scope.web_read,
                 Scope.organizations_read,
                 Scope.organizations_write,
@@ -26,7 +25,6 @@ OrganizationsWrite = Annotated[
     Depends(
         Authenticator(
             required_scopes={
-                Scope.web_default,
                 Scope.web_write,
                 Scope.organizations_write,
             },
@@ -40,7 +38,6 @@ OrganizationsCreate = Annotated[
     Depends(
         Authenticator(
             required_scopes={
-                Scope.web_default,
                 Scope.web_write,
                 Scope.organizations_write,
             },

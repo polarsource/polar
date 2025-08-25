@@ -11,7 +11,6 @@ LicenseKeysRead = Annotated[
     Depends(
         Authenticator(
             required_scopes={
-                Scope.web_default,
                 Scope.web_read,
                 Scope.license_keys_read,
                 Scope.license_keys_write,
@@ -26,7 +25,6 @@ LicenseKeysWrite = Annotated[
     Depends(
         Authenticator(
             required_scopes={
-                Scope.web_default,
                 Scope.web_write,
                 Scope.license_keys_write,
             },

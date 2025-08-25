@@ -21,7 +21,7 @@ class AuthSubjectFixture:
             "organization_blocked",
             "customer",
         ] = "user",
-        scopes: set[Scope] = {Scope.web_default},
+        scopes: set[Scope] = {Scope.web_read, Scope.web_write},
     ):
         self.subject = subject
         self.scopes = scopes

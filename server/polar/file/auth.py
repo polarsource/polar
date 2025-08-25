@@ -8,7 +8,6 @@ from polar.auth.scope import Scope
 
 _FileRead = Authenticator(
     required_scopes={
-        Scope.web_default,
         Scope.web_read,
         Scope.files_write,
         Scope.files_read,
@@ -19,7 +18,6 @@ FileRead = Annotated[AuthSubject[User | Organization], Depends(_FileRead)]
 
 _FileWrite = Authenticator(
     required_scopes={
-        Scope.web_default,
         Scope.web_write,
         Scope.files_write,
     },

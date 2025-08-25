@@ -8,7 +8,6 @@ from polar.auth.scope import Scope
 
 _WebhooksRead = Authenticator(
     required_scopes={
-        Scope.web_default,
         Scope.web_read,
         Scope.webhooks_read,
         Scope.webhooks_write,
@@ -19,7 +18,6 @@ WebhooksRead = Annotated[AuthSubject[User | Organization], Depends(_WebhooksRead
 
 _WebhooksWrite = Authenticator(
     required_scopes={
-        Scope.web_default,
         Scope.web_write,
         Scope.webhooks_write,
     },

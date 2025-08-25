@@ -204,18 +204,16 @@ def Authenticator(
 
 _WebUserOrAnonymous = Authenticator(
     allowed_subjects={Anonymous, User},
-    required_scopes={Scope.web_default, Scope.web_write},
+    required_scopes={Scope.web_write},
 )
 WebUserOrAnonymous = Annotated[
     AuthSubject[Anonymous | User], Depends(_WebUserOrAnonymous)
 ]
 
-_WebUserRead = Authenticator(
-    allowed_subjects={User}, required_scopes={Scope.web_default, Scope.web_read}
-)
+_WebUserRead = Authenticator(allowed_subjects={User}, required_scopes={Scope.web_read})
 WebUserRead = Annotated[AuthSubject[User], Depends(_WebUserRead)]
 
 _WebUserWrite = Authenticator(
-    allowed_subjects={User}, required_scopes={Scope.web_default, Scope.web_write}
+    allowed_subjects={User}, required_scopes={Scope.web_write}
 )
 WebUserWrite = Annotated[AuthSubject[User], Depends(_WebUserWrite)]

@@ -169,9 +169,9 @@ export const WhyPolarPage = () => {
                   <h3>Developer Tools</h3>
                   <p className="dark:text-polar-300 text-gray-500">
                     We build developer tools that make it easy to iterate
-                    quickly and maintain systems effectively. We're not just
-                    building a billing system, we're building a platform that
-                    enables you to build your business.
+                    quickly and maintain systems effectively. We&apos;re not
+                    just building a billing system, we&apos;re building a
+                    platform that enables you to build your business.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -217,26 +217,26 @@ export const WhyPolarPage = () => {
                 <div className="flex flex-col gap-2">
                   <h3>Integrate with 6 lines of code</h3>
                   <p className="dark:text-polar-300 text-gray-500">
-                    We've gone the extra mile to build ergonomic adapters that
-                    plugs right into the most popular frameworks. If that isn't
-                    enough, our versatile SDKs allow you to integrate with Polar
-                    in any way you want.
+                    We&apos;ve gone the extra mile to build ergonomic adapters
+                    that plugs right into the most popular frameworks. If that
+                    isn&apos;t enough, our versatile SDKs allow you to integrate
+                    with Polar in any way you want.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
                   <h3>Secure, robust & reliable payments</h3>
                   <p className="dark:text-polar-300 text-gray-500">
                     You can rest assured that your customers will be able to pay
-                    you securely and reliably. We've built a payment system that
-                    works for you, not against you.
+                    you securely and reliably. We&apos;ve built a payment system
+                    that works for you, not against you.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <h3>We're deeply invested in your success</h3>
+                  <h3>We&apos;re deeply invested in your success</h3>
                   <p className="dark:text-polar-300 text-gray-500">
                     Polar is built by developers, for developers. We listen to
-                    your feedback, and we're always looking for ways to make it
-                    easier for you to succeed. We care.
+                    your feedback, and we&apos;re always looking for ways to
+                    make it easier for you to succeed. We care.
                   </p>
                 </div>
               </GuideSection>

@@ -9,7 +9,6 @@ from polar.models.organization import Organization
 
 _CustomerSessionWrite = Authenticator(
     required_scopes={
-        Scope.web_default,
         Scope.web_write,
         Scope.customer_sessions_write,
     },

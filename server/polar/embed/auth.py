@@ -11,7 +11,6 @@ EmbedsRead = Annotated[
     Depends(
         Authenticator(
             required_scopes={
-                Scope.web_default,
                 Scope.web_read,
             },
             allowed_subjects={Anonymous, User, Organization},

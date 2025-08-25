@@ -33,10 +33,10 @@ def upgrade() -> None:
         ),
     )
 
-    # Update existing rows to have web_default and web_write scopes
+    # Update existing rows to have web:write scope
     op.execute("""
         UPDATE user_sessions 
-        SET scopes = ARRAY['web_default', 'web:write']
+        SET scopes = ARRAY['web:read', 'web:write']
         WHERE scopes = '{}'
     """)
 

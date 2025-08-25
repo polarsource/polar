@@ -1,6 +1,5 @@
 import '../styles/globals.scss'
 
-import ImpersonationBanner from '@/components/Impersonation/ImpersonationBanner'
 import SandboxBanner from '@/components/Sandbox/SandboxBanner'
 import { UserContextProvider } from '@/providers/auth'
 import { getServerSideAPI } from '@/utils/client/serverside'
@@ -103,7 +102,6 @@ export default async function RootLayout({
           <PolarPostHogProvider>
             <PolarQueryClientProvider>
               <PolarNuqsProvider>
-                <ImpersonationBanner />
                 <SandboxBanner />
                 {children}
               </PolarNuqsProvider>

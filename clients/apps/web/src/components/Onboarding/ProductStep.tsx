@@ -3,7 +3,6 @@ import {
   useCreateProduct,
   useUpdateProductBenefits,
 } from '@/hooks/queries'
-import { useMeters } from '@/hooks/queries/meters'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
@@ -50,9 +49,6 @@ export const ProductStep = () => {
     () => benefits.data?.items ?? [],
     [benefits],
   )
-  const meters = useMeters(organization.id, {
-    sorting: ['name'],
-  })
 
   const form = useForm<ProductCreateForm>({
     defaultValues: {

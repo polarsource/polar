@@ -29,7 +29,7 @@ export const PageContent = () => {
   return (
     <>
       <Section className="flex flex-col gap-y-32 pt-0 md:pt-0">
-        <Hero className="relative z-10" />
+        <Hero />
         <Features />
         <Adapters />
         <SDKs />

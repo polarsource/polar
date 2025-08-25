@@ -1,14 +1,10 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import {
-  ArrowDownwardOutlined,
-  ArrowOutwardOutlined,
-  CheckOutlined,
-} from '@mui/icons-material'
+import { ArrowOutwardOutlined, CheckOutlined } from '@mui/icons-material'
 import Link from 'next/link'
-import { PropsWithChildren } from 'react'
 import { Midday, StillaAI, Tailwind } from '../Logos'
+import { ResourceLayout, ResourceSection } from './ResourceLayout'
 
 const logos = [
   {
@@ -25,26 +21,6 @@ const logos = [
   },
 ]
 
-const GuideSection = ({
-  id,
-  title,
-  children,
-}: PropsWithChildren<{
-  id: string
-  title: string
-}>) => {
-  return (
-    <section id={id} className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-8">
-      <div className="sticky top-0 col-span-1 flex h-fit flex-col border-gray-200 pt-4 text-lg md:border-t md:text-base dark:border-gray-700">
-        <h2>{title}</h2>
-      </div>
-      <div className="col-span-2 flex flex-col gap-y-4 border-t border-gray-200 pt-4 dark:border-gray-700">
-        {children}
-      </div>
-    </section>
-  )
-}
-
 export const WhyPolarPage = () => {
   const tocItems = [
     { id: 'introduction', title: 'Introduction' },
@@ -58,247 +34,188 @@ export const WhyPolarPage = () => {
     { id: 'who-switches', title: 'Who else is switching?' },
   ]
 
-  const scrollToSection = (id: string) => {
-    const section = document.getElementById(id)
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth' })
-    }
-  }
-
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* Main Content */}
-      <main>
-        <div className="mx-auto flex w-full max-w-6xl flex-col px-4 sm:px-6 lg:px-8">
-          {/* Content Card */}
-          <div className="dark:md:bg-polar-900 flex flex-col gap-y-8 rounded-lg border-gray-200 shadow-sm md:gap-y-12 md:border md:bg-white md:p-24 md:px-16 dark:border-gray-800">
-            {/* Top Section */}
-            <div className="flex items-start justify-between">
-              <div className="flex flex-col gap-y-8">
-                <p className="border-t border-dashed border-gray-200 pt-4 font-mono text-sm uppercase text-gray-500 dark:border-gray-700">
-                  Resources
-                </p>
-                <h1 className="text-balance text-5xl !leading-tight md:text-6xl">
-                  Why Polar is the best way to monetize your software
-                </h1>
-              </div>
-            </div>
+    <ResourceLayout
+      title="Why Polar is the best way to monetize your software"
+      toc={tocItems}
+    >
+      <ResourceSection id="introduction" title="Introduction">
+        <p className="text-lg">Monetizing your software should be easy.</p>
+        <p className="dark:text-polar-300 text-gray-500">
+          Polar is an open-source billing infrastructure platform designed
+          specifically for developers who want to monetize their software
+          without the complexity of traditional payment systems.
+        </p>
+        <blockquote className="flex flex-col gap-y-4 border border-gray-200 p-4 dark:border-gray-700">
+          <p>
+            The speed at which Polar is executing on the financial
+            infrastructure primitives the new world needs is very impressive
+          </p>
+          <span className="dark:text-polar-500 text-sm text-gray-500">
+            — Guillermo Rauch, CEO & Founder of Vercel
+          </span>
+        </blockquote>
+      </ResourceSection>
 
-            {/* Table of Contents */}
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {tocItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => scrollToSection(item.id)}
-                  className="dark:hover:bg-polar-800 flex w-full cursor-pointer items-center gap-3 p-3 transition-colors duration-200 hover:bg-gray-100"
-                >
-                  <ArrowDownwardOutlined fontSize="inherit" />
-                  <span>{item.title}</span>
-                </button>
-              ))}
-            </div>
+      <ResourceSection id="mor" title="Merchant of Record">
+        <div className="flex flex-col gap-4">
+          <h3 className="text-lg">
+            Leave billing infrastructure and international tax headaches to us.
+          </h3>
+          <p className="dark:text-polar-300 text-gray-500">
+            We take on the liability of international sales taxes globally for
+            you. So you can focus on growing your business instead of accounting
+            bills.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <ul className="divide-y divide-gray-200 border-y border-gray-200 dark:divide-gray-700 dark:border-gray-700 [&>li]:py-2">
+            <li>
+              <CheckOutlined className="mr-3" fontSize="inherit" />
+              We handle VAT, GST, and sales tax in all jurisdictions
+            </li>
+            <li>
+              <CheckOutlined className="mr-3" fontSize="inherit" />
+              EU VAT handling - Proper B2B reverse charge and B2C tax collection
+            </li>
+            <li>
+              <CheckOutlined className="mr-3" fontSize="inherit" />
+              Automatic tax calculation - Real-time tax rates for every
+              transaction
+            </li>
+          </ul>
+        </div>
+      </ResourceSection>
 
-            {/* Content Sections */}
-            <div className="flex flex-col gap-y-12">
-              <GuideSection id="introduction" title="Introduction">
-                <p className="text-lg">
-                  Monetizing your software should be easy.
-                </p>
-                <p className="dark:text-polar-300 text-gray-500">
-                  Polar is an open-source billing infrastructure platform
-                  designed specifically for developers who want to monetize
-                  their software without the complexity of traditional payment
-                  systems.
-                </p>
-                <blockquote className="flex flex-col gap-y-4 border border-gray-200 p-4 dark:border-gray-700">
-                  <p>
-                    The speed at which Polar is executing on the financial
-                    infrastructure primitives the new world needs is very
-                    impressive
-                  </p>
-                  <span className="dark:text-polar-500 text-sm text-gray-500">
-                    — Guillermo Rauch, CEO & Founder of Vercel
-                  </span>
-                </blockquote>
-              </GuideSection>
+      <ResourceSection id="developer-experience" title="Developer Experience">
+        <div className="flex flex-col gap-2">
+          <h3>Developer Ergonomics</h3>
+          <p className="dark:text-polar-300 text-gray-500">
+            We design our APIs & SDKs with developer ergonomics in mind. We put
+            the developer experience in the front seat.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <h3>Developer Tools</h3>
+          <p className="dark:text-polar-300 text-gray-500">
+            We build developer tools that make it easy to iterate quickly and
+            maintain systems effectively. We&apos;re not just building a billing
+            system, we&apos;re building a platform that enables you to build
+            your business.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <h3>Open Source</h3>
+          <p className="dark:text-polar-300 text-gray-500">
+            Polar is open source, licensed under the Apache 2.0 license. We
+            believe that the best way to build a great developer experience is
+            to build it with the community.
+          </p>
+          <Link
+            href="https://github.com/polarsource/polar"
+            target="_blank"
+            className="w-fit border-b border-black pb-0.5 dark:border-white"
+          >
+            Follow the development on GitHub
+            <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
+          </Link>
+        </div>
+      </ResourceSection>
 
-              <GuideSection id="mor" title="Merchant of Record">
-                <div className="flex flex-col gap-4">
-                  <h3 className="text-lg">
-                    Leave billing infrastructure and international tax headaches
-                    to us.
-                  </h3>
-                  <p className="dark:text-polar-300 text-gray-500">
-                    We take on the liability of international sales taxes
-                    globally for you. So you can focus on growing your business
-                    instead of accounting bills.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <ul className="divide-y divide-gray-200 border-y border-gray-200 dark:divide-gray-700 dark:border-gray-700 [&>li]:py-2">
-                    <li>
-                      <CheckOutlined className="mr-3" fontSize="inherit" />
-                      We handle VAT, GST, and sales tax in all jurisdictions
-                    </li>
-                    <li>
-                      <CheckOutlined className="mr-3" fontSize="inherit" />
-                      EU VAT handling - Proper B2B reverse charge and B2C tax
-                      collection
-                    </li>
-                    <li>
-                      <CheckOutlined className="mr-3" fontSize="inherit" />
-                      Automatic tax calculation - Real-time tax rates for every
-                      transaction
-                    </li>
-                  </ul>
-                </div>
-              </GuideSection>
-
-              <GuideSection
-                id="developer-experience"
-                title="Developer Experience"
-              >
-                <div className="flex flex-col gap-2">
-                  <h3>Developer Ergonomics</h3>
-                  <p className="dark:text-polar-300 text-gray-500">
-                    We design our APIs & SDKs with developer ergonomics in mind.
-                    We put the developer experience in the front seat.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <h3>Developer Tools</h3>
-                  <p className="dark:text-polar-300 text-gray-500">
-                    We build developer tools that make it easy to iterate
-                    quickly and maintain systems effectively. We&apos;re not
-                    just building a billing system, we&apos;re building a
-                    platform that enables you to build your business.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <h3>Open Source</h3>
-                  <p className="dark:text-polar-300 text-gray-500">
-                    Polar is open source, licensed under the Apache 2.0 license.
-                    We believe that the best way to build a great developer
-                    experience is to build it with the community.
-                  </p>
-                  <Link
-                    href="https://github.com/polarsource/polar"
-                    target="_blank"
-                    className="w-fit border-b border-black pb-0.5 dark:border-white"
-                  >
-                    Follow the development on GitHub
-                    <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
-                  </Link>
-                </div>
-              </GuideSection>
-
-              <GuideSection id="pricing" title="Pricing">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="flex flex-col gap-2">
-                    <h3>Cheapest MoR on the market</h3>
-                    <p className="dark:text-polar-300 text-gray-500">
-                      Polar is priced 20% cheaper than other MoR alternatives.
-                      4% and 40¢ per transaction.
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <h3>No Hidden Fees</h3>
-                    <p className="dark:text-polar-300 text-gray-500">
-                      While payouts may incur fees charged by the payout
-                      providers (such as Stripe), Polar does not add any extra
-                      fees or markup.
-                    </p>
-                  </div>
-                </div>
-              </GuideSection>
-
-              {/* Why Switch */}
-              <GuideSection id="why-switch" title="Why switch to Polar?">
-                <div className="flex flex-col gap-2">
-                  <h3>Integrate with 6 lines of code</h3>
-                  <p className="dark:text-polar-300 text-gray-500">
-                    We&apos;ve gone the extra mile to build ergonomic adapters
-                    that plugs right into the most popular frameworks. If that
-                    isn&apos;t enough, our versatile SDKs allow you to integrate
-                    with Polar in any way you want.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <h3>Secure, robust & reliable payments</h3>
-                  <p className="dark:text-polar-300 text-gray-500">
-                    You can rest assured that your customers will be able to pay
-                    you securely and reliably. We&apos;ve built a payment system
-                    that works for you, not against you.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <h3>We&apos;re deeply invested in your success</h3>
-                  <p className="dark:text-polar-300 text-gray-500">
-                    Polar is built by developers, for developers. We listen to
-                    your feedback, and we&apos;re always looking for ways to
-                    make it easier for you to succeed. We care.
-                  </p>
-                </div>
-              </GuideSection>
-
-              {/* Who Switches */}
-              <GuideSection id="who-switches" title="Who else is switching?">
-                <div className="flex flex-col gap-8">
-                  <div className="flex flex-col gap-4">
-                    <h3 className="text-lg">
-                      Trusted by leading SaaS companies
-                    </h3>
-                    <p className="dark:text-polar-300 text-gray-700">
-                      Companies like{' '}
-                      <span className="text-black dark:text-white">
-                        Tailwind Labs
-                      </span>
-                      ,{' '}
-                      <span className="text-black dark:text-white">Midday</span>
-                      ,{' '}
-                      <span className="text-black dark:text-white">
-                        Stilla AI
-                      </span>{' '}
-                      & thousands of other SaaS companies have already made the
-                      switch to Polar.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-3 items-center divide-x divide-gray-200 border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
-                    {logos.map(({ logo, href }, index) => (
-                      <Link
-                        key={index}
-                        className="dark:hover:bg-polar-800 flex h-full items-center justify-center p-4 hover:bg-gray-100"
-                        href={href}
-                        target="_blank"
-                      >
-                        {logo}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              </GuideSection>
-            </div>
-
-            {/* Call to Action */}
-            <div className="flex flex-col border-t border-gray-200 pt-16 dark:border-gray-700">
-              <div className="flex flex-col items-center gap-8">
-                <div className="flex flex-col items-center gap-4">
-                  <h3 className="text-xl">Ready to make the switch?</h3>
-                  <p className="dark:text-polar-300 text-center text-gray-700 md:w-[440px]">
-                    Join thousands of teams who have already transformed their
-                    payment infrastructure with Polar.
-                  </p>
-                </div>
-                <GetStartedButton
-                  size="lg"
-                  text="Get Started"
-                  className="rounded-full bg-black font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black"
-                />
-              </div>
-            </div>
+      <ResourceSection id="pricing" title="Pricing">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <h3>Cheapest MoR on the market</h3>
+            <p className="dark:text-polar-300 text-gray-500">
+              Polar is priced 20% cheaper than other MoR alternatives. 4% and
+              40¢ per transaction.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <h3>No Hidden Fees</h3>
+            <p className="dark:text-polar-300 text-gray-500">
+              While payouts may incur fees charged by the payout providers (such
+              as Stripe), Polar does not add any extra fees or markup.
+            </p>
           </div>
         </div>
-      </main>
-    </div>
+      </ResourceSection>
+
+      {/* Why Switch */}
+      <ResourceSection id="why-switch" title="Why switch to Polar?">
+        <div className="flex flex-col gap-2">
+          <h3>Integrate with 6 lines of code</h3>
+          <p className="dark:text-polar-300 text-gray-500">
+            We&apos;ve gone the extra mile to build ergonomic adapters that
+            plugs right into the most popular frameworks. If that isn&apos;t
+            enough, our versatile SDKs allow you to integrate with Polar in any
+            way you want.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <h3>Secure, robust & reliable payments</h3>
+          <p className="dark:text-polar-300 text-gray-500">
+            You can rest assured that your customers will be able to pay you
+            securely and reliably. We&apos;ve built a payment system that works
+            for you, not against you.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <h3>We&apos;re deeply invested in your success</h3>
+          <p className="dark:text-polar-300 text-gray-500">
+            Polar is built by developers, for developers. We listen to your
+            feedback, and we&apos;re always looking for ways to make it easier
+            for you to succeed. We care.
+          </p>
+        </div>
+      </ResourceSection>
+
+      {/* Who Switches */}
+      <ResourceSection id="who-switches" title="Who else is switching?">
+        <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-4">
+            <h3 className="text-lg">Trusted by leading SaaS companies</h3>
+            <p className="dark:text-polar-300 text-gray-700">
+              Companies like{' '}
+              <span className="text-black dark:text-white">Tailwind Labs</span>,{' '}
+              <span className="text-black dark:text-white">Midday</span>,{' '}
+              <span className="text-black dark:text-white">Stilla AI</span> &
+              thousands of other SaaS companies have already made the switch to
+              Polar.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 items-center divide-x divide-gray-200 border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+            {logos.map(({ logo, href }, index) => (
+              <Link
+                key={index}
+                className="dark:hover:bg-polar-800 flex h-full items-center justify-center p-4 hover:bg-gray-100"
+                href={href}
+                target="_blank"
+              >
+                {logo}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </ResourceSection>
+
+      {/* Call to Action */}
+      <div className="flex flex-col border-t border-gray-200 pt-16 dark:border-gray-700">
+        <div className="flex flex-col items-center gap-8">
+          <div className="flex flex-col items-center gap-4">
+            <h3 className="text-xl">Ready to make the switch?</h3>
+            <p className="dark:text-polar-300 text-center text-gray-700 md:w-[440px]">
+              Join thousands of teams who have already transformed their payment
+              infrastructure with Polar.
+            </p>
+          </div>
+          <GetStartedButton
+            size="lg"
+            text="Get Started"
+            className="rounded-full bg-black font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black"
+          />
+        </div>
+      </div>
+    </ResourceLayout>
   )
 }

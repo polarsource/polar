@@ -1,6 +1,6 @@
 import asyncio
 import random
-from typing import NotRequired, TypedDict
+from typing import Any, Literal, NotRequired, TypedDict
 from uuid import UUID
 
 import dramatiq
@@ -19,10 +19,9 @@ from polar.config import settings
 from polar.customer.schemas.customer import CustomerCreate
 from polar.customer.service import customer as customer_service
 from polar.enums import SubscriptionRecurringInterval
-from polar.file.s3 import FileServiceTypes
 from polar.kit.db.postgres import create_async_engine
 from polar.models.benefit import BenefitType
-from polar.models.file import File
+from polar.models.file import File, FileServiceTypes
 from polar.models.product_price import ProductPriceAmountType
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
@@ -43,6 +42,7 @@ class OrganizationDict(TypedDict):
     website: str
     bio: str
     products: NotRequired[list["ProductDict"]]
+    benefits: NotRequired[dict[str, "BenefitDict"]]
     is_admin: NotRequired[bool]
 
 
@@ -54,25 +54,55 @@ class ProductDict(TypedDict):
     benefits: NotRequired[list[str]]
 
 
-class BenefitDict(TypedDict):
-    type: BenefitType
-    organization_id: NotRequired[UUID]
+class BenefitDictBase(TypedDict):
     description: str
-    properties: NotRequired[dict[str, str]]
+
+
+class BenefitCustomDict(BenefitDictBase):
+    type: Literal[BenefitType.custom]
+
+
+class FileDict(TypedDict):
+    name: str
+    mime_type: str
+    url: str
+    path: str
+    size: int
+
+
+class PropertiesFileDict(TypedDict):
+    files: list[FileDict]
+
+
+class BenefitFileDict(BenefitDictBase):
+    type: Literal[BenefitType.downloadables]
+    properties: PropertiesFileDict
+    # properties: TypedDict[{"files": list[FileDict]}]
+
+
+class BenefitLicenseDict(BenefitDictBase):
+    type: Literal[BenefitType.license_keys]
+
+
+type BenefitDict = BenefitCustomDict | BenefitFileDict | BenefitLicenseDict
 
 
 def create_benefit_schema(
-    dict_create: BenefitDict,
-) -> BenefitCustomCreate | BenefitDownloadablesCreate:
-    type = dict_create["type"]
-    if "properties" not in dict_create:
-        dict_create["properties"] = {}
+    dict_input: Any,
+) -> BenefitCustomCreate | BenefitDownloadablesCreate | BenefitLicenseKeysCreate:
+    type = dict_input["type"]
+
+    dict_create = {
+        "properties": {},
+        **dict_input,
+    }
+
     if type is BenefitType.custom:
-        return BenefitCustomCreate(**dict_create)  # type: ignore
+        return BenefitCustomCreate(**dict_create)
     elif type is BenefitType.downloadables:
-        return BenefitDownloadablesCreate(**dict_create)  # type: ignore
+        return BenefitDownloadablesCreate(**dict_create)
     elif type is BenefitType.license_keys:
-        return BenefitLicenseKeysCreate(**dict_create)  # type: ignore
+        return BenefitLicenseKeysCreate(**dict_create)
     else:
         raise Exception(
             f"Unsupported Benefit type, please go to `create_benefit_schema()` in {__file__} to implement"
@@ -83,7 +113,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
     """Create sample data for development and testing."""
 
     # Organizations data
-    orgs_data = [
+    orgs_data: list[OrganizationDict] = [
         {
             "name": "Acme Corporation",
             "slug": "acme-corp",
@@ -369,7 +399,8 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         # Create benefits for organization
         org_benefits = {}
         for key, benefit_data in org_data.get("benefits", {}).items():
-            benefit_data["organization_id"] = organization.id
+            benefit_schema_dict: Any = benefit_data.copy()
+            benefit_schema_dict["organization_id"] = organization.id
 
             if benefit_data["type"] == BenefitType.downloadables:
                 file_ids = []
@@ -390,9 +421,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                     await session.flush()
 
                     file_ids.append(instance.id)
-                benefit_data["properties"]["files"] = file_ids
+                benefit_schema_dict["properties"]["files"] = file_ids
 
-            schema = create_benefit_schema(benefit_data)
+            schema = create_benefit_schema(benefit_schema_dict)
             benefit = await benefit_service.user_create(
                 session=session,
                 redis=redis,

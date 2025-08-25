@@ -27,7 +27,7 @@ export const ResourceLayout = ({
             {/* Top Section */}
             <div className="flex flex-col">
               <div className="flex flex-col gap-y-8 border-t border-dashed border-gray-200 pt-4 dark:border-gray-700">
-                <p className="dark:text-polar-500 font-mono text-sm uppercase text-gray-500">
+                <p className="dark:text-polar-500 font-mono text-sm uppercase tracking-widest text-gray-500">
                   Resources
                 </p>
                 <h1 className="text-balance text-5xl !leading-tight md:text-6xl">

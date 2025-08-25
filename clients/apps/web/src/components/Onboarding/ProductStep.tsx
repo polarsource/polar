@@ -30,6 +30,7 @@ import { ProductInfoSection } from '../Products/ProductForm/ProductInfoSection'
 import { ProductMediaSection } from '../Products/ProductForm/ProductMediaSection'
 import { ProductPricingSection } from '../Products/ProductForm/ProductPricingSection'
 import { productCreateToProduct } from '../Products/utils'
+import { Well } from '../Shared/Well'
 
 type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
   ProductFullMediasMixin & {
@@ -146,74 +147,75 @@ export const ProductStep = () => {
 
   return (
     <Form {...form}>
-      <div className="flex h-full flex-col md:flex-row">
-        <div className="flex h-full min-h-0 w-full flex-col gap-8 overflow-y-auto p-12 md:max-w-lg">
-          <div className="flex flex-col gap-y-12">
+      <div className="dark:md:bg-polar-950 flex flex-col pt-16 md:items-center md:p-16">
+        <div className="flex min-h-0 w-full flex-shrink-0 flex-col gap-12 md:max-w-xl md:p-8">
+          <div className="flex flex-col items-center gap-y-8">
             <LogoIcon size={50} />
             <div className="flex flex-col gap-y-4">
-              <h1 className="text-3xl">Your first product</h1>
-              <p className="dark:text-polar-400 text-lg text-gray-600">
+              <h1 className="text-center text-3xl">Your first product</h1>
+              <p className="dark:text-polar-400 text-center text-lg text-gray-600">
                 Setup your first digital product to get started.
               </p>
             </div>
           </div>
 
-          <div className="flex flex-col">
+          <div className="flex flex-col md:gap-y-4">
             <form
               onSubmit={handleSubmit(onSubmit)}
-              className="flex flex-col gap-y-6 [&>div>*]:px-0 [&>div>*]:py-6 [&>div>:first-child]:pt-0"
+              className="flex flex-col gap-y-6 [&>div>*]:px-0 [&>div>:first-child]:pt-0"
             >
-              <div className="flex flex-col">
-                <ProductInfoSection compact />
-                <ProductMediaSection organization={organization} compact />
-                <ProductPricingSection organization={organization} compact />
+              <div className="flex flex-col md:gap-y-4">
+                <Well className="dark:bg-polar-900 border-gray-200 bg-white md:border dark:border-none">
+                  <ProductInfoSection compact />
+                </Well>
+
+                <Well className="dark:bg-polar-900 border-gray-200 bg-white md:border dark:border-none">
+                  <ProductMediaSection
+                    className="py-0"
+                    organization={organization}
+                    compact
+                  />
+                </Well>
+
+                <Well className="dark:bg-polar-900 border-gray-200 bg-white md:border dark:border-none">
+                  <ProductPricingSection
+                    className="py-0"
+                    organization={organization}
+                    compact
+                  />
+                </Well>
               </div>
             </form>
-            <ProductBenefitsForm
-              className="px-0"
-              organization={organization}
-              organizationBenefits={organizationBenefits.filter(
-                (benefit) =>
-                  // Hide not selectable benefits unless they are already enabled
-                  benefit.selectable ||
-                  enabledBenefits.some((b) => b.id === benefit.id),
-              )}
-              benefits={enabledBenefits}
-              onSelectBenefit={onSelectBenefit}
-              onRemoveBenefit={onRemoveBenefit}
-            />
-            <div className="flex flex-row gap-x-4">
+            <Well className="dark:bg-polar-900 border-gray-200 bg-white md:border dark:border-none">
+              <ProductBenefitsForm
+                className="px-0 py-0"
+                organization={organization}
+                organizationBenefits={organizationBenefits.filter(
+                  (benefit) =>
+                    // Hide not selectable benefits unless they are already enabled
+                    benefit.selectable ||
+                    enabledBenefits.some((b) => b.id === benefit.id),
+                )}
+                benefits={enabledBenefits}
+                onSelectBenefit={onSelectBenefit}
+                onRemoveBenefit={onRemoveBenefit}
+              />
+            </Well>
+            <div className="flex flex-col gap-y-2 p-8 md:p-0">
               <Button
-                className="self-start"
                 onClick={() => handleSubmit(onSubmit)()}
                 disabled={!formState.isValid}
                 loading={createProduct.isPending}
+                size="lg"
               >
                 Create Product
               </Button>
               <Link href={`/dashboard/${organization.slug}`}>
-                <Button variant="secondary">Skip</Button>
+                <Button className="w-full" size="lg" variant="secondary">
+                  Skip
+                </Button>
               </Link>
             </div>
-          </div>
-        </div>
-        <div className="dark:bg-polar-950 hidden flex-1 flex-grow flex-col items-center gap-12 overflow-y-auto bg-gray-100 p-16 md:flex">
-          <div className="dark:bg-polar-900 rounded-4xl flex w-full max-w-2xl flex-col gap-y-12 bg-white p-12">
-            <div className="flex flex-col items-center gap-y-6 text-center">
-              <LogoIcon size={40} />
-              <div className="flex flex-col gap-y-4">
-                <h1 className="text-3xl">Product Preview</h1>
-                <p className="dark:text-polar-500 text-lg text-gray-500">
-                  Product information will be shown on your checkout page.
-                </p>
-              </div>
-            </div>
-
-            <CheckoutPreview
-              enabledBenefitIds={enabledBenefitIds}
-              organizationBenefits={organizationBenefits}
-              meters={meters.data?.items ?? []}
-            />
           </div>
         </div>
       </div>

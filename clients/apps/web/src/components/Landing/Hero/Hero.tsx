@@ -39,7 +39,7 @@ export const Hero = ({ className }: { className?: string }) => {
         Monetize your software
       </motion.h1>
       <motion.p
-        className="dark:text-polar-500 text-pretty text-lg !leading-tight text-gray-500 md:px-0"
+        className="dark:text-polar-500 text-pretty text-xl !leading-tight text-gray-500 md:px-0"
         variants={itemVariants}
       >
         Turn your software into a business with 6 lines of code

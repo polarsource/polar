@@ -174,13 +174,6 @@ export const IntegrateStep = ({ product }: IntegrateStepProps) => {
         <div className="dark:bg-polar-950 hidden flex-1 flex-grow flex-col items-center gap-12 overflow-y-auto bg-gray-100 p-16 md:flex">
           <div className="dark:bg-polar-900 flex w-full max-w-3xl flex-col gap-y-12 rounded-3xl bg-white p-12">
             <div className="flex flex-col gap-y-6">
-              <LogoIcon size={50} />
-              <div className="flex flex-col gap-y-4">
-                <h1 className="text-3xl">Integrate Checkout</h1>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-y-6">
               <h2 className="text-lg">1. Install Dependencies</h2>
               <CodeWrapper>
                 <SyntaxHighlighterClient

@@ -16,12 +16,14 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { Label } from '@polar-sh/ui/components/ui/label'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import slugify from 'slugify'
 import LogoIcon from '../Brand/LogoIcon'
+import { Well } from '../Shared/Well'
 import { getStatusRedirect } from '../Toast/utils'
 
 export interface OrganizationStepProps {
@@ -136,11 +138,11 @@ export const OrganizationStep = ({
   }
 
   return (
-    <div className="dark:md:bg-polar-950 flex flex-col md:items-center md:p-16">
-      <div className="dark:md:bg-polar-900 rounded-4xl dark:border-polar-700 flex min-h-0 w-full flex-shrink-0 flex-col gap-8 overflow-y-auto border-gray-200 p-4 md:max-w-xl md:border md:bg-white md:p-8 md:shadow-sm">
-        <div className="flex flex-col gap-y-8">
+    <div className="dark:md:bg-polar-950 flex flex-col pt-16 md:items-center md:p-16">
+      <div className="flex min-h-0 w-full flex-shrink-0 flex-col gap-12 md:max-w-xl md:p-8">
+        <div className="flex flex-col items-center gap-y-8">
           <LogoIcon size={50} />
-          <div className="flex flex-col gap-y-4">
+          <div className="flex flex-col items-center gap-y-4">
             <h1 className="text-3xl">
               {hasExistingOrg
                 ? 'Create a new Organization'
@@ -161,7 +163,7 @@ export const OrganizationStep = ({
               className="flex w-full flex-col gap-y-8"
             >
               <div className="flex flex-col gap-y-8">
-                <div className="flex flex-col gap-y-4">
+                <Well className="dark:bg-polar-900 border-gray-200 bg-white md:border dark:border-none">
                   <FormField
                     control={control}
                     name="name"
@@ -170,8 +172,9 @@ export const OrganizationStep = ({
                     }}
                     render={({ field }) => (
                       <FormItem className="w-full">
-                        <FormControl className="w-full">
-                          <Input {...field} placeholder="Organization Name" />
+                        <FormControl className="flex w-full flex-col gap-y-4">
+                          <Label htmlFor="name">Organization Name</Label>
+                          <Input {...field} placeholder="Acme Inc." />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -185,21 +188,24 @@ export const OrganizationStep = ({
                       required: 'Slug is required',
                     }}
                     render={({ field }) => (
-                      <>
-                        <Input
-                          type="text"
-                          {...field}
-                          size={slug?.length || 1}
-                          placeholder="Organization Slug"
-                          onFocus={() => setEditedSlug(true)}
-                        />
+                      <FormItem className="w-full">
+                        <FormControl className="flex w-full flex-col gap-y-4">
+                          <Label htmlFor="slug">Organization Slug</Label>
+                          <Input
+                            type="text"
+                            {...field}
+                            size={slug?.length || 1}
+                            placeholder="acme-inc"
+                            onFocus={() => setEditedSlug(true)}
+                          />
+                        </FormControl>
                         <FormMessage />
-                      </>
+                      </FormItem>
                     )}
                   />
-                </div>
+                </Well>
 
-                <div className="flex flex-col gap-y-4">
+                <Well className="dark:bg-polar-900 border-gray-200 bg-white md:border dark:border-none">
                   {/* Simple Product Restrictions */}
                   <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-3 rounded-lg border border-gray-200 bg-white p-4">
                     <div className="flex flex-col gap-y-4 text-sm">
@@ -311,7 +317,7 @@ export const OrganizationStep = ({
                       )
                     }}
                   />
-                </div>
+                </Well>
               </div>
               {errors.root && (
                 <p className="text-destructive-foreground text-sm">

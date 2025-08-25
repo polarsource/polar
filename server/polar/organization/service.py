@@ -657,16 +657,26 @@ class OrganizationService:
         self, session: AsyncSession, organization: Organization
     ) -> OrganizationReview:
         """Validate organization details using AI and store the result."""
-
+        log = structlog.get_logger(__name__)
+        log.info(
+            "Validating organization details with AI",
+            organization_id=organization.id,
+            organization_details=organization.details,
+        )
         repository = OrganizationReviewRepository.from_session(session)
         previous_validation = await repository.get_by_organization(organization.id)
-
+        log.info(
+            "Found previous organization validation",
+            organization_id=organization.id,
+            previous_validation=previous_validation,
+        )
         if previous_validation is not None:
             return previous_validation
 
         result = await organization_validator.validate_organization_details(
             organization
         )
+        log.info("AI validation result", organization_id=organization.id, result=result)
 
         ai_validation = OrganizationReview(
             organization_id=organization.id,
@@ -684,10 +694,180 @@ class OrganizationService:
             model_used=organization_validator.model.model_name,
         )
 
+        # Update organization status based on AI verdict
+        if result.verdict.verdict in ["FAIL", "UNCERTAIN"]:
+            organization.status = Organization.Status.DENIED
+        # For PASS verdict, we keep the current status (don't change to ACTIVE automatically)
+
         session.add(ai_validation)
+        session.add(organization)
         await session.commit()
 
         return ai_validation
+
+    async def submit_appeal(
+        self, session: AsyncSession, organization: Organization, appeal_reason: str
+    ) -> OrganizationReview:
+        """Submit an appeal for organization review and create a Plain ticket."""
+        from polar.integrations.plain.service import plain as plain_service
+        from polar.notifications.notification import (
+            MaintainerAppealSubmittedNotificationPayload,
+            NotificationType,
+        )
+        from polar.notifications.service import PartialNotification
+        from polar.notifications.service import notifications as notification_service
+
+        repository = OrganizationReviewRepository.from_session(session)
+        review = await repository.get_by_organization(organization.id)
+
+        if review is None:
+            raise ValueError("Organization must have a review before submitting appeal")
+
+        if review.appeal_submitted_at is not None:
+            raise ValueError("Appeal has already been submitted for this organization")
+
+        # Update the review with appeal information
+        review.appeal_submitted_at = datetime.now(UTC)
+        review.appeal_reason = appeal_reason
+
+        session.add(review)
+
+        # Create Plain ticket for manual review
+        try:
+            await plain_service.create_appeal_review_thread(
+                session, organization, review, appeal_reason
+            )
+        except Exception as e:
+            # Log error but don't fail the appeal submission
+            import structlog
+
+            log = structlog.get_logger(__name__)
+            log.error(
+                "Failed to create Plain ticket for appeal",
+                organization_id=str(organization.id),
+                error=str(e),
+            )
+
+        # Send notification to organization admin
+        org_repository = OrganizationRepository.from_session(session)
+        admin_user = await org_repository.get_admin_user(session, organization)
+        if admin_user:
+            await notification_service.send_to_user(
+                session=session,
+                user_id=admin_user.id,
+                notif=PartialNotification(
+                    type=NotificationType.maintainer_appeal_submitted,
+                    payload=MaintainerAppealSubmittedNotificationPayload(
+                        organization_name=organization.name
+                    ),
+                ),
+            )
+
+        await session.commit()
+
+        return review
+
+    async def approve_appeal(
+        self, session: AsyncSession, organization: Organization
+    ) -> OrganizationReview:
+        """Approve an organization's appeal and restore payment access."""
+        from polar.notifications.notification import (
+            MaintainerAppealDecisionNotificationPayload,
+            NotificationType,
+        )
+        from polar.notifications.service import PartialNotification
+        from polar.notifications.service import notifications as notification_service
+
+        repository = OrganizationReviewRepository.from_session(session)
+        review = await repository.get_by_organization(organization.id)
+
+        if review is None:
+            raise ValueError("Organization must have a review before approving appeal")
+
+        if review.appeal_submitted_at is None:
+            raise ValueError("No appeal has been submitted for this organization")
+
+        if review.appeal_decision is not None:
+            raise ValueError("Appeal has already been reviewed")
+
+        # Approve the organization and update appeal status
+        organization.status = Organization.Status.ACTIVE
+        review.appeal_decision = "approved"
+        review.appeal_reviewed_at = datetime.now(UTC)
+
+        # Sync account status (if needed)
+        await self._sync_account_status(session, organization)
+
+        session.add(organization)
+        session.add(review)
+        await session.commit()
+
+        # Send notification to organization admin
+        org_repository = OrganizationRepository.from_session(session)
+        admin_user = await org_repository.get_admin_user(session, organization)
+        if admin_user:
+            await notification_service.send_to_user(
+                session=session,
+                user_id=admin_user.id,
+                notif=PartialNotification(
+                    type=NotificationType.maintainer_appeal_decision,
+                    payload=MaintainerAppealDecisionNotificationPayload(
+                        organization_name=organization.name,
+                        decision="approved",
+                    ),
+                ),
+            )
+
+        return review
+
+    async def deny_appeal(
+        self, session: AsyncSession, organization: Organization
+    ) -> OrganizationReview:
+        """Deny an organization's appeal and keep payment access blocked."""
+        from polar.notifications.notification import (
+            MaintainerAppealDecisionNotificationPayload,
+            NotificationType,
+        )
+        from polar.notifications.service import PartialNotification
+        from polar.notifications.service import notifications as notification_service
+
+        repository = OrganizationReviewRepository.from_session(session)
+        review = await repository.get_by_organization(organization.id)
+
+        if review is None:
+            raise ValueError("Organization must have a review before denying appeal")
+
+        if review.appeal_submitted_at is None:
+            raise ValueError("No appeal has been submitted for this organization")
+
+        if review.appeal_decision is not None:
+            raise ValueError("Appeal has already been reviewed")
+
+        # Keep organization denied and update appeal status
+        # (organization.status remains DENIED)
+        review.appeal_decision = "rejected"
+        review.appeal_reviewed_at = datetime.now(UTC)
+
+        session.add(review)
+        await session.commit()
+
+        # Send notification to organization admin
+        org_repository = OrganizationRepository.from_session(session)
+        admin_user = await org_repository.get_admin_user(session, organization)
+        if admin_user:
+            await notification_service.send_to_user(
+                session=session,
+                user_id=admin_user.id,
+                notif=PartialNotification(
+                    type=NotificationType.maintainer_appeal_decision,
+                    payload=MaintainerAppealDecisionNotificationPayload(
+                        organization_name=organization.name,
+                        decision="rejected",
+                    ),
+                ),
+            )
+
+        return review
 
 
 organization = OrganizationService()

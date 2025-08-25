@@ -12,6 +12,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import AppealForm from './AppealForm'
 
 interface AIValidationResultProps {
   organization: schemas['Organization']
@@ -107,9 +108,10 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
       case 'UNCERTAIN':
         return {
           type: 'review_required',
-          title: 'Manual Review Required',
+          title: 'Payment Access Denied',
           message: result.reason,
-          icon: <AlertTriangle className="h-8 w-8 text-gray-600" />,
+          icon: <AlertTriangle className="h-8 w-8 text-red-600" />,
+          severity: 'error',
         }
       default:
         return null
@@ -126,7 +128,7 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
         <div className="flex items-center space-x-4">
           <div className="flex-shrink-0">{status.icon}</div>
           <div className="flex-1">
-            <h3 className={`text-lg font-medium`}>{status.title}</h3>
+            <h3 className={`text-lg font-medium ${status.severity === 'error' ? 'text-red-800 dark:text-red-200' : ''}`}>{status.title}</h3>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
               {status.message}
             </p>
@@ -134,42 +136,53 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
         </div>
 
         {/* Information Message */}
-        <div className={`rounded-lg bg-gray-200 p-4`}>
+        <div className={`rounded-lg p-4 ${status.severity === 'error' ? 'bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800' : 'bg-gray-200 dark:bg-gray-800'}`}>
           <div className="flex items-start space-x-3">
-            <Info className="h-5 w-5" />
+            <Info className={`h-5 w-5 ${status.severity === 'error' ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
             <div className="flex-1">
               <h4
-                className={`text-sm font-medium text-gray-600 dark:text-gray-400`}
+                className={`text-sm font-medium ${status.severity === 'error' ? 'text-red-800 dark:text-red-200' : 'text-gray-600 dark:text-gray-400'}`}
               >
                 What happens next?
               </h4>
-              <p className={`mt-1 text-sm text-gray-600 dark:text-gray-400`}>
+              <p className={`mt-1 text-sm ${status.severity === 'error' ? 'text-red-700 dark:text-red-300' : 'text-gray-600 dark:text-gray-400'}`}>
                 {status.type === 'pass'
-                  ? 'Your organization details passed our automated compliance check, but a manual review will still occur as part of our standard process before the first payout. You can continue with your account setup.'
+                  ? 'Your organization details passed our automated compliance check. You can accept payments immediately, but a manual review will still occur before your first payout as part of our standard process.'
                   : status.type === 'review_required'
-                    ? "Our team will manually review your organization details. You can continue with your account setup process while we review your submission. We'll notify you once the review is complete."
+                    ? "Payments are currently blocked for your organization due to our compliance review. You can submit an appeal below if you believe this decision is incorrect."
                     : 'Please wait while we validate your organization details.'}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Continue Button */}
+        {/* Appeal Form for FAIL/UNCERTAIN or Continue Button */}
         {(validationResult ||
           (aiValidation.isSuccess && aiValidation.data?.data)) && (
-          <div className="flex justify-center pt-6">
-            <Button
-              onClick={() => {
-                if (onValidationCompleted) {
-                  onValidationCompleted()
-                }
-              }}
-              className="w-auto"
-            >
-              Continue to Account Setup
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
+          <>
+            {status.type === 'review_required' ? (
+              <div className="pt-6">
+                <AppealForm 
+                  organization={organization} 
+                  disabled={false} // Set to true to disable appeals
+                />
+              </div>
+            ) : (
+              <div className="flex justify-center pt-6">
+                <Button
+                  onClick={() => {
+                    if (onValidationCompleted) {
+                      onValidationCompleted()
+                    }
+                  }}
+                  className="w-auto"
+                >
+                  Continue to Account Setup
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </Card>

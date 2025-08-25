@@ -243,6 +243,11 @@ class OrganizationAIValidator:
 
             # Prepare organization context
             org_context = self._prepare_organization_context(organization)
+            log.debug(
+                "Prepared organization context for AI validation",
+                context=org_context,
+                organization_details=organization.details,
+            )
 
             # Create the validation prompt
             prompt = f"""
@@ -298,6 +303,7 @@ class OrganizationAIValidator:
     def _prepare_organization_context(self, organization: Organization) -> str:
         """Prepare organization details for AI analysis."""
         details = organization.details or {}
+        log.debug("Preparing organization context", details=details)
 
         context_parts = [
             f"Organization Name: {organization.name}",

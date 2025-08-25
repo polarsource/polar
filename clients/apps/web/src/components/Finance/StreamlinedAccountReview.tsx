@@ -184,9 +184,7 @@ export default function StreamlinedAccountReview({
   onStartAccountSetup,
   onStartIdentityVerification,
 }: StreamlinedAccountReviewProps) {
-  const [validationCompleted, setValidationCompleted] = useState(
-    organization.details_submitted_at !== null,
-  )
+  const [validationCompleted, setValidationCompleted] = useState(false)
 
   const handleDetailsSubmitted = () => {
     onDetailsSubmitted()

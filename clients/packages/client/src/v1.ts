@@ -614,6 +614,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/organizations/{id}/appeal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Appeal for Organization Review
+         * @description Submit an appeal for organization review after AI validation failure.
+         *
+         *     **Scopes**: `organizations:write`
+         */
+        post: operations["organizations:submit_appeal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organizations/{id}/review-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Organization Review Status
+         * @description Get the current review status and appeal information for an organization.
+         *
+         *     **Scopes**: `organizations:read` `organizations:write`
+         */
+        get: operations["organizations:get_review_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/subscriptions/": {
         parameters: {
             query?: never;
@@ -12597,6 +12641,56 @@ export interface components {
             /** Account Type */
             account_type: string;
         };
+        /** MaintainerAppealDecisionNotification */
+        MaintainerAppealDecisionNotification: {
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "MaintainerAppealDecisionNotification";
+            payload: components["schemas"]["MaintainerAppealDecisionNotificationPayload"];
+        };
+        /** MaintainerAppealDecisionNotificationPayload */
+        MaintainerAppealDecisionNotificationPayload: {
+            /** Organization Name */
+            organization_name: string;
+            /** Decision */
+            decision: string;
+        };
+        /** MaintainerAppealSubmittedNotification */
+        MaintainerAppealSubmittedNotification: {
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "MaintainerAppealSubmittedNotification";
+            payload: components["schemas"]["MaintainerAppealSubmittedNotificationPayload"];
+        };
+        /** MaintainerAppealSubmittedNotificationPayload */
+        MaintainerAppealSubmittedNotificationPayload: {
+            /** Organization Name */
+            organization_name: string;
+        };
         /** MaintainerCreateAccountNotification */
         MaintainerCreateAccountNotification: {
             /**
@@ -12688,6 +12782,30 @@ export interface components {
             organization_name: string;
             /** Formatted Price Amount */
             readonly formatted_price_amount: string;
+        };
+        /** MaintainerPaymentsBlockedNotification */
+        MaintainerPaymentsBlockedNotification: {
+            /**
+             * Id
+             * Format: uuid4
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "MaintainerPaymentsBlockedNotification";
+            payload: components["schemas"]["MaintainerPaymentsBlockedNotificationPayload"];
+        };
+        /** MaintainerPaymentsBlockedNotificationPayload */
+        MaintainerPaymentsBlockedNotificationPayload: {
+            /** Organization Name */
+            organization_name: string;
         };
         /** Meter */
         Meter: {
@@ -13233,7 +13351,7 @@ export interface components {
         /** NotificationsList */
         NotificationsList: {
             /** Notifications */
-            notifications: (components["schemas"]["MaintainerAccountUnderReviewNotification"] | components["schemas"]["MaintainerAccountReviewedNotification"] | components["schemas"]["MaintainerNewPaidSubscriptionNotification"] | components["schemas"]["MaintainerNewProductSaleNotification"] | components["schemas"]["MaintainerCreateAccountNotification"])[];
+            notifications: (components["schemas"]["MaintainerAccountUnderReviewNotification"] | components["schemas"]["MaintainerAccountReviewedNotification"] | components["schemas"]["MaintainerNewPaidSubscriptionNotification"] | components["schemas"]["MaintainerNewProductSaleNotification"] | components["schemas"]["MaintainerCreateAccountNotification"] | components["schemas"]["MaintainerPaymentsBlockedNotification"] | components["schemas"]["MaintainerAppealSubmittedNotification"] | components["schemas"]["MaintainerAppealDecisionNotification"])[];
             /** Last Read Notification Id */
             last_read_notification_id: string | null;
         };
@@ -14011,6 +14129,33 @@ export interface components {
             /** Scopes */
             scopes?: components["schemas"]["AvailableScope"][] | null;
         };
+        /** OrganizationAppealRequest */
+        OrganizationAppealRequest: {
+            /**
+             * Reason
+             * @description Detailed explanation of why this organization should be approved. Minimum 50 characters.
+             */
+            reason: string;
+        };
+        /** OrganizationAppealResponse */
+        OrganizationAppealResponse: {
+            /**
+             * Success
+             * @description Whether the appeal was successfully submitted
+             */
+            success: boolean;
+            /**
+             * Message
+             * @description Success or error message
+             */
+            message: string;
+            /**
+             * Appeal Submitted At
+             * Format: date-time
+             * @description When the appeal was submitted
+             */
+            appeal_submitted_at: string;
+        };
         /**
          * OrganizationAvatarFileCreate
          * @description Schema to create a file to be used as an organization avatar.
@@ -14243,6 +14388,39 @@ export interface components {
              * @description Whether the step is completed
              */
             completed: boolean;
+        };
+        /** OrganizationReviewStatus */
+        OrganizationReviewStatus: {
+            /**
+             * Verdict
+             * @description AI validation verdict
+             */
+            verdict?: ("PASS" | "FAIL" | "UNCERTAIN") | null;
+            /**
+             * Reason
+             * @description Reason for the verdict
+             */
+            reason?: string | null;
+            /**
+             * Appeal Submitted At
+             * @description When appeal was submitted
+             */
+            appeal_submitted_at?: string | null;
+            /**
+             * Appeal Reason
+             * @description Reason for the appeal
+             */
+            appeal_reason?: string | null;
+            /**
+             * Appeal Decision
+             * @description Decision on the appeal (approved/rejected)
+             */
+            appeal_decision?: string | null;
+            /**
+             * Appeal Reviewed At
+             * @description When appeal was reviewed
+             */
+            appeal_reviewed_at?: string | null;
         };
         /** OrganizationSetAccount */
         OrganizationSetAccount: {
@@ -18322,6 +18500,97 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrganizationValidationResult"];
+                };
+            };
+            /** @description Organization not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "organizations:submit_appeal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationAppealRequest"];
+            };
+        };
+        responses: {
+            /** @description Appeal submitted successfully. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationAppealResponse"];
+                };
+            };
+            /** @description Invalid appeal request. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Organization not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "organizations:get_review_status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Organization review status retrieved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationReviewStatus"];
                 };
             };
             /** @description Organization not found. */
@@ -25730,9 +25999,12 @@ export const legacyRecurringProductPriceFreeAmount_typeValues: ReadonlyArray<com
 export const licenseKeyStatusValues: ReadonlyArray<components["schemas"]["LicenseKeyStatus"]> = ["granted", "revoked", "disabled"];
 export const maintainerAccountReviewedNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerAccountReviewedNotification"]["type"]> = ["MaintainerAccountReviewedNotification"];
 export const maintainerAccountUnderReviewNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerAccountUnderReviewNotification"]["type"]> = ["MaintainerAccountUnderReviewNotification"];
+export const maintainerAppealDecisionNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerAppealDecisionNotification"]["type"]> = ["MaintainerAppealDecisionNotification"];
+export const maintainerAppealSubmittedNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerAppealSubmittedNotification"]["type"]> = ["MaintainerAppealSubmittedNotification"];
 export const maintainerCreateAccountNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerCreateAccountNotification"]["type"]> = ["MaintainerCreateAccountNotification"];
 export const maintainerNewPaidSubscriptionNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerNewPaidSubscriptionNotification"]["type"]> = ["MaintainerNewPaidSubscriptionNotification"];
 export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerNewProductSaleNotification"]["type"]> = ["MaintainerNewProductSaleNotification"];
+export const maintainerPaymentsBlockedNotificationTypeValues: ReadonlyArray<components["schemas"]["MaintainerPaymentsBlockedNotification"]["type"]> = ["MaintainerPaymentsBlockedNotification"];
 export const meterCreditEventNameValues: ReadonlyArray<components["schemas"]["MeterCreditEvent"]["name"]> = ["meter.credited"];
 export const meterResetEventNameValues: ReadonlyArray<components["schemas"]["MeterResetEvent"]["name"]> = ["meter.reset"];
 export const meterSortPropertyValues: ReadonlyArray<components["schemas"]["MeterSortProperty"]> = ["created_at", "-created_at", "name", "-name"];
@@ -25752,6 +26024,7 @@ export const organizationAccessTokenSortPropertyValues: ReadonlyArray<components
 export const organizationAvatarFileCreateServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileCreate"]["service"]> = ["organization_avatar"];
 export const organizationAvatarFileReadServiceValues: ReadonlyArray<components["schemas"]["OrganizationAvatarFileRead"]["service"]> = ["organization_avatar"];
 export const organizationDetailsSwitching_fromValues: ReadonlyArray<components["schemas"]["OrganizationDetails"]["switching_from"]> = ["paddle", "lemon_squeezy", "gumroad", "stripe", "other"];
+export const organizationReviewStatusVerdictValues: ReadonlyArray<components["schemas"]["OrganizationReviewStatus"]["verdict"]> = ["PASS", "FAIL", "UNCERTAIN"];
 export const organizationSocialPlatformsValues: ReadonlyArray<components["schemas"]["OrganizationSocialPlatforms"]> = ["x", "github", "facebook", "instagram", "youtube", "tiktok", "linkedin", "other"];
 export const organizationSortPropertyValues: ReadonlyArray<components["schemas"]["OrganizationSortProperty"]> = ["created_at", "-created_at", "slug", "-slug", "name", "-name"];
 export const organizationValidationResultVerdictValues: ReadonlyArray<components["schemas"]["OrganizationValidationResult"]["verdict"]> = ["PASS", "FAIL", "UNCERTAIN"];

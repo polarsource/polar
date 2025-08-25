@@ -47,6 +47,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.organization_review import OrganizationReview
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
 
@@ -478,6 +479,183 @@ class PlainService:
                 ),
             ]
         )
+
+    async def create_appeal_review_thread(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        review: OrganizationReview,
+        appeal_reason: str,
+    ) -> None:
+        """Create Plain ticket for organization appeal review."""
+        user_repository = UserRepository.from_session(session)
+        if organization.account is None:
+            from polar.organization.tasks import OrganizationAccountNotSet
+
+            raise OrganizationAccountNotSet(organization.id)
+
+        admin = await user_repository.get_by_id(organization.account.admin_id)
+        if admin is None:
+            raise AccountAdminDoesNotExistError(organization.account.admin_id)
+
+        # Create Plain ticket for appeal review
+        async with self._get_plain_client() as plain:
+            customer_result = await plain.upsert_customer(
+                UpsertCustomerInput(
+                    identifier=UpsertCustomerIdentifierInput(email_address=admin.email),
+                    on_create=UpsertCustomerOnCreateInput(
+                        external_id=str(admin.id),
+                        full_name=admin.email,
+                        email=EmailAddressInput(
+                            email=admin.email, is_verified=admin.email_verified
+                        ),
+                    ),
+                    on_update=UpsertCustomerOnUpdateInput(
+                        external_id=OptionalStringInput(value=str(admin.id)),
+                        email=EmailAddressInput(
+                            email=admin.email, is_verified=admin.email_verified
+                        ),
+                    ),
+                )
+            )
+
+            if customer_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    organization.account.id, customer_result.error.message
+                )
+
+            # Create the thread with detailed appeal information
+            thread_result = await plain.create_thread(
+                CreateThreadInput(
+                    customer_identifier=CustomerIdentifierInput(
+                        external_id=str(admin.id)
+                    ),
+                    title=f"Organization Appeal - {organization.slug}",
+                    label_type_ids=[
+                        "lt_01JFG7F4N67FN3MAWK06FJ8FPG"
+                    ],  # Use same label as account review
+                    components=[
+                        ComponentInput(
+                            component_text=ComponentTextInput(
+                                text=f"The organization `{organization.slug}` has submitted an appeal for review after AI validation {review.verdict}."
+                            )
+                        ),
+                        ComponentInput(
+                            component_container=ComponentContainerInput(
+                                container_content=[
+                                    ComponentContainerContentInput(
+                                        component_text=ComponentTextInput(
+                                            text=organization.name or organization.slug
+                                        )
+                                    ),
+                                    ComponentContainerContentInput(
+                                        component_divider=ComponentDividerInput(
+                                            divider_spacing_size=ComponentDividerSpacingSize.M
+                                        )
+                                    ),
+                                    # Organization ID
+                                    ComponentContainerContentInput(
+                                        component_row=ComponentRowInput(
+                                            row_main_content=[
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text="Organization ID",
+                                                        text_size=ComponentTextSize.S,
+                                                        text_color=ComponentTextColor.MUTED,
+                                                    )
+                                                ),
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text=str(organization.id)
+                                                    )
+                                                ),
+                                            ],
+                                            row_aside_content=[
+                                                ComponentRowContentInput(
+                                                    component_copy_button=ComponentCopyButtonInput(
+                                                        copy_button_value=str(
+                                                            organization.id
+                                                        ),
+                                                        copy_button_tooltip_label="Copy Organization ID",
+                                                    )
+                                                )
+                                            ],
+                                        )
+                                    ),
+                                    # AI Verdict
+                                    ComponentContainerContentInput(
+                                        component_row=ComponentRowInput(
+                                            row_main_content=[
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text="AI Verdict",
+                                                        text_size=ComponentTextSize.S,
+                                                        text_color=ComponentTextColor.MUTED,
+                                                    )
+                                                ),
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text=review.verdict
+                                                    )
+                                                ),
+                                            ],
+                                            row_aside_content=[],
+                                        )
+                                    ),
+                                    # AI Reason
+                                    ComponentContainerContentInput(
+                                        component_text=ComponentTextInput(
+                                            text="AI Review Reason:",
+                                            text_size=ComponentTextSize.S,
+                                            text_color=ComponentTextColor.MUTED,
+                                        )
+                                    ),
+                                    ComponentContainerContentInput(
+                                        component_text=ComponentTextInput(
+                                            text=review.reason
+                                        )
+                                    ),
+                                    ComponentContainerContentInput(
+                                        component_spacer=ComponentSpacerInput(
+                                            spacer_size=ComponentSpacerSize.M
+                                        )
+                                    ),
+                                    # Appeal Reason
+                                    ComponentContainerContentInput(
+                                        component_text=ComponentTextInput(
+                                            text="Appeal Reason:",
+                                            text_size=ComponentTextSize.S,
+                                            text_color=ComponentTextColor.MUTED,
+                                        )
+                                    ),
+                                    ComponentContainerContentInput(
+                                        component_text=ComponentTextInput(
+                                            text=appeal_reason
+                                        )
+                                    ),
+                                    ComponentContainerContentInput(
+                                        component_spacer=ComponentSpacerInput(
+                                            spacer_size=ComponentSpacerSize.M
+                                        )
+                                    ),
+                                    # Admin Dashboard Link
+                                    ComponentContainerContentInput(
+                                        component_link_button=ComponentLinkButtonInput(
+                                            link_button_url=f"{settings.FRONTEND_BASE_URL}/backoffice/organizations/{organization.id}",
+                                            link_button_label="View in Admin Dashboard",
+                                        )
+                                    ),
+                                ]
+                            )
+                        ),
+                    ],
+                )
+            )
+
+            if thread_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    organization.account.id, thread_result.error.message
+                )
 
     async def get_customer_card(
         self, session: AsyncSession, request: CustomerCardsRequest

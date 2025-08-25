@@ -49,6 +49,18 @@ class OrganizationReview(RecordModel):
         TIMESTAMP(timezone=True), nullable=False, default=lambda: datetime.now()
     )
 
+    # Appeal fields
+    appeal_submitted_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    appeal_reason: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    appeal_reviewed_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    appeal_decision: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
+
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise", back_populates="review")

@@ -361,3 +361,36 @@ class OrganizationValidationResult(Schema):
     timed_out: bool = Field(
         default=False, description="Whether the validation timed out"
     )
+
+
+class OrganizationAppealRequest(Schema):
+    reason: Annotated[
+        str,
+        StringConstraints(min_length=50, max_length=5000),
+        Field(
+            description="Detailed explanation of why this organization should be approved. Minimum 50 characters."
+        ),
+    ]
+
+
+class OrganizationAppealResponse(Schema):
+    success: bool = Field(description="Whether the appeal was successfully submitted")
+    message: str = Field(description="Success or error message")
+    appeal_submitted_at: datetime = Field(description="When the appeal was submitted")
+
+
+class OrganizationReviewStatus(Schema):
+    verdict: Literal["PASS", "FAIL", "UNCERTAIN"] | None = Field(
+        default=None, description="AI validation verdict"
+    )
+    reason: str | None = Field(default=None, description="Reason for the verdict")
+    appeal_submitted_at: datetime | None = Field(
+        default=None, description="When appeal was submitted"
+    )
+    appeal_reason: str | None = Field(default=None, description="Reason for the appeal")
+    appeal_decision: str | None = Field(
+        default=None, description="Decision on the appeal (approved/rejected)"
+    )
+    appeal_reviewed_at: datetime | None = Field(
+        default=None, description="When appeal was reviewed"
+    )

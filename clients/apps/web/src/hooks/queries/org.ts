@@ -231,3 +231,25 @@ export const useOrganizationAIValidation = (id: string) =>
     retry: defaultRetry,
   })
 
+export const useOrganizationAppeal = (id: string) =>
+  useMutation({
+    mutationFn: ({ reason }: { reason: string }) => {
+      return api.POST('/v1/organizations/{id}/appeal', {
+        params: { path: { id } },
+        body: { reason },
+      })
+    },
+    retry: defaultRetry,
+  })
+
+export const useOrganizationReviewStatus = (id: string, enabled: boolean = true) =>
+  useQuery({
+    queryKey: ['organizationReviewStatus', id],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/review-status', { params: { path: { id } } }),
+      ),
+    retry: defaultRetry,
+    enabled: enabled && !!id,
+  })
+

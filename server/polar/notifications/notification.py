@@ -16,6 +16,9 @@ class NotificationType(StrEnum):
     maintainer_new_paid_subscription = "MaintainerNewPaidSubscriptionNotification"
     maintainer_new_product_sale = "MaintainerNewProductSaleNotification"
     maintainer_create_account = "MaintainerCreateAccountNotification"
+    maintainer_payments_blocked = "MaintainerPaymentsBlockedNotification"
+    maintainer_appeal_submitted = "MaintainerAppealSubmittedNotification"
+    maintainer_appeal_decision = "MaintainerAppealDecisionNotification"
 
 
 class NotificationPayloadBase(BaseModel):
@@ -146,12 +149,65 @@ class MaintainerCreateAccountNotification(NotificationBase):
     payload: MaintainerCreateAccountNotificationPayload
 
 
+class MaintainerPaymentsBlockedNotificationPayload(NotificationPayloadBase):
+    organization_name: str
+
+    def subject(self) -> str:
+        return f"Payments blocked for {self.organization_name} - review required"
+
+    @classmethod
+    def template_name(cls) -> str:
+        return "notification_payments_blocked"
+
+
+class MaintainerPaymentsBlockedNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_payments_blocked]
+    payload: MaintainerPaymentsBlockedNotificationPayload
+
+
+class MaintainerAppealSubmittedNotificationPayload(NotificationPayloadBase):
+    organization_name: str
+
+    def subject(self) -> str:
+        return f"Appeal submitted for {self.organization_name}"
+
+    @classmethod
+    def template_name(cls) -> str:
+        return "notification_appeal_submitted"
+
+
+class MaintainerAppealSubmittedNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_appeal_submitted]
+    payload: MaintainerAppealSubmittedNotificationPayload
+
+
+class MaintainerAppealDecisionNotificationPayload(NotificationPayloadBase):
+    organization_name: str
+    decision: str  # "approved" or "rejected"
+
+    def subject(self) -> str:
+        status = "approved" if self.decision == "approved" else "rejected"
+        return f"Appeal {status} for {self.organization_name}"
+
+    @classmethod
+    def template_name(cls) -> str:
+        return "notification_appeal_decision"
+
+
+class MaintainerAppealDecisionNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_appeal_decision]
+    payload: MaintainerAppealDecisionNotificationPayload
+
+
 NotificationPayload = (
     MaintainerAccountUnderReviewNotificationPayload
     | MaintainerAccountReviewedNotificationPayload
     | MaintainerNewPaidSubscriptionNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
     | MaintainerCreateAccountNotificationPayload
+    | MaintainerPaymentsBlockedNotificationPayload
+    | MaintainerAppealSubmittedNotificationPayload
+    | MaintainerAppealDecisionNotificationPayload
 )
 
 Notification = Annotated[
@@ -159,6 +215,9 @@ Notification = Annotated[
     | MaintainerAccountReviewedNotification
     | MaintainerNewPaidSubscriptionNotification
     | MaintainerNewProductSaleNotification
-    | MaintainerCreateAccountNotification,
+    | MaintainerCreateAccountNotification
+    | MaintainerPaymentsBlockedNotification
+    | MaintainerAppealSubmittedNotification
+    | MaintainerAppealDecisionNotification,
     Discriminator(discriminator="type"),
 ]

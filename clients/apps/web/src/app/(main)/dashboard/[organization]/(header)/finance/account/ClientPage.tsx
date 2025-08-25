@@ -41,9 +41,7 @@ export default function ClientPage({
 
   const { data: organizationAccount } = useOrganizationAccount(organization.id)
 
-  const [validationCompleted, setValidationCompleted] = useState(
-    organization.details_submitted_at !== null,
-  )
+  const [validationCompleted, setValidationCompleted] = useState(false)
 
   type Step = 'review' | 'validation' | 'account' | 'identity' | 'complete'
 

@@ -12,6 +12,7 @@ LicenseKeysRead = Annotated[
         Authenticator(
             required_scopes={
                 Scope.web_read,
+                Scope.web_write,
                 Scope.license_keys_read,
                 Scope.license_keys_write,
             },

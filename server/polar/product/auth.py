@@ -9,6 +9,7 @@ from polar.auth.scope import Scope
 _CreatorProductsRead = Authenticator(
     required_scopes={
         Scope.web_read,
+        Scope.web_write,
         Scope.products_read,
         Scope.products_write,
     },

@@ -1,0 +1,24 @@
+name: Compress docs images
+
+on:
+  pull_request:
+    paths:
+      - "docs/**.png"
+      - "docs/**.jpg"
+      - "docs/**.jpeg"
+      - "docs/**.webp"
+
+jobs:
+  compress:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    name: calibreapp/image-actions
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v5
+
+      - name: Compress Images
+        uses: calibreapp/image-actions@1.2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

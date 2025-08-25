@@ -307,7 +307,7 @@ class TestCreateRefunds(StripeRefund):
         assert updated.refunded_tax_amount == 0
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.web_write}),
         AuthSubjectFixture(scopes={Scope.refunds_write}),
     )
     async def test_valid_partial_to_full(
@@ -416,7 +416,7 @@ class TestCreateRefunds(StripeRefund):
         assert order.refunded
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.web_write}),
         AuthSubjectFixture(scopes={Scope.refunds_write}),
     )
     async def test_valid_full_refund(

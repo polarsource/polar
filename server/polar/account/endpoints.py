@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import Depends, Query
 
-from polar.auth.dependencies import WebUser
+from polar.auth.dependencies import WebUserRead, WebUserWrite
 from polar.enums import AccountType
 from polar.exceptions import InternalServerError, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -20,7 +20,7 @@ router = APIRouter(tags=["accounts", APITag.private])
 
 @router.get("/accounts/search", response_model=ListResource[AccountSchema])
 async def search(
-    auth_subject: WebUser,
+    auth_subject: WebUserRead,
     pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[AccountSchema]:
@@ -38,7 +38,7 @@ async def search(
 @router.get("/accounts/{id}", response_model=AccountSchema)
 async def get(
     id: UUID,
-    auth_subject: WebUser,
+    auth_subject: WebUserRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Account:
     account = await account_service.get(session, auth_subject, id)
@@ -51,7 +51,7 @@ async def get(
 @router.post("/accounts", response_model=AccountSchema)
 async def create(
     account_create: AccountCreate,
-    auth_subject: WebUser,
+    auth_subject: WebUserWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Account:
     return await account_service.create_account(
@@ -63,7 +63,7 @@ async def create(
 async def patch(
     id: UUID,
     account_update: AccountUpdate,
-    auth_subject: WebUser,
+    auth_subject: WebUserWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Account:
     account = await account_service.get(session, auth_subject, id)
@@ -76,7 +76,7 @@ async def patch(
 @router.post("/accounts/{id}/onboarding_link", response_model=AccountLink)
 async def onboarding_link(
     id: UUID,
-    auth_subject: WebUser,
+    auth_subject: WebUserWrite,
     return_path: str = Query(...),
     session: AsyncSession = Depends(get_db_session),
 ) -> AccountLink:
@@ -96,7 +96,9 @@ async def onboarding_link(
 
 @router.post("/accounts/{id}/dashboard_link", response_model=AccountLink)
 async def dashboard_link(
-    id: UUID, auth_subject: WebUser, session: AsyncSession = Depends(get_db_session)
+    id: UUID,
+    auth_subject: WebUserWrite,
+    session: AsyncSession = Depends(get_db_session),
 ) -> AccountLink:
     account = await account_service.get(session, auth_subject, id)
     if account is None:

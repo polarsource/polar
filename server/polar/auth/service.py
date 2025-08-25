@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TypeVar
 
 import structlog
@@ -6,6 +6,7 @@ from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy import delete, select
 
+from polar.auth.scope import Scope
 from polar.config import settings
 from polar.enums import TokenType
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
@@ -35,6 +36,7 @@ class AuthService:
             session=session,
             user=user,
             user_agent=request.headers.get("User-Agent", ""),
+            scopes=[Scope.web_read, Scope.web_write],
         )
 
         return_url = get_safe_return_url(return_to)
@@ -54,9 +56,12 @@ class AuthService:
         return response
 
     async def authenticate(
-        self, session: AsyncSession, request: Request
+        self,
+        session: AsyncSession,
+        request: Request,
+        cookie: str = settings.USER_SESSION_COOKIE_KEY,
     ) -> UserSession | None:
-        token = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
+        token = request.cookies.get(cookie)
         if token is None:
             return None
 
@@ -107,7 +112,13 @@ class AuthService:
         return result.unique().scalar_one_or_none()
 
     async def _create_user_session(
-        self, session: AsyncSession, user: User, *, user_agent: str
+        self,
+        session: AsyncSession,
+        user: User,
+        *,
+        user_agent: str,
+        scopes: list[Scope],
+        expire_in: timedelta = settings.USER_SESSION_TTL,
     ) -> tuple[str, UserSession]:
         token, token_hash = generate_token_hash_pair(
             secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
@@ -116,6 +127,8 @@ class AuthService:
             token=token_hash,
             user_agent=user_agent,
             user=user,
+            scopes=scopes,
+            expires_at=utc_now() + expire_in,
         )
         session.add(user_session)
         await session.flush()

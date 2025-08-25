@@ -1,6 +1,6 @@
 from fastapi import Depends
 
-from polar.auth.dependencies import Authenticator, WebUser
+from polar.auth.dependencies import Authenticator, WebUserRead, WebUserWrite
 from polar.auth.models import AuthSubject
 from polar.customer_portal.endpoints.downloadables import router as downloadables_router
 from polar.customer_portal.endpoints.license_keys import router as license_keys_router
@@ -24,7 +24,7 @@ router.include_router(license_keys_router, deprecated=True, include_in_schema=Fa
 
 
 @router.get("/me", response_model=UserRead)
-async def get_authenticated(auth_subject: WebUser) -> User:
+async def get_authenticated(auth_subject: WebUserRead) -> User:
     return auth_subject.subject
 
 
@@ -37,7 +37,7 @@ async def scopes(
 
 @router.post("/me/identity-verification", response_model=UserIdentityVerification)
 async def create_identity_verification(
-    auth_subject: WebUser,
+    auth_subject: WebUserWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> UserIdentityVerification:
     return await user_service.create_identity_verification(

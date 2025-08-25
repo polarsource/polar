@@ -1,3 +1,4 @@
+import ImpersonationBanner from '@/components/Impersonation/ImpersonationBanner'
 import DashboardLayout from '@/components/Layout/DashboardLayout'
 import { SidebarProvider } from '@polar-sh/ui/components/ui/sidebar'
 import { cookies } from 'next/headers'
@@ -11,8 +12,11 @@ export default async function Layout({
   const defaultCollapsed = cookieStore.get('sidebar_state')?.value === 'false'
 
   return (
-    <SidebarProvider defaultOpen={!defaultCollapsed}>
-      <DashboardLayout>{children}</DashboardLayout>
-    </SidebarProvider>
+    <>
+      <ImpersonationBanner />
+      <SidebarProvider defaultOpen={!defaultCollapsed}>
+        <DashboardLayout>{children}</DashboardLayout>
+      </SidebarProvider>
+    </>
   )
 }

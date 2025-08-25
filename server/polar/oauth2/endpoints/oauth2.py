@@ -4,7 +4,7 @@ from typing import Literal, cast
 from fastapi import Depends, Form, HTTPException, Request, Response
 from fastapi.openapi.constants import REF_TEMPLATE
 
-from polar.auth.dependencies import WebUser, WebUserOrAnonymous
+from polar.auth.dependencies import WebUserOrAnonymous, WebUserRead, WebUserWrite
 from polar.auth.models import is_user
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import OAuth2Token, Organization
@@ -49,7 +49,7 @@ router = APIRouter(prefix="/oauth2", tags=["oauth2"])
     response_model=ListResource[OAuth2Client],
 )
 async def list(
-    auth_subject: WebUser,
+    auth_subject: WebUserRead,
     pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OAuth2Client]:
@@ -71,7 +71,7 @@ async def list(
 async def create(
     client_configuration: OAuth2ClientConfiguration,
     request: Request,
-    auth_subject: WebUser,
+    auth_subject: WebUserWrite,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
     """Create an OAuth2 client."""
@@ -186,7 +186,7 @@ async def authorize(
 @router.post("/consent", tags=[APITag.private])
 async def consent(
     request: Request,
-    auth_subject: WebUser,
+    auth_subject: WebUserWrite,
     action: Literal["allow", "deny"] = Form(...),
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:

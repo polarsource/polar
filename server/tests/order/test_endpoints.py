@@ -37,7 +37,7 @@ class TestListOrders:
         assert json["pagination"]["total_count"] == 0
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.web_read}),
         AuthSubjectFixture(scopes={Scope.orders_read}),
     )
     async def test_user_valid(
@@ -115,7 +115,7 @@ class TestGetOrder:
         assert response.status_code == 404
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.web_read}),
         AuthSubjectFixture(scopes={Scope.orders_read}),
     )
     async def test_user_valid(
@@ -174,7 +174,7 @@ class TesGetOrdersStatistics:
         assert response.status_code == 401
 
     @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.web_read}),
         AuthSubjectFixture(scopes={Scope.orders_read}),
     )
     async def test_user_valid(

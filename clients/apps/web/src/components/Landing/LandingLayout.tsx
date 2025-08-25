@@ -5,10 +5,15 @@ import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@polar-sh/ui/components/ui/popover'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { PropsWithChildren } from 'react'
+import { PropsWithChildren, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { AuthModal } from '../Auth/AuthModal'
 import { Modal } from '../Modal'
@@ -61,6 +66,8 @@ const NavLink = ({
 const LandingPageDesktopNavigation = () => {
   const posthog = usePostHog()
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
+  const [isResourcesOpen, setIsResourcesOpen] = useState(false)
+  const pathname = usePathname()
 
   const onLoginClick = () => {
     posthog.capture('global:user:login:click')
@@ -79,7 +86,39 @@ const LandingPageDesktopNavigation = () => {
             </NavLink>
           </li>
           <li>
-            <NavLink href="https://docs.polar.sh">Docs</NavLink>
+            <Popover open={isResourcesOpen} onOpenChange={setIsResourcesOpen}>
+              <PopoverTrigger
+                className={twMerge(
+                  'dark:text-polar-500 flex items-center gap-x-2 text-gray-500 transition-colors hover:text-black dark:hover:text-white',
+                  (isResourcesOpen || pathname.includes('/resources')) &&
+                    'text-black dark:text-white',
+                )}
+                onMouseEnter={() => setIsResourcesOpen(true)}
+                onMouseLeave={() => setIsResourcesOpen(false)}
+              >
+                Resources
+              </PopoverTrigger>
+              <PopoverContent
+                className="p-2"
+                onMouseEnter={() => setIsResourcesOpen(true)}
+                onMouseLeave={() => setIsResourcesOpen(false)}
+              >
+                {[
+                  { href: '/resources/why', label: 'Why Polar' },
+                  { href: '/resources/pricing', label: 'Pricing' },
+                  { href: 'https://docs.polar.sh', label: 'Documentation' },
+                ].map(({ href, label }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    prefetch
+                    className="dark:text-polar-500 dark:hover:bg-polar-800 flex items-center gap-x-2 rounded-md px-4 py-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-black dark:hover:text-white"
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </PopoverContent>
+            </Popover>
           </li>
           <li>
             <NavLink href="/company">Company</NavLink>

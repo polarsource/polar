@@ -21,7 +21,7 @@ from polar.routing import APIRouter
 from . import auth, sorting
 from .schemas import Subscription as SubscriptionSchema
 from .schemas import SubscriptionID, SubscriptionUpdate
-from .service import AlreadyCanceledSubscription
+from .service import AlreadyCanceledSubscription, SubscriptionLocked
 from .service import subscription as subscription_service
 
 log = structlog.get_logger()
@@ -177,6 +177,10 @@ async def get(
             "model": AlreadyCanceledSubscription.schema(),
         },
         404: SubscriptionNotFound,
+        409: {
+            "description": "Subscription is pending an update.",
+            "model": SubscriptionLocked.schema(),
+        },
     },
 )
 async def update(
@@ -197,9 +201,10 @@ async def update(
         customer_id=auth_subject.subject.id,
         updates=subscription_update,
     )
-    return await subscription_service.update(
-        session, locker, subscription, update=subscription_update
-    )
+    async with subscription_service.lock(locker, subscription):
+        return await subscription_service.update(
+            session, locker, subscription, update=subscription_update
+        )
 
 
 @router.delete(
@@ -213,6 +218,10 @@ async def update(
             "model": AlreadyCanceledSubscription.schema(),
         },
         404: SubscriptionNotFound,
+        409: {
+            "description": "Subscription is pending an update.",
+            "model": SubscriptionLocked.schema(),
+        },
     },
 )
 async def revoke(
@@ -229,7 +238,5 @@ async def revoke(
     log.info(
         "subscription.revoke", id=id, admin_id=auth_subject.subject.id, immediate=True
     )
-    async with locker.lock(
-        f"subscription:{subscription.id}", timeout=5, blocking_timeout=5
-    ):
+    async with subscription_service.lock(locker, subscription):
         return await subscription_service.revoke(session, subscription)

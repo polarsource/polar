@@ -68,11 +68,11 @@ const LandingPageDesktopNavigation = () => {
   }
 
   return (
-    <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-12 md:flex md:px-16">
+    <div className="dark:text-polar-50 hidden w-full flex-col items-center gap-12 py-8 md:flex md:px-8">
       <div className="relative flex w-full flex-row items-center justify-between">
-        <BrandingMenu logoVariant="icon" size={50} />
+        <BrandingMenu logoVariant="icon" size={40} />
 
-        <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-6 font-medium">
+        <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-10 font-medium">
           <li>
             <NavLink href="/" isActive={(pathname) => pathname === '/'}>
               Features
@@ -89,7 +89,7 @@ const LandingPageDesktopNavigation = () => {
           </li>
         </ul>
 
-        <Button onClick={onLoginClick} variant="ghost">
+        <Button onClick={onLoginClick} variant="ghost" className="rounded-full">
           Log In
         </Button>
       </div>

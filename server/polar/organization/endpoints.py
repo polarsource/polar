@@ -154,7 +154,7 @@ async def update(
 )
 async def get_account(
     id: OrganizationID,
-    auth_subject: auth.OrganizationsWrite,
+    auth_subject: auth.OrganizationsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Account:
     """Get the account for an organization."""
@@ -271,7 +271,7 @@ async def get_payment_status(
 )
 async def members(
     id: OrganizationID,
-    auth_subject: auth.OrganizationsWrite,
+    auth_subject: auth.OrganizationsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OrganizationMember]:
     """List members in an organization."""

@@ -235,6 +235,7 @@ async def get_payment_status(
         # For authenticated users, check proper scopes (need at least one of these)
         required_scopes = {
             Scope.web_read,
+            Scope.web_write,
             Scope.organizations_read,
             Scope.organizations_write,
         }

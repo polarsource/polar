@@ -10,6 +10,7 @@ from polar.models.organization import Organization
 _DiscountRead = Authenticator(
     required_scopes={
         Scope.web_read,
+        Scope.web_write,
         Scope.discounts_read,
         Scope.discounts_write,
     },

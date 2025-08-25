@@ -9,6 +9,7 @@ from polar.auth.scope import Scope
 _NotificationsRead = Authenticator(
     required_scopes={
         Scope.web_read,
+        Scope.web_write,
         Scope.notifications_read,
     },
     allowed_subjects={User},

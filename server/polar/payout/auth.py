@@ -9,6 +9,7 @@ from polar.auth.scope import Scope
 _PayoutsRead = Authenticator(
     required_scopes={
         Scope.web_read,
+        Scope.web_write,
         Scope.payouts_read,
     },
     allowed_subjects={User},

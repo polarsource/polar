@@ -12,6 +12,7 @@ OrganizationsRead = Annotated[
         Authenticator(
             required_scopes={
                 Scope.web_read,
+                Scope.web_write,
                 Scope.organizations_read,
                 Scope.organizations_write,
             },

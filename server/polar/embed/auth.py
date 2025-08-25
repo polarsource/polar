@@ -12,6 +12,7 @@ EmbedsRead = Annotated[
         Authenticator(
             required_scopes={
                 Scope.web_read,
+                Scope.web_write,
             },
             allowed_subjects={Anonymous, User, Organization},
         )

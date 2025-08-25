@@ -9,6 +9,7 @@ from polar.auth.scope import Scope
 _FileRead = Authenticator(
     required_scopes={
         Scope.web_read,
+        Scope.web_write,
         Scope.files_write,
         Scope.files_read,
     },

@@ -731,6 +731,11 @@ async def get(
 
     account = organization.account
 
+    # Get admin user for account link
+    admin_user = None
+    if organization.account_id:
+        admin_user = await repository.get_admin_user(session, organization)
+
     # Get setup, payment, and organization verdicts for account review sections
     setup_verdict_data = await get_setup_verdict_data(organization, session)
     payment_stats = await get_payment_statistics(session, organization.id)
@@ -820,13 +825,6 @@ async def get(
                         with tag.div(classes="flex justify-between items-center mb-4"):
                             with tag.h2(classes="card-title"):
                                 text(f"Team Members ({len(users)})")
-
-                        # Check if current organization has admin
-                        admin_user = None
-                        if organization.account_id:
-                            admin_user = await repository.get_admin_user(
-                                session, organization
-                            )
 
                         if users:
                             # Users table

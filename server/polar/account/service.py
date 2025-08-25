@@ -16,7 +16,9 @@ from polar.integrations.open_collective.service import open_collective
 from polar.integrations.stripe.service import stripe
 from polar.kit.pagination import PaginationParams
 from polar.models import Account, Organization, User
+from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession
+from polar.transaction.service.transaction import transaction as transaction_service
 
 from .schemas import AccountCreate, AccountLink, AccountUpdate
 
@@ -80,6 +82,11 @@ class AccountService:
         )
 
     async def delete(self, session: AsyncSession, account: Account) -> Account:
+        sum = await transaction_service.get_transactions_sum(
+            session, account.id, type=TransactionType.balance
+        )
+        if sum > 0:
+            raise AccountServiceError("Cannot delete account with positive balance")
         repository = AccountRepository.from_session(session)
         return await repository.soft_delete(account)
 

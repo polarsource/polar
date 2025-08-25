@@ -126,7 +126,11 @@ async def get_auth_subject(
 
     user_session = await get_user_session(request, session)
     if user_session is not None:
-        return AuthSubject(user_session.user, {Scope.web_default}, user_session)
+        # Use session's stored scopes, or fallback to web_default for backwards compatibility
+        scopes = (
+            set(user_session.scopes) if user_session.scopes else {Scope.web_default}
+        )
+        return AuthSubject(user_session.user, scopes, user_session)
 
     return AuthSubject(Anonymous(), set(), None)
 

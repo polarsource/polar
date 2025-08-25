@@ -22,6 +22,7 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from '@polar-sh/ui/components/atoms/DataTable'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { CellContext } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import React, { useCallback } from 'react'
@@ -195,6 +196,31 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
         return <pre>{payload['type']}</pre>
       },
     },
+    {
+      accessorKey: 'created_at',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Sent At" />
+      ),
+
+      cell: (props) => {
+        const { row } = props
+        const { original: delivery } = row
+
+        if (delivery.isSubRow) {
+          return null
+        }
+
+        return (
+          <FormattedDateTime
+            datetime={delivery.created_at}
+            resolution="time"
+            dateStyle="short"
+            timeStyle="short"
+          />
+        )
+      },
+    },
   ]
 
   return (
@@ -213,7 +239,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
           getCellColSpan={(cell) => {
             if (cell.row.original.isSubRow) {
               if (cell.column.id === 'id') {
-                return 4
+                return 5
               }
               // hide cell
               return 0

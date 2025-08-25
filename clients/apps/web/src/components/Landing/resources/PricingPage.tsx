@@ -65,9 +65,9 @@ export const PricingPage = () => {
       <ResourceSection id="example" title="Example">
         <div className="flex flex-col gap-4">
           <p>
-            Let's look at an example breakdown with all these additional fees
-            applied. Below is a payment of a $30 subscription from Sweden (25%
-            VAT).
+            Let&apos;s look at an example breakdown with all these additional
+            fees applied. Below is a payment of a $30 subscription from Sweden
+            (25% VAT).
           </p>
 
           <div className="overflow-x-auto">
@@ -164,7 +164,8 @@ export const PricingPage = () => {
           <p>
             While payouts may incur fees charged by the payout providers (such
             as Stripe), Polar does not add any extra fees or markup. These are
-            strictly the provider's fees, and Polar does not profit from them.
+            strictly the provider&apos;s fees, and Polar does not profit from
+            them.
           </p>
           <p>
             In addition, Polar offers manual withdrawals for developers. Keeping
@@ -172,9 +173,9 @@ export const PricingPage = () => {
           </p>
           <div className="dark:bg-polar-800 bg-gray-50 p-4">
             <p className="dark:text-polar-300 text-sm text-gray-500">
-              Unless you have a Polar balance that you haven't withdrawn for
-              several months, at which point we'll eventually need to trigger a
-              payout on your behalf.
+              Unless you have a Polar balance that you haven&apos;t withdrawn
+              for several months, at which point we&apos;ll eventually need to
+              trigger a payout on your behalf.
             </p>
           </div>
 

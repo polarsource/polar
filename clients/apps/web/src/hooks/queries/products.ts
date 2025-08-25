@@ -101,14 +101,10 @@ export const useProduct = (id?: string) =>
 
 export const useCreateProduct = (organization: schemas['Organization']) =>
   useMutation({
-    mutationFn: (body: schemas['ProductCreate']) => {
-      return api.POST('/v1/products/', { body })
+    mutationFn: async (body: schemas['ProductCreate']) => {
+      return unwrap(api.POST('/v1/products/', { body }))
     },
-    onSuccess: async (result, _variables, _ctx) => {
-      if (result.error) {
-        return
-      }
-
+    onSuccess: async (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['products', { organizationId: organization.id }],
       })

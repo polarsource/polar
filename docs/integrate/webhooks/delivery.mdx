@@ -180,8 +180,14 @@ any issues arise.
 
 - Using middleware for authorization? Make sure to exclude the webhook route
   from it since it needs to be publicly accessible
-- Using Cloudflare? Check the firewall logs to verify if they are blocking our
-  requests and setup a custom WAF rule to accept incoming requests from Polar.
+- Using Cloudflare? Webhook delivery failures with 403 errors can occur when 
+  Cloudflare's Bot Fight Mode is enabled. Bot Fight Mode automatically blocks 
+  requests it identifies as bots, including legitimate webhook requests from Polar.
+  Adding Polar's IP addresses to your IP Allow List or creating custom WAF rules 
+  will not resolve this issue. To fix webhook delivery problems, disable Bot Fight 
+  Mode in your Cloudflare dashboard under Security > Bots. Alternatively, you can 
+  check your Cloudflare firewall logs to confirm if requests are being blocked 
+  and create appropriate firewall rules if needed.
 
 ### Invalid signature exceptions
 

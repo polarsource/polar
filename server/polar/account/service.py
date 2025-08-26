@@ -260,6 +260,7 @@ class AccountService:
             account._platform_fee_fixed = campaign.fee_fixed
 
         session.add(account)
+        await session.flush()
         return account
 
     async def update_account_from_stripe(

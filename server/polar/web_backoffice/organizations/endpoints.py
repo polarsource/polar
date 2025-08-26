@@ -10,6 +10,13 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import classes, tag, text
 
+from polar.account.service import (
+    CannotChangeAdminError,
+    UserNotOrganizationMemberError,
+)
+from polar.account.service import (
+    account as account_service,
+)
 from polar.enums import AccountType
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
@@ -707,6 +714,140 @@ async def remove_member(
         )
 
 
+@router.get(
+    "/{id}/confirm_change_admin/{user_id}", name="organizations:confirm_change_admin"
+)
+async def confirm_change_admin(
+    request: Request,
+    id: UUID4,
+    user_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    """Show confirmation modal for changing account admin."""
+
+    # Get organization and account
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(
+        id, options=(joinedload(Organization.account),)
+    )
+
+    if not organization or not organization.account:
+        raise HTTPException(status_code=404, detail="Organization or account not found")
+
+    # Get current admin
+    current_admin = await org_repo.get_admin_user(session, organization)
+
+    # Get new admin user info
+    user_repo = UserRepository.from_session(session)
+    new_admin = await user_repo.get_by_id(user_id)
+
+    if not new_admin:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    with modal("Change Account Admin", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.div(classes="alert alert-info"):
+                with tag.div():
+                    with tag.h3(classes="font-bold"):
+                        text("Change Account Administrator")
+                    with tag.p():
+                        text("This will change who has admin control over the account.")
+
+            with tag.div(classes="space-y-4"):
+                with tag.div():
+                    with tag.h4(classes="font-semibold text-sm"):
+                        text("Current Admin:")
+                    with tag.p(classes="text-gray-600"):
+                        if current_admin:
+                            text(current_admin.email)
+                        else:
+                            text("No current admin found")
+
+                with tag.div():
+                    with tag.h4(classes="font-semibold text-sm"):
+                        text("New Admin:")
+                    with tag.p(classes="text-gray-600"):
+                        text(new_admin.email)
+
+        # Action buttons
+        with tag.div(classes="modal-action"):
+            with tag.form(method="dialog"):
+                with button(ghost=True):
+                    text("Cancel")
+
+            with tag.form(method="dialog"):
+                with button(
+                    variant="primary",
+                    hx_post=str(
+                        request.url_for(
+                            "organizations:change_admin",
+                            id=id,
+                            user_id=user_id,
+                        )
+                    ),
+                    hx_target="#modal",
+                ):
+                    text("Change Admin")
+
+
+@router.api_route(
+    "/{id}/change_admin/{user_id}",
+    name="organizations:change_admin",
+    methods=["POST"],
+)
+async def change_admin(
+    request: Request,
+    id: UUID4,
+    user_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    """Change account admin endpoint."""
+
+    try:
+        # Get organization and account
+        org_repo = OrganizationRepository.from_session(session)
+        organization = await org_repo.get_by_id(
+            id, options=(joinedload(Organization.account),)
+        )
+
+        if not organization or not organization.account:
+            raise HTTPException(
+                status_code=404, detail="Organization or account not found"
+            )
+
+        # Get user info for better error messages
+        user_repo = UserRepository.from_session(session)
+        user = await user_repo.get_by_id(user_id)
+        user_email = user.email if user else str(user_id)
+
+        # Change the admin
+        await account_service.change_admin(
+            session, organization.account, user_id, organization.id
+        )
+
+        # Add success toast and redirect
+        await add_toast(
+            request,
+            f"Account admin changed to {user_email}",
+            "success",
+        )
+
+        return HXRedirectResponse(
+            request, request.url_for("organizations:get", id=id), 303
+        )
+
+    except CannotChangeAdminError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    except UserNotOrganizationMemberError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail="An error occurred while changing the admin"
+        )
+
+
 @router.api_route(
     "/{id}/setup_manual_payout",
     name="organizations:setup_manual_payout",
@@ -1038,7 +1179,33 @@ async def get(
                                                         ):
                                                             text("Impersonate")
 
+                                                    # Check if we can show Change Admin button
+                                                    can_change_admin = (
+                                                        not is_admin  # Not currently admin
+                                                        and account  # Has account
+                                                        and not account.stripe_id  # Stripe account deleted
+                                                        and len(users)
+                                                        > 1  # More than one user
+                                                    )
+
                                                     if not is_admin:
+                                                        # Change Admin button (only if conditions are met)
+                                                        if can_change_admin:
+                                                            with tag.button(
+                                                                classes="btn btn-warning btn-sm",
+                                                                hx_get=str(
+                                                                    request.url_for(
+                                                                        "organizations:confirm_change_admin",
+                                                                        id=organization.id,
+                                                                        user_id=user.id,
+                                                                    )
+                                                                ),
+                                                                hx_target="#modal",
+                                                                title="Make this user the account admin",
+                                                            ):
+                                                                text("Make Admin")
+
+                                                        # Remove button
                                                         with tag.button(
                                                             classes="btn btn-error btn-sm",
                                                             hx_get=str(
@@ -1055,7 +1222,7 @@ async def get(
                                                         with tag.span(
                                                             classes="text-xs text-gray-400"
                                                         ):
-                                                            text("Cannot remove")
+                                                            text("Current Admin")
                         else:
                             # Empty state
                             with tag.div(classes="text-center py-8"):
@@ -1084,6 +1251,33 @@ async def get(
                                 ),
                             ).render(request, account):
                                 pass
+
+                            # Show admin change status
+                            if account:
+                                if account.stripe_id:
+                                    with tag.div(
+                                        classes="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded"
+                                    ):
+                                        with tag.p(classes="text-sm text-yellow-800"):
+                                            text(
+                                                "⚠️ To change account admin, first delete the Stripe account using backoffice account management."
+                                            )
+                                elif len(users) > 1:
+                                    with tag.div(
+                                        classes="mt-4 p-3 bg-green-50 border border-green-200 rounded"
+                                    ):
+                                        with tag.p(classes="text-sm text-green-800"):
+                                            text(
+                                                "✅ Account admin can now be changed. Use 'Make Admin' buttons in the Team Members section."
+                                            )
+                                else:
+                                    with tag.div(
+                                        classes="mt-4 p-3 bg-gray-50 border border-gray-200 rounded"
+                                    ):
+                                        with tag.p(classes="text-sm text-gray-600"):
+                                            text(
+                                                "ℹ️ Need at least 2 team members to change account admin."
+                                            )
                         else:
                             with tag.div(classes="text-center py-8"):
                                 with tag.p(classes="text-gray-600 mb-4"):

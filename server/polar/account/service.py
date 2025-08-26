@@ -4,6 +4,7 @@ import uuid
 from collections.abc import Sequence
 
 import stripe as stripe_lib
+from sqlalchemy import select
 from sqlalchemy.orm.strategy_options import joinedload
 
 from polar.account.repository import AccountRepository
@@ -15,7 +16,7 @@ from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.open_collective.service import open_collective
 from polar.integrations.stripe.service import stripe
 from polar.kit.pagination import PaginationParams
-from polar.models import Account, Organization, User
+from polar.models import Account, Organization, User, UserOrganization
 from polar.postgres import AsyncSession
 
 from .schemas import (
@@ -39,6 +40,18 @@ class AccountExternalIdDoesNotExist(AccountServiceError):
         self.external_id = external_id
         message = f"No associated account exists with external ID {external_id}"
         super().__init__(message)
+
+
+class CannotChangeAdminError(AccountServiceError):
+    def __init__(self, reason: str) -> None:
+        super().__init__(f"Cannot change account admin: {reason}")
+
+
+class UserNotOrganizationMemberError(AccountServiceError):
+    def __init__(self, user_id: uuid.UUID, organization_id: uuid.UUID) -> None:
+        super().__init__(
+            f"User {user_id} is not a member of organization {organization_id}"
+        )
 
 
 class AccountService:
@@ -327,6 +340,58 @@ class AccountService:
 
         name = await self._build_stripe_account_name(session, account)
         await stripe.update_account(account.stripe_id, name)
+
+    async def change_admin(
+        self,
+        session: AsyncSession,
+        account: Account,
+        new_admin_id: uuid.UUID,
+        organization_id: uuid.UUID,
+    ) -> Account:
+        """Change the admin of an account to a new user.
+
+        Args:
+            session: Database session
+            account: Account to change admin for
+            new_admin_id: ID of the new admin user
+            organization_id: ID of the organization (for validation)
+
+        Returns:
+            Updated account
+
+        Raises:
+            CannotChangeAdminError: If account still has Stripe ID
+            UserNotOrganizationMemberError: If new admin is not org member
+        """
+        # Cannot change admin if Stripe account still exists
+        if account.stripe_id:
+            raise CannotChangeAdminError(
+                "Stripe account must be deleted before changing admin"
+            )
+
+        # Validate new admin is a member of the organization
+        statement = select(UserOrganization).where(
+            UserOrganization.user_id == new_admin_id,
+            UserOrganization.organization_id == organization_id,
+            UserOrganization.deleted_at.is_(None),
+        )
+        result = await session.execute(statement)
+        user_org = result.scalar_one_or_none()
+
+        if user_org is None:
+            raise UserNotOrganizationMemberError(new_admin_id, organization_id)
+
+        # Cannot change to same admin
+        if account.admin_id == new_admin_id:
+            raise CannotChangeAdminError("New admin is the same as current admin")
+
+        # Update the admin
+        repository = AccountRepository.from_session(session)
+        account = await repository.update(
+            account, update_dict={"admin_id": new_admin_id}
+        )
+
+        return account
 
 
 account = AccountService()

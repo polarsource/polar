@@ -82,7 +82,8 @@ class StripeService:
 
         if account.country != "US":
             create_params["tos_acceptance"] = {"service_agreement": "recipient"}
-        return await stripe_lib.Account.create_async(**create_params)
+        stripe_account = await stripe_lib.Account.create_async(**create_params)
+        return stripe_account
 
     async def update_account(self, id: str, name: str | None) -> None:
         obj = {}

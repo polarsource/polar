@@ -14,7 +14,6 @@ import { PlusIcon } from '@heroicons/react/20/solid'
 import { ErrorMessage } from '@hookform/error-message'
 import { CloseOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
-import Alert from '@polar-sh/ui/components/atoms/Alert'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
@@ -177,7 +176,7 @@ export const ProductPriceMeteredUnitItem: React.FC<
 
   const { data: meters, refetch } = useMeters(organization.id, {
     sorting: ['name'],
-    limit: 30
+    limit: 30,
   })
 
   const {
@@ -221,21 +220,15 @@ export const ProductPriceMeteredUnitItem: React.FC<
   return (
     <>
       {meters.items.length === 0 ? (
-        <Alert color="gray">
-          <p className="text-center text-sm">
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                showCreateMeterModal()
-              }}
-              type="button"
-              className="font-medium text-blue-500"
-            >
-              Set up your first meter
-            </button>{' '}
-            to start using metered pricing
-          </p>
-        </Alert>
+        <Button
+          onClick={(e) => {
+            e.preventDefault()
+            showCreateMeterModal()
+          }}
+          size="sm"
+        >
+          Create a Meter
+        </Button>
       ) : (
         <>
           <FormField

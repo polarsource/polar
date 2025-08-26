@@ -1,5 +1,6 @@
 from fastapi import Depends, Request
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 
 from polar.models import UserSession as UserSession
 from polar.openapi import APITag
@@ -9,6 +10,11 @@ from polar.routing import APIRouter
 from .service import auth as auth_service
 
 router = APIRouter(tags=["auth", APITag.private])
+
+
+class ImpersonateResponse(BaseModel):
+    success: bool
+    message: str
 
 
 @router.get("/auth/logout")

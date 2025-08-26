@@ -5,10 +5,15 @@ import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
 import Button from '@polar-sh/ui/components/atoms/Button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@polar-sh/ui/components/ui/popover'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { PropsWithChildren } from 'react'
+import { PropsWithChildren, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { AuthModal } from '../Auth/AuthModal'
 import { Modal } from '../Modal'
@@ -61,6 +66,8 @@ const NavLink = ({
 const LandingPageDesktopNavigation = () => {
   const posthog = usePostHog()
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
+  const [isResourcesOpen, setIsResourcesOpen] = useState(false)
+  const pathname = usePathname()
 
   const onLoginClick = () => {
     posthog.capture('global:user:login:click')
@@ -79,7 +86,119 @@ const LandingPageDesktopNavigation = () => {
             </NavLink>
           </li>
           <li>
-            <NavLink href="https://docs.polar.sh">Docs</NavLink>
+            <Popover open={isResourcesOpen} onOpenChange={setIsResourcesOpen}>
+              <PopoverTrigger
+                className={twMerge(
+                  'dark:text-polar-500 flex items-center gap-x-2 text-gray-500 transition-colors hover:text-black focus:outline-none dark:hover:text-white',
+                  (isResourcesOpen || pathname.includes('/resources')) &&
+                    'text-black dark:text-white',
+                )}
+                onMouseEnter={() => setIsResourcesOpen(true)}
+                onMouseLeave={() => setIsResourcesOpen(false)}
+              >
+                Resources
+              </PopoverTrigger>
+              <PopoverContent
+                className="grid w-fit grid-cols-3 divide-x p-0"
+                onMouseEnter={() => setIsResourcesOpen(true)}
+                onMouseLeave={() => setIsResourcesOpen(false)}
+              >
+                <div className="flex flex-col p-2">
+                  <h3 className="dark:text-polar-500 px-4 py-2 text-sm text-gray-500">
+                    Polar Software Inc.
+                  </h3>
+                  <div>
+                    {[
+                      {
+                        href: '/company',
+                        label: 'Company',
+                        subtitle: 'Who we are',
+                      },
+                      {
+                        href: '/company',
+                        label: 'Careers',
+                        subtitle: "We're hiring",
+                      },
+                      {
+                        href: 'https://polar.sh/assets/brand/polar_brand.zip',
+                        target: '_blank',
+                        label: 'Brand Assets',
+                        subtitle: 'Logotype & Graphics',
+                      },
+                    ].map(({ href, label, subtitle, target }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        prefetch
+                        target={target}
+                        className="dark:hover:bg-polar-800 flex w-48 flex-col rounded-md px-4 py-2 text-sm transition-colors hover:bg-gray-100"
+                      >
+                        <span className="font-medium">{label}</span>
+                        <span className="dark:text-polar-500 text-gray-500">
+                          {subtitle}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+                <div className="col-span-2 flex flex-col p-2">
+                  <h3 className="dark:text-polar-500 px-4 py-2 text-sm text-gray-500">
+                    Platform
+                  </h3>
+                  <div className="grid grid-cols-2">
+                    {[
+                      {
+                        href: 'https://docs.polar.sh',
+                        label: 'Documentation',
+                        target: '_blank',
+                        subtitle: 'Get up to speed',
+                      },
+                      {
+                        href: '/resources/why',
+                        label: 'Why Polar',
+                        subtitle: 'Migrate to Polar today',
+                      },
+                      {
+                        href: '/resources/pricing',
+                        label: 'Pricing',
+                        subtitle: 'Cheap and fair pricing',
+                      },
+                      {
+                        href: 'https://github.com/polarsource',
+                        target: '_blank',
+                        label: 'Open Source',
+                        subtitle: 'Star our projects',
+                      },
+                      {
+                        href: 'https://status.polar.sh',
+                        label: 'Status',
+                        subtitle: 'API Service Status',
+                        target: '_blank',
+                      },
+                      {
+                        href: 'https://x.com/polar_sh',
+                        label: 'X',
+                        subtitle: 'Join the conversation',
+                        target: '_blank',
+                      },
+                    ].map(({ href, label, subtitle, target }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        prefetch
+                        target={target}
+                        className="dark:hover:bg-polar-800 flex w-48 flex-col rounded-md px-4 py-2 text-sm transition-colors hover:bg-gray-100"
+                      >
+                        <span className="font-medium">{label}</span>
+                        <span className="dark:text-polar-500 text-gray-500">
+                          {subtitle}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </li>
           <li>
             <NavLink href="/company">Company</NavLink>

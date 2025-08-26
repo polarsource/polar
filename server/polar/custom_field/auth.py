@@ -9,7 +9,8 @@ from polar.models.organization import Organization
 
 _CustomFieldRead = Authenticator(
     required_scopes={
-        Scope.web_default,
+        Scope.web_read,
+        Scope.web_write,
         Scope.custom_fields_read,
         Scope.custom_fields_write,
     },
@@ -18,7 +19,10 @@ _CustomFieldRead = Authenticator(
 CustomFieldRead = Annotated[AuthSubject[User | Organization], Depends(_CustomFieldRead)]
 
 _CustomFieldWrite = Authenticator(
-    required_scopes={Scope.web_default, Scope.custom_fields_write},
+    required_scopes={
+        Scope.web_write,
+        Scope.custom_fields_write,
+    },
     allowed_subjects={User, Organization},
 )
 CustomFieldWrite = Annotated[

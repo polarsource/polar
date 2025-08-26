@@ -8,7 +8,8 @@ from polar.auth.scope import Scope
 
 _SubscriptionsRead = Authenticator(
     required_scopes={
-        Scope.web_default,
+        Scope.web_read,
+        Scope.web_write,
         Scope.subscriptions_read,
         Scope.subscriptions_write,
     },
@@ -20,7 +21,10 @@ SubscriptionsRead = Annotated[
 
 
 _SubscriptionsWrite = Authenticator(
-    required_scopes={Scope.web_default, Scope.subscriptions_write},
+    required_scopes={
+        Scope.web_write,
+        Scope.subscriptions_write,
+    },
     allowed_subjects={User, Organization},
 )
 SubscriptionsWrite = Annotated[

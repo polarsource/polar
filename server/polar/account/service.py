@@ -83,6 +83,37 @@ class AccountService:
         repository = AccountRepository.from_session(session)
         return await repository.soft_delete(account)
 
+    async def delete_stripe_account(
+        self, session: AsyncSession, account: Account
+    ) -> None:
+        """Delete Stripe account and clear related database fields."""
+        if not account.stripe_id:
+            raise AccountServiceError("Account does not have a Stripe ID")
+
+        # Verify the account exists on Stripe before deletion
+        if not await stripe.account_exists(account.stripe_id):
+            raise AccountServiceError(
+                f"Stripe Account ID {account.stripe_id} doesn't exist"
+            )
+
+        # Delete the account on Stripe
+        await stripe.delete_account(account.stripe_id)
+
+        # Clear Stripe account data from database
+        account.stripe_id = None
+        account.is_details_submitted = False
+        account.is_charges_enabled = False
+        account.is_payouts_enabled = False
+        session.add(account)
+
+        # Update related organizations status to allow re-onboarding
+        await session.refresh(account, {"organizations"})
+        for organization in account.organizations:
+            from polar.models.organization import Organization
+
+            organization.status = Organization.Status.CREATED
+            session.add(organization)
+
     async def create_account(
         self,
         session: AsyncSession,

@@ -137,10 +137,13 @@ async def delete_stripe(
             )
             return
 
-        await stripe.delete_account(account.stripe_id)
+        # Delete Stripe account and update database
+        await account_service.delete_stripe_account(session, account)
+        await session.commit()
+
         await add_toast(
             request,
-            f"Stripe Connect account with ID {account.stripe_id} has been deleted",
+            f"Stripe Connect account with ID {stripe_account_id} has been deleted",
             "success",
         )
 

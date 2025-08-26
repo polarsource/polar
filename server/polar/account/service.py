@@ -176,7 +176,6 @@ class AccountService:
                 account.is_charges_enabled = stripe_account.charges_enabled or False
                 account.is_payouts_enabled = stripe_account.payouts_enabled or False
                 account.business_type = stripe_account.business_type
-                account.status = Account.Status.ONBOARDING_STARTED
                 account.data = stripe_account.to_dict()
 
                 session.add(account)

@@ -137,9 +137,7 @@ async def delete_stripe(
             )
             return
 
-        # Delete Stripe account and update database
         await account_service.delete_stripe_account(session, account)
-        await session.commit()
 
         await add_toast(
             request,

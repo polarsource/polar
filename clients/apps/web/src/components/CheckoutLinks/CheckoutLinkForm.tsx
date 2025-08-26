@@ -81,7 +81,7 @@ export const CheckoutLinkForm = ({
       success_url: '',
       discount_id: '',
     }
-  }, [checkoutLink])
+  }, [checkoutLink, productIds])
 
   const form = useForm<CheckoutLinkCreateForm>({
     defaultValues,
@@ -108,15 +108,25 @@ export const CheckoutLinkForm = ({
 
   const handleValidationError = useCallback(
     (data: CheckoutLinkCreateForm, errors: schemas['ValidationError'][]) => {
-      setValidationErrors(errors, setError)
-      errors.forEach((error) => {
-        if (error.loc[1] === 'metadata') {
-          const metadataKey = error.loc[2]
+      const discriminators = ['CheckoutLinkCreateProducts']
+      const filteredErrors = checkoutLink
+        ? errors
+        : errors.filter((error) =>
+            discriminators.includes(error.loc[1] as string),
+          )
+      setValidationErrors(filteredErrors, setError, 1, discriminators)
+      filteredErrors.forEach((error) => {
+        let loc = error.loc.slice(1)
+        if (discriminators.includes(loc[0] as string)) {
+          loc = loc.slice(1)
+        }
+        if (loc[0] === 'metadata') {
+          const metadataKey = loc[1]
           const metadataIndex = data.metadata.findIndex(
             ({ key }) => key === metadataKey,
           )
           if (metadataIndex > -1) {
-            const field = error.loc[3] === '[key]' ? 'key' : 'value'
+            const field = loc[2] === '[key]' ? 'key' : 'value'
             setError(`metadata.${metadataIndex}.${field}`, {
               message: error.msg,
             })
@@ -124,7 +134,7 @@ export const CheckoutLinkForm = ({
         }
       })
     },
-    [setError],
+    [checkoutLink, setError],
   )
 
   const onSubmit: SubmitHandler<CheckoutLinkCreateForm> = useCallback(

@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any, TypedDict, cast
 from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import pytest
@@ -930,6 +930,23 @@ class TestCreateSubscriptionOrderWithStripe:
         )
 
 
+class DiscountFixture(TypedDict):
+    type: DiscountType
+    duration: DiscountDuration
+    basis_points: int
+    duration_in_months: int
+    applies_to: list[str] | None
+
+
+class ProrationFixture(TypedDict):
+    discount: DiscountFixture | None
+    products: dict[str, tuple[SubscriptionRecurringInterval, int]]
+    history: list[tuple[str, tuple[BillingEntryDirection, int], datetime, datetime]]
+    expected_discount: int
+    expected_subtotal: int
+    expected_tax: int
+
+
 @pytest.mark.asyncio
 class TestCreateSubscriptionOrder:
     @pytest.fixture
@@ -1071,6 +1088,251 @@ class TestCreateSubscriptionOrder:
         )
         assert updated_billing_entry is not None
         assert updated_billing_entry.order_item_id == order_items[2].id
+
+        enqueue_job_mock.assert_any_call(
+            "order.trigger_payment",
+            order_id=order.id,
+            payment_method_id=subscription.payment_method_id,
+        )
+
+    @pytest.mark.parametrize(
+        "setup",
+        [
+            #### Basic monthly to Pro monthly ####
+            # pytest.param(
+            #     {
+            #         "discount": None,
+            #         # (SubscriptionRecurringInterval.month, 10000),
+            #         # (SubscriptionRecurringInterval.month, 30000),
+            #         # # - Start subscription on June 1st (June has 30 days)
+            #         # # - Update subscription at the end of June 15th (== start of 16th)
+            #         # # = 50% of price on both entries
+            #         # datetime(2025, 6, 1, tzinfo=UTC),
+            #         # datetime(2025, 6, 16, tzinfo=UTC),
+            #         # 5000,
+            #         # 15000,
+            #         # id="monthly-basic-to-pro-middle-of-month",
+            #     }
+            # ),
+            pytest.param(
+                {
+                    "discount": {
+                        # 25% off on Basic
+                        "type": DiscountType.percentage,
+                        "basis_points": 2500,
+                        "duration": DiscountDuration.repeating,
+                        "duration_in_months": 3,
+                        "applies_to": ["p-basic"],
+                    },
+                    "products": {
+                        "p-basic": (SubscriptionRecurringInterval.month, 3000),
+                        "p-pro": (SubscriptionRecurringInterval.month, 9000),
+                    },
+                    "history": [
+                        # (
+                        #     "p-yearly",
+                        #     (BillingEntryDirection.debit, 7500),
+                        #     datetime(2025, 6, 1, tzinfo=UTC),
+                        #     datetime(2025, 9, 1, tzinfo=UTC),
+                        # ),
+                        (
+                            "p-basic",
+                            # 3000 x 50% (half a month) x (100 - 25)% (discount)
+                            # (BillingEntryDirection.credit, 1125),
+                            # BillingEntries don't include discounts
+                            (BillingEntryDirection.credit, 1500),
+                            datetime(2025, 9, 16, tzinfo=UTC),
+                            datetime(2026, 10, 1, tzinfo=UTC),
+                        ),
+                        (
+                            "p-pro",
+                            # 9000 x 50% (half a month) (no discount)
+                            (BillingEntryDirection.debit, 4500),
+                            datetime(2025, 9, 16, tzinfo=UTC),
+                            datetime(2025, 10, 1, tzinfo=UTC),
+                        ),
+                    ],
+                    "expected_discount": 375,  # 3000 x 50% (half a month) x 25% (discount)
+                    "expected_subtotal": 3000,  # 4500 - 1500 = 3000
+                    "expected_tax": 525,  # (3000 - 375) x 20% = 525
+                },
+                id="discount-applies-only-to-first-product",
+            ),
+            pytest.param(
+                # $10 off every month for 3 months
+                # Switch from Basic to Pro middle of month
+                {
+                    "discount": {
+                        "type": DiscountType.fixed,
+                        "amount": 1000,
+                        "currency": "usd",
+                        "duration": DiscountDuration.repeating,
+                        "duration_in_months": 3,
+                        "applies_to": ["p-basic"],
+                    },
+                    "products": {
+                        "p-basic": (SubscriptionRecurringInterval.month, 3000),
+                        "p-pro": (SubscriptionRecurringInterval.month, 9000),
+                    },
+                    "history": [
+                        # Discounts aren't applied on the BillingEntry
+                        (
+                            "p-basic",
+                            # 3000 x 50% (half a month)
+                            (BillingEntryDirection.credit, 1500),
+                            datetime(2025, 9, 16, tzinfo=UTC),
+                            datetime(2026, 10, 1, tzinfo=UTC),
+                        ),
+                        (
+                            "p-pro",
+                            # 9000 x 50% (half a month)
+                            (BillingEntryDirection.debit, 4500),
+                            datetime(2025, 9, 16, tzinfo=UTC),
+                            datetime(2025, 10, 1, tzinfo=UTC),
+                        ),
+                    ],
+                    "expected_discount": 500,
+                    "expected_subtotal": 3000,  # 4500 - 1500 = 3000
+                    "expected_tax": 500,  # (3000 - 500) x 20% = 500
+                    # You paid 2000 for the month. Now you get 1000 back (50% the month).
+                },
+                id="fixed-discount-on-first-product",
+            ),
+            # pytest.param(
+            #     # 50% off for 3 months
+            #     # Switch from yearly to monthly after 3 months and 1 day
+            #     {
+            #         "discount": {
+            #             "type": DiscountType.percentage,
+            #             "basis_points": 5000,
+            #             "duration": DiscountDuration.repeating,
+            #             "duration_in_months": 3,
+            #         },
+            #         "products": {
+            #             "p-monthly": (SubscriptionRecurringInterval.month, 3000),
+            #             "p-yearly": (SubscriptionRecurringInterval.year, 30000),
+            #         },
+            #         "history": [
+            #             # (
+            #             #     "p-yearly",
+            #             #     (BillingEntryDirection.debit, 7500),
+            #             #     datetime(2025, 6, 1, tzinfo=UTC),
+            #             #     datetime(2025, 9, 1, tzinfo=UTC),
+            #             # ),
+            #             (
+            #                 "p-yearly",
+            #                 (BillingEntryDirection.credit, 22500),
+            #                 datetime(2025, 9, 1, tzinfo=UTC),
+            #                 datetime(2026, 6, 1, tzinfo=UTC),
+            #             ),
+            #             (
+            #                 "p-monthly",
+            #                 (BillingEntryDirection.debit, 3000),
+            #                 datetime(2025, 9, 1, tzinfo=UTC),
+            #                 datetime(2025, 10, 1, tzinfo=UTC),
+            #             ),
+            #         ],
+            #         "expected_discount": 11250,
+            #         # 50% off full year = 15000, then switch 3 months in = 15000 - 3750 = 11250 in credit
+            #         # then discount shouldn't apply to new monthly plan (because it expired) = 3000 in debit
+            #     },
+            #     id='yearly-to-monthly'
+            # ),
+        ],
+    )
+    async def test_cycle_proration_discount(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        subscription: Subscription,
+        setup: ProrationFixture,
+    ) -> None:
+        products = {}
+        prices = {}
+        for key, (recurring_interval, price_amount) in setup["products"].items():
+            product = await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=recurring_interval,
+                prices=[(price_amount,)],
+            )
+            products[key] = product
+
+            price = cast(ProductPriceFixed, product.prices[0])
+            prices[key] = price
+
+        entries = []
+        for product_key, (dir, amount), start_dt, end_dt in setup["history"]:
+            price = prices[product_key]
+            entry = await create_billing_entry(
+                save_fixture,
+                direction=dir,
+                start_timestamp=start_dt,
+                end_timestamp=end_dt,
+                customer=subscription.customer,
+                product_price=price,
+                amount=amount,
+                currency=price.price_currency,
+                subscription=subscription,
+            )
+            entries.append(entry)
+
+        if setup["discount"]:
+            discount = await create_discount(
+                save_fixture,
+                type=setup["discount"]["type"],
+                amount=setup["discount"].get("amount"),
+                currency=setup["discount"].get("currency"),
+                basis_points=setup["discount"].get("basis_points"),
+                duration=setup["discount"]["duration"],
+                duration_in_months=setup["discount"]["duration_in_months"],
+                organization=organization,
+                products=[products[key] for key in setup["discount"]["applies_to"]]
+                if setup["discount"]["applies_to"]
+                else None,
+            )
+            subscription.discount = discount
+            session.add(subscription)
+            await session.flush()
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        assert len(order.items) == 2
+        assert order.discount_amount == setup["expected_discount"]
+        assert order.subtotal_amount == setup["expected_subtotal"]
+        assert order.tax_amount == setup["expected_tax"]
+        # order_items = sorted(order.items, key=lambda i: i.amount)
+        # assert order_items[0].product_price == old_price
+        # assert order_items[0].amount == -250
+        # assert order_items[1].product_price == new_price
+        # assert order_items[1].amount == 1500
+        # assert order_items[2].product_price == new_price
+        # assert order_items[2].amount == 3000
+
+        assert order.status == OrderStatus.pending
+        assert order.billing_reason == OrderBillingReason.subscription_cycle
+        assert order.subscription == subscription
+
+        assert order.tax_calculation_processor_id == "TAX_PROCESSOR_ID"
+        assert order.taxability_reason == TaxabilityReason.standard_rated
+        # assert order.tax_rate == calculate_tax_mock.return_value["tax_rate"]
+        assert order.tax_transaction_processor_id is None
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        order_ids = set()
+        for billing_entry in entries:
+            updated_billing_entry = await billing_entry_repository.get_by_id(
+                billing_entry.id
+            )
+            assert updated_billing_entry is not None
+            order_ids.add(updated_billing_entry.order_item_id)
+
+        assert order_ids == set([oi.id for oi in order.items])
 
         enqueue_job_mock.assert_any_call(
             "order.trigger_payment",

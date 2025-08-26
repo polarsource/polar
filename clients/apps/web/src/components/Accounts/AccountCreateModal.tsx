@@ -72,6 +72,7 @@ const AccountCreateModal = ({
         body: {
           account_type: 'stripe',
           country: data.country,
+          organization_id: forOrganizationId,
         },
       })
 
@@ -81,13 +82,9 @@ const AccountCreateModal = ({
         } else {
           setError('root', { message: error.detail })
         }
+        setLoading(false)
         return
       }
-
-      await api.PATCH('/v1/organizations/{id}/account', {
-        params: { path: { id: forOrganizationId } },
-        body: { account_id: account.id },
-      })
 
       setLoading(false)
       await goToOnboarding(account)

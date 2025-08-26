@@ -12,7 +12,8 @@ const GenericAccountBanner: React.FC<{
   organization: schemas['Organization'] | undefined
   setupLink: string
 }> = ({ account, organization, setupLink }) => {
-  const isActive = organization?.status === 'active'
+  const isActive =
+    organization?.status === 'active' && account?.stripe_id !== null
   const isUnderReview = organization?.status === 'under_review'
 
   if (!account) {

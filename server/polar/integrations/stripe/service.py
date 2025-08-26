@@ -12,7 +12,7 @@ from polar.kit.utils import utc_now
 from polar.logfire import instrument_httpx
 
 if TYPE_CHECKING:
-    from polar.account.schemas import AccountCreate
+    from polar.account.schemas import AccountCreateForOrganization
     from polar.models import Product, ProductPrice, User
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
@@ -66,7 +66,7 @@ class StripeService:
         return await stripe_lib.PaymentIntent.retrieve_async(id)
 
     async def create_account(
-        self, account: "AccountCreate", name: str | None
+        self, account: "AccountCreateForOrganization", name: str | None
     ) -> stripe_lib.Account:
         create_params: stripe_lib.Account.CreateParams = {
             "country": account.country,

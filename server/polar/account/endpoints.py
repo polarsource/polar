@@ -8,11 +8,12 @@ from polar.exceptions import InternalServerError, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Account
 from polar.openapi import APITag
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from .schemas import Account as AccountSchema
-from .schemas import AccountCreate, AccountLink, AccountUpdate
+from .schemas import AccountCreateForOrganization, AccountLink, AccountUpdate
 from .service import account as account_service
 
 router = APIRouter(tags=["accounts", APITag.private])
@@ -50,13 +51,24 @@ async def get(
 
 @router.post("/accounts", response_model=AccountSchema)
 async def create(
-    account_create: AccountCreate,
+    account_create: AccountCreateForOrganization,
     auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> Account:
-    return await account_service.create_account(
-        session, admin=auth_subject.subject, account_create=account_create
+    organization = await organization_service.get(
+        session, auth_subject, account_create.organization_id
     )
+    if organization is None:
+        raise ResourceNotFound("Organization not found")
+
+    account = await account_service.get_or_create_account_for_organization(
+        session,
+        organization=organization,
+        admin=auth_subject.subject,
+        account_create=account_create,
+    )
+
+    return account
 
 
 @router.patch("/accounts/{id}", response_model=AccountSchema)

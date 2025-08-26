@@ -639,10 +639,6 @@ class OrganizationService:
         if not account:
             return False
 
-        # Check account readiness
-        if not account.is_account_ready():
-            return False
-
         # Check admin identity verification status
         admin = account.admin
         if not admin or admin.identity_verification_status not in [

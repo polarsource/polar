@@ -11,7 +11,11 @@ from polar.organization.schemas import Organization
 from polar.user.schemas import UserBase
 
 
-class AccountCreate(Schema):
+class AccountCreateForOrganization(Schema):
+    organization_id: UUID = Field(
+        description="Organization ID to create or get account for"
+    )
+
     account_type: Literal[AccountType.stripe]
     country: str = Field(
         description="Two letter uppercase country code", min_length=2, max_length=2

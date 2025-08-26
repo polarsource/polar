@@ -13,12 +13,13 @@ from polar.models.user_organization import UserOrganization
 
 @pytest.mark.asyncio
 @pytest.mark.auth
-async def test_create_invalid_account_type(client: AsyncClient) -> None:
+async def test_create_invalid_account_type(client: AsyncClient, organization: Organization) -> None:
     response = await client.post(
         "/v1/accounts",
         json={
             "account_type": "unknown",
             "country": "US",
+            "organization_id": str(organization.id),
         },
     )
 
@@ -28,9 +29,7 @@ async def test_create_invalid_account_type(client: AsyncClient) -> None:
 @pytest.mark.asyncio
 @pytest.mark.auth
 async def test_create_personal_stripe(
-    user: User,
-    mocker: MockerFixture,
-    client: AsyncClient,
+    user: User, mocker: MockerFixture, client: AsyncClient, organization: Organization, user_organization: UserOrganization
 ) -> None:
     stripe_mock = mocker.patch.object(stripe_lib.Account, "create_async")
 
@@ -54,6 +53,7 @@ async def test_create_personal_stripe(
         json={
             "account_type": "stripe",
             "country": "US",
+            "organization_id": str(organization.id),
         },
     )
 

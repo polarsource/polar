@@ -18,7 +18,11 @@ from polar.kit.pagination import PaginationParams
 from polar.models import Account, Organization, User
 from polar.postgres import AsyncSession
 
-from .schemas import AccountCreate, AccountLink, AccountUpdate
+from .schemas import (
+    AccountCreateForOrganization,
+    AccountLink,
+    AccountUpdate,
+)
 
 
 class AccountServiceError(PolarError):
@@ -106,26 +110,102 @@ class AccountService:
         account.is_payouts_enabled = False
         session.add(account)
 
-        # Update related organizations status to allow re-onboarding
-        await session.refresh(account, {"organizations"})
-        for organization in account.organizations:
-            from polar.models.organization import Organization
-
-            organization.status = Organization.Status.CREATED
-            session.add(organization)
-
     async def create_account(
         self,
         session: AsyncSession,
         *,
         admin: User,
-        account_create: AccountCreate,
+        account_create: AccountCreateForOrganization,
     ) -> Account:
         assert account_create.account_type == AccountType.stripe
         account = await self._create_stripe_account(session, admin, account_create)
         await loops_service.user_created_account(
             session, admin, accountType=account.account_type
         )
+        return account
+
+    async def get_or_create_account_for_organization(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        admin: User,
+        account_create: AccountCreateForOrganization,
+    ) -> Account:
+        """Get existing account for organization or create a new one.
+
+        If organization already has an account:
+        - If account has no stripe_id (deleted), create new Stripe account
+        - Otherwise return existing account
+
+        If organization has no account, create new one and link it.
+        """
+
+        # Check if organization already has an account
+        if organization.account_id:
+            repository = AccountRepository.from_session(session)
+            account = await repository.get_by_id(
+                organization.account_id,
+                options=(
+                    joinedload(Account.users),
+                    joinedload(Account.organizations),
+                ),
+            )
+
+            if account and not account.stripe_id:
+                assert account_create.account_type == AccountType.stripe
+                try:
+                    stripe_account = await stripe.create_account(
+                        account_create, name=None
+                    )
+                except stripe_lib.StripeError as e:
+                    if e.user_message:
+                        raise AccountServiceError(e.user_message) from e
+                    else:
+                        raise AccountServiceError(
+                            "An unexpected Stripe error happened"
+                        ) from e
+
+                # Update account with new Stripe details
+                account.stripe_id = stripe_account.id
+                account.email = stripe_account.email
+                if stripe_account.country is not None:
+                    account.country = stripe_account.country
+                assert stripe_account.default_currency is not None
+                account.currency = stripe_account.default_currency
+                account.is_details_submitted = stripe_account.details_submitted or False
+                account.is_charges_enabled = stripe_account.charges_enabled or False
+                account.is_payouts_enabled = stripe_account.payouts_enabled or False
+                account.business_type = stripe_account.business_type
+                account.status = Account.Status.ONBOARDING_STARTED
+                account.data = stripe_account.to_dict()
+
+                session.add(account)
+
+                await loops_service.user_created_account(
+                    session, admin, accountType=account.account_type
+                )
+
+                return account
+            elif account:
+                return account
+
+        # No account exists, create new one
+        account = await self.create_account(
+            session, admin=admin, account_create=account_create
+        )
+
+        # Link account to organization. Import happens here to avoid circular dependency
+        from polar.organization.service import organization as organization_service
+
+        await organization_service.set_account(
+            session,
+            auth_subject=AuthSubject(subject=admin, scopes=set(), session=None),
+            organization=organization,
+            account_id=account.id,
+        )
+
+        await session.refresh(account, {"users", "organizations"})
+
         return account
 
     async def _build_stripe_account_name(
@@ -142,7 +222,10 @@ class AccountService:
         return "·".join(associations)
 
     async def _create_stripe_account(
-        self, session: AsyncSession, admin: User, account_create: AccountCreate
+        self,
+        session: AsyncSession,
+        admin: User,
+        account_create: AccountCreateForOrganization,
     ) -> Account:
         try:
             stripe_account = await stripe.create_account(

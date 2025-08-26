@@ -3919,8 +3919,8 @@ export interface components {
             /** Organizations */
             organizations: components["schemas"]["Organization"][];
         };
-        /** AccountCreate */
-        AccountCreate: {
+        /** AccountCreateForOrganization */
+        AccountCreateForOrganization: {
             /**
              * Account Type
              * @constant
@@ -3931,6 +3931,12 @@ export interface components {
              * @description Two letter uppercase country code
              */
             country: string;
+            /**
+             * Organization Id
+             * Format: uuid
+             * @description Organization ID to create or get account for
+             */
+            organization_id: string;
         };
         /** AccountLink */
         AccountLink: {
@@ -15791,6 +15797,16 @@ export interface components {
             /** Avatar Url */
             readonly avatar_url: string;
         };
+        /** SubscriptionLocked */
+        SubscriptionLocked: {
+            /**
+             * Error
+             * @constant
+             */
+            error: "SubscriptionLocked";
+            /** Detail */
+            detail: string;
+        };
         /**
          * SubscriptionMeter
          * @description Current consumption and spending for a subscription meter.
@@ -17860,7 +17876,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AccountCreate"];
+                "application/json": components["schemas"]["AccountCreateForOrganization"];
             };
         };
         responses: {
@@ -18516,6 +18532,15 @@ export interface operations {
                     "application/json": components["schemas"]["ResourceNotFound"];
                 };
             };
+            /** @description Subscription is pending an update. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionLocked"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -18568,6 +18593,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResourceNotFound"];
+                };
+            };
+            /** @description Subscription is pending an update. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionLocked"];
                 };
             };
             /** @description Validation Error */

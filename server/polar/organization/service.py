@@ -43,7 +43,7 @@ from .schemas import (
 )
 from .sorting import OrganizationSortProperty
 
-log = structlog.get_logger(__name__)
+log = structlog.get_logger()
 
 
 class PaymentStepID(StrEnum):
@@ -73,9 +73,6 @@ class PaymentStatusResponse(BaseModel):
     organization_status: Organization.Status = Field(
         description="Current organization status"
     )
-
-
-log = structlog.get_logger()
 
 
 class OrganizationError(PolarError): ...

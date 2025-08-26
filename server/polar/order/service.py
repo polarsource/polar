@@ -61,6 +61,7 @@ from polar.models import (
     Transaction,
     User,
 )
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.held_balance import HeldBalance
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.product import ProductBillingType
@@ -643,7 +644,27 @@ class OrderService:
         discount = subscription.discount
         discount_amount = 0
         if discount is not None:
-            discount_amount = discount.get_discount_amount(subtotal_amount)
+            assert subscription.started_at is not None
+
+            # Check if discount is still applicable
+            if not discount.is_repetition_expired(
+                subscription.started_at, subscription.current_period_start
+            ):
+                # We need to check for each item if the discount is applicable
+                # to that product
+                for item in items:
+                    # `item.amount` may be negative in the case of prorations,
+                    # but the `discount_amount` we're calculating is expected
+                    # to be positive
+                    item_amount = abs(item.amount)
+
+                    if discount.is_applicable(item.product_price.product):
+                        discount_amount += discount.get_discount_amount(item_amount)
+
+                # For fixed amount Discounts we need to cap it at that amount
+                # as we might have summed up too high of a discount
+                if discount.type == DiscountType.fixed:
+                    discount_amount = min(discount_amount, discount.amount)
 
         # Calculate tax
         tax_amount = 0

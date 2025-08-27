@@ -39,7 +39,7 @@ from tests.fixtures.random_objects import (
 # - ✅ Tests subscriptions with meters
 # - ✅ Tests a customer with multiple subscriptions
 # - ✅ Tests multiple switches within a cycle
-# - Tests switch from yearly to monthly
+# - ✅ Tests switch from yearly to monthly
 # - Tests switch from a subscription where a discount is applied
 #    - Once
 #    - For 3 months
@@ -242,6 +242,35 @@ class TestUpdateProductProrations:
                 7586,
                 100000,
                 id="monthly-to-yearly-february-leap-year",
+            ),
+            #######################################
+            #### Basic yearly to Basic monthly ####
+            #######################################
+            pytest.param(
+                (SubscriptionRecurringInterval.year, 100000),
+                (SubscriptionRecurringInterval.month, 10000),
+                # - Start subscription on June 1st (June has 30 days)
+                # - Update subscription at the end of August 13th (== start of 14th) = 73 days = 20% of year
+                # = Credit 80% of price on yearly
+                # = Debit 100% of price on monthly as the new cycle starts at the time of the update
+                datetime(2025, 6, 1, tzinfo=UTC),
+                datetime(2025, 8, 13, tzinfo=UTC),
+                80000,
+                10000,
+                id="yearly-to-monthly-fifth-of-year",
+            ),
+            pytest.param(
+                (SubscriptionRecurringInterval.year, 100000),
+                (SubscriptionRecurringInterval.month, 10000),
+                # - Start subscription on February 18st 2024 (leap year, 366 days)
+                # - Update subscription at the end of April 18th = 61 days = 1/6 of year
+                # = Credit 5/6 = 83.33% of price on yearly
+                # = Debit 100% of price on monrhly as the new cycle starts at the time of the update
+                datetime(2024, 2, 18, tzinfo=UTC),
+                datetime(2024, 4, 19, tzinfo=UTC),
+                83333,
+                10000,
+                id="yearly-to-monthly-february-leap-year",
             ),
         ],
     )

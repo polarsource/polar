@@ -23,7 +23,7 @@ from polar.models import (
     ProductPrice,
     Subscription,
 )
-from polar.models.billing_entry import BillingEntryDirection
+from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.product.guard import (
@@ -118,6 +118,7 @@ async def create_metered_event_billing_entry(
     billing_entry = BillingEntry(
         start_timestamp=event.timestamp,
         end_timestamp=event.timestamp,
+        type=BillingEntryType.metered,
         direction=BillingEntryDirection.debit,
         customer=customer,
         product_price=price,
@@ -162,6 +163,7 @@ async def create_credit_billing_entry(
     billing_entry = BillingEntry(
         start_timestamp=event.timestamp,
         end_timestamp=event.timestamp,
+        type=BillingEntryType.metered,
         direction=BillingEntryDirection.debit,
         customer=customer,
         product_price=price,
@@ -187,6 +189,7 @@ async def create_credit_billing_entry(
 async def create_static_price_billing_entry(
     save_fixture: SaveFixture,
     *,
+    type: BillingEntryType = BillingEntryType.cycle,
     customer: Customer,
     price: StaticPrice,
     subscription: Subscription,
@@ -212,6 +215,7 @@ async def create_static_price_billing_entry(
     billing_entry = BillingEntry(
         start_timestamp=subscription.current_period_start,
         end_timestamp=subscription.current_period_end,
+        type=type,
         direction=BillingEntryDirection.debit,
         customer=customer,
         product_price=price,
@@ -515,16 +519,28 @@ class TestCreateOrderItemsFromPending:
                 subscription=subscription,
                 pending=True,
             ),
+            await create_static_price_billing_entry(
+                save_fixture,
+                type=BillingEntryType.proration,
+                customer=customer,
+                price=price,
+                subscription=subscription,
+                pending=True,
+            ),
         ]
 
         order_items = await billing_entry_service.create_order_items_from_pending(
             session, subscription
         )
 
-        assert len(order_items) == 1
+        assert len(order_items) == 2
 
-        order_item = order_items[0]
-        assert product.name in order_item.label
+        order_item_1 = order_items[0]
+        assert product.name in order_item_1.label
+        assert order_item_1.proration is False
+        assert entries[1].order_item == order_item_1
 
-        for entry in entries[1:]:
-            assert entry.order_item == order_item
+        order_item_2 = order_items[1]
+        assert product.name in order_item_2.label
+        assert order_item_2.proration is True
+        assert entries[2].order_item == order_item_2

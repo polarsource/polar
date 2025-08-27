@@ -643,7 +643,10 @@ class OrderService:
         discount = subscription.discount
         discount_amount = 0
         if discount is not None:
-            discount_amount = discount.get_discount_amount(subtotal_amount)
+            discountable_amount = sum(
+                item.amount for item in items if item.discountable
+            )
+            discount_amount = discount.get_discount_amount(discountable_amount)
 
         # Calculate tax
         tax_amount = 0

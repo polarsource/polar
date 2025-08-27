@@ -48,6 +48,12 @@ class OrderItem(RecordModel):
     def total_amount(self) -> int:
         return self.amount + self.tax_amount
 
+    @property
+    def discountable(self) -> bool:
+        # Simple logic for now: only non-prorated items are discountable
+        # But could be expanded in the future by having a dedicated column
+        return not self.proration
+
     @classmethod
     def from_price(
         cls, price: ProductPrice, tax_amount: int, amount: int | None = None

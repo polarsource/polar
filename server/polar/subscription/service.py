@@ -58,7 +58,7 @@ from polar.models import (
     SubscriptionProductPrice,
     User,
 )
-from polar.models.billing_entry import BillingEntryDirection
+from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -574,6 +574,14 @@ class SubscriptionService:
                 subscription.recurring_interval.get_next_period(current_period_end)
             )
 
+            # Check if discount is still applicable
+            if subscription.discount is not None:
+                assert subscription.started_at is not None
+                if subscription.discount.is_repetition_expired(
+                    subscription.started_at, subscription.current_period_start
+                ):
+                    subscription.discount = None
+
             event = event = await event_service.create_event(
                 session,
                 build_system_event(
@@ -592,23 +600,17 @@ class SubscriptionService:
                         BillingEntry(
                             start_timestamp=subscription.current_period_start,
                             end_timestamp=subscription.current_period_end,
+                            type=BillingEntryType.cycle,
                             direction=BillingEntryDirection.debit,
                             amount=subscription_product_price.amount,
                             currency=subscription.currency,
                             customer=subscription.customer,
                             product_price=product_price,
+                            discount=subscription.discount,
                             subscription=subscription,
                             event=event,
                         ),
                     )
-
-        # Check if discount is still applicable
-        if subscription.discount is not None:
-            assert subscription.started_at is not None
-            if subscription.discount.is_repetition_expired(
-                subscription.started_at, subscription.current_period_start
-            ):
-                subscription.discount = None
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.update(subscription)

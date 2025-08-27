@@ -89,6 +89,9 @@ class BillingEntry(RecordModel):
     discount_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("discounts.id", ondelete="restrict"), nullable=True
     )
+    discount_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("discounts.id", ondelete="restrict"), nullable=True
+    )
     event_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("events.id", ondelete="cascade"), nullable=False
     )

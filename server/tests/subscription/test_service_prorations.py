@@ -209,12 +209,12 @@ class TestUpdateProductProrations:
                 (SubscriptionRecurringInterval.year, 100000),
                 # - Start subscription on June 1st (June has 30 days)
                 # - Update subscription at the end of June 15th (== start of 16th)
-                # = 50% of price on monthly
-                # and (365 - 15) / 365 = 95.89041096% of price on yearly
+                # = Credit 50% of price on monthly
+                # = Debit 100% of price on yearly as the new cycle starts at the time of the update
                 datetime(2025, 6, 1, tzinfo=UTC),
                 datetime(2025, 6, 16, tzinfo=UTC),
                 5000,
-                95890,
+                100000,
                 id="monthly-to-yearly-middle-of-month",
             ),
             pytest.param(
@@ -222,12 +222,12 @@ class TestUpdateProductProrations:
                 (SubscriptionRecurringInterval.year, 100000),
                 # - Start subscription on June 1st (June has 30 days)
                 # - Update subscription at the end of June 10th (== start of 11th)
-                # = 66.67% of price on monthly
-                # and (365 - 10) / 365 = 97.26027397% of price on yearly
+                # = Credit 66.67% of price on monthly
+                # = Debit 100% of price on yearly as the new cycle starts at the time of the update
                 datetime(2025, 6, 1, tzinfo=UTC),
                 datetime(2025, 6, 11, tzinfo=UTC),
                 6667,
-                97260,
+                100000,
                 id="monthly-to-yearly-third-of-month",
             ),
             pytest.param(
@@ -235,12 +235,12 @@ class TestUpdateProductProrations:
                 (SubscriptionRecurringInterval.year, 100000),
                 # - Start subscription on February 18st 2024 (leap year, 29 days)
                 # - Update subscription at the end of February 25th
-                # = (29 - 7) / 29 = 75.86206897% of price on monthly
-                # = (366 - 7) / 366 = 98.08743169% of price on yearly
+                # = Credit (29 - 7) / 29 = 75.86206897% of price on monthly
+                # = Debit 100% of price on yearly as the new cycle starts at the time of the update
                 datetime(2024, 2, 18, tzinfo=UTC),
                 datetime(2024, 2, 25, tzinfo=UTC),
                 7586,
-                98087,
+                100000,
                 id="monthly-to-yearly-february-leap-year",
             ),
         ],
@@ -295,21 +295,29 @@ class TestUpdateProductProrations:
             )
 
             assert updated_subscription.ended_at is None
-            assert updated_subscription.current_period_start == previous_period_start
-
             if old_product.recurring_interval == new_product.recurring_interval:
+                assert (
+                    updated_subscription.current_period_start == previous_period_start
+                )
                 assert updated_subscription.current_period_end == previous_period_end
+            else:
+                # When switching monthly to yearly or yearly to monthly:
+                # - we reset the billing cycle
+                assert updated_subscription.current_period_start == time_of_update
 
-            if new_product.recurring_interval == SubscriptionRecurringInterval.month:
-                assert (
-                    updated_subscription.current_period_end
-                    == previous_period_start + relativedelta(months=1)
-                )
-            if new_product.recurring_interval == SubscriptionRecurringInterval.year:
-                assert (
-                    updated_subscription.current_period_end
-                    == previous_period_start + relativedelta(years=1)
-                )
+                if (
+                    new_product.recurring_interval
+                    == SubscriptionRecurringInterval.month
+                ):
+                    assert (
+                        updated_subscription.current_period_end
+                        == time_of_update + relativedelta(months=1)
+                    )
+                if new_product.recurring_interval == SubscriptionRecurringInterval.year:
+                    assert (
+                        updated_subscription.current_period_end
+                        == time_of_update + relativedelta(years=1)
+                    )
 
             event_repository = EventRepository.from_session(session)
             events = await event_repository.get_all_by_name(

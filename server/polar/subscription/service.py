@@ -898,23 +898,29 @@ class SubscriptionService:
             await session.flush()
         else:
             now = datetime.now(UTC)
-            # Cycle start is assumed to be unchanged across plan/product changes (e.g. monthly to yearly)
-            cycle_start = subscription.current_period_start
 
             # Cycle end can change in the case of e.g. monthly to yearly
+            old_cycle_start = subscription.current_period_start
             old_cycle_end = previous_product.recurring_interval.get_next_period(
                 subscription.current_period_start
             )
+
+            if previous_product.recurring_interval != product.recurring_interval:
+                # If switching from monthly to yearly or yearly to monthly, we
+                # set the cycle start to now
+                subscription.current_period_start = now
+
+            new_cycle_start = subscription.current_period_start
             new_cycle_end = subscription.recurring_interval.get_next_period(
                 subscription.current_period_start
             )
 
             old_cycle_remaining_time = (old_cycle_end - now).total_seconds()
-            old_cycle_total_time = (old_cycle_end - cycle_start).total_seconds()
+            old_cycle_total_time = (old_cycle_end - old_cycle_start).total_seconds()
             old_cycle_pct_remaining = old_cycle_remaining_time / old_cycle_total_time
 
             new_cycle_remaining_time = (new_cycle_end - now).total_seconds()
-            new_cycle_total_time = (new_cycle_end - cycle_start).total_seconds()
+            new_cycle_total_time = (new_cycle_end - new_cycle_start).total_seconds()
             new_cycle_pct_remaining = new_cycle_remaining_time / new_cycle_total_time
 
             subscription.current_period_end = new_cycle_end

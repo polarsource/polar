@@ -30,6 +30,7 @@ from sqlalchemy.orm import (
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.models import RecordModel
+from polar.kit.math import polar_round
 
 if TYPE_CHECKING:
     from polar.models import Meter, Product
@@ -346,11 +347,7 @@ class ProductPriceMeteredUnit(ProductPrice, HasPriceCurrency, NewProductPrice):
 
         billable_units = Decimal(max(0, units))
         raw_amount = self.unit_amount * billable_units
-        amount = (
-            math.ceil(raw_amount)
-            if raw_amount - int(raw_amount) >= 0.5
-            else math.floor(raw_amount)
-        )
+        amount = polar_round(raw_amount)
 
         if self.cap_amount is not None and amount > self.cap_amount:
             amount = self.cap_amount

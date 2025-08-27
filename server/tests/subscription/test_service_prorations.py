@@ -249,6 +249,7 @@ class TestUpdateProductProrations:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
         organization: Organization,
         customer: Customer,
         old_product_param,
@@ -274,6 +275,12 @@ class TestUpdateProductProrations:
         with freezegun.freeze_time(cycle_start) as frozen_time:
             # We're not using Stripe
             assert organization.subscriptions_billing_engine is True
+            # Assert default setting: "Invoice later"
+            assert (
+                organization.subscription_settings["proration_behavior"]
+                == SubscriptionProrationBehavior.prorate
+            )
+            expected_proration = SubscriptionProrationBehavior.prorate
 
             subscription = await create_active_subscription(
                 save_fixture,
@@ -303,6 +310,8 @@ class TestUpdateProductProrations:
             else:
                 # When switching monthly to yearly or yearly to monthly:
                 # - we reset the billing cycle
+                # - we always invoice
+                expected_proration = SubscriptionProrationBehavior.invoice
                 assert updated_subscription.current_period_start == time_of_update
 
                 if (
@@ -366,6 +375,24 @@ class TestUpdateProductProrations:
             assert billing_entries[1].amount == entry_1_amount
             assert billing_entries[1].currency == new_price.price_currency
             # fmt: on
+
+            # `enqueue_job` gets called a couple of times, only one of which
+            # we care about. We do the following to extract only that "one" and
+            # assert that it's just called once or never in the two cases.
+            calls = [
+                args[0]
+                for args, kwargs in enqueue_job_mock.call_args_list
+                if args[0] == "order.create_subscription_order"
+            ]
+            if expected_proration == SubscriptionProrationBehavior.invoice:
+                enqueue_job_mock.assert_any_call(
+                    "order.create_subscription_order",
+                    subscription.id,
+                    OrderBillingReason.subscription_update,
+                )
+                assert len(calls) == 1
+            else:
+                assert len(calls) == 0
 
     @pytest.mark.parametrize(
         "proration_behavior",

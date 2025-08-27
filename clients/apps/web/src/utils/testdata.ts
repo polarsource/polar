@@ -49,6 +49,7 @@ export const user: schemas['UserRead'] = {
   id: 'xxxabc-123',
   oauth_accounts: [],
   account_id: null,
+  is_admin: false,
 }
 
 export const payout: schemas['Payout'] = {

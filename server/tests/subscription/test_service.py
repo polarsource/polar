@@ -44,7 +44,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.billing_entry import BillingEntryDirection
+from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.subscription import SubscriptionStatus
@@ -585,6 +585,21 @@ class TestCycle:
         )
         assert fourth_month_subscription.discount is None
 
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 3
+
+        (
+            second_month_billing_entry,
+            third_month_billing_entry,
+            fourth_month_billing_entry,
+        ) = billing_entries
+        assert second_month_billing_entry.discount == discount
+        assert third_month_billing_entry.discount == discount
+        assert fourth_month_billing_entry.discount is None
+
     async def test_cancel_at_period_end(
         self,
         session: AsyncSession,
@@ -1088,6 +1103,7 @@ async def create_event_billing_entry(
     billing_entry = BillingEntry(
         start_timestamp=event.timestamp,
         end_timestamp=event.timestamp,
+        type=BillingEntryType.metered,
         direction=BillingEntryDirection.debit,
         customer=customer,
         product_price=price,

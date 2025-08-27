@@ -13,6 +13,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.math import non_negative_running_sum
 from polar.meter.service import meter as meter_service
 from polar.models import BillingEntry, Event, OrderItem, Subscription
+from polar.models.billing_entry import BillingEntryType
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.product.guard import (
@@ -157,7 +158,7 @@ class BillingEntryService:
             amount=entry.amount,
             currency=entry.currency,
             label=label,
-            proration=False,  # TODO: Handle proration for static prices
+            proration=entry.type == BillingEntryType.proration,
         )
 
     async def _get_metered_line_item(

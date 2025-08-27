@@ -68,7 +68,7 @@ from polar.models.benefit_grant import (
     BenefitGrant,
     BenefitGrantScope,
 )
-from polar.models.billing_entry import BillingEntryDirection
+from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus, get_expires_at
 from polar.models.custom_field import (
     CustomFieldCheckbox,
@@ -1787,6 +1787,7 @@ async def payment_method(
 async def create_billing_entry(
     save_fixture: SaveFixture,
     *,
+    type: BillingEntryType,
     customer: Customer,
     product_price: ProductPrice,
     event: Event | None = None,
@@ -1815,6 +1816,7 @@ async def create_billing_entry(
     billing_entry = BillingEntry(
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
+        type=type,
         direction=direction,
         amount=amount,
         currency=currency,

@@ -32,6 +32,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.billing_entry import BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountFixed, DiscountType
 from polar.models.order import OrderBillingReason, OrderStatus
@@ -666,6 +667,7 @@ class TestCreateSubscriptionOrder:
         assert is_fixed_price(price)
         billing_entry = await create_billing_entry(
             save_fixture,
+            type=BillingEntryType.cycle,
             customer=subscription.customer,
             product_price=price,
             amount=price.price_amount,
@@ -733,6 +735,7 @@ class TestCreateSubscriptionOrder:
         assert is_fixed_price(price)
         await create_billing_entry(
             save_fixture,
+            type=BillingEntryType.cycle,
             customer=subscription.customer,
             product_price=price,
             amount=price.price_amount,
@@ -786,6 +789,7 @@ class TestCreateSubscriptionOrder:
         assert is_fixed_price(price)
         await create_billing_entry(
             save_fixture,
+            type=BillingEntryType.cycle,
             customer=subscription.customer,
             product_price=price,
             amount=price.price_amount,
@@ -830,6 +834,7 @@ class TestCreateSubscriptionOrder:
         assert is_fixed_price(price)
         await create_billing_entry(
             save_fixture,
+            type=BillingEntryType.cycle,
             customer=subscription.customer,
             product_price=price,
             amount=price.price_amount,
@@ -856,6 +861,69 @@ class TestCreateSubscriptionOrder:
             customer.billing_address,
             [],
             True,
+        )
+
+    async def test_cycle_proration_discount(
+        self,
+        calculate_tax_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.proration,
+            customer=subscription.customer,
+            product_price=price,
+            amount=500,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=subscription.customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReason.subscription_cycle
+        )
+
+        assert order.subtotal_amount == price.price_amount + 500
+        assert order.discount == discount
+        assert order.discount_amount == price.price_amount / 2
+        assert order.net_amount == order.subtotal_amount - order.discount_amount
+
+        calculate_tax_mock.assert_called_once_with(
+            order.id,
+            subscription.currency,
+            order.net_amount,
+            product.stripe_product_id,
+            customer.billing_address,
+            [],
+            False,
         )
 
 

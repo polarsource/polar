@@ -150,7 +150,7 @@ $sdk = Polar\Polar::builder()
 Polar API has rate limits to ensure fair usage and maintain performance. The limits are as follows:
 
 - **300 requests per minute** per organization/customer or OAuth2 Client.
-- **1 request per second** for unauthenticated license key [validation](/api-reference/customer-portal/license-keys/validate), [activation](/api-reference/customer-portal/license-keys/activate), and [deactivation](/api-reference/customer-portal/license-keys/deactivate) endpoints.
+- **3 requests per second** for unauthenticated license key [validation](/api-reference/customer-portal/license-keys/validate), [activation](/api-reference/customer-portal/license-keys/activate), and [deactivation](/api-reference/customer-portal/license-keys/deactivate) endpoints.
 
 If you exceed the rate limit, you will receive a `429 Too Many Requests` response. The response will include a `Retry-After` header indicating how long you should wait before making another request.
 

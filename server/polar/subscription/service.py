@@ -909,6 +909,8 @@ class SubscriptionService:
                 # If switching from monthly to yearly or yearly to monthly, we
                 # set the cycle start to now
                 subscription.current_period_start = now
+                # And we always invoice immediately
+                proration_behavior = SubscriptionProrationBehavior.invoice
 
             new_cycle_start = subscription.current_period_start
             new_cycle_end = subscription.recurring_interval.get_next_period(

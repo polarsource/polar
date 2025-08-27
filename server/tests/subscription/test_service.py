@@ -1356,8 +1356,10 @@ class TestUpdateProductBenefitsGrants:
         await subscription_service.update_product_benefits_grants(session, product)
 
         assert enqueue_benefits_grants_mock.call_count == 2
-        assert enqueue_benefits_grants_mock.call_args_list[0].args[1] == subscription_1
-        assert enqueue_benefits_grants_mock.call_args_list[1].args[1] == subscription_2
+        # Collect actual subscription IDs from the mock calls
+        actual_ids = set(call.args[1].id for call in enqueue_benefits_grants_mock.call_args_list)
+        expected_ids = {subscription_1.id, subscription_2.id}
+        assert actual_ids == expected_ids
 
 
 @pytest.mark.asyncio

@@ -16399,6 +16399,8 @@ export interface components {
             id: string;
             /** Accepted Terms Of Service */
             accepted_terms_of_service: boolean;
+            /** Is Admin */
+            is_admin: boolean;
             /** Identity Verified */
             identity_verified: boolean;
             identity_verification_status: components["schemas"]["IdentityVerificationStatus"];

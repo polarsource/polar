@@ -91,11 +91,11 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
     def subject(self) -> str:
         if self.tier_price_amount:
             price = (
-                f"{self.formatted_price_amount}/{self.tier_price_recurring_interval} "
+                f"{self.formatted_price_amount}/{self.tier_price_recurring_interval}"
             )
         else:
             price = "free"
-        return f"Congrats! You have a new subscriber on {self.tier_name} ({price})!"
+        return f"You have a new subscriber on {self.tier_name} ({price})!"
 
     @classmethod
     def template_name(cls) -> str:
@@ -118,7 +118,7 @@ class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
         return format_currency(self.product_price_amount / 100, "USD", locale="en_US")
 
     def subject(self) -> str:
-        return f"Congrats! You've made a new sale ({self.formatted_price_amount})!"
+        return f"You've made a new sale ({self.formatted_price_amount})!"
 
     @classmethod
     def template_name(cls) -> str:

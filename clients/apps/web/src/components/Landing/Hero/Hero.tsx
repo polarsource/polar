@@ -1,8 +1,9 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import Button from '@polar-sh/ui/components/atoms/Button'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
+import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 export const Hero = ({ className }: { className?: string }) => {
   const containerVariants = {
@@ -23,7 +24,7 @@ export const Hero = ({ className }: { className?: string }) => {
   return (
     <motion.div
       className={twMerge(
-        'dark:border-polar-800 relative flex flex-col items-center justify-center gap-12 overflow-hidden rounded-3xl px-12 py-16 text-center md:py-24 dark:border',
+        'relative flex flex-col items-center justify-center gap-6 px-4 pt-8 text-center md:px-12 md:pt-12',
         className,
       )}
       variants={containerVariants}
@@ -31,35 +32,40 @@ export const Hero = ({ className }: { className?: string }) => {
       whileInView="visible"
       viewport={{ once: true }}
     >
-      <Image
-        src="/assets/landing/hero.jpg"
-        className="absolute inset-0 -z-10 h-full w-full object-cover object-[50%_70%]"
-        priority
-        fill
-        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 100vw, 1280px"
-        alt=""
-      />
       <motion.h1
-        className="text-balance text-5xl !leading-tight tracking-tight text-white md:px-0 md:text-7xl dark:text-white"
+        className="text-balance text-5xl !leading-tight tracking-tight md:px-0 md:text-6xl"
         variants={itemVariants}
       >
-        Payment infrastructure for the 21st century
+        Monetize your software
       </motion.h1>
       <motion.p
-        className="text-pretty text-2xl !leading-tight text-white md:px-0 md:text-3xl"
+        className="dark:text-polar-500 text-pretty text-xl !leading-tight text-gray-500 md:px-0"
         variants={itemVariants}
       >
-        The modern way to sell your SaaS and digital products
+        Turn your software into a business with 6 lines of code
       </motion.p>
       <motion.div
-        className="flex flex-row items-center gap-x-4"
+        className="mt-6 flex flex-row items-center gap-x-6"
         variants={itemVariants}
       >
         <GetStartedButton
           size="lg"
           text="Get Started"
-          className="rounded-full bg-white font-medium text-black hover:bg-gray-100 dark:bg-white dark:text-black"
+          className="rounded-full bg-black font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black"
         />
+        <Link
+          href="/resources/why"
+          prefetch
+          className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+        >
+          <Button
+            variant="secondary"
+            size="lg"
+            className="dark:bg-polar-800 rounded-full border-none bg-white"
+          >
+            Why Polar
+          </Button>
+        </Link>
       </motion.div>
     </motion.div>
   )

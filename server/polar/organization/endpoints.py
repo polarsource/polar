@@ -33,7 +33,6 @@ from .schemas import (
     OrganizationPaymentStatus,
     OrganizationPaymentStep,
     OrganizationReviewStatus,
-    OrganizationSetAccount,
     OrganizationUpdate,
     OrganizationValidationResult,
 )
@@ -157,7 +156,7 @@ async def update(
 )
 async def get_account(
     id: OrganizationID,
-    auth_subject: auth.OrganizationsWrite,
+    auth_subject: auth.OrganizationsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Account:
     """Get the account for an organization."""
@@ -175,37 +174,6 @@ async def get_account(
         raise ResourceNotFound()
 
     return account
-
-
-@router.patch(
-    "/{id}/account",
-    response_model=OrganizationSchema,
-    summary="Set Organization Account",
-    responses={
-        200: {"description": "Organization account set."},
-        403: {
-            "description": "You don't have the permission to update this organization.",
-            "model": NotPermitted.schema(),
-        },
-        404: OrganizationNotFound,
-    },
-    tags=[APITag.private],
-)
-async def set_account(
-    id: OrganizationID,
-    set_account: OrganizationSetAccount,
-    auth_subject: auth.OrganizationsWrite,
-    session: AsyncSession = Depends(get_db_session),
-) -> Organization:
-    """Set the account for an organization."""
-    organization = await organization_service.get(session, auth_subject, id)
-
-    if organization is None:
-        raise ResourceNotFound()
-
-    return await organization_service.set_account(
-        session, auth_subject, organization, set_account.account_id
-    )
 
 
 @router.get(
@@ -237,7 +205,8 @@ async def get_payment_status(
     else:
         # For authenticated users, check proper scopes (need at least one of these)
         required_scopes = {
-            Scope.web_default,
+            Scope.web_read,
+            Scope.web_write,
             Scope.organizations_read,
             Scope.organizations_write,
         }
@@ -274,7 +243,7 @@ async def get_payment_status(
 )
 async def members(
     id: OrganizationID,
-    auth_subject: auth.OrganizationsWrite,
+    auth_subject: auth.OrganizationsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OrganizationMember]:
     """List members in an organization."""

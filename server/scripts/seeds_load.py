@@ -1,60 +1,116 @@
 import asyncio
 import random
-from typing import NotRequired, TypedDict
-from uuid import UUID
+from typing import Any, Literal, NotRequired, TypedDict
 
 import dramatiq
 import typer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# Import tasks to register all dramatiq actors
 import polar.tasks  # noqa: F401
 from polar.auth.models import AuthSubject
 from polar.benefit.service import benefit as benefit_service
 from polar.benefit.strategies.custom.schemas import BenefitCustomCreate
 from polar.benefit.strategies.downloadables.schemas import BenefitDownloadablesCreate
+
+# Import tasks to register all dramatiq actors
+from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysCreate
+from polar.checkout_link.schemas import CheckoutLinkCreateProducts
+from polar.checkout_link.service import checkout_link as checkout_link_service
 from polar.config import settings
 from polar.customer.schemas.customer import CustomerCreate
 from polar.customer.service import customer as customer_service
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import AccountType, PaymentProcessor, SubscriptionRecurringInterval
 from polar.kit.db.postgres import create_async_engine
+from polar.kit.utils import utc_now
+from polar.models.account import Account
 from polar.models.benefit import BenefitType
+from polar.models.file import File, FileServiceTypes
+from polar.models.organization import Organization, OrganizationDetails
 from polar.models.product_price import ProductPriceAmountType
+from polar.models.user import IdentityVerificationStatus
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
 from polar.product.schemas import ProductCreate, ProductPriceFixedCreate
 from polar.product.service import product as product_service
 from polar.redis import Redis, create_redis
+from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.worker import JobQueueManager
 
 cli = typer.Typer()
 
 
+class OrganizationDict(TypedDict):
+    name: str
+    slug: str
+    email: str
+    website: str
+    bio: str
+    status: NotRequired[Organization.Status]
+    subscriptions_billing_engine: NotRequired[bool]
+    details: NotRequired[OrganizationDetails]
+    products: NotRequired[list["ProductDict"]]
+    benefits: NotRequired[dict[str, "BenefitDict"]]
+    is_admin: NotRequired[bool]
+
+
 class ProductDict(TypedDict):
     name: str
     description: str
     price: int
-    recurring: bool
+    recurring: SubscriptionRecurringInterval | None
+    benefits: NotRequired[list[str]]
 
 
-class BenefitDict(TypedDict):
-    type: BenefitType
-    organization_id: NotRequired[UUID]
+class BenefitDictBase(TypedDict):
     description: str
-    properties: NotRequired[dict[str, str]]
+
+
+class BenefitCustomDict(BenefitDictBase):
+    type: Literal[BenefitType.custom]
+
+
+class FileDict(TypedDict):
+    name: str
+    mime_type: str
+    url: str
+    path: str
+    size: int
+
+
+class PropertiesFileDict(TypedDict):
+    files: list[FileDict]
+
+
+class BenefitFileDict(BenefitDictBase):
+    type: Literal[BenefitType.downloadables]
+    properties: PropertiesFileDict
+    # properties: TypedDict[{"files": list[FileDict]}]
+
+
+class BenefitLicenseDict(BenefitDictBase):
+    type: Literal[BenefitType.license_keys]
+
+
+type BenefitDict = BenefitCustomDict | BenefitFileDict | BenefitLicenseDict
 
 
 def create_benefit_schema(
-    dict_create: BenefitDict,
-) -> BenefitCustomCreate | BenefitDownloadablesCreate:
-    type = dict_create["type"]
-    if "properties" not in dict_create:
-        dict_create["properties"] = {}
+    dict_input: Any,
+) -> BenefitCustomCreate | BenefitDownloadablesCreate | BenefitLicenseKeysCreate:
+    type = dict_input["type"]
+
+    dict_create = {
+        "properties": {},
+        **dict_input,
+    }
+
     if type is BenefitType.custom:
-        return BenefitCustomCreate(**dict_create)  # type: ignore
+        return BenefitCustomCreate(**dict_create)
     elif type is BenefitType.downloadables:
-        return BenefitDownloadablesCreate(**dict_create)  # type: ignore
+        return BenefitDownloadablesCreate(**dict_create)
+    elif type is BenefitType.license_keys:
+        return BenefitLicenseKeysCreate(**dict_create)
     else:
         raise Exception(
             f"Unsupported Benefit type, please go to `create_benefit_schema()` in {__file__} to implement"
@@ -65,13 +121,39 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
     """Create sample data for development and testing."""
 
     # Organizations data
-    orgs_data = [
+    orgs_data: list[OrganizationDict] = [
         {
             "name": "Acme Corporation",
             "slug": "acme-corp",
             "email": "contact@acme-corp.com",
             "website": "https://acme-corp.com",
             "bio": "Leading provider of innovative solutions for modern businesses.",
+            "products": [
+                {
+                    "name": "Premium Business Suite",
+                    "description": "Complete business management solution",
+                    "price": 25000,
+                    "recurring": SubscriptionRecurringInterval.month,
+                },
+                {
+                    "name": "Starter Kit",
+                    "description": "Everything you need to get started",
+                    "price": 5000,
+                    "recurring": None,
+                },
+                {
+                    "name": "Enterprise Dashboard",
+                    "description": "Advanced analytics and reporting",
+                    "price": 5000,
+                    "recurring": SubscriptionRecurringInterval.month,
+                },
+                {
+                    "name": "Mobile App License",
+                    "description": "Mobile companion app access",
+                    "price": 5000,
+                    "recurring": None,
+                },
+            ],
         },
         {
             "name": "Widget Industries",
@@ -79,13 +161,194 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "email": "info@widget-industries.com",
             "website": "https://widget-industries.com",
             "bio": "Manufacturing high-quality widgets since 1985.",
+            "products": [
+                {
+                    "name": "Widget Pro",
+                    "description": "Professional-grade widget with extended warranty",
+                    "price": 19900,
+                    "recurring": None,
+                },
+                {
+                    "name": "Widget Subscription",
+                    "description": "Monthly widget delivery service",
+                    "price": 1900,
+                    "recurring": SubscriptionRecurringInterval.month,
+                },
+                {
+                    "name": "Widget Kit",
+                    "description": "Complete widget toolkit for professionals",
+                    "price": 9900,
+                    "recurring": None,
+                },
+                {
+                    "name": "Widget Plus",
+                    "description": "Enhanced widget with premium features",
+                    "price": 15900,
+                    "recurring": SubscriptionRecurringInterval.month,
+                },
+                {
+                    "name": "Widget Support Package",
+                    "description": "Annual maintenance and support",
+                    "price": 5000,
+                    "recurring": SubscriptionRecurringInterval.month,
+                },
+            ],
         },
         {
-            "name": "Placeholder Enterprises",
-            "slug": "placeholder-enterprises",
-            "email": "hello@placeholder.com",
-            "website": "https://placeholder.com",
-            "bio": "Your go-to solution for all placeholder needs.",
+            "name": "MeltedSQL",
+            "slug": "melted-sql",
+            "email": "support@meltedsql.com",
+            "website": "https://meltedsql.com",
+            "bio": "Your go-to solution for SQL database management and optimization.",
+            "status": Organization.Status.ACTIVE,
+            "subscriptions_billing_engine": True,
+            "details": {
+                "about": "We make beautiful SQL management products for macOS.",
+                "intended_use": "Well have a checkout on our website granting a download link and license key.",
+                "switching": False,
+                "switching_from": None,
+                "product_description": "The desktop apps that we create allows connecting to SQL databases, and performing queries on those databases.",
+                "customer_acquisition": ["website"],
+                "future_annual_revenue": 2000000,
+                "previous_annual_revenue": 0,
+            },
+            "benefits": {
+                "melted-sql-premium-support": {
+                    "type": BenefitType.custom,
+                    "description": "MeltedSQL premium support email",
+                },
+                "download-link": {
+                    "type": BenefitType.downloadables,
+                    "description": "MeltedSQL download link",
+                    "properties": {
+                        "files": [
+                            {
+                                "name": "meltedsql-download.zip",
+                                "mime_type": "application/zip",
+                                "url": "https://example.com/meltedsql-download.zip",
+                                "path": "/102465214/meltedsql-download.zip",
+                                "size": 508484,
+                            },
+                        ],
+                    },
+                },
+                "license-key": {
+                    "type": BenefitType.license_keys,
+                    "description": "MeltedSQL license",
+                },
+            },
+            "products": [
+                {
+                    "name": "MeltedSQL Basic",
+                    "description": "SQL management tool that will melt your heart",
+                    "price": 9900,
+                    "recurring": SubscriptionRecurringInterval.month,
+                    "benefits": [
+                        "download-link",
+                        "license-key",
+                    ],
+                },
+                {
+                    "name": "MeltedSQL Pro",
+                    "description": "SQL management tool that will melt your brain",
+                    "price": 19900,
+                    "recurring": SubscriptionRecurringInterval.month,
+                    "benefits": [
+                        "download-link",
+                        "license-key",
+                    ],
+                },
+                {
+                    "name": "MeltedSQL Corporate",
+                    "description": "SQL management tool that will melt your face",
+                    "price": 99900,
+                    "recurring": SubscriptionRecurringInterval.month,
+                    "benefits": [
+                        "download-link",
+                        "license-key",
+                        "melted-sql-premium-support",
+                    ],
+                },
+                {
+                    "name": "MeltedSQL Lifetime",
+                    "description": "SQL management tool that will never melt!",
+                    "price": 39900,
+                    "recurring": None,
+                    "benefits": [
+                        "download-link",
+                        "license-key",
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "ColdMail Inc.",
+            "slug": "coldmail",
+            "email": "hello@coldmail.com",
+            "website": "https://coldmail.com",
+            "bio": "Online mail services like it's 1999!",
+            "products": [
+                {
+                    "name": "ColdMail 10 GB",
+                    "description": "ColdMail with 10 GB of storage",
+                    "price": 1500,
+                    "recurring": SubscriptionRecurringInterval.month,
+                },
+                {
+                    "name": "ColdMail 10 GB",
+                    "description": "ColdMail with 10 GB of storage",
+                    "price": 15000,
+                    "recurring": SubscriptionRecurringInterval.year,
+                },
+                {
+                    "name": "ColdMail 50 GB",
+                    "description": "ColdMail with 50 GB of storage",
+                    "price": 5000,
+                    "recurring": SubscriptionRecurringInterval.month,
+                },
+                {
+                    "name": "ColdMail 50 GB",
+                    "description": "ColdMail with 50 GB of storage",
+                    "price": 50000,
+                    "recurring": SubscriptionRecurringInterval.year,
+                },
+                {
+                    "name": "ColdMail 100 GB",
+                    "description": "ColdMail with 100 GB of storage",
+                    "price": 8000,
+                    "recurring": SubscriptionRecurringInterval.month,
+                },
+                {
+                    "name": "ColdMail 100 GB",
+                    "description": "ColdMail with 100 GB of storage",
+                    "price": 80000,
+                    "recurring": SubscriptionRecurringInterval.year,
+                },
+                {
+                    "name": "TemperateDocs Basic",
+                    "description": "TemperateDocs with basic document editing",
+                    "price": 3000,
+                    "recurring": SubscriptionRecurringInterval.month,
+                },
+                {
+                    "name": "TemperateDocs Basic",
+                    "description": "TemperateDocs with basic document editing",
+                    "price": 30000,
+                    "recurring": SubscriptionRecurringInterval.year,
+                },
+                {
+                    "name": "TemperateDocs Pro",
+                    "description": "TemperateDocs with sheets, slides, and PDF export",
+                    "price": 6000,
+                    "recurring": SubscriptionRecurringInterval.month,
+                },
+                {
+                    "name": "TemperateDocs Pro",
+                    "description": "TemperateDocs with sheets, slides, and PDF export",
+                    "price": 60000,
+                    "recurring": SubscriptionRecurringInterval.year,
+                },
+            ],
         },
         {
             "name": "Admin Org",
@@ -93,90 +356,9 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             "email": "admin@polar.sh",
             "website": "https://polar.sh",
             "bio": "The admin organization of Polar",
+            "is_admin": True,
         },
     ]
-
-    # Products data for each organization
-    products_data: dict[str, list[ProductDict]] = {
-        "acme-corp": [
-            {
-                "name": "Premium Business Suite",
-                "description": "Complete business management solution",
-                "price": 25000,
-                "recurring": True,
-            },
-            {
-                "name": "Starter Kit",
-                "description": "Everything you need to get started",
-                "price": 5000,
-                "recurring": False,
-            },
-            {
-                "name": "Enterprise Dashboard",
-                "description": "Advanced analytics and reporting",
-                "price": 5000,
-                "recurring": True,
-            },
-            {
-                "name": "Mobile App License",
-                "description": "Mobile companion app access",
-                "price": 5000,
-                "recurring": False,
-            },
-        ],
-        "widget-industries": [
-            {
-                "name": "Widget Pro",
-                "description": "Professional-grade widget with extended warranty",
-                "price": 19900,
-                "recurring": False,
-            },
-            {
-                "name": "Widget Subscription",
-                "description": "Monthly widget delivery service",
-                "price": 1900,
-                "recurring": True,
-            },
-            {
-                "name": "Widget Kit",
-                "description": "Complete widget toolkit for professionals",
-                "price": 9900,
-                "recurring": False,
-            },
-            {
-                "name": "Widget Plus",
-                "description": "Enhanced widget with premium features",
-                "price": 15900,
-                "recurring": True,
-            },
-            {
-                "name": "Widget Support Package",
-                "description": "Annual maintenance and support",
-                "price": 5000,
-                "recurring": True,
-            },
-        ],
-        "placeholder-enterprises": [
-            {
-                "name": "Placeholder Pro",
-                "description": "Professional placeholder service",
-                "price": 9999,
-                "recurring": True,
-            },
-            {
-                "name": "Demo Content Pack",
-                "description": "High-quality demo content and assets",
-                "price": 1999,
-                "recurring": False,
-            },
-            {
-                "name": "Placeholder API",
-                "description": "RESTful API for placeholder generation",
-                "price": 5000,
-                "recurring": True,
-            },
-        ],
-    }
 
     # Benefits data for each organization
     benefits_data: dict[str, list[BenefitDict]] = {
@@ -192,6 +374,15 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         ],
         "widget-industries": [
             {"type": BenefitType.custom, "description": "Free shipping on all orders"},
+        ],
+        "melted-sql": [
+            # {
+            #     "type": BenefitType.downloadables,
+            #     "description": "Exclusive business templates",
+            #     "properties": {
+            #         "files": ["https://example.com/placeholder-downloadable.pdf"],
+            #     },
+            # },
         ],
         "placeholder-enterprises": [
             {"type": BenefitType.custom, "description": "24/7 placeholder support"},
@@ -212,6 +403,15 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
             session=session,
             email=org_data["email"],
         )
+        user_repository = UserRepository.from_session(session)
+        await user_repository.update(
+            user,
+            update_dict={
+                "is_admin": org_data.get("is_admin", False),
+                "identity_verification_status": IdentityVerificationStatus.verified,
+                "identity_verification_id": f"vs_{org_data['slug']}_test",
+            },
+        )
 
         auth_subject = AuthSubject(subject=user, scopes=set(), session=None)
 
@@ -229,23 +429,75 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
         organization.email = org_data["email"]
         organization.website = org_data["website"]
         organization.bio = org_data["bio"]
+        organization.details = org_data.get("details", {})  # type: ignore
+        organization.details_submitted_at = utc_now()
+        organization.status = org_data.get("status", Organization.Status.CREATED)
+        organization.subscriptions_billing_engine = org_data.get(
+            "subscriptions_billing_engine", False
+        )
         session.add(organization)
 
+        # Create an Account for MeltedSQL organization
+        if org_data["slug"] == "melted-sql":
+            account = Account(
+                account_type=AccountType.stripe,
+                admin_id=user.id,
+                stripe_id="acct_meltedsql_test",  # Test Stripe account ID
+                country="US",
+                currency="USD",
+                is_details_submitted=True,
+                is_charges_enabled=True,
+                is_payouts_enabled=True,
+                status=Account.Status.ACTIVE,
+                email=org_data["email"],
+                processor_fees_applicable=True,
+            )
+            session.add(account)
+            await session.flush()
+
+            # Link the account to the organization
+            organization.account_id = account.id
+            session.add(organization)
+
         # Create benefits for organization
-        org_benefits = []
-        for benefit_data in benefits_data.get(org_data["slug"], []):
-            benefit_data["organization_id"] = organization.id
-            schema = create_benefit_schema(benefit_data)
+        org_benefits = {}
+        for key, benefit_data in org_data.get("benefits", {}).items():
+            benefit_schema_dict: Any = benefit_data.copy()
+            benefit_schema_dict["organization_id"] = organization.id
+
+            if benefit_data["type"] == BenefitType.downloadables:
+                file_ids = []
+                for file_data in benefit_data["properties"]["files"]:
+                    instance = File(
+                        organization=organization,
+                        name=file_data["name"],
+                        path=file_data["path"],
+                        mime_type=file_data["mime_type"],
+                        checksum_sha256_hex="a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e",
+                        checksum_sha256_base64="pZGm1Av0IEBKARczz7exkNYsZb8LzaMrV7J32a2fFG4=",
+                        size=file_data["size"],
+                        service=FileServiceTypes.downloadable,
+                        is_enabled=True,
+                        is_uploaded=True,
+                    )
+                    session.add(instance)
+                    await session.flush()
+
+                    file_ids.append(instance.id)
+                benefit_schema_dict["properties"]["files"] = file_ids
+
+            schema = create_benefit_schema(benefit_schema_dict)
             benefit = await benefit_service.user_create(
                 session=session,
                 redis=redis,
                 create_schema=schema,
                 auth_subject=auth_subject,
             )
-            org_benefits.append(benefit)
+            org_benefits[key] = benefit
 
         # Create products for organization
-        for product_data in products_data.get(org_data["slug"], []):
+        org_products = []
+        for product_data in org_data.get("products", []):
             # Create price for product
             price_create = ProductPriceFixedCreate(
                 amount_type=ProductPriceAmountType.fixed,
@@ -257,9 +509,7 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 name=product_data["name"],
                 description=product_data["description"],
                 organization_id=organization.id,
-                recurring_interval=SubscriptionRecurringInterval.month
-                if product_data["recurring"]
-                else None,
+                recurring_interval=product_data.get("recurring", None),
                 prices=[price_create],
             )
 
@@ -268,18 +518,30 @@ async def create_seed_data(session: AsyncSession, redis: Redis) -> None:
                 create_schema=product_create,
                 auth_subject=auth_subject,
             )
+            org_products.append(product)
 
-            # Add benefits to product (randomly assign 0-2 benefits)
-            selected_benefits = random.sample(
-                org_benefits, min(len(org_benefits), random.randint(0, 2))
-            )
-            for benefit in selected_benefits:
+            selected_benefits = product_data.get("benefits", [])
+            for benefit_key in selected_benefits:
                 await product_service.update_benefits(
                     session=session,
                     product=product,
-                    benefits=[b.id for b in org_benefits],
+                    benefits=[org_benefits[key].id for key in selected_benefits],
                     auth_subject=auth_subject,
                 )
+
+        # Create CheckoutLink with all products
+        if org_products:
+            checkout_link_create = CheckoutLinkCreateProducts(
+                payment_processor=PaymentProcessor.stripe,
+                products=[product.id for product in org_products],
+                label=f"{org_data['name']} store",
+                allow_discount_codes=True,
+            )
+            await checkout_link_service.create(
+                session=session,
+                checkout_link_create=checkout_link_create,
+                auth_subject=auth_subject,
+            )
 
         # Create customers for organization
         num_customers = random.randint(0, 5)

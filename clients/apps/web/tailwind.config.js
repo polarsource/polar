@@ -70,6 +70,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ['var(--font-geist)', ...defaultTheme.fontFamily.sans],
+        mono: ['var(--font-geist-mono)', ...defaultTheme.fontFamily.mono],
       },
       fontSize: {
         xxs: '0.65rem',

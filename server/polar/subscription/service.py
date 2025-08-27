@@ -1,5 +1,6 @@
+import contextlib
 import uuid
-from collections.abc import Sequence
+from collections.abc import AsyncGenerator, Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Literal, cast, overload
@@ -144,7 +145,7 @@ class SubscriptionNotActiveOnStripe(SubscriptionError):
         super().__init__(message, 400)
 
 
-class SubscriptionUpdatePending(SubscriptionError):
+class SubscriptionLocked(SubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
         message = "This subscription is pending an update."
@@ -679,6 +680,20 @@ class SubscriptionService:
             subscription.customer_id,
         )
 
+    @contextlib.asynccontextmanager
+    async def lock(
+        self, locker: Locker, subscription: Subscription
+    ) -> AsyncGenerator[Subscription]:
+        lock_name = f"subscription:{subscription.id}"
+        if await locker.is_locked(lock_name):
+            raise SubscriptionLocked(subscription)
+        async with locker.lock(
+            lock_name,
+            timeout=10.0,  # Quite long, but we've experienced slow responses from Stripe in test mode
+            blocking_timeout=1,
+        ):
+            yield subscription
+
     async def update(
         self,
         session: AsyncSession,
@@ -687,54 +702,46 @@ class SubscriptionService:
         *,
         update: SubscriptionUpdate,
     ) -> Subscription:
-        lock_name = f"subscription:{subscription.id}"
-        if await locker.is_locked(lock_name):
-            raise SubscriptionUpdatePending(subscription)
-        async with locker.lock(
-            lock_name,
-            timeout=10.0,  # Quite long, but we've experienced slow responses from Stripe in test mode
-            blocking_timeout=1,
-        ):
-            if isinstance(update, SubscriptionUpdateProduct):
-                if subscription.revoked or subscription.cancel_at_period_end:
-                    raise AlreadyCanceledSubscription(subscription)
-                return await self.update_product(
-                    session,
-                    subscription,
-                    product_id=update.product_id,
-                    proration_behavior=update.proration_behavior,
-                )
+        if isinstance(update, SubscriptionUpdateProduct):
+            if subscription.revoked or subscription.cancel_at_period_end:
+                raise AlreadyCanceledSubscription(subscription)
+            return await self.update_product(
+                session,
+                subscription,
+                product_id=update.product_id,
+                proration_behavior=update.proration_behavior,
+            )
 
-            if isinstance(update, SubscriptionUpdateDiscount):
-                return await self.update_discount(
-                    session,
-                    locker,
-                    subscription,
-                    discount_id=update.discount_id,
-                )
+        if isinstance(update, SubscriptionUpdateDiscount):
+            return await self.update_discount(
+                session,
+                locker,
+                subscription,
+                discount_id=update.discount_id,
+            )
 
-            if isinstance(update, SubscriptionCancel):
-                cancel = update.cancel_at_period_end is True
-                uncancel = update.cancel_at_period_end is False
+        if isinstance(update, SubscriptionCancel):
+            cancel = update.cancel_at_period_end is True
+            uncancel = update.cancel_at_period_end is False
 
-                if uncancel:
-                    return await self.uncancel(session, subscription)
+            if uncancel:
+                return await self.uncancel(session, subscription)
 
-                return await self.cancel(
-                    session,
-                    subscription,
-                    customer_reason=update.customer_cancellation_reason,
-                    customer_comment=update.customer_cancellation_comment,
-                )
+            return await self.cancel(
+                session,
+                subscription,
+                customer_reason=update.customer_cancellation_reason,
+                customer_comment=update.customer_cancellation_comment,
+            )
 
-            if isinstance(update, SubscriptionRevoke):
-                return await self._perform_cancellation(
-                    session,
-                    subscription,
-                    customer_reason=update.customer_cancellation_reason,
-                    customer_comment=update.customer_cancellation_comment,
-                    immediately=True,
-                )
+        if isinstance(update, SubscriptionRevoke):
+            return await self._perform_cancellation(
+                session,
+                subscription,
+                customer_reason=update.customer_cancellation_reason,
+                customer_comment=update.customer_cancellation_comment,
+                immediately=True,
+            )
 
     async def update_product(
         self,
@@ -836,11 +843,22 @@ class SubscriptionService:
             assert organization is not None
             proration_behavior = organization.proration_behavior
 
+        stripe_price_ids = [
+            price.stripe_price_id for price in prices if is_static_price(price)
+        ]
+
+        # If no static prices (only metered), create a placeholder price
+        if len(stripe_price_ids) == 0:
+            placeholder_price = await stripe_service.create_placeholder_price(
+                product,
+                subscription.currency,
+                idempotency_key=f"subscription_update_{subscription.id}_placeholder",
+            )
+            stripe_price_ids.append(placeholder_price.id)
+
         await stripe_service.update_subscription_price(
             subscription.stripe_subscription_id,
-            new_prices=[
-                price.stripe_price_id for price in prices if is_static_price(price)
-            ],
+            new_prices=stripe_price_ids,
             proration_behavior=proration_behavior.to_stripe(),
             metadata={
                 "type": ProductType.product,
@@ -1018,7 +1036,11 @@ class SubscriptionService:
             await self._perform_cancellation(session, subscription, immediately=True)
 
     async def update_from_stripe(
-        self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        *,
+        stripe_subscription: stripe_lib.Subscription,
     ) -> Subscription:
         """
         Since Stripe manages the billing cycle, listen for their webhooks and update the
@@ -1032,45 +1054,46 @@ class SubscriptionService:
         if subscription is None:
             raise SubscriptionDoesNotExist(stripe_subscription.id)
 
-        previous_status = subscription.status
-        previous_is_canceled = subscription.canceled
+        async with self.lock(locker, subscription):
+            previous_status = subscription.status
+            previous_is_canceled = subscription.canceled
 
-        subscription.status = SubscriptionStatus(stripe_subscription.status)
-        subscription.current_period_start = _from_timestamp(
-            stripe_subscription.current_period_start
-        )
-        subscription.current_period_end = _from_timestamp(
-            stripe_subscription.current_period_end
-        )
-        subscription.set_started_at()
-        self.update_cancellation_from_stripe(subscription, stripe_subscription)
-        # Reset discount if it has expired
-        if (
-            len(stripe_subscription.discounts) == 0
-            and subscription.discount is not None
-        ):
-            subscription.discount = None
-
-        # Update payment method
-        if stripe_subscription.default_payment_method is not None:
-            stripe_payment_method = await stripe_service.get_payment_method(
-                get_expandable_id(stripe_subscription.default_payment_method)
+            subscription.status = SubscriptionStatus(stripe_subscription.status)
+            subscription.current_period_start = _from_timestamp(
+                stripe_subscription.current_period_start
             )
-            payment_method = await payment_method_service.upsert_from_stripe(
-                session, subscription.customer, stripe_payment_method
+            subscription.current_period_end = _from_timestamp(
+                stripe_subscription.current_period_end
             )
-            subscription.payment_method = payment_method
+            subscription.set_started_at()
+            self.update_cancellation_from_stripe(subscription, stripe_subscription)
+            # Reset discount if it has expired
+            if (
+                len(stripe_subscription.discounts) == 0
+                and subscription.discount is not None
+            ):
+                subscription.discount = None
 
-        subscription = await repository.update(subscription)
+            # Update payment method
+            if stripe_subscription.default_payment_method is not None:
+                stripe_payment_method = await stripe_service.get_payment_method(
+                    get_expandable_id(stripe_subscription.default_payment_method)
+                )
+                payment_method = await payment_method_service.upsert_from_stripe(
+                    session, subscription.customer, stripe_payment_method
+                )
+                subscription.payment_method = payment_method
 
-        await self.enqueue_benefits_grants(session, subscription)
-        await self._after_subscription_updated(
-            session,
-            subscription,
-            previous_status=previous_status,
-            previous_is_canceled=previous_is_canceled,
-        )
-        return subscription
+            subscription = await repository.update(subscription)
+
+            await self.enqueue_benefits_grants(session, subscription)
+            await self._after_subscription_updated(
+                session,
+                subscription,
+                previous_status=previous_status,
+                previous_is_canceled=previous_is_canceled,
+            )
+            return subscription
 
     async def _perform_cancellation(
         self,

@@ -54,6 +54,7 @@ export default function ClientPage({
     }
     if (
       organizationAccount === undefined ||
+      !organizationAccount.stripe_id ||
       !organizationAccount.is_details_submitted ||
       !organizationAccount.is_payouts_enabled
     ) {
@@ -125,6 +126,7 @@ export default function ClientPage({
         setStep('validation')
       } else if (
         organizationAccount === undefined ||
+        !organizationAccount.stripe_id ||
         !organizationAccount.is_details_submitted ||
         !organizationAccount.is_payouts_enabled
       ) {
@@ -153,7 +155,8 @@ export default function ClientPage({
   }, [])
 
   const handleStartAccountSetup = useCallback(async () => {
-    if (!organizationAccount) {
+    // Check if account exists but has no stripe_id (deleted account)
+    if (!organizationAccount || !organizationAccount.stripe_id) {
       showSetupModal()
     } else {
       const link = await unwrap(
@@ -170,7 +173,7 @@ export default function ClientPage({
       )
       window.location.href = link.url
     }
-  }, [showSetupModal])
+  }, [organizationAccount, showSetupModal])
 
   const handleStartIdentityVerification = useCallback(async () => {
     await startIdentityVerification()

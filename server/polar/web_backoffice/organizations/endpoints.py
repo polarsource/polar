@@ -707,6 +707,129 @@ async def remove_member(
         )
 
 
+@router.api_route(
+    "/{id}/setup_manual_payout",
+    name="organizations:setup_manual_payout",
+    methods=["GET", "POST"],
+)
+async def setup_manual_payout(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    org_repo = OrganizationRepository.from_session(session)
+    organization = await org_repo.get_by_id(id)
+    if not organization:
+        raise HTTPException(status_code=404)
+
+    # Check if organization already has an account
+    if organization.account_id is not None:
+        raise HTTPException(
+            status_code=400, detail="Organization already has an account"
+        )
+
+    if request.method == "POST":
+        # Create a manual account for the organization
+        # Get country from form data
+        data = await request.form()
+        country = data.get("country", "US")
+
+        # Get the first user of the organization as admin
+        user_repository = UserRepository.from_session(session)
+        users = await user_repository.get_all_by_organization(organization.id)
+        if not users:
+            raise HTTPException(status_code=400, detail="Organization has no users")
+
+        admin_user = users[0]  # Use first user as admin
+
+        # Create manual account
+        account = Account(
+            account_type=AccountType.manual,
+            admin_id=admin_user.id,
+            country=country,
+            currency="usd",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+            processor_fees_applicable=False,  # No processor fees for manual accounts
+            status=Account.Status.ACTIVE,
+        )
+
+        session.add(account)
+        await session.flush()
+
+        # Associate account with organization
+        organization = await org_repo.update(
+            organization, update_dict={"account_id": account.id}
+        )
+
+        await add_toast(
+            request,
+            f"Manual payout account created for {organization.name}",
+            "success",
+        )
+
+        return HXRedirectResponse(
+            request, str(request.url_for("organizations:get", id=id)), 303
+        )
+
+    with modal("Setup Manual Payout", open=True):
+        with tag.form(
+            method="POST", action=str(request.url), classes="flex flex-col gap-4"
+        ):
+            # Warning message
+            with tag.div(classes="alert alert-warning"):
+                with tag.svg(
+                    classes="stroke-current shrink-0 h-6 w-6",
+                    fill="none",
+                    viewBox="0 0 24 24",
+                ):
+                    with tag.path(
+                        stroke_linecap="round",
+                        stroke_linejoin="round",
+                        stroke_width="2",
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z",
+                    ):
+                        pass
+                with tag.span(classes="font-semibold"):
+                    text(
+                        "Should only be enabled by Birk at this stage since its manual and reserved for a few customers in alpha"
+                    )
+
+            with tag.p():
+                text("This will create a manual payout account for this organization.")
+
+            # Country selection
+            with tag.div(classes="form-control w-full"):
+                with tag.label(classes="label"):
+                    with tag.span(classes="label-text"):
+                        text("Country Code")
+                with tag.input(
+                    type="text",
+                    name="country",
+                    required=True,
+                    maxlength="2",
+                    minlength="2",
+                    pattern="[A-Z]{2}",
+                    placeholder="US",
+                    classes="input input-bordered w-full",
+                    title="Enter a 2-letter country code (e.g., US, GB, CA)",
+                ):
+                    pass
+                with tag.p(classes="text-xs text-gray-500 mt-1"):
+                    text("Enter a 2-letter ISO country code (e.g., US, GB, CA)")
+
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="submit",
+                    variant="primary",
+                ):
+                    text("Create Manual Account")
+
+
 @router.api_route("/{id}", name="organizations:get", methods=["GET", "POST"])
 async def get(
     request: Request,
@@ -905,6 +1028,20 @@ async def get(
 
                                                 # Actions
                                                 with tag.td():
+                                                    with tag.div(classes="flex gap-2"):
+                                                        with tag.button(
+                                                            classes="btn btn-primary btn-sm",
+                                                            name="user_id",
+                                                            value=str(user.id),
+                                                            hx_post=str(
+                                                                request.url_for(
+                                                                    "backoffice:start_impersonation",
+                                                                )
+                                                            ),
+                                                            hx_confirm="Are you sure you want to impersonate this user?",
+                                                        ):
+                                                            text("Impersonate")
+
                                                     if not is_admin:
                                                         with tag.button(
                                                             classes="btn btn-error btn-sm",
@@ -951,6 +1088,23 @@ async def get(
                                 ),
                             ).render(request, account):
                                 pass
+                        else:
+                            with tag.div(classes="text-center py-8"):
+                                with tag.p(classes="text-gray-600 mb-4"):
+                                    text(
+                                        "No account has been set up for this organization"
+                                    )
+                                with button(
+                                    hx_get=str(
+                                        request.url_for(
+                                            "organizations:setup_manual_payout",
+                                            id=organization.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                    variant="primary",
+                                ):
+                                    text("Setup Manual Account")
 
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):

@@ -12,7 +12,8 @@ const GenericAccountBanner: React.FC<{
   organization: schemas['Organization'] | undefined
   setupLink: string
 }> = ({ account, organization, setupLink }) => {
-  const isActive = organization?.status === 'active'
+  const isActive =
+    organization?.status === 'active' && account?.stripe_id !== null
   const isUnderReview = organization?.status === 'under_review'
 
   if (!account) {
@@ -83,9 +84,11 @@ const GenericAccountBanner: React.FC<{
           color="muted"
           right={
             <>
-              <Link href={setupLink}>
-                <Button size="sm">Manage</Button>
-              </Link>
+              {accountType !== 'manual' && (
+                <Link href={setupLink}>
+                  <Button size="sm">Manage</Button>
+                </Link>
+              )}
             </>
           }
         >
@@ -95,6 +98,8 @@ const GenericAccountBanner: React.FC<{
               'Payouts will be made to the connected Stripe account'}
             {accountType === 'open_collective' &&
               'Payouts will be made in bulk once per month to the connected Open Collective account'}
+            {accountType === 'manual' &&
+              'Payouts will be made manually via bank transfers. Reach out to support@polar.sh to follow-up.'}
           </span>
         </Banner>
       </>

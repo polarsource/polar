@@ -6,7 +6,7 @@ from fastapi import Request
 from fastapi.responses import RedirectResponse
 from httpx_oauth.oauth2 import GetAccessTokenError
 
-from polar.auth.dependencies import WebUser
+from polar.auth.dependencies import WebUserWrite
 from polar.config import settings
 from polar.exceptions import Unauthorized
 from polar.kit import jwt
@@ -54,7 +54,7 @@ def get_decoded_token_state(state: str) -> dict[str, Any]:
     name="integrations.discord.bot_authorize",
 )
 async def discord_bot_authorize(
-    return_to: ReturnTo, request: Request, auth_subject: WebUser
+    return_to: ReturnTo, request: Request, auth_subject: WebUserWrite
 ) -> RedirectResponse:
     state = {
         "auth_type": "bot",
@@ -76,7 +76,7 @@ async def discord_bot_authorize(
 
 @router.get("/bot/callback", name="integrations.discord.bot_callback")
 async def discord_bot_callback(
-    auth_subject: WebUser,
+    auth_subject: WebUserWrite,
     request: Request,
     state: str,
     code: str | None = None,
@@ -134,7 +134,9 @@ async def discord_bot_callback(
 
 
 @router.get("/guild/lookup", response_model=DiscordGuild)
-async def discord_guild_lookup(guild_token: str, auth_subject: WebUser) -> DiscordGuild:
+async def discord_guild_lookup(
+    guild_token: str, auth_subject: WebUserWrite
+) -> DiscordGuild:
     try:
         guild_token_data = jwt.decode(
             token=guild_token,

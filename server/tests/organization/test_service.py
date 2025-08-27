@@ -23,7 +23,7 @@ from polar.organization.ai_validation import (
     OrganizationAIValidator,
 )
 from polar.organization.schemas import OrganizationCreate, OrganizationFeatureSettings
-from polar.organization.service import AccountAlreadySetByOwner
+from polar.organization.service import AccountAlreadySet
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
@@ -898,19 +898,17 @@ class TestSetAccount:
         assert updated_organization.account_id == account.id
 
     @pytest.mark.auth
-    async def test_account_change_by_owner_succeeds(
+    async def test_account_change_fails(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User],
         save_fixture: SaveFixture,
         organization: Organization,
         user: User,
-        auth_subject: AuthSubject[User],
     ) -> None:
-        """Test that the account owner can change the account."""
-        # Set up initial account with user as admin
         initial_account = Account(
             account_type=AccountType.stripe,
-            admin_id=user.id,  # user is the admin/owner
+            admin_id=user.id,
             country="US",
             currency="USD",
             is_details_submitted=True,
@@ -923,7 +921,7 @@ class TestSetAccount:
         organization.account_id = initial_account.id
         await save_fixture(organization)
 
-        # Create a new account (also owned by the same user)
+        # Create a new account
         new_account = Account(
             account_type=AccountType.stripe,
             admin_id=user.id,
@@ -936,59 +934,9 @@ class TestSetAccount:
         )
         await save_fixture(new_account)
 
-        # Owner should be able to change the account
-        updated_organization = await organization_service.set_account(
-            session, auth_subject, organization, new_account.id
-        )
-
-        assert updated_organization.account_id == new_account.id
-
-    @pytest.mark.auth
-    async def test_account_change_by_non_owner_fails(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user: User,
-        user_second: User,
-    ) -> None:
-        """Test that a non-owner cannot change an existing account."""
-
-        # Set up initial account with original_owner as admin
-        initial_account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user_second.id,  # original_owner is the admin/owner
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="INITIAL_ACCOUNT_ID",
-        )
-        await save_fixture(initial_account)
-
-        organization.account_id = initial_account.id
-        await save_fixture(organization)
-
-        # Create a new account (owned by user, not original owner)
-        new_account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="NEW_ACCOUNT_ID",
-        )
-        await save_fixture(new_account)
-
-        # Non-owner should not be able to change the account
-        with pytest.raises(AccountAlreadySetByOwner) as exc_info:
+        with pytest.raises(AccountAlreadySet) as exc_info:
             await organization_service.set_account(
                 session, auth_subject, organization, new_account.id
             )
 
-        assert "already been set up by the owner" in str(exc_info.value)
-        assert "prevent unintended consequences" in str(exc_info.value)
+        assert "already been set up" in str(exc_info.value)

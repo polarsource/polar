@@ -1,6 +1,7 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
 import { CONFIG } from '@/utils/config'
+import { isImpersonating } from '@/utils/impersonation'
 import { ArrowOutwardOutlined } from '@mui/icons-material'
 import { schemas } from '@polar-sh/client'
 import Avatar from '@polar-sh/ui/components/atoms/Avatar'
@@ -26,6 +27,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { BrandingMenu } from '../Public/BrandingMenu'
 import {
@@ -51,12 +53,19 @@ export const DashboardSidebar = ({
     router.push(`/dashboard/${org.slug}`)
   }
 
+  // Annoying useEffect hack to allow access to client-side cookies from Server-Side component
+  const [_isImpersonating, setIsImpersonating] = useState(false)
+  useEffect(() => {
+    setIsImpersonating(isImpersonating())
+  }, [])
+  const isTopBannerVisible = CONFIG.IS_SANDBOX || _isImpersonating
+
   return (
     <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader
         className={twMerge(
           'flex md:pt-3.5',
-          CONFIG.IS_SANDBOX ? 'md:pt-10' : '',
+          isTopBannerVisible ? 'md:pt-10' : '',
           isCollapsed
             ? 'flex-row items-center justify-between gap-y-4 md:flex-col md:items-start md:justify-start'
             : 'flex-row items-center justify-between',

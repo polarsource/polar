@@ -87,13 +87,10 @@ class InvalidAccount(OrganizationError):
         super().__init__(message)
 
 
-class AccountAlreadySetByOwner(OrganizationError):
-    def __init__(self, organization_name: str) -> None:
-        self.organization_name = organization_name
-        message = (
-            f"The account for organization '{organization_name}' has already been set up by the owner. "
-            "Only the original member who set up the account can make changes to prevent unintended consequences."
-        )
+class AccountAlreadySet(OrganizationError):
+    def __init__(self, organization_slug: str) -> None:
+        self.organization_slug = organization_slug
+        message = f"The account for organization '{organization_slug}' has already been set up by the owner. Contact support to change the owner of the account."
         super().__init__(message, 403)
 
 
@@ -341,32 +338,19 @@ class OrganizationService:
         organization: Organization,
         account_id: UUID,
     ) -> Organization:
+        if organization.account_id is not None:
+            raise AccountAlreadySet(organization.slug)
+
         account = await account_service.get(session, auth_subject, account_id)
         if account is None:
             raise InvalidAccount(account_id)
-
-        first_account_set = organization.account_id is None
-
-        # If an account is already set, only the organization admin (account owner) can change it
-        if not first_account_set:
-            repository = OrganizationRepository.from_session(session)
-            admin_user = await repository.get_admin_user(session, organization)
-
-            # Check if current user is the admin
-            current_user_id = None
-            if hasattr(auth_subject.subject, "id"):
-                current_user_id = auth_subject.subject.id
-
-            if not admin_user or current_user_id != admin_user.id:
-                raise AccountAlreadySetByOwner(organization.name)
 
         repository = OrganizationRepository.from_session(session)
         organization = await repository.update(
             organization, update_dict={"account": account}
         )
 
-        if first_account_set:
-            enqueue_job("organization.account_set", organization.id)
+        enqueue_job("organization.account_set", organization.id)
 
         await self._after_update(session, organization)
 

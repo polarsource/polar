@@ -511,7 +511,7 @@ export interface paths {
          * Get Organization Account
          * @description Get the account for an organization.
          *
-         *     **Scopes**: `organizations:write`
+         *     **Scopes**: `organizations:read` `organizations:write`
          */
         get: operations["organizations:get_account"];
         put?: never;
@@ -519,13 +519,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /**
-         * Set Organization Account
-         * @description Set the account for an organization.
-         *
-         *     **Scopes**: `organizations:write`
-         */
-        patch: operations["organizations:set_account"];
+        patch?: never;
         trace?: never;
     };
     "/v1/organizations/{id}/payment-status": {
@@ -559,7 +553,7 @@ export interface paths {
          * Members
          * @description List members in an organization.
          *
-         *     **Scopes**: `organizations:write`
+         *     **Scopes**: `organizations:read` `organizations:write`
          */
         get: operations["organizations:members"];
         put?: never;
@@ -3922,6 +3916,12 @@ export interface components {
         /** AccountCreateForOrganization */
         AccountCreateForOrganization: {
             /**
+             * Organization Id
+             * Format: uuid
+             * @description Organization ID to create or get account for
+             */
+            organization_id: string;
+            /**
              * Account Type
              * @constant
              */
@@ -3931,12 +3931,6 @@ export interface components {
              * @description Two letter uppercase country code
              */
             country: string;
-            /**
-             * Organization Id
-             * Format: uuid
-             * @description Organization ID to create or get account for
-             */
-            organization_id: string;
         };
         /** AccountLink */
         AccountLink: {
@@ -14250,14 +14244,6 @@ export interface components {
              */
             completed: boolean;
         };
-        /** OrganizationSetAccount */
-        OrganizationSetAccount: {
-            /**
-             * Account Id
-             * Format: uuid4
-             */
-            account_id: string;
-        };
         /**
          * OrganizationSlugLookup
          * @description Schema for organization slug lookup response.
@@ -15542,7 +15528,7 @@ export interface components {
          * Scope
          * @enum {string}
          */
-        Scope: "openid" | "profile" | "email" | "user:read" | "web_default" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "transactions:read" | "transactions:write" | "payouts:read" | "payouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "orders:write" | "refunds:read" | "refunds:write" | "payments:read" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notifications:read" | "notifications:write" | "notification_recipients:read" | "notification_recipients:write";
+        Scope: "openid" | "profile" | "email" | "user:read" | "web:read" | "web:write" | "organizations:read" | "organizations:write" | "custom_fields:read" | "custom_fields:write" | "discounts:read" | "discounts:write" | "checkout_links:read" | "checkout_links:write" | "checkouts:read" | "checkouts:write" | "transactions:read" | "transactions:write" | "payouts:read" | "payouts:write" | "products:read" | "products:write" | "benefits:read" | "benefits:write" | "events:read" | "events:write" | "meters:read" | "meters:write" | "files:read" | "files:write" | "subscriptions:read" | "subscriptions:write" | "customers:read" | "customers:write" | "customer_meters:read" | "customer_sessions:write" | "orders:read" | "orders:write" | "refunds:read" | "refunds:write" | "payments:read" | "metrics:read" | "webhooks:read" | "webhooks:write" | "external_organizations:read" | "license_keys:read" | "license_keys:write" | "repositories:read" | "repositories:write" | "issues:read" | "issues:write" | "customer_portal:read" | "customer_portal:write" | "notifications:read" | "notifications:write" | "notification_recipients:read" | "notification_recipients:write";
         /**
          * Status
          * @enum {string}
@@ -18149,59 +18135,6 @@ export interface operations {
                 };
             };
             /** @description Organization not found or account not set. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResourceNotFound"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    "organizations:set_account": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["OrganizationSetAccount"];
-            };
-        };
-        responses: {
-            /** @description Organization account set. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Organization"];
-                };
-            };
-            /** @description You don't have the permission to update this organization. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NotPermitted"];
-                };
-            };
-            /** @description Organization not found. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -25820,7 +25753,7 @@ export const propertyAggregationFuncValues: ReadonlyArray<components["schemas"][
 export const refundReasonValues: ReadonlyArray<components["schemas"]["RefundReason"]> = ["duplicate", "fraudulent", "customer_request", "service_disruption", "satisfaction_guarantee", "other"];
 export const refundSortPropertyValues: ReadonlyArray<components["schemas"]["RefundSortProperty"]> = ["created_at", "-created_at", "amount", "-amount"];
 export const refundStatusValues: ReadonlyArray<components["schemas"]["RefundStatus"]> = ["pending", "succeeded", "failed", "canceled"];
-export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "web_default", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "transactions:read", "transactions:write", "payouts:read", "payouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "orders:write", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notifications:read", "notifications:write", "notification_recipients:read", "notification_recipients:write"];
+export const scopeValues: ReadonlyArray<components["schemas"]["Scope"]> = ["openid", "profile", "email", "user:read", "web:read", "web:write", "organizations:read", "organizations:write", "custom_fields:read", "custom_fields:write", "discounts:read", "discounts:write", "checkout_links:read", "checkout_links:write", "checkouts:read", "checkouts:write", "transactions:read", "transactions:write", "payouts:read", "payouts:write", "products:read", "products:write", "benefits:read", "benefits:write", "events:read", "events:write", "meters:read", "meters:write", "files:read", "files:write", "subscriptions:read", "subscriptions:write", "customers:read", "customers:write", "customer_meters:read", "customer_sessions:write", "orders:read", "orders:write", "refunds:read", "refunds:write", "payments:read", "metrics:read", "webhooks:read", "webhooks:write", "external_organizations:read", "license_keys:read", "license_keys:write", "repositories:read", "repositories:write", "issues:read", "issues:write", "customer_portal:read", "customer_portal:write", "notifications:read", "notifications:write", "notification_recipients:read", "notification_recipients:write"];
 export const statusValues: ReadonlyArray<components["schemas"]["Status"]> = ["created", "onboarding_started", "under_review", "denied", "active"];
 export const subTypeValues: ReadonlyArray<components["schemas"]["SubType"]> = ["user", "organization"];
 export const subscriptionProrationBehaviorValues: ReadonlyArray<components["schemas"]["SubscriptionProrationBehavior"]> = ["invoice", "prorate"];

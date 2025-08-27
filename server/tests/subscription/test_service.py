@@ -1533,6 +1533,63 @@ class TestUpdateProduct:
         assert updated_subscription_meter.meter == meter
         assert updated_subscription_meter.subscription == updated_subscription
 
+    async def test_update_to_metered_only_product(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        meter: Meter,
+        product: Product,  # This is a product with fixed pricing
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        # Create a subscription with the initial product (which has fixed prices)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.stripe_subscription_id = "sub_test_stripe_id"
+        await save_fixture(subscription)
+
+        # Create a new product that only has metered prices (no static/fixed prices)
+        metered_only_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None)],
+        )
+
+        mock_placeholder_price = MagicMock()
+        mock_placeholder_price.id = "price_placeholder_test_id"
+        stripe_service_mock.create_placeholder_price.return_value = (
+            mock_placeholder_price
+        )
+
+        updated_subscription = await subscription_service.update_product(
+            session,
+            subscription,
+            product_id=metered_only_product.id,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+
+        stripe_service_mock.create_placeholder_price.assert_called_once_with(
+            metered_only_product,
+            subscription.currency,
+            idempotency_key=f"subscription_update_{subscription.id}_placeholder",
+        )
+
+        # Verify that update_subscription_price was called with the placeholder price
+        stripe_service_mock.update_subscription_price.assert_called_once_with(
+            subscription.stripe_subscription_id,
+            new_prices=["price_placeholder_test_id"],
+            proration_behavior="create_prorations",  # This is the Stripe equivalent of prorate
+            metadata={
+                "type": "product",
+                "product_id": str(metered_only_product.id),
+            },
+        )
+
+        assert updated_subscription.product == metered_only_product
+
 
 @pytest.mark.asyncio
 class TestUpdateDiscount:

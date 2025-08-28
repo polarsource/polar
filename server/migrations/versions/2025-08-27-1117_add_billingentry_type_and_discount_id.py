@@ -1,8 +1,8 @@
-"""Add BillingEntry type and discount_id
+"""Add BillingEntry type, discount_id and discount_amount
 
-Revision ID: 8f78f7f938c9
-Revises: d784000f1f80
-Create Date: 2025-08-27 11:17:12.614617
+Revision ID: a7c4fe33ecec
+Revises: b5ffc01faa80
+Create Date: 2025-08-28 12:03:51.464409
 
 """
 
@@ -12,8 +12,8 @@ from alembic import op
 # Polar Custom Imports
 
 # revision identifiers, used by Alembic.
-revision = "8f78f7f938c9"
-down_revision = "d784000f1f80"
+revision = "a7c4fe33ecec"
+down_revision = "b5ffc01faa80"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 
@@ -35,6 +35,9 @@ def upgrade() -> None:
     op.alter_column("billing_entry", "type", nullable=False)
 
     op.add_column("billing_entry", sa.Column("discount_id", sa.Uuid(), nullable=True))
+    op.add_column(
+        "billing_entry", sa.Column("discount_amount", sa.Integer(), nullable=True)
+    )
     op.create_index(
         op.f("ix_billing_entry_type"), "billing_entry", ["type"], unique=False
     )
@@ -56,5 +59,6 @@ def downgrade() -> None:
     )
     op.drop_index(op.f("ix_billing_entry_type"), table_name="billing_entry")
     op.drop_column("billing_entry", "discount_id")
+    op.drop_column("billing_entry", "discount_amount")
     op.drop_column("billing_entry", "type")
     # ### end Alembic commands ###

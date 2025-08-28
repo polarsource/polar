@@ -17,13 +17,14 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { Label } from '@polar-sh/ui/components/ui/label'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import slugify from 'slugify'
+import { FadeUp } from '../Animated/FadeUp'
 import LogoIcon from '../Brand/LogoIcon'
-import { Well } from '../Shared/Well'
 import { getStatusRedirect } from '../Toast/utils'
 
 export interface OrganizationStepProps {
@@ -139,8 +140,13 @@ export const OrganizationStep = ({
 
   return (
     <div className="dark:md:bg-polar-950 flex flex-col pt-16 md:items-center md:p-16">
-      <div className="flex min-h-0 w-full flex-shrink-0 flex-col gap-12 md:max-w-xl md:p-8">
-        <div className="flex flex-col items-center gap-y-8">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        transition={{ duration: 1, staggerChildren: 0.3 }}
+        className="flex min-h-0 w-full flex-shrink-0 flex-col gap-12 md:max-w-xl md:p-8"
+      >
+        <FadeUp className="flex flex-col items-center gap-y-8">
           <LogoIcon size={50} />
           <div className="flex flex-col items-center gap-y-4">
             <h1 className="text-3xl">
@@ -154,7 +160,7 @@ export const OrganizationStep = ({
                 : 'Get up to speed with an Organization, Product & Checkout Session'}
             </p>
           </div>
-        </div>
+        </FadeUp>
 
         <div className="flex flex-col gap-12">
           <Form {...form}>
@@ -163,7 +169,7 @@ export const OrganizationStep = ({
               className="flex w-full flex-col gap-y-8"
             >
               <div className="flex flex-col gap-y-8">
-                <Well className="dark:bg-polar-900 border-gray-200 bg-white md:border dark:border-none">
+                <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
                   <FormField
                     control={control}
                     name="name"
@@ -203,9 +209,9 @@ export const OrganizationStep = ({
                       </FormItem>
                     )}
                   />
-                </Well>
+                </FadeUp>
 
-                <Well className="dark:bg-polar-900 border-gray-200 bg-white md:border dark:border-none">
+                <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
                   {/* Simple Product Restrictions */}
                   <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-3 rounded-lg border border-gray-200 bg-white p-4">
                     <div className="flex flex-col gap-y-4 text-sm">
@@ -317,14 +323,14 @@ export const OrganizationStep = ({
                       )
                     }}
                   />
-                </Well>
+                </FadeUp>
               </div>
               {errors.root && (
                 <p className="text-destructive-foreground text-sm">
                   {errors.root.message}
                 </p>
               )}
-              <div className="flex flex-col gap-y-3">
+              <FadeUp className="flex flex-col gap-y-3">
                 <Button
                   type="submit"
                   loading={createOrganization.isPending}
@@ -339,11 +345,11 @@ export const OrganizationStep = ({
                     </Button>
                   </Link>
                 )}
-              </div>
+              </FadeUp>
             </form>
           </Form>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

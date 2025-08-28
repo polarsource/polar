@@ -10,8 +10,8 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import PolarError
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import utc_now
-from polar.logging import Logger
 from polar.logfire import instrument_httpx
+from polar.logging import Logger
 
 if TYPE_CHECKING:
     from polar.account.schemas import AccountCreateForOrganization
@@ -91,7 +91,7 @@ class StripeService:
 
         if account.country != "US":
             create_params["tos_acceptance"] = {"service_agreement": "recipient"}
-        
+
         return await stripe_lib.Account.create_async(**create_params)
 
     async def update_account(self, id: str, name: str | None) -> None:
@@ -177,7 +177,7 @@ class StripeService:
             create_params["source_transaction"] = source_transaction
         if transfer_group is not None:
             create_params["transfer_group"] = transfer_group
-        
+
         return await stripe_lib.Transfer.create_async(**create_params)
 
     async def get_transfer(self, id: str) -> stripe_lib.Transfer:
@@ -212,7 +212,7 @@ class StripeService:
         }
         if description is not None:
             create_params["description"] = description
-        
+
         return await stripe_lib.Product.create_async(**create_params)
 
     async def create_price_for_product(
@@ -232,7 +232,7 @@ class StripeService:
         params = {**params, "product": product}
         if idempotency_key is not None:
             params["idempotency_key"] = idempotency_key
-        
+
         return await stripe_lib.Price.create_async(**params)
 
     async def update_product(
@@ -602,7 +602,7 @@ class StripeService:
                 frozen_time=int(utc_now().timestamp())
             )
             params["test_clock"] = test_clock.id
-        
+
         return await stripe_lib.Customer.create_async(**params)
 
     async def update_customer(

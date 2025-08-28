@@ -87,7 +87,6 @@ export default function ClientPage({
 
   const { data: account, error: accountError } = useOrganizationAccount(organization.id)
   
-  // Check if user is not admin of the account
   const isNotAdmin = accountError && (accountError as any)?.response?.status === 403
 
   const { data: payouts, isLoading } = usePayouts(account?.id, {
@@ -257,7 +256,6 @@ export default function ClientPage({
     },
   ]
 
-  // If user is not admin, show blocked message
   if (isNotAdmin) {
     return (
       <div className="flex flex-col gap-y-6">

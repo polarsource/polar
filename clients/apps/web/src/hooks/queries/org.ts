@@ -104,7 +104,6 @@ export const useOrganizationAccount = (id?: string) =>
         }),
       ),
     retry: (failureCount, error: any) => {
-      // Don't retry on 403 (user is not admin) or 404 (account not found)
       if (error?.response?.status === 403 || error?.response?.status === 404) {
         return false
       }

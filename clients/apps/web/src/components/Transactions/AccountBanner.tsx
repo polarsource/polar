@@ -120,7 +120,6 @@ const OrganizationAccountBanner: React.FC<{
     return null
   }
 
-  // Check if user is not admin of the account
   const isNotAdmin = accountError && (accountError as any)?.response?.status === 403
 
   if (isNotAdmin) {

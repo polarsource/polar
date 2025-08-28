@@ -60,7 +60,6 @@ export default function ClientPage({
     organization.id,
   )
   
-  // Check if user is not admin of the account
   const isNotAdmin = accountError && (accountError as any)?.response?.status === 403
 
   const balancesHook = useSearchTransactions({
@@ -73,7 +72,6 @@ export default function ClientPage({
   const rowCount = balancesHook.data?.pagination.total_count ?? 0
   const pageCount = balancesHook.data?.pagination.max_page ?? 1
 
-  // If user is not admin, show blocked message
   if (isNotAdmin) {
     return (
       <div className="flex flex-col gap-y-6">

@@ -45,7 +45,6 @@ export default function ClientPage({
 
   const [validationCompleted, setValidationCompleted] = useState(false)
 
-  // Check if user is not admin of the account
   const isNotAdmin = accountError && (accountError as any)?.response?.status === 403
 
   type Step = 'review' | 'validation' | 'account' | 'identity' | 'complete'
@@ -221,7 +220,6 @@ export default function ClientPage({
   }, [organizationAccount, identityVerified])
 
   const handleSkipAccountSetup = useCallback(() => {
-    // For non-admin users, skip directly to identity verification
     if (!identityVerified) {
       setStep('identity')
     } else {

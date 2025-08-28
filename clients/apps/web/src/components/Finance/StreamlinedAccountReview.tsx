@@ -224,9 +224,7 @@ export default function StreamlinedAccountReview({
     currentStep: Step,
     prerequisiteCompleted?: boolean,
   ): StepStatus => {
-    // Special handling for account step when user is not admin
     if (stepId === 'account' && isNotAdmin) {
-      // Show as blocked if current step, otherwise show as completed for progression
       return currentStep === 'account' ? 'blocked' : 'completed'
     }
 

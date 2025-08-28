@@ -79,6 +79,10 @@ export const getRecurringBillingLabel = (
   recurringInterval: schemas['SubscriptionRecurringInterval'],
 ) => {
   switch (recurringInterval) {
+    case 'day':
+      return '/day'
+    case 'week':
+      return '/week'
     case 'month':
       return '/mo'
     case 'year':

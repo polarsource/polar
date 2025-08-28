@@ -19,6 +19,10 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
       return ''
     }
     switch (interval) {
+      case 'day':
+        return ' / dy'
+      case 'week':
+        return ' / wk'
       case 'month':
         return ' / mo'
       case 'year':

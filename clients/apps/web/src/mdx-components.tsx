@@ -1,6 +1,7 @@
 import ProseWrapper from '@/components/MDX/ProseWrapper'
 import type { MDXComponents } from 'mdx/types'
 import Image from 'next/image'
+import { twMerge } from 'tailwind-merge'
 
 interface ImportedImageSrc {
   src: string
@@ -23,14 +24,24 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     },
     InnerHeaderWrapper(props) {
       return (
-        <div className="prose-headings:font-normal prose-h1:leading-tight prose-headings:text-balance pt-6 text-center md:max-w-3xl md:pb-6 md:pt-0">
+        <div
+          className={twMerge(
+            'prose-headings:font-normal prose-h1:leading-tight prose-headings:text-balance pt-6 text-center md:max-w-3xl md:pb-6 md:pt-0',
+            props.className,
+          )}
+        >
           {props.children}
         </div>
       )
     },
     InnerWrapper(props) {
       return (
-        <div className="flex w-full flex-col md:max-w-2xl">
+        <div
+          className={twMerge(
+            'flex w-full flex-col md:max-w-2xl',
+            props.className,
+          )}
+        >
           {props.children}
         </div>
       )

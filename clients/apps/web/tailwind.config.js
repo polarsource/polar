@@ -35,7 +35,7 @@ const flattenColorPalette = (obj, sep = '-') =>
 module.exports = {
   mode: 'jit',
   content: [
-    './src/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx,mdx}',
     'node_modules/@polar-sh/ui/src/**/*.{ts,tsx}',
     'node_modules/@polar-sh/checkout/src/**/*.{ts,tsx}',
     '.storybook/**/*.{ts,tsx}',

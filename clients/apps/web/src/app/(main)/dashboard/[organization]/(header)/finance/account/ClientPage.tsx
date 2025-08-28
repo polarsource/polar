@@ -51,7 +51,13 @@ export default function ClientPage({
     if (!organization.details_submitted_at) {
       return 'review'
     }
-    if (!validationCompleted) {
+    
+    // Skip validation if AI validation passed or appeal is approved
+    const aiValidationPassed = reviewStatus?.verdict === 'PASS'
+    const appealApproved = reviewStatus?.appeal_decision === 'approved'
+    const skipValidation = aiValidationPassed || appealApproved || validationCompleted
+    
+    if (!skipValidation) {
       return 'validation'
     }
     if (
@@ -124,9 +130,11 @@ export default function ClientPage({
   // Auto-advance to next step when details are submitted or appeal is approved
   React.useEffect(() => {
     if (organization.details_submitted_at) {
-      const isAppealApproved = reviewStatus?.appeal_decision === 'approved'
+      const aiValidationPassed = reviewStatus?.verdict === 'PASS'
+      const appealApproved = reviewStatus?.appeal_decision === 'approved'
+      const skipValidation = aiValidationPassed || appealApproved || validationCompleted
 
-      if (!validationCompleted && !isAppealApproved) {
+      if (!skipValidation) {
         setStep('validation')
       } else if (
         organizationAccount === undefined ||
@@ -147,6 +155,7 @@ export default function ClientPage({
     organizationAccount,
     identityVerified,
     reviewStatus?.appeal_decision,
+    reviewStatus?.verdict,
   ])
 
   const handleDetailsSubmitted = useCallback(() => {
@@ -202,6 +211,7 @@ export default function ClientPage({
       return
     }
 
+    setValidationCompleted(true)
     setStep('complete')
   }, [organizationAccount, identityVerified])
 

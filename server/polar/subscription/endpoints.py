@@ -5,7 +5,8 @@ from fastapi import Depends, Query, Response
 from fastapi.responses import StreamingResponse
 
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
-from polar.exceptions import ResourceNotFound
+from polar.enums import SubscriptionRecurringInterval
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
@@ -194,6 +195,16 @@ async def update(
     subscription = await subscription_service.get(session, auth_subject, id)
     if subscription is None:
         raise ResourceNotFound()
+
+    if (
+        subscription_update.recurring_interval
+        not in (
+            SubscriptionRecurringInterval.month,
+            SubscriptionRecurringInterval.year,
+        )
+        and not auth_subject.subject.is_admin
+    ):
+        raise NotPermitted()
 
     log.info(
         "subscription.update",

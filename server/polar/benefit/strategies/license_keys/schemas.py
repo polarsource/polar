@@ -36,14 +36,14 @@ class BenefitLicenseKeysCreateProperties(Schema):
 
 
 class BenefitLicenseKeysProperties(Schema):
-    prefix: EmptyStrToNone | None
+    prefix: str | None
     expires: BenefitLicenseKeyExpirationProperties | None
     activations: BenefitLicenseKeyActivationProperties | None
     limit_usage: int | None
 
 
 class BenefitLicenseKeysSubscriberProperties(Schema):
-    prefix: EmptyStrToNone | None
+    prefix: str | None
     expires: BenefitLicenseKeyExpirationProperties | None
     activations: BenefitLicenseKeyActivationProperties | None
     limit_usage: int | None

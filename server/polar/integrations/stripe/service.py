@@ -3,12 +3,14 @@ from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 from typing import TYPE_CHECKING, Literal, Unpack, cast, overload
 
 import stripe as stripe_lib
+import structlog
 
 from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import PolarError
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import utc_now
+from polar.logging import Logger
 from polar.logfire import instrument_httpx
 
 if TYPE_CHECKING:
@@ -20,6 +22,8 @@ stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 stripe_http_client = stripe_lib.HTTPXClient(allow_sync_methods=True)
 instrument_httpx(stripe_http_client._client_async)
 stripe_lib.default_http_client = stripe_http_client
+
+log: Logger = structlog.get_logger()
 
 
 StripeCancellationReasons = Literal[
@@ -68,6 +72,11 @@ class StripeService:
     async def create_account(
         self, account: "AccountCreateForOrganization", name: str | None
     ) -> stripe_lib.Account:
+        log.info(
+            "stripe.account.create",
+            country=account.country,
+            name=name,
+        )
         create_params: stripe_lib.Account.CreateParams = {
             "country": account.country,
             "type": "express",
@@ -82,9 +91,15 @@ class StripeService:
 
         if account.country != "US":
             create_params["tos_acceptance"] = {"service_agreement": "recipient"}
+        
         return await stripe_lib.Account.create_async(**create_params)
 
     async def update_account(self, id: str, name: str | None) -> None:
+        log.info(
+            "stripe.account.update",
+            account_id=id,
+            name=name,
+        )
         obj = {}
         if name:
             obj["business_profile"] = {"name": name}
@@ -99,6 +114,10 @@ class StripeService:
 
     async def delete_account(self, id: str) -> stripe_lib.Account:
         # TODO: Check if this fails when account balance is non-zero
+        log.info(
+            "stripe.account.delete",
+            account_id=id,
+        )
         return await stripe_lib.Account.delete_async(id)
 
     async def retrieve_balance(self, id: str) -> tuple[str, int]:
@@ -138,6 +157,15 @@ class StripeService:
         metadata: dict[str, str] | None = None,
         idempotency_key: str | None = None,
     ) -> stripe_lib.Transfer:
+        log.info(
+            "stripe.transfer.create",
+            destination_account=destination_stripe_id,
+            amount=amount,
+            currency="usd",
+            source_transaction=source_transaction,
+            transfer_group=transfer_group,
+            idempotency_key=idempotency_key,
+        )
         create_params: stripe_lib.Transfer.CreateParams = {
             "amount": amount,
             "currency": "usd",
@@ -149,6 +177,7 @@ class StripeService:
             create_params["source_transaction"] = source_transaction
         if transfer_group is not None:
             create_params["transfer_group"] = transfer_group
+        
         return await stripe_lib.Transfer.create_async(**create_params)
 
     async def get_transfer(self, id: str) -> stripe_lib.Transfer:
@@ -172,12 +201,18 @@ class StripeService:
         description: str | None = None,
         metadata: dict[str, str] | None = None,
     ) -> stripe_lib.Product:
+        log.info(
+            "stripe.product.create",
+            name=name,
+            description=description,
+        )
         create_params: stripe_lib.Product.CreateParams = {
             "name": name,
             "metadata": metadata or {},
         }
         if description is not None:
             create_params["description"] = description
+        
         return await stripe_lib.Product.create_async(**create_params)
 
     async def create_price_for_product(
@@ -187,9 +222,17 @@ class StripeService:
         *,
         idempotency_key: str | None = None,
     ) -> stripe_lib.Price:
+        log.info(
+            "stripe.price.create",
+            product_id=product,
+            amount=params.get("unit_amount"),
+            currency=params.get("currency"),
+            idempotency_key=idempotency_key,
+        )
         params = {**params, "product": product}
         if idempotency_key is not None:
             params["idempotency_key"] = idempotency_key
+        
         return await stripe_lib.Price.create_async(**params)
 
     async def update_product(
@@ -198,9 +241,17 @@ class StripeService:
         return await stripe_lib.Product.modify_async(product, **kwargs)
 
     async def archive_product(self, id: str) -> stripe_lib.Product:
+        log.info(
+            "stripe.product.archive",
+            product_id=id,
+        )
         return await stripe_lib.Product.modify_async(id, active=False)
 
     async def unarchive_product(self, id: str) -> stripe_lib.Product:
+        log.info(
+            "stripe.product.unarchive",
+            product_id=id,
+        )
         return await stripe_lib.Product.modify_async(id, active=True)
 
     async def archive_price(self, id: str) -> stripe_lib.Price:
@@ -278,6 +329,12 @@ class StripeService:
         proration_behavior: Literal["always_invoice", "create_prorations", "none"],
         metadata: dict[str, str],
     ) -> stripe_lib.Subscription:
+        log.info(
+            "stripe.subscription.update_price",
+            subscription_id=id,
+            new_prices=new_prices,
+            proration_behavior=proration_behavior,
+        )
         subscription = await stripe_lib.Subscription.retrieve_async(id)
 
         old_items = subscription["items"]
@@ -314,6 +371,12 @@ class StripeService:
     async def update_subscription_discount(
         self, id: str, old_coupon: str | None, new_coupon: str | None
     ) -> stripe_lib.Subscription:
+        log.info(
+            "stripe.subscription.update_discount",
+            subscription_id=id,
+            old_coupon=old_coupon,
+            new_coupon=new_coupon,
+        )
         if old_coupon is not None:
             await stripe_lib.Subscription.delete_discount_async(id)
 
@@ -326,6 +389,10 @@ class StripeService:
         )
 
     async def uncancel_subscription(self, id: str) -> stripe_lib.Subscription:
+        log.info(
+            "stripe.subscription.uncancel",
+            subscription_id=id,
+        )
         return await stripe_lib.Subscription.modify_async(
             id,
             cancel_at_period_end=False,
@@ -337,6 +404,11 @@ class StripeService:
         customer_reason: StripeCancellationReasons | None = None,
         customer_comment: str | None = None,
     ) -> stripe_lib.Subscription:
+        log.info(
+            "stripe.subscription.cancel",
+            subscription_id=id,
+            customer_reason=customer_reason,
+        )
         return await stripe_lib.Subscription.modify_async(
             id,
             cancel_at_period_end=True,
@@ -352,6 +424,11 @@ class StripeService:
         customer_reason: StripeCancellationReasons | None = None,
         customer_comment: str | None = None,
     ) -> stripe_lib.Subscription:
+        log.info(
+            "stripe.subscription.revoke",
+            subscription_id=id,
+            customer_reason=customer_reason,
+        )
         return await stripe_lib.Subscription.cancel_async(
             id,
             cancellation_details=self._generate_subscription_cancellation_details(
@@ -417,6 +494,12 @@ class StripeService:
         reason: Literal["duplicate", "requested_by_customer"],
         metadata: dict[str, str] | None = None,
     ) -> stripe_lib.Refund:
+        log.info(
+            "stripe.refund.create",
+            charge_id=charge_id,
+            amount=amount,
+            reason=reason,
+        )
         stripe_metadata: Literal[""] | dict[str, str] = ""
         if metadata is not None:
             stripe_metadata = metadata
@@ -469,6 +552,12 @@ class StripeService:
         currency: str,
         metadata: dict[str, str] | None = None,
     ) -> stripe_lib.Payout:
+        log.info(
+            "stripe.payout.create",
+            account_id=stripe_account,
+            amount=amount,
+            currency=currency,
+        )
         return await stripe_lib.Payout.create_async(
             stripe_account=stripe_account,
             amount=amount,
@@ -479,6 +568,12 @@ class StripeService:
     async def create_payment_intent(
         self, **params: Unpack[stripe_lib.PaymentIntent.CreateParams]
     ) -> stripe_lib.PaymentIntent:
+        log.info(
+            "stripe.payment_intent.create",
+            amount=params.get("amount"),
+            currency=params.get("currency"),
+            customer=params.get("customer"),
+        )
         return await stripe_lib.PaymentIntent.create_async(**params)
 
     async def get_payment_intent(self, id: str) -> stripe_lib.PaymentIntent:
@@ -487,16 +582,27 @@ class StripeService:
     async def create_setup_intent(
         self, **params: Unpack[stripe_lib.SetupIntent.CreateParams]
     ) -> stripe_lib.SetupIntent:
+        log.info(
+            "stripe.setup_intent.create",
+            customer=params.get("customer"),
+            usage=params.get("usage"),
+        )
         return await stripe_lib.SetupIntent.create_async(**params)
 
     async def create_customer(
         self, **params: Unpack[stripe_lib.Customer.CreateParams]
     ) -> stripe_lib.Customer:
+        log.info(
+            "stripe.customer.create",
+            email=params.get("email"),
+            name=params.get("name"),
+        )
         if settings.USE_TEST_CLOCK:
             test_clock = await stripe_lib.test_helpers.TestClock.create_async(
                 frozen_time=int(utc_now().timestamp())
             )
             params["test_clock"] = test_clock.id
+        
         return await stripe_lib.Customer.create_async(**params)
 
     async def update_customer(
@@ -505,6 +611,13 @@ class StripeService:
         tax_id: stripe_lib.Customer.CreateParamsTaxIdDatum | None = None,
         **params: Unpack[stripe_lib.Customer.ModifyParams],
     ) -> stripe_lib.Customer:
+        log.info(
+            "stripe.customer.update",
+            customer_id=id,
+            email=params.get("email"),
+            name=params.get("name"),
+            tax_id_type=tax_id.get("type") if tax_id else None,
+        )
         params = {**params, "expand": ["tax_ids"]}
         customer = await stripe_lib.Customer.modify_async(id, **params)
         if tax_id is None:
@@ -560,6 +673,15 @@ class StripeService:
         invoice_metadata: dict[str, str] | None = None,
         idempotency_key: str | None = None,
     ) -> tuple[stripe_lib.Subscription, stripe_lib.Invoice]:
+        log.info(
+            "stripe.subscription.create_out_of_band",
+            customer=customer,
+            currency=currency,
+            prices=list(prices),
+            coupon=coupon,
+            automatic_tax=automatic_tax,
+            idempotency_key=idempotency_key,
+        )
         params: stripe_lib.Subscription.CreateParams = {
             "customer": customer,
             "currency": currency,
@@ -803,6 +925,11 @@ class StripeService:
     async def create_tax_transaction(
         self, calculation_id: str, reference: str
     ) -> stripe_lib.tax.Transaction:
+        log.info(
+            "stripe.tax.transaction.create",
+            calculation_id=calculation_id,
+            reference=reference,
+        )
         return await stripe_lib.tax.Transaction.create_from_calculation_async(
             calculation=calculation_id,
             reference=reference,
@@ -843,6 +970,13 @@ class StripeService:
     async def create_coupon(
         self, **params: Unpack[stripe_lib.Coupon.CreateParams]
     ) -> stripe_lib.Coupon:
+        log.info(
+            "stripe.coupon.create",
+            coupon_id=params.get("id"),
+            percent_off=params.get("percent_off"),
+            amount_off=params.get("amount_off"),
+            currency=params.get("currency"),
+        )
         return await stripe_lib.Coupon.create_async(**params)
 
     async def update_coupon(
@@ -851,6 +985,10 @@ class StripeService:
         return await stripe_lib.Coupon.modify_async(id, **params)
 
     async def delete_coupon(self, id: str) -> stripe_lib.Coupon:
+        log.info(
+            "stripe.coupon.delete",
+            coupon_id=id,
+        )
         return await stripe_lib.Coupon.delete_async(id)
 
     async def list_payment_methods(
@@ -868,6 +1006,10 @@ class StripeService:
     async def delete_payment_method(
         self, payment_method_id: str
     ) -> stripe_lib.PaymentMethod:
+        log.info(
+            "stripe.payment_method.delete",
+            payment_method_id=payment_method_id,
+        )
         return await stripe_lib.PaymentMethod.detach_async(payment_method_id)
 
     async def get_verification_session(

@@ -64,6 +64,9 @@ class BillingEntry(RecordModel):
         StrEnumType(BillingEntryDirection), nullable=False
     )
     amount: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    discount_amount: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=None
+    )
     currency: Mapped[str | None] = mapped_column(String(3), nullable=True, default=None)
     customer_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("customers.id", ondelete="cascade"), nullable=False, index=True

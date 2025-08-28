@@ -35,6 +35,7 @@ from polar.models.organization import (
     OrganizationNotificationSettings,
     OrganizationSubscriptionSettings,
 )
+from polar.models.organization_review import OrganizationReview
 
 OrganizationID = Annotated[
     UUID4,
@@ -388,7 +389,7 @@ class OrganizationReviewStatus(Schema):
         default=None, description="When appeal was submitted"
     )
     appeal_reason: str | None = Field(default=None, description="Reason for the appeal")
-    appeal_decision: str | None = Field(
+    appeal_decision: OrganizationReview.AppealDecision | None = Field(
         default=None, description="Decision on the appeal (approved/rejected)"
     )
     appeal_reviewed_at: datetime | None = Field(

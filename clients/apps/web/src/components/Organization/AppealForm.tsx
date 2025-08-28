@@ -1,23 +1,29 @@
 'use client'
 
-import { useOrganizationAppeal, useOrganizationReviewStatus } from '@/hooks/queries/org'
+import {
+  useOrganizationAppeal,
+  useOrganizationReviewStatus,
+} from '@/hooks/queries/org'
 import { queryClient } from '@/utils/api/query'
 import { schemas } from '@polar-sh/client'
 import Button from '@polar-sh/ui/components/atoms/Button'
 import { Card } from '@polar-sh/ui/components/ui/card'
-import { CheckCircle, Loader2, Send, X } from 'lucide-react'
-import React, { useState, useEffect } from 'react'
+import { Textarea } from '@polar-sh/ui/components/ui/textarea'
+import { ArrowRight, Loader2, Send, X } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
 
 interface AppealFormProps {
   organization: schemas['Organization']
   disabled?: boolean
   onAppealSubmitted?: () => void
+  onAppealApproved?: () => void
 }
 
 const AppealForm: React.FC<AppealFormProps> = ({
   organization,
   disabled = false,
   onAppealSubmitted,
+  onAppealApproved,
 }) => {
   const [appealReason, setAppealReason] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
@@ -38,7 +44,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (appealReason.length < 50) {
       return
     }
@@ -46,12 +52,12 @@ const AppealForm: React.FC<AppealFormProps> = ({
     try {
       await appealMutation.mutateAsync({ reason: appealReason })
       setIsSubmitted(true)
-      
+
       // Invalidate the review status query to refresh the data
       queryClient.invalidateQueries({
         queryKey: ['organizationReviewStatus', organization.id],
       })
-      
+
       if (onAppealSubmitted) {
         onAppealSubmitted()
       }
@@ -72,42 +78,49 @@ const AppealForm: React.FC<AppealFormProps> = ({
       <Card className="p-6">
         <div className="space-y-6">
           <div className="flex items-center space-x-4">
-            <CheckCircle className={`h-8 w-8 ${
-              decision === 'approved' ? 'text-green-600' : 
-              decision === 'rejected' ? 'text-red-600' : 
-              'text-blue-600'
-            }`} />
             <div className="flex-1">
               <h3 className="text-lg font-medium">
-                {decision === 'approved' ? 'Appeal Approved' :
-                 decision === 'rejected' ? 'Appeal Denied' :
-                 'Appeal Under Review'}
+                {decision === 'approved'
+                  ? 'Appeal Approved'
+                  : decision === 'rejected'
+                    ? 'Appeal Denied'
+                    : 'Appeal Under Review'}
               </h3>
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                {decision === 'approved' 
+                {decision === 'approved'
                   ? 'Your appeal has been approved. Payment access has been restored.'
                   : decision === 'rejected'
                     ? 'Your appeal has been reviewed and denied. Please contact support for further assistance.'
-                    : 'Thank you for submitting your appeal. Our team will review your case and get back to you as soon as possible.'
-                }
+                    : 'Thank you for submitting your appeal. Our team will review your case and get back to you as soon as possible.'}
               </p>
               {submissionDate && (
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                   Submitted: {new Date(submissionDate).toLocaleDateString()}
-                  {reviewedAt && ` • Reviewed: ${new Date(reviewedAt).toLocaleDateString()}`}
+                  {reviewedAt &&
+                    ` • Reviewed: ${new Date(reviewedAt).toLocaleDateString()}`}
                 </p>
               )}
             </div>
           </div>
 
+          {/* Next button for approved appeals */}
+          {decision === 'approved' && onAppealApproved && (
+            <div className="flex justify-center pt-4">
+              <Button onClick={onAppealApproved} className="w-auto">
+                Continue to Account Setup
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
           {/* Show the appeal reason */}
           {appealReason && (
             <div className="border-t pt-4">
-              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <h4 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 Your Appeal:
               </h4>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+              <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
+                <p className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
                   {appealReason}
                 </p>
               </div>
@@ -121,21 +134,20 @@ const AppealForm: React.FC<AppealFormProps> = ({
   if (!showForm) {
     return (
       <Card className={`p-6 ${disabled ? 'opacity-60' : ''}`}>
-        <div className="text-center space-y-4">
+        <div className="space-y-4 text-center">
           <h3 className="text-lg font-medium">Submit an Appeal</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            {disabled 
-              ? "Appeal functionality is currently disabled. Please contact support if you believe this decision is incorrect."
-              : "If you believe your organization was incorrectly flagged, you can submit an appeal for manual review."
-            }
+            {disabled
+              ? 'Appeal functionality is currently disabled. Please contact support if you believe this decision is incorrect.'
+              : 'If you believe your organization was incorrectly flagged, you can submit an appeal for manual review.'}
           </p>
-          <Button 
-            onClick={() => setShowForm(true)} 
-            className="w-auto" 
+          <Button
+            onClick={() => setShowForm(true)}
+            className="w-auto"
             disabled={disabled}
           >
             <Send className="mr-2 h-4 w-4" />
-            {disabled ? "Appeal Disabled" : "Start Appeal"}
+            {disabled ? 'Appeal Disabled' : 'Start Appeal'}
           </Button>
         </div>
       </Card>
@@ -164,27 +176,32 @@ const AppealForm: React.FC<AppealFormProps> = ({
           </label>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {disabled
-              ? "Appeal submission is currently disabled. Please contact support for assistance."
-              : "Please provide a detailed explanation of your business model and why it complies with our acceptable use policy. Be specific about what you're selling and how it fits within our guidelines."
-            }
+              ? 'Appeal submission is currently disabled. Please contact support for assistance.'
+              : "Please provide a detailed explanation of your business model and why it complies with our acceptable use policy. Be specific about what you're selling and how it fits within our guidelines."}
           </p>
-          <textarea
+          <Textarea
             value={appealReason}
             onChange={(e) => setAppealReason(e.target.value)}
             disabled={disabled}
-            className={`w-full min-h-32 p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              characterCount > 0 && !isValid
-                ? 'border-red-300 focus:ring-red-500'
-                : 'border-gray-300 dark:border-gray-600'
-            } ${disabled ? 'bg-gray-100 cursor-not-allowed dark:bg-gray-800' : ''}`}
-            placeholder={disabled ? "Appeal submission disabled..." : "Explain why your organization should be approved for payments..."}
+            className={`min-h-32 w-full`}
+            placeholder={
+              disabled
+                ? 'Appeal submission disabled...'
+                : 'Explain why your organization should be approved for payments...'
+            }
             maxLength={5000}
           />
           <div className="flex justify-between text-xs">
-            <span className={characterCount < 50 ? 'text-red-500' : 'text-gray-500'}>
+            <span
+              className={characterCount < 50 ? 'text-red-500' : 'text-gray-500'}
+            >
               Minimum 50 characters required
             </span>
-            <span className={characterCount > 5000 ? 'text-red-500' : 'text-gray-500'}>
+            <span
+              className={
+                characterCount > 5000 ? 'text-red-500' : 'text-gray-500'
+              }
+            >
               {characterCount}/5000
             </span>
           </div>
@@ -209,7 +226,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
             ) : (
               <Send className="mr-2 h-4 w-4" />
             )}
-            {disabled ? "Appeal Disabled" : "Submit Appeal"}
+            {disabled ? 'Appeal Disabled' : 'Submit Appeal'}
           </Button>
         </div>
       </form>

@@ -1,4 +1,5 @@
 export {
+  appealDecisionValues,
   availableScopeValues,
   benefitGitHubRepositoryPropertiesPermissionValues,
   benefitTypeValues,

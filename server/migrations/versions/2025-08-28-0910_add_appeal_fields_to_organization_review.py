@@ -1,8 +1,8 @@
 """Add appeal fields to organization_review
 
-Revision ID: 5e5cb09dde25
-Revises: 503b06c92be0
-Create Date: 2025-08-22 12:24:26.058820
+Revision ID: b5ffc01faa80
+Revises: d784000f1f80
+Create Date: 2025-08-28 09:10:57.559307
 
 """
 
@@ -12,8 +12,8 @@ from alembic import op
 # Polar Custom Imports
 
 # revision identifiers, used by Alembic.
-revision = "5e5cb09dde25"
-down_revision = "503b06c92be0"
+revision = "b5ffc01faa80"
+down_revision = "d784000f1f80"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

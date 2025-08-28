@@ -18,6 +18,7 @@ from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import Environment, settings
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
+from polar.integrations.plain.service import plain as plain_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
@@ -686,13 +687,6 @@ class OrganizationService:
         self, session: AsyncSession, organization: Organization, appeal_reason: str
     ) -> OrganizationReview:
         """Submit an appeal for organization review and create a Plain ticket."""
-        from polar.integrations.plain.service import plain as plain_service
-        from polar.notifications.notification import (
-            MaintainerAppealSubmittedNotificationPayload,
-            NotificationType,
-        )
-        from polar.notifications.service import PartialNotification
-        from polar.notifications.service import notifications as notification_service
 
         repository = OrganizationReviewRepository.from_session(session)
         review = await repository.get_by_organization(organization.id)
@@ -725,21 +719,6 @@ class OrganizationService:
                 error=str(e),
             )
 
-        # Send notification to organization admin
-        org_repository = OrganizationRepository.from_session(session)
-        admin_user = await org_repository.get_admin_user(session, organization)
-        if admin_user:
-            await notification_service.send_to_user(
-                session=session,
-                user_id=admin_user.id,
-                notif=PartialNotification(
-                    type=NotificationType.maintainer_appeal_submitted,
-                    payload=MaintainerAppealSubmittedNotificationPayload(
-                        organization_name=organization.name
-                    ),
-                ),
-            )
-
         await session.commit()
 
         return review
@@ -748,12 +727,6 @@ class OrganizationService:
         self, session: AsyncSession, organization: Organization
     ) -> OrganizationReview:
         """Approve an organization's appeal and restore payment access."""
-        from polar.notifications.notification import (
-            MaintainerAppealDecisionNotificationPayload,
-            NotificationType,
-        )
-        from polar.notifications.service import PartialNotification
-        from polar.notifications.service import notifications as notification_service
 
         repository = OrganizationReviewRepository.from_session(session)
         review = await repository.get_by_organization(organization.id)
@@ -769,7 +742,7 @@ class OrganizationService:
 
         # Approve the organization and update appeal status
         organization.status = Organization.Status.ACTIVE
-        review.appeal_decision = "approved"
+        review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
         review.appeal_reviewed_at = datetime.now(UTC)
 
         # Sync account status (if needed)
@@ -779,34 +752,12 @@ class OrganizationService:
         session.add(review)
         await session.commit()
 
-        # Send notification to organization admin
-        org_repository = OrganizationRepository.from_session(session)
-        admin_user = await org_repository.get_admin_user(session, organization)
-        if admin_user:
-            await notification_service.send_to_user(
-                session=session,
-                user_id=admin_user.id,
-                notif=PartialNotification(
-                    type=NotificationType.maintainer_appeal_decision,
-                    payload=MaintainerAppealDecisionNotificationPayload(
-                        organization_name=organization.name,
-                        decision="approved",
-                    ),
-                ),
-            )
-
         return review
 
     async def deny_appeal(
         self, session: AsyncSession, organization: Organization
     ) -> OrganizationReview:
         """Deny an organization's appeal and keep payment access blocked."""
-        from polar.notifications.notification import (
-            MaintainerAppealDecisionNotificationPayload,
-            NotificationType,
-        )
-        from polar.notifications.service import PartialNotification
-        from polar.notifications.service import notifications as notification_service
 
         repository = OrganizationReviewRepository.from_session(session)
         review = await repository.get_by_organization(organization.id)
@@ -822,27 +773,11 @@ class OrganizationService:
 
         # Keep organization denied and update appeal status
         # (organization.status remains DENIED)
-        review.appeal_decision = "rejected"
+        review.appeal_decision = OrganizationReview.AppealDecision.REJECTED
         review.appeal_reviewed_at = datetime.now(UTC)
 
         session.add(review)
         await session.commit()
-
-        # Send notification to organization admin
-        org_repository = OrganizationRepository.from_session(session)
-        admin_user = await org_repository.get_admin_user(session, organization)
-        if admin_user:
-            await notification_service.send_to_user(
-                session=session,
-                user_id=admin_user.id,
-                notif=PartialNotification(
-                    type=NotificationType.maintainer_appeal_decision,
-                    payload=MaintainerAppealDecisionNotificationPayload(
-                        organization_name=organization.name,
-                        decision="rejected",
-                    ),
-                ),
-            )
 
         return review
 

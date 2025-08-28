@@ -18,6 +18,7 @@ interface AIValidationResultProps {
   organization: schemas['Organization']
   autoValidate?: boolean
   onValidationCompleted?: () => void
+  onAppealApproved?: () => void
 }
 
 interface ValidationResult {
@@ -30,6 +31,7 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
   organization,
   autoValidate = false,
   onValidationCompleted,
+  onAppealApproved,
 }) => {
   const [validationResult, setValidationResult] =
     useState<ValidationResult | null>(null)
@@ -110,7 +112,7 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
           type: 'review_required',
           title: 'Payment Access Denied',
           message: result.reason,
-          icon: <AlertTriangle className="h-8 w-8 text-red-600" />,
+          icon: <AlertTriangle className="h-8 w-8 text-gray-600" />,
           severity: 'error',
         }
       default:
@@ -128,7 +130,7 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
         <div className="flex items-center space-x-4">
           <div className="flex-shrink-0">{status.icon}</div>
           <div className="flex-1">
-            <h3 className={`text-lg font-medium ${status.severity === 'error' ? 'text-red-800 dark:text-red-200' : ''}`}>{status.title}</h3>
+            <h3 className={`text-lg font-medium`}>{status.title}</h3>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
               {status.message}
             </p>
@@ -136,25 +138,21 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
         </div>
 
         {/* Information Message */}
-        <div className={`rounded-lg p-4 ${status.severity === 'error' ? 'bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800' : 'bg-gray-200 dark:bg-gray-800'}`}>
+        <Card className={`rounded-lg p-4`}>
           <div className="flex items-start space-x-3">
-            <Info className={`h-5 w-5 ${status.severity === 'error' ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`} />
+            <Info className={`h-5 w-5 text-gray-600 dark:text-gray-400`} />
             <div className="flex-1">
-              <h4
-                className={`text-sm font-medium ${status.severity === 'error' ? 'text-red-800 dark:text-red-200' : 'text-gray-600 dark:text-gray-400'}`}
-              >
-                What happens next?
-              </h4>
-              <p className={`mt-1 text-sm ${status.severity === 'error' ? 'text-red-700 dark:text-red-300' : 'text-gray-600 dark:text-gray-400'}`}>
+              <h4 className={`text-sm font-medium`}>What happens next?</h4>
+              <p className={`mt-1 text-sm text-gray-600 dark:text-gray-400`}>
                 {status.type === 'pass'
                   ? 'Your organization details passed our automated compliance check. You can accept payments immediately, but a manual review will still occur before your first payout as part of our standard process.'
                   : status.type === 'review_required'
-                    ? "Payments are currently blocked for your organization due to our compliance review. You can submit an appeal below if you believe this decision is incorrect."
+                    ? 'Payments are currently blocked for your organization due to our compliance review. You can submit an appeal below if you believe this decision is incorrect.'
                     : 'Please wait while we validate your organization details.'}
               </p>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Appeal Form for FAIL/UNCERTAIN or Continue Button */}
         {(validationResult ||
@@ -162,9 +160,10 @@ const AIValidationResult: React.FC<AIValidationResultProps> = ({
           <>
             {status.type === 'review_required' ? (
               <div className="pt-6">
-                <AppealForm 
-                  organization={organization} 
+                <AppealForm
+                  organization={organization}
                   disabled={false} // Set to true to disable appeals
+                  onAppealApproved={onAppealApproved}
                 />
               </div>
             ) : (

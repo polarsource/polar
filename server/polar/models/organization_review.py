@@ -21,6 +21,10 @@ class OrganizationReview(RecordModel):
         FAIL = "FAIL"
         UNCERTAIN = "UNCERTAIN"
 
+    class AppealDecision(StrEnum):
+        APPROVED = "approved"
+        REJECTED = "rejected"
+
     __tablename__ = "organization_reviews"
 
     organization_id: Mapped[UUID] = mapped_column(
@@ -57,7 +61,7 @@ class OrganizationReview(RecordModel):
     appeal_reviewed_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
-    appeal_decision: Mapped[str | None] = mapped_column(
+    appeal_decision: Mapped[AppealDecision | None] = mapped_column(
         String, nullable=True, default=None
     )
 

@@ -13,6 +13,7 @@ import {
   useListAccounts,
   useOrganizationAccount,
 } from '@/hooks/queries'
+import { useOrganizationReviewStatus } from '@/hooks/queries/org'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -40,6 +41,7 @@ export default function ClientPage({
   const identityVerified = identityVerificationStatus === 'verified'
 
   const { data: organizationAccount } = useOrganizationAccount(organization.id)
+  const { data: reviewStatus } = useOrganizationReviewStatus(organization.id)
 
   const [validationCompleted, setValidationCompleted] = useState(false)
 
@@ -119,10 +121,12 @@ export default function ClientPage({
     await reloadUser()
   }, [createIdentityVerification, stripePromise, reloadUser])
 
-  // Auto-advance to next step when details are submitted
+  // Auto-advance to next step when details are submitted or appeal is approved
   React.useEffect(() => {
     if (organization.details_submitted_at) {
-      if (!validationCompleted) {
+      const isAppealApproved = reviewStatus?.appeal_decision === 'approved'
+
+      if (!validationCompleted && !isAppealApproved) {
         setStep('validation')
       } else if (
         organizationAccount === undefined ||
@@ -142,6 +146,7 @@ export default function ClientPage({
     validationCompleted,
     organizationAccount,
     identityVerified,
+    reviewStatus?.appeal_decision,
   ])
 
   const handleDetailsSubmitted = useCallback(() => {
@@ -179,6 +184,27 @@ export default function ClientPage({
     await startIdentityVerification()
   }, [startIdentityVerification])
 
+  const handleAppealApproved = useCallback(() => {
+    if (
+      !organizationAccount ||
+      !organizationAccount.stripe_id ||
+      !organizationAccount.is_details_submitted ||
+      !organizationAccount.is_payouts_enabled
+    ) {
+      setValidationCompleted(true)
+      setStep('account')
+      return
+    }
+
+    if (!identityVerified) {
+      setValidationCompleted(true)
+      setStep('identity')
+      return
+    }
+
+    setStep('complete')
+  }, [organizationAccount, identityVerified])
+
   return (
     <DashboardBody>
       <div className="flex flex-col gap-y-6">
@@ -189,10 +215,12 @@ export default function ClientPage({
           organizationAccount={organizationAccount}
           identityVerified={identityVerified}
           identityVerificationStatus={identityVerificationStatus}
+          organizationReviewStatus={reviewStatus}
           onDetailsSubmitted={handleDetailsSubmitted}
           onValidationCompleted={handleValidationCompleted}
           onStartAccountSetup={handleStartAccountSetup}
           onStartIdentityVerification={handleStartIdentityVerification}
+          onAppealApproved={handleAppealApproved}
         />
 
         {accounts?.items && accounts.items.length > 0 ? (

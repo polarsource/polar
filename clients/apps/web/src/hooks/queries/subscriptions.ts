@@ -87,3 +87,53 @@ export const useUpdateSubscription = (id: string) =>
       )
     },
   })
+
+export const useUncancelSubscription = (id: string) =>
+  useMutation({
+    mutationFn: () => {
+      return api.PATCH('/v1/subscriptions/{id}', {
+        params: { path: { id } },
+        body: {
+          cancel_at_period_end: false,
+        },
+      })
+    },
+    onSuccess: (result, _variables, _ctx) => {
+      const { data, error } = result
+      if (error) {
+        return
+      }
+      queryClient.setQueriesData<schemas['Subscription']>(
+        {
+          queryKey: ['subscriptions', { id }],
+        },
+        data,
+      )
+      queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
+        {
+          queryKey: [
+            'subscriptions',
+            { organizationId: data.product.organization_id },
+          ],
+        },
+        (old) => {
+          if (!old) {
+            return {
+              items: [data],
+              pagination: {
+                total_count: 1,
+                max_page: 1,
+              },
+            }
+          } else {
+            return {
+              items: old.items.map((item) =>
+                item.id === data.id ? data : item,
+              ),
+              pagination: old.pagination,
+            }
+          }
+        },
+      )
+    },
+  })

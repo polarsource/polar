@@ -58,8 +58,19 @@ const CheckoutProductSwitcher = ({
   const getDescription = (
     price: ProductPrice | LegacyRecurringProductPrice,
   ) => {
+    let recurringLabel = ''
+    if (price.recurringInterval === 'day') {
+      recurringLabel = 'daily'
+    } else if (price.recurringInterval === 'week') {
+      recurringLabel = 'weekly'
+    } else if (price.recurringInterval === 'month') {
+      recurringLabel = 'monthly'
+    } else if (price.recurringInterval === 'year') {
+      recurringLabel = 'yearly'
+    }
+
     if (price.recurringInterval) {
-      return `Billed ${price.recurringInterval === 'month' ? 'monthly' : 'yearly'}`
+      return `Billed ${recurringLabel}`
     }
 
     return `One-time purchase`

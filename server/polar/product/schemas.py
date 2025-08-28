@@ -211,6 +211,8 @@ class ProductCreate(MetadataInputMixin, Schema):
         description=(
             "The recurring interval of the product. "
             "If `None`, the product is a one-time purchase."
+            ""
+            "Note that the `day` and `week` values are for internal Polar staff use only."
         ),
     )
     prices: ProductPriceCreateList = Field(
@@ -500,6 +502,8 @@ class ProductBase(IDSchema, TimestampedSchema):
     recurring_interval: SubscriptionRecurringInterval | None = Field(
         description="The recurring interval of the product. "
         "If `None`, the product is a one-time purchase."
+        ""
+        "Note that the `day` and `week` values are for internal Polar staff use only."
     )
     is_recurring: bool = Field(description="Whether the product is a subscription.")
     is_archived: bool = Field(

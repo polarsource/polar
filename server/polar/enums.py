@@ -27,14 +27,20 @@ class AccountType(StrEnum):
 
 
 class SubscriptionRecurringInterval(StrEnum):
+    day = "day"
+    week = "week"
     month = "month"
     year = "year"
 
-    def as_literal(self) -> Literal["month", "year"]:
+    def as_literal(self) -> Literal["day", "week", "month", "year"]:
         return self.value
 
     def get_next_period(self, d: datetime, leap: int = 1) -> datetime:
         match self:
+            case SubscriptionRecurringInterval.day:
+                return d + relativedelta(days=leap)
+            case SubscriptionRecurringInterval.week:
+                return d + relativedelta(weeks=leap)
             case SubscriptionRecurringInterval.month:
                 return d + relativedelta(months=leap)
             case SubscriptionRecurringInterval.year:

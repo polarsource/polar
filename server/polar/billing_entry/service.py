@@ -1,13 +1,12 @@
 import dataclasses
-import itertools
 import uuid
 from collections.abc import Sequence
 from datetime import datetime
 from typing import cast
 
 from babel.dates import format_date
-from sqlalchemy.orm import joinedload
 from sqlalchemy.util.typing import Literal
+from typing_extensions import AsyncGenerator
 
 from polar.event.repository import EventRepository
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -19,10 +18,9 @@ from polar.postgres import AsyncSession
 from polar.product.guard import (
     MeteredPrice,
     StaticPrice,
-    is_metered_price,
-    is_static_price,
 )
-from polar.product.repository import ProductRepository
+from polar.product.repository import ProductPriceRepository, ProductRepository
+from polar.worker._enqueue import enqueue_job
 
 from .repository import BillingEntryRepository
 
@@ -58,10 +56,8 @@ class BillingEntryService:
         stripe_invoice_id: str | None = None,
         stripe_customer_id: str | None = None,
     ) -> Sequence[OrderItem]:
-        repository = BillingEntryRepository.from_session(session)
-
-        items: list[tuple[OrderItem, Sequence[BillingEntry]]] = []
-        for line_item, entries in await self.compute_pending_subscription_line_items(
+        items: list[OrderItem] = []
+        async for line_item, entries in self.compute_pending_subscription_line_items(
             session, subscription
         ):
             order_item_id = uuid.uuid4()
@@ -95,50 +91,52 @@ class BillingEntryService:
                 proration=line_item.proration,
                 product_price=line_item.price,
             )
-            items.append((order_item, entries))
+            items.append(order_item)
 
-        # Update entries with order item
-        # We don't do it in the main loop to avoid issues with DB flush, since we're
-        # generating OrderItem without attached to an Order yet.
-        for order_item, order_item_entries in items:
-            for entry in order_item_entries:
-                await repository.update(entry, update_dict={"order_item": order_item})
+            # Do it asynchronously to avoid issues with DB flush, since we're
+            # generating OrderItem without attached to an Order yet.
+            enqueue_job("billing_entry.set_order_item", entries, order_item.id)
 
-        return [item for item, _ in items]
+        return items
 
     async def compute_pending_subscription_line_items(
         self, session: AsyncSession, subscription: Subscription
-    ) -> Sequence[tuple[StaticLineItem | MeteredLineItem, Sequence[BillingEntry]]]:
+    ) -> AsyncGenerator[tuple[StaticLineItem | MeteredLineItem, Sequence[uuid.UUID]]]:
         repository = BillingEntryRepository.from_session(session)
-        pending_entries = await repository.get_pending_by_subscription(
-            subscription.id,
-            options=(joinedload(BillingEntry.product_price),),
-        )
 
-        items: list[tuple[StaticLineItem | MeteredLineItem, list[BillingEntry]]] = []
-
-        static_price_entries = (
-            e for e in pending_entries if is_static_price(e.product_price)
-        )
-        for entry in static_price_entries:
+        async for entry in repository.get_static_pending_by_subscription(
+            subscription.id
+        ):
             static_price = cast(StaticPrice, entry.product_price)
             static_line_item = await self._get_static_price_line_item(
                 session, static_price, entry
             )
-            items.append((static_line_item, [entry]))
+            yield static_line_item, [entry.id]
 
-        metered_entries_by_price = itertools.groupby(
-            (e for e in pending_entries if is_metered_price(e.product_price)),
-            lambda e: cast(MeteredPrice, e.product_price),
-        )
-        for metered_price, entries in metered_entries_by_price:
-            entries_list = list(entries)
-            metered_line_item = await self._get_metered_line_item(
-                session, metered_price, subscription, entries_list
+        # 👋 Reading the code below, you might wonder:
+        # "Why is this so complex?"
+        # "Why are there so many queries?"
+        # Well, if you look at the previous implementation, it was much more readable
+        # but it involved to load lot of BillingEntry in memory, which was causing
+        # performance issues and even OOM on large subscriptions.
+        product_price_repository = ProductPriceRepository.from_session(session)
+        async for (
+            product_price_id,
+            start_timestamp,
+            end_timestamp,
+        ) in repository.get_pending_metered_by_subscription_tuples(subscription.id):
+            metered_price = cast(
+                MeteredPrice, await product_price_repository.get_by_id(product_price_id)
             )
-            items.append((metered_line_item, entries_list))
-
-        return items
+            metered_line_item = await self._get_metered_line_item(
+                session, metered_price, subscription, start_timestamp, end_timestamp
+            )
+            pending_entries_ids = (
+                await repository.get_pending_ids_by_subscription_and_price(
+                    subscription.id, product_price_id
+                )
+            )
+            yield metered_line_item, pending_entries_ids
 
     async def _get_static_price_line_item(
         self, session: AsyncSession, price: StaticPrice, entry: BillingEntry
@@ -167,7 +165,8 @@ class BillingEntryService:
         session: AsyncSession,
         price: MeteredPrice,
         subscription: Subscription,
-        entries: Sequence[BillingEntry],
+        start_timestamp: datetime,
+        end_timestamp: datetime,
     ) -> MeteredLineItem:
         event_repository = EventRepository.from_session(session)
         events_statement = event_repository.get_by_pending_entries_statement(
@@ -190,9 +189,6 @@ class BillingEntryService:
         )
         amount, amount_label = price.get_amount_and_label(units - credited_units)
         label = f"{meter.name} — {amount_label}"
-
-        start_timestamp = min(entry.start_timestamp for entry in entries)
-        end_timestamp = max(entry.end_timestamp for entry in entries)
 
         return MeteredLineItem(
             price=price,

@@ -1,4 +1,3 @@
-import math
 from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Literal, cast
@@ -28,6 +27,7 @@ from sqlalchemy.orm import (
 )
 
 from polar.kit.db.models import RecordModel
+from polar.kit.math import polar_round
 from polar.kit.metadata import MetadataMixin
 
 if TYPE_CHECKING:
@@ -204,11 +204,7 @@ class DiscountPercentage(Discount):
 
     def get_discount_amount(self, amount: int) -> int:
         discount_amount_float = amount * (self.basis_points / 10_000)
-        return (
-            math.ceil(discount_amount_float)
-            if discount_amount_float - int(discount_amount_float) >= 0.5
-            else math.floor(discount_amount_float)
-        )
+        return polar_round(discount_amount_float)
 
     def get_stripe_coupon_params(self) -> stripe_lib.Coupon.CreateParams:
         params = super().get_stripe_coupon_params()

@@ -79,7 +79,7 @@ const LandingPageDesktopNavigation = () => {
       <div className="relative flex w-full flex-row items-center justify-between">
         <BrandingMenu logoVariant="icon" size={40} />
 
-        <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-10 font-medium">
+        <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-8 font-medium">
           <li>
             <NavLink href="/" isActive={(pathname) => pathname === '/'}>
               Features

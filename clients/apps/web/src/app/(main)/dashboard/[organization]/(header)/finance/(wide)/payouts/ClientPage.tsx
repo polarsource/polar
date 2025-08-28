@@ -4,6 +4,7 @@ import AccountBalance from '@/components/Payouts/AccountBalance'
 import DownloadInvoice, {
   InvoiceModal,
 } from '@/components/Payouts/DownloadInvoice'
+import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { PayoutProvider } from '@/components/Payouts/PayoutContext'
 import { PayoutStatus } from '@/components/Payouts/PayoutStatus'
 import AccountBanner from '@/components/Transactions/AccountBanner'
@@ -84,7 +85,9 @@ export default function ClientPage({
     )
   }
 
-  const { data: account } = useOrganizationAccount(organization.id)
+  const { data: account, error: accountError } = useOrganizationAccount(organization.id)
+  
+  const isNotAdmin = accountError && (accountError as any)?.response?.status === 403
 
   const { data: payouts, isLoading } = usePayouts(account?.id, {
     ...getAPIParams(pagination, sorting),
@@ -252,6 +255,14 @@ export default function ClientPage({
       },
     },
   ]
+
+  if (isNotAdmin) {
+    return (
+      <div className="flex flex-col gap-y-6">
+        <AccessRestricted message="You are not the admin of the account. Only the account admin can view payout information." />
+      </div>
+    )
+  }
 
   return (
     <PayoutProvider>

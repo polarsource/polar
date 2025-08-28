@@ -843,11 +843,22 @@ class SubscriptionService:
             assert organization is not None
             proration_behavior = organization.proration_behavior
 
+        stripe_price_ids = [
+            price.stripe_price_id for price in prices if is_static_price(price)
+        ]
+
+        # If no static prices (only metered), create a placeholder price
+        if len(stripe_price_ids) == 0:
+            placeholder_price = await stripe_service.create_placeholder_price(
+                product,
+                subscription.currency,
+                idempotency_key=f"subscription_update_{subscription.id}_placeholder",
+            )
+            stripe_price_ids.append(placeholder_price.id)
+
         await stripe_service.update_subscription_price(
             subscription.stripe_subscription_id,
-            new_prices=[
-                price.stripe_price_id for price in prices if is_static_price(price)
-            ],
+            new_prices=stripe_price_ids,
             proration_behavior=proration_behavior.to_stripe(),
             metadata={
                 "type": ProductType.product,
@@ -1191,10 +1202,10 @@ class SubscriptionService:
         for subscription_meter in subscription.meters:
             subscription_meter.reset()
 
-        for (
+        async for (
             line_item,
             _,
-        ) in await billing_entry_service.compute_pending_subscription_line_items(
+        ) in billing_entry_service.compute_pending_subscription_line_items(
             session, subscription
         ):
             if not isinstance(line_item, MeteredLineItem):

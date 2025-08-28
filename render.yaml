@@ -272,17 +272,6 @@ databases:
     postgresMajorVersion: "15"
     readReplicas:
       - name: polar-replica
-  - name: db-new
-    databaseName: polar_cpit
-    user: polar_cpit_user
-    plan: pro-8gb
-    diskSizeGB: 30
-    highAvailability:
-      enabled: true
-    region: ohio
-    postgresMajorVersion: "17"
-    readReplicas:
-      - name: polar-analytics
 
 envVarGroups:
   - name: google-production

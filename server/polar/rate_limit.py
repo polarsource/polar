@@ -30,7 +30,7 @@ _RULES: dict[str, Sequence[Rule]] = {
         Rule(minute=3, hour=10, block_time=900, zone="customer-session")
     ],
     "^/v1/customer-portal/license-keys/(validate|activate|deactivate)": [
-        Rule(second=1, block_time=60, zone="customer-license-key")
+        Rule(second=3, block_time=60, zone="customer-license-key")
     ],
     "^/v1": [
         Rule(group=RateLimitGroup.default, minute=500, zone="api"),

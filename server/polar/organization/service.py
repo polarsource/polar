@@ -18,6 +18,7 @@ from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import Environment, settings
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
+from polar.integrations.plain.service import plain as plain_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.pagination import PaginationParams
 from polar.kit.repository import Options
@@ -87,13 +88,10 @@ class InvalidAccount(OrganizationError):
         super().__init__(message)
 
 
-class AccountAlreadySetByOwner(OrganizationError):
-    def __init__(self, organization_name: str) -> None:
-        self.organization_name = organization_name
-        message = (
-            f"The account for organization '{organization_name}' has already been set up by the owner. "
-            "Only the original member who set up the account can make changes to prevent unintended consequences."
-        )
+class AccountAlreadySet(OrganizationError):
+    def __init__(self, organization_slug: str) -> None:
+        self.organization_slug = organization_slug
+        message = f"The account for organization '{organization_slug}' has already been set up by the owner. Contact support to change the owner of the account."
         super().__init__(message, 403)
 
 
@@ -341,32 +339,19 @@ class OrganizationService:
         organization: Organization,
         account_id: UUID,
     ) -> Organization:
+        if organization.account_id is not None:
+            raise AccountAlreadySet(organization.slug)
+
         account = await account_service.get(session, auth_subject, account_id)
         if account is None:
             raise InvalidAccount(account_id)
-
-        first_account_set = organization.account_id is None
-
-        # If an account is already set, only the organization admin (account owner) can change it
-        if not first_account_set:
-            repository = OrganizationRepository.from_session(session)
-            admin_user = await repository.get_admin_user(session, organization)
-
-            # Check if current user is the admin
-            current_user_id = None
-            if hasattr(auth_subject.subject, "id"):
-                current_user_id = auth_subject.subject.id
-
-            if not admin_user or current_user_id != admin_user.id:
-                raise AccountAlreadySetByOwner(organization.name)
 
         repository = OrganizationRepository.from_session(session)
         organization = await repository.update(
             organization, update_dict={"account": account}
         )
 
-        if first_account_set:
-            enqueue_job("organization.account_set", organization.id)
+        enqueue_job("organization.account_set", organization.id)
 
         await self._after_update(session, organization)
 
@@ -650,7 +635,6 @@ class OrganizationService:
         self, session: AsyncSession, organization: Organization
     ) -> OrganizationReview:
         """Validate organization details using AI and store the result."""
-
         repository = OrganizationReviewRepository.from_session(session)
         previous_validation = await repository.get_by_organization(organization.id)
 
@@ -677,10 +661,104 @@ class OrganizationService:
             model_used=organization_validator.model.model_name,
         )
 
+        if result.verdict.verdict in ["FAIL", "UNCERTAIN"]:
+            await self.deny_organization(session, organization)
+
         session.add(ai_validation)
         await session.commit()
 
         return ai_validation
+
+    async def submit_appeal(
+        self, session: AsyncSession, organization: Organization, appeal_reason: str
+    ) -> OrganizationReview:
+        """Submit an appeal for organization review and create a Plain ticket."""
+
+        repository = OrganizationReviewRepository.from_session(session)
+        review = await repository.get_by_organization(organization.id)
+
+        if review is None:
+            raise ValueError("Organization must have a review before submitting appeal")
+
+        if review.verdict == OrganizationReview.Verdict.PASS:
+            raise ValueError("Cannot submit appeal for a passed review")
+
+        if review.appeal_submitted_at is not None:
+            raise ValueError("Appeal has already been submitted for this organization")
+
+        review.appeal_submitted_at = datetime.now(UTC)
+        review.appeal_reason = appeal_reason
+
+        session.add(review)
+
+        try:
+            await plain_service.create_appeal_review_thread(
+                session, organization, review
+            )
+        except Exception as e:
+            log.error(
+                "Failed to create Plain ticket for appeal",
+                organization_id=str(organization.id),
+                error=str(e),
+            )
+
+        await session.commit()
+
+        return review
+
+    async def approve_appeal(
+        self, session: AsyncSession, organization: Organization
+    ) -> OrganizationReview:
+        """Approve an organization's appeal and restore payment access."""
+
+        repository = OrganizationReviewRepository.from_session(session)
+        review = await repository.get_by_organization(organization.id)
+
+        if review is None:
+            raise ValueError("Organization must have a review before approving appeal")
+
+        if review.appeal_submitted_at is None:
+            raise ValueError("No appeal has been submitted for this organization")
+
+        if review.appeal_decision is not None:
+            raise ValueError("Appeal has already been reviewed")
+
+        organization.status = Organization.Status.ACTIVE
+        review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
+        review.appeal_reviewed_at = datetime.now(UTC)
+
+        await self._sync_account_status(session, organization)
+
+        session.add(organization)
+        session.add(review)
+        await session.commit()
+
+        return review
+
+    async def deny_appeal(
+        self, session: AsyncSession, organization: Organization
+    ) -> OrganizationReview:
+        """Deny an organization's appeal and keep payment access blocked."""
+
+        repository = OrganizationReviewRepository.from_session(session)
+        review = await repository.get_by_organization(organization.id)
+
+        if review is None:
+            raise ValueError("Organization must have a review before denying appeal")
+
+        if review.appeal_submitted_at is None:
+            raise ValueError("No appeal has been submitted for this organization")
+
+        if review.appeal_decision is not None:
+            raise ValueError("Appeal has already been reviewed")
+
+        review.appeal_decision = OrganizationReview.AppealDecision.REJECTED
+        review.appeal_reviewed_at = datetime.now(UTC)
+
+        session.add(review)
+        await session.commit()
+
+        return review
 
 
 organization = OrganizationService()

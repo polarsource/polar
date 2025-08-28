@@ -90,8 +90,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/mdx
       '@polar-sh/sdk':
-        specifier: ^0.34.9
-        version: 0.34.9
+        specifier: ^0.34.14
+        version: 0.34.14
       '@polar-sh/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -406,8 +406,8 @@ importers:
         specifier: workspace:^
         version: link:../../packages/checkout
       '@polar-sh/sdk':
-        specifier: ^0.34.9
-        version: 0.34.9
+        specifier: ^0.34.14
+        version: 0.34.14
       '@stripe/react-stripe-js':
         specifier: ^3.7.0
         version: 3.7.0(@stripe/stripe-js@7.5.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -464,8 +464,8 @@ importers:
   packages/checkout:
     dependencies:
       '@polar-sh/sdk':
-        specifier: ^0.34.9
-        version: 0.34.9
+        specifier: ^0.34.14
+        version: 0.34.14
       '@polar-sh/ui':
         specifier: workspace:^
         version: link:../ui
@@ -2520,8 +2520,8 @@ packages:
     resolution: {integrity: sha512-c83qWb22rNRuB0UaVCI0uRPNRr8Z0FWnEIvT47jiHAmOIUHbBOg5XvV7pM5x+rKn9HRpjxquDbXYSXr3fAKFcw==}
     engines: {node: '>=12'}
 
-  '@polar-sh/sdk@0.34.9':
-    resolution: {integrity: sha512-+kzQ3IlO67+/eSC4kmbZbmqdPjmvAr8zjTsavyx/u5lqwrerutvhpDzCCBQMlFnEVgeXArF+Rf6FQKkqKrgpxA==}
+  '@polar-sh/sdk@0.34.14':
+    resolution: {integrity: sha512-Hm25NDxjoc4MwXtmeDZVgHmdo7ESkUtaKyvr9CWcs2+/4GEOeP1PlgbMzRAM2kixbZk2gXongOlpoPQiFw7J9g==}
     hasBin: true
     peerDependencies:
       '@modelcontextprotocol/sdk': '>=1.5.0 <1.10.0'
@@ -11728,7 +11728,7 @@ snapshots:
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
 
-  '@polar-sh/sdk@0.34.9':
+  '@polar-sh/sdk@0.34.14':
     dependencies:
       standardwebhooks: 1.0.0
       zod: 3.25.76

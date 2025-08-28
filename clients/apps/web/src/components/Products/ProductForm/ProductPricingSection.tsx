@@ -4,6 +4,7 @@ import CreateMeterModalContent from '@/components/Meter/CreateMeterModalContent'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
+import { useAuth } from '@/hooks/auth'
 import { useMeters } from '@/hooks/queries/meters'
 import {
   isLegacyRecurringPrice,
@@ -549,6 +550,8 @@ export const ProductPricingSection = ({
     })
   }, [recurringInterval, prices, remove])
 
+  const { currentUser } = useAuth()
+
   return (
     <Section
       title="Pricing"
@@ -597,6 +600,12 @@ export const ProductPricingSection = ({
                           <SelectItem value="one_time">
                             One-time purchase
                           </SelectItem>
+                        )}
+                        {currentUser && currentUser.is_admin && (
+                          <>
+                            <SelectItem value="day">Daily</SelectItem>
+                            <SelectItem value="week">Weekly</SelectItem>
+                          </>
                         )}
                         <SelectItem value="month">Monthly</SelectItem>
                         <SelectItem value="year">Yearly</SelectItem>

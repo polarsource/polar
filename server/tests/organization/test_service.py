@@ -23,7 +23,7 @@ from polar.organization.ai_validation import (
     OrganizationAIValidator,
 )
 from polar.organization.schemas import OrganizationCreate, OrganizationFeatureSettings
-from polar.organization.service import AccountAlreadySetByOwner
+from polar.organization.service import AccountAlreadySet
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
@@ -898,19 +898,17 @@ class TestSetAccount:
         assert updated_organization.account_id == account.id
 
     @pytest.mark.auth
-    async def test_account_change_by_owner_succeeds(
+    async def test_account_change_fails(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User],
         save_fixture: SaveFixture,
         organization: Organization,
         user: User,
-        auth_subject: AuthSubject[User],
     ) -> None:
-        """Test that the account owner can change the account."""
-        # Set up initial account with user as admin
         initial_account = Account(
             account_type=AccountType.stripe,
-            admin_id=user.id,  # user is the admin/owner
+            admin_id=user.id,
             country="US",
             currency="USD",
             is_details_submitted=True,
@@ -923,7 +921,7 @@ class TestSetAccount:
         organization.account_id = initial_account.id
         await save_fixture(organization)
 
-        # Create a new account (also owned by the same user)
+        # Create a new account
         new_account = Account(
             account_type=AccountType.stripe,
             admin_id=user.id,
@@ -936,59 +934,289 @@ class TestSetAccount:
         )
         await save_fixture(new_account)
 
-        # Owner should be able to change the account
-        updated_organization = await organization_service.set_account(
-            session, auth_subject, organization, new_account.id
-        )
-
-        assert updated_organization.account_id == new_account.id
-
-    @pytest.mark.auth
-    async def test_account_change_by_non_owner_fails(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user: User,
-        user_second: User,
-    ) -> None:
-        """Test that a non-owner cannot change an existing account."""
-
-        # Set up initial account with original_owner as admin
-        initial_account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user_second.id,  # original_owner is the admin/owner
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="INITIAL_ACCOUNT_ID",
-        )
-        await save_fixture(initial_account)
-
-        organization.account_id = initial_account.id
-        await save_fixture(organization)
-
-        # Create a new account (owned by user, not original owner)
-        new_account = Account(
-            account_type=AccountType.stripe,
-            admin_id=user.id,
-            country="US",
-            currency="USD",
-            is_details_submitted=True,
-            is_charges_enabled=True,
-            is_payouts_enabled=True,
-            stripe_id="NEW_ACCOUNT_ID",
-        )
-        await save_fixture(new_account)
-
-        # Non-owner should not be able to change the account
-        with pytest.raises(AccountAlreadySetByOwner) as exc_info:
+        with pytest.raises(AccountAlreadySet) as exc_info:
             await organization_service.set_account(
                 session, auth_subject, organization, new_account.id
             )
 
-        assert "already been set up by the owner" in str(exc_info.value)
-        assert "prevent unintended consequences" in str(exc_info.value)
+        assert "already been set up" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+class TestSubmitAppeal:
+    async def test_submit_appeal_success(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=85.0,
+            violated_sections=["human_resources"],
+            reason="Policy violation detected",
+            model_used="test-model",
+            organization_details_snapshot={"name": organization.name},
+        )
+        await save_fixture(review)
+
+        mock_plain_service = mocker.patch(
+            "polar.organization.service.plain_service.create_appeal_review_thread"
+        )
+
+        appeal_reason = "We selling templates and not consultancy services"
+        result = await organization_service.submit_appeal(
+            session, organization, appeal_reason
+        )
+
+        assert result.appeal_submitted_at is not None
+        assert result.appeal_reason == appeal_reason
+        mock_plain_service.assert_called_once_with(session, organization, result)
+
+    async def test_submit_appeal_no_review_exists(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        with pytest.raises(ValueError, match="Organization must have a review"):
+            await organization_service.submit_appeal(
+                session, organization, "Appeal reason"
+            )
+
+    async def test_submit_appeal_passed_review(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.PASS,
+            risk_score=25.0,
+            violated_sections=[],
+            reason="No issues found",
+            model_used="test-model",
+            organization_details_snapshot={"name": organization.name},
+        )
+        await save_fixture(review)
+
+        with pytest.raises(
+            ValueError, match="Cannot submit appeal for a passed review"
+        ):
+            await organization_service.submit_appeal(
+                session, organization, "Appeal reason"
+            )
+
+    async def test_submit_appeal_already_submitted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=85.0,
+            violated_sections=["terms_of_service"],
+            reason="Policy violation detected",
+            model_used="test-model",
+            organization_details_snapshot={"name": organization.name},
+            appeal_submitted_at=datetime.now(UTC),
+            appeal_reason="Previous appeal",
+        )
+        await save_fixture(review)
+
+        with pytest.raises(
+            ValueError, match="Appeal has already been submitted for this organization"
+        ):
+            await organization_service.submit_appeal(
+                session, organization, "New appeal reason"
+            )
+
+    async def test_submit_appeal_plain_service_called(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.UNCERTAIN,
+            risk_score=50.0,
+            violated_sections=[],
+            reason="Manual review required",
+            model_used="test-model",
+            organization_details_snapshot={"name": organization.name},
+        )
+        await save_fixture(review)
+
+        mock_plain_service = mocker.patch(
+            "polar.organization.service.plain_service.create_appeal_review_thread"
+        )
+
+        result = await organization_service.submit_appeal(
+            session, organization, "Please review again"
+        )
+
+        mock_plain_service.assert_called_once_with(session, organization, result)
+
+
+@pytest.mark.asyncio
+class TestApproveAppeal:
+    async def test_approve_appeal_success(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.status = Organization.Status.UNDER_REVIEW
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=85.0,
+            violated_sections=["terms_of_service"],
+            reason="Policy violation detected",
+            model_used="test-model",
+            organization_details_snapshot={"name": organization.name},
+            appeal_submitted_at=datetime.now(UTC),
+            appeal_reason="We have fixed the issues",
+        )
+        await save_fixture(review)
+
+        result = await organization_service.approve_appeal(session, organization)
+
+        assert organization.status == Organization.Status.ACTIVE
+        assert result.appeal_decision == OrganizationReview.AppealDecision.APPROVED
+        assert result.appeal_reviewed_at is not None
+
+    async def test_approve_appeal_no_review_exists(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        with pytest.raises(ValueError, match="Organization must have a review"):
+            await organization_service.approve_appeal(session, organization)
+
+    async def test_approve_appeal_no_appeal_submitted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=85.0,
+            violated_sections=["terms_of_service"],
+            reason="Policy violation detected",
+            model_used="test-model",
+            organization_details_snapshot={"name": organization.name},
+        )
+        await save_fixture(review)
+
+        with pytest.raises(
+            ValueError, match="No appeal has been submitted for this organization"
+        ):
+            await organization_service.approve_appeal(session, organization)
+
+    async def test_approve_appeal_already_reviewed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=85.0,
+            violated_sections=["terms_of_service"],
+            reason="Policy violation detected",
+            model_used="test-model",
+            organization_details_snapshot={"name": organization.name},
+            appeal_submitted_at=datetime.now(UTC),
+            appeal_reason="We have fixed the issues",
+            appeal_decision=OrganizationReview.AppealDecision.REJECTED,
+            appeal_reviewed_at=datetime.now(UTC),
+        )
+        await save_fixture(review)
+
+        with pytest.raises(ValueError, match="Appeal has already been reviewed"):
+            await organization_service.approve_appeal(session, organization)
+
+
+@pytest.mark.asyncio
+class TestDenyAppeal:
+    async def test_deny_appeal_success(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=85.0,
+            violated_sections=["terms_of_service"],
+            reason="Policy violation detected",
+            model_used="test-model",
+            organization_details_snapshot={"name": organization.name},
+            appeal_submitted_at=datetime.now(UTC),
+            appeal_reason="We have fixed the issues",
+        )
+        await save_fixture(review)
+
+        result = await organization_service.deny_appeal(session, organization)
+
+        assert result.appeal_decision == OrganizationReview.AppealDecision.REJECTED
+        assert result.appeal_reviewed_at is not None
+
+    async def test_deny_appeal_no_review_exists(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        with pytest.raises(ValueError, match="Organization must have a review"):
+            await organization_service.deny_appeal(session, organization)
+
+    async def test_deny_appeal_no_appeal_submitted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=85.0,
+            violated_sections=["terms_of_service"],
+            reason="Policy violation detected",
+            model_used="test-model",
+            organization_details_snapshot={"name": organization.name},
+        )
+        await save_fixture(review)
+
+        with pytest.raises(
+            ValueError, match="No appeal has been submitted for this organization"
+        ):
+            await organization_service.deny_appeal(session, organization)
+
+    async def test_deny_appeal_already_reviewed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.FAIL,
+            risk_score=85.0,
+            violated_sections=["terms_of_service"],
+            reason="Policy violation detected",
+            model_used="test-model",
+            organization_details_snapshot={"name": organization.name},
+            appeal_submitted_at=datetime.now(UTC),
+            appeal_reason="We have fixed the issues",
+            appeal_decision=OrganizationReview.AppealDecision.APPROVED,
+            appeal_reviewed_at=datetime.now(UTC),
+        )
+        await save_fixture(review)
+
+        with pytest.raises(ValueError, match="Appeal has already been reviewed"):
+            await organization_service.deny_appeal(session, organization)

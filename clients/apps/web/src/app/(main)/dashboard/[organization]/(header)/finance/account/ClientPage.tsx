@@ -13,6 +13,7 @@ import {
   useListAccounts,
   useOrganizationAccount,
 } from '@/hooks/queries'
+import { useOrganizationReviewStatus } from '@/hooks/queries/org'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -39,11 +40,12 @@ export default function ClientPage({
   const identityVerificationStatus = currentUser?.identity_verification_status
   const identityVerified = identityVerificationStatus === 'verified'
 
-  const { data: organizationAccount } = useOrganizationAccount(organization.id)
+  const { data: organizationAccount, error: accountError } = useOrganizationAccount(organization.id)
+  const { data: reviewStatus } = useOrganizationReviewStatus(organization.id)
 
-  const [validationCompleted, setValidationCompleted] = useState(
-    organization.details_submitted_at !== null,
-  )
+  const [validationCompleted, setValidationCompleted] = useState(false)
+
+  const isNotAdmin = accountError && (accountError as any)?.response?.status === 403
 
   type Step = 'review' | 'validation' | 'account' | 'identity' | 'complete'
 
@@ -51,9 +53,16 @@ export default function ClientPage({
     if (!organization.details_submitted_at) {
       return 'review'
     }
-    if (!validationCompleted) {
+    
+    // Skip validation if AI validation passed or appeal is approved
+    const aiValidationPassed = reviewStatus?.verdict === 'PASS'
+    const appealApproved = reviewStatus?.appeal_decision === 'approved'
+    const skipValidation = aiValidationPassed || appealApproved || validationCompleted
+    
+    if (!skipValidation) {
       return 'validation'
     }
+    
     if (
       organizationAccount === undefined ||
       !organizationAccount.stripe_id ||
@@ -121,10 +130,14 @@ export default function ClientPage({
     await reloadUser()
   }, [createIdentityVerification, stripePromise, reloadUser])
 
-  // Auto-advance to next step when details are submitted
+  // Auto-advance to next step when details are submitted or appeal is approved
   React.useEffect(() => {
     if (organization.details_submitted_at) {
-      if (!validationCompleted) {
+      const aiValidationPassed = reviewStatus?.verdict === 'PASS'
+      const appealApproved = reviewStatus?.appeal_decision === 'approved'
+      const skipValidation = aiValidationPassed || appealApproved || validationCompleted
+
+      if (!skipValidation) {
         setStep('validation')
       } else if (
         organizationAccount === undefined ||
@@ -144,6 +157,9 @@ export default function ClientPage({
     validationCompleted,
     organizationAccount,
     identityVerified,
+    reviewStatus?.appeal_decision,
+    reviewStatus?.verdict,
+    isNotAdmin,
   ])
 
   const handleDetailsSubmitted = useCallback(() => {
@@ -181,6 +197,36 @@ export default function ClientPage({
     await startIdentityVerification()
   }, [startIdentityVerification])
 
+  const handleAppealApproved = useCallback(() => {
+    if (
+      !organizationAccount ||
+      !organizationAccount.stripe_id ||
+      !organizationAccount.is_details_submitted ||
+      !organizationAccount.is_payouts_enabled
+    ) {
+      setValidationCompleted(true)
+      setStep('account')
+      return
+    }
+
+    if (!identityVerified) {
+      setValidationCompleted(true)
+      setStep('identity')
+      return
+    }
+
+    setValidationCompleted(true)
+    setStep('complete')
+  }, [organizationAccount, identityVerified])
+
+  const handleSkipAccountSetup = useCallback(() => {
+    if (!identityVerified) {
+      setStep('identity')
+    } else {
+      setStep('complete')
+    }
+  }, [identityVerified])
+
   return (
     <DashboardBody>
       <div className="flex flex-col gap-y-6">
@@ -191,10 +237,14 @@ export default function ClientPage({
           organizationAccount={organizationAccount}
           identityVerified={identityVerified}
           identityVerificationStatus={identityVerificationStatus}
+          organizationReviewStatus={reviewStatus}
+          isNotAdmin={isNotAdmin}
           onDetailsSubmitted={handleDetailsSubmitted}
           onValidationCompleted={handleValidationCompleted}
           onStartAccountSetup={handleStartAccountSetup}
           onStartIdentityVerification={handleStartIdentityVerification}
+          onSkipAccountSetup={handleSkipAccountSetup}
+          onAppealApproved={handleAppealApproved}
         />
 
         {accounts?.items && accounts.items.length > 0 ? (

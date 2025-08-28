@@ -6657,7 +6657,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -6897,7 +6897,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -9226,7 +9226,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -9477,7 +9477,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -10142,7 +10142,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -11173,7 +11173,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -13729,7 +13729,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -14600,7 +14600,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring
@@ -14691,7 +14691,7 @@ export interface components {
              * @description The description of the product.
              */
             description?: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * ProductPriceCreateList
@@ -15210,7 +15210,7 @@ export interface components {
              * @description The description of the product.
              */
             description: string | null;
-            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
+            /** @description The recurring interval of the product. If `None`, the product is a one-time purchase.Note that the `day` and `week` values are for internal Polar staff use only. */
             recurring_interval: components["schemas"]["SubscriptionRecurringInterval"] | null;
             /**
              * Is Recurring

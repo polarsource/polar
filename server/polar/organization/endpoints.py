@@ -11,10 +11,16 @@ from polar.auth.scope import Scope
 from polar.config import settings
 from polar.email.react import render_email_template
 from polar.email.sender import enqueue_email
-from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
+from polar.exceptions import (
+    NotPermitted,
+    PolarRequestValidationError,
+    ResourceNotFound,
+    Unauthorized,
+)
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
 from polar.openapi import APITag
+from polar.organization.repository import OrganizationReviewRepository
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.user.service import user as user_service
@@ -391,14 +397,12 @@ async def submit_appeal(
             appeal_submitted_at=result.appeal_submitted_at,  # type: ignore[arg-type]
         )
     except ValueError as e:
-        from polar.exceptions import PolarRequestValidationError
-
         raise PolarRequestValidationError(
             [
                 {
                     "type": "value_error",
                     "loc": ("body", "reason"),
-                    "msg": str(e),
+                    "msg": e.args[0],
                     "input": appeal_request.reason,
                 }
             ]
@@ -425,9 +429,6 @@ async def get_review_status(
 
     if organization is None:
         raise ResourceNotFound()
-
-    # Get the review record
-    from polar.organization.repository import OrganizationReviewRepository
 
     review_repository = OrganizationReviewRepository.from_session(session)
     review = await review_repository.get_by_organization(organization.id)

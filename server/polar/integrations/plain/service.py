@@ -77,6 +77,12 @@ class AccountReviewThreadCreationError(PlainServiceError):
         )
 
 
+class NoUserFoundError(PlainServiceError):
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        self.organization_id = organization_id
+        super().__init__(f"No user found for organization {organization_id}")
+
+
 _card_getter_semaphore = asyncio.Semaphore(3)
 
 
@@ -485,35 +491,30 @@ class PlainService:
         session: AsyncSession,
         organization: Organization,
         review: OrganizationReview,
-        appeal_reason: str,
     ) -> None:
         """Create Plain ticket for organization appeal review."""
         user_repository = UserRepository.from_session(session)
-        if organization.account is None:
-            from polar.organization.tasks import OrganizationAccountNotSet
-
-            raise OrganizationAccountNotSet(organization.id)
-
-        admin = await user_repository.get_by_id(organization.account.admin_id)
-        if admin is None:
-            raise AccountAdminDoesNotExistError(organization.account.admin_id)
+        users = await user_repository.get_all_by_organization(organization.id)
+        if len(users) == 0:
+            raise NoUserFoundError(organization.id)
+        user = users[0]
 
         # Create Plain ticket for appeal review
         async with self._get_plain_client() as plain:
             customer_result = await plain.upsert_customer(
                 UpsertCustomerInput(
-                    identifier=UpsertCustomerIdentifierInput(email_address=admin.email),
+                    identifier=UpsertCustomerIdentifierInput(email_address=user.email),
                     on_create=UpsertCustomerOnCreateInput(
-                        external_id=str(admin.id),
-                        full_name=admin.email,
+                        external_id=str(user.id),
+                        full_name=user.email,
                         email=EmailAddressInput(
-                            email=admin.email, is_verified=admin.email_verified
+                            email=user.email, is_verified=user.email_verified
                         ),
                     ),
                     on_update=UpsertCustomerOnUpdateInput(
-                        external_id=OptionalStringInput(value=str(admin.id)),
+                        external_id=OptionalStringInput(value=str(user.id)),
                         email=EmailAddressInput(
-                            email=admin.email, is_verified=admin.email_verified
+                            email=user.email, is_verified=user.email_verified
                         ),
                     ),
                 )
@@ -521,19 +522,17 @@ class PlainService:
 
             if customer_result.error is not None:
                 raise AccountReviewThreadCreationError(
-                    organization.account.id, customer_result.error.message
+                    user.id, customer_result.error.message
                 )
 
             # Create the thread with detailed appeal information
             thread_result = await plain.create_thread(
                 CreateThreadInput(
                     customer_identifier=CustomerIdentifierInput(
-                        external_id=str(admin.id)
+                        external_id=str(user.id)
                     ),
                     title=f"Organization Appeal - {organization.slug}",
-                    label_type_ids=[
-                        "lt_01JFG7F4N67FN3MAWK06FJ8FPG"
-                    ],  # Use same label as account review
+                    label_type_ids=["lt_01K3QWYTDV7RSS7MM2RC584X41"],
                     components=[
                         ComponentInput(
                             component_text=ComponentTextInput(
@@ -582,62 +581,6 @@ class PlainService:
                                             ],
                                         )
                                     ),
-                                    # AI Verdict
-                                    ComponentContainerContentInput(
-                                        component_row=ComponentRowInput(
-                                            row_main_content=[
-                                                ComponentRowContentInput(
-                                                    component_text=ComponentTextInput(
-                                                        text="AI Verdict",
-                                                        text_size=ComponentTextSize.S,
-                                                        text_color=ComponentTextColor.MUTED,
-                                                    )
-                                                ),
-                                                ComponentRowContentInput(
-                                                    component_text=ComponentTextInput(
-                                                        text=review.verdict
-                                                    )
-                                                ),
-                                            ],
-                                            row_aside_content=[],
-                                        )
-                                    ),
-                                    # AI Reason
-                                    ComponentContainerContentInput(
-                                        component_text=ComponentTextInput(
-                                            text="AI Review Reason:",
-                                            text_size=ComponentTextSize.S,
-                                            text_color=ComponentTextColor.MUTED,
-                                        )
-                                    ),
-                                    ComponentContainerContentInput(
-                                        component_text=ComponentTextInput(
-                                            text=review.reason
-                                        )
-                                    ),
-                                    ComponentContainerContentInput(
-                                        component_spacer=ComponentSpacerInput(
-                                            spacer_size=ComponentSpacerSize.M
-                                        )
-                                    ),
-                                    # Appeal Reason
-                                    ComponentContainerContentInput(
-                                        component_text=ComponentTextInput(
-                                            text="Appeal Reason:",
-                                            text_size=ComponentTextSize.S,
-                                            text_color=ComponentTextColor.MUTED,
-                                        )
-                                    ),
-                                    ComponentContainerContentInput(
-                                        component_text=ComponentTextInput(
-                                            text=appeal_reason
-                                        )
-                                    ),
-                                    ComponentContainerContentInput(
-                                        component_spacer=ComponentSpacerInput(
-                                            spacer_size=ComponentSpacerSize.M
-                                        )
-                                    ),
                                     # Admin Dashboard Link
                                     ComponentContainerContentInput(
                                         component_link_button=ComponentLinkButtonInput(
@@ -654,7 +597,7 @@ class PlainService:
 
             if thread_result.error is not None:
                 raise AccountReviewThreadCreationError(
-                    organization.account.id, thread_result.error.message
+                    user.id, thread_result.error.message
                 )
 
     async def get_customer_card(

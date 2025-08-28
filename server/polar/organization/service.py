@@ -635,26 +635,15 @@ class OrganizationService:
         self, session: AsyncSession, organization: Organization
     ) -> OrganizationReview:
         """Validate organization details using AI and store the result."""
-        log = structlog.get_logger(__name__)
-        log.info(
-            "Validating organization details with AI",
-            organization_id=organization.id,
-            organization_details=organization.details,
-        )
         repository = OrganizationReviewRepository.from_session(session)
         previous_validation = await repository.get_by_organization(organization.id)
-        log.info(
-            "Found previous organization validation",
-            organization_id=organization.id,
-            previous_validation=previous_validation,
-        )
+
         if previous_validation is not None:
             return previous_validation
 
         result = await organization_validator.validate_organization_details(
             organization
         )
-        log.info("AI validation result", organization_id=organization.id, result=result)
 
         ai_validation = OrganizationReview(
             organization_id=organization.id,
@@ -672,13 +661,10 @@ class OrganizationService:
             model_used=organization_validator.model.model_name,
         )
 
-        # Update organization status based on AI verdict
         if result.verdict.verdict in ["FAIL", "UNCERTAIN"]:
-            organization.status = Organization.Status.DENIED
-        # For PASS verdict, we keep the current status (don't change to ACTIVE automatically)
+            await self.deny_organization(session, organization)
 
         session.add(ai_validation)
-        session.add(organization)
         await session.commit()
 
         return ai_validation
@@ -694,25 +680,22 @@ class OrganizationService:
         if review is None:
             raise ValueError("Organization must have a review before submitting appeal")
 
+        if review.verdict == OrganizationReview.Verdict.PASS:
+            raise ValueError("Cannot submit appeal for a passed review")
+
         if review.appeal_submitted_at is not None:
             raise ValueError("Appeal has already been submitted for this organization")
 
-        # Update the review with appeal information
         review.appeal_submitted_at = datetime.now(UTC)
         review.appeal_reason = appeal_reason
 
         session.add(review)
 
-        # Create Plain ticket for manual review
         try:
             await plain_service.create_appeal_review_thread(
-                session, organization, review, appeal_reason
+                session, organization, review
             )
         except Exception as e:
-            # Log error but don't fail the appeal submission
-            import structlog
-
-            log = structlog.get_logger(__name__)
             log.error(
                 "Failed to create Plain ticket for appeal",
                 organization_id=str(organization.id),

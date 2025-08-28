@@ -744,14 +744,50 @@ async def confirm_change_admin(
     if not new_admin:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # Check all the conditions that might prevent changing admin
+    has_stripe_account = bool(organization.account.stripe_id)
+    user_not_verified = (
+        new_admin.identity_verification_status != IdentityVerificationStatus.verified
+    )
+    not_enough_users = (
+        len(await user_repo.get_all_by_organization(organization.id)) <= 1
+    )
+
+    # Determine if admin change is blocked and why
+    is_blocked = has_stripe_account or user_not_verified or not_enough_users
+
     with modal("Change Account Admin", open=True):
         with tag.div(classes="flex flex-col gap-4"):
-            with tag.div(classes="alert alert-info"):
-                with tag.div():
-                    with tag.h3(classes="font-bold"):
-                        text("Change Account Administrator")
-                    with tag.p():
-                        text("This will change who has admin control over the account.")
+            # Show appropriate alert based on blocking conditions
+            if is_blocked:
+                with tag.div(classes="alert alert-error"):
+                    with tag.div():
+                        with tag.h3(classes="font-bold"):
+                            text("Cannot Change Admin")
+                        if has_stripe_account:
+                            with tag.p():
+                                text(
+                                    "To change account admin, first delete the Stripe account using backoffice account management."
+                                )
+                        elif user_not_verified:
+                            with tag.p():
+                                text(
+                                    "The selected user must be verified in Stripe before they can become an admin. Please ensure they complete identity verification first."
+                                )
+                        elif not_enough_users:
+                            with tag.p():
+                                text(
+                                    "Need at least 2 team members to change account admin."
+                                )
+            else:
+                with tag.div(classes="alert alert-success"):
+                    with tag.div():
+                        with tag.h3(classes="font-bold"):
+                            text("Change Account Administrator")
+                        with tag.p():
+                            text(
+                                "Account admin can now be changed. This will change who has admin control over the account."
+                            )
 
             with tag.div(classes="space-y-4"):
                 with tag.div():
@@ -769,25 +805,63 @@ async def confirm_change_admin(
                     with tag.p(classes="text-gray-600"):
                         text(new_admin.email)
 
+                # Show verification status
+                with tag.div():
+                    with tag.h4(classes="font-semibold text-sm"):
+                        text("Identity Verification Status:")
+                    verification_status = new_admin.identity_verification_status
+                    if verification_status == IdentityVerificationStatus.verified:
+                        with tag.p(classes="text-green-600 font-medium"):
+                            text("✅ Verified")
+                    else:
+                        with tag.p(classes="text-red-600 font-medium"):
+                            text(f"❌ {verification_status.get_display_name()}")
+
+            # Show warning if user is not verified
+            if (
+                new_admin.identity_verification_status
+                != IdentityVerificationStatus.verified
+            ):
+                with tag.div(classes="alert alert-error"):
+                    with tag.div():
+                        with tag.h3(classes="font-bold"):
+                            text("Cannot Change Admin")
+                        with tag.p():
+                            text(
+                                "The selected user must be verified in Stripe before they can become an admin. Please ensure they complete identity verification first."
+                            )
+
         # Action buttons
         with tag.div(classes="modal-action"):
             with tag.form(method="dialog"):
                 with button(ghost=True):
                     text("Cancel")
 
-            with tag.form(method="dialog"):
-                with button(
-                    variant="primary",
-                    hx_post=str(
-                        request.url_for(
-                            "organizations:change_admin",
-                            id=id,
-                            user_id=user_id,
-                        )
-                    ),
-                    hx_target="#modal",
-                ):
-                    text("Change Admin")
+            # Show button based on blocking conditions
+            if is_blocked:
+                # Show disabled button with appropriate message
+                with button(variant="primary", disabled=True):
+                    if has_stripe_account:
+                        text("Change Admin (Delete Stripe Account First)")
+                    elif user_not_verified:
+                        text("Change Admin (Requires Verification)")
+                    elif not_enough_users:
+                        text("Change Admin (Need More Members)")
+            else:
+                # All conditions met - show active button
+                with tag.form(method="dialog"):
+                    with button(
+                        variant="primary",
+                        hx_post=str(
+                            request.url_for(
+                                "organizations:change_admin",
+                                id=id,
+                                user_id=user_id,
+                            )
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Change Admin")
 
 
 @router.api_route(
@@ -1170,6 +1244,7 @@ async def get(
                                                 # Actions
                                                 with tag.td():
                                                     with tag.div(classes="flex gap-2"):
+                                                        # Impersonate button (always visible)
                                                         with tag.button(
                                                             classes="btn btn-primary btn-sm",
                                                             name="user_id",
@@ -1183,50 +1258,75 @@ async def get(
                                                         ):
                                                             text("Impersonate")
 
-                                                    # Check if we can show Change Admin button
-                                                    can_change_admin = (
-                                                        not is_admin  # Not currently admin
-                                                        and account  # Has account
-                                                        and not account.stripe_id  # Stripe account deleted
-                                                        and len(users)
-                                                        > 1  # More than one user
-                                                    )
+                                                        # More actions dropdown menu
+                                                        if not is_admin:
+                                                            # Check if we can show Change Admin button
+                                                            can_change_admin = (
+                                                                account  # Has account
+                                                                and not account.stripe_id  # Stripe account deleted
+                                                                and len(users)
+                                                                > 1  # More than one user
+                                                                and user.identity_verification_status
+                                                                == IdentityVerificationStatus.verified  # User must be verified
+                                                            )
 
-                                                    if not is_admin:
-                                                        # Change Admin button (only if conditions are met)
-                                                        if can_change_admin:
-                                                            with tag.button(
-                                                                classes="btn btn-warning btn-sm",
-                                                                hx_get=str(
-                                                                    request.url_for(
-                                                                        "organizations:confirm_change_admin",
-                                                                        id=organization.id,
-                                                                        user_id=user.id,
-                                                                    )
-                                                                ),
-                                                                hx_target="#modal",
-                                                                title="Make this user the account admin",
+                                                            with tag.div(
+                                                                classes="dropdown dropdown-end"
                                                             ):
-                                                                text("Make Admin")
+                                                                with tag.div(
+                                                                    classes="btn btn-ghost btn-sm",
+                                                                    tabindex="0",
+                                                                    role="button",
+                                                                ):
+                                                                    # Three dots icon
+                                                                    with tag.svg(
+                                                                        classes="w-4 h-4",
+                                                                        fill="currentColor",
+                                                                        viewBox="0 0 20 20",
+                                                                    ):
+                                                                        with tag.path(
+                                                                            d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"
+                                                                        ):
+                                                                            pass
 
-                                                        # Remove button
-                                                        with tag.button(
-                                                            classes="btn btn-error btn-sm",
-                                                            hx_get=str(
-                                                                request.url_for(
-                                                                    "organizations:confirm_remove_member",
-                                                                    id=organization.id,
-                                                                    user_id=user.id,
-                                                                )
-                                                            ),
-                                                            hx_target="#modal",
-                                                        ):
-                                                            text("Remove")
-                                                    else:
-                                                        with tag.span(
-                                                            classes="text-xs text-gray-400"
-                                                        ):
-                                                            text("Current Admin")
+                                                                with tag.ul(
+                                                                    classes="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow",
+                                                                    tabindex="0",
+                                                                ):
+                                                                    # Make Admin option (always show, handle restrictions in modal)
+                                                                    with tag.li():
+                                                                        with tag.a(
+                                                                            hx_get=str(
+                                                                                request.url_for(
+                                                                                    "organizations:confirm_change_admin",
+                                                                                    id=organization.id,
+                                                                                    user_id=user.id,
+                                                                                )
+                                                                            ),
+                                                                            hx_target="#modal",
+                                                                            classes="text-warning hover:bg-warning hover:text-warning-content",
+                                                                        ):
+                                                                            text(
+                                                                                "Make Admin"
+                                                                            )
+
+                                                                    # Remove option
+                                                                    with tag.li():
+                                                                        with tag.a(
+                                                                            hx_get=str(
+                                                                                request.url_for(
+                                                                                    "organizations:confirm_remove_member",
+                                                                                    id=organization.id,
+                                                                                    user_id=user.id,
+                                                                                )
+                                                                            ),
+                                                                            hx_target="#modal",
+                                                                            classes="text-error hover:bg-error hover:text-error-content",
+                                                                        ):
+                                                                            text(
+                                                                                "Remove Member"
+                                                                            )
+
                         else:
                             # Empty state
                             with tag.div(classes="text-center py-8"):
@@ -1257,31 +1357,14 @@ async def get(
                                 pass
 
                             # Show admin change status
-                            if account:
-                                if account.stripe_id:
-                                    with tag.div(
-                                        classes="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded"
-                                    ):
-                                        with tag.p(classes="text-sm text-yellow-800"):
-                                            text(
-                                                "⚠️ To change account admin, first delete the Stripe account using backoffice account management."
-                                            )
-                                elif len(users) > 1:
-                                    with tag.div(
-                                        classes="mt-4 p-3 bg-green-50 border border-green-200 rounded"
-                                    ):
-                                        with tag.p(classes="text-sm text-green-800"):
-                                            text(
-                                                "✅ Account admin can now be changed. Use 'Make Admin' buttons in the Team Members section."
-                                            )
-                                else:
-                                    with tag.div(
-                                        classes="mt-4 p-3 bg-gray-50 border border-gray-200 rounded"
-                                    ):
-                                        with tag.p(classes="text-sm text-gray-600"):
-                                            text(
-                                                "ℹ️ Need at least 2 team members to change account admin."
-                                            )
+                            if account and len(users) <= 1:
+                                with tag.div(
+                                    classes="mt-4 p-3 bg-gray-50 border border-gray-200 rounded"
+                                ):
+                                    with tag.p(classes="text-sm text-gray-600"):
+                                        text(
+                                            "ℹ️ Need at least 2 team members to change account admin."
+                                        )
                         else:
                             with tag.div(classes="text-center py-8"):
                                 with tag.p(classes="text-gray-600 mb-4"):

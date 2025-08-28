@@ -17,7 +17,9 @@ from polar.integrations.open_collective.service import open_collective
 from polar.integrations.stripe.service import stripe
 from polar.kit.pagination import PaginationParams
 from polar.models import Account, Organization, User, UserOrganization
+from polar.models.user import IdentityVerificationStatus
 from polar.postgres import AsyncSession
+from polar.user.repository import UserRepository
 
 from .schemas import (
     AccountCreateForOrganization,
@@ -372,28 +374,11 @@ class AccountService:
         new_admin_id: uuid.UUID,
         organization_id: uuid.UUID,
     ) -> Account:
-        """Change the admin of an account to a new user.
-
-        Args:
-            session: Database session
-            account: Account to change admin for
-            new_admin_id: ID of the new admin user
-            organization_id: ID of the organization (for validation)
-
-        Returns:
-            Updated account
-
-        Raises:
-            CannotChangeAdminError: If account still has Stripe ID
-            UserNotOrganizationMemberError: If new admin is not org member
-        """
-        # Cannot change admin if Stripe account still exists
         if account.stripe_id:
             raise CannotChangeAdminError(
                 "Stripe account must be deleted before changing admin"
             )
 
-        # Validate new admin is a member of the organization
         statement = select(UserOrganization).where(
             UserOrganization.user_id == new_admin_id,
             UserOrganization.organization_id == organization_id,
@@ -404,6 +389,20 @@ class AccountService:
 
         if user_org is None:
             raise UserNotOrganizationMemberError(new_admin_id, organization_id)
+
+        user_repository = UserRepository.from_session(session)
+        new_admin_user = await user_repository.get_by_id(new_admin_id)
+
+        if new_admin_user is None:
+            raise UserNotOrganizationMemberError(new_admin_id, organization_id)
+
+        if (
+            new_admin_user.identity_verification_status
+            != IdentityVerificationStatus.verified
+        ):
+            raise CannotChangeAdminError(
+                f"New admin must be verified in Stripe. Current status: {new_admin_user.identity_verification_status.get_display_name()}"
+            )
 
         # Cannot change to same admin
         if account.admin_id == new_admin_id:

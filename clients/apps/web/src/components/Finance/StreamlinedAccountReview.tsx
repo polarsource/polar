@@ -41,10 +41,12 @@ interface StreamlinedAccountReviewProps {
   identityVerified?: boolean
   identityVerificationStatus?: string
   organizationReviewStatus?: schemas['OrganizationReviewStatus']
+  isNotAdmin?: boolean
   onDetailsSubmitted: () => void
   onValidationCompleted: () => void
   onStartAccountSetup: () => void
   onStartIdentityVerification: () => void
+  onSkipAccountSetup?: () => void
   onAppealApproved?: () => void
 }
 
@@ -182,10 +184,12 @@ export default function StreamlinedAccountReview({
   identityVerified,
   identityVerificationStatus,
   organizationReviewStatus,
+  isNotAdmin = false,
   onDetailsSubmitted,
   onValidationCompleted,
   onStartAccountSetup,
   onStartIdentityVerification,
+  onSkipAccountSetup,
   onAppealApproved,
 }: StreamlinedAccountReviewProps) {
   const [validationCompleted, setValidationCompleted] = useState(false)
@@ -209,8 +213,9 @@ export default function StreamlinedAccountReview({
   const isValidationCompleted =
     validationCompleted || isAIValidationPassed || isAppealApproved
   const isAccountCompleted =
-    organizationAccount !== undefined &&
-    organizationAccount.is_details_submitted
+    (organizationAccount !== undefined &&
+      organizationAccount.is_details_submitted) ||
+    isNotAdmin // Non-admins skip account setup, so consider it "completed"
   const isIdentityCompleted = !!identityVerified
 
   const getStepStatus = (
@@ -219,9 +224,14 @@ export default function StreamlinedAccountReview({
     currentStep: Step,
     prerequisiteCompleted?: boolean,
   ): StepStatus => {
+    if (stepId === 'account' && isNotAdmin) {
+      return currentStep === 'account' ? 'blocked' : 'completed'
+    }
+
     if (isCompleted) return 'completed'
     if (prerequisiteCompleted !== undefined && !prerequisiteCompleted)
       return 'blocked'
+
     if (currentStep === stepId) {
       if (stepId === 'identity') {
         if (identityVerificationStatus === 'pending') {
@@ -258,7 +268,7 @@ export default function StreamlinedAccountReview({
     {
       id: 'account' as Step,
       title: 'Account',
-      description: 'Payout setup',
+      description: isNotAdmin ? 'Admin only' : 'Payout setup',
       icon: <UserCheck className="h-5 w-5" />,
       status: getStepStatus(
         'account',
@@ -351,22 +361,57 @@ export default function StreamlinedAccountReview({
         )}
 
         {currentStep === 'account' && (
-          <StepCard>
-            <div className="space-y-4">
-              <div className="space-y-4 text-center">
-                <div className="rounded-lg bg-gray-50 p-8 dark:bg-gray-800">
-                  <h4 className="mb-2 font-medium">Create Payout Account</h4>
-                  <p className="mx-auto mb-6 max-w-md text-sm text-gray-600 dark:text-gray-400">
-                    Connect or create a Stripe account to receive payments from
-                    your customers.
-                  </p>
-                  <Button onClick={onStartAccountSetup} className="w-auto">
-                    Continue with Account Setup
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
+          <StepCard
+            className={isNotAdmin ? 'border-gray-300 dark:border-gray-600' : ''}
+          >
+            {isNotAdmin ? (
+              <div className="space-y-4">
+                <div className="space-y-4 text-center">
+                  <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-8 dark:border-gray-600 dark:bg-gray-800">
+                    <div className="mb-4 flex justify-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
+                        <UserCheck className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+                      </div>
+                    </div>
+                    <h4 className="mb-2 font-medium text-gray-600 dark:text-gray-400">
+                      Account Setup Restricted
+                    </h4>
+                    <p className="mx-auto mb-4 max-w-md text-sm text-gray-500 dark:text-gray-500">
+                      You are not the admin of the account. Only the account
+                      admin can set up payout accounts.
+                    </p>
+                    <Button
+                      onClick={onSkipAccountSetup}
+                      variant="default"
+                      className="w-auto"
+                    >
+                      Skip & Continue to Identity Verification
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                    <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                      The account admin will need to complete this step
+                      separately
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-4 text-center">
+                  <div className="rounded-lg bg-gray-50 p-8 dark:bg-gray-800">
+                    <h4 className="mb-2 font-medium">Create Payout Account</h4>
+                    <p className="mx-auto mb-6 max-w-md text-sm text-gray-600 dark:text-gray-400">
+                      Connect or create a Stripe account to receive payments
+                      from your customers.
+                    </p>
+                    <Button onClick={onStartAccountSetup} className="w-auto">
+                      Continue with Account Setup
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </StepCard>
         )}
 

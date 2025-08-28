@@ -112,12 +112,25 @@ const GenericAccountBanner: React.FC<{
 const OrganizationAccountBanner: React.FC<{
   organization: schemas['Organization']
 }> = ({ organization }) => {
-  const { data: organizationAccount, isLoading: organizationAccountIsLoading } =
+  const { data: organizationAccount, isLoading: organizationAccountIsLoading, error: accountError } =
     useOrganizationAccount(organization?.id)
   const setupLink = `/dashboard/${organization.slug}/finance/account`
 
   if (organizationAccountIsLoading) {
     return null
+  }
+
+  const isNotAdmin = accountError && (accountError as any)?.response?.status === 403
+
+  if (isNotAdmin) {
+    return (
+      <Banner color="default">
+        <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
+        <span className="text-sm">
+          You are not the admin of the account. Only the admin can manage payout settings.
+        </span>
+      </Banner>
+    )
   }
 
   return (

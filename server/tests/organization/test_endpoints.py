@@ -518,3 +518,116 @@ class TestGetPaymentStatus:
         # All steps should be complete
         for step in json["steps"]:
             assert step["completed"] is True
+
+
+@pytest.mark.asyncio
+class TestGetAccount:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}/account")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_member(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}/account")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_organization_not_found(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/organizations/{uuid.uuid4()}/account")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_no_account_set(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        organization.account_id = None
+        await save_fixture(organization)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/account")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_not_account_admin(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        # Create an account with a different admin (not the current user)
+        other_user = User(
+            email="other@example.com",
+        )
+        await save_fixture(other_user)
+
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=other_user.id,  # Different admin than the current user
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+        )
+        await save_fixture(account)
+
+        # Link account to organization
+        organization.account_id = account.id
+        await save_fixture(organization)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/account")
+
+        assert response.status_code == 403
+        json = response.json()
+        assert json["detail"] == "You are not the admin of this account"
+
+    @pytest.mark.auth
+    async def test_valid_account_admin(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        # Create an account with the current user as admin
+        account = Account(
+            account_type=AccountType.stripe,
+            admin_id=user.id,  # Current user is the admin
+            country="US",
+            currency="USD",
+            is_details_submitted=True,
+            is_charges_enabled=True,
+            is_payouts_enabled=True,
+        )
+        await save_fixture(account)
+
+        # Link account to organization
+        organization.account_id = account.id
+        await save_fixture(organization)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/account")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(account.id)
+        assert json["account_type"] == "stripe"
+        assert json["country"] == "US"
+        assert json["is_details_submitted"]
+        assert json["is_charges_enabled"]
+        assert json["is_payouts_enabled"]

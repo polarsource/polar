@@ -103,7 +103,12 @@ export const useOrganizationAccount = (id?: string) =>
           params: { path: { id: id ?? '' } },
         }),
       ),
-    retry: defaultRetry,
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 403 || error?.response?.status === 404) {
+        return false
+      }
+      return defaultRetry(failureCount, error)
+    },
     enabled: !!id,
   })
 

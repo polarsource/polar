@@ -1,6 +1,7 @@
 'use client'
 
 import AccountBalance from '@/components/Payouts/AccountBalance'
+import AccessRestricted from '@/components/Finance/AccessRestricted'
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useOrganizationAccount, useSearchTransactions } from '@/hooks/queries'
@@ -55,9 +56,11 @@ export default function ClientPage({
     )
   }
 
-  const { data: account, isLoading: accountIsLoading } = useOrganizationAccount(
+  const { data: account, isLoading: accountIsLoading, error: accountError } = useOrganizationAccount(
     organization.id,
   )
+  
+  const isNotAdmin = accountError && (accountError as any)?.response?.status === 403
 
   const balancesHook = useSearchTransactions({
     account_id: account?.id,
@@ -68,6 +71,14 @@ export default function ClientPage({
   const balances = balancesHook.data?.items || []
   const rowCount = balancesHook.data?.pagination.total_count ?? 0
   const pageCount = balancesHook.data?.pagination.max_page ?? 1
+
+  if (isNotAdmin) {
+    return (
+      <div className="flex flex-col gap-y-6">
+        <AccessRestricted message="You are not the admin of the account. Only the account admin can view income information." />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-y-6">

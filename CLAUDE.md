@@ -120,6 +120,9 @@ docker compose up -d  # Start PostgreSQL, Redis, Minio
 
 ## Development Guidelines
 
+### General
+- Keep comments to the minimum, code should be self-explanatory.
+
 ### Backend
 - Follow modular structure with service/repository pattern
 - Use SQLAlchemy ORM consistently

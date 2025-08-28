@@ -596,6 +596,12 @@ class SubscriptionService:
             for subscription_product_price in subscription.subscription_product_prices:
                 product_price = subscription_product_price.product_price
                 if is_static_price(product_price):
+                    discount_amount = 0
+                    if subscription.discount:
+                        discount_amount = subscription.discount.get_discount_amount(
+                            subscription_product_price.amount
+                        )
+
                     await billing_entry_repository.create(
                         BillingEntry(
                             start_timestamp=subscription.current_period_start,
@@ -607,6 +613,7 @@ class SubscriptionService:
                             customer=subscription.customer,
                             product_price=product_price,
                             discount=subscription.discount,
+                            discount_amount=discount_amount,
                             subscription=subscription,
                             event=event,
                         ),

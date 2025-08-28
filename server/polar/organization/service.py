@@ -723,12 +723,10 @@ class OrganizationService:
         if review.appeal_decision is not None:
             raise ValueError("Appeal has already been reviewed")
 
-        # Approve the organization and update appeal status
         organization.status = Organization.Status.ACTIVE
         review.appeal_decision = OrganizationReview.AppealDecision.APPROVED
         review.appeal_reviewed_at = datetime.now(UTC)
 
-        # Sync account status (if needed)
         await self._sync_account_status(session, organization)
 
         session.add(organization)
@@ -754,8 +752,6 @@ class OrganizationService:
         if review.appeal_decision is not None:
             raise ValueError("Appeal has already been reviewed")
 
-        # Keep organization denied and update appeal status
-        # (organization.status remains DENIED)
         review.appeal_decision = OrganizationReview.AppealDecision.REJECTED
         review.appeal_reviewed_at = datetime.now(UTC)
 

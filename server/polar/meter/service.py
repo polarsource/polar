@@ -26,7 +26,6 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.models import BillingEntry, Event, Meter, SubscriptionProductPrice
-from polar.models.subscription import Subscription
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionProductPriceRepository
@@ -285,7 +284,7 @@ class MeterService:
 
         billing_entry_repository = BillingEntryRepository.from_session(session)
         entries: list[BillingEntry] = []
-        updated_subscriptions: set[Subscription] = set()
+        updated_subscriptions: set[uuid.UUID] = set()
         last_event: Event | None = None
         async for event in event_repository.stream(statement):
             last_event = event
@@ -311,7 +310,7 @@ class MeterService:
             )
             entries.append(entry)
             if entry.subscription is not None:
-                updated_subscriptions.add(entry.subscription)
+                updated_subscriptions.add(entry.subscription.id)
 
         # Update the last billed event
         meter.last_billed_event = (
@@ -320,8 +319,8 @@ class MeterService:
         session.add(meter)
 
         # Update subscription meters
-        for subscription in updated_subscriptions:
-            enqueue_job("subscription.update_meters", subscription.id)
+        for subscription_id in updated_subscriptions:
+            enqueue_job("subscription.update_meters", subscription_id)
 
         return entries
 

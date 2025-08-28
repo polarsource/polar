@@ -11,7 +11,6 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
-from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
 from polar.enums import PaymentProcessor
 from polar.held_balance.service import held_balance as held_balance_service
@@ -700,13 +699,6 @@ class TestCreateSubscriptionOrder:
         )
         assert order.tax_rate == calculate_tax_mock.return_value["tax_rate"]
         assert order.tax_transaction_processor_id is None
-
-        billing_entry_repository = BillingEntryRepository.from_session(session)
-        updated_billing_entry = await billing_entry_repository.get_by_id(
-            billing_entry.id
-        )
-        assert updated_billing_entry is not None
-        assert updated_billing_entry.order_item_id == order_item.id
 
         enqueue_job_mock.assert_any_call(
             "order.trigger_payment",

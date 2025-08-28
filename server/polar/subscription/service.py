@@ -1202,10 +1202,10 @@ class SubscriptionService:
         for subscription_meter in subscription.meters:
             subscription_meter.reset()
 
-        for (
+        async for (
             line_item,
             _,
-        ) in await billing_entry_service.compute_pending_subscription_line_items(
+        ) in billing_entry_service.compute_pending_subscription_line_items(
             session, subscription
         ):
             if not isinstance(line_item, MeteredLineItem):

@@ -1,7 +1,7 @@
 """Add appeal fields to organization_review
 
 Revision ID: b5ffc01faa80
-Revises: d784000f1f80
+Revises: 15fd38497594
 Create Date: 2025-08-28 09:10:57.559307
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "b5ffc01faa80"
-down_revision = "d784000f1f80"
+down_revision = "15fd38497594"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

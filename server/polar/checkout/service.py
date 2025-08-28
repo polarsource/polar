@@ -207,7 +207,7 @@ class CheckoutService:
     ) -> tuple[Sequence[Checkout], int]:
         repository = CheckoutRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).options(
-            *repository.get_eager_options()
+            *repository.get_eager_options(product_load=contains_eager(Checkout.product))
         )
 
         if organization_id is not None:
@@ -241,7 +241,11 @@ class CheckoutService:
         statement = (
             repository.get_readable_statement(auth_subject)
             .where(Checkout.id == id)
-            .options(*repository.get_eager_options())
+            .options(
+                *repository.get_eager_options(
+                    product_load=contains_eager(Checkout.product)
+                )
+            )
         )
         checkout = await repository.get_one_or_none(statement)
 
@@ -561,6 +565,7 @@ class CheckoutService:
             checkout_products=[CheckoutProduct(product=product, order=0)],
             product=product,
             product_price=price,
+            discount=None,
             customer=None,
             subscription=None,
             customer_email=checkout_create.customer_email,

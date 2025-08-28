@@ -125,8 +125,7 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @declared_attr
     def product(cls) -> Mapped[Product]:
-        # Eager loading makes sense here because we always need the product
-        return relationship(Product, lazy="joined")
+        return relationship(Product, lazy="raise")
 
     product_price_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("product_prices.id", ondelete="cascade"), nullable=False
@@ -134,16 +133,14 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @declared_attr
     def product_price(cls) -> Mapped[ProductPrice]:
-        # Eager loading makes sense here because we always need the price
-        return relationship(ProductPrice, lazy="joined")
+        return relationship(ProductPrice, lazy="raise")
 
     checkout_products: Mapped[list["CheckoutProduct"]] = relationship(
         "CheckoutProduct",
         back_populates="checkout",
         cascade="all, delete-orphan",
         order_by="CheckoutProduct.order",
-        # Products are almost always needed, so eager loading makes sense
-        lazy="selectin",
+        lazy="raise",
     )
 
     products: AssociationProxy[list["Product"]] = association_proxy(
@@ -160,8 +157,7 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     @declared_attr
     def discount(cls) -> Mapped[Discount | None]:
-        # Eager loading makes sense here because we always need the discount when present
-        return relationship(Discount, lazy="joined")
+        return relationship(Discount, lazy="raise")
 
     customer_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("customers.id", ondelete="set null"), nullable=True
@@ -205,7 +201,7 @@ class Checkout(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def subscription(cls) -> Mapped[Subscription | None]:
         return relationship(
             Subscription,
-            lazy="joined",
+            lazy="raise",
             foreign_keys=[cls.subscription_id],  # type: ignore
         )
 

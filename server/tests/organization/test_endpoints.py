@@ -17,7 +17,6 @@ from polar.user_organization.service import (
 )
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.oauth2.conftest import save_fixture
 
 
 @pytest.mark.asyncio
@@ -550,6 +549,7 @@ class TestGetAccount:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
+        save_fixture: SaveFixture,
     ) -> None:
         organization.account_id = None
         await save_fixture(organization)

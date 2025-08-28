@@ -1,4 +1,3 @@
-import math
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, TypeAlias
 from uuid import UUID
@@ -12,6 +11,7 @@ from polar.enums import AccountType
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
+from polar.kit.math import polar_round
 
 if TYPE_CHECKING:
     from .organization import Organization
@@ -157,8 +157,4 @@ class Account(RecordModel):
         basis_points, fixed = self.platform_fee
         fee_in_cents = (amount_in_cents * (basis_points / 10_000)) + fixed
         # Apply same logic as Stripe fee rounding
-        return (
-            math.ceil(fee_in_cents)
-            if fee_in_cents - int(fee_in_cents) >= 0.5
-            else math.floor(fee_in_cents)
-        )
+        return polar_round(fee_in_cents)

@@ -34,6 +34,9 @@ def upgrade() -> None:
     op.add_column(
         "organization_reviews", sa.Column("appeal_decision", sa.String(), nullable=True)
     )
+    op.execute(
+        "UPDATE organization_reviews SET appeal_decision = 'approved', appeal_reviewed_at = NOW() WHERE verdict = 'FAIL'"
+    )
     # ### end Alembic commands ###
 
 

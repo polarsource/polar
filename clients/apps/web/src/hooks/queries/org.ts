@@ -103,7 +103,13 @@ export const useOrganizationAccount = (id?: string) =>
           params: { path: { id: id ?? '' } },
         }),
       ),
-    retry: defaultRetry,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 403 (user is not admin) or 404 (account not found)
+      if (error?.response?.status === 403 || error?.response?.status === 404) {
+        return false
+      }
+      return defaultRetry(failureCount, error)
+    },
     enabled: !!id,
   })
 

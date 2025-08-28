@@ -75,6 +75,32 @@ class AccountService:
         )
         return await repository.get_one_or_none(statement)
 
+    async def _get_unrestricted(
+        self,
+        session: AsyncSession,
+        id: uuid.UUID,
+    ) -> Account | None:
+        """Get account without auth restrictions - for internal use only."""
+        repository = AccountRepository.from_session(session)
+        statement = (
+            repository.get_base_statement()
+            .where(Account.id == id)
+            .options(
+                joinedload(Account.users),
+                joinedload(Account.organizations),
+            )
+        )
+        return await repository.get_one_or_none(statement)
+
+    async def is_user_admin(
+        self, session: AsyncSession, account_id: uuid.UUID, user: User
+    ) -> bool:
+        """Check if the given user is the admin of the account."""
+        account = await self._get_unrestricted(session, account_id)
+        if account is None:
+            return False
+        return account.admin_id == user.id
+
     async def update(
         self, session: AsyncSession, account: Account, account_update: AccountUpdate
     ) -> Account:

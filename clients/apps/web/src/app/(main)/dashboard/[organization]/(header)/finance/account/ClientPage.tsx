@@ -40,10 +40,13 @@ export default function ClientPage({
   const identityVerificationStatus = currentUser?.identity_verification_status
   const identityVerified = identityVerificationStatus === 'verified'
 
-  const { data: organizationAccount } = useOrganizationAccount(organization.id)
+  const { data: organizationAccount, error: accountError } = useOrganizationAccount(organization.id)
   const { data: reviewStatus } = useOrganizationReviewStatus(organization.id)
 
   const [validationCompleted, setValidationCompleted] = useState(false)
+
+  // Check if user is not admin of the account
+  const isNotAdmin = accountError && (accountError as any)?.response?.status === 403
 
   type Step = 'review' | 'validation' | 'account' | 'identity' | 'complete'
 
@@ -60,6 +63,7 @@ export default function ClientPage({
     if (!skipValidation) {
       return 'validation'
     }
+    
     if (
       organizationAccount === undefined ||
       !organizationAccount.stripe_id ||
@@ -156,6 +160,7 @@ export default function ClientPage({
     identityVerified,
     reviewStatus?.appeal_decision,
     reviewStatus?.verdict,
+    isNotAdmin,
   ])
 
   const handleDetailsSubmitted = useCallback(() => {
@@ -215,6 +220,15 @@ export default function ClientPage({
     setStep('complete')
   }, [organizationAccount, identityVerified])
 
+  const handleSkipAccountSetup = useCallback(() => {
+    // For non-admin users, skip directly to identity verification
+    if (!identityVerified) {
+      setStep('identity')
+    } else {
+      setStep('complete')
+    }
+  }, [identityVerified])
+
   return (
     <DashboardBody>
       <div className="flex flex-col gap-y-6">
@@ -226,10 +240,12 @@ export default function ClientPage({
           identityVerified={identityVerified}
           identityVerificationStatus={identityVerificationStatus}
           organizationReviewStatus={reviewStatus}
+          isNotAdmin={isNotAdmin}
           onDetailsSubmitted={handleDetailsSubmitted}
           onValidationCompleted={handleValidationCompleted}
           onStartAccountSetup={handleStartAccountSetup}
           onStartIdentityVerification={handleStartIdentityVerification}
+          onSkipAccountSetup={handleSkipAccountSetup}
           onAppealApproved={handleAppealApproved}
         />
 

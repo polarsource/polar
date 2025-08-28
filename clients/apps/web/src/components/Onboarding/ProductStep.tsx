@@ -15,10 +15,12 @@ import Button from '@polar-sh/ui/components/atoms/Button'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useThemePreset } from '@polar-sh/ui/hooks/theming'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { memo, useCallback, useContext, useMemo, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
+import { FadeUp } from '../Animated/FadeUp'
 import LogoIcon from '../Brand/LogoIcon'
 import { CheckoutCard } from '../Checkout/CheckoutCard'
 import CheckoutProductInfo from '../Checkout/CheckoutProductInfo'
@@ -29,7 +31,6 @@ import { ProductInfoSection } from '../Products/ProductForm/ProductInfoSection'
 import { ProductMediaSection } from '../Products/ProductForm/ProductMediaSection'
 import { ProductPricingSection } from '../Products/ProductForm/ProductPricingSection'
 import { productCreateToProduct } from '../Products/utils'
-import { Well } from '../Shared/Well'
 
 type ProductCreateForm = Omit<schemas['ProductCreate'], 'metadata'> &
   ProductFullMediasMixin & {
@@ -144,8 +145,13 @@ export const ProductStep = () => {
   return (
     <Form {...form}>
       <div className="dark:md:bg-polar-950 flex flex-col pt-16 md:items-center md:p-16">
-        <div className="flex min-h-0 w-full flex-shrink-0 flex-col gap-12 md:max-w-xl md:p-8">
-          <div className="flex flex-col items-center gap-y-8">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          transition={{ duration: 1, staggerChildren: 0.3 }}
+          className="flex min-h-0 w-full flex-shrink-0 flex-col gap-12 md:max-w-xl md:p-8"
+        >
+          <FadeUp className="flex flex-col items-center gap-y-8">
             <LogoIcon size={50} />
             <div className="flex flex-col gap-y-4">
               <h1 className="text-center text-3xl">Your first product</h1>
@@ -153,7 +159,7 @@ export const ProductStep = () => {
                 Setup your first digital product to get started.
               </p>
             </div>
-          </div>
+          </FadeUp>
 
           <div className="flex flex-col md:gap-y-4">
             <form
@@ -161,28 +167,28 @@ export const ProductStep = () => {
               className="flex flex-col gap-y-6 [&>div>*]:px-0 [&>div>:first-child]:pt-0"
             >
               <div className="flex flex-col md:gap-y-4">
-                <Well className="dark:bg-polar-900 border-gray-200 bg-white md:border dark:border-none">
+                <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
                   <ProductInfoSection compact />
-                </Well>
+                </FadeUp>
 
-                <Well className="dark:bg-polar-900 border-gray-200 bg-white md:border dark:border-none">
+                <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
                   <ProductMediaSection
                     className="py-0"
                     organization={organization}
                     compact
                   />
-                </Well>
+                </FadeUp>
 
-                <Well className="dark:bg-polar-900 border-gray-200 bg-white md:border dark:border-none">
+                <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
                   <ProductPricingSection
                     className="py-0"
                     organization={organization}
                     compact
                   />
-                </Well>
+                </FadeUp>
               </div>
             </form>
-            <Well className="dark:bg-polar-900 border-gray-200 bg-white md:border dark:border-none">
+            <FadeUp className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl border-gray-200 bg-white p-6 md:border dark:border-none">
               <ProductBenefitsForm
                 className="px-0 py-0"
                 organization={organization}
@@ -196,8 +202,8 @@ export const ProductStep = () => {
                 onSelectBenefit={onSelectBenefit}
                 onRemoveBenefit={onRemoveBenefit}
               />
-            </Well>
-            <div className="flex flex-col gap-y-2 p-8 md:p-0">
+            </FadeUp>
+            <FadeUp className="flex flex-col gap-y-2 p-8 md:p-0">
               <Button
                 onClick={() => handleSubmit(onSubmit)()}
                 disabled={!formState.isValid}
@@ -211,9 +217,9 @@ export const ProductStep = () => {
                   Skip
                 </Button>
               </Link>
-            </div>
+            </FadeUp>
           </div>
-        </div>
+        </motion.div>
       </div>
     </Form>
   )

@@ -25,8 +25,20 @@ class UnderReviewAccountForm(forms.BaseForm):
     action: Annotated[Literal["under_review"], forms.SkipField]
 
 
+class ApproveAppealForm(forms.BaseForm):
+    action: Annotated[Literal["approve_appeal"], forms.SkipField]
+
+
+class DenyAppealForm(forms.BaseForm):
+    action: Annotated[Literal["deny_appeal"], forms.SkipField]
+
+
 AccountStatusForm = Annotated[
-    ApproveAccountForm | DenyAccountForm | UnderReviewAccountForm,
+    ApproveAccountForm
+    | DenyAccountForm
+    | UnderReviewAccountForm
+    | ApproveAppealForm
+    | DenyAppealForm,
     Discriminator("action"),
 ]
 

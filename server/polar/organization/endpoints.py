@@ -11,10 +11,16 @@ from polar.auth.scope import Scope
 from polar.config import settings
 from polar.email.react import render_email_template
 from polar.email.sender import enqueue_email
-from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
+from polar.exceptions import (
+    NotPermitted,
+    PolarRequestValidationError,
+    ResourceNotFound,
+    Unauthorized,
+)
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization
 from polar.openapi import APITag
+from polar.organization.repository import OrganizationReviewRepository
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.user.service import user as user_service
@@ -26,10 +32,13 @@ from polar.user_organization.service import (
 from . import auth, sorting
 from .schemas import Organization as OrganizationSchema
 from .schemas import (
+    OrganizationAppealRequest,
+    OrganizationAppealResponse,
     OrganizationCreate,
     OrganizationID,
     OrganizationPaymentStatus,
     OrganizationPaymentStep,
+    OrganizationReviewStatus,
     OrganizationUpdate,
     OrganizationValidationResult,
 )
@@ -351,4 +360,87 @@ async def validate_with_ai(
         verdict=result.verdict,  # type: ignore[arg-type]
         reason=result.reason,
         timed_out=result.timed_out,
+    )
+
+
+@router.post(
+    "/{id}/appeal",
+    response_model=OrganizationAppealResponse,
+    summary="Submit Appeal for Organization Review",
+    responses={
+        200: {"description": "Appeal submitted successfully."},
+        404: OrganizationNotFound,
+        400: {"description": "Invalid appeal request."},
+    },
+    tags=[APITag.private],
+)
+async def submit_appeal(
+    id: OrganizationID,
+    appeal_request: OrganizationAppealRequest,
+    auth_subject: auth.OrganizationsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationAppealResponse:
+    """Submit an appeal for organization review after AI validation failure."""
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    try:
+        result = await organization_service.submit_appeal(
+            session, organization, appeal_request.reason
+        )
+
+        return OrganizationAppealResponse(
+            success=True,
+            message="Appeal submitted successfully. Our team will review your case.",
+            appeal_submitted_at=result.appeal_submitted_at,  # type: ignore[arg-type]
+        )
+    except ValueError as e:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "type": "value_error",
+                    "loc": ("body", "reason"),
+                    "msg": e.args[0],
+                    "input": appeal_request.reason,
+                }
+            ]
+        )
+
+
+@router.get(
+    "/{id}/review-status",
+    response_model=OrganizationReviewStatus,
+    summary="Get Organization Review Status",
+    responses={
+        200: {"description": "Organization review status retrieved."},
+        404: OrganizationNotFound,
+    },
+    tags=[APITag.private],
+)
+async def get_review_status(
+    id: OrganizationID,
+    auth_subject: auth.OrganizationsRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationReviewStatus:
+    """Get the current review status and appeal information for an organization."""
+    organization = await organization_service.get(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    review_repository = OrganizationReviewRepository.from_session(session)
+    review = await review_repository.get_by_organization(organization.id)
+
+    if review is None:
+        return OrganizationReviewStatus()
+
+    return OrganizationReviewStatus(
+        verdict=review.verdict,  # type: ignore[arg-type]
+        reason=review.reason,
+        appeal_submitted_at=review.appeal_submitted_at,
+        appeal_reason=review.appeal_reason,
+        appeal_decision=review.appeal_decision,
+        appeal_reviewed_at=review.appeal_reviewed_at,
     )

@@ -878,6 +878,10 @@ async def get(
                 await organization_service.set_organization_under_review(
                     session, organization
                 )
+            elif account_status.action == "approve_appeal":
+                await organization_service.approve_appeal(session, organization)
+            elif account_status.action == "deny_appeal":
+                await organization_service.deny_appeal(session, organization)
             return HXRedirectResponse(request, request.url, 303)
         except ValidationError as e:
             validation_error = e
@@ -893,7 +897,7 @@ async def get(
     )
 
     # Create AI review verdict
-    ai_review_verdict = AIReviewVerdict(organization.review)
+    ai_review_verdict = AIReviewVerdict(organization.review, organization, request)
 
     with layout(
         request,

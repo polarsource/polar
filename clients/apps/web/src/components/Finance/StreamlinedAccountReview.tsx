@@ -40,10 +40,12 @@ interface StreamlinedAccountReviewProps {
   organizationAccount?: schemas['Account']
   identityVerified?: boolean
   identityVerificationStatus?: string
+  organizationReviewStatus?: schemas['OrganizationReviewStatus']
   onDetailsSubmitted: () => void
   onValidationCompleted: () => void
   onStartAccountSetup: () => void
   onStartIdentityVerification: () => void
+  onAppealApproved?: () => void
 }
 
 const ProgressIndicator = ({ steps }: { steps: StepConfig[] }) => {
@@ -179,14 +181,14 @@ export default function StreamlinedAccountReview({
   organizationAccount,
   identityVerified,
   identityVerificationStatus,
+  organizationReviewStatus,
   onDetailsSubmitted,
   onValidationCompleted,
   onStartAccountSetup,
   onStartIdentityVerification,
+  onAppealApproved,
 }: StreamlinedAccountReviewProps) {
-  const [validationCompleted, setValidationCompleted] = useState(
-    organization.details_submitted_at !== null,
-  )
+  const [validationCompleted, setValidationCompleted] = useState(false)
 
   const handleDetailsSubmitted = () => {
     onDetailsSubmitted()
@@ -199,7 +201,13 @@ export default function StreamlinedAccountReview({
 
   // Determine completion status for each step
   const isReviewCompleted = !!organization.details_submitted_at
-  const isValidationCompleted = validationCompleted
+
+  // Check if validation is completed through AI result PASS or approved appeal
+  const isAIValidationPassed = organizationReviewStatus?.verdict === 'PASS'
+  const isAppealApproved =
+    organizationReviewStatus?.appeal_decision === 'approved'
+  const isValidationCompleted =
+    validationCompleted || isAIValidationPassed || isAppealApproved
   const isAccountCompleted =
     organizationAccount !== undefined &&
     organizationAccount.is_details_submitted
@@ -337,6 +345,7 @@ export default function StreamlinedAccountReview({
               organization={organization}
               autoValidate={true}
               onValidationCompleted={handleValidationCompleted}
+              onAppealApproved={onAppealApproved}
             />
           </div>
         )}

@@ -47,6 +47,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.organization_review import OrganizationReview
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
 
@@ -74,6 +75,12 @@ class AccountReviewThreadCreationError(PlainServiceError):
         super().__init__(
             f"Error creating thread for account ID {account_id}: {message}"
         )
+
+
+class NoUserFoundError(PlainServiceError):
+    def __init__(self, organization_id: uuid.UUID) -> None:
+        self.organization_id = organization_id
+        super().__init__(f"No user found for organization {organization_id}")
 
 
 _card_getter_semaphore = asyncio.Semaphore(3)
@@ -478,6 +485,120 @@ class PlainService:
                 ),
             ]
         )
+
+    async def create_appeal_review_thread(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        review: OrganizationReview,
+    ) -> None:
+        """Create Plain ticket for organization appeal review."""
+        user_repository = UserRepository.from_session(session)
+        users = await user_repository.get_all_by_organization(organization.id)
+        if len(users) == 0:
+            raise NoUserFoundError(organization.id)
+        user = users[0]
+
+        # Create Plain ticket for appeal review
+        async with self._get_plain_client() as plain:
+            customer_result = await plain.upsert_customer(
+                UpsertCustomerInput(
+                    identifier=UpsertCustomerIdentifierInput(email_address=user.email),
+                    on_create=UpsertCustomerOnCreateInput(
+                        external_id=str(user.id),
+                        full_name=user.email,
+                        email=EmailAddressInput(
+                            email=user.email, is_verified=user.email_verified
+                        ),
+                    ),
+                    on_update=UpsertCustomerOnUpdateInput(
+                        external_id=OptionalStringInput(value=str(user.id)),
+                        email=EmailAddressInput(
+                            email=user.email, is_verified=user.email_verified
+                        ),
+                    ),
+                )
+            )
+
+            if customer_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    user.id, customer_result.error.message
+                )
+
+            # Create the thread with detailed appeal information
+            thread_result = await plain.create_thread(
+                CreateThreadInput(
+                    customer_identifier=CustomerIdentifierInput(
+                        external_id=str(user.id)
+                    ),
+                    title=f"Organization Appeal - {organization.slug}",
+                    label_type_ids=["lt_01K3QWYTDV7RSS7MM2RC584X41"],
+                    components=[
+                        ComponentInput(
+                            component_text=ComponentTextInput(
+                                text=f"The organization `{organization.slug}` has submitted an appeal for review after AI validation {review.verdict}."
+                            )
+                        ),
+                        ComponentInput(
+                            component_container=ComponentContainerInput(
+                                container_content=[
+                                    ComponentContainerContentInput(
+                                        component_text=ComponentTextInput(
+                                            text=organization.name or organization.slug
+                                        )
+                                    ),
+                                    ComponentContainerContentInput(
+                                        component_divider=ComponentDividerInput(
+                                            divider_spacing_size=ComponentDividerSpacingSize.M
+                                        )
+                                    ),
+                                    # Organization ID
+                                    ComponentContainerContentInput(
+                                        component_row=ComponentRowInput(
+                                            row_main_content=[
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text="Organization ID",
+                                                        text_size=ComponentTextSize.S,
+                                                        text_color=ComponentTextColor.MUTED,
+                                                    )
+                                                ),
+                                                ComponentRowContentInput(
+                                                    component_text=ComponentTextInput(
+                                                        text=str(organization.id)
+                                                    )
+                                                ),
+                                            ],
+                                            row_aside_content=[
+                                                ComponentRowContentInput(
+                                                    component_copy_button=ComponentCopyButtonInput(
+                                                        copy_button_value=str(
+                                                            organization.id
+                                                        ),
+                                                        copy_button_tooltip_label="Copy Organization ID",
+                                                    )
+                                                )
+                                            ],
+                                        )
+                                    ),
+                                    # Admin Dashboard Link
+                                    ComponentContainerContentInput(
+                                        component_link_button=ComponentLinkButtonInput(
+                                            link_button_url=f"{settings.FRONTEND_BASE_URL}/backoffice/organizations/{organization.id}",
+                                            link_button_label="View in Admin Dashboard",
+                                        )
+                                    ),
+                                ]
+                            )
+                        ),
+                    ],
+                )
+            )
+
+            if thread_result.error is not None:
+                raise AccountReviewThreadCreationError(
+                    user.id, thread_result.error.message
+                )
 
     async def get_customer_card(
         self, session: AsyncSession, request: CustomerCardsRequest

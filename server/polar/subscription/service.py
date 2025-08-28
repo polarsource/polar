@@ -943,12 +943,19 @@ class SubscriptionService:
             new_static_prices = [p for p in product.prices if is_static_price(p)]
 
             for old_price in old_static_prices:
+                base_amount = old_price.price_amount
+                discount_amount = 0
+                if subscription.discount:
+                    discount_amount = subscription.discount.get_discount_amount(
+                        base_amount
+                    )
                 entry_unused_time = BillingEntry(
                     type=BillingEntryType.proration,
                     direction=BillingEntryDirection.credit,
                     start_timestamp=now,
                     end_timestamp=old_cycle_end,
                     amount=round(old_price.price_amount * old_cycle_pct_remaining),
+                    discount_amount=discount_amount,
                     currency=subscription.currency,
                     customer_id=subscription.customer_id,
                     product_price_id=old_price.id,
@@ -959,12 +966,21 @@ class SubscriptionService:
                 session.add(entry_unused_time)
 
             for new_price in new_static_prices:
+                base_amount = new_price.price_amount
+                discount_amount = 0
+                if subscription.discount and subscription.discount.is_applicable(
+                    new_price.product
+                ):
+                    discount_amount = subscription.discount.get_discount_amount(
+                        base_amount
+                    )
                 entry_remaining_time = BillingEntry(
                     type=BillingEntryType.proration,
                     direction=BillingEntryDirection.debit,
                     start_timestamp=now,
                     end_timestamp=new_cycle_end,
                     amount=round(new_price.price_amount * new_cycle_pct_remaining),
+                    discount_amount=discount_amount,
                     currency=subscription.currency,
                     customer_id=subscription.customer_id,
                     product_price_id=new_price.id,

@@ -8,6 +8,10 @@ import pytest
 import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
+from pydantic_extra_types.country import CountryAlpha2
+from pytest_mock import MockerFixture
+from sqlalchemy.orm import joinedload
+
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
@@ -61,10 +65,6 @@ from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
 )
 from polar.transaction.service.platform_fee import PlatformFeeTransactionService
-from pydantic_extra_types.country import CountryAlpha2
-from pytest_mock import MockerFixture
-from sqlalchemy.orm import joinedload
-
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -941,7 +941,15 @@ class DiscountFixture(TypedDict):
 class ProrationFixture(TypedDict):
     discount: DiscountFixture | None
     products: dict[str, tuple[SubscriptionRecurringInterval, int]]
-    history: list[tuple[str, tuple[BillingEntryDirection, int], datetime, datetime]]
+    history: list[
+        tuple[
+            str,
+            BillingEntryType,
+            tuple[BillingEntryDirection, int, int],
+            datetime,
+            datetime,
+        ]
+    ]
     expected_discount: int
     expected_subtotal: int
     expected_tax: int
@@ -961,6 +969,7 @@ class TestCreateSubscriptionOrder:
             stripe_product_id: str,
             address: Address,
             tax_ids: list[TaxID],
+            tax_exempted: bool,
         ) -> TaxCalculation:
             return {
                 "processor_id": "TAX_PROCESSOR_ID",
@@ -1016,6 +1025,7 @@ class TestCreateSubscriptionOrder:
 
         billing_entry_credit = await create_billing_entry(
             save_fixture,
+            type=BillingEntryType.proration,
             direction=BillingEntryDirection.credit,
             start_timestamp=datetime(2025, 6, 1, tzinfo=UTC),
             end_timestamp=datetime(2025, 6, 16, tzinfo=UTC),
@@ -1027,6 +1037,7 @@ class TestCreateSubscriptionOrder:
         )
         billing_entry_debit = await create_billing_entry(
             save_fixture,
+            type=BillingEntryType.proration,
             direction=BillingEntryDirection.debit,
             start_timestamp=datetime(2025, 6, 16, tzinfo=UTC),
             end_timestamp=datetime(2025, 7, 1, tzinfo=UTC),
@@ -1038,6 +1049,7 @@ class TestCreateSubscriptionOrder:
         )
         billing_entry_cycle = await create_billing_entry(
             save_fixture,
+            type=BillingEntryType.cycle,
             direction=BillingEntryDirection.debit,
             start_timestamp=datetime(2025, 7, 1, tzinfo=UTC),
             end_timestamp=datetime(2025, 8, 1, tzinfo=UTC),
@@ -1129,32 +1141,37 @@ class TestCreateSubscriptionOrder:
                         "p-pro": (SubscriptionRecurringInterval.month, 9000),
                     },
                     "history": [
-                        # (
-                        #     "p-yearly",
-                        #     (BillingEntryDirection.debit, 7500),
-                        #     datetime(2025, 6, 1, tzinfo=UTC),
-                        #     datetime(2025, 9, 1, tzinfo=UTC),
-                        # ),
                         (
                             "p-basic",
-                            # 3000 x 50% (half a month) x (100 - 25)% (discount)
+                            # 3000 x 50% (half a month), discount: (100 - 25)% x 1500 = 375
                             # (BillingEntryDirection.credit, 1125),
                             # BillingEntries don't include discounts
-                            (BillingEntryDirection.credit, 1500),
+                            BillingEntryType.proration,
+                            (BillingEntryDirection.credit, 1500, 375),
                             datetime(2025, 9, 16, tzinfo=UTC),
                             datetime(2026, 10, 1, tzinfo=UTC),
                         ),
                         (
                             "p-pro",
-                            # 9000 x 50% (half a month) (no discount)
-                            (BillingEntryDirection.debit, 4500),
+                            BillingEntryType.proration,
+                            # 9000 x 50% (half a month) discount: (100 - 25)% x 4500 = 1125
+                            (BillingEntryDirection.debit, 4500, 1125),
                             datetime(2025, 9, 16, tzinfo=UTC),
                             datetime(2025, 10, 1, tzinfo=UTC),
                         ),
+                        (
+                            "p-pro",
+                            BillingEntryType.cycle,
+                            (BillingEntryDirection.debit, 9000, 1800),
+                            datetime(2025, 10, 1, tzinfo=UTC),
+                            datetime(2025, 11, 1, tzinfo=UTC),
+                        ),
                     ],
-                    "expected_discount": 375,  # 3000 x 50% (half a month) x 25% (discount)
-                    "expected_subtotal": 3000,  # 4500 - 1500 = 3000
-                    "expected_tax": 525,  # (3000 - 375) x 20% = 525
+                    "expected_discount": 0 + 2250,
+                    # (4500 - 1125) - (1500 - 375) = 2250
+                    "expected_subtotal": 2250 + 9000,
+                    # Tax: 2250 x 20% = 450 ; (9000 - 2250) x 25% = 1440
+                    "expected_tax": 450 + 1350,
                 },
                 id="discount-applies-only-to-first-product",
             ),
@@ -1175,25 +1192,35 @@ class TestCreateSubscriptionOrder:
                         "p-pro": (SubscriptionRecurringInterval.month, 9000),
                     },
                     "history": [
-                        # Discounts aren't applied on the BillingEntry
+                        # Discounts aren't applied on the BillingEntry, but they are applied to the OrderItem
                         (
                             "p-basic",
+                            BillingEntryType.proration,
                             # 3000 x 50% (half a month)
-                            (BillingEntryDirection.credit, 1500),
+                            (BillingEntryDirection.credit, 1500, 1000),
                             datetime(2025, 9, 16, tzinfo=UTC),
                             datetime(2026, 10, 1, tzinfo=UTC),
                         ),
                         (
                             "p-pro",
+                            BillingEntryType.proration,
                             # 9000 x 50% (half a month)
-                            (BillingEntryDirection.debit, 4500),
+                            (BillingEntryDirection.debit, 4500, 1750),
                             datetime(2025, 9, 16, tzinfo=UTC),
                             datetime(2025, 10, 1, tzinfo=UTC),
                         ),
+                        (
+                            "p-pro",
+                            BillingEntryType.cycle,
+                            (BillingEntryDirection.debit, 9000, 1000),
+                            datetime(2025, 10, 1, tzinfo=UTC),
+                            datetime(2025, 11, 1, tzinfo=UTC),
+                        ),
                     ],
-                    "expected_discount": 500,
-                    "expected_subtotal": 3000,  # 4500 - 1500 = 3000
-                    "expected_tax": 500,  # (3000 - 500) x 20% = 500
+                    "expected_discount": 1000,
+                    # (4500 - 1750) - (1500 - 1000) = 2250
+                    "expected_subtotal": 2250 + 9000,
+                    "expected_tax": 450 + 1600,  # 2250 x 20% = 450 ; 8000 x 20% = 1600
                     # You paid 2000 for the month. Now you get 1000 back (50% the month).
                 },
                 id="fixed-discount-on-first-product",
@@ -1265,16 +1292,22 @@ class TestCreateSubscriptionOrder:
             prices[key] = price
 
         entries = []
-        for product_key, (dir, amount), start_dt, end_dt in setup["history"]:
+        for product_key, type, (
+            dir,
+            amount,
+            discount_amount,
+        ), start_dt, end_dt in setup["history"]:
             price = prices[product_key]
             entry = await create_billing_entry(
                 save_fixture,
+                type=type,
                 direction=dir,
                 start_timestamp=start_dt,
                 end_timestamp=end_dt,
                 customer=subscription.customer,
                 product_price=price,
                 amount=amount,
+                discount_amount=discount_amount,
                 currency=price.price_currency,
                 subscription=subscription,
             )

@@ -649,24 +649,13 @@ class OrderService:
             if not discount.is_repetition_expired(
                 subscription.started_at, subscription.current_period_start
             ):
-                # We need to check for each item if the discount is applicable
-                # to that product
-                for item in items:
-                    if not item.discountable:
-                        continue
-
-                    # `item.amount` may be negative in the case of prorations,
-                    # but the `discount_amount` we're calculating is expected
-                    # to be positive
-                    item_amount = abs(item.amount)
-
-                    if discount.is_applicable(item.product_price.product):
-                        discount_amount += discount.get_discount_amount(item_amount)
-
-                # For fixed amount Discounts we need to cap it at that amount
-                # as we might have summed up too high of a discount
-                if discount.type == DiscountType.fixed:
-                    discount_amount = min(discount_amount, discount.amount)
+                # Discount only applies to cycle and meter items, as prorations
+                # use "last month's" discount and so this month's discount
+                # shouldn't apply to those.
+                discountable_amount = sum(
+                    item.amount for item in items if item.discountable
+                )
+                discount_amount = discount.get_discount_amount(discountable_amount)
 
         # Calculate tax
         tax_amount = 0

@@ -2377,7 +2377,6 @@ class TestUpdateOrder:
         )
         await save_fixture(order)
 
-
         updated_order = await order_service.update(
             session,
             order,
@@ -2401,7 +2400,6 @@ class TestUpdateOrder:
             billing_name="Original Name",
         )
         await save_fixture(order)
-
 
         updated_order = await order_service.update(
             session,
@@ -2441,7 +2439,6 @@ class TestUpdateOrder:
             city="Updated City",
             postal_code="90210",
         )
-
 
         updated_order = await order_service.update(
             session,
@@ -2508,7 +2505,6 @@ class TestUpdateOrder:
         # Set invoice_path after creation
         order.invoice_path = "/path/to/invoice.pdf"  # Invoice already generated
         await save_fixture(order)
-
 
         updated_order = await order_service.update(
             session,

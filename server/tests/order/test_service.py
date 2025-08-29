@@ -39,9 +39,9 @@ from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.organization import Organization
 from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
+from polar.models.custom_field import CustomFieldType
 from polar.models.subscription import SubscriptionRecurringInterval, SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
-from polar.models.custom_field import CustomFieldType
 from polar.order.service import (
     MissingCheckoutCustomer,
     NoPendingBillingEntries,
@@ -55,6 +55,7 @@ from polar.order.service import (
     RecurringProduct,
     SubscriptionDoesNotExist,
 )
+from polar.order.schemas import OrderUpdate
 from polar.order.service import order as order_service
 from polar.product.guard import is_fixed_price, is_static_price
 from polar.transaction.service.balance import (

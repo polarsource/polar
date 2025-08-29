@@ -216,7 +216,10 @@ class TestUpdateOrder:
     ) -> None:
         # Create a product with custom fields
         text_field = await create_custom_field(
-            save_fixture, type=CustomFieldType.text, slug="text", organization=organization
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="text",
+            organization=organization,
         )
         select_field = await create_custom_field(
             save_fixture,
@@ -260,7 +263,10 @@ class TestUpdateOrder:
     ) -> None:
         # Create a product with custom fields
         text_field = await create_custom_field(
-            save_fixture, type=CustomFieldType.text, slug="text", organization=organization
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="text",
+            organization=organization,
         )
         select_field = await create_custom_field(
             save_fixture,
@@ -308,7 +314,10 @@ class TestUpdateOrder:
     ) -> None:
         # Create a product with custom fields
         text_field = await create_custom_field(
-            save_fixture, type=CustomFieldType.text, slug="text", organization=organization
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="text",
+            organization=organization,
         )
         select_field = await create_custom_field(
             save_fixture,

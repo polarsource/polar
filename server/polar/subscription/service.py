@@ -912,6 +912,16 @@ class SubscriptionService:
                 # And we always invoice immediately
                 proration_behavior = SubscriptionProrationBehavior.invoice
 
+                # Check if discount is still applicable - if won't check discount at
+                # this point one can keep on switching plans and never triggering a
+                # true `subscription/service.py::cycle()` which would be the normal
+                # mechanism expiring the discount applied to the subscription
+                if subscription.discount is not None:
+                    if subscription.discount.is_repetition_expired(
+                        subscription.started_at, subscription.current_period_start
+                    ):
+                        subscription.discount = None
+
             new_cycle_start = subscription.current_period_start
             new_cycle_end = subscription.recurring_interval.get_next_period(
                 subscription.current_period_start

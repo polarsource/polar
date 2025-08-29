@@ -2447,11 +2447,11 @@ class TestUpdateOrder:
         )
 
         assert updated_order.billing_address is not None
-        assert updated_order.billing_address["country"] == "US"
-        assert updated_order.billing_address["state"] == "US-CA"
-        assert updated_order.billing_address["line1"] == "456 Updated St"
-        assert updated_order.billing_address["city"] == "Updated City"
-        assert updated_order.billing_address["postal_code"] == "90210"
+        assert updated_order.billing_address["country"] == "US"  # type: ignore
+        assert updated_order.billing_address["state"] == "US-CA"  # type: ignore
+        assert updated_order.billing_address["line1"] == "456 Updated St"  # type: ignore
+        assert updated_order.billing_address["city"] == "Updated City"  # type: ignore
+        assert updated_order.billing_address["postal_code"] == "90210"  # type: ignore
 
     async def test_update_with_invoice_generated(
         self,

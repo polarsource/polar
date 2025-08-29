@@ -1,0 +1,131 @@
+name: "Maintenance Mode Toggle"
+description: "Enable or disable maintenance mode by toggling Cloudflare Custom Error Rules"
+inputs:
+  enable:
+    description: "Enable maintenance mode (true) or disable (false)"
+    required: true
+  cloudflare_api_token:
+    description: "Cloudflare API token"
+    required: true
+  cloudflare_zone_id:
+    description: "Cloudflare Zone ID"
+    required: true
+  cloudflare_ruleset_id:
+    description: "Cloudflare Ruleset ID"
+    required: true
+  frontend_maintenance_rule_id:
+    description: "Frontend maintenance rule ID"
+    required: true
+  api_maintenance_rule_id:
+    description: "API maintenance rule ID"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set action variables
+      shell: bash
+      run: |
+        if [[ "${{ inputs.enable }}" == "true" ]]; then
+          echo "ACTION=enable" >> $GITHUB_ENV
+          echo "ENABLED_VALUE=true" >> $GITHUB_ENV
+          echo "ACTION_VERB=Enabling" >> $GITHUB_ENV
+          echo "STATUS_ICON=🚧" >> $GITHUB_ENV
+          echo "SUCCESS_MESSAGE=MAINTENANCE MODE IS NOW ACTIVE" >> $GITHUB_ENV
+        else
+          echo "ACTION=disable" >> $GITHUB_ENV
+          echo "ENABLED_VALUE=false" >> $GITHUB_ENV
+          echo "ACTION_VERB=Disabling" >> $GITHUB_ENV
+          echo "STATUS_ICON=🟢" >> $GITHUB_ENV
+          echo "SUCCESS_MESSAGE=NORMAL OPERATION RESTORED" >> $GITHUB_ENV
+        fi
+
+    - name: ${{ env.ACTION_VERB }} Frontend Maintenance Rule
+      id: frontend_rule
+      shell: bash
+      run: |
+        echo "${{ env.ACTION_VERB }} frontend maintenance rule: ${{ inputs.frontend_maintenance_rule_id }}"
+
+        response=$(curl -s -w "%{http_code}" -o frontend_response.json \
+          -X PATCH \
+          "https://api.cloudflare.com/client/v4/zones/${{ inputs.cloudflare_zone_id }}/rulesets/${{ inputs.cloudflare_ruleset_id }}/rules/${{ inputs.frontend_maintenance_rule_id }}" \
+          -H "Authorization: Bearer ${{ inputs.cloudflare_api_token }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "enabled": ${{ env.ENABLED_VALUE }}
+          }')
+
+        http_code="${response: -3}"
+
+        if [[ "$http_code" -ge 200 && "$http_code" -lt 300 ]]; then
+          echo "✅ Successfully ${{ env.ACTION }}d frontend maintenance rule"
+          echo "FRONTEND_SUCCESS=true" >> $GITHUB_ENV
+        else
+          echo "❌ Failed to ${{ env.ACTION }} frontend maintenance rule (HTTP $http_code)"
+          cat frontend_response.json
+          echo "FRONTEND_SUCCESS=false" >> $GITHUB_ENV
+          exit 1
+        fi
+
+    - name: ${{ env.ACTION_VERB }} API Maintenance Rule
+      id: api_rule
+      shell: bash
+      run: |
+        echo "${{ env.ACTION_VERB }} API maintenance rule: ${{ inputs.api_maintenance_rule_id }}"
+
+        response=$(curl -s -w "%{http_code}" -o api_response.json \
+          -X PATCH \
+          "https://api.cloudflare.com/client/v4/zones/${{ inputs.cloudflare_zone_id }}/rulesets/${{ inputs.cloudflare_ruleset_id }}/rules/${{ inputs.api_maintenance_rule_id }}" \
+          -H "Authorization: Bearer ${{ inputs.cloudflare_api_token }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "enabled": ${{ env.ENABLED_VALUE }}
+          }')
+
+        http_code="${response: -3}"
+
+        if [[ "$http_code" -ge 200 && "$http_code" -lt 300 ]]; then
+          echo "✅ Successfully ${{ env.ACTION }}d API maintenance rule"
+          echo "API_SUCCESS=true" >> $GITHUB_ENV
+        else
+          echo "❌ Failed to ${{ env.ACTION }} API maintenance rule (HTTP $http_code)"
+          cat api_response.json
+          echo "API_SUCCESS=false" >> $GITHUB_ENV
+          exit 1
+        fi
+
+    - name: Generate Summary
+      shell: bash
+      if: always()
+      run: |
+        echo "## ${{ env.STATUS_ICON }} Maintenance Mode Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Action**: ${{ inputs.enable == 'true' && 'Enable' || 'Disable' }} maintenance mode" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Rule | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|------|---------|" >> $GITHUB_STEP_SUMMARY
+
+        if [[ "${{ env.FRONTEND_SUCCESS }}" == "true" ]]; then
+          echo "| Frontend | ✅ ${{ inputs.enable == 'true' && 'Enabled' || 'Disabled' }} |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| Frontend | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [[ "${{ env.API_SUCCESS }}" == "true" ]]; then
+          echo "| API | ✅ ${{ inputs.enable == 'true' && 'Enabled' || 'Disabled' }} |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| API | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Zone ID**: ${{ inputs.cloudflare_zone_id }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Ruleset ID**: ${{ inputs.cloudflare_ruleset_id }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Timestamp**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+
+        if [[ "${{ env.FRONTEND_SUCCESS }}" == "true" && "${{ env.API_SUCCESS }}" == "true" ]]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "${{ env.STATUS_ICON }} **${{ env.SUCCESS_MESSAGE }}** ${{ env.STATUS_ICON }}" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **MAINTENANCE MODE OPERATION INCOMPLETE** ⚠️" >> $GITHUB_STEP_SUMMARY
+        fi

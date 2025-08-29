@@ -152,12 +152,6 @@ class BillingEntryService:
         start = format_date(entry.start_timestamp.date(), locale="en_US")
         end = format_date(entry.end_timestamp.date(), locale="en_US")
         amount = entry.amount
-        # Prorations have discount applied to the `OrderItem` immediately.
-        # This is because e.g. a Fixed discount applies to the whole order
-        # across all metered prices. But the discount should not apply to
-        # prorations, as prorations are really using "last month's" discount.
-        if entry.type == BillingEntryType.proration:
-            amount -= entry.discount_amount or 0
 
         if entry.direction == BillingEntryDirection.credit:
             label = f"Remaining time on {product.name} — From {start} to {end}"

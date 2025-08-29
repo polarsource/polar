@@ -1147,7 +1147,8 @@ class TestCreateSubscriptionOrder:
                             # (BillingEntryDirection.credit, 1125),
                             # BillingEntries don't include discounts
                             BillingEntryType.proration,
-                            (BillingEntryDirection.credit, 1500, 375),
+                            # INCLUDES discount
+                            (BillingEntryDirection.credit, 1125, 375),
                             datetime(2025, 9, 16, tzinfo=UTC),
                             datetime(2026, 10, 1, tzinfo=UTC),
                         ),
@@ -1155,13 +1156,15 @@ class TestCreateSubscriptionOrder:
                             "p-pro",
                             BillingEntryType.proration,
                             # 9000 x 50% (half a month) discount: (100 - 25)% x 4500 = 1125
-                            (BillingEntryDirection.debit, 4500, 1125),
+                            # INCLUDES discount
+                            (BillingEntryDirection.debit, 3375, 1125),
                             datetime(2025, 9, 16, tzinfo=UTC),
                             datetime(2025, 10, 1, tzinfo=UTC),
                         ),
                         (
                             "p-pro",
                             BillingEntryType.cycle,
+                            # EXCLUDES discount
                             (BillingEntryDirection.debit, 9000, 1800),
                             datetime(2025, 10, 1, tzinfo=UTC),
                             datetime(2025, 11, 1, tzinfo=UTC),
@@ -1197,7 +1200,8 @@ class TestCreateSubscriptionOrder:
                             "p-basic",
                             BillingEntryType.proration,
                             # 3000 x 50% (half a month)
-                            (BillingEntryDirection.credit, 1500, 1000),
+                            # INCLUDES discount
+                            (BillingEntryDirection.credit, 500, 1000),
                             datetime(2025, 9, 16, tzinfo=UTC),
                             datetime(2026, 10, 1, tzinfo=UTC),
                         ),
@@ -1205,13 +1209,15 @@ class TestCreateSubscriptionOrder:
                             "p-pro",
                             BillingEntryType.proration,
                             # 9000 x 50% (half a month)
-                            (BillingEntryDirection.debit, 4500, 1750),
+                            # INCLUDES discount
+                            (BillingEntryDirection.debit, 2750, 1750),
                             datetime(2025, 9, 16, tzinfo=UTC),
                             datetime(2025, 10, 1, tzinfo=UTC),
                         ),
                         (
                             "p-pro",
                             BillingEntryType.cycle,
+                            # EXCLUDES discount
                             (BillingEntryDirection.debit, 9000, 1000),
                             datetime(2025, 10, 1, tzinfo=UTC),
                             datetime(2025, 11, 1, tzinfo=UTC),

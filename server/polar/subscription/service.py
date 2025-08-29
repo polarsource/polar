@@ -951,12 +951,25 @@ class SubscriptionService:
                     discount_amount = subscription.discount.get_discount_amount(
                         base_amount
                     )
+
+                # Prorations have discounts applied to the `BillingEntry.amount`
+                # immediately.
+                # This is because we're really applying the discount from "this" cycle
+                # whereas the `cycle` and `meter` BillingEntries should use the
+                # discount from the _next_ cycle -- the discount that applies to
+                # that upcoming order. applies to next order applies to the
+                # For example, if you have a flat "$20 off" discount, part of that
+                # $20 discount should _not_ apply to the prorations because the
+                # prorations are happening "this cycle" and shouldn't take away
+                # from next cycle's discount.
                 entry_unused_time = BillingEntry(
                     type=BillingEntryType.proration,
                     direction=BillingEntryDirection.credit,
                     start_timestamp=now,
                     end_timestamp=old_cycle_end,
-                    amount=round(old_price.price_amount * old_cycle_pct_remaining),
+                    amount=round(
+                        (base_amount - discount_amount) * old_cycle_pct_remaining
+                    ),
                     discount_amount=discount_amount,
                     currency=subscription.currency,
                     customer_id=subscription.customer_id,
@@ -985,7 +998,9 @@ class SubscriptionService:
                         direction=BillingEntryDirection.debit,
                         start_timestamp=now,
                         end_timestamp=new_cycle_end,
-                        amount=round(new_price.price_amount * new_cycle_pct_remaining),
+                        amount=round(
+                            (base_amount - discount_amount) * new_cycle_pct_remaining
+                        ),
                         discount_amount=discount_amount,
                         currency=subscription.currency,
                         customer_id=subscription.customer_id,

@@ -198,7 +198,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
     },
     {
       accessorKey: 'created_at',
-      enableSorting: true,
+      enableSorting: false,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Sent At" />
       ),

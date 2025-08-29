@@ -1282,6 +1282,7 @@ class TestCreateSubscriptionOrder:
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
+        customer: Customer,
         subscription: Subscription,
         setup: ProrationFixture,
     ) -> None:
@@ -1382,11 +1383,18 @@ class TestCreateSubscriptionOrder:
 
         assert order_ids == set([oi.id for oi in order.items])
 
+        customer_balance = await order_service.customer_balance(session, customer)
         if order.subtotal_amount >= 0:
             enqueue_job_mock.assert_any_call(
                 "order.trigger_payment",
                 order_id=order.id,
                 payment_method_id=subscription.payment_method_id,
+            )
+            assert customer_balance == 0
+        else:
+            assert (
+                customer_balance
+                == setup["expected_subtotal"] - setup["expected_discount"]
             )
 
 

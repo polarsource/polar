@@ -15,6 +15,10 @@ class Notification(RecordModel):
             "idx_notifications_user_id",
             "user_id",
         ),
+        Index(
+            "idx_notifications_organization_id",
+            "organization_id",
+        ),
     )
 
     user_id: Mapped[UUID] = mapped_column(Uuid, nullable=True)

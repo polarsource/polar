@@ -11,3 +11,12 @@ class NotificationsList(Schema):
 
 class NotificationsMarkRead(Schema):
     notification_id: UUID4
+
+
+class OrganizationNotificationsList(Schema):
+    notifications: list[Notification]
+    last_read_notification_id: UUID4 | None
+
+
+class OrganizationNotificationsMarkRead(Schema):
+    notification_id: UUID4

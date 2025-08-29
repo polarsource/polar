@@ -1231,46 +1231,48 @@ class TestCreateSubscriptionOrder:
                 },
                 id="fixed-discount-on-first-product",
             ),
-            # pytest.param(
-            #     # 50% off for 3 months
-            #     # Switch from yearly to monthly after 3 months and 1 day
-            #     {
-            #         "discount": {
-            #             "type": DiscountType.percentage,
-            #             "basis_points": 5000,
-            #             "duration": DiscountDuration.repeating,
-            #             "duration_in_months": 3,
-            #         },
-            #         "products": {
-            #             "p-monthly": (SubscriptionRecurringInterval.month, 3000),
-            #             "p-yearly": (SubscriptionRecurringInterval.year, 30000),
-            #         },
-            #         "history": [
-            #             # (
-            #             #     "p-yearly",
-            #             #     (BillingEntryDirection.debit, 7500),
-            #             #     datetime(2025, 6, 1, tzinfo=UTC),
-            #             #     datetime(2025, 9, 1, tzinfo=UTC),
-            #             # ),
-            #             (
-            #                 "p-yearly",
-            #                 (BillingEntryDirection.credit, 22500),
-            #                 datetime(2025, 9, 1, tzinfo=UTC),
-            #                 datetime(2026, 6, 1, tzinfo=UTC),
-            #             ),
-            #             (
-            #                 "p-monthly",
-            #                 (BillingEntryDirection.debit, 3000),
-            #                 datetime(2025, 9, 1, tzinfo=UTC),
-            #                 datetime(2025, 10, 1, tzinfo=UTC),
-            #             ),
-            #         ],
-            #         "expected_discount": 11250,
-            #         # 50% off full year = 15000, then switch 3 months in = 15000 - 3750 = 11250 in credit
-            #         # then discount shouldn't apply to new monthly plan (because it expired) = 3000 in debit
-            #     },
-            #     id='yearly-to-monthly'
-            # ),
+            pytest.param(
+                # 50% off for 3 months
+                # Switch from yearly to monthly after 3 months and 1 day
+                {
+                    "discount": {
+                        "type": DiscountType.percentage,
+                        "basis_points": 5000,
+                        "duration": DiscountDuration.forever,
+                        # "duration_in_months": None,
+                    },
+                    "products": {
+                        "p-monthly": (SubscriptionRecurringInterval.month, 3000),
+                        "p-yearly": (SubscriptionRecurringInterval.year, 30000),
+                    },
+                    "history": [
+                        (
+                            "p-yearly",
+                            BillingEntryType.proration,
+                            # INCLUDES discount
+                            # 15000 * (365 - 30 - 31 - 31) / 365 = 11.219,1780821918
+                            (BillingEntryDirection.credit, 11219, 11219),
+                            datetime(2025, 6, 1, tzinfo=UTC),
+                            datetime(2025, 9, 1, tzinfo=UTC),
+                        ),
+                        (
+                            "p-monthly",
+                            BillingEntryType.cycle,
+                            # EXCLUDES discount
+                            (BillingEntryDirection.debit, 3000, 1500),
+                            datetime(2025, 9, 1, tzinfo=UTC),
+                            datetime(2025, 10, 1, tzinfo=UTC),
+                        ),
+                    ],
+                    "expected_discount": 1500,
+                    # (4500 - 1750) - (1500 - 1000) = 2250
+                    "expected_subtotal": -11219 + 3000,
+                    "expected_tax": 0,
+                    # 50% off full year = 15000, then switch 3 months in = 15000 - 3750 = 11250 in credit
+                    # then discount shouldn't apply to new monthly plan (because it expired) = 3000 in debit
+                },
+                id="yearly-to-monthly",
+            ),
         ],
     )
     async def test_cycle_proration_discount(
@@ -1327,10 +1329,10 @@ class TestCreateSubscriptionOrder:
                 currency=setup["discount"].get("currency"),
                 basis_points=setup["discount"].get("basis_points"),
                 duration=setup["discount"]["duration"],
-                duration_in_months=setup["discount"]["duration_in_months"],
+                duration_in_months=setup["discount"].get("duration_in_months"),
                 organization=organization,
                 products=[products[key] for key in setup["discount"]["applies_to"]]
-                if setup["discount"]["applies_to"]
+                if setup["discount"].get("applies_to")
                 else None,
             )
             subscription.discount = discount
@@ -1353,14 +1355,21 @@ class TestCreateSubscriptionOrder:
         # assert order_items[2].product_price == new_price
         # assert order_items[2].amount == 3000
 
-        assert order.status == OrderStatus.pending
+        if order.subtotal_amount < 0:
+            assert order.status == OrderStatus.paid
+            assert order.tax_calculation_processor_id is None
+            assert order.taxability_reason is None
+            # assert order.tax_rate == calculate_tax_mock.return_value["tax_rate"]
+            assert order.tax_transaction_processor_id is None
+        else:
+            assert order.status == OrderStatus.pending
+            assert order.tax_calculation_processor_id == "TAX_PROCESSOR_ID"
+            assert order.taxability_reason == TaxabilityReason.standard_rated
+            # assert order.tax_rate == calculate_tax_mock.return_value["tax_rate"]
+            assert order.tax_transaction_processor_id is None
+
         assert order.billing_reason == OrderBillingReason.subscription_cycle
         assert order.subscription == subscription
-
-        assert order.tax_calculation_processor_id == "TAX_PROCESSOR_ID"
-        assert order.taxability_reason == TaxabilityReason.standard_rated
-        # assert order.tax_rate == calculate_tax_mock.return_value["tax_rate"]
-        assert order.tax_transaction_processor_id is None
 
         billing_entry_repository = BillingEntryRepository.from_session(session)
         order_ids = set()
@@ -1373,11 +1382,12 @@ class TestCreateSubscriptionOrder:
 
         assert order_ids == set([oi.id for oi in order.items])
 
-        enqueue_job_mock.assert_any_call(
-            "order.trigger_payment",
-            order_id=order.id,
-            payment_method_id=subscription.payment_method_id,
-        )
+        if order.subtotal_amount >= 0:
+            enqueue_job_mock.assert_any_call(
+                "order.trigger_payment",
+                order_id=order.id,
+                payment_method_id=subscription.payment_method_id,
+            )
 
 
 @pytest.mark.asyncio

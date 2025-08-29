@@ -19,17 +19,10 @@ from polar.notifications import (
     auth as notifications_auth,
 )
 from polar.openapi import APITag
-from polar.organization import auth as organization_auth
-from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
-from .schemas import (
-    NotificationsList,
-    NotificationsMarkRead,
-    OrganizationNotificationsList,
-    OrganizationNotificationsMarkRead,
-)
+from .schemas import NotificationsList, NotificationsMarkRead
 from .service import notifications
 
 NotificationRecipientID = Annotated[
@@ -131,36 +124,3 @@ async def delete(
 ) -> None:
     """Delete a notification recipient."""
     await notification_recipient_service.delete(session, auth_subject, id)
-
-
-# Organization notification endpoints
-@router.get("/organizations/{organization_id}/notifications", response_model=OrganizationNotificationsList)
-async def get_organization_notifications(
-    organization_id: OrganizationID,
-    auth_subject: organization_auth.OrganizationsRead,
-    session: AsyncSession = Depends(get_db_session),
-) -> OrganizationNotificationsList:
-    """Get notifications for an organization."""
-    notifs = await notifications.get_for_organization(session, organization_id)
-    last_read_notification_id = await notifications.get_organization_last_read(
-        session, organization_id
-    )
-
-    return OrganizationNotificationsList(
-        notifications=notifs,  # type: ignore
-        last_read_notification_id=last_read_notification_id,
-    )
-
-
-@router.post("/organizations/{organization_id}/notifications/read")
-async def mark_organization_notifications_read(
-    organization_id: OrganizationID,
-    read: OrganizationNotificationsMarkRead,
-    auth_subject: organization_auth.OrganizationsWrite,
-    session: AsyncSession = Depends(get_db_session),
-) -> None:
-    """Mark organization notifications as read."""
-    await notifications.set_organization_last_read(
-        session, organization_id, read.notification_id
-    )
-    return None

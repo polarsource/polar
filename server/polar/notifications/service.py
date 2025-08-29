@@ -6,7 +6,6 @@ from sqlalchemy import desc
 
 from polar.kit.extensions.sqlalchemy import sql
 from polar.models.notification import Notification
-from polar.models.organization_notification import OrganizationNotification
 from polar.models.pledge import Pledge
 from polar.models.user_notification import UserNotification
 from polar.notifications.notification import Notification as NotificationSchema
@@ -38,20 +37,6 @@ class NotificationsService:
             sql.select(Notification)
             .join(Pledge, Pledge.id == Notification.pledge_id, isouter=True)
             .where(Notification.user_id == user_id)
-            .order_by(desc(Notification.created_at))
-            .limit(100)
-        )
-
-        res = await session.execute(stmt)
-        return res.scalars().unique().all()
-
-    async def get_for_organization(
-        self, session: AsyncSession, organization_id: UUID
-    ) -> Sequence[Notification]:
-        stmt = (
-            sql.select(Notification)
-            .join(Pledge, Pledge.id == Notification.pledge_id, isouter=True)
-            .where(Notification.organization_id == organization_id)
             .order_by(desc(Notification.created_at))
             .limit(100)
         )
@@ -91,25 +76,6 @@ class NotificationsService:
                 user_id=member.user_id,
                 notif=notif,
             )
-
-    async def send_to_organization(
-        self,
-        session: AsyncSession,
-        organization_id: UUID,
-        notif: PartialNotification,
-    ) -> bool:
-        notification = Notification(
-            organization_id=organization_id,
-            type=notif.type,
-            pledge_id=notif.pledge_id,
-            payload=notif.payload.model_dump(mode="json"),
-        )
-
-        session.add(notification)
-        await session.flush()
-        enqueue_job("notifications.send", notification_id=notification.id)
-        enqueue_job("notifications.push", notification_id=notification.id)
-        return True
 
     async def send_to_anonymous_email(
         self,
@@ -181,31 +147,6 @@ class NotificationsService:
             .values(user_id=user_id, last_read_notification_id=notification_id)
             .on_conflict_do_update(
                 index_elements=[UserNotification.user_id],
-                set_={"last_read_notification_id": notification_id},
-            )
-        )
-        await session.execute(stmt)
-
-    async def get_organization_last_read(
-        self, session: AsyncSession, organization_id: UUID
-    ) -> UUID | None:
-        stmt = sql.select(OrganizationNotification).where(
-            OrganizationNotification.organization_id == organization_id
-        )
-        res = await session.execute(stmt)
-        org_notif = res.scalar_one_or_none()
-        return org_notif.last_read_notification_id if org_notif else None
-
-    async def set_organization_last_read(
-        self, session: AsyncSession, organization_id: UUID, notification_id: UUID
-    ) -> None:
-        stmt = (
-            sql.insert(OrganizationNotification)
-            .values(
-                organization_id=organization_id, last_read_notification_id=notification_id
-            )
-            .on_conflict_do_update(
-                index_elements=[OrganizationNotification.organization_id],
                 set_={"last_read_notification_id": notification_id},
             )
         )

@@ -30,6 +30,7 @@ from .login_code import LoginCode
 from .meter import Meter
 from .notification import Notification
 from .notification_recipient import NotificationRecipient
+from .organization_notification import OrganizationNotification
 from .oauth2_authorization_code import OAuth2AuthorizationCode
 from .oauth2_client import OAuth2Client
 from .oauth2_grant import OAuth2Grant
@@ -106,6 +107,7 @@ __all__ = [
     "Meter",
     "Notification",
     "NotificationRecipient",
+    "OrganizationNotification",
     "OAuth2AuthorizationCode",
     "OAuth2Client",
     "OAuth2Grant",

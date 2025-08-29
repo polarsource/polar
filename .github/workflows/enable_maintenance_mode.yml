@@ -15,12 +15,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Enable Maintenance Mode
+      - name: Enable Frontend Maintenance Rule
         uses: ./.github/actions/maintenance-mode
         with:
           enable: "true"
           cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           cloudflare_ruleset_id: ${{ secrets.CLOUDFLARE_RULESET_ID }}
-          frontend_maintenance_rule_id: ${{ secrets.FRONTEND_MAINTENANCE_RULE_ID }}
-          api_maintenance_rule_id: ${{ secrets.API_MAINTENANCE_RULE_ID }}
+          rule_id: ${{ secrets.FRONTEND_MAINTENANCE_RULE_ID }}
+          rule_name: "Frontend"
+
+      - name: Enable API Maintenance Rule
+        uses: ./.github/actions/maintenance-mode
+        with:
+          enable: "true"
+          cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          cloudflare_ruleset_id: ${{ secrets.CLOUDFLARE_RULESET_ID }}
+          rule_id: ${{ secrets.API_MAINTENANCE_RULE_ID }}
+          rule_name: "API"

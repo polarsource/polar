@@ -27,6 +27,7 @@ from polar.email.sender import enqueue_email
 from polar.enums import PaymentProcessor
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
+from polar.custom_field.data import validate_custom_field_data
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -425,10 +426,23 @@ class OrderService:
         if errors:
             raise PolarRequestValidationError(errors)
 
+        # Handle custom field data validation and update
+        update_dict = order_update.model_dump(exclude_unset=True)
+
+        if "custom_field_data" in update_dict:
+            # Validate custom field data against the product's attached custom fields
+            custom_field_data = validate_custom_field_data(
+                order.product.attached_custom_fields,
+                update_dict["custom_field_data"],
+                validate_required=False,  # Allow merchants to update even if required fields are missing
+            )
+            update_dict["custom_field_data"] = custom_field_data
+
         repository = OrderRepository.from_session(session)
-        order = await repository.update(
-            order, update_dict=order_update.model_dump(exclude_unset=True)
-        )
+        order = await repository.update(order, update_dict=update_dict)
+
+        # Refresh the order to get the updated data, including the product relationship
+        await session.refresh(order, {"product"})
 
         await self.send_webhook(session, order, WebhookEventType.order_updated)
 

@@ -1,3 +1,4 @@
+import datetime
 from typing import Annotated
 
 from babel.numbers import format_currency
@@ -5,7 +6,7 @@ from fastapi import Path
 from pydantic import UUID4, AliasChoices, AliasPath, Field, computed_field
 from pydantic.json_schema import SkipJsonSchema
 
-from polar.custom_field.data import CustomFieldDataOutputMixin
+from polar.custom_field.data import CustomFieldDataInputMixin, CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase
 from polar.discount.schemas import DiscountMinimal
 from polar.exceptions import ResourceNotFound
@@ -179,16 +180,22 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
 
 class OrderUpdateBase(Schema):
     billing_name: str | None = Field(
+        default=None,
         description=(
             "The name of the customer that should appear on the invoice. "
             "Can't be updated after the invoice is generated."
         )
     )
     billing_address: Address | None = Field(
+        default=None,
         description=(
             "The address of the customer that should appear on the invoice. "
             "Can't be updated after the invoice is generated."
         )
+    )
+    custom_field_data: dict[str, str | int | bool | datetime.datetime | None] | None = Field(
+        default=None,
+        description="Key-value object storing custom field values. Can be updated by merchants to correct errors.",
     )
 
 

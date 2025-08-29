@@ -950,6 +950,7 @@ class SubscriptionService:
                         base_amount
                     )
                 entry_unused_time = BillingEntry(
+                    type=BillingEntryType.proration,
                     direction=BillingEntryDirection.credit,
                     start_timestamp=now,
                     end_timestamp=old_cycle_end,
@@ -974,6 +975,7 @@ class SubscriptionService:
                         base_amount
                     )
                 entry_remaining_time = BillingEntry(
+                    type=BillingEntryType.proration,
                     direction=BillingEntryDirection.debit,
                     start_timestamp=now,
                     end_timestamp=new_cycle_end,

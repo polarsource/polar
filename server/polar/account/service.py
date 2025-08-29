@@ -4,7 +4,6 @@ import uuid
 from collections.abc import Sequence
 
 import stripe as stripe_lib
-from sqlalchemy import select
 from sqlalchemy.orm.strategy_options import joinedload
 
 from polar.account.repository import AccountRepository
@@ -16,7 +15,7 @@ from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.open_collective.service import open_collective
 from polar.integrations.stripe.service import stripe
 from polar.kit.pagination import PaginationParams
-from polar.models import Account, Organization, User, UserOrganization
+from polar.models import Account, Organization, User
 from polar.models.user import IdentityVerificationStatus
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
@@ -379,18 +378,14 @@ class AccountService:
                 "Stripe account must be deleted before changing admin"
             )
 
-        statement = select(UserOrganization).where(
-            UserOrganization.user_id == new_admin_id,
-            UserOrganization.organization_id == organization_id,
-            UserOrganization.deleted_at.is_(None),
+        user_repository = UserRepository.from_session(session)
+        is_member = await user_repository.is_organization_member(
+            new_admin_id, organization_id
         )
-        result = await session.execute(statement)
-        user_org = result.scalar_one_or_none()
 
-        if user_org is None:
+        if not is_member:
             raise UserNotOrganizationMemberError(new_admin_id, organization_id)
 
-        user_repository = UserRepository.from_session(session)
         new_admin_user = await user_repository.get_by_id(new_admin_id)
 
         if new_admin_user is None:
@@ -404,11 +399,9 @@ class AccountService:
                 f"New admin must be verified in Stripe. Current status: {new_admin_user.identity_verification_status.get_display_name()}"
             )
 
-        # Cannot change to same admin
         if account.admin_id == new_admin_id:
             raise CannotChangeAdminError("New admin is the same as current admin")
 
-        # Update the admin
         repository = AccountRepository.from_session(session)
         account = await repository.update(
             account, update_dict={"admin_id": new_admin_id}

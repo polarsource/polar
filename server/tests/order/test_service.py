@@ -4,6 +4,7 @@ from typing import Any, cast
 from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import pytest
+import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
 from pydantic_extra_types.country import CountryAlpha2
@@ -38,8 +39,9 @@ from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.organization import Organization
 from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
-from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription import SubscriptionRecurringInterval, SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
+from polar.models.custom_field import CustomFieldType
 from polar.order.service import (
     MissingCheckoutCustomer,
     NoPendingBillingEntries,
@@ -70,10 +72,12 @@ from tests.fixtures.random_objects import (
     create_canceled_subscription,
     create_checkout,
     create_customer,
+    create_custom_field,
     create_discount,
     create_order,
     create_payment,
     create_payment_method,
+    create_product,
     create_subscription,
 )
 from tests.fixtures.stripe import construct_stripe_invoice
@@ -2328,3 +2332,192 @@ class TestProcessRetryPayment:
             await order_service.process_retry_payment(
                 session, order, "ctoken_test", PaymentProcessor.stripe
             )
+
+
+@pytest_asyncio.fixture
+async def product_custom_fields(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    text_field = await create_custom_field(
+        save_fixture, type=CustomFieldType.text, slug="text", organization=organization
+    )
+    select_field = await create_custom_field(
+        save_fixture,
+        type=CustomFieldType.select,
+        slug="select",
+        organization=organization,
+        properties={
+            "options": [{"value": "a", "label": "A"}, {"value": "b", "label": "B"}],
+        },
+    )
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        attached_custom_fields=[(text_field, False), (select_field, True)],
+    )
+
+
+@pytest.mark.asyncio
+class TestUpdateOrder:
+    async def test_update_custom_field_data(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_custom_fields: Product,
+        customer: Customer,
+    ) -> None:
+        """Test updating custom field data for an order."""
+        order = await create_order(
+            save_fixture,
+            product=product_custom_fields,
+            customer=customer,
+            custom_field_data={"text": "original", "select": "a"},
+        )
+        await save_fixture(order)
+
+        from polar.order.schemas import OrderUpdate
+
+        updated_order = await order_service.update(
+            session,
+            order,
+            OrderUpdate(custom_field_data={"text": "updated", "select": "b"}),
+        )
+
+        assert updated_order.custom_field_data == {"text": "updated", "select": "b"}
+
+    async def test_update_billing_name(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test updating billing name for an order."""
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_name="Original Name",
+        )
+        await save_fixture(order)
+
+        from polar.order.schemas import OrderUpdate
+
+        updated_order = await order_service.update(
+            session,
+            order,
+            OrderUpdate(billing_name="Updated Name"),
+        )
+
+        assert updated_order.billing_name == "Updated Name"
+
+    async def test_update_billing_address(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test updating billing address for an order."""
+        original_address = Address(
+            country="US",
+            state="NY",
+            line1="123 Original St",
+            city="Original City",
+            postal_code="10001",
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_address=original_address,
+        )
+        await save_fixture(order)
+
+        new_address = Address(
+            country="US",
+            state="CA",
+            line1="456 Updated St",
+            city="Updated City",
+            postal_code="90210",
+        )
+
+        from polar.order.schemas import OrderUpdate
+
+        updated_order = await order_service.update(
+            session,
+            order,
+            OrderUpdate(billing_address=new_address),
+        )
+
+        assert updated_order.billing_address["country"] == "US"
+        assert updated_order.billing_address["state"] == "US-CA"
+        assert updated_order.billing_address["line1"] == "456 Updated St"
+        assert updated_order.billing_address["city"] == "Updated City"
+        assert updated_order.billing_address["postal_code"] == "90210"
+
+    async def test_update_with_invoice_generated(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that billing fields cannot be updated after invoice is generated."""
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            billing_name="Original Name",
+        )
+        await save_fixture(order)
+
+        # Set invoice_path after creation
+        order.invoice_path = "/path/to/invoice.pdf"  # Invoice already generated
+        await save_fixture(order)
+
+        from polar.order.schemas import OrderUpdate
+        from polar.exceptions import PolarRequestValidationError
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await order_service.update(
+                session,
+                order,
+                OrderUpdate(billing_name="Updated Name"),
+            )
+
+        errors = e.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "billing_name")
+        assert "cannot be updated after the invoice is generated" in errors[0]["msg"]
+
+    async def test_update_custom_field_data_with_invoice_generated(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_custom_fields: Product,
+        customer: Customer,
+    ) -> None:
+        """Test that custom field data can still be updated after invoice is generated."""
+        order = await create_order(
+            save_fixture,
+            product=product_custom_fields,
+            customer=customer,
+            custom_field_data={"text": "original", "select": "a"},
+        )
+        await save_fixture(order)
+
+        # Set invoice_path after creation
+        order.invoice_path = "/path/to/invoice.pdf"  # Invoice already generated
+        await save_fixture(order)
+
+        from polar.order.schemas import OrderUpdate
+
+        updated_order = await order_service.update(
+            session,
+            order,
+            OrderUpdate(custom_field_data={"text": "updated", "select": "b"}),
+        )
+
+        assert updated_order.custom_field_data == {"text": "updated", "select": "b"}

@@ -34,14 +34,15 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.checkout import CheckoutStatus
+from polar.models.custom_field import CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountFixed, DiscountType
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.organization import Organization
 from polar.models.payment import PaymentStatus
 from polar.models.product import ProductBillingType
-from polar.models.custom_field import CustomFieldType
 from polar.models.subscription import SubscriptionRecurringInterval, SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
+from polar.order.schemas import OrderUpdate
 from polar.order.service import (
     MissingCheckoutCustomer,
     NoPendingBillingEntries,
@@ -55,7 +56,6 @@ from polar.order.service import (
     RecurringProduct,
     SubscriptionDoesNotExist,
 )
-from polar.order.schemas import OrderUpdate
 from polar.order.service import order as order_service
 from polar.product.guard import is_fixed_price, is_static_price
 from polar.transaction.service.balance import (
@@ -72,8 +72,8 @@ from tests.fixtures.random_objects import (
     create_billing_entry,
     create_canceled_subscription,
     create_checkout,
-    create_customer,
     create_custom_field,
+    create_customer,
     create_discount,
     create_order,
     create_payment,
@@ -2377,7 +2377,6 @@ class TestUpdateOrder:
         )
         await save_fixture(order)
 
-        from polar.order.schemas import OrderUpdate
 
         updated_order = await order_service.update(
             session,
@@ -2403,7 +2402,6 @@ class TestUpdateOrder:
         )
         await save_fixture(order)
 
-        from polar.order.schemas import OrderUpdate
 
         updated_order = await order_service.update(
             session,
@@ -2444,7 +2442,6 @@ class TestUpdateOrder:
             postal_code="90210",
         )
 
-        from polar.order.schemas import OrderUpdate
 
         updated_order = await order_service.update(
             session,
@@ -2478,7 +2475,6 @@ class TestUpdateOrder:
         order.invoice_path = "/path/to/invoice.pdf"  # Invoice already generated
         await save_fixture(order)
 
-        from polar.order.schemas import OrderUpdate
         from polar.exceptions import PolarRequestValidationError
 
         with pytest.raises(PolarRequestValidationError) as e:
@@ -2513,7 +2509,6 @@ class TestUpdateOrder:
         order.invoice_path = "/path/to/invoice.pdf"  # Invoice already generated
         await save_fixture(order)
 
-        from polar.order.schemas import OrderUpdate
 
         updated_order = await order_service.update(
             session,

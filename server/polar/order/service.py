@@ -643,19 +643,13 @@ class OrderService:
         discount = subscription.discount
         discount_amount = 0
         if discount is not None:
-            assert subscription.started_at is not None
-
-            # Check if discount is still applicable
-            if not discount.is_repetition_expired(
-                subscription.started_at, subscription.current_period_start
-            ):
-                # Discount only applies to cycle and meter items, as prorations
-                # use "last month's" discount and so this month's discount
-                # shouldn't apply to those.
-                discountable_amount = sum(
-                    item.amount for item in items if item.discountable
-                )
-                discount_amount = discount.get_discount_amount(discountable_amount)
+            # Discount only applies to cycle and meter items, as prorations
+            # use "last month's" discount and so this month's discount
+            # shouldn't apply to those.
+            discountable_amount = sum(
+                item.amount for item in items if item.discountable
+            )
+            discount_amount = discount.get_discount_amount(discountable_amount)
 
         # Calculate tax
         tax_amount = 0

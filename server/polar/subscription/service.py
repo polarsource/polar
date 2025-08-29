@@ -545,7 +545,10 @@ class SubscriptionService:
         return subscription, new_subscription
 
     async def cycle(
-        self, session: AsyncSession, subscription: Subscription
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        update_cycle_dates: bool = True,
     ) -> Subscription:
         if not subscription.active:
             raise InactiveSubscription(subscription)
@@ -569,11 +572,12 @@ class SubscriptionService:
             await self.enqueue_benefits_grants(session, subscription)
         # Normal cycle
         else:
-            current_period_end = subscription.current_period_end
-            subscription.current_period_start = current_period_end
-            subscription.current_period_end = (
-                subscription.recurring_interval.get_next_period(current_period_end)
-            )
+            if update_cycle_dates:
+                current_period_end = subscription.current_period_end
+                subscription.current_period_start = current_period_end
+                subscription.current_period_end = (
+                    subscription.recurring_interval.get_next_period(current_period_end)
+                )
 
             # Check if discount is still applicable
             if subscription.discount is not None:
@@ -909,18 +913,6 @@ class SubscriptionService:
                 # If switching from monthly to yearly or yearly to monthly, we
                 # set the cycle start to now
                 subscription.current_period_start = now
-                # And we always invoice immediately
-                proration_behavior = SubscriptionProrationBehavior.invoice
-
-                # Check if discount is still applicable - if won't check discount at
-                # this point one can keep on switching plans and never triggering a
-                # true `subscription/service.py::cycle()` which would be the normal
-                # mechanism expiring the discount applied to the subscription
-                if subscription.discount is not None:
-                    if subscription.discount.is_repetition_expired(
-                        subscription.started_at, subscription.current_period_start
-                    ):
-                        subscription.discount = None
 
             new_cycle_start = subscription.current_period_start
             new_cycle_end = subscription.recurring_interval.get_next_period(
@@ -975,35 +967,42 @@ class SubscriptionService:
                 )
                 session.add(entry_unused_time)
 
-            for new_price in new_static_prices:
-                base_amount = new_price.price_amount
-                discount_amount = 0
-                if subscription.discount and subscription.discount.is_applicable(
-                    new_price.product
-                ):
-                    discount_amount = subscription.discount.get_discount_amount(
-                        base_amount
+            if previous_product.recurring_interval == product.recurring_interval:
+                # If switching from monthly to yearly or yearly to monthly, we trigger a cycle immediately
+                # that means a debit billing entry for the new cycle will be added automatically.
+                # So debit prorations only apply when the cycle interval is the same.
+                for new_price in new_static_prices:
+                    base_amount = new_price.price_amount
+                    discount_amount = 0
+                    if subscription.discount and subscription.discount.is_applicable(
+                        new_price.product
+                    ):
+                        discount_amount = subscription.discount.get_discount_amount(
+                            base_amount
+                        )
+                    entry_remaining_time = BillingEntry(
+                        type=BillingEntryType.proration,
+                        direction=BillingEntryDirection.debit,
+                        start_timestamp=now,
+                        end_timestamp=new_cycle_end,
+                        amount=round(new_price.price_amount * new_cycle_pct_remaining),
+                        discount_amount=discount_amount,
+                        currency=subscription.currency,
+                        customer_id=subscription.customer_id,
+                        product_price_id=new_price.id,
+                        subscription_id=subscription.id,
+                        event_id=event.id,
+                        order_item_id=None,
                     )
-                entry_remaining_time = BillingEntry(
-                    type=BillingEntryType.proration,
-                    direction=BillingEntryDirection.debit,
-                    start_timestamp=now,
-                    end_timestamp=new_cycle_end,
-                    amount=round(new_price.price_amount * new_cycle_pct_remaining),
-                    discount_amount=discount_amount,
-                    currency=subscription.currency,
-                    customer_id=subscription.customer_id,
-                    product_price_id=new_price.id,
-                    subscription_id=subscription.id,
-                    event_id=event.id,
-                    order_item_id=None,
-                )
-                session.add(entry_remaining_time)
+                    session.add(entry_remaining_time)
 
             session.add(subscription)
             await session.flush()
 
-            if proration_behavior == SubscriptionProrationBehavior.invoice:
+            if previous_product.recurring_interval != product.recurring_interval:
+                # If switching from monthly to yearly or yearly to monthly, we trigger a cycle immediately
+                await self.cycle(session, subscription, update_cycle_dates=False)
+            elif proration_behavior == SubscriptionProrationBehavior.invoice:
                 # Invoice immediately
                 enqueue_job(
                     "order.create_subscription_order",

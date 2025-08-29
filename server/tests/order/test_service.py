@@ -1335,7 +1335,7 @@ class TestCreateSubscriptionOrder:
             session, subscription, OrderBillingReason.subscription_cycle
         )
 
-        assert len(order.items) == 2
+        assert len(order.items) == len(setup["history"])
         assert order.discount_amount == setup["expected_discount"]
         assert order.subtotal_amount == setup["expected_subtotal"]
         assert order.tax_amount == setup["expected_tax"]

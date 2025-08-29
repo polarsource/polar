@@ -400,7 +400,8 @@ class TestUpdateProductProrations:
             assert billing_entries[1].direction == BillingEntryDirection.debit
             assert billing_entries[1].customer_id == customer.id
             assert billing_entries[1].product_price_id == new_price.id
-            assert billing_entries[1].event_id == event.id
+            if old_product.recurring_interval == new_product.recurring_interval:
+                assert billing_entries[1].event_id == event.id
             assert billing_entries[1].amount == entry_1_amount
             assert billing_entries[1].currency == new_price.price_currency
             # fmt: on
@@ -413,7 +414,14 @@ class TestUpdateProductProrations:
                 for args, kwargs in enqueue_job_mock.call_args_list
                 if args[0] == "order.create_subscription_order"
             ]
-            if expected_proration == SubscriptionProrationBehavior.invoice:
+            if old_product.recurring_interval != new_product.recurring_interval:
+                enqueue_job_mock.assert_any_call(
+                    "order.create_subscription_order",
+                    subscription.id,
+                    OrderBillingReason.subscription_cycle,
+                )
+                assert len(calls) == 1
+            elif expected_proration == SubscriptionProrationBehavior.invoice:
                 enqueue_job_mock.assert_any_call(
                     "order.create_subscription_order",
                     subscription.id,

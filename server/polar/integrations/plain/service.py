@@ -581,13 +581,11 @@ class PlainService:
                                             ],
                                         )
                                     ),
-                                    # Backoffice Link
+                                    # Admin Dashboard Link
                                     ComponentContainerContentInput(
                                         component_link_button=ComponentLinkButtonInput(
-                                            link_button_url=settings.generate_external_url(
-                                                f"/backoffice/organizations/{organization.id}"
-                                            ),
-                                            link_button_label="View in Backoffice",
+                                            link_button_url=f"{settings.FRONTEND_BASE_URL}/backoffice/organizations/{organization.id}",
+                                            link_button_label="View in Admin Dashboard",
                                         )
                                     ),
                                 ]

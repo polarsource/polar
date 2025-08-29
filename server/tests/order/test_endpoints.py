@@ -5,9 +5,9 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
+from polar.enums import SubscriptionRecurringInterval
 from polar.models import Customer, Order, Organization, Product, UserOrganization
 from polar.models.custom_field import CustomFieldType
-from polar.models.subscription import SubscriptionRecurringInterval
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
